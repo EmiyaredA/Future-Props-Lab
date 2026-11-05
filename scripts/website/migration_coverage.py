@@ -20,6 +20,7 @@ from studio.apps.interview_assistant.storage.migration_records import CREATES as
 from studio.apps.interview_assistant.storage.migration_records import DATASETS as INTERVIEW
 from studio.apps.model_service.catalog_migration import DATASETS as MODELS
 from studio.apps.model_service.settings_migration import DEFAULT_PREFIX, POLICIES
+from studio.apps.model_service.storage.migration_history import DATASETS as MODEL_HISTORY
 from studio.apps.motion_compositor.storage.migration_records import DATASETS as MOTION
 from studio.apps.presentation_workshop.migration_operations import DATASET as PRESENTATION_RECEIPTS
 from studio.apps.presentation_workshop.storage.migration_records import DATASETS as PRESENTATION
@@ -54,6 +55,7 @@ TRANSFER = {
             *ASSETS,
             *DIRECTOR,
             *MODELS,
+            *MODEL_HISTORY,
             *PRESENTATION,
             *AGENTS,
             *AMADEUS,

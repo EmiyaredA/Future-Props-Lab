@@ -1,4 +1,4 @@
-"""Explicit Models catalog transfer with the destination encryption key."""
+"""Transfer Models catalog and owned history using the destination encryption key."""
 
 from functools import partial
 
@@ -12,10 +12,13 @@ from studio.apps.model_service.catalog_migration import (
     import_batch,
     inventory,
 )
+from studio.apps.model_service.storage.migration_history import DATASETS as HISTORY
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
 from studio.runtime.database.migration_apps import export_app, import_app, mount_dataset
+from studio.runtime.database.project_history_migration import mount_project_history
 
 PREFIX = "/v1/migration/models"
+TRANSPORT = {"maximum": 32 * 1024 * 1024}
 
 
 def mount_catalog(app, plan, sessions, *, source=None, cipher=None):
@@ -53,12 +56,18 @@ def mount_catalog(app, plan, sessions, *, source=None, cipher=None):
 
 
 def create_export_app(*, plan, source_path):
-    app, sessions, source = export_app(plan, source_path)
+    app, sessions, source = export_app(plan, source_path, **TRANSPORT)
+    mount_project_history(app, plan, sessions, PREFIX, HISTORY, ModelsImportReceipt, source=source)
     return mount_catalog(app, plan, sessions, source=source)
 
 
 def create_import_app(*, plan, state_root, secret_key):
     cipher = SecretCipher(secret_key)
-    models = (*[dataset.model for dataset in DATASETS], *settings.MODELS, ModelsImportReceipt)
-    app, database = import_app(plan, state_root, "models", models, MIGRATIONS)
+    models = (
+        *(dataset.model for dataset in (*DATASETS, *HISTORY)),
+        *settings.MODELS,
+        ModelsImportReceipt,
+    )
+    app, database = import_app(plan, state_root, "models", models, MIGRATIONS, **TRANSPORT)
+    mount_project_history(app, plan, database.sessions, PREFIX, HISTORY, ModelsImportReceipt)
     return mount_catalog(app, plan, database.sessions, cipher=cipher)
