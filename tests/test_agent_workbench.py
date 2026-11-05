@@ -13,7 +13,7 @@ from sqlalchemy import event, insert, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from db.migrations import apply_migrations
-from studio.apps.agent_workbench.events import event_page
+from studio.apps.agent_workbench.change_stream import event_page
 from studio.apps.agent_workbench.storage.models import WorkbenchCheckpoint, WorkbenchSession
 from studio.apps.agent_workbench.sync.projection import apply_batch
 from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
@@ -707,7 +707,7 @@ async def test_archive_duplicates_and_same_inode_rewrite(store, tmp_path):
 async def test_stream_reauthorizes_after_session_revocation(store):
     from datetime import timedelta
 
-    from studio.apps.agent_workbench.events import stream_events
+    from studio.apps.agent_workbench.change_stream import stream_events
     from studio.apps.identity.storage.models.accounts import AuthSession
     from studio.runtime.time import utc_now
 
@@ -737,7 +737,15 @@ async def test_stream_reauthorizes_after_session_revocation(store):
         async def is_disconnected(self):
             return False
 
-    stream = stream_events(ConnectedRequest(), principal, 0, sessions=sessions)
+    from studio.apps.identity.storage.workbench_access import WorkbenchStreamAuthorization
+
+    stream = stream_events(
+        ConnectedRequest(),
+        principal,
+        0,
+        sessions=sessions,
+        authorizer=WorkbenchStreamAuthorization(sessions, clock=utc_now).check,
+    )
     assert "connected" in await anext(stream)
     assert "heartbeat" in await anext(stream)
     async with sessions() as db:

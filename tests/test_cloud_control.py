@@ -15,7 +15,15 @@ import pytest
 from PIL import Image
 
 from db.migrations import runner as migration_runner
-from studio.apps.agent_workbench.execution import events, project_files, projects, runner, storage
+from studio.apps.agent_workbench.execution import (
+    project_files,
+    projects,
+    runner,
+    storage,
+)
+from studio.apps.agent_workbench.transport import (
+    turn_events as events,
+)
 from studio.apps.agent_workbench.transport.website import execution
 from studio.apps.identity.storage import cloud_access as access
 from studio.apps.identity.use_cases.cloud_factors import totp
@@ -457,7 +465,7 @@ async def test_slow_project_check_releases_sqlite_and_rechecks_binding(monkeypat
         assert result.status_code == 409, result.text
 
 
-async def test_execution_stream_releases_session_before_sending(monkeypatch):
+async def test_execution_stream_releases_session_before_sending():
     open_sessions = 0
 
     @asynccontextmanager
@@ -465,7 +473,7 @@ async def test_execution_stream_releases_session_before_sending(monkeypatch):
         nonlocal open_sessions
         open_sessions += 1
         try:
-            yield object()
+            yield SimpleNamespace(info={})
         finally:
             open_sessions -= 1
 
@@ -475,12 +483,18 @@ async def test_execution_stream_releases_session_before_sending(monkeypatch):
     async def version(*_args):
         return ("turn", 1)
 
-    monkeypatch.setattr(events, "valid_auth", authorized)
-    monkeypatch.setattr(events, "get_chat", authorized)
-    monkeypatch.setattr(events, "latest_turn_version", version)
+    from studio.apps.agent_workbench.storage.turn_versions import SqlTurnVersions
+
+    versions = SqlTurnVersions(session, load=version, readiness=lambda *_args: None)
     request = SimpleNamespace(is_disconnected=lambda: asyncio.sleep(0, result=False))
     async with aclosing(
-        events.stream(request, SimpleNamespace(user_id="owner"), "chat", sessions=session)
+        events.stream_turns(
+            request,
+            SimpleNamespace(user_id="owner"),
+            "chat",
+            versions=versions,
+            authorizer=authorized,
+        )
     ) as stream:
         assert (await anext(stream)).startswith("event: change")
         assert open_sessions == 0

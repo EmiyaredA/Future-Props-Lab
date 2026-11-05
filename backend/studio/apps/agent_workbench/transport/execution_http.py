@@ -1,7 +1,5 @@
 """Read account-owned workbench execution transcripts while the native lane is gated."""
 
-import asyncio
-import json
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -330,32 +328,12 @@ async def decide(
     )
 
 
-async def updates(request, owner, chat_id):
-    previous = None
-    while not await request.is_disconnected():
-        try:
-            await request.app.state.workbench_reauthorize(request)
-        except HTTPException:
-            break
-        async with request.app.state.database.sessions(info={"owner_user_id": owner}) as db:
-            version = await transcripts.latest_turn_version(db, owner, chat_id)
-        instructions = request.app.state.execution_turns.instructions
-        version = (version, any(instructions.steerable(turn_id) for turn_id, _ in version[1]))
-        if version != previous:
-            previous = version
-            yield f"event: change\ndata: {json.dumps(version)}\n\n"
-        else:
-            yield ": heartbeat\n\n"
-        await asyncio.sleep(0.6)
-    yield "event: auth_expired\ndata: {}\n\n"
-
-
 @router.get("/chats/{chat_id}/events", response_class=StreamingResponse)
 async def stream(request: Request, chat_id: str, db: SessionDep, principal: StudioAuth):
     await transcripts.get_chat(db, principal.user_id, chat_id)
     await db.rollback()
     return StreamingResponse(
-        updates(request, principal.user_id, chat_id),
+        request.app.state.workbench_turn_stream(request, principal, chat_id),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )

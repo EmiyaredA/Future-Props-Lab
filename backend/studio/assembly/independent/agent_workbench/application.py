@@ -17,7 +17,10 @@ from studio.apps.agent_workbench.execution.models import (
     WorkbenchProject,
     WorkbenchTurn,
 )
-from studio.apps.agent_workbench.execution.transcripts import recover_owned_turns
+from studio.apps.agent_workbench.execution.transcripts import (
+    latest_turn_version,
+    recover_owned_turns,
+)
 from studio.apps.agent_workbench.execution_discovery import ExecutionDiscovery
 from studio.apps.agent_workbench.execution_turns import ExecutionTurns
 from studio.apps.agent_workbench.native_access import NativeSourceAccess
@@ -37,11 +40,13 @@ from studio.apps.agent_workbench.storage.service_models import (
     NativeWorkerSeen,
     WorkbenchExecutionJob,
 )
+from studio.apps.agent_workbench.storage.turn_versions import SqlTurnVersions
 from studio.apps.agent_workbench.supervisor import CollectionSupervisor
 from studio.apps.agent_workbench.transport.execution_http import router as execution_router
 from studio.apps.agent_workbench.transport.execution_native_http import router as execution_native
 from studio.apps.agent_workbench.transport.native_api import router as native_router
 from studio.apps.agent_workbench.transport.service import router
+from studio.apps.agent_workbench.transport.turn_events import stream_turns
 from studio.config.settings import get_settings
 from studio.contracts.agent_workbench.native import COLLECTOR_OPERATIONS
 from studio.runtime.database.migrations import check
@@ -155,6 +160,17 @@ def create_app(
         except HTTPException:
             return False
 
+    app.state.workbench_turn_stream = partial(
+        stream_turns,
+        versions=SqlTurnVersions(
+            database.sessions,
+            load=latest_turn_version,
+            readiness=lambda _owner, _chat, version: any(
+                turns.instructions.steerable(turn_id) for turn_id, _ in version[1]
+            ),
+        ),
+        authorizer=authorize_events,
+    )
     app.state.workbench_reauthorize = reauthorize
     app.state.workbench_event_stream = partial(
         stream_events,

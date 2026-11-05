@@ -7,8 +7,11 @@ from functools import partial
 
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
-from studio.apps.agent_workbench.events import stream_events
+from studio.apps.agent_workbench.change_stream import stream_events
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
+from studio.apps.agent_workbench.execution.storage import latest_turn_version
+from studio.apps.agent_workbench.storage.turn_versions import SqlTurnVersions
+from studio.apps.agent_workbench.transport.turn_events import stream_turns
 from studio.apps.amadeus.execution.website_actions import ActionExecution
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
 from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
@@ -18,6 +21,7 @@ from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.apps.gateway.storage.website_resources import WebsiteResources
 from studio.apps.gateway.use_cases.resource_links import ResourceLinks
 from studio.apps.identity.storage.cloud_factors import FactorRecords
+from studio.apps.identity.storage.workbench_access import WorkbenchStreamAuthorization
 from studio.apps.identity.transport.database_auth import (
     authenticate_database_request,
     authenticate_database_websocket,
@@ -199,7 +203,10 @@ def bind_components(app, settings, database):
         )
     )
     app.state.workbench_native = LocalSourceAccess()
-    app.state.workbench_event_stream = partial(stream_events, sessions=sessions)
+    workbench_authorizer = WorkbenchStreamAuthorization(sessions, clock=utc_now).check
+    app.state.workbench_event_stream = partial(
+        stream_events, sessions=sessions, authorizer=workbench_authorizer
+    )
     app.state.account_creator = create_account
     app.state.account_storage_check = upgrade_pending
     app.state.code_agent_runs = CodeAgentRuns(
@@ -215,3 +222,14 @@ def bind_components(app, settings, database):
         preferences=app.state.desktop_preferences,
     )
     app.state.workbench_runs = WorkbenchRuns(sessions=sessions, settings=settings)
+    app.state.workbench_turn_stream = partial(
+        stream_turns,
+        versions=SqlTurnVersions(
+            sessions,
+            load=latest_turn_version,
+            readiness=lambda owner, chat_id, _version: app.state.workbench_runs.ready_turn(
+                owner, chat_id
+            ),
+        ),
+        authorizer=workbench_authorizer,
+    )

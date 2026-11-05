@@ -116,6 +116,8 @@
 - 通用工具循环、上下文预算和进程内审批等待归 `studio/runtime/tasks/reactive_tools/`。
   循环必须接收审批端口；应用装配创建并在关闭时清理协调器，不在模块导入时创建单例。
   持久审批、业务授权、最终状态和重启恢复仍由所属应用负责，通用循环不得代为裁决。
+- 工作台轮次订阅由 `use_cases/observe_turns.py` 共用版本比较与断线规则；SQL 适配关闭读取会话
+  后返回快照，协议层再发送 SSE。实时账号复核由 Identity 的显式授权端口提供，工作台不加载账号 ORM。
 - Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证

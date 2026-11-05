@@ -6,7 +6,6 @@ from fastapi.responses import StreamingResponse
 
 from app.console.governance.code_agents import resolve_connection
 from studio.apps.agent_workbench.execution import (
-    events,
     history_source,
     projects,
     source_preview,
@@ -197,13 +196,7 @@ async def stream(request: Request, chat_id: str, db: SessionDep, principal: Stud
     await storage.get_chat(db, principal.user_id, chat_id)
     await db.rollback()
     return StreamingResponse(
-        events.stream(
-            request,
-            principal,
-            chat_id,
-            request.app.state.workbench_runs.ready_turn,
-            sessions=request.app.state.database.sessions,
-        ),
+        request.app.state.workbench_turn_stream(request, principal, chat_id),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )
