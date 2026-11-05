@@ -2,15 +2,15 @@
 
 from fastapi import APIRouter, Query, Request
 
-from app.capabilities.asset_store.schemas.files import (
+from studio.apps.asset_library.project_links import ProjectFileLinks
+from studio.apps.asset_library.transport.service.context import cases
+from studio.contracts.asset_library.files import (
     VisualAssetImportIn,
     VisualAssetListOut,
     VisualAssetOut,
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
-from studio.apps.asset_library.project_links import ProjectFileLinks
-from studio.apps.asset_library.transport.service.context import cases
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])

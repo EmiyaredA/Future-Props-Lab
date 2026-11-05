@@ -6,11 +6,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_outputs import render_outputs
 from studio.apps.motion_compositor.assets import MotionAssets
 from studio.apps.motion_compositor.storage.models import MotionTask
 from studio.config.settings import Settings
+from studio.contracts.motion_compositor.document import MotionComposition
 from studio.runtime.database.ownership import bind_owner, require_owner_id
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now

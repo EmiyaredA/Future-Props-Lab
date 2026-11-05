@@ -2,7 +2,7 @@
 
 from math import floor
 
-from app.capabilities.media_rendering.timeline_document import VideoEditorClip
+from studio.contracts.video_editor.timeline_document import VideoEditorClip
 
 
 def source_time_us(clip: VideoEditorClip, local_us: int) -> int:

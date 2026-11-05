@@ -9,13 +9,13 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
 
-from app.capabilities.media_rendering.motion_document import (
+from app.capabilities.media_rendering.text_layer import FONT_ROOT
+from studio.contracts.motion_compositor.document import (
     MotionComposition,
     MotionLayer,
     MotionMask,
     MotionPoint,
 )
-from app.capabilities.media_rendering.text_layer import FONT_ROOT
 
 
 def _curve(t: float, kind: str) -> float:

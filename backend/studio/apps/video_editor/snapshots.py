@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.capabilities.asset_store import (
     AssetStorage,
     ExportedProjectSnapshot,
-    IncomingFile,
     ProjectSnapshotError,
     SnapshotAssetSource,
     export_project_snapshot,
@@ -30,6 +29,7 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorTimeline,
 )
 from studio.config.settings import Settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.ids import new_id
 
 

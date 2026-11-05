@@ -9,8 +9,8 @@ from typing import Protocol
 
 from fastapi import HTTPException
 
-from app.capabilities.asset_store.errors import AssetError
-from app.capabilities.asset_store.incoming import IncomingFile
+from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.incoming import IncomingFile
 
 
 class LocalInput:

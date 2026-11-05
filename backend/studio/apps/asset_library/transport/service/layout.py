@@ -2,10 +2,7 @@
 
 from fastapi import APIRouter, Query, Request
 
-from app.capabilities.asset_store.schemas.files import (
-    StorageLayoutMigrationOut,
-    StorageLayoutStatusOut,
-)
+from studio.contracts.asset_library.files import StorageLayoutMigrationOut, StorageLayoutStatusOut
 from studio.runtime.http.dependencies import OwnerDep
 
 router = APIRouter(tags=["file-management"])

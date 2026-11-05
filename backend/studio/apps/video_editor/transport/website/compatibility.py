@@ -7,7 +7,6 @@ from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
 from app.capabilities.asset_store import (
-    AssetError,
     AssetStorage,
     ProjectFolderError,
     ProjectSnapshotError,
@@ -46,6 +45,7 @@ from studio.apps.video_editor.transport.website.tasks import router as tasks_rou
 from studio.apps.video_editor.transport.website.timeline import router as timeline_router
 from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 from studio.config.settings import get_settings
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter(prefix="/video-editor", tags=["video-editor"])

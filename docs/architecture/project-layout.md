@@ -119,6 +119,8 @@ backend/
 
 ## 浏览器加载与图片派生
 
+`studio/contracts/asset_library/` 的 `incoming.py`、`errors.py` 和 `files.py` 拥有上传流接口、素材错误与文件协议；流不暴露主机路径或 ORM。`studio/contracts/media_rendering/` 拥有裁切、取帧、媒体信息和角色动画数据，`studio/contracts/video_editor/` 拥有时间线及音频接缝结果，`studio/contracts/motion_compositor/document.py` 拥有特效文档。兼容网站和独立服务消费同一份数据定义；契约导入不读取配置、不加载数据库或媒体执行器。渲染计划中尚含路径的进程内结构仍留在实现侧，不作为跨服务素材接口。
+
 `capabilities/asset_store/file_previews.py` 拥有文件预览授权、受限文本读取和账号／素材版本派生缓存；
 `pdf_preview_worker.py` 在独立进程中读取 PDF 页数并栅格化当前页面，不执行文档脚本。
 `capabilities/media_rendering/file_previews.py` 拥有有超时的媒体时长检查、视频封面和前 60 秒真实音频波形，

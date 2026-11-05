@@ -8,7 +8,6 @@ from sqlalchemy import select
 
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
-from app.capabilities.asset_store.schemas.files import VisualAssetFolderCreateIn, VisualAssetPatchIn
 from studio.apps.asset_library.deletions import FileCleanup
 from studio.apps.asset_library.files import Files
 from studio.apps.asset_library.references.references import AssetReferences
@@ -18,6 +17,7 @@ from studio.apps.asset_library.storage.service_models import (
     MODELS,
     AssetDeletion,
 )
+from studio.contracts.asset_library.files import VisualAssetFolderCreateIn, VisualAssetPatchIn
 from studio.contracts.asset_library.references import ReferenceUpdate
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database

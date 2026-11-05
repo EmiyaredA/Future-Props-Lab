@@ -4,11 +4,11 @@ from uuid import UUID, uuid4
 
 import httpx
 
-from app.capabilities.media_rendering.motion_document import MotionComposition
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionUnavailable
 from studio.apps.motion_compositor.schemas import HandoffOut
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.motion_compositor.document import MotionComposition
 from studio.contracts.motion_compositor.motion_preview import sha256
 from studio.contracts.video_editor.video_handoff import HANDOFFS, PURPOSE, MotionHandoff
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable

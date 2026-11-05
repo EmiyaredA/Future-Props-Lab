@@ -5,7 +5,6 @@ import re
 import httpx
 from fastapi import APIRouter, HTTPException, Request
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.assets.asr_records import AsrRecords
 from studio.apps.galgame_workshop.schemas import (
     GalgameAsrSettingsOut,
@@ -21,6 +20,7 @@ from studio.apps.galgame_workshop.transcription.asr_jobs import enqueue_transcri
 from studio.apps.galgame_workshop.transport.asset_read_routes import read_assets
 from studio.apps.galgame_workshop.voice_matches import match_voice, patch_transcript
 from studio.contracts.asset_library.descriptions import ID
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.galgame_workshop.galgame_asr import PREFIX, PURPOSE, AsrModelStatus
 from studio.contracts.galgame_workshop.galgame_assets import SOURCE
 from studio.contracts.identity.claims import HEADER

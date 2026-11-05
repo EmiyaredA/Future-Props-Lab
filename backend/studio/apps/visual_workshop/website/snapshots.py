@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.capabilities.asset_store import (
     AssetStorage,
     ExportedProjectSnapshot,
-    IncomingFile,
     ProjectSnapshotError,
     SnapshotAssetSource,
     export_project_snapshot,
@@ -47,6 +46,7 @@ from studio.apps.visual_workshop.storage.models import (
 )
 from studio.apps.visual_workshop.website.projects import project_out
 from studio.config.settings import Settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.ids import new_id
 
 

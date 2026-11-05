@@ -5,8 +5,8 @@ import asyncio
 import httpx
 from pydantic import ValidationError
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.exports.export_preflight import export_context, frozen_plan
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.galgame_workshop.galgame_frames import (
     FRAMES,
     INPUT_HEADER,

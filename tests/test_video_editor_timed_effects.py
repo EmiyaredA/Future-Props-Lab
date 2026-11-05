@@ -15,7 +15,6 @@ from app.capabilities.media_rendering.contracts import RenderCaptureFrame
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.render_engine import RENDER_PRESETS, render_document
 from app.capabilities.media_rendering.timed_effects import effect_progress
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
 from studio.apps.video_editor.clip_merging.document import (
     render_snapshot,
     replace_selection,
@@ -23,6 +22,7 @@ from studio.apps.video_editor.clip_merging.document import (
 )
 from studio.apps.video_editor.schemas import VideoEditorTimelineBatchIn
 from studio.apps.video_editor.timeline import apply_operations
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from website_test_support import app
 
 

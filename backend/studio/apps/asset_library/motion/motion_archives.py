@@ -6,7 +6,6 @@ from anyio.to_thread import run_sync
 from sqlalchemy import select, text
 
 from app.capabilities.asset_store.digests import sha256_file
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.archive_staging import ArchiveFileStaging, conflict
 from studio.apps.asset_library.deletions import schedule
@@ -15,6 +14,7 @@ from studio.apps.asset_library.storage.service_models import (
     MotionArchiveBatch,
     MotionArchiveFile,
 )
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.motion_compositor.motion_snapshot import (
     MAX_ARCHIVE_BYTES,
     MotionArchiveManifest,

@@ -6,9 +6,9 @@ from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Protocol
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.schemas import GalgameProjectAssetOut
 from studio.apps.galgame_workshop.storage.models import GalgameAssetMetadata
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.time import iso_utc
 
 CATEGORY_DIRECTORIES = {

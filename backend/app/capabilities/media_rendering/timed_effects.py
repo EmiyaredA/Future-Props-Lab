@@ -8,7 +8,7 @@ from PIL import Image, ImageFilter
 from app.capabilities.media_rendering.audio_transitions import eased_progress
 from app.capabilities.media_rendering.directional_transitions import light_leak, whip_pan
 from app.capabilities.media_rendering.spin_blur import spin_blur
-from app.capabilities.media_rendering.timeline_document import VideoEditorTimedEffect
+from studio.contracts.video_editor.timeline_document import VideoEditorTimedEffect
 
 
 def effect_progress(

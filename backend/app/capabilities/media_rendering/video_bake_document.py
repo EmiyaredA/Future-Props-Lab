@@ -1,6 +1,6 @@
 """Build the standard 1080p timeline for baking a video's chroma settings."""
 
-from .timeline_document import parse_timeline_document
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 
 
 def bake_video_document(source_asset, name, duration_us, clip_id, chroma):

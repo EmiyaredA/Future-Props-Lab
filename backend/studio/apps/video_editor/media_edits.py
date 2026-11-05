@@ -4,7 +4,6 @@ from uuid import uuid4
 
 from sqlalchemy import text, update
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.video_editor.asset_output import asset_output
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
@@ -18,6 +17,7 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorTimeline,
 )
 from studio.apps.video_editor.timeline_file_removal import uses_file, without_file
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.references import (
     PrepareReferenceChange,
     VideoFileRemoval,

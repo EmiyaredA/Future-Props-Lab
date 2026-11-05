@@ -10,12 +10,12 @@ from PIL import Image, UnidentifiedImageError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from studio.apps.model_service.storage.models.model_test import (
     ModelTestAttachment,
     ModelTestConversation,
 )
 from studio.config.settings import Settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.model_service.schemas.model_test import (
     ModelTestAttachmentListOut,
     ModelTestAttachmentOut,

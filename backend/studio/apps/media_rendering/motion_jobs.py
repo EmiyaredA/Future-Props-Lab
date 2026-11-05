@@ -5,10 +5,10 @@ from shutil import rmtree
 from anyio.to_thread import run_sync
 from sqlalchemy import select, update
 
-from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_outputs import render_outputs
 from studio.apps.media_rendering.storage.file_paths import sync_directory, sync_files
 from studio.apps.media_rendering.storage.service_models import MotionRenderJob
+from studio.contracts.motion_compositor.document import MotionComposition
 from studio.contracts.motion_compositor.motion_exports import RenderRequest, RenderStatus
 from studio.runtime.http.capability_client import CapabilityUnavailable
 from studio.runtime.tasks.polling import PollingTaskRunner

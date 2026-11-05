@@ -15,7 +15,6 @@ import httpx
 import pytest
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.model_service.inference.assets import InferenceAssets
 from studio.apps.model_service.library.inputs import library_inputs
 from studio.apps.model_service.library_inputs import HttpLibraryInputs
@@ -25,6 +24,7 @@ from studio.apps.model_service.storage.models.model_inference import ModelInfere
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.delegation import RequestGrant, permitted, target_permission_path
 from studio.contracts.model_service.schemas.model_test import ModelTestTranscriptionCreateIn

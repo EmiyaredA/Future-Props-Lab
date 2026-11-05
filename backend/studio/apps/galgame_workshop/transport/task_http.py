@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, Request, Response, status
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.annotation.annotation_jobs import enqueue_import
 from studio.apps.galgame_workshop.annotation.annotation_preview import annotation_preview
 from studio.apps.galgame_workshop.exact_frame import exact_frame
@@ -26,6 +25,7 @@ from studio.apps.galgame_workshop.schemas import (
 )
 from studio.apps.galgame_workshop.storage.task_records import TaskRecords
 from studio.apps.galgame_workshop.transport.asset_read_routes import read_assets
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.galgame_workshop.galgame_assets import SOURCE
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 

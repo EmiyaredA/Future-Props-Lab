@@ -4,10 +4,10 @@ import httpx
 from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorUnavailableError
 from studio.apps.video_editor.handoffs.segment_requests import KIND, MISSING
 from studio.apps.video_editor.task_reads import VideoTaskReads
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.video_editor.video_segments import BUNDLES, PURPOSE

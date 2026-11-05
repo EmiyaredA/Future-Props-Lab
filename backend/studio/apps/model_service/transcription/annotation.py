@@ -7,7 +7,6 @@ from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.providers.transcription import (
     TranscriptionResult,
@@ -23,6 +22,7 @@ from studio.apps.model_service.transcription.support import (
     resolve_transcription_target_language,
     safe_transcription_error,
 )
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.model_service.annotation import WAV_TYPES, SegmentResult
 from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.contracts.model_service.transcription import ModelTestTranscriptionParametersIn

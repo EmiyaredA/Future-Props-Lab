@@ -16,7 +16,6 @@ from app.capabilities.asset_store.asset_scope import (
 )
 from app.capabilities.asset_store.document_references import protect_document_references
 from app.capabilities.asset_store.folders import AssetFolders
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import (
     VisualAsset,
@@ -24,7 +23,8 @@ from app.capabilities.asset_store.models import (
     VisualProjectAssetReference,
 )
 from app.capabilities.asset_store.policy import display_name_without_original_extension
-from app.capabilities.asset_store.schemas.files import (
+from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
+from studio.contracts.asset_library.files import (
     LibraryAssetImportIn,
     VisualAssetImportIn,
     VisualAssetListOut,
@@ -33,7 +33,7 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.database.orm_base import Base
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now

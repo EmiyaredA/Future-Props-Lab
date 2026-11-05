@@ -3,7 +3,6 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store import AssetError
 from app.capabilities.media_rendering.galgame.compiler import COMPILER_VERSION
 from studio.apps.galgame_workshop.schemas import (
     GalgameVideoEditorHandoffCreateIn,
@@ -19,6 +18,7 @@ from studio.apps.galgame_workshop.storage.models import (
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from studio.apps.galgame_workshop.task_views import handoff_out
 from studio.apps.galgame_workshop.video.video_export import GalgameVideoExports
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.time import utc_now
 
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 
-from .document import CharacterDocument
+from studio.contracts.media_rendering.character_document import CharacterDocument
 
 
 def idle_pose(

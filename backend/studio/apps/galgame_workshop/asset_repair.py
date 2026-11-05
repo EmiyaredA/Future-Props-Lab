@@ -2,11 +2,11 @@
 
 import re
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from studio.apps.galgame_workshop.story.asset_repair import replace_story_file
 from studio.apps.galgame_workshop.story.document_values import normalize_story_document
 from studio.contracts.asset_library.descriptions import ID
+from studio.contracts.asset_library.errors import AssetError
 
 from .story_writes import story_error
 

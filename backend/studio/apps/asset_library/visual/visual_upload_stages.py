@@ -5,7 +5,6 @@ from uuid import uuid4
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ALLOWED_FILES
@@ -15,6 +14,7 @@ from studio.apps.asset_library.archive_staging import SNAPSHOT_FIELDS
 from studio.apps.asset_library.deletions import schedule
 from studio.apps.asset_library.library_outputs import VerifiedOutput
 from studio.apps.asset_library.storage.service_models import ReferenceIntent, VisualUploadStage
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.thought_workshop.thought_assets import AssetDescription
 from studio.contracts.visual_workshop.visual_upload import VisualUpload
 from studio.runtime.ids import new_id

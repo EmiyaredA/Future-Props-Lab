@@ -8,13 +8,13 @@ from sqlalchemy import select
 from starlette.datastructures import UploadFile
 from tests.test_community_asset_protocol import scenario  # noqa: F401
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.settings import StorageSettings
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
 from studio.apps.asset_library.storage.service_models import MODELS, ThoughtUploadReceipt
 from studio.apps.asset_library.thought.thought_uploads import ThoughtUploads
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadDescription
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database

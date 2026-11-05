@@ -1,6 +1,5 @@
 """Validated file staging followed by one short output/CAS transaction."""
 
-from app.capabilities.asset_store import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.policy import ALLOWED_FILES
 from app.capabilities.media_rendering.gif_upload import prepare_output_upload
@@ -9,6 +8,7 @@ from studio.apps.visual_workshop.outputs.history import NodeOutputs, OutputError
 from studio.apps.visual_workshop.outputs.schemas import VisualNodeOutputCreateIn
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
 from studio.config.settings import Settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 

@@ -4,7 +4,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
-from app.capabilities.asset_store import AssetError
 from studio.apps.galgame_workshop.assets.assets import GalgameProjectAssets
 from studio.apps.galgame_workshop.assets.maintenance import GalgameMaintenance
 from studio.apps.galgame_workshop.errors import (
@@ -32,6 +31,7 @@ from studio.apps.galgame_workshop.transport.website._shared import (
 )
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.config.settings import get_settings
+from studio.contracts.asset_library.errors import AssetError
 
 router = APIRouter()
 

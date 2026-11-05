@@ -33,7 +33,7 @@ from app.capabilities.media_rendering.galgame.values import (
 )
 from app.capabilities.media_rendering.galgame.values import timeline_clip as _clip
 from app.capabilities.media_rendering.galgame.values import timeline_track as _track
-from app.capabilities.media_rendering.timeline_document import VideoEditorTimelineDocument
+from studio.contracts.video_editor.timeline_document import VideoEditorTimelineDocument
 
 FLOATING_TEXT_FONT_ASSET_ID = "galgame-floating-text-noto-sans-sc"
 

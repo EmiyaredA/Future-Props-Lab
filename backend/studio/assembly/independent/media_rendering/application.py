@@ -9,7 +9,6 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.media_rendering.galgame_export_jobs import GalgameExports
 from studio.apps.media_rendering.galgame_frames import router as galgame_frames_router
 from studio.apps.media_rendering.motion_jobs import MotionJobs
@@ -42,6 +41,7 @@ from studio.apps.media_rendering.video_frames import router as video_frame_route
 from studio.apps.media_rendering.video_media_jobs import VideoJobs
 from studio.apps.media_rendering.visual_grids import router as visual_grid_router
 from studio.apps.media_rendering.visual_samples import router as visual_samples_router
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.motion_compositor.motion_exports import ExportPeer
 from studio.contracts.video_editor.video_exports import output_peer
 from studio.contracts.video_editor.video_processing import originals_peer, video_peer

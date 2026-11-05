@@ -2,12 +2,12 @@
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.scoped_project_files import check_project_scope
 from studio.apps.asset_library.visual.visual_snapshot_files import scoped_assets
 from studio.contracts.asset_library.descriptions import LibraryAssetDescription
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.visual_workshop.visual_generation import GenerationAssets
 
 

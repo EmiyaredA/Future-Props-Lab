@@ -588,10 +588,10 @@ def test_public_files_have_independent_ownership() -> None:
     required = (
         BACKEND_APP / "capabilities" / "asset_store" / "assets.py",
         BACKEND_APP / "capabilities" / "asset_store" / "models.py",
-        BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "files.py",
+        REPO_ROOT / "backend/studio/contracts/asset_library/files.py",
     )
     assert all(path.is_file() for path in required), (
-        "公共文件能力必须由 capabilities/asset_store 拥有"
+        "公共文件实现由素材能力拥有，协议由独立的素材契约拥有"
     )
     assert not (BACKEND_APP / "visual_workshop" / "assets.py").exists()
     for route_name in ("file_management.py",):

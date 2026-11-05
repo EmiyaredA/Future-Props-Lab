@@ -3,7 +3,6 @@
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.schemas import (
     GalgameAsrSettingsOut,
     GalgameAsrSettingsPatchIn,
@@ -15,6 +14,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetTranscriptionTask,
     GalgameWorkshopProject,
 )
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
 

@@ -5,8 +5,8 @@ import os
 import re
 from pathlib import Path
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from studio.config.settings import get_settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.database.operation_receipts import OperationError
 
 MAX_FILE_BYTES = 10 * 1024 * 1024

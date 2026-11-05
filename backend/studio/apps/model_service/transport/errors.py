@@ -3,8 +3,8 @@
 from fastapi import HTTPException
 from pydantic import ValidationError
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.model_service.transcription.parameters import TranscriptionParameterError
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.database.operation_receipts import OperationError
 
 

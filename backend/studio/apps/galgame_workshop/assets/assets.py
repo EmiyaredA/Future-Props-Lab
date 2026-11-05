@@ -5,7 +5,7 @@ from pathlib import Path
 from sqlalchemy import delete, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store import AssetError, AssetLibrary, IncomingFile
+from app.capabilities.asset_store import AssetLibrary
 from app.capabilities.asset_store.media_metadata import inspect_media_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import GALGAME_EXTENSIONS
@@ -30,6 +30,8 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
 from studio.config.settings import Settings
+from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.revisions import RevisionConflictError
 
 

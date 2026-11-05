@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
-from app.capabilities.media_rendering.audio_seam_results import (
+from studio.contracts.video_editor.audio_seam_results import (
     AudioSeamCandidateOut as AudioSeamCandidateOut,
 )
-from app.capabilities.media_rendering.audio_seam_results import (
+from studio.contracts.video_editor.audio_seam_results import (
     AudioSeamCandidatesOut as AudioSeamCandidatesOut,
 )
 

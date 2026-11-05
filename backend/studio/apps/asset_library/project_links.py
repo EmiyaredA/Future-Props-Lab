@@ -7,8 +7,8 @@ from app.capabilities.asset_store.asset_scope import is_library_asset, is_visual
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import display_name_without_original_extension
-from app.capabilities.asset_store.schemas.files import VisualAssetListOut
 from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
+from studio.contracts.asset_library.files import VisualAssetListOut
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 

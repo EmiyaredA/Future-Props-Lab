@@ -12,7 +12,6 @@ from anyio.to_thread import run_sync
 from pydantic import BaseModel
 from sqlalchemy import text, update
 
-from app.capabilities.media_rendering.motion_document import MotionComposition
 from studio.apps.asset_library.clients.archive_delivery import FileBatchDelivery, reserve_import
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionUnavailable
 from studio.apps.motion_compositor.schemas import ProjectCreateIn, ProjectOut
@@ -23,6 +22,7 @@ from studio.apps.motion_compositor.storage.models import (
     MotionProject,
 )
 from studio.apps.motion_compositor.storage.service_models import MotionImportBatch
+from studio.contracts.motion_compositor.document import MotionComposition
 from studio.contracts.motion_compositor.motion_snapshot import MotionArchiveManifest
 from studio.contracts.thought_workshop.thought_archives import ArchiveBatchKey, ArchiveFileKey
 from studio.runtime.files.signed_payloads import ModelOutputDescription

@@ -11,14 +11,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.schemas.files import (
+from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from studio.assembly.website.models import LAYOUT_PROJECT_MODELS
+from studio.config.settings import Settings
+from studio.contracts.asset_library.files import (
     StorageLayoutIssueOut,
     StorageLayoutMigrationOut,
     StorageLayoutStatusOut,
 )
-from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from studio.assembly.website.models import LAYOUT_PROJECT_MODELS
-from studio.config.settings import Settings
 
 _migration_lock = asyncio.Lock()
 

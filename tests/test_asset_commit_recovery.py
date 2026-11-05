@@ -7,7 +7,7 @@ from tests.test_asset_owned_files import owned as owned
 
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.schemas.files import LibraryAssetImportIn
+from studio.contracts.asset_library.files import LibraryAssetImportIn
 
 
 async def test_upload_lost_commit_acknowledgement_keeps_the_committed_original(owned, monkeypatch):

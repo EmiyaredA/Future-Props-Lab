@@ -15,7 +15,6 @@ from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.chroma_key import bake_image
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
-from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
 from app.capabilities.media_rendering.video_bake_document import bake_video_document
 from app.capabilities.media_rendering.video_derivatives import prepare_media, probe_media
 from app.capabilities.media_rendering.video_output import verify_video_output
@@ -29,6 +28,7 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorTask,
 )
 from studio.config.settings import Settings
+from studio.contracts.video_editor.timeline_document import VideoEditorChromaKey
 from studio.runtime.database.ownership import bind_owner, require_owner_id
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now

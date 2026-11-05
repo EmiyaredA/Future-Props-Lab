@@ -7,7 +7,6 @@ from uuid import uuid4
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
@@ -30,6 +29,7 @@ from studio.apps.video_editor.storage.models import (
 )
 from studio.apps.video_editor.timeline_file_removal import without_file
 from studio.config.settings import Settings, get_settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.revisions import RevisionConflictError, require_revision_write
 from studio.runtime.time import iso_utc, utc_now
 

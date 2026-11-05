@@ -6,7 +6,11 @@ from pathlib import Path
 
 import numpy as np
 
-from .audio_seam_results import REFERENCE_US, AudioSeamCandidateOut, AudioSeamCandidatesOut
+from studio.contracts.video_editor.audio_seam_results import (
+    REFERENCE_US,
+    AudioSeamCandidateOut,
+    AudioSeamCandidatesOut,
+)
 
 
 class AudioMatchError(Exception):

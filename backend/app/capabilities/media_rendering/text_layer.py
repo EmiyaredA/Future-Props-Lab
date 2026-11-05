@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 
-from app.capabilities.media_rendering.timeline_document import VideoEditorClip
+from studio.contracts.video_editor.timeline_document import VideoEditorClip
 
 TEXT_RENDER_VERSION = 2
 FONT_ROOT = Path(__file__).resolve().parent / "assets"

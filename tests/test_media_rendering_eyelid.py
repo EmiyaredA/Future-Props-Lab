@@ -7,7 +7,7 @@ from PIL import Image
 
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame
 from app.capabilities.media_rendering.render_engine import RENDER_PRESETS, render_document
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 
 
 def test_encoded_eyelid_has_symmetric_lids_and_switches_while_closed(tmp_path, monkeypatch):

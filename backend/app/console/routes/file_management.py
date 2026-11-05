@@ -8,7 +8,6 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from app.capabilities.asset_store import (
-    AssetError,
     AssetStorage,
     ProjectFolderError,
     VisualAssets,
@@ -25,7 +24,20 @@ from app.capabilities.asset_store.layout_migration import (
     LayoutMigrationBusyError,
     StorageLayoutMigration,
 )
-from app.capabilities.asset_store.schemas.files import (
+from app.capabilities.asset_store.thumbnails import ThumbnailSize, thumbnail
+from app.console.file_library import (
+    LibraryFolderArchive,
+    LibraryFolderArchiveError,
+)
+from studio.assembly.http_dependencies import (
+    OwnerDep,
+    SessionDep,
+    StudioAuth,
+    require_recent_reauthentication,
+)
+from studio.config.settings import get_settings
+from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.files import (
     FILE_CONTENT_HEADERS,
     FilePreviewOut,
     LibraryAssetImportIn,
@@ -42,18 +54,6 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetOut,
     VisualAssetPatchIn,
 )
-from app.capabilities.asset_store.thumbnails import ThumbnailSize, thumbnail
-from app.console.file_library import (
-    LibraryFolderArchive,
-    LibraryFolderArchiveError,
-)
-from studio.assembly.http_dependencies import (
-    OwnerDep,
-    SessionDep,
-    StudioAuth,
-    require_recent_reauthentication,
-)
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter(tags=["file-management"])

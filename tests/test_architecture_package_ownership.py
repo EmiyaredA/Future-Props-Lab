@@ -181,11 +181,12 @@ def test_identity_owns_account_routes_and_contracts() -> None:
     assert not (BACKEND_APP / "console/schemas/platform_governance.py").exists()
 
 
-def test_asset_store_owns_media_routes_and_schemas() -> None:
+def test_media_contracts_are_separate_from_website_file_adapters() -> None:
     assert (BACKEND_APP / "capabilities" / "asset_store" / "routes" / "image_crop.py").is_file()
     assert (BACKEND_APP / "capabilities" / "asset_store" / "routes" / "video_frames.py").is_file()
-    assert (BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "image_crop.py").is_file()
-    assert (BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "video_frames.py").is_file()
+    for name in ("image_crop.py", "video_frames.py", "media_info.py"):
+        assert (CONTRACTS / "media_rendering" / name).is_file()
+        assert not (BACKEND_APP / "capabilities/asset_store/schemas" / name).exists()
     assert not (BACKEND_APP / "schemas" / "image_crop.py").exists()
     assert not (BACKEND_APP / "schemas" / "video_frames.py").exists()
 
@@ -205,7 +206,8 @@ def test_identity_and_models_own_their_records() -> None:
 
 def test_asset_store_owns_files_models_and_schemas() -> None:
     assert (BACKEND_APP / "capabilities" / "asset_store" / "models.py").is_file()
-    assert (BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "files.py").is_file()
+    assert (CONTRACTS / "asset_library/files.py").is_file()
+    assert not (BACKEND_APP / "capabilities/asset_store/schemas/files.py").exists()
     assert (REPO_ROOT / "backend/studio/contracts/asset_library/project_snapshots.py").is_file()
 
 

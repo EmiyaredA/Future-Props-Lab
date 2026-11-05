@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from copy import deepcopy
 
-from .document import CharacterDocument
+from studio.contracts.media_rendering.character_document import CharacterDocument
 
 
 def interval(keys: list[dict], value: float, field: str) -> tuple[dict, dict, float]:

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from app.capabilities.media_rendering.timeline_document import VideoEditorTimelineDocument
+from studio.contracts.video_editor.timeline_document import VideoEditorTimelineDocument
 
 
 @dataclass(frozen=True)

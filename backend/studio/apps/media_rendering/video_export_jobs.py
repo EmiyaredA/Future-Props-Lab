@@ -15,10 +15,6 @@ from sqlalchemy import select, text, update
 
 from app.capabilities.media_rendering.chroma_key import bake_image
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
-from app.capabilities.media_rendering.timeline_document import (
-    VideoEditorChromaKey,
-    parse_timeline_document,
-)
 from app.capabilities.media_rendering.video_derivatives import probe_media
 from app.capabilities.media_rendering.video_output import (
     verify_clip_merge_output,
@@ -26,6 +22,10 @@ from app.capabilities.media_rendering.video_output import (
 )
 from studio.apps.media_rendering.storage.file_paths import sync_directory, sync_files
 from studio.apps.media_rendering.storage.service_models import VideoExportJob, VideoMediaJob
+from studio.contracts.video_editor.timeline_document import (
+    VideoEditorChromaKey,
+    parse_timeline_document,
+)
 from studio.contracts.video_editor.video_assets import VideoAsset
 from studio.contracts.video_editor.video_exports import (
     MAX_EXPORT_INPUT_BYTES,

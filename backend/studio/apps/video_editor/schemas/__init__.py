@@ -2,22 +2,6 @@
 
 # ruff: noqa: F401
 
-from app.capabilities.media_rendering.timeline_document import (
-    VideoEditorAssetFolder,
-    VideoEditorAssetOrganization,
-    VideoEditorClip,
-    VideoEditorKeyframe,
-    VideoEditorProjectSettings,
-    VideoEditorTextStyle,
-    VideoEditorTimedEffect,
-    VideoEditorTimelineDocument,
-    VideoEditorTimelineTransition,
-    VideoEditorTrack,
-    VideoEditorTransform,
-    VideoEditorTransition,
-    normalize_legacy_edge_transitions,
-    parse_timeline_document,
-)
 from studio.apps.video_editor.schemas.audio_seam import (
     AudioSeamCandidateOut,
     AudioSeamCandidatesIn,
@@ -79,6 +63,22 @@ from studio.apps.video_editor.schemas.timeline import (
     VideoEditorTimelineBatchIn,
     VideoEditorTimelineOperation,
     VideoEditorTimelineOut,
+)
+from studio.contracts.video_editor.timeline_document import (
+    VideoEditorAssetFolder,
+    VideoEditorAssetOrganization,
+    VideoEditorClip,
+    VideoEditorKeyframe,
+    VideoEditorProjectSettings,
+    VideoEditorTextStyle,
+    VideoEditorTimedEffect,
+    VideoEditorTimelineDocument,
+    VideoEditorTimelineTransition,
+    VideoEditorTrack,
+    VideoEditorTransform,
+    VideoEditorTransition,
+    normalize_legacy_edge_transitions,
+    parse_timeline_document,
 )
 
 __all__ = [

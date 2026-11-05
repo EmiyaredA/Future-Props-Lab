@@ -11,7 +11,7 @@ import zipfile
 
 from PIL import Image
 
-from app.capabilities.media_rendering.live2d.document import CharacterDocument
+from studio.contracts.media_rendering.character_document import CharacterDocument
 
 
 def read_package(data: bytes) -> tuple[str, CharacterDocument, dict]:

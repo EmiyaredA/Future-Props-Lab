@@ -7,7 +7,7 @@ from typing import Any
 
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.capabilities.media_rendering.galgame.lip_sync import LipSyncSchedule
-from app.capabilities.media_rendering.timeline_document import VideoEditorTimelineDocument
+from studio.contracts.video_editor.timeline_document import VideoEditorTimelineDocument
 
 DISTANCE_SCALE = {"far": 0.78, "medium": 1.0, "near": 1.28}
 

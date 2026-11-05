@@ -4,11 +4,11 @@ import re
 
 from pydantic import ValidationError
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.assets.transcript_records import write_transcript
 from studio.apps.galgame_workshop.assets.voice_matching import match_dialogue
 from studio.apps.galgame_workshop.schemas import GalgameStoryDocumentPutIn, GalgameVoiceMatchOut
 from studio.contracts.asset_library.descriptions import ID
+from studio.contracts.asset_library.errors import AssetError
 
 from .story_writes import story_error
 

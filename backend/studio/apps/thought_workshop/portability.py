@@ -13,7 +13,6 @@ from uuid import uuid4
 from pydantic import ValidationError
 from sqlalchemy import select
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
@@ -24,6 +23,7 @@ from studio.apps.thought_workshop.notes import Notes, ThoughtError
 from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut
 from studio.apps.thought_workshop.website.archive_import import allocate_ids, persist_archive
 from studio.config.settings import Settings
+from studio.contracts.asset_library.incoming import IncomingFile
 
 
 async def export_backup(

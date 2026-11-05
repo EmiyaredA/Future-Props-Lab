@@ -14,7 +14,7 @@ from app.capabilities.media_rendering.render_engine import (
     _VideoDecoder,
     render_document,
 )
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 
 
 @pytest.fixture

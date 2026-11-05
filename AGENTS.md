@@ -119,7 +119,9 @@
   路由通过 `OwnerDep` 传递账号，根资源保存 `owner_user_id`，子资源继承已经校验的根资源归属。
   不存在 Workspace、成员角色、动态权限矩阵、账号切换空间或 `default` 回退；后台执行器从持久任务恢复账号。
   `AssetStorage` 的项目路径与写入方法必须显式传入账号；跨账号 ID 按不存在处理。
-  HTTP `UploadFile` 只在路由中出现，业务用例依赖 `capabilities.asset_store.IncomingFile`。
+  HTTP `UploadFile` 只在路由中出现，业务用例依赖 `studio.contracts.asset_library.incoming.IncomingFile`。
+  素材描述、媒体请求、时间线与特效文档归各所有者的 `studio/contracts/`；导入契约不得加载
+  素材 ORM、文件适配或渲染器。接收流的 I/O 适配器负责成功、失败及取消后的关闭。
 - 思绪工坊 `publication/` 拥有发布与逐篇授权，社区接口仅使用浏览器 Session；先验证发布记录、当前文章与有效角色，再在独立会话中显式绑定源账号。素材仅开放可读正文实际引用的文件与发布封面；不开放历史、私人目录或普通文件库查询。正文仍由 Notes 用例执行校验、CAS 和历史，回收站事务同步撤回发布，恢复不自动重新发布。
 - 固定账号权限由 `studio/contracts/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
   `studio/contracts/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，

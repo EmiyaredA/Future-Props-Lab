@@ -4,7 +4,6 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
-from app.capabilities.asset_store.schemas.files import VisualAssetOut
 from studio.apps.model_service.inference.assets import InferenceAssets
 from studio.apps.model_service.inference.catalog import options
 from studio.apps.model_service.inference.tasks import InferenceTasks
@@ -17,6 +16,7 @@ from studio.apps.model_service.transport.stream_access import stream_access
 from studio.apps.model_service.transport.website.model_capacity import task_admission
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.assembly.model_credentials import CallCredentialDep
+from studio.contracts.asset_library.files import VisualAssetOut
 from studio.contracts.model_service.schemas.model_inference import (
     InferenceAssetImportIn,
     InferenceAssetOut,

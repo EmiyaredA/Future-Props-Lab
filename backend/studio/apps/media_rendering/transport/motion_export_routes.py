@@ -12,12 +12,12 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import ValidationError
 
-from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_outputs import OUTPUT_NAMES
 from studio.apps.media_rendering.motion_preview import fetch_sources
 from studio.apps.media_rendering.storage.file_paths import sync_directory, sync_files
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
+from studio.contracts.motion_compositor.document import MotionComposition
 from studio.contracts.motion_compositor.motion_exports import (
     PREFIX,
     RenderRequest,

@@ -1,10 +1,7 @@
 from copy import deepcopy
 
-from app.capabilities.media_rendering.timeline_document import (
-    VideoEditorClip,
-    parse_timeline_document,
-)
 from studio.apps.video_editor.errors import VideoEditorValidationError
+from studio.contracts.video_editor.timeline_document import VideoEditorClip, parse_timeline_document
 
 
 def selection(document: dict, clip_ids: list[str]) -> dict:

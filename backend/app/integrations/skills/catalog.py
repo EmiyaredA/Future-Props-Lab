@@ -9,7 +9,6 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.integrations.common import (
     DuplicateIntegrationError,
     IntegrationNotFoundError,
@@ -33,6 +32,7 @@ from app.integrations.skills.archive import (
 )
 from app.integrations.skills.preview import list_skill_files, read_skill_image, read_skill_text
 from studio.config.settings import get_settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.database.ownership import require_owner_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now

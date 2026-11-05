@@ -16,7 +16,6 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import func, select
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.library_outputs import LibraryOutputFiles
@@ -26,6 +25,7 @@ from studio.apps.asset_library.storage.service_models import ModelLibraryOutputR
 from studio.apps.model_service.library.outputs import library_outputs
 from studio.apps.model_service.library_outputs import HttpLibraryOutputs
 from studio.assembly.independent.asset_library.application import create_app
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
 from studio.contracts.identity.delegation import RequestGrant, permitted, target_permission_path

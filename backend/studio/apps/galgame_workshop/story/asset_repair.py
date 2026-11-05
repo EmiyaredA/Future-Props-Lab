@@ -1,6 +1,6 @@
 """Shared missing-file repair rules for Galgame Story documents."""
 
-from app.capabilities.asset_store.errors import AssetError
+from studio.contracts.asset_library.errors import AssetError
 
 
 def replace_story_file(document, story_asset_id, replacement):

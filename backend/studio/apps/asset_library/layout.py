@@ -10,11 +10,8 @@ from sqlalchemy import func, select, update
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.schemas.files import (
-    StorageLayoutMigrationOut,
-    StorageLayoutStatusOut,
-)
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
+from studio.contracts.asset_library.files import StorageLayoutMigrationOut, StorageLayoutStatusOut
 
 
 class StorageLayouts:

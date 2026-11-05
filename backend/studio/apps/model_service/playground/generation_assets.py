@@ -12,12 +12,12 @@ from uuid import uuid4
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from studio.apps.model_service.storage.models.model_test import (
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
 )
 from studio.config.settings import Settings, get_settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.model_service.schemas.model_test import (
     ModelTestGenerationAssetBackfillOut,
     ModelTestGenerationAssetBackfillStatusOut,

@@ -8,7 +8,6 @@ from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.console.creative_workshop.archives import archives
 from app.console.creative_workshop.authors import authors
 from app.console.creative_workshop.files import (
@@ -29,6 +28,7 @@ from app.console.creative_workshop.schemas import (
 from app.console.creative_workshop.sources import MemoryIncoming, sources
 from app.integrations.schemas import ToolApiCreateIn
 from studio.config.settings import get_settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.files.raster import derived_thumbnail

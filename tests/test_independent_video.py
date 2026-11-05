@@ -11,7 +11,6 @@ from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
@@ -20,6 +19,7 @@ from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
 from studio.assembly.independent.video_editor.application import PROJECTS, create_app
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import HEADER, Actor, issue_context
 from studio.deployment.images import source_closure

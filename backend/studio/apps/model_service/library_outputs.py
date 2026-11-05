@@ -3,8 +3,8 @@
 import asyncio
 from contextlib import aclosing
 
-from app.capabilities.asset_store.errors import AssetError
-from app.capabilities.asset_store.schemas.files import VisualAssetOut
+from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.files import VisualAssetOut
 from studio.runtime.files.signed_payloads import ModelOutputDescription
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 

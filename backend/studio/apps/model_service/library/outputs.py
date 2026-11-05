@@ -7,7 +7,7 @@ from typing import Protocol
 
 from fastapi import HTTPException
 
-from app.capabilities.asset_store.schemas.files import VisualAssetOut
+from studio.contracts.asset_library.files import VisualAssetOut
 
 
 class LibraryOutputs(Protocol):

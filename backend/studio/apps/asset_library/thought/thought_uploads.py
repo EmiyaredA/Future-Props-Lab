@@ -3,14 +3,14 @@
 from sqlalchemy import select, text
 
 from app.capabilities.asset_store.asset_outputs import asset_out
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
-from app.capabilities.asset_store.schemas.files import VisualAssetOut
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.library_outputs import VerifiedOutput
 from studio.apps.asset_library.storage.service_models import ThoughtUploadReceipt
+from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.files import VisualAssetOut
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 

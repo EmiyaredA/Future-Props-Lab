@@ -7,7 +7,8 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw
 
-from .document import CharacterDocument
+from studio.contracts.media_rendering.character_document import CharacterDocument
+
 from .evaluate import evaluate, parameter_values
 from .idle import idle_pose
 

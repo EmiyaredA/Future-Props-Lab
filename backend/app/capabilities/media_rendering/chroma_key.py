@@ -4,7 +4,7 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageFilter, ImageMath
 
-from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
+from studio.contracts.video_editor.timeline_document import VideoEditorChromaKey
 
 
 def apply_chroma_key(layer: Image.Image, key: VideoEditorChromaKey) -> Image.Image:

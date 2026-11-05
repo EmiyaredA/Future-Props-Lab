@@ -4,11 +4,11 @@ from copy import deepcopy
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.media_rendering.timeline_document import normalize_legacy_edge_transitions
 from studio.apps.video_editor.errors import VideoEditorNotFoundError
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import VideoEditorTimelineOut
 from studio.apps.video_editor.storage.models import VideoEditorTimeline
+from studio.contracts.video_editor.timeline_document import normalize_legacy_edge_transitions
 from studio.runtime.time import iso_utc
 
 

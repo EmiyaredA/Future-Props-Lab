@@ -2,7 +2,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
-from app.capabilities.asset_store import AssetError
 from studio.apps.visual_workshop.canvas import VisualCanvasDocuments
 from studio.apps.visual_workshop.outputs.history import NodeOutputs, OutputError
 from studio.apps.visual_workshop.outputs.schemas import (
@@ -15,6 +14,7 @@ from studio.apps.visual_workshop.outputs.uploads import upload_version
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentOut
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.config.settings import get_settings
+from studio.contracts.asset_library.errors import AssetError
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
 

@@ -11,10 +11,10 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import ValidationError
 
-from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_frames import MotionFrameRenderer
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
+from studio.contracts.motion_compositor.document import MotionComposition
 from studio.contracts.motion_compositor.motion_preview import (
     INPUTS,
     MAX_SCENE_BYTES,

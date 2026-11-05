@@ -4,7 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.capabilities.media_rendering.motion_document import MotionComposition, MotionLayer
+from studio.contracts.motion_compositor.document import MotionComposition, MotionLayer
 
 
 class ProjectCreateIn(BaseModel):

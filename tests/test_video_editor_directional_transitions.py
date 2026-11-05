@@ -15,7 +15,7 @@ from app.capabilities.media_rendering.directional_transitions import (
     whip_pan,
 )
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from website_test_support import app
 
 

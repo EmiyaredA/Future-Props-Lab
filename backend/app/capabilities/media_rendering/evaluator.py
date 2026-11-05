@@ -14,16 +14,16 @@ from app.capabilities.media_rendering.directional_transitions import light_leak,
 from app.capabilities.media_rendering.spin_blur import spin_blur
 from app.capabilities.media_rendering.text_layer import render_text_layer
 from app.capabilities.media_rendering.timed_effects import apply_timed_effects
-from app.capabilities.media_rendering.timeline_document import (
-    VideoEditorClip,
-    VideoEditorTimelineDocument,
-    VideoEditorTimelineTransition,
-)
 from app.capabilities.media_rendering.timeline_ranges import (
     timeline_duration_us as timeline_duration_us,
 )
 from app.capabilities.media_rendering.timeline_ranges import track_frame_sources, visible_tracks
 from app.capabilities.media_rendering.timeline_ranges import visual_gaps as visual_gaps
+from studio.contracts.video_editor.timeline_document import (
+    VideoEditorClip,
+    VideoEditorTimelineDocument,
+    VideoEditorTimelineTransition,
+)
 
 # Invalidate exact-frame caches when compositing geometry changes.
 FRAME_COMPOSITOR_VERSION = 4

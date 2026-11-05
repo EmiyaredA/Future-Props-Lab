@@ -8,13 +8,13 @@ from tests.test_asset_owned_files import Upload
 from tests.test_asset_owned_files import owned as owned
 
 from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.schemas.files import (
+from studio.apps.asset_library.project_links import ProjectFileLinks
+from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
+from studio.contracts.asset_library.files import (
     VisualAssetFolderCreateIn,
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
-from studio.apps.asset_library.project_links import ProjectFileLinks
-from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
 from studio.runtime.revisions import RevisionConflictError
 
 

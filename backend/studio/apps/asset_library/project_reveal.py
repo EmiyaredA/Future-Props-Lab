@@ -2,8 +2,8 @@
 
 from sqlalchemy import text
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.storage import AssetStorage
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.reveal import APPLICATION_SERVICES
 
 from .scoped_project_files import check_project_scope

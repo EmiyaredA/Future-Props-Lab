@@ -9,7 +9,7 @@ from app.capabilities.asset_store.asset_context import VisualAssetContext
 from app.capabilities.asset_store.asset_outputs import folder_out
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAssetFolder
-from app.capabilities.asset_store.schemas.files import (
+from studio.contracts.asset_library.files import (
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
     VisualAssetFolderOut,

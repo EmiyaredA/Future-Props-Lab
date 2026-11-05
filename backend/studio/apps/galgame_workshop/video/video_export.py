@@ -6,7 +6,6 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
@@ -35,6 +34,7 @@ from studio.apps.galgame_workshop.task_views import export_task_out as _task_out
 from studio.apps.galgame_workshop.video.export_preview import preview_export
 from studio.apps.galgame_workshop.video.video_export_planning import EXPORT_PACKAGING_POLICY
 from studio.config.settings import Settings, get_settings
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.time import utc_now
 
 __all__ = ["EXPORT_PACKAGING_POLICY", "GalgameVideoExports"]

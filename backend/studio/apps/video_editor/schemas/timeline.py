@@ -4,7 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.capabilities.media_rendering.timeline_document import (
+from studio.apps.video_editor.schemas.clip_merge import ClipMergeOperation
+from studio.contracts.video_editor.timeline_document import (
     VideoEditorAssetOrganization,
     VideoEditorClip,
     VideoEditorKeyframe,
@@ -13,7 +14,6 @@ from app.capabilities.media_rendering.timeline_document import (
     VideoEditorTrack,
     VideoEditorTransition,
 )
-from studio.apps.video_editor.schemas.clip_merge import ClipMergeOperation
 
 
 class AddTrackOperation(BaseModel):

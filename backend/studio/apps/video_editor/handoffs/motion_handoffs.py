@@ -5,7 +5,6 @@ import asyncio
 from pydantic import ValidationError
 from sqlalchemy import select, text, update
 
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
     VideoEditorUnavailableError,
@@ -24,6 +23,7 @@ from studio.apps.video_editor.storage.models import (
 )
 from studio.apps.video_editor.storage.service_models import VideoMotionHandoff
 from studio.apps.video_editor.timeline import apply_operations
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from studio.contracts.video_editor.video_handoff import MotionHandoff
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now

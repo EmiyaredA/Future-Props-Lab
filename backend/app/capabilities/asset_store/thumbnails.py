@@ -3,7 +3,6 @@
 from pathlib import Path
 
 from app.capabilities.asset_store.assets import VisualAssets
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.file_previews import PreviewSource, media_thumbnail
 from app.capabilities.asset_store.image_thumbnails import (
     ThumbnailSource as ThumbnailSource,
@@ -17,6 +16,7 @@ from app.capabilities.asset_store.image_thumbnails import (
 from app.capabilities.asset_store.image_thumbnails import (
     derived_thumbnail as derived_thumbnail,
 )
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.files.image_sizes import ThumbnailSize as ThumbnailSize
 
 

@@ -9,7 +9,6 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.deletions import FileCleanup
@@ -21,6 +20,7 @@ from studio.apps.asset_library.storage.service_models import (
     AssetReferenceSet,
 )
 from studio.apps.asset_library.thought.thought_archives import ThoughtArchives
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.thought_workshop.thought_archives import ArchiveBatchKey, ArchiveManifest
 from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadDescription
 from studio.runtime.database.migrations import apply

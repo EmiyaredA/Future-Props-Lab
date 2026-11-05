@@ -7,7 +7,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from app.capabilities.media_rendering.live2d.document import CharacterDocument
+from studio.contracts.media_rendering.character_document import CharacterDocument
 
 ROOT = Path(__file__).resolve().parents[1]
 TARGET = ROOT / "web/src/shared/live2d/modelSchema.ts"

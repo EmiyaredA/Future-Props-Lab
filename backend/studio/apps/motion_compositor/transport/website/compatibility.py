@@ -9,7 +9,6 @@ from fastapi import APIRouter, File, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.media_rendering.motion_frames import MotionFrameRenderer
 from studio.apps.motion_compositor.assets import MotionAssets
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionProjects
@@ -30,6 +29,7 @@ from studio.apps.motion_compositor.transport.website.errors import _error
 from studio.apps.motion_compositor.transport.website.projects import router as projects
 from studio.apps.motion_compositor.website.exports import MotionExports
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.revisions import RevisionConflictError
 
 router = APIRouter(prefix="/motion-compositor", tags=["motion-compositor"])

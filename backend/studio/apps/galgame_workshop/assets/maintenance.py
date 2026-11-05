@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.galgame_workshop.schemas import (
     GalgameMissingAssetRepairIn,
@@ -11,6 +10,7 @@ from studio.apps.galgame_workshop.schemas import (
 )
 from studio.apps.galgame_workshop.story.asset_repair import replace_story_file
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
+from studio.contracts.asset_library.errors import AssetError
 
 
 class GalgameMaintenance:

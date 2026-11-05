@@ -2,8 +2,8 @@ from fastapi import APIRouter, HTTPException
 
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.media_info import get_video_media_info
-from app.capabilities.asset_store.schemas.media_info import VideoMediaInfoOut
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.contracts.media_rendering.media_info import VideoMediaInfoOut
 
 router = APIRouter(tags=["file-management"])
 

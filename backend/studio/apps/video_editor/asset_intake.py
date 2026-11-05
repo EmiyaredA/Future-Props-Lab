@@ -5,11 +5,11 @@ from uuid import uuid4
 import httpx
 from sqlalchemy import select, text, update
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.video_editor.asset_output import asset_output
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorUnavailableError
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorProject
 from studio.apps.video_editor.storage.service_models import VideoAssetIntake
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.video_editor.video_assets import PREFIX, WRITE_PURPOSE, VideoAsset

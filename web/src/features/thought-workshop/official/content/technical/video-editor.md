@@ -132,7 +132,7 @@ flowchart LR
 
 1. `backend/studio/apps/video_editor/timeline.py`
 2. `backend/app/capabilities/media_rendering/speed.py`
-3. `backend/app/capabilities/media_rendering/timeline_document.py`
+3. `backend/studio/contracts/video_editor/timeline_document.py`
 4. `web/src/features/video-editor/timelineGaps.ts`
 5. `web/src/features/video-editor/gapEditPlan.ts` 与 `gapFreeze.ts`
 6. `web/src/features/video-editor/previewPlayback.ts`、`VideoEditorProxyVideo.tsx` 与 `VideoEditorPreciseFrame.tsx`

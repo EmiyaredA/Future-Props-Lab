@@ -5,7 +5,6 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
@@ -18,6 +17,7 @@ from studio.apps.motion_compositor.schemas import (
     ImportSourceOut,
 )
 from studio.config.settings import get_settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.motion_compositor.motion_assets import MOTION_EXTENSIONS
 
 

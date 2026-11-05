@@ -1,9 +1,9 @@
 """Publish a sealed segment group in one short transaction after checking every byte."""
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.asset_library.library_outputs import VerifiedOutput
 from studio.apps.asset_library.scoped_writes import VideoFileWrites
 from studio.apps.asset_library.video.video_files import record as file_record
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.video_editor.video_segments import MAX_MANIFEST_BYTES, PublishedSegment
 
 

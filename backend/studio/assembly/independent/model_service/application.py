@@ -10,7 +10,6 @@ from sqlalchemy.exc import OperationalError
 from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.model_service.account_events import CatalogProvisioningRunner
 from studio.apps.model_service.admission.admission import ModelAdmission, settle
 from studio.apps.model_service.admission.execution_authority import ModelTaskAuthority
@@ -91,6 +90,7 @@ from studio.apps.model_service.visual.visual_generation_runner import VisualGene
 from studio.apps.model_service.visual.visual_review_attempts import VisualReviewAttempts
 from studio.apps.model_service.writing import router as writing_router
 from studio.assembly.http_dependencies import require_studio_auth
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.visual_workshop.visual_assistant import MODEL_RUNS as ASSISTANT_MODEL_RUNS
 from studio.contracts.visual_workshop.visual_assistant_model import (

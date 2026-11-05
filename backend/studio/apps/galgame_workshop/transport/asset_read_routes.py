@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.asset_edits import AssetEdits
 from studio.apps.galgame_workshop.asset_scan import scan_metadata
 from studio.apps.galgame_workshop.assets_read import ProjectAssetReads
@@ -16,6 +15,7 @@ from studio.apps.galgame_workshop.schemas import (
     GalgameProjectAssetPatchIn,
     GalgameStoryRouteReportOut,
 )
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.galgame_workshop.galgame_assets import SOURCE
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 

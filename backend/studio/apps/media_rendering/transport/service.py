@@ -6,11 +6,11 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store.schemas.files import FilePreviewOut
-from app.capabilities.asset_store.schemas.image_crop import ImageCropIn
-from app.capabilities.asset_store.schemas.media_info import VideoMediaInfoOut
-from app.capabilities.asset_store.schemas.video_frames import VideoFramesIn
 from studio.apps.media_rendering.inputs import input_file
+from studio.contracts.asset_library.files import FilePreviewOut
+from studio.contracts.media_rendering.image_crop import ImageCropIn
+from studio.contracts.media_rendering.media_info import VideoMediaInfoOut
+from studio.contracts.media_rendering.video_frames import VideoFramesIn
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.http.dependencies import OwnerDep
 

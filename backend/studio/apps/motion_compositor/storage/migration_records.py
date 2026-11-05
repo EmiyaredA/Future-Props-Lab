@@ -4,7 +4,6 @@ from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from app.capabilities.media_rendering.motion_document import MotionComposition
 from studio.apps.motion_compositor.schemas import ExportCreateIn, OperationBatchIn
 from studio.apps.motion_compositor.storage.models import (
     MotionDocument,
@@ -21,6 +20,7 @@ from studio.contracts.management.project_history import (
     ProjectRecord,
     TaskRecord,
 )
+from studio.contracts.motion_compositor.document import MotionComposition
 from studio.runtime.database.project_history_migration import ProjectDataset
 
 

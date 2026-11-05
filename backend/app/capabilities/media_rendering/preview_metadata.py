@@ -9,8 +9,8 @@ from pathlib import Path
 from uuid import uuid4
 from weakref import WeakKeyDictionary
 
-from app.capabilities.asset_store.errors import AssetError
-from app.capabilities.asset_store.schemas.files import FilePreviewOut
+from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.files import FilePreviewOut
 
 from .file_previews import (
     audio_waveform,

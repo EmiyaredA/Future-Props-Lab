@@ -1,6 +1,6 @@
 """Pure timeline bounds and the source files required by a single frame."""
 
-from .timeline_document import VideoEditorTimelineDocument
+from studio.contracts.video_editor.timeline_document import VideoEditorTimelineDocument
 
 
 def timeline_duration_us(document: VideoEditorTimelineDocument) -> int:

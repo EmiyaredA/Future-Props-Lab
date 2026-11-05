@@ -12,9 +12,9 @@ from uuid import uuid4
 
 import yaml
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.integrations.common import IntegrationValidationError
 from studio.config.settings import Settings
+from studio.contracts.asset_library.incoming import IncomingFile
 
 SKILL_MD_MAX_BYTES = 256 * 1024
 SKILL_DESCRIPTION_MAX_LENGTH = 4000

@@ -6,8 +6,8 @@ import json
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.asset_library.library_outputs import LibraryOutputFiles
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.audio_annotation.task_sources import (
     UPLOADS,
     AnnotationTaskOriginal,

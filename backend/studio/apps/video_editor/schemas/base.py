@@ -4,8 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.capabilities.media_rendering.timeline_document import VideoEditorChromaKey
 from studio.contracts.asset_library.project_snapshots import ProjectSnapshotImportWarning
+from studio.contracts.video_editor.timeline_document import VideoEditorChromaKey
 
 VideoEditorPreset = Literal["720p30", "1080p30", "720p60", "1080p60"]
 VideoEditorTaskStatus = Literal["queued", "running", "completed", "failed", "cancelled"]

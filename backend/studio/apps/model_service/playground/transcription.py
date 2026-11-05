@@ -7,8 +7,6 @@ from uuid import uuid4
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.errors import AssetError
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.policy import ALLOWED_FILES, looks_like
 from studio.apps.model_service.library.inputs import ExactInput
 from studio.apps.model_service.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
@@ -24,6 +22,8 @@ from studio.apps.model_service.transcription.support import (
     model_supports_transcription,
 )
 from studio.config.settings import Settings, get_settings
+from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.model_service.credential_snapshot import CredentialSnapshot
 from studio.contracts.model_service.schemas.model_test import (
     ModelTestTranscriptionCreateIn,

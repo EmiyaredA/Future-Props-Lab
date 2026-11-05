@@ -12,8 +12,8 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from studio.config.settings import Settings
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.asset_library.project_snapshots import (
     ProjectSnapshotAssetManifest,
     ProjectSnapshotManifest,

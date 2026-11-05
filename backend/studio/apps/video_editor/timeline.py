@@ -7,9 +7,6 @@ from pydantic import ValidationError
 from sqlalchemy import select, update
 
 from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
-from app.capabilities.media_rendering.timeline_document import (
-    normalize_legacy_edge_transitions,
-)
 from studio.apps.video_editor.audio_alignment.audio_seam_edit import align_audio_seam
 from studio.apps.video_editor.audio_alignment.audio_transition_edit import set_audio_transition
 from studio.apps.video_editor.clip_merging.context import operation_contexts
@@ -28,6 +25,7 @@ from studio.apps.video_editor.storage.models import (
 )
 from studio.apps.video_editor.timed_effect_edit import crop_timed_effects, scale_timed_effects
 from studio.apps.video_editor.timeline_read import VideoTimelineRead
+from studio.contracts.video_editor.timeline_document import normalize_legacy_edge_transitions
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
 

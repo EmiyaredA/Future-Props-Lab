@@ -13,7 +13,6 @@ from pydantic import ValidationError
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.integrations.models import (
     McpIntegration,
     SkillIntegration,
@@ -28,6 +27,7 @@ from studio.apps.integrations.storage.creative_records import (
     CreativeInstalledPart,
     CreativeInstallReceipt,
 )
+from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.creative_workshop.creative_integrations import (
     CreativeInstallBatch,
     CreativeOperationGrant,

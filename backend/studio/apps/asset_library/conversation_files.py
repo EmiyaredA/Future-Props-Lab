@@ -13,7 +13,6 @@ from app.capabilities.asset_store.assistant_media import (
     read_document,
     read_image,
 )
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.storage.service_models import (
@@ -24,6 +23,7 @@ from studio.apps.asset_library.storage.service_models import (
     VisualProjectFileLink,
 )
 from studio.apps.asset_library.visual.visual_snapshot_files import scoped_assets
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.visual_workshop.visual_assistant import (
     AttachmentContext,
     AttachmentImage,

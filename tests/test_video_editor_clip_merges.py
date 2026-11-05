@@ -8,7 +8,6 @@ from PIL import Image
 from sqlalchemy import select
 
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
 from studio.apps.video_editor.clip_merging.document import (
     render_snapshot,
     replace_selection,
@@ -18,6 +17,7 @@ from studio.apps.video_editor.errors import VideoEditorValidationError
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorTask
 from studio.config.settings import get_settings
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from website_test_support import SessionLocal, app
 
 

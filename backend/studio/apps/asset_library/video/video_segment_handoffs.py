@@ -2,7 +2,6 @@
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.archive_staging import ArchiveFileStaging, conflict
 from studio.apps.asset_library.deletions import schedule
@@ -19,6 +18,7 @@ from studio.apps.asset_library.storage.service_models import (
 from studio.apps.asset_library.video.video_files import record as file_record
 from studio.apps.asset_library.video.video_segment_files import SegmentFile
 from studio.apps.asset_library.visual.visual_upload_stages import check_canvas_upload_fence
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.thought_workshop.thought_archives import ArchiveBatchKey
 from studio.contracts.video_editor.video_segment_handoff import SegmentHandoff
 from studio.contracts.video_editor.video_segments import (

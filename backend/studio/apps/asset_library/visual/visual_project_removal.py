@@ -2,7 +2,6 @@
 
 from sqlalchemy import and_, delete, or_, select
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
 from studio.apps.asset_library.scoped_project_files import remove_files
 from studio.apps.asset_library.storage.service_models import (
@@ -12,6 +11,7 @@ from studio.apps.asset_library.storage.service_models import (
     ReferenceIntent,
     VisualProjectFileLink,
 )
+from studio.contracts.asset_library.errors import AssetError
 
 
 def project_children(projection, identities):

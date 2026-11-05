@@ -11,7 +11,7 @@ from app.capabilities.media_rendering.chroma_key import apply_chroma_key
 from app.capabilities.media_rendering.contracts import RenderPlan
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
-from app.capabilities.media_rendering.timeline_document import (
+from studio.contracts.video_editor.timeline_document import (
     VideoEditorChromaKey,
     VideoEditorClip,
     VideoEditorTimelineDocument,

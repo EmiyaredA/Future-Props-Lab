@@ -218,3 +218,28 @@ def test_module_files_do_not_shadow_packages():
         if path.with_suffix("").is_dir()
     ]
     assert not collisions, "Module/package name collisions: " + ", ".join(collisions)
+
+
+def test_asset_and_media_contracts_load_without_runtime_implementations():
+    code = """
+import importlib
+import sys
+import studio.config
+
+def forbidden(*args, **kwargs):
+    raise AssertionError("contract import read deployment configuration")
+
+studio.config.read_config = forbidden
+for name in (
+    'asset_library.incoming', 'asset_library.errors', 'asset_library.files',
+    'media_rendering.image_crop', 'media_rendering.video_frames',
+    'media_rendering.media_info', 'media_rendering.character_document',
+    'video_editor.timeline_document', 'video_editor.audio_seam_results',
+    'motion_compositor.document',
+):
+    importlib.import_module('studio.contracts.' + name)
+for name in sys.modules:
+    assert not name.startswith(('app.', 'studio.apps.', 'studio.assembly.',
+        'studio.host.', 'sqlalchemy', 'fastapi', 'PIL', 'httpx')), name
+"""
+    subprocess.run([sys.executable, "-c", code], cwd=ROOT / "backend", check=True)

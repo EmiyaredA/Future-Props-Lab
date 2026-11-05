@@ -20,12 +20,12 @@ ART = ROOT / "web/src/features/amadeus/art"
 DEST = ROOT / "web/public/brand/amadeus"
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.capabilities.media_rendering.live2d.document import CharacterDocument  # noqa: E402
 from app.capabilities.media_rendering.live2d.evaluate import (  # noqa: E402
     evaluate,
     parameter_values,
 )
 from app.capabilities.media_rendering.live2d.render import render_frame  # noqa: E402
+from studio.contracts.media_rendering.character_document import CharacterDocument  # noqa: E402
 
 WIDTH, HEIGHT = 1087, 1447
 SX, SY = WIDTH / 1024, HEIGHT / 1536

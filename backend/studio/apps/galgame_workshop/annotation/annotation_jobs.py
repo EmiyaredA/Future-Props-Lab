@@ -2,11 +2,11 @@
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.annotation.annotation_preview import annotation_preview
 from studio.apps.galgame_workshop.storage.models import GalgameAnnotationImportTask
 from studio.apps.galgame_workshop.storage.service_models import GalgameAnnotationAuthorization
 from studio.apps.galgame_workshop.task_views import annotation_task_out
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.project_errors import ProjectResourceError
 
 

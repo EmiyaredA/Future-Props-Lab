@@ -2,13 +2,13 @@
 
 from sqlalchemy import delete, select, text
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.storage.models import VideoEditorTask
 from studio.apps.video_editor.storage.service_models import VideoRenderDispatch
 from studio.apps.video_editor.task_reads import task_out
 from studio.apps.video_editor.timeline_file_removal import uses_file
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.revisions import RevisionConflictError
 
 from .media_edits import MediaEdits

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.presentation_workshop.exchange.contracts import ImportPreview
 from studio.apps.presentation_workshop.exchange.transfers import (
     import_presentation,
@@ -10,6 +9,7 @@ from studio.apps.presentation_workshop.exchange.transfers import (
 from studio.apps.presentation_workshop.projects import PresentationError, Presentations
 from studio.apps.presentation_workshop.schemas.document import PresentationProjectOut
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.contracts.asset_library.errors import AssetError
 
 router = APIRouter()
 

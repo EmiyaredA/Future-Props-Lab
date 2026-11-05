@@ -4,7 +4,6 @@ from uuid import UUID
 
 from sqlalchemy import delete, select
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.asset_library.deletions import schedule
 from studio.apps.asset_library.references.references import (
     protect_pending_removals,
@@ -17,6 +16,7 @@ from studio.apps.asset_library.storage.service_models import (
     VideoFileWriteReceipt,
 )
 from studio.apps.asset_library.video.video_files import original_record
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.references import VideoFileRemoval, VideoFileRename
 
 

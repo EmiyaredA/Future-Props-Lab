@@ -4,10 +4,10 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.asset_library.scoped_project_files import check_project_scope
 from studio.apps.asset_library.visual.visual_snapshot_files import originals, scoped_assets
 from studio.contracts.asset_library.descriptions import LibraryAssetDescription
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.visual_workshop.visual_samples import (

@@ -2,12 +2,12 @@
 
 from fastapi import HTTPException
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
     VideoEditorUnavailableError,
     VideoEditorValidationError,
 )
+from studio.contracts.asset_library.errors import AssetError
 
 
 def _error(exc: Exception) -> HTTPException:

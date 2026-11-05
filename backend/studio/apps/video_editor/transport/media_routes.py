@@ -10,7 +10,6 @@ from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
     VideoEditorUnavailableError,
@@ -28,6 +27,7 @@ from studio.apps.video_editor.schemas import (
 )
 from studio.apps.video_editor.transport.website.errors import _error
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.video_editor.video_assets import VideoCopyQuery
 from studio.runtime.files.signed_payloads import ModelOutputDescription
 

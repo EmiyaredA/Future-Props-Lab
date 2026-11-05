@@ -2,8 +2,8 @@
 
 from contextlib import asynccontextmanager
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.model_service.library.inputs import LibraryInput
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.files.incoming import ModelInputDescription
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 

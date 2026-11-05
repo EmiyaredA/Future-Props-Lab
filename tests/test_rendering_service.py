@@ -242,9 +242,9 @@ async def test_cancelled_grid_waits_for_writer_before_removing_output(instance, 
     import asyncio
     import threading
 
-    from app.capabilities.asset_store.schemas.video_frames import VideoFramesIn
     from app.capabilities.media_rendering.preview_metadata import PreviewSource
     from studio.apps.media_rendering import previews
+    from studio.contracts.media_rendering.video_frames import VideoFramesIn
 
     app, _client, _private, _inputs, _identity = instance
     started, release = threading.Event(), threading.Event()

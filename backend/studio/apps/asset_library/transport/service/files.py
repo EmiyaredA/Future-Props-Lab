@@ -9,7 +9,10 @@ from starlette.background import BackgroundTask
 
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.policy import download_filename
-from app.capabilities.asset_store.schemas.files import (
+from app.console.file_library import LibraryFolderArchiveError
+from studio.apps.asset_library.transport.service.context import archive as archive_cases
+from studio.apps.asset_library.transport.service.context import cases
+from studio.contracts.asset_library.files import (
     FILE_CONTENT_HEADERS,
     LibraryAssetImportIn,
     LibraryFolderImportOut,
@@ -23,9 +26,6 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetOut,
     VisualAssetPatchIn,
 )
-from app.console.file_library import LibraryFolderArchiveError
-from studio.apps.asset_library.transport.service.context import archive as archive_cases
-from studio.apps.asset_library.transport.service.context import cases
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 
 router = APIRouter(tags=["file-management"])

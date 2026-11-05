@@ -5,7 +5,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from app.capabilities.asset_store.schemas.files import (
+from studio.apps.visual_workshop.schemas.prompts import VisualPromptDraft, VisualVideoPromptVersion
+from studio.contracts.asset_library.files import (
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
     VisualAssetFolderOut,
@@ -16,7 +17,6 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
-from studio.apps.visual_workshop.schemas.prompts import VisualPromptDraft, VisualVideoPromptVersion
 from studio.contracts.asset_library.project_snapshots import ProjectSnapshotImportWarning
 from studio.contracts.model_service.generation_tasks import (
     AudioGenerationTaskCreateIn,

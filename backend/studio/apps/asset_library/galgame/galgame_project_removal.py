@@ -2,7 +2,6 @@
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import (
     AssetReferencePin,
@@ -10,6 +9,7 @@ from studio.apps.asset_library.storage.service_models import (
     PreparedAssetPin,
     VisualProjectFileLink,
 )
+from studio.contracts.asset_library.errors import AssetError
 
 
 async def prepare_project_removal(session, projection):

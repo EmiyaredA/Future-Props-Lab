@@ -8,7 +8,7 @@ import stat
 import httpx
 from pydantic import ValidationError
 
-from app.capabilities.asset_store.schemas.files import VisualAssetOut
+from studio.contracts.asset_library.files import VisualAssetOut
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.thought_workshop.thought_uploads import (
     ThoughtUploadDescription,

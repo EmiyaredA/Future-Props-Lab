@@ -5,9 +5,9 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.schemas.video_frames import VideoFramesIn
 from app.capabilities.asset_store.video_frames import export_frames
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.contracts.media_rendering.video_frames import VideoFramesIn
 
 router = APIRouter(tags=["file-management"])
 

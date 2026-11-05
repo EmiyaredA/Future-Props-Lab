@@ -8,9 +8,9 @@ from app.capabilities.asset_store.project_transactions import (
     deleting_project_layout,
 )
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.media_rendering.motion_document import MotionComposition
 from studio.apps.motion_compositor.projects import MotionInvalid
 from studio.config.settings import get_settings
+from studio.contracts.motion_compositor.document import MotionComposition
 
 
 class LegacyProjectResources:

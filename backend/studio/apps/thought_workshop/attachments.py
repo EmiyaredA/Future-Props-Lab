@@ -2,11 +2,11 @@
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
 from studio.config.settings import Settings
+from studio.contracts.asset_library.incoming import IncomingFile
 
 
 async def upload_attachment(

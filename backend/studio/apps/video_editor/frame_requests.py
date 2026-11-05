@@ -3,7 +3,6 @@
 import httpx
 from fastapi import HTTPException
 
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
 from app.capabilities.media_rendering.timeline_ranges import frame_asset_ids, timeline_duration_us
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
@@ -14,6 +13,7 @@ from studio.apps.video_editor.timeline_read import VideoTimelineRead
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.motion_compositor.motion_preview import FrameFile, FrameScope, sha256
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from studio.contracts.video_editor.video_frames import (
     MAX_FRAME_BYTES,
     PREFIX,

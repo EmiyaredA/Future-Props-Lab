@@ -6,12 +6,12 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
 
 from app.capabilities.media_rendering.presets import RENDER_PRESETS
-from app.capabilities.media_rendering.timeline_document import (
+from app.capabilities.media_rendering.timeline_ranges import timeline_duration_us
+from studio.contracts.motion_compositor.motion_preview import sha256
+from studio.contracts.video_editor.timeline_document import (
     VideoEditorChromaKey,
     parse_timeline_document,
 )
-from app.capabilities.media_rendering.timeline_ranges import timeline_duration_us
-from studio.contracts.motion_compositor.motion_preview import sha256
 from studio.contracts.video_editor.video_exports import (
     EXPORTS,
     MAX_EXPORT_REQUEST_BYTES,

@@ -5,7 +5,6 @@ from typing import Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
 from studio.apps.video_editor.schemas import VideoEditorDefaultEffects, VideoEditorTimelineBatchIn
 from studio.apps.video_editor.storage.models import (
     VideoEditorAssetMetadata,
@@ -25,6 +24,7 @@ from studio.contracts.management.project_history import (
     ProjectRecord,
     TaskRecord,
 )
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from studio.runtime.database.project_history_migration import ProjectDataset
 
 

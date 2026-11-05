@@ -4,8 +4,8 @@ import zipfile
 
 from fastapi import HTTPException
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionUnavailable
+from studio.contracts.asset_library.errors import AssetError
 
 
 def _error(exc: Exception) -> HTTPException:

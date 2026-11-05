@@ -5,7 +5,6 @@ from uuid import uuid4
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.galgame_workshop.assets.asset_support import asset_edit_values, galgame_asset_out
 from studio.apps.galgame_workshop.storage.models import GalgameAssetMetadata
 from studio.apps.galgame_workshop.storage.service_models import (
@@ -13,6 +12,7 @@ from studio.apps.galgame_workshop.storage.service_models import (
     GalgameUploadIntake,
 )
 from studio.contracts.asset_library.descriptions import ID
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.references import GalgameFileMutation, PrepareReferenceChange
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.project_errors import ProjectResourceError

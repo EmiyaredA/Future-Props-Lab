@@ -3,7 +3,7 @@ from PIL import Image, ImageChops, ImageDraw
 
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.spin_blur import spin_blur
-from app.capabilities.media_rendering.timeline_document import parse_timeline_document
+from studio.contracts.video_editor.timeline_document import parse_timeline_document
 
 
 def _pattern():

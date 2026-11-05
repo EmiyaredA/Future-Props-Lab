@@ -6,8 +6,8 @@ from contextlib import asynccontextmanager
 from email.message import Message
 from pathlib import Path
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.media_rendering.preview_metadata import PreviewSource
+from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.http.capability_client import CapabilityUnavailable
 
 

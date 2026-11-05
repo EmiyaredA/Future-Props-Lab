@@ -2,7 +2,6 @@
 
 from sqlalchemy import text
 
-from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.asset_library.library_outputs import VerifiedOutput
@@ -12,6 +11,7 @@ from studio.apps.asset_library.visual.visual_upload_stages import (
     conflict,
     staged_record,
 )
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.visual_workshop.visual_samples import VisualEvidenceUpload
 from studio.runtime.http.framed_media import SIZE, FramedInputs
 

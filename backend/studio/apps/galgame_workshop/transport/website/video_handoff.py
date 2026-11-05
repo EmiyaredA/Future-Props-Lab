@@ -1,6 +1,5 @@
 from fastapi import APIRouter, status
 
-from app.capabilities.asset_store import AssetError
 from studio.apps.galgame_workshop.schemas import (
     GalgameVideoEditorHandoffCreateIn,
     GalgameVideoEditorHandoffTaskListOut,
@@ -9,6 +8,7 @@ from studio.apps.galgame_workshop.schemas import (
 from studio.apps.galgame_workshop.transport.website._shared import _asset_error
 from studio.apps.galgame_workshop.video.video_handoff import GalgameVideoEditorHandoffs
 from studio.assembly.http_dependencies import SessionDep
+from studio.contracts.asset_library.errors import AssetError
 
 router = APIRouter()
 

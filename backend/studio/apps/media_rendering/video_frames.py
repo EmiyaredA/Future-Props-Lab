@@ -14,14 +14,11 @@ from pydantic import ValidationError
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.capabilities.media_rendering.text_layer import text_layer_png
-from app.capabilities.media_rendering.timeline_document import (
-    VideoEditorClip,
-    parse_timeline_document,
-)
 from app.capabilities.media_rendering.timeline_ranges import frame_asset_ids, timeline_duration_us
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.motion_compositor.motion_preview import sha256
+from studio.contracts.video_editor.timeline_document import VideoEditorClip, parse_timeline_document
 from studio.contracts.video_editor.video_frames import (
     INPUTS,
     MAX_FRAME_BYTES,

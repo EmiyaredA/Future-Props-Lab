@@ -2,11 +2,11 @@
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.errors import AssetError
 from studio.apps.asset_library.scoped_project_files import check_project_scope
 from studio.apps.asset_library.storage.service_models import AssetReferencePin, AssetReferenceSet
 from studio.apps.asset_library.visual.visual_snapshot_files import originals, scoped_assets
 from studio.contracts.asset_library.descriptions import LibraryAssetDescription
+from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.visual_workshop.visual_samples import evidence_resource
 
 
