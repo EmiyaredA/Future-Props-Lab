@@ -65,7 +65,8 @@ export function ManagedImageView({
       ? 1280
       : 640;
   // Keep the selected image and its controls mounted during width changes.
-  const unselectedPreviewSize = useRef(preferredPreviewSize);
+  const unselectedPreviewSize =
+    useRef<typeof preferredPreviewSize>(preferredPreviewSize);
   useEffect(() => {
     if (!selected) unselectedPreviewSize.current = preferredPreviewSize;
   }, [preferredPreviewSize, selected]);
