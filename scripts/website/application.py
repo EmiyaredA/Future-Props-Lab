@@ -1,10 +1,46 @@
 """Compose each website worker after checking persistent schema compatibility."""
 
+import asyncio
 import contextlib
 import logging
+import socket
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+
+
+@contextlib.asynccontextmanager
+async def local_frontend(app, enabled):
+    if not enabled:
+        yield
+        return
+    import uvicorn
+
+    from app.capabilities.web_access.runtime import BrowserServer
+
+    with socket.socket() as listener:
+        listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        listener.bind(("127.0.0.1", 3000))
+        server = BrowserServer(
+            uvicorn.Config(
+                app,
+                lifespan="off",
+                access_log=False,
+                proxy_headers=False,
+                timeout_graceful_shutdown=5,
+            )
+        )
+        task = asyncio.create_task(server.serve(sockets=[listener]))
+        try:
+            while not server.started:
+                if task.done():
+                    await task
+                    raise RuntimeError("本机前端监听启动失败")
+                await asyncio.sleep(0.05)
+            yield
+        finally:
+            server.should_exit = True
+            await task
 
 
 async def authenticate_browser(scope, receive):
@@ -30,22 +66,28 @@ def create_app():
     # Every reload checks before app.main can import the database or run lifespan.
     # The reloader parent keeps the exclusive data locks throughout these reloads.
     check_migrations(settings.database_path)
+    from scripts.website.frontend import CURRENT
+
     from app.capabilities.web_access.profiles import AccessError
     from app.capabilities.web_access.runtime import WebAccess
     from app.console.governance.automation_access import automation_allowed
     from app.main import app
-    from app.runtime.website import attach_website
+    from app.runtime.website import CurrentWebsite, attach_website
 
     web_root = Path(settings.fpl_website_web_root).expanduser()
     if not web_root.is_absolute():
         web_root = ROOT / web_root
-    access = WebAccess(app, settings, ROOT, web_root, authenticate_browser)
+    shared = web_root == ROOT / CURRENT and settings.fpl_website_port == 9001
+    static = CurrentWebsite(web_root) if shared else None
+    access = WebAccess(app, settings, ROOT, web_root, authenticate_browser, shared_static=static)
     app.state.web_access = access
     attach_website(
         app,
         web_root=web_root,
         local_port=settings.fpl_website_port,
         frontend_origin=("http://127.0.0.1:3000" if settings.fpl_website_port == 9001 else None),
+        frontend_port=3000 if shared else None,
+        static=static,
         public_access=access,
         automation_policy=automation_allowed,
     )
@@ -53,7 +95,7 @@ def create_app():
 
     @contextlib.asynccontextmanager
     async def lifespan(application):
-        async with original_lifespan(application) as state:
+        async with original_lifespan(application) as state, local_frontend(application, shared):
             try:
                 if settings.fpl_website_public_enabled:
                     try:

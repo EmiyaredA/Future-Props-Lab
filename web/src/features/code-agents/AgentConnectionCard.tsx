@@ -35,18 +35,20 @@ export function AgentConnectionCard({
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
   const command = {
-    codex: "codex login",
+    codex: "npm run codex:login",
     "claude-code": "claude auth login",
     opencode: "opencode auth login",
     dsh: "dsh web",
     pi: "pi",
   }[agent.id];
   const help =
-    agent.id === "pi"
-      ? "在 Pi 中使用 /login，完成后重新检测"
-      : agent.id === "dsh"
-        ? "在 Harness 中完成登录后重新检测"
-        : "安装或登录后重新检测";
+    agent.id === "codex"
+      ? "在服务所在 Mac 的 FPL 项目目录执行，完成专用登录后重新检测"
+      : agent.id === "pi"
+        ? "在 Pi 中使用 /login，完成后重新检测"
+        : agent.id === "dsh"
+          ? "在 Harness 中完成登录后重新检测"
+          : "安装或登录后重新检测";
   const copy = async () => {
     setError("");
     try {

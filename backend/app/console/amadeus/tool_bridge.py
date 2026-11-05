@@ -7,7 +7,6 @@ from pathlib import Path
 import httpx
 from jsonschema import ValidationError, validate
 
-from app.capabilities.agents.cli.tool_relay import ToolRelay
 from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.files import list_files, read_file_bytes
 from app.console.amadeus.fpl_operations import call_operation, operation_catalog
@@ -114,12 +113,15 @@ TOOLS = [
 ]
 
 
-class ToolBridge(ToolRelay):
-    def __init__(self, app, headers, principal, run, sessions, emit):
+class ToolBridge:
+    def __init__(self, app, headers, principal, run, sessions):
         self.app, self.headers, self.principal = app, headers, principal
-        self.run, self.sessions, self.emit = run, sessions, emit
+        self.run, self.sessions = run, sessions
         self.paused = asyncio.Event()
-        super().__init__(TOOLS, self.call, emit)
+        self.closed = False
+
+    def close(self):
+        self.closed = True
 
     async def api(self, path):
         async with httpx.AsyncClient(

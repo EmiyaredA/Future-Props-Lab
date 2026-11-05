@@ -25,11 +25,12 @@ class BrowserServer(uvicorn.Server):
 
 
 class WebAccess:
-    def __init__(self, app, settings, data_root, static_root, authenticate):
+    def __init__(self, app, settings, data_root, static_root, authenticate, *, shared_static=None):
         self.app = app
         self.store = ProfileStore(data_root, settings)
         self.profile = self.store.profile()
         self.static_root = static_root
+        self.shared_static = shared_static
         self.authenticate = authenticate
         self.local = EndpointStatus(url=f"http://127.0.0.1:{self.profile.local_port}")
         self.public = EndpointStatus(url=self.profile.origin)
@@ -84,7 +85,7 @@ class WebAccess:
         ingress = RemoteWeb(
             origin=self.profile.origin,
             port=self.profile.local_port,
-            static=WebsiteStaticFiles(directory=self.static_root, html=True),
+            static=self.shared_static or WebsiteStaticFiles(directory=self.static_root, html=True),
             authenticate=self.authenticate,
             secure_cookies=True,
         )
@@ -224,6 +225,14 @@ class WebAccess:
                 trust_env=False, timeout=8, follow_redirects=False
             ) as client:
                 response = await client.get(self.profile.origin + "/ready")
+                if self.shared_static is not None:
+                    build = await client.get(self.profile.origin + "/build.json")
+                    if (
+                        build.status_code != 200
+                        or build.headers.get("x-fpl-web-instance") != self.instance
+                        or build.json().get("build_id") != self.manifest()["build_id"]
+                    ):
+                        raise ValueError("公网构建与当前实例不一致")
             if (
                 response.status_code != 200
                 or response.headers.get("x-fpl-web-instance") != self.instance
@@ -233,7 +242,7 @@ class WebAccess:
         except Exception:
             self.public.phase, self.public.error = (
                 "reconnecting",
-                "隧道或远端就绪检查失败，正在重连",
+                "公网就绪检查失败，等待下次检查",
             )
             raise AccessError(self.public.error) from None
 
@@ -302,23 +311,19 @@ class WebAccess:
                         stdout=asyncio.subprocess.DEVNULL,
                         stderr=asyncio.subprocess.PIPE,
                     )
-                    await asyncio.sleep(1)
-                    for _ in range(10):
-                        if self.child.returncode is not None:
-                            break
+                    child = self.child
+                    while self.public_enabled and child.returncode is None:
                         try:
                             await self.check_public()
-                            break
                         except AccessError:
-                            # Do not kill an SSH handshake before authentication
-                            # and reverse forwarding have had time to complete.
-                            await asyncio.sleep(1)
-                    else:
-                        raise AccessError("远端转发就绪超时")
-                    while self.public_enabled and self.child.returncode is None:
-                        await self.check_public()
-                        delay = 1
-                        await asyncio.sleep(30)
+                            # An HTTP probe can fail during a release switch or gateway
+                            # hiccup while SSH is still carrying established connections.
+                            interval = 5
+                        else:
+                            delay = 1
+                            interval = 30
+                        with contextlib.suppress(TimeoutError):
+                            await asyncio.wait_for(child.wait(), interval)
                     stderr = getattr(self.child, "stderr", None)
                     diagnostic = (await stderr.read(8192)) if stderr else b""
                     reason = next(
@@ -371,7 +376,8 @@ class WebAccess:
                 if not self.public_enabled:
                     try:
                         self.validate_credentials()
-                        await self.check_build()
+                        if self.shared_static is None:
+                            await self.check_build()
                     except AccessError as exc:
                         self.public.phase, self.public.error = "failed", str(exc)
                         raise

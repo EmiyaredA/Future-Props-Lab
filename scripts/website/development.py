@@ -12,6 +12,11 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+if __package__ in {None, ""}:
+    from frontend import uses_shared_frontend
+else:
+    from .frontend import uses_shared_frontend
+
 ROOT = Path(__file__).resolve().parents[2]
 WEB_URL = "http://127.0.0.1:3000"
 API_URL = "http://127.0.0.1:9001"
@@ -96,8 +101,12 @@ def run_pair(root=ROOT):
         )
         children.append(backend)
         wait_ready(backend)
+        config = root / "backend/config.toml"
+        shared = config.is_file() and uses_shared_frontend(root)
         frontend = subprocess.Popen(
-            ["npm", "run", "dev", "--workspace", "web", "--", "--strictPort"],
+            [sys.executable, str(root / "scripts/website/frontend.py"), "--watch"]
+            if shared
+            else ["npm", "run", "dev", "--workspace", "web", "--", "--strictPort"],
             cwd=root,
             env=env,
             start_new_session=True,

@@ -901,6 +901,7 @@ class ChatDetail(WireModel):
     created_at: int = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
     project_id: str = Field(default=..., alias='project_id')
+    project_label: str | None = Field(default=None, alias='project_label')
     turns: list[TurnOut] = Field(default=..., alias='turns')
 
 class ChatOut(WireModel):
@@ -908,6 +909,7 @@ class ChatOut(WireModel):
     created_at: int = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
     project_id: str = Field(default=..., alias='project_id')
+    project_label: str | None = Field(default=None, alias='project_label')
 
 class CheckpointIn(WireModel):
     expected_note_revision: int = Field(default=..., alias='expected_note_revision', ge=0.0)
@@ -941,7 +943,6 @@ class CloudSetup(WireModel):
     enrolled: bool = Field(default=..., alias='enrolled')
     guacd_ready: bool = Field(default=..., alias='guacd_ready')
     host_label: str = Field(default=..., alias='host_label')
-    projects: list[SetupProject] = Field(default=..., alias='projects')
     public_desktop_vnc_only: bool = Field(default=..., alias='public_desktop_vnc_only')
     public_enabled: bool = Field(default=..., alias='public_enabled')
     revision: str = Field(default=..., alias='revision')
@@ -949,7 +950,6 @@ class CloudSetup(WireModel):
 
 class CloudSetupUpdate(WireModel):
     host_label: str = Field(default=..., alias='host_label', min_length=1, max_length=80)
-    projects: list[str] = Field(default=..., alias='projects', max_length=80)
     public_enabled: bool = Field(default=..., alias='public_enabled')
     revision: str = Field(default=..., alias='revision')
 
@@ -1339,6 +1339,15 @@ class DirectorToolCall(WireModel):
 class DirectorToolOut(WireModel):
     result: Any = Field(default=..., alias='result')
 
+class DirectoryChoice(WireModel):
+    label: str = Field(default=..., alias='label')
+    root: str = Field(default=..., alias='root')
+
+class DirectoryListing(WireModel):
+    items: list[DirectoryChoice] = Field(default=..., alias='items')
+    parent: str | None = Field(default=..., alias='parent')
+    selectable: bool = Field(default=..., alias='selectable')
+
 class DocumentOut(WireModel):
     document: MotionComposition = Field(default=..., alias='document')
     revision: int = Field(default=..., alias='revision')
@@ -1371,8 +1380,11 @@ class Enrollment(WireModel):
 
 class ExecutionCatalog(WireModel):
     agents: list[AgentChoice] = Field(default=..., alias='agents')
+    can_select_directory: bool = Field(default=False, alias='can_select_directory')
     enabled: bool = Field(default=..., alias='enabled')
     projects: list[ProjectChoice] = Field(default=..., alias='projects')
+    recent_projects: list[RecentProject] | None = Field(default=None, alias='recent_projects')
+    suggested_directories: list[DirectoryChoice] | None = Field(default=None, alias='suggested_directories')
 
 class Experience(WireModel):
     evidence: list[InputReference] = Field(default=..., alias='evidence')
@@ -4265,6 +4277,9 @@ class ProjectCreateIn(WireModel):
     starter: Literal['blank', 'comic-entry'] = Field(default='blank', alias='starter')
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
+class ProjectDirectory(WireModel):
+    root: str = Field(default=..., alias='root', min_length=1, max_length=4096)
+
 class ProjectFolderOpenOut(WireModel):
     opened: Literal[True] = Field(default=True, alias='opened')
 
@@ -4451,6 +4466,11 @@ class RealtimeVoiceVadOut(WireModel):
 
 class ReauthIn(WireModel):
     password: str = Field(default=..., alias='password', repr=False)
+
+class RecentProject(WireModel):
+    id: str = Field(default=..., alias='id')
+    label: str = Field(default=..., alias='label')
+    root: str = Field(default=..., alias='root')
 
 class RecordPage(WireModel):
     groups: dict[str, int] | None = Field(default=None, alias='groups')
@@ -4800,11 +4820,6 @@ class SetTransitionOperation(WireModel):
     edge: Literal['in', 'out'] = Field(default=..., alias='edge')
     transition: VideoEditorTransition | None = Field(default=None, alias='transition')
     type: Literal['setTransition'] = Field(default=..., alias='type')
-
-class SetupProject(WireModel):
-    label: str = Field(default=..., alias='label')
-    root: str = Field(default=..., alias='root')
-    selected: bool = Field(default=..., alias='selected')
 
 class SkillCatalogOut(WireModel):
     draft_count: int = Field(default=..., alias='draft_count')
@@ -6628,6 +6643,8 @@ DirectorProjectPatch.model_rebuild()
 DirectorProjectSummary.model_rebuild()
 DirectorToolCall.model_rebuild()
 DirectorToolOut.model_rebuild()
+DirectoryChoice.model_rebuild()
+DirectoryListing.model_rebuild()
 DocumentOut.model_rebuild()
 DuplicateIn.model_rebuild()
 DuplicateOut.model_rebuild()
@@ -7023,6 +7040,7 @@ PresentationTextLayout.model_rebuild()
 PresentationTransition.model_rebuild()
 ProjectChoice.model_rebuild()
 ProjectCreateIn.model_rebuild()
+ProjectDirectory.model_rebuild()
 ProjectFolderOpenOut.model_rebuild()
 ProjectListOut.model_rebuild()
 ProjectOut.model_rebuild()
@@ -7051,6 +7069,7 @@ RealtimeVoiceOptionsOut.model_rebuild()
 RealtimeVoicePlaybackOut.model_rebuild()
 RealtimeVoiceVadOut.model_rebuild()
 ReauthIn.model_rebuild()
+RecentProject.model_rebuild()
 RecordPage.model_rebuild()
 RecordSpec.model_rebuild()
 RecordsDelete.model_rebuild()
@@ -7108,7 +7127,6 @@ SetAssetOrganizationOperation.model_rebuild()
 SetAudioTransitionOperation.model_rebuild()
 SetClipSpeedOperation.model_rebuild()
 SetTransitionOperation.model_rebuild()
-SetupProject.model_rebuild()
 SkillCatalogOut.model_rebuild()
 SkillFileListOut.model_rebuild()
 SkillFileOut.model_rebuild()

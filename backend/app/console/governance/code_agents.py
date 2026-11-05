@@ -48,16 +48,23 @@ async def resolve(session, owner_user_id, user_id, agent_id, purpose, *, setting
     settings = settings or get_cloud_settings()
     if not await authorized(session, owner_user_id, user_id, agent_id, purpose):
         raise OperationError("此账号未获准使用该 Agent", "agent_not_authorized", 403)
-    return await resolve_connection(agent_id, settings=settings, probe=probe)
+    return await resolve_connection(
+        agent_id,
+        settings=settings,
+        probe=probe,
+        app_server=purpose in {"amadeus", "agent_workbench"},
+    )
 
 
-async def resolve_connection(agent_id, *, settings=None, probe=True):
+async def resolve_connection(agent_id, *, settings=None, probe=True, app_server=True):
     settings = settings or get_cloud_settings()
     enabled, path, error = connection(settings, agent_id)
     if error or not enabled or not path:
         raise OperationError(error or "Agent 尚未配置", "agent_unavailable", 409)
     if probe:
-        status = await inspect_connection(settings, agent_id, discover_models=False)
+        status = await inspect_connection(
+            settings, agent_id, discover_models=False, app_server=app_server
+        )
         if not status["available"]:
             raise OperationError(status["message"], status["status"], 409)
     return path

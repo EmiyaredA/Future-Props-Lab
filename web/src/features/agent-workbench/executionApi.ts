@@ -6,9 +6,27 @@ export type Chat = Schema["ChatOut"];
 export type ChatDetail = Schema["ChatDetail"];
 export type ChatCreate = Schema["ChatCreate"];
 export type TurnCreate = Schema["TurnCreate"];
+export type ProjectChoice = Schema["ProjectChoice"];
+export type ExecutionCatalog = Schema["ExecutionCatalog"];
 
 export const getExecutionCatalog = async (signal?: AbortSignal) =>
   unwrap(await api.GET("/v1/agent-workbench/execution/catalog", { signal }));
+export const browseProjectDirectories = async (
+  parent?: string,
+  signal?: AbortSignal,
+) =>
+  unwrap(
+    await api.GET("/v1/agent-workbench/execution/directories", {
+      params: { query: { parent } },
+      signal,
+    }),
+  );
+export const registerProjectDirectory = async (root: string) =>
+  unwrap(
+    await api.POST("/v1/agent-workbench/execution/projects", {
+      body: { root },
+    }),
+  );
 export const getChats = async (signal?: AbortSignal) =>
   unwrap(await api.GET("/v1/agent-workbench/chats", { signal }));
 export const getChat = async (chat_id: string, signal?: AbortSignal) =>

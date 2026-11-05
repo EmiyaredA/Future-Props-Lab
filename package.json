@@ -48,6 +48,7 @@
     "build:studio": "python3 scripts/check_lfs_assets.py --web && npm run images:check && npm run build:studio --workspace web",
     "start": "uv run python scripts/website/development.py",
     "website:service": "uv run python scripts/website/service.py",
+    "codex:login": "uv run python scripts/website/codex_login.py",
     "images:generate": "uv run python scripts/generate_image_variants.py",
     "images:check": "uv run python scripts/generate_image_variants.py --check"
   },

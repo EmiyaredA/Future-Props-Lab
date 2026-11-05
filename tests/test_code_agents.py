@@ -11,11 +11,14 @@ import pytest
 from sqlalchemy import update
 
 from app.capabilities.agents.cli.catalog import connection, inspect_connection
+from app.capabilities.agents.cli.codex_profile import profile_path
 from app.console.amadeus.models import AmadeusConversation
+from app.console.governance.code_agents import resolve_connection
 from app.main import app
 from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
+from app.runtime.operation_receipts import OperationError
 from test_workspace_governance import client_account
 
 pytestmark = pytest.mark.real_auth
@@ -31,7 +34,7 @@ import sys, json, os, subprocess, re
 if "--version" in sys.argv:
     print("fake 2.163.300")
     raise SystemExit
-if sys.argv[1:3] in (["login", "status"], ["auth", "status"]):
+if sys.argv[-2:] in (["login", "status"], ["auth", "status"]):
     raise SystemExit
 assert "FPL_SECRETS_KEY" not in os.environ
 assert "FPL_STUDIO_TOKEN" not in os.environ
@@ -42,12 +45,30 @@ def send(x):
 
 
 if "app-server" in sys.argv:
+    assert os.environ["CODEX_HOME"].endswith("/profiles/codex-app-server")
     assert "features.shell_tool=false" in sys.argv
+    assert 'sandbox_mode="read-only"' in sys.argv
     for line in sys.stdin:
         x = json.loads(line)
         method = x.get("method")
         if method == "initialize":
             send({"id": x["id"], "result": {}})
+        elif method == "config/read":
+            send({"id": x["id"], "result": {"config": {
+                "sandbox_mode": "read-only",
+                "approval_policy": "never",
+                "web_search": "disabled",
+                "cli_auth_credentials_store": "file",
+                "features": {
+                    "skip_host_skill_discovery": True,
+                    "shell_tool": False,
+                    "hooks": False,
+                    "plugins": False,
+                    "apps": False,
+                    "multi_agent": False,
+                    "skill_search": False,
+                },
+            }}})
         elif method == "model/list":
             send(
                 {
@@ -57,6 +78,8 @@ if "app-server" in sys.argv:
             )
         elif method == "thread/start":
             assert x["params"]["ephemeral"]
+            assert os.getcwd() == x["params"]["cwd"]
+            assert os.path.basename(os.getcwd()).startswith("fpl-codex-work-")
             send({"id": x["id"], "result": {"thread": {"id": "fake-thread"}}})
         elif method == "turn/start":
             send({"id": x["id"], "result": {"turn": {"id": "fake-turn"}}})
@@ -155,6 +178,10 @@ async def configured(tmp_path, monkeypatch):
     binary = fake_cli(tmp_path)
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-home"))
     monkeypatch.setenv("FPL_SECRETS_KEY", "not-for-cli")
+    profile = profile_path(settings.runtime_path)
+    profile.mkdir(mode=0o700, parents=True, exist_ok=True)
+    auth = profile / "auth.json"
+    auth.touch(mode=0o600)
     for prefix in ("codex", "claude"):
         monkeypatch.setattr(settings, f"fpl_code_agents_{prefix}_enabled", True)
         monkeypatch.setattr(settings, f"fpl_code_agents_{prefix}_executable", binary)
@@ -163,6 +190,51 @@ async def configured(tmp_path, monkeypatch):
     # Waiting-for-owner is persisted before transport teardown completes. The
     # server lifespan normally drains these tasks; each test owns a fresh loop.
     await app.state.code_agent_runs.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured")
+async def test_codex_startup_failure_does_not_hide_other_agents(tmp_path, monkeypatch):
+    binary = tmp_path / "broken-codex"
+    binary.write_text(
+        f"#!{sys.executable}\n"
+        "import sys\n"
+        "if '--version' in sys.argv: print('codex-cli 0.166.0')\n"
+        "raise SystemExit(2 if 'app-server' in sys.argv else 0)\n"
+    )
+    binary.chmod(0o700)
+    monkeypatch.setattr(get_settings(), "fpl_code_agents_codex_executable", str(binary))
+    client, _, _, _ = await client_account(admin=True)
+    async with aclosing(client):
+        for response in (
+            await client.get("/v1/code-agents"),
+            await client.post("/v1/code-agents/detect"),
+        ):
+            assert response.status_code == 200
+            agents = {item["id"]: item for item in response.json()["items"]}
+            assert agents["codex"]["status"] == "probe_failed"
+            assert not agents["codex"]["available"]
+            assert agents["codex"]["models"] == []
+            assert agents["claude-code"]["available"]
+    status = await inspect_connection(get_settings(), "codex", discover_models=False)
+    assert not status["available"] and status["status"] == "probe_failed"
+    with pytest.raises(OperationError) as failure:
+        await resolve_connection("codex")
+    assert failure.value.code == "probe_failed"
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("configured")
+async def test_codex_model_discovery_failure_preserves_dialogue_readiness(tmp_path, monkeypatch):
+    binary = Path(fake_cli(tmp_path, "missing-model-list"))
+    binary.write_text(binary.read_text().replace('"data": [{"model":', '"unexpected": [{"model":'))
+    settings = get_settings()
+    monkeypatch.setattr(settings, "fpl_code_agents_codex_executable", str(binary))
+
+    result = await inspect_connection(settings, "codex")
+    assert result["available"] and result["status"] == "ready"
+    assert result["models"] == []
+    assert await resolve_connection("codex") == str(binary)
 
 
 async def wait_run(client, root, identity):

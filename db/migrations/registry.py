@@ -123,6 +123,7 @@ from db.migrations.versions import (
     r0119_retire_model_test_tools,
     r0120_cloud_control,
     r0121_cloud_desktop_sessions,
+    r0122_workbench_projects,
 )
 
 
@@ -571,5 +572,7 @@ MIGRATIONS += (Migration(r0120_cloud_control.MIGRATION_ID, r0120_cloud_control.S
 MIGRATIONS += (
     Migration(r0121_cloud_desktop_sessions.MIGRATION_ID, r0121_cloud_desktop_sessions.SQL),
 )
+
+MIGRATIONS += (Migration(r0122_workbench_projects.MIGRATION_ID, r0122_workbench_projects.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

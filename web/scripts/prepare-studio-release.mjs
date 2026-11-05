@@ -6,6 +6,7 @@ import { gzipSync, brotliCompressSync, constants } from "node:zlib";
 const root = path.resolve(process.env.FPL_WEB_DIST_DIR || "dist");
 const digest = (buffer) => createHash("sha256").update(buffer).digest("hex");
 const files = [];
+const precompress = process.env.FPL_STUDIO_PRECOMPRESS !== "0";
 const publicRoots = new Set([
   "assets",
   "brand",
@@ -43,7 +44,7 @@ function walk(directory) {
       throw new Error(`Unexpected release file: ${name}`);
     const body = fs.readFileSync(file);
     files.push({ path: name, bytes: body.length, sha256: digest(body) });
-    if (/\.(html|js|css|json|svg|txt|wasm)$/.test(name)) {
+    if (precompress && /\.(html|js|css|json|svg|txt|wasm)$/.test(name)) {
       for (const [extension, compressed] of [
         ["gz", gzipSync(body, { level: 9 })],
         [

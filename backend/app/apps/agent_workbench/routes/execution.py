@@ -1,18 +1,26 @@
-from fastapi import APIRouter, HTTPException, Request
+import asyncio
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
-from app.console.cloud_control.access import require_unlocked
+from app.console.cloud_control.access import require_enabled, require_unlocked
 from app.console.governance.code_agents import resolve_connection
 from app.deps import SessionDep, StudioAuth
+from app.runtime.config import get_cloud_settings
 from app.runtime.operation_receipts import OperationError
+from app.runtime.website import require_local_browser
 
-from ..execution import events, storage
+from ..execution import events, projects, storage
 from ..execution.schemas import (
     ApprovalDecision,
     ChatCreate,
     ChatDetail,
     ChatOut,
+    DirectoryListing,
     ExecutionCatalog,
+    ProjectChoice,
+    ProjectDirectory,
     TurnCreate,
     TurnOut,
 )
@@ -32,8 +40,31 @@ async def require_agent(agent_id):
 
 
 @router.get("/execution/catalog", response_model=ExecutionCatalog)
-async def catalog(request: Request, db: SessionDep, principal: StudioAuth):
+async def catalog(request: Request, response: Response, db: SessionDep, principal: StudioAuth):
+    response.headers["Cache-Control"] = "no-store"
     return await storage.catalog(db, principal, local(request))
+
+
+@router.get("/execution/directories", response_model=DirectoryListing)
+async def directories(
+    request: Request,
+    response: Response,
+    principal: StudioAuth,
+    parent: Annotated[str | None, Query(max_length=4096)] = None,
+):
+    require_local_browser(request, principal)
+    require_enabled(principal, local=True)
+    response.headers["Cache-Control"] = "no-store"
+    return await asyncio.to_thread(projects.browse, parent, get_cloud_settings())
+
+
+@router.post("/execution/projects", response_model=ProjectChoice)
+async def register_project(
+    request: Request, body: ProjectDirectory, db: SessionDep, principal: StudioAuth
+):
+    require_local_browser(request, principal)
+    require_enabled(principal, local=True)
+    return await projects.register(db, principal.user_id, body.root)
 
 
 @router.get("/chats", response_model=list[ChatOut])
@@ -45,7 +76,7 @@ async def list_chats(db: SessionDep, principal: StudioAuth):
 async def create_chat(request: Request, body: ChatCreate, db: SessionDep, principal: StudioAuth):
     await require_unlocked(db, principal, local=local(request))
     await require_agent(body.agent_id)
-    return await storage.create_chat(db, principal.user_id, body)
+    return await storage.create_chat(db, principal, body, local=local(request))
 
 
 @router.get("/chats/{chat_id}", response_model=ChatDetail)
@@ -64,7 +95,7 @@ async def send_turn(
     await require_unlocked(db, principal, local=local(request))
     chat = await storage.get_chat(db, principal.user_id, chat_id)
     await require_agent(chat.agent_id)
-    turn, created = await storage.create_turn(db, principal.user_id, chat_id, body)
+    turn, created = await storage.create_turn(db, principal, chat_id, body, local=local(request))
     if created:
         request.app.state.workbench_runs.start(principal, local(request), chat_id, turn.id)
     return turn
@@ -86,7 +117,9 @@ async def decide(
     principal: StudioAuth,
 ):
     await require_unlocked(db, principal, local=local(request))
-    await storage.decide(db, principal.user_id, chat_id, turn_id, approval_id, body.approved)
+    await storage.decide(
+        db, principal, chat_id, turn_id, approval_id, body.approved, local=local(request)
+    )
 
 
 @router.get("/chats/{chat_id}/events", response_class=StreamingResponse)

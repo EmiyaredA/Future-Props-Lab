@@ -158,7 +158,7 @@ test("connection details are collapsed and login commands have copy feedback", a
     within(card).getByRole("button", { name: "复制 Codex 登录命令" }),
   );
   await screen.findByText("登录命令已复制");
-  expect(writeText).toHaveBeenCalledWith("codex login");
+  expect(writeText).toHaveBeenCalledWith("npm run codex:login");
 });
 
 test("selecting an agent shows its connection without carrying over disclosure or copy feedback", async () => {

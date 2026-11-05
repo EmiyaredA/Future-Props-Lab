@@ -1,11 +1,15 @@
 """Real browser sessions across separate trusted sockets, using isolated test data."""
 
+import json
+import os
+import time
 from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
 import pytest
 from fastapi import FastAPI
+from scripts.website import frontend
 from scripts.website.serve import authenticate_browser
 
 from app.api import api_router
@@ -14,7 +18,8 @@ from app.console.governance.provisioning import create_account
 from app.main import app as main_app
 from app.runtime.db import SessionLocal
 from app.runtime.remote_web import RemoteWeb
-from app.runtime.website import WebsiteStaticFiles, WebsiteTransport
+from app.runtime.website import CurrentWebsite, WebsiteTransport, pin_release
+from app.runtime.website_releases import RETIRED_SECONDS
 
 pytestmark = pytest.mark.real_auth
 
@@ -28,7 +33,11 @@ async def website(tmp_path):
         )
     root = tmp_path / "web"
     root.mkdir()
-    (root / "index.html").write_text("<html>website</html>")
+    (root / "index.html").write_text("<html><head></head>website</html>")
+    (root / "build.json").write_text('{"build_id":"first"}')
+    current = tmp_path / "current"
+    current.symlink_to(root, target_is_directory=True)
+    static = CurrentWebsite(current)
     application = FastAPI()
     application.exception_handlers.update(main_app.exception_handlers)
     application.include_router(api_router)
@@ -36,7 +45,7 @@ async def website(tmp_path):
     public = RemoteWeb(
         origin="https://studio.example.test",
         port=28081,
-        static=WebsiteStaticFiles(directory=root, html=True),
+        static=static,
         authenticate=authenticate_browser,
     )
 
@@ -47,10 +56,11 @@ async def website(tmp_path):
         async def __call__(self, inner, scope, receive, send):
             await public(inner, scope, receive, send)
 
-    application.mount("/", WebsiteStaticFiles(directory=root, html=True))
+    application.mount("/", static)
     application.add_middleware(
         WebsiteTransport,
         local_port=9000,
+        frontend_port=3000,
         public_access=PublicIngress(),
         automation_policy=automation_allowed,
     )
@@ -71,7 +81,94 @@ async def website(tmp_path):
         )
         assert response.status_code == 204, response.text
         local.headers["X-CSRF-Token"] = local.cookies["fpl_csrf"]
-        yield SimpleNamespace(local=local, gateway=gateway, app=application, username=username)
+        yield SimpleNamespace(
+            local=local, gateway=gateway, app=application, username=username, current=current
+        )
+
+
+async def test_same_build_switches_on_both_ingresses_without_restart(website):
+    transport = httpx.ASGITransport(app=website.gateway)
+    async with (
+        httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:3000") as local,
+        httpx.AsyncClient(
+            transport=transport,
+            base_url="http://127.0.0.1:28081",
+            headers={"Host": "studio.example.test"},
+        ) as public,
+    ):
+        for client in (local, public):
+            assert (await client.get("/build.json")).json()["build_id"] == "first"
+        root = website.current.parent / "second"
+        root.mkdir()
+        (root / "index.html").write_text("<html><head></head>new page</html>")
+        (root / "build.json").write_text('{"build_id":"second"}')
+        link = root.parent / "next"
+        link.symlink_to(root, target_is_directory=True)
+        link.replace(website.current)
+        for client in (local, public):
+            assert (await client.get("/build.json")).json()["build_id"] == "second"
+            page = await client.get("/management/audit", headers={"Accept": "text/html"})
+            assert page.headers["Cache-Control"] == "no-cache"
+            assert 'name="fpl-build" content="second"' in page.text
+
+
+async def test_old_hashes_resolve_only_while_release_is_retained(website, monkeypatch):
+    current = website.current
+    monkeypatch.setattr(frontend, "CURRENT", current.relative_to(current.parent))
+    retired = current.parent / "retired"
+    retired.mkdir()
+
+    def publish(digit):
+        identity = digit * 64
+        release = current.parent / "builds" / identity
+        asset = f"assets/chunk-{digit * 8}.js"
+        (release / "assets").mkdir(parents=True)
+        (release / asset).write_text(digit)
+        if digit == "a":
+            (release / "assets/unlisted-12345678.js").touch()
+        (release / "index.html").write_text(f'<head></head><script src="/{asset}"></script>')
+        (release / "build.json").write_text(json.dumps({"build_id": identity}))
+        (release / "manifest.json").write_text(
+            json.dumps({"build_id": identity, "files": [{"path": asset}]})
+        )
+        previous = current.resolve()
+        if previous.parent == release.parent:
+            (retired / previous.name).touch()
+        link = current.with_name("next")
+        link.symlink_to(release)
+        link.replace(current)
+        return release, "/" + asset
+
+    first, old_asset = publish("a")
+    transport = httpx.ASGITransport(app=website.gateway)
+    async with (
+        httpx.AsyncClient(transport=transport, base_url="http://127.0.0.1:3000") as local,
+        httpx.AsyncClient(
+            transport=transport,
+            base_url="http://127.0.0.1:28081",
+            headers={"Host": "studio.example.test"},
+        ) as public,
+    ):
+        for client in (local, public):
+            assert old_asset in (await client.get("/")).text
+        second, second_asset = publish("b")
+        for client in (local, public):
+            assert (await client.get(old_asset)).text == "a"
+            assert second_asset in (await client.get("/")).text
+            assert (await client.get("/assets/unlisted-12345678.js")).status_code == 404
+            assert (await client.get("/assets/%2e%2e" + old_asset)).status_code == 404
+        publish("c")
+        publish("d")
+        with pin_release(first):
+            assert (await local.get(old_asset)).status_code == 404
+            frontend.prune(current.parent)
+            assert first.is_dir()
+        past = time.time() - RETIRED_SECONDS - 1
+        os.utime(retired / second.name, (past, past))
+        assert (await public.get(second_asset)).status_code == 404
+        frontend.prune(current.parent)
+        assert not first.exists()
+        assert not second.exists()
 
 
 async def public_client(site):

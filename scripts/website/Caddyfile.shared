@@ -1,0 +1,34 @@
+{
+  admin localhost:2019
+  log default {
+    exclude http.log.error
+  }
+}
+
+studio.{$RC_DOMAIN} {
+  header {
+    -Server
+    X-Content-Type-Options nosniff
+    Referrer-Policy no-referrer
+  }
+  request_header -X-Fpl-Desktop-Token
+  request_header -X-Fpl-Agent-Channel
+  request_header -X-Auth-Request-User
+  request_header -X-Auth-Request-Email
+  request_header -X-Remote-Control-Proxy
+  @program {
+    not path /v1 /v1/* /health /ready
+  }
+  encode @program zstd gzip
+  reverse_proxy 127.0.0.1:28080 {
+    header_up X-Forwarded-Proto https
+    transport http {
+      dial_timeout 3s
+    }
+  }
+  handle_errors {
+    header Cache-Control no-store
+    header Content-Type application/json
+    respond "{\"code\":\"studio_unavailable\",\"detail\":\"本地网站暂时离线，请检查 Mac 后台服务。\"}" {err.status_code}
+  }
+}

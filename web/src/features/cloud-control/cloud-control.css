@@ -493,13 +493,11 @@
   align-items: center;
   gap: 6px;
 }
-.cloud-password-field,
-.cloud-setup-path {
+.cloud-password-field {
   display: flex;
   gap: 6px;
 }
-.cloud-password-field input,
-.cloud-setup-path input {
+.cloud-password-field input {
   flex: 1;
   min-width: 0;
 }
@@ -523,7 +521,7 @@
 .cloud-setup-dialog {
   display: flex;
   flex-direction: column;
-  width: min(920px, calc(100vw - 32px));
+  width: min(520px, calc(100vw - 32px));
   max-height: calc(100dvh - 32px);
   padding: 0;
   overflow: hidden;
@@ -568,25 +566,14 @@
   min-height: 0;
   gap: 0;
 }
-.cloud-setup-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  align-items: stretch;
-  gap: 12px;
-  min-height: 0;
-  padding: 16px 22px;
-  overflow: auto;
-  overscroll-behavior: contain;
-}
 .cloud-setup-section {
   display: flex;
   flex-direction: column;
   min-width: 0;
   gap: 12px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
+  padding: 16px 22px;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .cloud-setup-section-heading {
   display: flex;
@@ -602,7 +589,6 @@
   margin: 0 auto 0 0;
   font-size: 15px;
 }
-.cloud-setup-count,
 .cloud-setup-readiness dd {
   margin: 0;
   padding: 2px 7px;
@@ -701,54 +687,6 @@
   color: var(--muted);
   cursor: default;
 }
-.cloud-setup-search {
-  position: relative;
-  color: var(--muted);
-}
-.cloud-setup-search svg {
-  position: absolute;
-  top: 50%;
-  left: 10px;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-.cloud-setup-search input {
-  width: 100%;
-  padding-inline-start: 32px;
-}
-.cloud-setup-list {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 96px;
-  max-height: 236px;
-  padding: 3px;
-  overflow: auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.cloud-setup-list .cloud-setup-check {
-  padding: 7px 8px;
-  border-radius: 5px;
-}
-.cloud-setup-list .cloud-setup-check:hover {
-  background: var(--surface-soft);
-}
-.cloud-setup-list .cloud-setup-hint {
-  padding: 7px 8px;
-}
-.cloud-setup-list small {
-  display: block;
-  overflow-wrap: anywhere;
-}
-.cloud-setup-list strong {
-  font-size: 13px;
-  font-weight: 600;
-  overflow-wrap: anywhere;
-}
-.cloud-setup-path {
-  margin-top: auto;
-}
 .cloud-setup-footer {
   justify-content: space-between;
   flex-wrap: wrap;
@@ -778,11 +716,8 @@
     max-height: calc(100dvh - 20px);
   }
   .cloud-setup-header,
-  .cloud-setup-grid,
+  .cloud-setup-section,
   .cloud-setup-footer {
     padding: 12px;
-  }
-  .cloud-setup-grid {
-    grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -16,7 +16,7 @@ auth_cookie_secure = false
 
 [website]
 port = 9000
-web_root = ".local/studio-release"
+web_root = ".local/studio-current/current"
 public_enabled = false
 # 迁移工具写入原桌面数据根，服务持锁防止旧客户端误启动。
 legacy_data_root = ""
@@ -86,7 +86,7 @@ codex_user_ids = []
 claude_executable = ""
 claude_user_ids = []
 
-# Shared local CLI connections. Login with the CLI outside FPL; grant usage in Code Agents.
+# Shared local CLI connections. Use npm run codex:login for the FPL app-server profile.
 [code_agents]
 codex_enabled = false
 codex_executable = ""

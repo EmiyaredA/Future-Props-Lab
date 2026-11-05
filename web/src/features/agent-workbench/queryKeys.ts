@@ -2,6 +2,8 @@ export const workbenchKeys = {
   root: (owner: string) => ["agent-workbench", owner] as const,
   executionCatalog: (owner: string) =>
     [...workbenchKeys.root(owner), "execution-catalog"] as const,
+  directories: (owner: string, parent: string | undefined) =>
+    [...workbenchKeys.root(owner), "directories", parent ?? null] as const,
   chats: (owner: string) => [...workbenchKeys.root(owner), "chats"] as const,
   chat: (owner: string, id: string) =>
     [...workbenchKeys.chats(owner), id] as const,

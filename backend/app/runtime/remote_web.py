@@ -105,7 +105,7 @@ class RemoteWeb:
                         else "public, max-age=3600, must-revalidate"
                     )
                     if not path.rsplit("/", 1)[-1].count(".") or path.endswith(
-                        (".html", "/build.json")
+                        (".html", "/build.json", "/manifest.json")
                     ):
                         policy = "no-cache"
                 response_headers.append((b"cache-control", policy.encode()))

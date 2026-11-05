@@ -1,39 +1,17 @@
-"""Project path boundaries shared by configuration and execution."""
+"""Workbench policy for eligible project roots."""
 
 from pathlib import Path
 
 from fastapi import HTTPException
 
 from app.runtime.config import REPO_ROOT
+from app.runtime.safe_paths import visible
 from fpl_config import CONFIG_FILE
-
-PRIVATE_NAMES = {
-    "config.toml",
-    "credentials",
-    "credentials.json",
-    "secrets",
-    "secrets.toml",
-    "secrets.json",
-    "node_modules",
-    "accounts",
-    "profiles",
-    "__pycache__",
-}
-PRIVATE_SUFFIXES = (".pem", ".key", ".sqlite", ".sqlite3", ".db", ".p12")
-
-
-def visible(name):
-    return not (
-        not name
-        or name.startswith(".")
-        or name.casefold() in PRIVATE_NAMES
-        or name.casefold().endswith(PRIVATE_SUFFIXES)
-    )
 
 
 def validate_project_root(root, settings):
     root = Path(root)
-    if not root.is_absolute() or len(root.parts) < 3:
+    if not root.is_absolute() or len(root.parts) < 3 or ".." in root.parts or "\x00" in str(root):
         raise HTTPException(409, "项目目录不可用")
     try:
         resolved = root.resolve(strict=True)
@@ -53,6 +31,7 @@ def validate_project_root(root, settings):
             home / "Desktop",
             home / "Documents",
             home / "Downloads",
+            Path("/private/tmp"),
             Path("/private/var"),
         }
         or any(

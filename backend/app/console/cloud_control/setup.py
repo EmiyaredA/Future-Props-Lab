@@ -2,54 +2,22 @@
 
 import asyncio
 import os
-from contextlib import nullcontext
-from pathlib import Path
 
 import tomlkit
 from fastapi import HTTPException
 
 from app.console.governance.deployment_config import config_bytes, replace_config, revision
-from app.runtime.config import REPO_ROOT, get_cloud_settings
-from app.runtime.ids import new_id
+from app.runtime.config import get_cloud_settings
 from fpl_config import CONFIG_FILE
 
 from .access import enrolled
-from .project_paths import validate_project_root
-from .schemas import CloudSetup, SetupProject
+from .schemas import CloudSetup
 
 
 def assert_setup_account(settings, principal):
     ids = set(filter(None, settings.fpl_cloud_control_admin_user_ids.split(os.pathsep)))
     if ids and principal.user_id not in ids:
         raise HTTPException(403, "该账号未获准管理云控配置")
-
-
-def project_candidates(settings, owner):
-    known = {
-        project.root: project.label
-        for project in settings.fpl_cloud_control_projects.values()
-        if owner in project.user_ids
-    }
-    candidates = {**known, str(REPO_ROOT): known.get(str(REPO_ROOT), REPO_ROOT.name)}
-    with (
-        os.scandir(Path.home() / "Projects")
-        if (Path.home() / "Projects").is_dir()
-        else nullcontext(()) as entries
-    ):
-        for entry in entries:
-            if len(candidates) >= 80:
-                break
-            if entry.is_dir(follow_symlinks=False):
-                candidates.setdefault(entry.path, entry.name[:80])
-    output = []
-    for root, label in sorted(candidates.items(), key=lambda pair: pair[1].casefold()):
-        if root not in known:
-            try:
-                validate_project_root(root, settings)
-            except HTTPException:
-                continue
-        output.append(SetupProject(label=label, root=root, selected=root in known))
-    return output
 
 
 async def probe_port(port, *, vnc=False):
@@ -89,7 +57,6 @@ async def read_setup(db, principal):
             if settings.fpl_cloud_control_vnc_host in {"127.0.0.1", "host.docker.internal"}
             else None
         ),
-        projects=project_candidates(settings, principal.user_id),
     )
 
 
@@ -104,7 +71,6 @@ async def save_setup(db, principal, body):
     ):
         raise HTTPException(409, "请先在本机登记验证器")
     await db.rollback()
-    roots = {str(validate_project_root(root, settings)) for root in body.projects}
     label = body.host_label.strip()
     if not label:
         raise HTTPException(422, "请填写主机名称")
@@ -116,16 +82,6 @@ async def save_setup(db, principal, body):
         cloud["host_label"] = label
         cloud["admin_user_ids"] = list(dict.fromkeys([*cloud.get("admin_user_ids", []), owner]))
         cloud.pop("vnc_password", None)
-        projects = cloud.setdefault("projects", tomlkit.table())
-        for project in projects.values():
-            users = [item for item in project["user_ids"] if item != owner]
-            if project["root"] in roots:
-                users.append(owner)
-                roots.remove(project["root"])
-            if list(project["user_ids"]) != users:
-                project["user_ids"] = users
-        for root in sorted(roots):
-            projects[new_id()] = {"label": Path(root).name[:80], "root": root, "user_ids": [owner]}
 
     await asyncio.to_thread(replace_config, CONFIG_FILE, body.revision, edit)
     return await read_setup(db, principal)

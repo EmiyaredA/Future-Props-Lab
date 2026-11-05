@@ -15,6 +15,8 @@ import { requestDesktop, type CloudStatus } from "./cloudApi";
 import { DesktopIdle, DesktopPassword } from "./DesktopDialogs";
 
 const DESKTOP_START_TIMEOUT_MS = 25_000;
+const PUBLIC_FRAME_DEADLINE_MS = 90_000;
+const IMAGE_DATA = new Set(["blob", "png", "jpeg", "webp"]);
 
 function hasDesktopPixels(display: Display, sample: CanvasRenderingContext2D) {
   const width = display.getWidth();
@@ -123,25 +125,40 @@ export function RemoteDesktop({
     const request = new AbortController();
     let waitingForFrame = false;
     let ready = false;
+    const started = performance.now();
+    let lastImageData = started;
+    const publicDesktop = status?.local === false;
     setState("connecting");
     setError("");
-    const timeout = window.setTimeout(() => {
+    const checkStarting = () => {
       if (version !== connection.current) return;
+      const remaining =
+        Math.min(
+          lastImageData + DESKTOP_START_TIMEOUT_MS,
+          started + PUBLIC_FRAME_DEADLINE_MS,
+        ) - performance.now();
+      if (publicDesktop && remaining > 0) {
+        timeout = window.setTimeout(checkStarting, remaining);
+        return;
+      }
       disconnect();
       setPasswordOpen(false);
       setError(
         waitingForFrame
-          ? "等待桌面画面超时。请确认 Mac 已唤醒且屏幕共享仍开启，再重试。"
+          ? publicDesktop
+            ? "等待公网桌面画面超时，请重新连接。"
+            : "等待桌面画面超时。请确认 Mac 已唤醒且屏幕共享仍开启，再重试。"
           : "连接 Mac 超时。请检查网络与屏幕共享服务，再重试。",
       );
-    }, DESKTOP_START_TIMEOUT_MS);
+    };
+    let timeout = window.setTimeout(checkStarting, DESKTOP_START_TIMEOUT_MS);
     const stopStarting = () => {
       window.clearTimeout(timeout);
       request.abort();
     };
     cleanup.current = stopStarting;
     try {
-      const { Client, Keyboard, Mouse, WebSocketTunnel } =
+      const { Client, Keyboard, Mouse, Tunnel, WebSocketTunnel } =
         await import("@glokon/guacamole-common-js");
       if (version !== connection.current) return;
       await requestDesktop(password, request.signal);
@@ -155,6 +172,14 @@ export function RemoteDesktop({
         window.location.protocol === "https:" ? "wss:" : "ws:";
       const tunnel = new WebSocketTunnel(endpoint.href);
       const remote = new Client(tunnel);
+      if (publicDesktop) {
+        const onInstruction = tunnel.oninstruction;
+        tunnel.oninstruction = (opcode, parameters) => {
+          if (!ready && IMAGE_DATA.has(opcode))
+            lastImageData = performance.now();
+          onInstruction?.(opcode, parameters);
+        };
+      }
       client.current = remote;
       const display = remote.getDisplay();
       const preview = document.createElement("canvas");
@@ -247,6 +272,7 @@ export function RemoteDesktop({
       };
       cleanup.current = () => {
         stopStarting();
+        tunnel.onstatechange = null;
         remote.onerror = null;
         remote.onstatechange = null;
         remote.onsync = null;
@@ -261,23 +287,25 @@ export function RemoteDesktop({
         client.current = null;
         releaseInputs.current = null;
       };
+      const connectionClosed = () => {
+        if (version !== connection.current) return;
+        disconnect();
+        setPasswordOpen(false);
+        setError(
+          ready
+            ? "远程桌面已断开，请重新连接。"
+            : "远程桌面连接在画面显示前中断，请重新连接。",
+        );
+      };
+      tunnel.onstatechange = (next) => {
+        if (next === Tunnel.State.CLOSED) connectionClosed();
+      };
       remote.onstatechange = (next) => {
         if (next === Client.State.CONNECTED) {
           waitingForFrame = true;
           setState("waiting");
         }
-        if (
-          next === Client.State.DISCONNECTED &&
-          version === connection.current
-        ) {
-          disconnect();
-          setPasswordOpen(false);
-          setError(
-            ready
-              ? "远程桌面已断开，请重新连接。"
-              : "连接在画面显示前断开，请重试。",
-          );
-        }
+        if (next === Client.State.DISCONNECTED) connectionClosed();
       };
       remote.onsync = () => {
         // Guacamole marks the connection open before its asynchronous image tasks finish.

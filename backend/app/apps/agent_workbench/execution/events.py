@@ -6,7 +6,7 @@ import json
 from app.runtime.db import SessionLocal
 
 from ..events import valid_auth
-from .storage import get_chat, recent_turns
+from .storage import get_chat, latest_turn_version
 
 
 async def stream(request, principal, chat_id):
@@ -17,8 +17,7 @@ async def stream(request, principal, chat_id):
             if not await valid_auth(db, principal):
                 break
             await get_chat(db, owner, chat_id)
-            turns = await recent_turns(db, owner, chat_id, 1)
-            version = (turns[0].id, turns[0].revision) if turns else ()
+            version = await latest_turn_version(db, owner, chat_id)
         if version != previous:
             previous = version
             yield f"event: change\ndata: {json.dumps(version)}\n\n"

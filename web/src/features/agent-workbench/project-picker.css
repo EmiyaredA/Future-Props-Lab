@@ -1,0 +1,124 @@
+.workbench-project-trigger.btn,
+.workbench-project-list .btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: start;
+}
+.workbench-project-trigger.btn {
+  min-width: 0;
+}
+.workbench-project-trigger > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.workbench-project-trigger svg,
+.workbench-project-list svg {
+  flex: none;
+}
+.workbench-project-overlay {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  background: #0009;
+}
+.workbench-project-dialog {
+  position: fixed;
+  z-index: 81;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(520px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: clamp(14px, 3vw, 22px);
+  overflow: auto;
+}
+.workbench-project-dialog p,
+.workbench-project-dialog h3 {
+  margin: 0;
+}
+.workbench-project-dialog header p,
+.workbench-project-list h3 {
+  margin-top: 5px;
+  font-size: 13px;
+}
+.workbench-project-list {
+  min-height: 0;
+  max-height: min(42dvh, 320px);
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.workbench-project-list .btn {
+  width: 100%;
+  margin-block: 4px;
+  background: var(--surface);
+  white-space: normal;
+}
+.workbench-project-list .btn:hover:not(:disabled) {
+  background: var(--surface-soft);
+}
+.workbench-project-list .btn > span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.workbench-project-list small {
+  display: block;
+  color: var(--muted);
+}
+.workbench-directory-location {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.workbench-directory-location code {
+  overflow-wrap: anywhere;
+}
+.workbench-project-dialog h2 {
+  margin: 0;
+  font-size: 19px;
+}
+.workbench-project-dialog p {
+  color: var(--muted);
+}
+.workbench-project-dialog p[role="alert"] {
+  color: var(--danger);
+}
+.workbench-project-dialog form,
+.workbench-project-dialog label {
+  display: grid;
+  gap: 8px;
+}
+.workbench-project-dialog input {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+}
+.workbench-project-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+.workbench-project-primary.btn {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #18120f;
+}
+.workbench-project-primary.btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 86%, white);
+  border-color: var(--accent-hover);
+  color: #18120f;
+}
