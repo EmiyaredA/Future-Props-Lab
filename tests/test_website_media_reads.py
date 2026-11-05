@@ -58,3 +58,26 @@ async def test_crop_shares_processor_and_rechecks_revoked_session(monkeypatch):
         monkeypatch.setattr(app.state, "media_reads", reads)
         rejected = await client.post(path, json=body, headers=unsafe_headers(client))
         assert rejected.status_code == 401, rejected.text
+
+
+@pytest.mark.real_auth
+async def test_upload_uses_the_current_website_file_limit(monkeypatch):
+    username, temporary = await create_test_account()
+    settings = app.state.settings.model_copy(update={"fpl_visual_asset_max_bytes": 8})
+    monkeypatch.setattr(app.state, "settings", settings)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        await login_and_change_password(client, username, temporary)
+        image = io.BytesIO()
+        Image.new("RGB", (2, 2), "red").save(image, "PNG")
+        rejected = await client.post(
+            "/v1/files",
+            headers=unsafe_headers(client),
+            files={"upload": ("too-large.png", image.getvalue(), "image/png")},
+        )
+        assert rejected.status_code == 413, rejected.text
+        assert rejected.json()["code"] == "file_too_large"
+        files = await client.get("/v1/files")
+        assert files.status_code == 200
+        assert files.json()["items"] == []

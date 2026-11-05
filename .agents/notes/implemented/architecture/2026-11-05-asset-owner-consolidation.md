@@ -33,3 +33,12 @@ Status: implemented
 - 素材、账号布局、媒体读取、文件预览与架构相关回归：148 passed。
 - 23 个服务源码闭包通过；278 个表的服务和模型归属保持一致。
 - OpenAPI stale check、Ruff、Agent Note 与文档保护检查随本批执行。
+
+## Website configuration follow-up
+
+The website file, folder archive, storage upgrade and local reveal adapters
+receive the settings of the serving application. They no longer read a
+process-global configuration when resolving file paths or enforcing limits.
+The website upload regression uses a per-application limit and verifies that a
+rejected upload does not create a library record. The asset and repository
+checks passed 60 tests.

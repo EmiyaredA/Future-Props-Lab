@@ -28,7 +28,6 @@ from studio.assembly.http_dependencies import (
     StudioAuth,
     require_recent_reauthentication,
 )
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import (
     FILE_CONTENT_HEADERS,
@@ -53,12 +52,14 @@ from studio.runtime.files.names import download_filename
 router = APIRouter(tags=["file-management"])
 
 
-def _assets(session: SessionDep, owner_user_id: str) -> VisualAssets:
-    return VisualAssets(session, get_settings(), owner_user_id)
+def _assets(request: Request, session: SessionDep, owner_user_id: str) -> VisualAssets:
+    return VisualAssets(session, request.app.state.settings, owner_user_id)
 
 
-def _library_archive(session: SessionDep, owner_user_id: str) -> LibraryFolderArchive:
-    return LibraryFolderArchive(session, get_settings(), owner_user_id)
+def _library_archive(
+    request: Request, session: SessionDep, owner_user_id: str
+) -> LibraryFolderArchive:
+    return LibraryFolderArchive(session, request.app.state.settings, owner_user_id)
 
 
 def asset_http_error(exc: AssetError) -> HTTPException:
@@ -92,7 +93,7 @@ async def storage_layout_status(
             conflicting_files=state["failed"],
             complete=not state["pending"],
         )
-    return await StorageLayoutMigration(session, get_settings(), owner_user_id).status()
+    return await StorageLayoutMigration(session, request.app.state.settings, owner_user_id).status()
 
 
 @router.post("/file-storage/layout/migrate", response_model=StorageLayoutMigrationOut)
@@ -109,7 +110,7 @@ async def migrate_storage_layout(
         require_recent_reauthentication(principal)
 
         try:
-            state = await migrate_accounts(session, get_settings())
+            state = await migrate_accounts(session, request.app.state.settings)
         except AccountUpgradeBusyError:
             raise HTTPException(
                 409, {"code": "storage_migration_busy", "message": "文件升级正在执行"}
@@ -129,13 +130,16 @@ async def migrate_storage_layout(
             restart_required=not state["pending"],
         )
     try:
-        return await StorageLayoutMigration(session, get_settings(), owner_user_id).migrate(limit)
+        return await StorageLayoutMigration(
+            session, request.app.state.settings, owner_user_id
+        ).migrate(limit)
     except LayoutMigrationBusyError as exc:
         raise HTTPException(409, {"code": "storage_migration_busy", "message": str(exc)}) from None
 
 
 @router.post("/file-storage/open-folder", response_model=ProjectFolderOpenOut)
 async def reveal_library_folder(
+    request: Request,
     principal: StudioAuth,
     owner_user_id: OwnerDep,
 ) -> ProjectFolderOpenOut:
@@ -145,7 +149,9 @@ async def reveal_library_folder(
             {"code": "browser_session_required", "message": "打开文件夹必须使用浏览器 Session"},
         )
     try:
-        await open_library_folder(AssetStorage(get_settings()), owner_user_id=owner_user_id)
+        await open_library_folder(
+            AssetStorage(request.app.state.settings), owner_user_id=owner_user_id
+        )
     except ProjectFolderError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
     return ProjectFolderOpenOut()
@@ -153,12 +159,13 @@ async def reveal_library_folder(
 
 @router.get("/file-library/folder-exports", response_class=FileResponse)
 async def export_library_folder_archive(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     folder_id: str | None = Query(default=None),
 ) -> FileResponse:
     try:
-        exported = await _library_archive(session, owner_user_id).export_subtree(folder_id)
+        exported = await _library_archive(request, session, owner_user_id).export_subtree(folder_id)
     except LibraryFolderArchiveError as exc:
         raise archive_http_error(exc) from None
     return FileResponse(
@@ -171,13 +178,14 @@ async def export_library_folder_archive(
 
 @router.post("/file-library/folder-archive-imports", response_model=LibraryFolderImportOut)
 async def import_library_folder_archive(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     archive: Annotated[UploadFile, File()],
     parent_folder_id: Annotated[str | None, Form()] = None,
 ) -> LibraryFolderImportOut:
     try:
-        return await _library_archive(session, owner_user_id).import_archive(
+        return await _library_archive(request, session, owner_user_id).import_archive(
             archive, parent_folder_id=parent_folder_id or None
         )
     except LibraryFolderArchiveError as exc:
@@ -186,6 +194,7 @@ async def import_library_folder_archive(
 
 @router.post("/file-library/folder-entry-imports", response_model=LibraryFolderImportOut)
 async def import_library_folder_entries(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     files: Annotated[list[UploadFile], File()],
@@ -193,7 +202,7 @@ async def import_library_folder_entries(
     parent_folder_id: Annotated[str | None, Form()] = None,
 ) -> LibraryFolderImportOut:
     try:
-        return await _library_archive(session, owner_user_id).import_entries(
+        return await _library_archive(request, session, owner_user_id).import_entries(
             list(files),
             list(relative_paths),
             parent_folder_id=parent_folder_id or None,
@@ -204,62 +213,67 @@ async def import_library_folder_entries(
 
 @router.post("/file-library/asset-imports", response_model=VisualAssetListOut)
 async def import_project_assets_to_library(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     body: LibraryAssetImportIn,
 ) -> VisualAssetListOut:
     try:
-        return await _assets(session, owner_user_id).import_project_assets_to_library(body)
+        return await _assets(request, session, owner_user_id).import_project_assets_to_library(body)
     except AssetError as exc:
         raise asset_http_error(exc) from None
 
 
 @router.get("/file-folders", response_model=VisualAssetFolderListOut)
 async def list_file_folders(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str | None = None,
 ) -> VisualAssetFolderListOut:
     try:
-        return await _assets(session, owner_user_id).list_folders(project_id)
+        return await _assets(request, session, owner_user_id).list_folders(project_id)
     except AssetError as exc:
         raise asset_http_error(exc) from None
 
 
 @router.post("/file-folders", response_model=VisualAssetFolderOut)
 async def create_file_folder(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     body: VisualAssetFolderCreateIn,
 ) -> VisualAssetFolderOut:
     try:
-        return await _assets(session, owner_user_id).create_folder(body)
+        return await _assets(request, session, owner_user_id).create_folder(body)
     except AssetError as exc:
         raise asset_http_error(exc) from None
 
 
 @router.patch("/file-folders/{folder_id}", response_model=VisualAssetFolderOut)
 async def patch_file_folder(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     folder_id: str,
     body: VisualAssetFolderPatchIn,
 ) -> VisualAssetFolderOut:
     try:
-        return await _assets(session, owner_user_id).patch_folder(folder_id, body)
+        return await _assets(request, session, owner_user_id).patch_folder(folder_id, body)
     except AssetError as exc:
         raise asset_http_error(exc) from None
 
 
 @router.delete("/file-folders/{folder_id}")
 async def delete_file_folder(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     folder_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await _assets(session, owner_user_id).delete_folder(folder_id, expected_revision)
+        await _assets(request, session, owner_user_id).delete_folder(folder_id, expected_revision)
     except AssetError as exc:
         raise asset_http_error(exc) from None
     return {"deleted": True}
@@ -267,6 +281,7 @@ async def delete_file_folder(
 
 @router.get("/files", response_model=VisualAssetListOut)
 async def list_files(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str | None = None,
@@ -278,7 +293,7 @@ async def list_files(
     include_svg: bool = False,
 ) -> VisualAssetListOut:
     try:
-        return await _assets(session, owner_user_id).list_assets(
+        return await _assets(request, session, owner_user_id).list_assets(
             project_id=project_id,
             folder_id=folder_id,
             query=query.strip(),
@@ -293,6 +308,7 @@ async def list_files(
 
 @router.post("/files", response_model=VisualAssetOut)
 async def upload_file(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     upload: Annotated[UploadFile, File()],
@@ -301,7 +317,7 @@ async def upload_file(
     display_name: Annotated[str | None, Form()] = None,
 ) -> VisualAssetOut:
     try:
-        return await _assets(session, owner_user_id).upload(
+        return await _assets(request, session, owner_user_id).upload(
             upload,
             project_id=project_id,
             folder_id=folder_id,
@@ -313,35 +329,39 @@ async def upload_file(
 
 @router.patch("/files/{asset_id}", response_model=VisualAssetOut)
 async def patch_file(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     asset_id: str,
     body: VisualAssetPatchIn,
 ) -> VisualAssetOut:
     try:
-        return await _assets(session, owner_user_id).patch_asset(asset_id, body)
+        return await _assets(request, session, owner_user_id).patch_asset(asset_id, body)
     except AssetError as exc:
         raise asset_http_error(exc) from None
 
 
 @router.delete("/files/{asset_id}")
 async def delete_file(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     asset_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await _assets(session, owner_user_id).delete_asset(asset_id, expected_revision)
+        await _assets(request, session, owner_user_id).delete_asset(asset_id, expected_revision)
     except AssetError as exc:
         raise asset_http_error(exc) from None
     return {"deleted": True}
 
 
 @router.get("/files/{asset_id}/content", responses={200: {"headers": FILE_CONTENT_HEADERS}})
-async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: str) -> FileResponse:
+async def preview_file(
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, asset_id: str
+) -> FileResponse:
     try:
-        row, path = await _assets(session, owner_user_id).content(asset_id)
+        row, path = await _assets(request, session, owner_user_id).content(asset_id)
     except AssetError as exc:
         raise asset_http_error(exc) from None
     return FileResponse(
@@ -368,13 +388,14 @@ async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: s
 
 @router.get("/files/{asset_id}/download")
 async def download_file(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     asset_id: str,
     download_name: str | None = Query(default=None, max_length=255),
 ) -> FileResponse:
     try:
-        row, path = await _assets(session, owner_user_id).content(asset_id)
+        row, path = await _assets(request, session, owner_user_id).content(asset_id)
     except AssetError as exc:
         raise asset_http_error(exc) from None
     return FileResponse(
