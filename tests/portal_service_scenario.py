@@ -1,6 +1,7 @@
 """Fresh Portal process loads no account or workshop database implementation."""
 
 import asyncio
+import hashlib
 import json
 import os
 import sys
@@ -28,9 +29,31 @@ state = Path(os.environ["PORTAL_TEST_ROOT"])
 key = Ed25519PrivateKey.generate()
 catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
 apply(state / "service.db", "portal", MIGRATIONS)
-app = create_app(state_root=state, catalog=catalog, public_key=key.public_key())
 path = "/v1/account/developer-documents"
 canonical = json.loads(Path("web/src/generated/openapi.json").read_text())
+web = state / "web"
+web.mkdir()
+entry = b"<!doctype html><title>Portal release</title>"
+(web / "index.html").write_bytes(entry)
+(web / "build.json").write_text(
+    json.dumps(
+        {
+            "version": 1,
+            "service": "portal",
+            "build_id": "a" * 20,
+            "entry": "index.html",
+            "api_sha256": public_contract(canonical, "portal", catalog),
+            "files": [
+                {
+                    "path": "index.html",
+                    "bytes": len(entry),
+                    "sha256": hashlib.sha256(entry).hexdigest(),
+                }
+            ],
+        }
+    )
+)
+app = create_app(state_root=state, catalog=catalog, public_key=key.public_key(), web_root=web)
 assert public_contract(app.openapi(), "portal", catalog) == public_contract(
     canonical, "portal", catalog
 )
@@ -58,6 +81,15 @@ async def journey():
             transport=httpx.ASGITransport(app), base_url="http://portal"
         ) as client:
             assert (await client.get("/ready")).status_code == 200
+            for alias in ("/docs", "/docs/"):
+                response = await client.head(alias)
+                assert response.status_code == 307
+                assert response.headers["location"] == "/docs.html"
+                assert response.headers["cache-control"] == "no-store"
+            page = await client.get("/docs", follow_redirects=True)
+            assert page.status_code == 200 and page.content == entry
+            assert page.headers["X-Application-Build"] == "a" * 20
+            assert (await client.get("/docs/missing.png")).status_code == 404
             assert (await client.get(path)).status_code == 401
             denied = await client.get(path, headers=headers(api_key=True))
             assert denied.status_code == 403 and denied.json()["code"] == "browser_session_required"

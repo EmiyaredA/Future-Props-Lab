@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.responses import RedirectResponse
 
 from studio.apps.portal.storage.documents import InstalledDocuments
 from studio.apps.portal.storage.migrations.registry import MIGRATIONS
@@ -68,6 +69,12 @@ def create_app(
         release = load_release(web_root, "portal")
         if release.api_sha256 != public_contract(app.openapi(), "portal", catalog):
             raise ValueError("门户页面与服务契约不匹配")
+
+        @app.api_route("/docs", methods=["GET", "HEAD"], include_in_schema=False)
+        @app.api_route("/docs/", methods=["GET", "HEAD"], include_in_schema=False)
+        async def document_center():
+            return RedirectResponse("/docs.html", headers={"Cache-Control": "no-store"})
+
         attach_web(
             app,
             release,
