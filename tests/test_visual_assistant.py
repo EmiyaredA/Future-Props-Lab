@@ -795,6 +795,11 @@ async def test_visual_agent_approval_updates_canvas_and_persists_steps(
             monkeypatch.setattr(approval_broker, "wait", original_wait)
             run_id = str(uuid4())
             approval_id = str(uuid4())
+            registered = asyncio.Event()
+
+            async def mark_registered():
+                registered.set()
+
             pending = asyncio.create_task(
                 approval_broker.wait(
                     run_id=run_id,
@@ -804,17 +809,23 @@ async def test_visual_agent_approval_updates_canvas_and_persists_steps(
                         "conversation_id": conversation["id"],
                     },
                     proposal_canvas_revision=1,
-                    timeout_seconds=1,
+                    timeout_seconds=10,
+                    on_registered=mark_registered,
                 )
             )
-            await asyncio.sleep(0)
-            approved = await client.post(
-                f"/v1/visual-workshop/projects/{project['id']}/conversations/"
-                f"{conversation['id']}/runs/{run_id}/approvals/{approval_id}",
-                json={"decision": "approve", "canvas_revision": 99},
-            )
-            assert approved.status_code == 200
-            assert (await pending).canvas_revision == 1
+            try:
+                await asyncio.wait_for(registered.wait(), timeout=5)
+                approved = await client.post(
+                    f"/v1/visual-workshop/projects/{project['id']}/conversations/"
+                    f"{conversation['id']}/runs/{run_id}/approvals/{approval_id}",
+                    json={"decision": "approve", "canvas_revision": 99},
+                )
+                assert approved.status_code == 200, approved.text
+                assert (await pending).canvas_revision == 1
+            finally:
+                if not pending.done():
+                    pending.cancel()
+                    await asyncio.gather(pending, return_exceptions=True)
             repeated = await client.post(
                 f"/v1/visual-workshop/projects/{project['id']}/conversations/"
                 f"{conversation['id']}/runs/{run_id}/approvals/{approval_id}",
