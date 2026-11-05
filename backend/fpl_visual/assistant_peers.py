@@ -3,7 +3,7 @@
 import httpx
 from pydantic import TypeAdapter
 
-from app.llm.schemas.visual_catalog import AssistantCatalog
+from app.llm.schemas.visual_catalog import AssistantCatalog, GenerationOptionsOut
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.claims import HEADER
@@ -20,7 +20,9 @@ from fpl_runtime.visual_assistant import (
     AttachmentMetadata,
     AttachmentQuery,
     CanvasAssetContextQuery,
+    CanvasAssetSearch,
 )
+from fpl_runtime.visual_catalog import GENERATION_TARGET
 
 from .catalog_http import lookup
 
@@ -109,7 +111,7 @@ class AssistantPeers:
                 "对话素材引用结果未确认", "retention_unconfirmed", 503
             ) from exc
 
-    async def input_query(self, project_id, conversation_id, query, projection, *, exact):
+    async def input_query(self, project_id, conversation_id, query, projection):
         peer = self.request.app.state.capabilities
         try:
             target = query.path(project_id, conversation_id)
@@ -138,14 +140,7 @@ class AssistantPeers:
                 )
             response.raise_for_status()
             rows = projection.validate_json(response.content)
-            actual = [row.id for row in rows]
-            if (
-                actual != sorted(set(actual))
-                or not set(actual).issubset(query.asset_ids)
-                or (exact and actual != query.asset_ids)
-            ):
-                raise ValueError("附件投影不符合已授权的集合")
-            return {row.id: row for row in rows}
+            return rows
         except CapabilityDenied as exc:
             raise ProjectResourceError(
                 "附件授权已撤销", "assistant_asset_denied", exc.status
@@ -154,6 +149,12 @@ class AssistantPeers:
             raise ProjectResourceError(
                 "附件输入暂不可用", "assistant_asset_unavailable", 503
             ) from exc
+
+    async def search_assets(self, project, conversation, query: CanvasAssetSearch):
+        return await self.input_query(project, conversation, query, CONTEXT)
+
+    async def generation_options(self):
+        return await lookup(self.request, GENERATION_TARGET, GenerationOptionsOut)
 
     async def input_assets(self, project_id, conversation_id, asset_ids):
         return await self.project_inputs(
@@ -183,13 +184,16 @@ class AssistantPeers:
         result = {}
         identities = sorted(set(asset_ids))
         for start in range(0, len(identities), batch_size):
-            result.update(
-                await self.input_query(
-                    project_id,
-                    conversation_id,
-                    query(asset_ids=identities[start : start + batch_size]),
-                    projection,
-                    exact=exact,
+            query_batch = query(asset_ids=identities[start : start + batch_size])
+            rows = await self.input_query(project_id, conversation_id, query_batch, projection)
+            actual = [row.id for row in rows]
+            if (
+                actual != sorted(set(actual))
+                or not set(actual).issubset(query_batch.asset_ids)
+                or (exact and actual != query_batch.asset_ids)
+            ):
+                raise ProjectResourceError(
+                    "附件投影不符合已授权的集合", "assistant_asset_unavailable", 503
                 )
-            )
+            result.update((row.id, row) for row in rows)
         return result

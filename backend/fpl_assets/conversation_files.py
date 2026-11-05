@@ -18,7 +18,13 @@ from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from fpl_runtime.visual_assistant import AttachmentContext, AttachmentImage, AttachmentInput
 
-from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
+from .models import (
+    AssetReferencePin,
+    AssetReferenceSet,
+    PreparedAssetPin,
+    ReferenceIntent,
+    VisualProjectFileLink,
+)
 from .scoped_project_files import check_project_scope
 from .visual_snapshot_files import scoped_assets
 
@@ -136,3 +142,31 @@ async def canvas_attachment_context(database, owner, project, identities):
         await check_project_scope(session, "visual", project)
         rows = await scoped_assets(session, project, identities, include_private=False)
         return [AttachmentContext.model_validate(row, from_attributes=True) for row, _link in rows]
+
+
+async def search_canvas_assets(database, owner, project, search):
+    link = VisualProjectFileLink
+    links = select(link.asset_id).where(link.owner_user_id == owner, link.project_id == project)
+    statement = select(VisualAsset).where(
+        VisualAsset.owner_user_id == owner,
+        or_(
+            VisualAsset.project_id == project,
+            VisualAsset.project_id.is_(None)
+            & VisualAsset.galgame_project_id.is_(None)
+            & VisualAsset.video_editor_project_id.is_(None)
+            & VisualAsset.motion_compositor_project_id.is_(None)
+            & VisualAsset.id.in_(links),
+        ),
+    )
+    if search.kind:
+        statement = statement.where(VisualAsset.media_kind == search.kind)
+    if search.query:
+        statement = statement.where(
+            VisualAsset.display_name.contains(search.query, autoescape=True)
+        )
+    statement = statement.order_by(VisualAsset.updated_at.desc(), VisualAsset.id)
+    statement = statement.limit(search.limit)
+    async with database.sessions(info={"owner_user_id": owner}) as session:
+        await check_project_scope(session, "visual", project)
+        rows = await session.scalars(statement)
+        return [AttachmentContext.model_validate(row) for row in rows]

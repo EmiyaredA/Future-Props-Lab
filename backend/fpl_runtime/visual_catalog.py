@@ -3,7 +3,7 @@
 import re
 
 from .library_assets import ID
-from .visual_assistant import MODEL_TARGET, SOURCE
+from .visual_assistant import MODEL_TARGET, SOURCE, message_source
 
 GENERATION_SOURCE = "/v1/visual-workshop/generation-options"
 GENERATION_TARGET = "/_internal/v1/visual-catalog/generation-options"
@@ -45,12 +45,14 @@ def visual_catalog_grant(grant):
         return False
     if grant.target_path == FIXED_ACCEPTANCE_TARGET:
         return acceptance_scheme_source(grant.source_method, grant.source_path)
-    if grant.source_method != "GET":
-        return False
     if grant.target_path == GENERATION_TARGET:
-        return grant.source_path == GENERATION_SOURCE
-    return grant.target_path == ACCEPTANCE_TARGET and bool(
-        ACCEPTANCE_SOURCE.fullmatch(grant.source_path)
+        return (grant.source_method, grant.source_path) == ("GET", GENERATION_SOURCE) or bool(
+            message_source(grant.source_method, grant.source_path)
+        )
+    return (
+        grant.source_method == "GET"
+        and grant.target_path == ACCEPTANCE_TARGET
+        and bool(ACCEPTANCE_SOURCE.fullmatch(grant.source_path))
     )
 
 

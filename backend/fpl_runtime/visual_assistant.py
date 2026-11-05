@@ -1,6 +1,8 @@
 """Narrow grants for the Visual assistant's Models and Assets projections."""
 
 import re
+from hashlib import sha256
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -165,7 +167,21 @@ class CanvasAssetContextQuery(LibraryAssetQuery):
         return f"{INPUT_PREFIX}/{project_id}/{conversation_id}/context/{self.digest}"
 
 
+class CanvasAssetSearch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    kind: Literal["image", "video", "audio", "document"] | None = None
+    query: str = Field(default="", max_length=256)
+    limit: int = Field(default=20, ge=1, le=60)
+
+    @property
+    def digest(self):
+        return sha256(self.model_dump_json().encode()).hexdigest()
+
+    def path(self, project_id, conversation_id):
+        return f"{INPUT_PREFIX}/{project_id}/{conversation_id}/search/{self.digest}"
+
+
 def input_target(method, path):
     return method == "POST" and re.fullmatch(
-        rf"{INPUT_PREFIX}/({ID})/({ID})/(?:context/)?({DIGEST})", path
+        rf"{INPUT_PREFIX}/({ID})/({ID})/(?:(?:context|search)/)?({DIGEST})", path
     )

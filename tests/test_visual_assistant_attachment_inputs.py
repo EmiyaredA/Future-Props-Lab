@@ -13,7 +13,12 @@ from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied
 from fpl_runtime.claims import HEADER
 from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.visual_assistant import INPUT_PURPOSE, SOURCE, AttachmentInputQuery
+from fpl_runtime.visual_assistant import (
+    INPUT_PURPOSE,
+    SOURCE,
+    AttachmentInputQuery,
+    CanvasAssetSearch,
+)
 
 
 async def test_visual_assistant_reads_only_prepared_project_attachments(
@@ -75,6 +80,26 @@ async def test_visual_assistant_reads_only_prepared_project_attachments(
             )
             return await capability.client.post(
                 "http://assets" + target, headers={HEADER: token}, json=query.model_dump()
+            )
+
+        response = await inputs(CanvasAssetSearch())
+        assert response.status_code == 200, response.text
+        assert {row["id"] for row in response.json()} == {image, document}
+        response = await inputs(CanvasAssetSearch(kind="image", query="reference"))
+        assert response.status_code == 200, response.text
+        assert [row["id"] for row in response.json()] == [image]
+        with pytest.raises(CapabilityDenied):
+            await capability.authorize_request(
+                assertion,
+                RequestGrant(
+                    "visual",
+                    INPUT_PURPOSE,
+                    "POST",
+                    source,
+                    "assets",
+                    "POST",
+                    CanvasAssetSearch().path(another, conversation),
+                ),
             )
 
         async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
