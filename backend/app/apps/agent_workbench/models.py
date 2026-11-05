@@ -62,6 +62,7 @@ class WorkbenchEntry(Base):
     parent_id: Mapped[str | None] = mapped_column(String(255))
     tool_name: Mapped[str] = mapped_column(String(255), default="")
     attachments: Mapped[list] = mapped_column(JSON, default=list)
+    presentation: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class WorkbenchCheckpoint(Base):

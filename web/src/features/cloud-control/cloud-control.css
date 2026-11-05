@@ -321,24 +321,6 @@
   color: var(--muted);
   font-size: 11px;
 }
-.cloud-chat .aw-message.is-user {
-  justify-content: flex-end;
-}
-.cloud-chat .is-user .aw-message-avatar {
-  display: none;
-}
-.cloud-chat .is-user .aw-message-content {
-  flex: 0 1 auto;
-  max-width: 88%;
-}
-.cloud-chat .is-user .aw-message-byline {
-  justify-content: flex-end;
-}
-.cloud-chat .is-user .aw-prose {
-  background: var(--accent-soft);
-  border-color: var(--accent-line);
-  border-radius: 10px 0 10px 10px;
-}
 .cloud-composer.aw-composer {
   margin: 10px;
   border-color: var(--border);
@@ -356,6 +338,10 @@
   border-radius: 8px;
   background: var(--surface-soft);
   overflow-wrap: anywhere;
+}
+.cloud-approval > strong {
+  display: block;
+  margin-top: 5px;
 }
 .cloud-approval pre {
   max-height: 260px;

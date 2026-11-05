@@ -3,6 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.capabilities.agents.activity import ActivityDetails
 from app.capabilities.agents.sessions.contracts import AgentId
 
 
@@ -80,6 +81,24 @@ class WorkbenchSessionPage(BaseModel):
     change_cursor: int
 
 
+class HistoryBlock(BaseModel):
+    details: ActivityDetails | None = None
+    kind: str
+    text: str
+    tool_name: str = ""
+    call_id: str | None = None
+    status: str | None = None
+
+
+class HistoryPresentation(BaseModel):
+    details: ActivityDetails | None = None
+    turn_id: str | None = None
+    message_id: str | None = None
+    call_id: str | None = None
+    status: str | None = None
+    blocks: list[HistoryBlock] = Field(default_factory=list)
+
+
 class WorkbenchEntryOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
@@ -92,11 +111,13 @@ class WorkbenchEntryOut(BaseModel):
     parent_id: str | None
     tool_name: str
     attachments: list[dict]
+    presentation: HistoryPresentation = Field(default_factory=HistoryPresentation)
 
 
 class WorkbenchHistory(BaseModel):
     items: list[WorkbenchEntryOut]
     next_cursor: int | None
+    next_cursor_native_id: str | None = None
     change_cursor: int
     branches: list[str] = Field(default_factory=list)
     selected_branch: str | None = None

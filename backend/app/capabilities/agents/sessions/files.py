@@ -18,6 +18,7 @@ MAX_CHUNK = 4 * 1024 * 1024
 MAX_RECORD = 64 * 1024 * 1024
 MAX_EXPANDED = 512 * 1024 * 1024
 NORMALIZATION_VERSION = 1
+PRESENTATION_VERSION = 2
 SKIP_DIRS = {"node_modules", ".git", "skills", "plugins", "cache", "Cache", "attachments"}
 
 
@@ -212,11 +213,11 @@ class JsonlAdapter:
         )
 
     def read_history(self, root, locator, checkpoint):
-        # Only DSH's projected event semantics changed. Other formats retain
-        # their existing offsets instead of reindexing large, unchanged archives.
+        # Re-read changed normalization rules in bounded batches using existing entry identities.
         normalization_version = NORMALIZATION_VERSION if self.agent_id == "dsh" else 0
-        reindex = (
-            bool(checkpoint) and checkpoint.get("normalization_version", 0) != normalization_version
+        reindex = bool(checkpoint) and (
+            checkpoint.get("normalization_version", 0) != normalization_version
+            or checkpoint.get("presentation_version") != PRESENTATION_VERSION
         )
         reading_state = {**checkpoint, "offset": 0, "complete": False} if reindex else checkpoint
         records, updated, reset, complete = read_records(root, locator, reading_state)
@@ -231,7 +232,12 @@ class JsonlAdapter:
         info.archived = info.archived or (
             self.agent_id == "codex" and "archived_sessions" in (Path(root) / locator).parts
         )
-        updated = {**updated, "info": asdict(info), "normalization_version": normalization_version}
+        updated = {
+            **updated,
+            "info": asdict(info),
+            "normalization_version": normalization_version,
+            "presentation_version": PRESENTATION_VERSION,
+        }
         return ReadBatch(info, entries, updated, reset, complete)
 
     def watch(self, root, locator, checkpoint):

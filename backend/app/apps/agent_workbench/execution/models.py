@@ -30,6 +30,7 @@ class WorkbenchChat(Base):
     project_id: Mapped[str]
     agent_id: Mapped[str]
     created_at: Mapped[int]
+    queue_paused: Mapped[bool] = mapped_column(default=False)
 
 
 class WorkbenchTurn(Base):
@@ -46,3 +47,8 @@ class WorkbenchTurn(Base):
     error: Mapped[str | None]
     approvals: Mapped[list[dict]] = mapped_column(JSON)
     revision: Mapped[int]
+    started_at: Mapped[int | None]
+    queued_session_id: Mapped[str | None]
+    queued_local: Mapped[bool] = mapped_column(default=False)
+    activity: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    instructions: Mapped[list[dict]] = mapped_column(JSON, default=list)

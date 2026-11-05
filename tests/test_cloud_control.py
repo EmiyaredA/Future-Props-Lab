@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import io
+import json
 import os
 import sys
 from contextlib import aclosing, asynccontextmanager
@@ -262,7 +263,7 @@ def test_file_tools_reject_private_paths_and_changes_after_approval(tmp_path):
 def test_project_migration_preserves_existing_chat_binding(tmp_path, monkeypatch):
     database = tmp_path / "previous-workbench.db"
     with monkeypatch.context() as patch:
-        patch.setattr(migration_runner, "MIGRATIONS", migration_runner.MIGRATIONS[:-1])
+        patch.setattr(migration_runner, "MIGRATIONS", migration_runner.MIGRATIONS[:-2])
         patch.setattr(migration_runner, "LATEST_MIGRATION_ID", "0121_cloud_desktop_sessions")
         migration_runner.apply_migrations(database)
     with migration_runner.connect_database(database) as connection:
@@ -278,8 +279,8 @@ def test_project_migration_preserves_existing_chat_binding(tmp_path, monkeypatch
                 'turn', 'owner', 'chat', 'client', 1, 'prompt', 'answer', 'completed', '[]', 2
             );
         """)
-    assert migration_runner.apply_migrations(database) == ("0122_workbench_projects", True)
-    assert migration_runner.apply_migrations(database) == ("0122_workbench_projects", False)
+    assert migration_runner.apply_migrations(database) == ("0123_workbench_turns", True)
+    assert migration_runner.apply_migrations(database) == ("0123_workbench_turns", False)
     with migration_runner.connect_database(database) as connection:
         assert connection.execute("SELECT project_id FROM workbench_chats").fetchone() == (
             "legacy-project",
@@ -1016,3 +1017,105 @@ async def test_idle_watcher_rechecks_active_connection_when_preference_changes(m
         if not task.done():
             task.cancel()
             await asyncio.gather(task, return_exceptions=True)
+
+
+async def test_workbench_queue_is_fifo_idempotent_and_pauses_on_stop_or_restart(
+    monkeypatch,
+    tmp_path,
+):
+    client, owner = await admin_client()
+    other, other_id = await admin_client()
+    configure(monkeypatch, owner, other_id)
+    root = tmp_path.resolve()
+    monkeypatch.setattr(
+        get_settings(),
+        "fpl_cloud_control_projects",
+        {"project": CloudProject(label="Queue fixture", root=str(root), user_ids=[owner])},
+    )
+    entered = asyncio.Queue()
+    gates = {}
+    accepted = []
+
+    async def resolve(*_args, **_kwargs):
+        return "/fixture/cli"
+
+    async def dialogue(
+        _agent, _executable, _model, prompt, _tools, _call, emit, *, instructions, **_kwargs
+    ):
+        message = json.loads(prompt.split("\n", 1)[1])["message"]
+        gates[message] = asyncio.Event()
+
+        async def steer(identity, text):
+            accepted.append(text)
+            instructions.acknowledge(identity, "accepted")
+
+        instructions.send = steer
+        await emit("assistant_delta", {"text": "处理中"})
+        await entered.put(message)
+        await gates[message].wait()
+
+    monkeypatch.setattr(execution, "resolve_connection", resolve)
+    monkeypatch.setattr(runner, "resolve_connection", resolve)
+    monkeypatch.setattr(runner, "run_dialogue", dialogue)
+    monkeypatch.setattr(app.state, "workbench_runs", runner.WorkbenchRuns())
+    async with aclosing(client), aclosing(other):
+        await enroll(client)
+        result = await client.post(
+            WORKBENCH + "/chats", json={"project_id": "project", "agent_id": "codex"}
+        )
+        assert result.status_code == 201, result.text
+        path = f"{WORKBENCH}/chats/{result.json()['id']}"
+
+        async def send(text, mode="queue"):
+            response = await client.post(
+                path + "/turns", json={"request_id": text, "text": text, "mode": mode}
+            )
+            assert response.status_code == 202, response.text
+            return response.json()["id"]
+
+        async def started(text):
+            assert await asyncio.wait_for(entered.get(), 5) == text
+
+        first = await send("first", "immediate")
+        await started("first")
+        async with SessionLocal() as db:
+            chat_id = result.json()["id"]
+            before_queue = await storage.latest_turn_version(db, owner, chat_id)
+
+        second = await send("second")
+        assert await send("second") == second
+        removed = await send("remove me")
+        third = await send("third")
+        snapshot = (await client.get(path)).json()
+        assert [item["id"] for item in snapshot["queue"]] == [second, removed, third]
+        assert [turn["id"] for turn in snapshot["turns"]] == [first]
+        assert snapshot["steerable_turn_id"] == first
+
+        instruction = {"request_id": "insert", "text": "keep the existing tests"}
+        endpoint = f"{path}/turns/{first}/instructions"
+        assert (await client.post(endpoint, json=instruction)).json()["status"] == "accepted"
+        assert (await client.post(endpoint, json=instruction)).json()["status"] == "accepted"
+        assert accepted == [instruction["text"]]
+        async with SessionLocal() as db:
+            queued_version = await storage.latest_turn_version(db, owner, chat_id)
+            assert queued_version != before_queue
+            await storage.append_answer(db, (owner, chat_id, first), "more")
+            assert await storage.latest_turn_version(db, owner, chat_id) != queued_version
+        assert (await other.delete(f"{path}/queue/{removed}")).status_code in (403, 404)
+        assert (await client.delete(f"{path}/queue/{removed}")).status_code == 204
+        gates["first"].set()
+        await started("second")
+        assert (await client.delete(f"{path}/queue/{second}")).status_code == 409
+        assert (await client.post(f"{path}/turns/{second}/stop")).status_code == 204
+        snapshot = (await client.get(path)).json()
+        assert snapshot["queue_paused"]
+        assert [item["id"] for item in snapshot["queue"]] == [third]
+        assert snapshot["turns"][-1]["status"] == "cancelled"
+
+        async with SessionLocal() as db:
+            await storage.interrupt_all(db)
+        assert (await client.post(f"{path}/queue/resume")).status_code == 204
+        await started("third")
+        gates["third"].set()
+        await await_turn(client, path, "completed")
+        assert (await client.get(path)).json()["queue"] == []

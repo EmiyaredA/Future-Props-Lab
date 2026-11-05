@@ -157,9 +157,16 @@ async def history(
     before: int | None = Query(default=None, ge=0),
     limit: int = Query(default=50, ge=1, le=100),
     branch: str | None = None,
+    before_native_id: str | None = Query(default=None, max_length=255),
 ):
     return await reading.history(
-        session, owner, session_id, before=before, limit=limit, branch=branch
+        session,
+        owner,
+        session_id,
+        before=before,
+        limit=limit,
+        branch=branch,
+        before_native_id=before_native_id,
     )
 
 

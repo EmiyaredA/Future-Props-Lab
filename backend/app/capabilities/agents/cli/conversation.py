@@ -109,15 +109,17 @@ def verify_codex_policy(value):
         raise CliError("Codex app-server 未通过 FPL 隔离设置校验")
 
 
-async def codex(executable, profile, model, prompt, tools, call_tool, emit, *, watchdog=()):
+async def codex(
+    executable, profile, model, prompt, tools, call_tool, emit, *, watchdog=(), instructions=None
+):
     async with codex_process(executable, profile, model, watchdog=watchdog) as (
         process,
         thread_params,
     ):
-        await codex_turn(process, thread_params, prompt, tools, call_tool, emit)
+        await codex_turn(process, thread_params, prompt, tools, call_tool, emit, instructions)
 
 
-async def codex_turn(process, thread_params, prompt, tools, call_tool, emit):
+async def codex_turn(process, thread_params, prompt, tools, call_tool, emit, instructions=None):
     sequence = 0
     total = 0
 
@@ -135,7 +137,7 @@ async def codex_turn(process, thread_params, prompt, tools, call_tool, emit):
         return json.loads(line)
 
     async def rpc(method, params):
-        nonlocal sequence
+        nonlocal sequence, completed
         sequence += 1
         request_id = sequence
         await send({"id": request_id, "method": method, "params": params})
@@ -145,54 +147,76 @@ async def codex_turn(process, thread_params, prompt, tools, call_tool, emit):
                 if "error" in item:
                     raise CliError("Codex 协议请求失败，请检查 CLI 版本与连接")
                 return item.get("result", {})
-            await event(item)
+            completed = await event(item) or completed
+
+    async def handle_tool(item, params):
+        name, arguments = params.get("tool", ""), params.get("arguments", {})
+        call_id = str(params.get("callId", item["id"]))
+        try:
+            result = await call_tool(name, arguments)
+            content = [{"type": "inputText", "text": json.dumps(result, ensure_ascii=False)}]
+            if isinstance(result, list):
+                content = [
+                    {
+                        "type": "inputImage",
+                        "imageUrl": f"data:{part['mimeType']};base64,{part['data']}",
+                    }
+                    if part.get("type") == "image"
+                    else {"type": "inputText", "text": part.get("text", "")}
+                    for part in result
+                ]
+            response = {
+                "contentItems": [
+                    {"type": "inputText", "text": json.dumps(result, ensure_ascii=False)}
+                ],
+                "success": True,
+            }
+            response["contentItems"] = content
+        except Exception as exc:
+            result = {"error": str(exc)[:1000]}
+            response = {
+                "contentItems": [{"type": "inputText", "text": str(exc)[:1000]}],
+                "success": False,
+            }
+        await emit(
+            "tool_result",
+            {
+                "tool_call_id": call_id,
+                "name": name,
+                "status": "completed" if response["success"] else "failed",
+                "result": recorded_result(result),
+            },
+        )
+        await send({"id": item["id"], "result": response})
 
     async def event(item):
         method, params = item.get("method"), item.get("params", {})
         if method == "item/agentMessage/delta":
             await emit("assistant_delta", {"text": params.get("delta", "")})
         elif method == "item/tool/call" and "id" in item:
-            name, arguments = params.get("tool", ""), params.get("arguments", {})
-            call_id = str(params.get("callId", item["id"]))
             await emit(
-                "tool_call", {"tool_call_id": call_id, "tool_name": name, "arguments": arguments}
-            )
-            try:
-                result = await call_tool(name, arguments)
-                content = [{"type": "inputText", "text": json.dumps(result, ensure_ascii=False)}]
-                if isinstance(result, list):
-                    content = [
-                        {
-                            "type": "inputImage",
-                            "imageUrl": f"data:{part['mimeType']};base64,{part['data']}",
-                        }
-                        if part.get("type") == "image"
-                        else {"type": "inputText", "text": part.get("text", "")}
-                        for part in result
-                    ]
-                response = {
-                    "contentItems": [
-                        {"type": "inputText", "text": json.dumps(result, ensure_ascii=False)}
-                    ],
-                    "success": True,
-                }
-                response["contentItems"] = content
-            except Exception as exc:
-                result = {"error": str(exc)[:1000]}
-                response = {
-                    "contentItems": [{"type": "inputText", "text": str(exc)[:1000]}],
-                    "success": False,
-                }
-            await emit(
-                "tool_result",
+                "tool_call",
                 {
-                    "tool_call_id": call_id,
-                    "name": name,
-                    "status": "completed" if response["success"] else "failed",
-                    "result": recorded_result(result),
+                    "tool_call_id": str(params.get("callId", item["id"])),
+                    "tool_name": params.get("tool", ""),
+                    "arguments": params.get("arguments", {}),
                 },
             )
-            await send({"id": item["id"], "result": response})
+            task = asyncio.create_task(run_tool(item, params))
+            tool_tasks.add(task)
+            task.add_done_callback(tool_done)
+        elif method == "turn/completed":
+            if instructions:
+                instructions.close()
+            return params.get("turn", {}).get("status") or "failed"
+        elif not method and instructions and isinstance(item.get("id"), str):
+            if "error" in item:
+                status = "rejected"
+            else:
+                status = (
+                    "accepted" if item.get("result", {}).get("turnId") == turn_id else "unknown"
+                )
+            instructions.acknowledge(item["id"], status)
         elif "id" in item and method:
             # Native command/file/credential approvals never widen the declared tool surface.
             await send(
@@ -202,21 +226,62 @@ async def codex_turn(process, thread_params, prompt, tools, call_tool, emit):
                 }
             )
 
-    await initialize_codex(rpc, send)
-    thread_params["dynamicTools"] = [
-        {"name": t["name"], "description": t["description"], "inputSchema": t["inputSchema"]}
-        for t in tools
-    ]
-    thread = await rpc("thread/start", thread_params)
-    thread_id = thread["thread"]["id"]
-    await rpc("turn/start", {"threadId": thread_id, "input": [{"type": "text", "text": prompt}]})
-    while True:
-        item = await receive()
-        if item.get("method") == "turn/completed":
-            if item.get("params", {}).get("turn", {}).get("status") != "completed":
-                raise CliError("Codex 任务未完成")
-            return
-        await event(item)
+    async def run_tool(item, params):
+        async with tool_lock:
+            await handle_tool(item, params)
+
+    def tool_done(task):
+        tool_tasks.discard(task)
+        if not task.cancelled() and task.exception():
+            # A failed tool response makes this transport unusable.
+            process.stdin.close()
+
+    tool_lock = asyncio.Lock()
+    tool_tasks = set()
+    turn_id = None
+    completed = None
+
+    try:
+        await initialize_codex(rpc, send)
+        thread_params["dynamicTools"] = [
+            {"name": t["name"], "description": t["description"], "inputSchema": t["inputSchema"]}
+            for t in tools
+        ]
+        thread = await rpc("thread/start", thread_params)
+        thread_id = thread["thread"]["id"]
+        started = await rpc(
+            "turn/start", {"threadId": thread_id, "input": [{"type": "text", "text": prompt}]}
+        )
+        turn_id = started.get("turn", {}).get("id")
+
+        async def steer(identity, message):
+            try:
+                await send(
+                    {
+                        "id": identity,
+                        "method": "turn/steer",
+                        "params": {
+                            "threadId": thread_id,
+                            "expectedTurnId": turn_id,
+                            "input": [{"type": "text", "text": message}],
+                        },
+                    }
+                )
+            except CliError as exc:
+                raise OSError from exc
+
+        if instructions and turn_id and completed is None:
+            instructions.send = steer
+        while completed is None:
+            completed = await event(await receive())
+        if completed != "completed":
+            raise CliError("Codex 任务未完成")
+    finally:
+        if instructions:
+            instructions.close()
+        for task in tool_tasks:
+            task.cancel()
+        await asyncio.gather(*tool_tasks, return_exceptions=True)
 
 
 async def initialize_codex(rpc, send):
