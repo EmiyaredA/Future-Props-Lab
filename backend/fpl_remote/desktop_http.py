@@ -144,17 +144,18 @@ async def desktop_socket(socket: WebSocket):
 @router.get("/settings", response_model=CloudSetup)
 async def settings_view(request: Request, principal: StudioAuth):
     require_local_browser(request, principal)
-    return await require_setup(request).run(request, principal.user_id)
+    return await setup_snapshot(request, principal.user_id)
 
 
 @router.put("/settings", response_model=CloudSetup)
 async def settings_save(request: Request, body: CloudSetupUpdate, principal: StudioAuth):
     require_local_browser(request, principal)
-    return await require_setup(request).run(request, principal.user_id, body)
+    return await setup_snapshot(request, principal.user_id, body)
 
 
-def require_setup(request):
+async def setup_snapshot(request, owner, body=None):
     setup = request.app.state.cloud_setup
     if setup is None:
         raise HTTPException(503, "云控配置协调器尚未就绪")
-    return setup
+    value = await setup.run(request, owner, body)
+    return value.model_copy(update={"guacd_ready": await request.app.state.guacd_ready()})

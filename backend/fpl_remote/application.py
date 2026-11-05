@@ -72,9 +72,20 @@ def create_app(
             options.guacd_host, options.fpl_cloud_control_guacd_port
         )
 
+    connector = connect_upstream or dial
     desktop = DesktopConnection(
-        settings=lambda: settings, access=current_access, connect_upstream=connect_upstream or dial
+        settings=lambda: settings, access=current_access, connect_upstream=connector
     )
+
+    async def guacd_ready():
+        try:
+            async with asyncio.timeout(0.75):
+                _reader, writer = await connector(settings)
+                writer.close()
+                await writer.wait_closed()
+        except (OSError, TimeoutError):
+            return False
+        return True
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -95,6 +106,7 @@ def create_app(
     app.state.cloud_desktop = desktop
     app.state.remote_settings = settings
     app.state.cloud_projection = cloud_projection
+    app.state.guacd_ready = guacd_ready
     app.state.cloud_setup = SetupHost(database, identity) if setup_options else None
     app.include_router(setup_native_router)
     app.add_middleware(NativeIngress, options=setup_options, state_key="remote_worker")
@@ -130,6 +142,8 @@ def create_app(
             cloud_projection.read()
         except ConfigurationError:
             raise HTTPException(503, "remote_cloud_projection_unavailable") from None
+        if not await guacd_ready():
+            raise HTTPException(503, "remote_guacamole_unavailable")
         async with database.sessions() as db:
             await db.execute(text("SELECT 1"))
         return {"status": "ready", "service": "remote"}

@@ -5105,6 +5105,12 @@
       "model": "RemoteSetupJob"
     },
     {
+      "table": "remote_desktop_import_receipts",
+      "service": "remote",
+      "module": "fpl_remote.models",
+      "model": "DesktopPreferenceImportReceipt"
+    },
+    {
       "table": "motion_render_jobs",
       "service": "rendering",
       "module": "fpl_rendering.models",

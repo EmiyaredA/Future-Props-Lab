@@ -399,6 +399,10 @@ uv run python -m fpl_host.cloud_setup_worker \
 
 worker 将根目录下的 `identity`、`remote`、`committed` 分别供 Compose 挂载。只读投影与原配置写入均由 Mac 协调。Remote 就绪需要可读的已提交版本和在轮询的 worker。隔离测试使用合成 Guacamole 对端及隔离账号。正式 Mac 屏幕共享和数据验收由整站切换门禁核验。
 
+Guacamole 伴随进程使用 `deploy/remote-guacd.compose.yaml`。将已验收且已导入本机的带 Mac 认证适配镜像摘要指定为 `FPL_GUACD_IMAGE`。该进程仅在私网接受 Remote 请求，VNC 目标仍由部署配置预设。Remote 就绪检查同时探测实际 Guacamole TCP 对端。
+
+隔离运行 `fpl-remote-native-0b53131db1` 使用真实 Guacamole 与受密码保护的 RFB 夹具，经 Chromium 验证云控设置、画面传输、390px 页面及 Remote／Identity 重启后的设置读回。验收镜像为 `mac-browser-remote-guacd@sha256:a7445df8bcabb9f3d19164f71baac96b0e859cdd36b1bc8f3a62df64a63c87aa`。
+
 四容器运行 `fpl-remote-protocol-95f841c9ca` 经真实 Gateway 建立桌面 WebSocket，验证了单次票据、注销后关流及 Remote 重启后偏好读回。镜像 `fpl/remote:09ba3729bd9555e58b81` 包含独立锁定的 WebSocket 依赖。Guacamole TCP 对端使用合成协议夹具。
 
 历史桌面空闲偏好使用同一份已封存源和迁移计划，目标为已初始化且停止运行的 Remote 状态目录。

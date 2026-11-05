@@ -85,9 +85,14 @@ async def test_remote_settings_commit_live_scopes_and_replay_receipt(
 
     root = tmp_path / "remote"
     apply(root / "service.db", "remote", MIGRATIONS)
+    guacd = await asyncio.start_server(lambda _reader, writer: writer.close(), "127.0.0.1", 0)
     app = create_app(
         state_root=root,
-        settings=RemoteSettings(ORIGIN),
+        settings=RemoteSettings(
+            ORIGIN,
+            guacd_host="127.0.0.1",
+            fpl_cloud_control_guacd_port=guacd.sockets[0].getsockname()[1],
+        ),
         public_key=case.key.public_key(),
         credential=CREDENTIAL,
         catalog=CATALOG,
@@ -103,6 +108,7 @@ async def test_remote_settings_commit_live_scopes_and_replay_receipt(
     )
     worker = CloudSetupWorker(transport, config, projections, host)
     async with (
+        guacd,
         app.router.lifespan_context(app),
         transport.client,
         httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as api,
@@ -146,6 +152,7 @@ async def test_remote_settings_commit_live_scopes_and_replay_receipt(
 
         read = await submit("GET")
         assert read.status_code == 200 and read.json()["host_label"] == "Before", read.text
+        assert read.json()["guacd_ready"]
         body = {"revision": read.json()["revision"], "host_label": "After", "public_enabled": False}
         requires_factor = await submit("PUT", json={**body, "public_enabled": True})
         assert requires_factor.status_code == 409

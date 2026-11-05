@@ -1,0 +1,20 @@
+[project]
+name = "future-props-lab-remote-image"
+version = "0.1.0"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+  "aiosqlite==0.22.1",
+  "cryptography==50.0.0",
+  "fastapi==0.141.1",
+  "httpx==0.28.1",
+  "python-multipart==0.0.32",
+  "pillow==12.3.0",
+  "pydantic-settings==2.14.0",
+  "pyjwt==2.13.0",
+  "sqlalchemy[asyncio]==2.0.51",
+  "uvicorn==0.52.1",
+  "websockets==16.1.1",
+]
+
+[tool.uv]
+package = false

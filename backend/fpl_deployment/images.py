@@ -472,7 +472,9 @@ def source_closure(root: Path, service):
 def prepare_image(root: Path, service: str, *, web_release=None):
     sources = source_closure(root, service)
     definition = (
-        root / "deploy/images" / ("owned-http" if service in OWNED_HTTP_IMAGES else service)
+        root
+        / "deploy/images"
+        / ("owned-http" if service in OWNED_HTTP_IMAGES and service != "remote" else service)
     )
     generated = subprocess.run(
         [
