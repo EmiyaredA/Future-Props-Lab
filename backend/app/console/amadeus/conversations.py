@@ -30,7 +30,7 @@ from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import utc_now
 
 
-def _digest(value: dict) -> str:
+def action_arguments_sha256(value: dict) -> str:
     return hashlib.sha256(
         json.dumps(value, ensure_ascii=False, sort_keys=True).encode()
     ).hexdigest()
@@ -269,7 +269,7 @@ class Conversations:
             user_id=self.principal.user_id,
             tool_name=body.tool_name,
             arguments_json=body.arguments,
-            arguments_sha256=_digest(body.arguments),
+            arguments_sha256=action_arguments_sha256(body.arguments),
             status="pending",
             run_id=body.run_id,
         )

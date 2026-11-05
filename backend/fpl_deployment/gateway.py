@@ -317,6 +317,7 @@ def render_gateway(
             if service not in {
                 "agents",
                 "agent-runtime",
+                "amadeus",
                 "management",
                 "models",
                 "integrations",

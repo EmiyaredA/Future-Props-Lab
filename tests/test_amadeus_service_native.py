@@ -1,0 +1,148 @@
+"""Check that Amadeus Finder requests retain only scoped Mac action receipts."""
+
+import asyncio
+from dataclasses import replace
+
+import httpx
+import pytest
+from sqlalchemy import select
+from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
+from tests.test_independent_project_catalog import authorize
+
+from fpl_amadeus.application import create_app
+from fpl_amadeus.migrations.registry import MIGRATIONS
+from fpl_amadeus.models import AmadeusNativeJob
+from fpl_host.amadeus_worker import AmadeusWorker
+from fpl_host.transport import NativeTransport
+from fpl_runtime.claims import HEADER, issue_context, verify_context
+from fpl_runtime.migrations import apply
+from fpl_runtime.native_ingress import NativeWorkerOptions
+from fpl_runtime.native_protocol import NativeLease
+
+CONVERSATIONS = "/v1/amadeus/conversations"
+CREDENTIAL = "isolated-amadeus-service-token-" * 2
+INGRESS = "isolated-amadeus-ingress-token-" * 2
+WORKER = "isolated-amadeus-mac-token-" * 2
+
+
+class MacBridge(httpx.AsyncBaseTransport):
+    def __init__(self, app):
+        self.transport = httpx.ASGITransport(app=app)
+        self.lose_receipt = True
+
+    async def handle_async_request(self, request):
+        request.url = request.url.copy_with(path=request.url.path.removeprefix("/amadeus"))
+        request.headers["X-Fpl-Native-Ingress"] = INGRESS
+        reply = await self.transport.handle_async_request(request)
+        if self.lose_receipt and request.url.path.endswith("/receipt"):
+            self.lose_receipt = False
+            await reply.aclose()
+            raise httpx.ReadError("isolated lost receipt acknowledgement", request=request)
+        return reply
+
+
+async def wait_for_intent(app):
+    async with asyncio.timeout(2):
+        while not app.state.native_host.requests:
+            await asyncio.sleep(0.01)
+
+
+async def test_finder_live_scope_receipt_replay_and_sandbox_probe(
+    scenario,  # noqa: F811
+    tmp_path,
+):
+    case = scenario
+    root = tmp_path / "amadeus"
+    root.mkdir()
+    apply(root / "service.db", "amadeus", MIGRATIONS)
+    case.identity.state.identity_options["service_credentials"]["amadeus"] = CREDENTIAL
+    app = create_app(
+        state_root=root,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        credential=CREDENTIAL,
+        transport=case.mesh,
+        native_options=NativeWorkerOptions(
+            ingress=INGRESS, identity_credential=CREDENTIAL, workers={"mac": WORKER}
+        ),
+    )
+    transport = NativeTransport(
+        service="amadeus",
+        base_url="http://127.0.0.1:29090/amadeus",
+        credential=WORKER,
+        transport=MacBridge(app),
+    )
+    opened = []
+    worker = AmadeusWorker(
+        transport,
+        root,
+        tmp_path / "mac",
+        launch=lambda command, **_: opened.append(command),
+        probe=lambda: True,
+    )
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://amadeus") as api,
+    ):
+        created = await api.post(
+            CONVERSATIONS, headers=await authorize(case, "amadeus", "POST", CONVERSATIONS)
+        )
+        assert created.status_code == 200, created.text
+        identity = created.json()["id"]
+        path = f"{CONVERSATIONS}/{identity}/files/open-folder"
+        proof = await authorize(case, "amadeus", "POST", path)
+        actor = verify_context(
+            proof[HEADER],
+            service="amadeus",
+            method="POST",
+            path=path,
+            public_key=case.key.public_key(),
+        )
+        public_proof = issue_context(
+            replace(actor, local=False),
+            service="amadeus",
+            method="POST",
+            path=path,
+            private_key=case.key,
+            key_id="test",
+        )
+        assert (await api.post(path, headers={HEADER: public_proof})).status_code == 403
+        probe = "/v1/amadeus/script-capability"
+        probe_proof = await authorize(case, "amadeus", "GET", probe)
+        assert (await api.get(probe, headers=probe_proof)).json() == {"available": False}
+        assert (await api.post(path, headers=proof)).status_code == 503
+        assert (
+            await api.post("/_native/v1/claim", json={"sandbox_available": True})
+        ).status_code == 403
+        await transport.post("claim", {"wait_seconds": 0, "sandbox_available": True})
+        assert (await api.get(probe, headers=probe_proof)).json() == {"available": True}
+
+        opening = asyncio.create_task(api.post(path, headers=proof))
+        await wait_for_intent(app)
+        with pytest.raises(httpx.ReadError):
+            await worker.poll_once()
+        assert (await opening).json() == {"opened": True}
+        await worker.poll_once()
+        assert opened == [
+            ["/usr/bin/open", str(root / "accounts" / case.viewer / "amadeus" / identity)]
+        ]
+        async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
+            row = await session.scalar(select(AmadeusNativeJob))
+            assert row.payload == {"conversation_id": identity}
+            assert row.result == {"opened": True} and row.status == "completed"
+
+        opening = asyncio.create_task(api.post(path, headers=proof))
+        await wait_for_intent(app)
+        claimed = await transport.post("claim", {"wait_seconds": 1, "sandbox_available": True})
+        lease = NativeLease.model_validate(claimed["lease"])
+        logout = await case.browser.post(
+            "/v1/auth/logout",
+            headers={"X-CSRF-Token": case.csrf, "Origin": "http://127.0.0.1:19000"},
+        )
+        assert logout.status_code == 204
+        denied = await worker.receipts.execute_async(lease, worker.execute)
+        assert denied.status == "failed" and denied.error_code == "authorization_revoked"
+        await worker.deliver(lease, denied)
+        assert (await opening).status_code == 403
+        assert len(opened) == 1
+    await transport.close()

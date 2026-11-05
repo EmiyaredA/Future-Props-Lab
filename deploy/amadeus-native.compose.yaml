@@ -1,0 +1,10 @@
+# Mount only the Amadeus worker protocol credentials.
+services:
+  amadeus:
+    volumes:
+      - type: bind
+        source: ${FPL_AMADEUS_NATIVE_CONFIG:?Select isolated Amadeus native credentials}
+        target: /run/fpl/amadeus-native.json
+        read_only: true
+        bind:
+          create_host_path: false

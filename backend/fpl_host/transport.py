@@ -19,6 +19,7 @@ class NativeTransport:
         if service not in {
             "agents",
             "agent-runtime",
+            "amadeus",
             "management",
             "models",
             "integrations",

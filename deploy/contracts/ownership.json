@@ -4541,6 +4541,12 @@
       "model": "NativeWorkerSeen"
     },
     {
+      "table": "amadeus_native_jobs",
+      "service": "amadeus",
+      "module": "fpl_amadeus.models",
+      "model": "AmadeusNativeJob"
+    },
+    {
       "table": "annotation_reference_mutations",
       "service": "annotation",
       "module": "fpl_annotation.models",

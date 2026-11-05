@@ -29,7 +29,10 @@ from app.console.amadeus.schemas import (
     RunFinishIn,
     RunOut,
 )
+from app.runtime.operation_receipts import OperationError
 from fpl_runtime.http_dependencies import SessionDep, StudioAuth
+
+from .action_records import ActionRecords
 
 router = APIRouter(prefix="/v1/amadeus", tags=["amadeus"])
 
@@ -150,6 +153,8 @@ async def delete_conversation(
 ) -> dict[str, bool]:
     app = request.app.state
     async with app.file_locks.setdefault((principal.user_id, conversation_id), asyncio.Lock()):
+        if await ActionRecords(session, principal, conversation_id).active():
+            raise OperationError("请先停止正在执行的操作", "action_running", 409)
         await Conversations(session, principal, files_root=app.database.root).delete(
             conversation_id, expected_revision
         )
