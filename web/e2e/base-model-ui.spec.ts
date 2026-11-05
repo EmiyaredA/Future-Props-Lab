@@ -1,13 +1,15 @@
 import { expect, test } from "@playwright/test";
 
-test("sidebar chevron points inward when collapsed and custom select chevrons stay centered", async ({
+test("secondary navigation can be collapsed and custom select chevrons stay centered", async ({
   page,
 }) => {
   await page.goto("/model-call-logs");
   await expect(
     page.getByRole("heading", { name: "模型调用日志" }),
   ).toBeVisible();
-  await expect(page.locator(".studio-sidebar")).toHaveCSS("width", "272px");
+  const sidebar = page.locator(".studio-sidebar");
+  await expect(sidebar).toHaveClass(/has-secondary/);
+  const expandedWidth = (await sidebar.boundingBox())!.width;
   await expect(page.locator("select")).toHaveCount(0);
 
   const offsets = await page.locator(".select-chevron").evaluateAll((nodes) =>
@@ -22,24 +24,18 @@ test("sidebar chevron points inward when collapsed and custom select chevrons st
   expect(offsets.length).toBeGreaterThan(3);
   expect(offsets.every((offset) => Math.abs(offset) < 0.6)).toBe(true);
 
-  const navOffset = await page.locator(".nav-chevron").evaluate((node) => {
-    const rect = node.getBoundingClientRect();
-    const parent = node.parentElement?.getBoundingClientRect();
-    return parent
-      ? rect.top + rect.height / 2 - (parent.top + parent.height / 2)
-      : 99;
+  const submenu = page.getByRole("navigation", {
+    name: "AI 能力子菜单",
+    exact: true,
   });
-  expect(Math.abs(navOffset)).toBeLessThan(0.6);
-
-  await expect(page.locator(".nav-chevron")).toHaveCSS(
-    "transform",
-    "matrix(0, 1, -1, 0, 0, 0)",
-  );
-  await page.getByRole("button", { name: "AI 能力" }).click();
-  await expect(page.locator(".nav-chevron")).toHaveCSS(
-    "transform",
-    "matrix(-1, 0, 0, -1, 0, 0)",
-  );
+  await expect(submenu).toBeVisible();
+  await page.getByRole("button", { name: "收起二级导航" }).press("Enter");
+  await expect(submenu).toBeHidden();
+  expect((await sidebar.boundingBox())!.width).toBeLessThan(expandedWidth);
+  await page.getByRole("button", { name: "展开二级导航" }).press("Enter");
+  await expect(submenu).toBeVisible();
+  expect((await sidebar.boundingBox())!.width).toBe(expandedWidth);
+  await expect(page).toHaveURL(/\/model-call-logs$/);
 });
 
 test("model test workspace keeps panels readable on desktop and narrow screens", async ({

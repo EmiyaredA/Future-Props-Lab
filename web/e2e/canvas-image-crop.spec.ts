@@ -172,7 +172,11 @@ test("裁剪新增、保存重试、连续截取、撤销重做及刷新", async
   await openCrop(page);
   await page.getByRole("button", { name: "裁剪并添加到画布" }).click();
   await expect(page.getByRole("dialog")).not.toBeVisible();
-  expect(state.getCanvas().nodes[2].position).toEqual({ x: 468, y: 362 });
+  const [, firstCrop, secondCrop] = state.getCanvas().nodes;
+  expect(secondCrop.position).toEqual({
+    x: firstCrop.position.x,
+    y: firstCrop.position.y + 214 + 32,
+  });
   expect(state.getCanvas().edges).toEqual([]);
   await page.reload();
   await expect(page.locator(".canvas-node.image")).toHaveCount(3);
