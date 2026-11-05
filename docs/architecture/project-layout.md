@@ -156,7 +156,7 @@ Models 的 `backend/fpl_models/catalog_migration.py` 按账号传输历史目录
 Assets 的 `backend/fpl_assets/migration_application.py` 装配文件夹、素材记录及原件的回环维护入口。`backend/fpl_assets/library_reads.py` 提供账号文件库查询，音频标注通过专用签名协议读取元数据和对应修订的音频，并为项目准备素材引用。`backend/fpl_annotation/` 装配自有项目、文档、波形和回执，兼容应用通过同一业务入口绑定旧站数据端口。
 面试助手的 `backend/fpl_interview/` 独立装配签名接口、场次数据库及私有材料目录。兼容站仍由现有 Codex runner 执行。独立面试助手通过 `backend/fpl_host/interview_worker.py` 领取固定准备任务，并通过 Identity 复核账号权限。
 导演台的 `backend/fpl_director/migration_application.py` 装配回环维护入口，按账号迁移原项目、动作及其文件。
-Remote 的 `backend/fpl_remote/` 拥有桌面偏好、短期连接票据与 WebSocket。
+Remote 的 `backend/fpl_remote/` 拥有桌面偏好、短期连接票据与 WebSocket。 `fpl_host/cloud_projection.py` 按归属发布 Mac 云控策略，`fpl_config/cloud_projection.py` 核对当前提交和服务自己的 TOML 摘要。
 共享 `app/console/cloud_control/desktop_bridge.py` 负责 Guacamole 协议，旧站与 Remote 分别注入自己的授权和连接端口。历史偏好由 `fpl_remote/preference_migration.py` 在回环维护入口导入，Identity 的 `credential_migration.py` 保留加密 TOTP 登记与归属会话。
 `deploy/remote.compose.yaml` 只装配私网桌面服务，另需显式选择 Guacamole 对端。Identity 提供限定到原请求的会话复核。
 
