@@ -1,6 +1,5 @@
 """Explicit recovery-site adapter. Independent Thought never loads Assets ORM."""
 
-import asyncio
 import shutil
 
 from sqlalchemy import select
@@ -8,6 +7,7 @@ from sqlalchemy import select
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
+from studio.runtime.tasks.blocking_io import run_blocking_io
 
 
 class LegacyAssetMetadata:
@@ -61,5 +61,5 @@ class LegacyAssetMetadata:
             with source.open("rb") as incoming, target.open("xb") as outgoing:
                 shutil.copyfileobj(incoming, outgoing)
 
-        await asyncio.to_thread(copy)
+        await run_blocking_io(copy)
         return target

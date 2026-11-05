@@ -398,3 +398,62 @@ async def test_website_metadata_uses_injected_storage_and_rechecks_owner(instanc
             await foreign.download(asset, tmp_path / "foreign")
     assert not (tmp_path / "stale").exists()
     assert not (tmp_path / "foreign").exists()
+
+
+@pytest.mark.parametrize("reader", ["sqlite", "memory"])
+async def test_sync_snapshot_accepts_replaceable_asset_reader(instance, tmp_path, reader):
+    from PIL import Image
+
+    from studio.apps.asset_library.storage.file_paths import AssetStorage
+    from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
+    from studio.apps.thought_workshop.synchronization.sync_artifacts import SyncArtifacts
+
+    app, _, _, _ = instance
+    image = io.BytesIO()
+    Image.new("RGB", (2, 2), color="blue").save(image, format="PNG")
+    image_bytes = image.getvalue()
+    artifacts = SyncArtifacts(tmp_path)
+    async with app.state.database.sessions(info={"owner_user_id": "alpha"}) as session:
+        row = await AssetLibrary(session, app.state.settings).store_upload(
+            UploadFile(io.BytesIO(image_bytes), filename="image.png"), owner_user_id="alpha"
+        )
+        identity = row.id
+        real = LegacyAssetMetadata(session, "alpha", storage=AssetStorage(app.state.settings))
+        descriptor = (await real.describe({identity}))[identity]
+
+        class MemoryReader:
+            async def describe(self, ids):
+                assert ids == {identity}
+                return {identity: descriptor}
+
+            async def download(self, asset, target):
+                assert asset == descriptor
+                target.write_bytes(image_bytes)
+
+        port = real if reader == "sqlite" else MemoryReader()
+        key, manifest = await artifacts.capture(port, [identity])
+    assert await artifacts.read(key, manifest[0]) == image_bytes
+    (artifacts.directory(key) / identity).write_bytes(b"changed")
+    with pytest.raises(ValueError, match="内容已变化"):
+        await artifacts.read(key, manifest[0])
+    await artifacts.discard(key)
+    assert not artifacts.directory(key).exists()
+
+
+async def test_sync_snapshot_discards_partial_files_after_reader_cancellation(tmp_path):
+    import asyncio
+
+    from studio.apps.thought_workshop.synchronization.sync_artifacts import SyncArtifacts
+
+    class CancelledReader:
+        async def describe(self, _ids):
+            return {"asset": LibraryAsset("asset", "image.png", "image/png", "image", 10, 1)}
+
+        async def download(self, _asset, target):
+            target.write_bytes(b"partial")
+            raise asyncio.CancelledError
+
+    artifacts = SyncArtifacts(tmp_path)
+    with pytest.raises(asyncio.CancelledError):
+        await artifacts.capture(CancelledReader(), ["asset"])
+    assert list(artifacts.root.iterdir()) == []

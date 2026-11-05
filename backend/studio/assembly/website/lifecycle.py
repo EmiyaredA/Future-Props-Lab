@@ -109,6 +109,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
                 external_sync_actor_allowed,
                 sessions=sessions,
                 connections=lifespan_app.state.article_connections,
+                asset_metadata=lifespan_app.state.article_assets,
             ),
             ModelTemplateSyncRunner(sessions=sessions),
             VisualGenerationRunner(

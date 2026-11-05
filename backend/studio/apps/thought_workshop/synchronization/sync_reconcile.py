@@ -16,7 +16,8 @@ def require_review(task):
         raise ExternalError("任务不处于待核对状态", 409)
 
 
-async def reconcile_task(records, reads, state, note_id, task_id, body):
+async def reconcile_task(records, reads, note_id, task_id, body, *, artifacts, intents, transport):
+    """Resume only with matching authorization, remote snapshot and a confirmed step receipt."""
     session = records.session
     task = await records.get_task(note_id, task_id)
     require_review(task)
@@ -33,7 +34,7 @@ async def reconcile_task(records, reads, state, note_id, task_id, body):
         await session.execute(delete(ArticleSyncAsset).where(ArticleSyncAsset.task_id == task_id))
         output = ArticleSyncReconcileOut(task=task_out(task), remote_text="", can_resume=False)
         await session.commit()
-        await state.thought_sync_artifacts.discard(checkpoint.get("staging", ""))
+        await artifacts.discard(checkpoint.get("staging", ""))
         return output
 
     expected = checkpoint.get("remote", task.remote)
@@ -58,18 +59,18 @@ async def reconcile_task(records, reads, state, note_id, task_id, body):
     safe, confirmed = False, None
     if intent_id:
         try:
-            decision = await state.thought_sync_intents.check(intent_id)
+            decision = await intents.check(intent_id)
         except IntegrationAuthorizationUnavailable:
             raise ExternalError("同步授权暂不可用", 503, "authorization_unavailable") from None
         if decision.allowed and awaiting and awaiting[1]:
-            proof = await state.thought_sync_transport.call(
+            proof = await transport.call(
                 intent_id,
                 "read",
                 ExternalStepEvidence(step_id=awaiting[0], request_sha256=awaiting[1]),
                 ExternalStepProof,
             )
             if proof.status == "confirmed":
-                progress = await state.thought_sync_transport.progress(intent_id)
+                progress = await transport.progress(intent_id)
                 if progress.status in {"active", "closed"} and progress.checkpoint:
                     snapshot = progress.checkpoint.model_dump()
                     if remote.snapshot() == snapshot["remote"]:

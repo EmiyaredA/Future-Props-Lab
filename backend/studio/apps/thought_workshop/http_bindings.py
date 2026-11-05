@@ -25,11 +25,8 @@ async def bind_ports(request, session, principal):
         await directory.profiles(ids=(principal.user_id,))
     except ThoughtError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
-    assets = getattr(request.app.state, "thought_assets", None)
-    if isinstance(assets, AssetMetadataBindings):
-        asset_port = assets.for_request(request, session, principal)
-        if inspect.isawaitable(asset_port):
-            asset_port = await asset_port
+    if isinstance(getattr(request.app.state, "thought_assets", None), AssetMetadataBindings):
+        asset_port = await request_asset_metadata(request, session, principal)
 
         def asset_metadata_for_owner(_session, owner):
             if owner != principal.user_id:
@@ -39,6 +36,15 @@ async def bind_ports(request, session, principal):
         session.info["thought_asset_metadata_factory"] = asset_metadata_for_owner
     session.info["thought_directory"] = directory
     return session
+
+
+async def request_asset_metadata(request, session, principal):
+    """Bind a capability at the protocol boundary; do not discover it from a database session."""
+    binding = getattr(request.app.state, "thought_assets", None)
+    if not isinstance(binding, AssetMetadataBindings):
+        raise ThoughtError("素材目录尚未连接", 503, "asset_metadata_unavailable")
+    port = binding.for_request(request, session, principal)
+    return await port if inspect.isawaitable(port) else port
 
 
 async def thought_session(request: Request, session: BaseSessionDep, principal: StudioAuth):

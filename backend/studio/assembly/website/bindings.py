@@ -187,12 +187,14 @@ def bind_components(app, settings, database):
         for_request=lambda _request, session, owner: LegacyLibraryInputs(session, settings, owner)
     )
 
+    def thought_metadata(session, owner):
+        return LegacyAssetMetadata(session, owner, storage=AssetStorage(settings))
+
+    app.state.article_assets = thought_metadata
     sessions.configure(
         info={
             **sessions.kw.get("info", {}),
-            "thought_asset_metadata_factory": lambda session, owner: LegacyAssetMetadata(
-                session, owner, storage=AssetStorage(settings)
-            ),
+            "thought_asset_metadata_factory": thought_metadata,
             "presentation_project_assets": LegacyProjectAssets,
             "motion_project_resources": LegacyProjectResources,
             "video_project_layouts": LegacyVideoLayouts,

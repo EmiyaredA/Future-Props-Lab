@@ -369,9 +369,16 @@ def test_restore_old_external_sync_for_review_without_remote_replay(tmp_path):
                 actor = SimpleNamespace(allows=lambda _permission: True)
                 records = ArticleSyncRecords(db, str(owner), actor)
                 reads = SimpleNamespace(read_document=read_document, close_task=close_task)
-                state = SimpleNamespace(thought_sync_artifacts=SimpleNamespace(discard=discard))
+                artifacts = SimpleNamespace(discard=discard)
                 response = await reconcile_task(
-                    records, reads, state, ids.note, ids.running, ArticleSyncReconcile()
+                    records,
+                    reads,
+                    ids.note,
+                    ids.running,
+                    ArticleSyncReconcile(),
+                    artifacts=artifacts,
+                    intents=None,
+                    transport=None,
                 )
                 assert response.task.status == "needs_review" and not response.can_resume
                 assert remote_reads == [(ids.connection, 1, "Doc1")]
@@ -379,10 +386,12 @@ def test_restore_old_external_sync_for_review_without_remote_replay(tmp_path):
                 response = await reconcile_task(
                     records,
                     reads,
-                    state,
                     ids.note,
                     ids.running,
                     ArticleSyncReconcile(acknowledge_partial=True),
+                    artifacts=artifacts,
+                    intents=None,
+                    transport=None,
                 )
                 assert response.task.status == "failed" and closed == [ids.running]
                 assert await db.get(ArticleSyncAsset, (ids.running, ids.asset)) is None

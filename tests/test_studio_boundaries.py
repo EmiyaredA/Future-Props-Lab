@@ -495,3 +495,26 @@ def test_website_page_composition_and_navigation_have_explicit_owners():
     assert "history.replaceState" not in composition
     assert "popstate" not in composition
     assert (app / "routes.ts").is_file()
+
+
+def test_thought_sync_operations_receive_ports_instead_of_request_or_state():
+    base = STUDIO / "apps/thought_workshop/synchronization"
+    for filename, operation in (
+        ("sync_submit.py", "submit_task"),
+        ("sync_reconcile.py", "reconcile_task"),
+    ):
+        tree = ast.parse((base / filename).read_text())
+        function = next(
+            node
+            for node in tree.body
+            if isinstance(node, ast.AsyncFunctionDef) and node.name == operation
+        )
+        names = {arg.arg for arg in [*function.args.args, *function.args.kwonlyargs]}
+        assert not names & {"request", "state"}
+        assert {"artifacts", "intents"} <= names
+        assert not any(
+            isinstance(node, ast.Attribute) and node.attr == "info" for node in ast.walk(function)
+        )
+    source = (base / "sync_artifacts.py").read_text()
+    assert "metadata(session" not in source
+    assert "session.info" not in source

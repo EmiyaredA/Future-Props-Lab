@@ -64,8 +64,21 @@ def require_step_budget(payload):
         raise ExternalError("同步正文及图片超过传输限制", 413, "sync_payload_too_large")
 
 
-async def submit_task(records, reads, request, note_id, body):
-    session, state = records.session, request.app.state
+async def submit_task(
+    records,
+    reads,
+    note_id,
+    body,
+    *,
+    assets,
+    artifacts,
+    intents,
+    source_assertion,
+    source_method,
+    source_path,
+):
+    """Commit work and its manifest together; preserve staging if commit is unknown."""
+    session = records.session
     prior = await replay(records, note_id, body)
     if prior is not None:
         return prior
@@ -76,12 +89,9 @@ async def submit_task(records, reads, request, note_id, body):
     remote = await reads.read_document(connection, revision, expected["document_id"])
     if remote.fingerprint != expected["fingerprint"] or remote.revision != expected["revision"]:
         raise ExternalError("飞书内容已变化，请重新预览再确认", 409, "remote_changed")
-    artifacts = state.thought_sync_artifacts
     staging, committing = "", False
     try:
-        staging, asset_manifest = await artifacts.capture(
-            session, records.owner_user_id, content["asset_ids"]
-        )
+        staging, asset_manifest = await artifacts.capture(assets, content["asset_ids"])
         payload = ExternalTaskPayload(
             content=content, remote=expected, asset_manifest=asset_manifest
         )
@@ -96,11 +106,11 @@ async def submit_task(records, reads, request, note_id, body):
             input_sha256=payload.fingerprint(),
         )
         await reads.require_enabled(connection, expected_revision=revision)
-        receipt = await state.thought_sync_intents.enroll(
+        receipt = await intents.enroll(
             request_id=body.operation_id,
-            assertion=request.state.service_assertion,
-            method=request.method,
-            path=request.url.path,
+            assertion=source_assertion,
+            method=source_method,
+            path=source_path,
             scope=scope,
         )
         await session.execute(text("BEGIN IMMEDIATE"))

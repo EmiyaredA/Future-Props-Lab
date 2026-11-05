@@ -26,6 +26,8 @@ class AssetMetadataBindings:
 
 
 class AssetMetadata(Protocol):
+    """An owner-authorized reader; download must stop writing before returning or cancelling."""
+
     async def describe(self, asset_ids: set[str]) -> dict[str, LibraryAsset]: ...
     async def download(self, asset: LibraryAsset, target): ...
 
@@ -40,9 +42,9 @@ def metadata(session, owner_user_id: str) -> AssetMetadata:
     return factory(session, owner_user_id)
 
 
-async def read_bytes(session, owner_user_id: str, asset: LibraryAsset) -> bytes:
+async def read_bytes(port: AssetMetadata, asset: LibraryAsset) -> bytes:
     """Read a verified version through the explicit port, using only local staging."""
     with tempfile.TemporaryDirectory(prefix="thought-asset-") as directory:
         target = Path(directory) / "content"
-        await metadata(session, owner_user_id).download(asset, target)
+        await port.download(asset, target)
         return await asyncio.to_thread(target.read_bytes)

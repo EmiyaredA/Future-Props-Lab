@@ -294,6 +294,7 @@ async def test_sync_end_to_end_idempotency_and_detach(client, remote):
         allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     ).process_once()
     result = (await client.get(prefix)).json()
     assert result["tasks"][0]["status"] == "succeeded", result
@@ -333,6 +334,7 @@ async def test_remote_change_requires_fresh_confirmation(client, remote):
         allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     ).process_once()
     assert (await client.get(prefix + "/tasks/" + task["id"])).json()["status"] == "succeeded"
 
@@ -349,6 +351,7 @@ async def test_partial_write_never_replays_or_deletes_old(client, remote, failur
         allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     )
     await runner.process_once()
     state = (await client.get(prefix)).json()
@@ -415,6 +418,7 @@ async def test_connection_disabled_and_permission_revoked_before_run(client, rem
         allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     ).process_once()
     assert (await client.get(prefix + "/tasks/" + task["id"])).json()["status"] == "failed"
     assert remote.writes == []
@@ -607,6 +611,7 @@ async def test_runner_recovery_only_marks_running_jobs(client, remote):
         allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     ).recover()
     assert (await client.get(prefix)).json()["tasks"][0]["status"] == "needs_review"
     assert remote.writes == []
@@ -620,6 +625,7 @@ async def test_recovery_continues_only_confirmed_steps_without_reappending(clien
         allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     )
     finish = interrupted.finish_step
 
@@ -639,6 +645,7 @@ async def test_recovery_continues_only_confirmed_steps_without_reappending(clien
         allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     ).process_once()
     assert remote.writes == ["append", "delete"]
     assert (await client.get(prefix + "/tasks/" + task["id"])).json()["status"] == "succeeded"
@@ -693,6 +700,7 @@ async def test_source_version_changes_require_new_preview_and_sync_keeps_queued_
         allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     ).process_once()
     state = (await client.get(prefix)).json()
     assert state["tasks"][0]["status"] == "succeeded", state
@@ -750,6 +758,7 @@ async def test_images_and_tables_verified_before_old_body_removed(client, remote
         allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     ).process_once()
     result = (await client.get(prefix + "/tasks/" + task["id"])).json()
     assert result["status"] == "succeeded", result
@@ -802,6 +811,7 @@ async def test_authorization_and_article_state_checked_at_execution(client, remo
         revoked if reason == "actor" else allowed,
         sessions=SessionLocal,
         connections=integration_dependencies.connections(remote.transport),
+        asset_metadata=app.state.article_assets,
     ).process_once()
     assert (await client.get(prefix + "/tasks/" + task["id"])).json()["status"] == "failed"
     assert remote.writes == []
@@ -938,6 +948,7 @@ async def test_connections_bindings_and_jobs_are_workspace_scoped(remote):
             external_sync_actor_allowed,
             sessions=SessionLocal,
             connections=integration_dependencies.connections(remote.transport),
+            asset_metadata=app.state.article_assets,
         ).process_once()
         assert (await owner.get(prefix + "/tasks/" + task["id"])).json()["status"] == "succeeded"
 
@@ -967,6 +978,7 @@ async def test_other_account_cannot_sync_and_disabled_owner_stops_queued_job(rem
             external_sync_actor_allowed,
             sessions=SessionLocal,
             connections=integration_dependencies.connections(remote.transport),
+            asset_metadata=app.state.article_assets,
         ).process_once()
         async with SessionLocal() as session:
             current = await session.get(ArticleSyncTask, task["id"])

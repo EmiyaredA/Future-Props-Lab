@@ -10,7 +10,7 @@ from uuid import uuid4
 
 from anyio.to_thread import run_sync
 
-from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata
 from studio.contracts.integrations.external_sync import ID, ExternalAsset
 
 
@@ -26,7 +26,7 @@ class SyncArtifacts:
             raise ValueError("同步暂存不能经过符号链接")
         return path
 
-    async def capture(self, session, owner, asset_ids):
+    async def capture(self, port: AssetMetadata, asset_ids):
         if not asset_ids:
             return "", []
         key = uuid4().hex
@@ -34,7 +34,6 @@ class SyncArtifacts:
         self.root.mkdir(mode=0o700, exist_ok=True)
         path.mkdir(mode=0o700)
         try:
-            port = metadata(session, owner)
             assets = await port.describe(set(asset_ids))
             result = []
             for asset_id in asset_ids:

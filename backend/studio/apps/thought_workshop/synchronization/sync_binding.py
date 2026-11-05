@@ -17,7 +17,7 @@ from studio.apps.thought_workshop.external_sync.schemas import (
     ArticleSyncSubmit,
     ArticleSyncTaskOut,
 )
-from studio.apps.thought_workshop.http_bindings import SessionDep
+from studio.apps.thought_workshop.http_bindings import SessionDep, request_asset_metadata
 from studio.apps.thought_workshop.synchronization.sync_reconcile import reconcile_task
 from studio.apps.thought_workshop.synchronization.sync_submit import submit_task
 from studio.apps.thought_workshop.synchronization.sync_transport import (
@@ -213,9 +213,14 @@ async def submit(
         return await submit_task(
             ArticleSyncRecords(session, owner_user_id, principal),
             BindingReads(request, note_id),
-            request,
             note_id,
             body,
+            assets=await request_asset_metadata(request, session, principal),
+            artifacts=request.app.state.thought_sync_artifacts,
+            intents=request.app.state.thought_sync_intents,
+            source_assertion=request.state.service_assertion,
+            source_method=request.method,
+            source_path=request.url.path,
         )
     except (ExternalError, ThoughtError) as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
@@ -235,10 +240,12 @@ async def reconcile(
         return await reconcile_task(
             ArticleSyncRecords(session, owner_user_id, principal),
             BindingReads(request, note_id),
-            request.app.state,
             note_id,
             task_id,
             body,
+            artifacts=request.app.state.thought_sync_artifacts,
+            intents=request.app.state.thought_sync_intents,
+            transport=request.app.state.thought_sync_transport,
         )
     except (ExternalError, ThoughtError) as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

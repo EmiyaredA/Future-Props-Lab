@@ -12,7 +12,6 @@ from studio.apps.integrations.clients.document_verification import (
     verify_delete,
     verify_image,
 )
-from studio.apps.thought_workshop.content_exports import resolve_assets
 from studio.apps.thought_workshop.external_sync.models import (
     ArticleSyncAsset,
     ArticleSyncBinding,
@@ -30,8 +29,9 @@ from studio.runtime.time import utc_now
 class ArticleSyncRunner(PollingTaskRunner):
     runner_name = "article-external-sync"
 
-    def __init__(self, actor_allowed, *, sessions, connections):
+    def __init__(self, actor_allowed, *, sessions, connections, asset_metadata):
         super().__init__()
+        self.asset_metadata = asset_metadata
         self.actor_allowed, self.connections, self.sessions = actor_allowed, connections, sessions
 
     async def recover(self):
@@ -192,15 +192,15 @@ class ArticleSyncRunner(PollingTaskRunner):
                     before = await self.before_step(task_id, client)
                     async with self.sessions() as session:
                         task = await self.context(session, task_id)
-                        assets = await resolve_assets(session, task.owner_user_id, {asset_id})
+                        port = self.asset_metadata(session, task.owner_user_id)
+                        assets = await port.describe({asset_id})
                         asset = assets[asset_id]
-                        filename, mime, owner = (
+                        filename, mime = (
                             asset.original_filename,
                             asset.mime_type,
-                            task.owner_user_id,
                         )
                         await session.rollback()
-                        data = await read_bytes(session, owner, asset)
+                        data = await read_bytes(port, asset)
                     step = await self.begin_step(task_id, "upload_image")
                     wrote = True
                     token = await client.upload_image(
