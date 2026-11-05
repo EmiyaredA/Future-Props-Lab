@@ -25,3 +25,12 @@ HTTP、数据表、权限与历史迁移不变。业务仍存在待迁移的全�
 ## Verification
 
 装配、迁移、架构、闭包和网站组合检查先有 87 项通过，4 个网站用例因测试适配未传显式工厂失败；修正后完整网站文件 8 项通过。另有服务契约及独立服务检查 102 项通过，其两项旧路径断言在后续组合检查中通过。新增进程检查证明导入和 OpenAPI 不读取配置或构造引擎，两个应用实例的数据库与活动状态互不共享。OpenAPI 和服务归属清单保持一致。正式数据未操作。
+
+## Presentation adapter follow-up
+
+Website composition binds Presentation asset lookup and legacy archive import
+to the current application's storage and configuration. The existing
+session-scoped adapter keys still select the compatibility implementation.
+Presentation exchange, media, scene, and website assembly checks passed 64
+tests. The Thought attachment limit fixture now targets the serving app as
+well. The ordered Models and Thought regression passed 36 tests.

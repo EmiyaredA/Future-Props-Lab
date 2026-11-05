@@ -9,12 +9,11 @@ from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.presentation_workshop.exchange.archives import MAX_BYTES
 from studio.apps.presentation_workshop.exchange.transfers import remap_document
 from studio.apps.presentation_workshop.schemas.document import PresentationProjectIn
-from studio.config.settings import get_settings
 from studio.runtime.ids import new_id
 
 
-async def import_legacy_presentation(projects, title, document, files, _source_sha256):
-    library = AssetLibrary(projects.session, get_settings())
+async def import_legacy_presentation(projects, title, document, files, _source_sha256, *, settings):
+    library = AssetLibrary(projects.session, settings)
     staged = []
     paths = []
     identities = {}

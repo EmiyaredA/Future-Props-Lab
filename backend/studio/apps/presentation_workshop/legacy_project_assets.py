@@ -14,15 +14,15 @@ from studio.apps.presentation_workshop.templates.models import (
     PresentationExampleAsset,
     PresentationTemplateAsset,
 )
-from studio.config.settings import get_settings
 from studio.runtime.files.svg import normalize_svg
 
 
 class LegacyProjectAssets:
     export_output_root = None
 
-    def __init__(self, session, owner_user_id):
+    def __init__(self, session, owner_user_id, *, storage: AssetStorage):
         self.session, self.owner_user_id = session, owner_user_id
+        self.storage = storage
 
     async def assets(self, document: PresentationDocument) -> list[VisualAsset]:
         references = document_references(document)
@@ -45,7 +45,7 @@ class LegacyProjectAssets:
         return await validate_assets(document, rows, monochrome=self.monochrome)
 
     async def monochrome(self, row):
-        path = AssetStorage(get_settings()).path_for(row)
+        path = self.storage.path_for(row)
         return normalize_svg(path.read_text())["monochrome"]
 
     async def references(self, project_id: str, assets):
@@ -69,13 +69,12 @@ class LegacyProjectAssets:
 
     @asynccontextmanager
     async def export_sources(self, rows):
-        storage = AssetStorage(get_settings())
         sources = [
             (
                 SimpleNamespace(
                     id=row.id, original_filename=row.original_filename, mime_type=row.mime_type
                 ),
-                storage.path_for(row),
+                self.storage.path_for(row),
             )
             for row in rows
         ]

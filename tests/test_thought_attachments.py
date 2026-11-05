@@ -10,7 +10,6 @@ from tests.test_account_system import create_test_account, login_and_change_pass
 from tests.test_thought_workshop import note_body
 from tests.thought_helpers import create_note, delete_note
 
-from studio.config.settings import get_settings
 from website_test_support import app
 
 ROOT = "/v1/thought-workshop"
@@ -130,7 +129,8 @@ async def test_limits_unlink_cas_backup_and_legacy_import(monkeypatch, legacy_ve
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
         with monkeypatch.context() as patch:
-            patch.setattr(get_settings(), "fpl_visual_asset_max_bytes", 4)
+            settings = app.state.settings.model_copy(update={"fpl_visual_asset_max_bytes": 4})
+            patch.setattr(app.state, "settings", settings)
             assert (
                 await client.post(
                     ROOT + "/attachments", files={"upload": ("large.txt", b"12345", "text/plain")}

@@ -199,11 +199,13 @@ def bind_components(app, settings, database):
         info={
             **sessions.kw.get("info", {}),
             "thought_asset_metadata_factory": thought_metadata,
-            "presentation_project_assets": LegacyProjectAssets,
+            "presentation_project_assets": partial(
+                LegacyProjectAssets, storage=AssetStorage(settings)
+            ),
             "motion_project_resources": LegacyProjectResources,
             "video_project_layouts": LegacyVideoLayouts,
             "video_timeline_assets": LegacyTimelineAssets,
-            "presentation_import": import_legacy_presentation,
+            "presentation_import": partial(import_legacy_presentation, settings=settings),
         }
     )
 
