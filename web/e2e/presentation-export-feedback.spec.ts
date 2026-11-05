@@ -81,77 +81,51 @@ test("真实 PPTX 下载期间持续显示进度，完成后明确提示下载�
   await expect(dialog).toHaveCount(0);
 });
 
-test("模拟桌面另存为取消与重选，显示完整保存路径并支持文件定位", async ({
-  page,
-}, info) => {
+test("PPTX 导出失败后可重试并通过浏览器下载", async ({ page }, info) => {
   await page.setViewportSize({ width: 1440, height: 960 });
   const id = await create(page);
   let exports = 0;
-  page.on("request", (request) => {
-    if (request.url().endsWith(`/projects/${id}/export`)) exports++;
-  });
-  await page.evaluate(() => {
-    let count = 0;
-    Object.assign(window, {
-      futurePropsDesktop: {
-        saveExportFile: async (filename: string, bytes: Uint8Array) => {
-          if (
-            filename !== "导出反馈验收.pptx" ||
-            bytes[0] !== 80 ||
-            bytes[1] !== 75
-          )
-            throw new Error("导出文件内容无效");
-          count++;
-          return count === 1
-            ? null
-            : {
-                id: "receipt",
-                path: "/Users/example/Desktop/导出反馈验收.pptx",
-              };
-        },
-        revealExportFile: async (id: string) => {
-          document.body.dataset.revealedExport = id;
-        },
-      },
-    });
-  });
+  const downloads: string[] = [];
+  page.on("download", (file) => downloads.push(file.suggestedFilename()));
+  await page.route(
+    `**/v1/presentation-workshop/projects/${id}/export`,
+    async (route) => {
+      expect(route.request().method()).toBe("POST");
+      if (++exports === 1) {
+        await route.fulfill({
+          status: 503,
+          json: {
+            detail: { code: "export_unavailable", message: "导出暂不可用" },
+          },
+        });
+      } else {
+        await route.fallback();
+      }
+    },
+  );
   await page.getByRole("button", { name: "导出选项" }).click();
   await page
     .getByRole("menuitem", { name: "导出 PPTX 文件", exact: true })
     .click();
   const dialog = page.getByRole("dialog", { name: "导出 PPTX", exact: true });
-  await expect(dialog.getByText("已取消保存，文件尚未保存。")).toBeVisible();
-  await dialog
-    .getByRole("button", { name: "选择保存位置", exact: true })
-    .click();
-  await expect(
-    dialog.getByText("导出文件已保存", { exact: true }),
-  ).toBeVisible();
-  await expect(
-    dialog.getByText("/Users/example/Desktop/导出反馈验收.pptx"),
-  ).toBeVisible();
-  expect(exports).toBe(1);
-  await dialog
-    .getByRole("button", { name: "在文件夹中显示", exact: true })
-    .click();
-  await expect(page.locator("body")).toHaveAttribute(
-    "data-revealed-export",
-    "receipt",
-  );
-  await page.screenshot({ path: info.outputPath("export-saved.png") });
+  await expect(dialog.getByRole("alert")).toContainText("导出暂不可用");
+  expect(downloads).toEqual([]);
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(
-    dialog.getByText("/Users/example/Desktop/导出反馈验收.pptx"),
-  ).toBeVisible();
-  const bounds = await dialog.boundingBox();
-  expect(bounds!.width).toBeLessThanOrEqual(390);
-  await page.screenshot({ path: info.outputPath("export-saved-mobile.png") });
-  await page.evaluate(() => {
-    document.documentElement.dataset.theme = "dark";
-  });
-  await page.screenshot({
-    path: info.outputPath("export-saved-mobile-dark.png"),
-  });
+  await expect(dialog.getByRole("alert")).toBeVisible();
+  const bounds = (await dialog.boundingBox())!;
+  expect(bounds.x).toBeGreaterThanOrEqual(0);
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390);
+  await page.screenshot({ path: info.outputPath("export-retry-mobile.png") });
+
+  const downloaded = page.waitForEvent("download");
+  await dialog.getByRole("button", { name: "导出文件", exact: true }).click();
+  const file = await downloaded;
+  expect(file.suggestedFilename()).toBe("导出反馈验收.pptx");
+  expect(await file.failure()).toBeNull();
+  await expect(dialog.getByRole("status")).toContainText("浏览器下载列表");
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+  expect(exports).toBe(2);
+  expect(downloads).toEqual(["导出反馈验收.pptx"]);
   await dialog.getByRole("button", { name: "完成", exact: true }).click();
-  await expect(dialog).toHaveCount(0);
+  await expect(dialog).toBeHidden();
 });
