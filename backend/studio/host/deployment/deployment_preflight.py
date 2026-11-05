@@ -69,7 +69,9 @@ def check_creative_gateway_credentials(environment, root):
         raise ValueError("Creative 要求 Gateway 服务凭据独立于入口凭据和其他服务凭据")
 
 
-def check_selected_databases(environment, business_services, root, *, only_management=False):
+def check_selected_databases(
+    environment, business_services, root, *, only_management=False, credential_root=None
+):
     """Read only configured service databases; never initialize or migrate them."""
     selected = {"identity", "management"}
     if environment.get("FPL_MODELS_IMAGE"):
@@ -82,7 +84,7 @@ def check_selected_databases(environment, business_services, root, *, only_manag
                 raise ValueError(f"所选服务缺少发布镜像：{service}")
             selected.add(service)
     if "creative" in selected:
-        check_creative_gateway_credentials(environment, root)
+        check_creative_gateway_credentials(environment, credential_root or root)
     for service in sorted(selected):
         module = MIGRATION_MODULES.get(service)
         if module is None:

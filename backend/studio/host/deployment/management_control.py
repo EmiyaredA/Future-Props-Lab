@@ -10,6 +10,7 @@ from pathlib import Path
 
 from studio.contracts.gateway.catalog import BY_ID
 from studio.host.deployment.compose_selection import resolve_files
+from studio.host.deployment.deployment_preflight import check_creative_gateway_credentials
 from studio.host.deployment.service_observation import ServiceObserver
 
 PROTECTED = frozenset({"identity", "management", "models"})
@@ -185,6 +186,10 @@ class DeploymentControl:
                 action = payload["action"]
                 if self.force and action != "force_stop":
                     raise ValueError("请先确认并强制停止未退出的业务服务")
+                if action in {"start", "restart"} and "creative" in self.services:
+                    await asyncio.to_thread(
+                        check_creative_gateway_credentials, self.env, self.compose_file.parent
+                    )
                 if action in {"stop", "restart"}:
                     await self.stop()
                 if action == "force_stop":

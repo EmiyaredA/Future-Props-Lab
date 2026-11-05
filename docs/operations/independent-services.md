@@ -229,8 +229,9 @@ Creative 的 `/ready` 要求持锁启动检查完成，安装及 stdio 路由齐
 
 启用 Creative 时，`FPL_GATEWAY_IDENTITY_TOKEN` 文件的内容须与
 `FPL_IDENTITY_SERVICE_CREDENTIALS` 中的 `gateway` 条目一致。为 `FPL_GATEWAY_TOKEN`、
-`FPL_MANAGEMENT_GATEWAY_TOKEN` 和每个其他服务分别生成凭据。管理启动器在接触 Compose
-前核对这些文件。原始安装和来源导入的签名请求只接受 Gateway 服务凭据。
+`FPL_MANAGEMENT_GATEWAY_TOKEN` 和每个其他服务分别生成凭据。管理启动器和管理端的启动、
+重启动作在接触 Compose 前核对这些文件。相对路径以 Compose 主清单所在目录为准。
+原始安装和来源导入的签名请求只接受 Gateway 服务凭据。
 
 单服务隔离 Compose 用 `fpl/creative:d67d6a41f02c394166f6` 显式初始化独立卷，探针和页面返回同一发布版本 `c7961c03ee5fa530b54c`。
 

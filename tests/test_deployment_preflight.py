@@ -1,11 +1,13 @@
 """The host checks selected service schemas and Creative credentials before deployment."""
 
 import json
+from pathlib import Path
 
 import pytest
 
 from studio.contracts.gateway.catalog import BY_ID
 from studio.host.deployment import deployment_preflight
+from studio.host.deployment.management_control import DeploymentControl
 
 
 @pytest.fixture
@@ -78,6 +80,29 @@ def test_invalid_creative_gateway_credentials_block_preflight(
         deployment_preflight.check_selected_databases(environment, ["creative"], tmp_path)
 
 
+async def test_creative_restart_checks_credentials_before_stopping(tmp_path, creative_credentials):
+    credential = (tmp_path / "FPL_GATEWAY_IDENTITY_TOKEN").read_text()
+    (tmp_path / "FPL_GATEWAY_TOKEN").write_text(credential)
+    control = DeploymentControl(
+        compose_file=Path("deploy/compose.yaml"),
+        project_name="isolated-credential-restart",
+        services=["creative", "integrations"],
+        environment={
+            **creative_credentials,
+            "FPL_CREATIVE_IMAGE": "creative-fixture",
+            "FPL_INTEGRATIONS_IMAGE": "integrations-fixture",
+        },
+        tunnels={},
+        runner=lambda *_args, **_kwargs: pytest.fail("invalid credentials must not invoke Compose"),
+    )
+
+    async def authorize():
+        pass
+
+    with pytest.raises(ValueError, match="独立于入口凭据"):
+        await control.execute("management.application", {"action": "restart"}, authorize)
+
+
 def test_management_only_does_not_require_stopped_business_databases(monkeypatch, tmp_path):
     seen = []
     monkeypatch.setattr(
@@ -145,7 +170,9 @@ def test_launcher_does_not_invoke_compose_when_selected_database_fails(monkeypat
 
     config = tmp_path / "config.toml"
     environment = {"FPL_MANAGEMENT_IMAGE": "fixture"}
-    control = SimpleNamespace(env={}, prefix=["docker", "compose"], services=["assets"])
+    control = SimpleNamespace(
+        env={}, prefix=["docker", "compose"], services=["assets"], compose_file=tmp_path / "compose"
+    )
     monkeypatch.setattr(
         start, "read_config", lambda _path: {"fpl_deployment_environment": environment}
     )

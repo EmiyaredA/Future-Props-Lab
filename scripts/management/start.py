@@ -35,7 +35,11 @@ def main():
     with service_lock(state):
         # Acquire the host singleton before any Compose action, including a second npm start.
         check_selected_databases(
-            environment, control.services, ROOT, only_management=options.only_management
+            environment,
+            control.services,
+            ROOT,
+            only_management=options.only_management,
+            credential_root=control.compose_file.parent,
         )
         subprocess.run([*command, "config", "--quiet"], env=env, check=True, cwd=ROOT)
         if options.check:
