@@ -1,6 +1,9 @@
 """Image and Compose boundaries reject hidden monolith dependencies and host mounts."""
 
+import os
+import stat
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import yaml
@@ -229,8 +232,6 @@ def test_integrations_image_packages_owned_http_and_only_file_value_contracts():
 
 
 def test_models_image_includes_the_local_model_runtime_manifest(monkeypatch):
-    from types import SimpleNamespace
-
     from studio.deployment import images
 
     original = images.subprocess.run
@@ -246,6 +247,39 @@ def test_models_image_includes_the_local_model_runtime_manifest(monkeypatch):
     assert name in metadata["files"]
     assert (context / name).read_bytes() == (ROOT / name).read_bytes()
     assert (context / "web/.api-only").is_file()
+
+
+def test_service_image_payload_is_readable_by_nonroot_under_private_umask(tmp_path, monkeypatch):
+    from studio.deployment import images
+
+    source = tmp_path / "backend/studio/entry.py"
+    for path in (
+        source,
+        tmp_path / "deploy/images/owned-http/Dockerfile",
+        tmp_path / "deploy/contracts/ownership.json",
+        tmp_path / "web/src/generated/openapi.json",
+        tmp_path / "backend/studio/contracts/gateway/automation_operations.json",
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("# fixture\n")
+    monkeypatch.setattr(images, "source_closure", lambda *_: {"entry": source})
+    monkeypatch.setattr(
+        images.subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(stdout=b"", returncode=0),
+    )
+
+    original = os.umask(0o077)
+    try:
+        context, release = images.prepare_image(tmp_path, "amadeus")
+    finally:
+        os.umask(original)
+
+    assert stat.S_IMODE(context.stat().st_mode) == 0o700
+    assert stat.S_IMODE((context / "service-entry.py").stat().st_mode) == 0o644
+    assert stat.S_IMODE((context / "backend/studio").stat().st_mode) == 0o755
+    assert stat.S_IMODE((context / "backend/studio/entry.py").stat().st_mode) == 0o644
+    assert images.prepare_image(tmp_path, "amadeus")[1]["image"] == release["image"]
 
 
 def test_integrations_compose_uses_owned_data_and_outbound_only_provider_network():

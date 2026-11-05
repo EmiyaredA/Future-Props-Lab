@@ -786,7 +786,9 @@ def prepare_image(root: Path, service: str, *, web_release=None):
     hashes = {
         name: hashlib.sha256(content).hexdigest() for name, content in sorted(payloads.items())
     }
-    release = hashlib.sha256(json.dumps(hashes, sort_keys=True).encode()).hexdigest()[:20]
+    file_mode, directory_mode = 0o644, 0o755
+    fingerprint = {"files": hashes, "file_mode": file_mode, "directory_mode": directory_mode}
+    release = hashlib.sha256(json.dumps(fingerprint, sort_keys=True).encode()).hexdigest()[:20]
     context = root / ".local/service-releases" / service / release / "context"
     ignored = subprocess.run(
         ["git", "check-ignore", "--quiet", str(context)], cwd=root, check=False
@@ -798,10 +800,15 @@ def prepare_image(root: Path, service: str, *, web_release=None):
     present = {str(path.relative_to(context)) for path in context.rglob("*") if path.is_file()}
     if present - expected:
         raise ValueError("构建目录包含未登记文件")
+    directories = {parent for name in payloads for parent in Path(name).parents} - {Path(".")}
+    for parent in sorted(directories, key=lambda path: len(path.parts)):
+        directory = context / parent
+        directory.mkdir(exist_ok=True)
+        directory.chmod(directory_mode)
     for name, content in payloads.items():
         target = context / name
-        target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(content)
+        target.chmod(file_mode)
     metadata = {
         "service": service,
         "version": release,
