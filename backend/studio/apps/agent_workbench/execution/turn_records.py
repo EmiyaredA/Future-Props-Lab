@@ -15,6 +15,7 @@ from studio.apps.agent_workbench.execution.transcripts import (
     get_turn,
     queued_turns,
 )
+from studio.apps.agent_workbench.rules.turn_endings import completion
 from studio.runtime.ids import new_id
 
 
@@ -180,5 +181,6 @@ async def finish_turn(db, key, status, error=None, *, only_cancelling=False):
     row = await get_turn(db, *key)
     eligible = ("cancelling",) if only_cancelling else ACTIVE
     if row.status in eligible:
-        end_turn(row, "cancelled" if row.status == "cancelling" else status, error)
+        ending = completion(row.status, status, error)
+        end_turn(row, ending.status, ending.error)
         await db.commit()

@@ -40,6 +40,7 @@ from studio.apps.agent_workbench.storage.service_models import (
     NativeWorkerSeen,
     WorkbenchExecutionJob,
 )
+from studio.apps.agent_workbench.storage.turn_settlement import SqlTurnSettlement
 from studio.apps.agent_workbench.storage.turn_versions import SqlTurnVersions
 from studio.apps.agent_workbench.supervisor import CollectionSupervisor
 from studio.apps.agent_workbench.transport.change_events import stream_events
@@ -48,6 +49,7 @@ from studio.apps.agent_workbench.transport.execution_native_http import router a
 from studio.apps.agent_workbench.transport.native_api import router as native_router
 from studio.apps.agent_workbench.transport.service import create_router
 from studio.apps.agent_workbench.transport.turn_events import stream_turns
+from studio.apps.agent_workbench.use_cases.settle_turn import SettleTurn
 from studio.config.settings import get_settings
 from studio.contracts.agent_workbench.native import COLLECTOR_OPERATIONS
 from studio.runtime.database.migrations import check
@@ -106,7 +108,9 @@ def create_app(
     supervisor = CollectionSupervisor(database, identity)
     discovery = ExecutionDiscovery(database, identity, configured=bool(execution_workers))
 
-    turns = ExecutionTurns(database, identity, discovery)
+    turns = ExecutionTurns(
+        database, identity, discovery, settlement=SettleTurn(SqlTurnSettlement(database.sessions))
+    )
 
     @asynccontextmanager
     async def lifespan(_app):

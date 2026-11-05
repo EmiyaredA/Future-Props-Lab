@@ -2,9 +2,10 @@
 
 import asyncio
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
+from studio.apps.agent_workbench.use_cases.settle_turn import ReceiptError
 from studio.contracts.agent_workbench.execution import (
     InstructionReceipt,
     Leased,
@@ -115,9 +116,17 @@ async def receipt_turn_approval(request: Request, body: TurnApprovalReceipt):
 
 @router.post("/turns/receipt")
 async def turn_receipt(request: Request, body: Receipt):
-    await request.app.state.execution_turns.settle(
-        request.state.native_worker.id, body.lease, body.outcome
-    )
+    try:
+        await request.app.state.execution_turns.settle(
+            request.state.native_worker.id, body.lease, body.outcome
+        )
+    except ReceiptError as exc:
+        status = {
+            "workbench_turn_receipt_invalid": 422,
+            "workbench_execution_lease_ended": 410,
+            "workbench_turn_receipt_conflict": 409,
+        }[exc.code]
+        raise HTTPException(status, exc.code) from None
     return {"acknowledged": True}
 
 

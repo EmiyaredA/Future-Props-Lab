@@ -22,6 +22,7 @@ from studio.apps.agent_workbench.execution.schemas import (
 from studio.apps.agent_workbench.execution.transcripts import end_turn
 from studio.apps.agent_workbench.execution.turn_activity import next_activity_sequence
 from studio.apps.agent_workbench.execution.turn_records import store_turn
+from studio.apps.agent_workbench.rules.turn_endings import completion
 from studio.apps.identity.storage.cloud_access import allowed, require_unlocked
 from studio.config.settings import get_cloud_settings
 from studio.runtime.ids import new_id
@@ -416,7 +417,8 @@ async def finish_turn(db, key, status, error=None, *, only_cancelling=False):
     row = await get_turn(db, *key)
     eligible = ("cancelling",) if only_cancelling else ACTIVE
     if row.status in eligible:
-        end_turn(row, "cancelled" if row.status == "cancelling" else status, error)
+        ending = completion(row.status, status, error)
+        end_turn(row, ending.status, ending.error)
         if row.status != "completed":
             (await get_chat(db, *key[:2])).queue_paused = True
         await db.commit()

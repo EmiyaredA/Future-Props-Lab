@@ -8,9 +8,9 @@ from sqlalchemy import select, text, update
 from studio.apps.agent_workbench.execution import projects
 from studio.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchTurn
 from studio.apps.agent_workbench.execution.schemas import ChatDetail, ChatOut, QueuedTurn, TurnOut
+from studio.apps.agent_workbench.rules.turn_endings import ACTIVE, closed_approvals, closed_inflight
 from studio.runtime.ids import new_id
 
-ACTIVE = ("running", "waiting_approval", "cancelling")
 MAX_QUEUE = 20
 
 
@@ -122,27 +122,9 @@ async def get_turn(db, owner, chat_id, turn_id):
 
 def end_turn(turn, status, error=None):
     turn.status, turn.error = status, error
-    turn.approvals = [
-        {
-            **approval,
-            "status": (
-                "unknown"
-                if approval["status"] == "executing"
-                else "expired"
-                if approval["status"] in {"pending", "approved"}
-                else approval["status"]
-            ),
-        }
-        for approval in turn.approvals
-    ]
-    turn.instructions = [
-        {**item, "status": "unknown"} if item["status"] == "sending" else item
-        for item in turn.instructions
-    ]
-    turn.activity = [
-        {**item, "status": "unknown"} if item["status"] == "running" else item
-        for item in turn.activity
-    ]
+    turn.approvals = closed_approvals(turn.approvals)
+    turn.instructions = closed_inflight(turn.instructions, "sending")
+    turn.activity = closed_inflight(turn.activity, "running")
     turn.revision += 1
 
 

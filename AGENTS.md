@@ -122,6 +122,9 @@
   网站只额外装配本机执行协议；来源绑定和原生采集逐次接收装配的启用策略，不读取全局配置。
 - 工作台历史事件的游标重置与积压恢复归 `use_cases/history_subscription.py`；事件存储返回不可变
   账号快照，HTTP/SSE 编码归 `transport/change_events.py`。发送时不得持有数据库会话。
+- 工作台 `SettleTurn` 通过原子存储端口核对账号、执行尝试和载荷并提交回执、轮次及队列暂停。
+  重复回执是无副作用成功；过期尝试只允许核对原动作结果，不恢复权限或重新执行。结束规则由
+  `rules/turn_endings.py` 共用，迟到回执不能覆盖已结束轮次；协议错误由 HTTP 适配映射。
 - Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证

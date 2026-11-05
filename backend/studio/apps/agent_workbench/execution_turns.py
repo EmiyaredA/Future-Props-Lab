@@ -32,11 +32,12 @@ class TurnGrant:
 
 
 class ExecutionTurns:
-    def __init__(self, database, identity, discovery):
+    def __init__(self, database, identity, discovery, *, settlement):
         self.database, self.identity, self.discovery = database, identity, discovery
         self.queue = NativeQueue(
             database, WorkbenchExecutionJob, operations=OPERATIONS, clock=utc_now
         )
+        self.settlement = settlement
         self.grants = {}
         self.last_poll = None
         self.pending = ExecutionQueue(self)
@@ -297,34 +298,11 @@ class ExecutionTurns:
         await db.commit()
 
     async def settle(self, worker, lease, outcome):
-        if lease.operation != RUN_TURN or outcome.result:
-            raise HTTPException(422, "workbench_turn_receipt_invalid")
-        await self.discovery.lease(worker, lease, active=False)
-        owner = lease.owner_user_id
+        await self.settlement.execute(worker, lease, outcome)
         scope = TurnScope.model_validate(lease.payload)
-        checksum = digest(outcome.model_dump(mode="json"))
-        async with self.session(owner) as db:
-            await turn_records.begin(db)
-            job = await db.get(WorkbenchExecutionJob, str(lease.job_id))
-            if job.outcome_sha256 == checksum:
-                return
-            if job.outcome_sha256 is not None or job.status not in {"leased", "unknown"}:
-                raise HTTPException(409, "workbench_turn_receipt_conflict")
-            job.outcome_sha256, job.status = checksum, outcome.status
-            job.error_code = outcome.error_code
-            job.revision += 1
-            row = await transcripts.get_turn(db, owner, scope.chat_id, scope.turn_id)
-            if row.status in transcripts.ACTIVE:
-                status = "interrupted" if outcome.status == "unknown" else outcome.status
-                error = None if status == "completed" else "Agent 运行未完成，请核对结果后继续"
-                if row.status == "cancelling":
-                    status, error = "cancelled", None
-                transcripts.end_turn(row, status, error)
-                if status != "completed":
-                    (await transcripts.get_chat(db, owner, scope.chat_id)).queue_paused = True
-            await db.commit()
-        self.grants.pop((owner, scope.turn_id), None)
-        self.instructions.close_turn(owner, scope.turn_id)
+        # Also clean ephemeral handles after a replay of an already committed receipt.
+        self.grants.pop((lease.owner_user_id, scope.turn_id), None)
+        self.instructions.close_turn(lease.owner_user_id, scope.turn_id)
 
     async def sweep(self):
         for (owner, identity), grant in tuple(self.grants.items()):
