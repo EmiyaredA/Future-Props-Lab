@@ -618,3 +618,9 @@ Creative 和 Integrations 的目录与原件均读回验收后，保留封存源
 先显式应用 Interview 的 0003 迁移。用同一份隔离计划，通过 `studio.assembly.independent.interview_assistant.cli` 启动封存源的 `migration-export` 和目标的 `migration-import`。执行 `uv run python -m scripts.website.migrate_interview --plan "$plan" --source "$interview_source" --target "$interview_target"`，依次迁入场次、材料、准备任务和创建回执，然后校验当前任务、已交付报告和材料原件。文件按原账号、场次及材料标识传输，核对大小、SHA256 和持久回执。旧尝试的临时执行目录随封存快照保留。
 
 迁移读回后，正常启动会将旧站尚未结束的准备任务标记为中断，并保留任务事件和已交付报告。只有显式重试才会创建新的执行。正式切换仍由整站门禁确认。
+
+### Amadeus 对话及运行历史
+
+先显式应用 Amadeus 的 0003 迁移。用同一隔离计划，通过 `studio.assembly.independent.amadeus.cli` 分别启动封存源的 `migration-export` 和目标的 `migration-import`。执行 `uv run python -m scripts.website.migrate_amadeus_history --plan "$plan" --source "$amadeus_source" --target "$amadeus_target"`。先恢复对话、运行、消息、操作、问题和事件，再恢复运行之间的续接关系。报告核对运行链、响应消息和事件序列。启动后，旧活动运行由正常恢复逻辑标记为中断，未知外部操作保留待核实状态，已生成的部分回复可读回。
+
+会话工作文件和固定 Skill 原件仍需单独迁移并验收。正式窗口前保留完整来源快照。

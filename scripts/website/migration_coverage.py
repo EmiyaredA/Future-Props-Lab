@@ -7,6 +7,7 @@ from contextlib import closing
 from pathlib import Path
 
 from studio.apps.agent_workbench.migration_shapes import DATASETS as AGENTS
+from studio.apps.amadeus.storage.migration_history import DATASETS as AMADEUS
 from studio.apps.asset_library.storage.migration_records import DATASETS as ASSETS
 from studio.apps.audio_annotation.storage.migration_records import DATASETS as ANNOTATION
 from studio.apps.audio_annotation.storage.migration_records import OPERATIONS as ANNOTATION_RECEIPTS
@@ -46,6 +47,7 @@ TRANSFER = {
             *MODELS,
             *PRESENTATION,
             *AGENTS,
+            *AMADEUS,
             *INTEGRATIONS,
             *CREATIVE,
         )

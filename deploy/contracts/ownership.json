@@ -3959,6 +3959,12 @@
       "model": "WorkbenchExecutionJob"
     },
     {
+      "table": "amadeus_import_receipts",
+      "service": "amadeus",
+      "module": "studio.apps.amadeus.storage.migration_history",
+      "model": "AmadeusImportReceipt"
+    },
+    {
       "table": "amadeus_native_jobs",
       "service": "amadeus",
       "module": "studio.apps.amadeus.storage.service_models",
