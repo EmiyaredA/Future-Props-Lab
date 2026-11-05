@@ -115,13 +115,14 @@ def invocation(root: Path):
             "project_doc_max_bytes": 0,
             "history.persistence": "none",
             "sqlite_home": str(root / "codex-state"),
-            "default_permissions": "studio.apps.interview_assistant",
-            "permissions.studio.apps.interview_assistant.filesystem": {
+            # This is an external Codex profile key, independent of Python package names.
+            "default_permissions": "fpl_interview",
+            "permissions.fpl_interview.filesystem": {
                 ":minimal": "read",
                 str(root / "input"): "read",
                 str(root / "work"): "write",
             },
-            "permissions.studio.apps.interview_assistant.network.enabled": False,
+            "permissions.fpl_interview.network.enabled": False,
             "features.shell_tool": False,
             "features.shell_snapshot": False,
             "features.hooks": False,

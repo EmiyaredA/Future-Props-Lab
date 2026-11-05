@@ -405,7 +405,20 @@ def test_cli_configuration_does_not_inherit_backend_credentials(tmp_path, monkey
     assert "features.shell_tool=false" in combined
     assert "--ignore-user-config" in command
     assert "--output-schema" in command
-    assert "permissions.studio.apps.interview_assistant.filesystem" in combined
+    import tomllib
+
+    overrides = tomllib.loads(
+        "\n".join(command[index + 1] for index, arg in enumerate(command) if arg == "-c")
+    )
+    profile = overrides["default_permissions"]
+    assert profile == "fpl_interview"
+    permissions = overrides["permissions"][profile]
+    assert permissions["filesystem"] == {
+        ":minimal": "read",
+        str(tmp_path / "input"): "read",
+        str(tmp_path / "work"): "write",
+    }
+    assert permissions["network"]["enabled"] is False
     assert "danger-full-access" not in combined
 
 
