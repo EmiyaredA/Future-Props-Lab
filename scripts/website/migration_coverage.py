@@ -15,6 +15,8 @@ from studio.apps.director_desk.storage.migration_records import DATASETS as DIRE
 from studio.apps.galgame_workshop.storage.migration_records import DATASETS as GALGAME
 from studio.apps.galgame_workshop.storage.migration_records import OPERATIONS as GALGAME_RECEIPTS
 from studio.apps.identity.credential_migration import DATASETS as IDENTITY
+from studio.apps.interview_assistant.storage.migration_records import CREATES as INTERVIEW_CREATES
+from studio.apps.interview_assistant.storage.migration_records import DATASETS as INTERVIEW
 from studio.apps.model_service.catalog_migration import DATASETS as MODELS
 from studio.apps.model_service.settings_migration import DEFAULT_PREFIX, POLICIES
 from studio.apps.motion_compositor.storage.migration_records import DATASETS as MOTION
@@ -50,8 +52,8 @@ TRANSFER = {
     },
     **{
         dataset.model.__tablename__: dataset.name
-        for dataset in (*MOTION, *VIDEO, *GALGAME, *VISUAL, *ANNOTATION)
-        if dataset is not ANNOTATION_RECEIPTS
+        for dataset in (*MOTION, *VIDEO, *GALGAME, *VISUAL, *ANNOTATION, *INTERVIEW)
+        if dataset is not ANNOTATION_RECEIPTS and dataset is not INTERVIEW_CREATES
     },
     **{
         dataset.orm.__tablename__: dataset.name
@@ -123,6 +125,7 @@ OPERATION_DATASETS = {
     "visual": VISUAL_RECEIPTS.name,
     "thought": NOTE_RECEIPTS.name,
     "annotation": ANNOTATION_RECEIPTS.name,
+    "interview-create": INTERVIEW_CREATES.name,
 }
 
 

@@ -612,3 +612,9 @@ Creative 和 Integrations 的目录与原件均读回验收后，保留封存源
 先显式应用 Annotation 的 0002 迁移。在同一隔离计划下，通过 `studio.assembly.independent.audio_annotation.cli` 启动封存源的 `migration-export` 和目标的 `migration-import`，并执行 `uv run python -m scripts.website.migrate_annotation --plan "$plan" --source "$annotation_source" --target "$annotation_target"`。按项目、文档、波形和编辑回执的顺序迁入并读回。每个项目必须同时具有文档和波形。
 
 完成 Assets 原件传输及 SHA256 核验后，执行 `uv run python -m scripts.website.migrate_annotation_references --plan "$plan" --source "$annotation_source" --target "$assets_target"`。每个项目仅保留原账号库内的一份合规音频。目标验证文件回执及引用修订，重复提交同一批次时核对原回执。
+
+### 面试助手场次与资料原件
+
+先显式应用 Interview 的 0003 迁移。用同一份隔离计划，通过 `studio.assembly.independent.interview_assistant.cli` 启动封存源的 `migration-export` 和目标的 `migration-import`。执行 `uv run python -m scripts.website.migrate_interview --plan "$plan" --source "$interview_source" --target "$interview_target"`，依次迁入场次、材料、准备任务和创建回执，然后校验当前任务、已交付报告和材料原件。文件按原账号、场次及材料标识传输，核对大小、SHA256 和持久回执。旧尝试的临时执行目录随封存快照保留。
+
+迁移读回后，正常启动会将旧站尚未结束的准备任务标记为中断，并保留任务事件和已交付报告。只有显式重试才会创建新的执行。正式切换仍由整站门禁确认。

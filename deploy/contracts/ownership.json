@@ -4493,6 +4493,12 @@
       "model": "NativeMcpObservation"
     },
     {
+      "table": "interview_import_receipts",
+      "service": "interview",
+      "module": "studio.apps.interview_assistant.storage.migration_records",
+      "model": "InterviewImportReceipt"
+    },
+    {
       "table": "interview_rooms",
       "service": "interview",
       "module": "studio.apps.interview_assistant.storage.models",
