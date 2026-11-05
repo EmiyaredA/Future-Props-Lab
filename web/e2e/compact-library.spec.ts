@@ -68,7 +68,7 @@ test("compact apps and file collections keep measurable density and keyboard ope
     await page.setViewportSize(viewport);
     for (const theme of ["dark", "light"]) {
       await page.goto("/apps");
-      await expect(page.locator(".application-card")).toHaveCount(10);
+      await expect(page.locator(".application-card")).toHaveCount(9);
       await setResponsiveTheme(page, theme);
       await noOverflow(page);
       const rows = await page

@@ -51,7 +51,7 @@ for (const width of [390, 1440]) {
       });
       await page.goto("/model-service");
       await expect(
-        page.getByRole("heading", { name: "模型服务", exact: true }),
+        page.getByRole("heading", { name: "模型与智能体", exact: true }),
       ).toBeVisible();
       if (theme === "dark")
         await page.getByRole("button", { name: "深色", exact: true }).click();

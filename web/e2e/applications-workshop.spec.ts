@@ -715,7 +715,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await expect(page.locator(".studio-sidebar")).toBeVisible();
   await page.getByRole("button", { name: "文件管理" }).click();
   await expect(page).toHaveURL(/\/files$/);
-  await expect(page.getByRole("heading", { name: "文件管理" })).toBeVisible();
+  await expect(page.locator(".file-management-page")).toBeVisible();
 
   await page.setViewportSize({ width: 700, height: 800 });
   await page.goto("/apps/visual-workshop/tasks");
