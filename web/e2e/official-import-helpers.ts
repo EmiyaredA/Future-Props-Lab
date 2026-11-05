@@ -47,7 +47,7 @@ export async function importAndPublish(
         title: directory.knowledge_base.title,
         is_official: true,
         read_only: true,
-        editable_platform_roles: ["admin", "admin"],
+        editable_platform_roles: ["admin"],
         articles: [
           ...directory.documents,
           { id: directory.knowledge_base.home_note_id },

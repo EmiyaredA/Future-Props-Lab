@@ -182,7 +182,7 @@ export function PublicationDialog({
                       editable_platform_roles:
                         e.target.checked &&
                         !value.editable_platform_roles?.length
-                          ? ["admin", "admin"]
+                          ? ["admin"]
                           : value.editable_platform_roles,
                     })
                   }
@@ -193,7 +193,6 @@ export function PublicationDialog({
                 <legend>可编辑的平台角色</legend>
                 {(
                   [
-                    ["admin", "超级管理员"],
                     ["admin", "管理员"],
                     ["user", "普通用户"],
                   ] as const

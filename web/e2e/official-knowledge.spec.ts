@@ -20,7 +20,9 @@ test("administrators explicitly import private notes then publish through the or
   await expect(dialog).toContainText("12 个私人知识库");
   await expect(dialog).toContainText("93 篇文章");
   await expect(dialog).toContainText("不会自动发布");
-  await dialog.getByRole("button", { name: "导入到当前 Workspace" }).click();
+  await dialog
+    .getByRole("button", { name: "导入到当前账号", exact: true })
+    .click();
   await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible({
     timeout: 20000,
   });
@@ -36,6 +38,10 @@ test("administrators explicitly import private notes then publish through the or
     ).publication,
   ).toBeNull();
   await page
+    .getByRole("navigation", { name: "当前知识库视图" })
+    .getByRole("button", { name: "全部文档", exact: true })
+    .click();
+  await page
     .getByRole("button", { name: "知识库更多操作", exact: true })
     .click();
   await page
@@ -44,10 +50,12 @@ test("administrators explicitly import private notes then publish through the or
   const publish = page.getByRole("alertdialog", { name: "发布到知识社区" });
   await expect(publish.getByLabel("只读发布", { exact: true })).toBeChecked();
   await publish.getByLabel("官方发布", { exact: true }).check();
-  await expect(publish.getByLabel("超级管理员可编辑")).toBeChecked();
   await expect(
     publish.getByLabel("管理员可编辑", { exact: true }),
   ).toBeChecked();
+  await expect(
+    publish.getByLabel("普通用户可编辑", { exact: true }),
+  ).not.toBeChecked();
   await publish.getByRole("button", { name: "全选", exact: true }).click();
   await publish.getByRole("button", { name: "发布选定文章" }).click();
   await expect(publish).not.toBeVisible();
@@ -57,6 +65,7 @@ test("administrators explicitly import private notes then publish through the or
     ).json()
   ).publication;
   expect(pub.is_official && pub.read_only).toBe(true);
+  expect(pub.editable_platform_roles).toEqual(["admin"]);
   await page.goto(
     `/apps/thought-workshop/community/${pub.id}/documents/${directory.documents[0].id}`,
   );
