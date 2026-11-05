@@ -623,4 +623,4 @@ Creative 和 Integrations 的目录与原件均读回验收后，保留封存源
 
 先显式应用 Amadeus 的 0003 迁移。用同一隔离计划，通过 `studio.assembly.independent.amadeus.cli` 分别启动封存源的 `migration-export` 和目标的 `migration-import`。执行 `uv run python -m scripts.website.migrate_amadeus_history --plan "$plan" --source "$amadeus_source" --target "$amadeus_target"`。先恢复对话、运行、消息、操作、问题和事件，再恢复运行之间的续接关系。报告核对运行链、响应消息和事件序列。启动后，旧活动运行由正常恢复逻辑标记为中断，未知外部操作保留待核实状态，已生成的部分回复可读回。
 
-会话工作文件和固定 Skill 原件仍需单独迁移并验收。正式窗口前保留完整来源快照。
+同一命令随后逐账号迁移会话的导入文件、脚本、输出文件和固定 Skill 原件，包括嵌套文件与空文件。源、目标逐文件比对路径、大小和 SHA256，核对持久回执，拒绝未登记的目标文件。临时执行文件随封存的来源快照保留。正式窗口前保留完整来源快照。

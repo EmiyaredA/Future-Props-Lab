@@ -1,20 +1,23 @@
 """Rehearse Amadeus graph transfer and interrupted-run recovery using owned state."""
 
 import asyncio
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
+import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from scripts.website.legacy_snapshot import digest
-from scripts.website.migrate_amadeus_history import verify_relationships
+from scripts.website.migrate_amadeus_history import transfer_originals, verify_relationships
 from scripts.website.migration_transfer import pages, project_datasets, transfer
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from tests.test_tools_navigation_migration import available_ports, listener
 
+from app.console.amadeus.files import read_file_bytes, work_root
 from app.console.amadeus.models import (
     AmadeusAction,
     AmadeusConversation,
@@ -23,8 +26,10 @@ from app.console.amadeus.models import (
     AmadeusRun,
     AmadeusRunEvent,
 )
+from app.console.amadeus.skill_files import read_skill_file
 from db.migrations import apply_migrations
 from studio.apps.amadeus.storage.migration_history import DATASETS, LINKS
+from studio.apps.amadeus.storage.migration_originals import PREFIX as ORIGINALS
 from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
 from studio.apps.identity.storage.models.accounts import User
 from studio.assembly.independent.amadeus.application import create_app
@@ -146,6 +151,20 @@ def test_transfer_amadeus_graph_and_preserve_unknown_execution(tmp_path):
     owner, other = uuid4(), uuid4()
     old = tmp_path / "legacy.sqlite"
     ids = seed_legacy(old, owner, other)
+    source_files = work_root(str(owner), ids.conversation, files_root=old.parent)
+    expected_files = {
+        "imports/原资料.txt": "保留原始输入".encode(),
+        "scripts/sample.py": b"print('archived')\n",
+        # A streaming original can exceed the maintenance JSON body limit.
+        "outputs/old-output.bin": bytes(33 * 1024 * 1024),
+        "skills/retained-skill/v1/SKILL.md": b"# Prior pinned version\n",
+        "skills/retained-skill/v1/nested/empty.txt": b"",
+    }
+    for name, payload in {**expected_files, "tmp/unfinished.txt": b"rollback only"}.items():
+        file = source_files / name
+        file.parent.mkdir(parents=True, exist_ok=True)
+        file.write_bytes(payload)
+
     plan = MigrationPlan(
         run_id=uuid4(),
         source_revision="d" * 40,
@@ -191,6 +210,23 @@ def test_transfer_amadeus_graph_and_preserve_unknown_execution(tmp_path):
         httpx.Client(timeout=25, trust_env=False) as client,
         start(client, old_port, "migration-export", "--legacy-db", old) as source,
     ):
+        path = f"{ORIGINALS}/{owner}"
+        manifest = client.get(source + path + "/inventory", headers=headers)
+        manifest.raise_for_status()
+        descriptors = {entry["path"]: entry for entry in manifest.json()}
+        assert {name: item["sha256"] for name, item in descriptors.items()} == {
+            name: hashlib.sha256(payload).hexdigest() for name, payload in expected_files.items()
+        }
+        first_file = descriptors["skills/retained-skill/v1/nested/empty.txt"]
+
+        def put_file(target, descriptor, data, *, account=owner):
+            return client.put(
+                target + f"{ORIGINALS}/{account}/file",
+                params=descriptor,
+                headers=headers,
+                content=data,
+            )
+
         with open_target(client) as target:
             assert transfer(client, plan, source, target, conversations)["record_count"] == 1
             first = next(pages(client, source, headers, plan, owner, runs)).batch
@@ -198,6 +234,19 @@ def test_transfer_amadeus_graph_and_preserve_unknown_execution(tmp_path):
             durable = upload(client, target, runs, first)
             durable.raise_for_status()
             early = durable.json()
+            assert put_file(target, first_file, b"wrong").status_code == 409
+            assert put_file(target, first_file, b"", account=other).status_code == 409
+            escaped = {**first_file, "path": "outputs/../escape.txt", "kind": "outputs"}
+            denied = put_file(target, escaped, b"")
+            assert denied.status_code == 409
+            assert denied.json()["code"] == "migration_amadeus_original_descriptor_invalid"
+            partial = put_file(target, first_file, b"")
+            partial.raise_for_status()
+            first_file_receipt = partial.json()
+            incomplete_skill = client.get(
+                target + path + "/inventory", params={"complete": True}, headers=headers
+            )
+            assert incomplete_skill.status_code == 409
 
         with open_target(client) as target:
             assert upload(client, target, runs, first).json() == early
@@ -229,6 +278,29 @@ def test_transfer_amadeus_graph_and_preserve_unknown_execution(tmp_path):
             assert upload(client, target, links, foreign).status_code == 409
             assert transfer(client, plan, source, target, links) == evidence
             assert verify_relationships(client, plan, source, target)["record_count"] == 2
+            files = transfer_originals(client, plan, source, target)
+            assert (files["record_count"], files["byte_count"]) == (
+                len(expected_files),
+                sum(map(len, expected_files.values())),
+            )
+            assert put_file(target, first_file, b"").json() == first_file_receipt
+            assert transfer_originals(client, plan, source, target) == files
+            dest = work_root(str(owner), ids.conversation, files_root=state)
+            assert not (dest / "tmp").exists()
+            excess = dest / "outputs" / "unexpected.txt"
+            excess.write_bytes(b"not in the sealed snapshot")
+            with pytest.raises(ValueError, match="原件与源快照不一致"):
+                transfer_originals(client, plan, source, target)
+            excess.unlink()
+
+    assert (
+        read_file_bytes(str(owner), ids.conversation, "imports", "原资料.txt", files_root=state)
+        == expected_files["imports/原资料.txt"]
+    )
+    skill = read_skill_file(
+        str(owner), ids.conversation, "retained-skill", "v1", "nested/empty.txt", files_root=state
+    )
+    assert skill == {"path": "nested/empty.txt", "bytes": 0, "content": ""}
 
     async def first_start():
         app = create_app(
