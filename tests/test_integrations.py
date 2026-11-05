@@ -13,14 +13,12 @@ import pytest
 from fastapi import UploadFile
 from sqlalchemy import delete
 
-from app.integrations.common import IntegrationValidationError
-from app.integrations.mcp import McpCatalog
-from app.integrations.mcp.client import (
-    DiscoveredTool,
-    DiscoveryResult,
-    OfficialMcpDiscoveryClient,
-)
-from app.integrations.models import (
+import integration_test_support as integration_dependencies
+from studio.apps.integrations.mcp.catalog import McpCatalog
+from studio.apps.integrations.mcp.client import OfficialMcpDiscoveryClient
+from studio.apps.integrations.skills.archive import SkillArchiveStorage
+from studio.apps.integrations.skills.catalog import SkillCatalog
+from studio.apps.integrations.storage.models import (
     IntegrationCheck,
     McpDiscoveredTool,
     McpIntegration,
@@ -28,14 +26,14 @@ from app.integrations.models import (
     SkillVersion,
     ToolApiIntegration,
 )
-from app.integrations.schemas import McpCreateIn, ToolApiCreateIn
-from app.integrations.skills.archive import SkillArchiveStorage
-from app.integrations.skills.catalog import SkillCatalog
-from app.integrations.tool_apis import ToolApiCatalog
+from studio.apps.integrations.tool_apis.catalog import ToolApiCatalog
 from studio.assembly.http_dependencies import SessionDep, require_studio_auth
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.integrations.catalog import McpCreateIn, ToolApiCreateIn
+from studio.contracts.integrations.errors import IntegrationValidationError
+from studio.contracts.integrations.mcp import DiscoveredTool, DiscoveryResult
 from studio.runtime.http.outbound_urls import require_safe_integration_http_url
 from website_test_support import SessionLocal, app
 
@@ -80,7 +78,7 @@ def _skill_zip(
 
 
 @pytest.mark.asyncio
-async def test_skill_download_after_runtime_directory_move(tmp_path, monkeypatch) -> None:
+async def test_skill_download_after_runtime_directory_move(tmp_path) -> None:
     await _clear_integrations()
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -99,9 +97,10 @@ async def test_skill_download_after_runtime_directory_move(tmp_path, monkeypatch
     new_root = SkillArchiveStorage(moved, "test-user").final_path(skill_id, "v1")
     shutil.copytree(old_root, new_root)
     old_root.rename(old_root.with_name("offline-v1"))
-    monkeypatch.setattr("app.integrations.skills.catalog.get_settings", lambda: moved)
     async with SessionLocal() as session:
-        _, payload = await SkillCatalog(session, "test-user").version_zip(skill_id, "v1")
+        _, payload = await SkillCatalog(
+            session, "test-user", storage=SkillArchiveStorage(moved, "test-user")
+        ).version_zip(skill_id, "v1")
     with zipfile.ZipFile(io.BytesIO(payload)) as archive:
         assert "name: demo-skill" in archive.read("SKILL.md").decode()
 
@@ -123,7 +122,12 @@ async def test_tool_api_crud_secret_redaction_cas_and_mock_validation() -> None:
 
     async with SessionLocal() as session:
         bind_owner(session, "test-user")
-        catalog = ToolApiCatalog(session, "test-user", transport=httpx.MockTransport(handler))
+        catalog = ToolApiCatalog(
+            session,
+            "test-user",
+            transport=httpx.MockTransport(handler),
+            cipher=integration_dependencies.cipher(),
+        )
         created = await catalog.create(
             ToolApiCreateIn(
                 name="Local echo",
@@ -194,7 +198,12 @@ async def test_tool_api_validation_does_not_follow_redirects_and_limits_response
 
     async with SessionLocal() as session:
         bind_owner(session, "test-user")
-        catalog = ToolApiCatalog(session, "test-user", transport=httpx.MockTransport(handler))
+        catalog = ToolApiCatalog(
+            session,
+            "test-user",
+            transport=httpx.MockTransport(handler),
+            cipher=integration_dependencies.cipher(),
+        )
         for name, path, expected in (
             ("Redirect fixture", "redirect", "HTTP 302"),
             ("Large fixture", "large", "超过 1 MiB"),
@@ -213,11 +222,13 @@ async def test_catalog_queries_are_workspace_scoped() -> None:
     await _clear_integrations()
     async with SessionLocal() as session:
         bind_owner(session, "test-user")
-        await ToolApiCatalog(session, "test-user").create(
+        await ToolApiCatalog(session, "test-user", cipher=integration_dependencies.cipher()).create(
             ToolApiCreateIn(name="Default only", url="https://example.com/tool")
         )
     async with SessionLocal() as session:
-        catalog = await ToolApiCatalog(session, "another-workspace").catalog()
+        catalog = await ToolApiCatalog(
+            session, "another-workspace", cipher=integration_dependencies.cipher()
+        ).catalog()
         assert catalog.items == []
         assert catalog.overview.primary_count == 0
         assert catalog.overview.recent == []
@@ -296,7 +307,9 @@ async def test_mcp_validation_replaces_discovery_snapshot() -> None:
     await _clear_integrations()
     async with SessionLocal() as session:
         bind_owner(session, "test-user")
-        catalog = McpCatalog(session, "test-user", client=_FakeMcpClient())
+        catalog = McpCatalog(
+            session, "test-user", client=_FakeMcpClient(), cipher=integration_dependencies.cipher()
+        )
         created = await catalog.create(
             McpCreateIn(
                 name="Fixture MCP",
@@ -319,7 +332,12 @@ async def test_mcp_failure_summaries_and_responses_do_not_leak_secrets() -> None
     await _clear_integrations()
     async with SessionLocal() as session:
         bind_owner(session, "test-user")
-        catalog = McpCatalog(session, "test-user", client=_FailingMcpClient())
+        catalog = McpCatalog(
+            session,
+            "test-user",
+            client=_FailingMcpClient(),
+            cipher=integration_dependencies.cipher(),
+        )
         created = await catalog.create(
             McpCreateIn(
                 name="Failing MCP",

@@ -18,7 +18,6 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.integrations.mcp.client import DiscoveredTool, DiscoveryResult
 from studio.apps.integrations.records import ValidationAttempt
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.integrations.application import create_app
@@ -31,6 +30,7 @@ from studio.contracts.integrations.integration_intents import (
     IntegrationDecision,
     IntegrationIntentReceipt,
 )
+from studio.contracts.integrations.mcp import DiscoveredTool, DiscoveryResult
 from studio.runtime.database.migrations import apply
 
 
@@ -257,10 +257,10 @@ for forbidden in (
 async def test_skill_files_follow_confirmed_database_state_after_lost_commit_reply(
     case, monkeypatch
 ):
-    from app.integrations.models import SkillIntegration
-    from app.integrations.skills.archive import SkillArchiveStorage
-    from app.integrations.skills.catalog import SkillCatalog
     from studio.apps.integrations.skill_files import reconcile_skill_files
+    from studio.apps.integrations.skills.archive import SkillArchiveStorage
+    from studio.apps.integrations.skills.catalog import SkillCatalog
+    from studio.apps.integrations.storage.models import SkillIntegration
 
     class Archive:
         filename = "skill.zip"

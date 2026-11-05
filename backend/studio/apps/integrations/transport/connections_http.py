@@ -1,10 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request
 
-from app.integrations.http_bindings import external_catalog
+from studio.apps.integrations.transport.bindings import external_catalog
 from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
-
-from .contracts import ExternalError
-from .schemas import (
+from studio.contracts.integrations.external_connections import (
     ExternalConnectionInput,
     ExternalConnectionList,
     ExternalConnectionOut,
@@ -12,6 +10,7 @@ from .schemas import (
     ExternalTargetInput,
     ExternalTargetOut,
 )
+from studio.contracts.integrations.external_documents import ExternalError
 
 router = APIRouter(prefix="/integrations/external-connections", tags=["integrations"])
 

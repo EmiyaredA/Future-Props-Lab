@@ -2,7 +2,6 @@
 
 from functools import partial
 
-from app.runtime.credentials import SecretCipher
 from studio.apps.model_service import settings_migration as settings
 from studio.apps.model_service.catalog_migration import (
     DATASETS,
@@ -27,6 +26,7 @@ from studio.apps.model_service.transport.migration_originals_http import (
 )
 from studio.runtime.database.migration_apps import export_app, import_app, mount_dataset
 from studio.runtime.database.project_history_migration import mount_project_history
+from studio.runtime.secrets import SecretCipher
 
 PREFIX = "/v1/migration/models"
 TRANSPORT = {

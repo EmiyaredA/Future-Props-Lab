@@ -26,10 +26,10 @@ from app.console.creative_workshop.schemas import (
     CreativeReleaseOut,
 )
 from app.console.creative_workshop.sources import MemoryIncoming, sources
-from app.integrations.schemas import ToolApiCreateIn
 from studio.config.settings import get_settings
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.integrations.catalog import ToolApiCreateIn
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.files.raster import derived_thumbnail
 from studio.runtime.http.outbound_urls import normalize_integration_http_url

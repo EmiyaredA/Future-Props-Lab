@@ -12,14 +12,9 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.integrations.checks import list_recent_checks, record_check
-from app.integrations.common import (
-    DuplicateIntegrationError,
-    IntegrationNotFoundError,
-    redact_sensitive,
-)
-from app.integrations.models import IntegrationCheck, ToolApiIntegration
-from app.integrations.schemas import (
+from studio.apps.integrations.storage.check_history import list_recent_checks, record_check
+from studio.apps.integrations.storage.models import IntegrationCheck, ToolApiIntegration
+from studio.contracts.integrations.catalog import (
     IntegrationOverviewOut,
     ToolApiCatalogOut,
     ToolApiCreateIn,
@@ -27,13 +22,12 @@ from app.integrations.schemas import (
     ToolApiUpdateIn,
     ToolApiValidationOut,
 )
-from app.runtime.credentials import SecretCipher
-from app.runtime.secret_hints import encrypted_secret_hint
-from studio.config.settings import get_settings
+from studio.contracts.integrations.errors import DuplicateIntegrationError, IntegrationNotFoundError
 from studio.contracts.model_service.demo import TOOL_BASE_URL
 from studio.runtime.database.ownership import require_owner_id
 from studio.runtime.http.outbound_urls import require_safe_integration_http_url
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.secrets import redact_sensitive
 from studio.runtime.time import iso_utc, utc_now
 
 PLACEHOLDER = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
@@ -41,7 +35,7 @@ RESPONSE_LIMIT = 1024 * 1024
 PREVIEW_LIMIT = 32 * 1024
 
 
-def _out(row: ToolApiIntegration, hint=encrypted_secret_hint) -> ToolApiOut:
+def _out(row: ToolApiIntegration, hint) -> ToolApiOut:
     return ToolApiOut(
         id=row.id,
         name=row.name,
@@ -152,9 +146,9 @@ class ToolApiCatalog:
         transport: httpx.AsyncBaseTransport | None = None,
         demo_tools=None,
         execution=None,
-        cipher=None,
+        cipher,
     ) -> None:
-        self.cipher = cipher or SecretCipher(get_settings().fpl_secrets_key)
+        self.cipher = cipher
         self.session = session
         self.owner_user_id = require_owner_id(owner_user_id, subject="integration catalog")
         self.transport = transport

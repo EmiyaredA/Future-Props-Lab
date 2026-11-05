@@ -9,9 +9,9 @@ import httpx
 import pytest
 from fastapi import UploadFile
 
-from app.integrations.common import IntegrationValidationError
-from app.integrations.skills.archive import SkillArchiveStorage
+from studio.apps.integrations.skills.archive import SkillArchiveStorage
 from studio.config.settings import Settings, get_settings
+from studio.contracts.integrations.errors import IntegrationValidationError
 from website_test_support import app
 
 

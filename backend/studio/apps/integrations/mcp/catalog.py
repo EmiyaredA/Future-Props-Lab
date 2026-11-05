@@ -9,20 +9,13 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.integrations.checks import list_recent_checks, record_check
-from app.integrations.common import (
-    DuplicateIntegrationError,
-    IntegrationNotFoundError,
-    redact_sensitive,
-    redact_structure,
-)
-from app.integrations.mcp.client import McpDiscoveryClient, OfficialMcpDiscoveryClient
-from app.integrations.models import (
+from studio.apps.integrations.storage.check_history import list_recent_checks, record_check
+from studio.apps.integrations.storage.models import (
     IntegrationCheck,
     McpDiscoveredTool,
     McpIntegration,
 )
-from app.integrations.schemas import (
+from studio.contracts.integrations.catalog import (
     IntegrationOverviewOut,
     McpCatalogOut,
     McpCreateIn,
@@ -31,10 +24,11 @@ from app.integrations.schemas import (
     McpUpdateIn,
     McpValidationOut,
 )
-from app.runtime.credentials import SecretCipher
-from studio.config.settings import get_settings
+from studio.contracts.integrations.errors import DuplicateIntegrationError, IntegrationNotFoundError
+from studio.contracts.integrations.mcp import McpDiscoveryClient
 from studio.runtime.database.ownership import require_owner_id
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.secrets import redact_sensitive, redact_structure
 from studio.runtime.time import iso_utc, utc_now
 
 
@@ -53,15 +47,15 @@ class McpCatalog:
         session: AsyncSession,
         owner_user_id: str,
         *,
-        client: McpDiscoveryClient | None = None,
+        client: McpDiscoveryClient,
         execution=None,
-        cipher=None,
+        cipher,
     ) -> None:
-        self.cipher = cipher or SecretCipher(get_settings().fpl_secrets_key)
+        self.cipher = cipher
         self.execution = execution
         self.session = session
         self.owner_user_id = require_owner_id(owner_user_id, subject="integration catalog")
-        self.client = client or OfficialMcpDiscoveryClient(get_settings())
+        self.client = client
 
     async def _get(self, integration_id: str) -> McpIntegration:
         row = await self.session.get(McpIntegration, integration_id)

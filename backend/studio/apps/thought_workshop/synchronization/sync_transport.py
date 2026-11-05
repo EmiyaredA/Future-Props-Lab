@@ -5,8 +5,8 @@ import json
 import httpx
 from pydantic import TypeAdapter
 
-from app.integrations.external.contracts import ExternalError
 from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
+from studio.contracts.integrations.external_documents import ExternalError
 from studio.contracts.integrations.external_sync import (
     ExternalIntentGrant,
     ExternalProgress,

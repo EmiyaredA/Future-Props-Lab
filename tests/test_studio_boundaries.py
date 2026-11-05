@@ -131,6 +131,7 @@ def test_migrated_packages_have_one_source_owner():
         ROOT / "backend/app/capabilities/identity",
         ROOT / "backend/app/capabilities/asset_store",
         ROOT / "backend/app/capabilities/media_rendering",
+        ROOT / "backend/app/integrations",
         ROOT / "backend/app/console/file_library",
     ):
         assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"
@@ -150,6 +151,28 @@ def test_runtime_mechanisms_do_not_import_application_implementations():
             assert not name.startswith(
                 ("app.", "studio.apps.", "studio.assembly.", "studio.host.")
             ), f"{path.relative_to(ROOT)} imports {name}"
+
+
+def test_integrations_do_not_fall_back_to_global_settings():
+    for path in (STUDIO / "apps/integrations").rglob("*.py"):
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                name = (
+                    node.func.id
+                    if isinstance(node.func, ast.Name)
+                    else node.func.attr
+                    if isinstance(node.func, ast.Attribute)
+                    else ""
+                )
+                assert name != "get_settings", path
+
+
+def test_article_sync_does_not_construct_integration_storage():
+    for path in (STUDIO / "apps/thought_workshop/external_sync").glob("*.py"):
+        for name in imports(path):
+            if name.startswith("studio.apps.integrations."):
+                assert name.startswith("studio.apps.integrations.clients."), (path, name)
 
 
 def test_public_client_parents_cannot_eagerly_load_foreign_implementations():

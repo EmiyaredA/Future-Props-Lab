@@ -9,16 +9,11 @@ from uuid import UUID
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
-from app.integrations.common import (
-    DuplicateIntegrationError,
-    IntegrationNotFoundError,
-    IntegrationPermissionError,
-    IntegrationValidationError,
-    require_integration_owner,
-)
-from app.integrations.http_bindings import mcp_catalog, skill_catalog, tool_catalog
-from app.integrations.projections import safe_validation_catalog
-from app.integrations.schemas import (
+from studio.apps.integrations.rules.access import require_integration_owner
+from studio.apps.integrations.transport.bindings import mcp_catalog, skill_catalog, tool_catalog
+from studio.apps.integrations.transport.projections import safe_validation_catalog
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
+from studio.contracts.integrations.catalog import (
     DeleteOut,
     McpCatalogOut,
     McpCreateIn,
@@ -43,7 +38,12 @@ from app.integrations.schemas import (
     ValidationAttemptListOut,
     ValidationReconcileOut,
 )
-from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
+from studio.contracts.integrations.errors import (
+    DuplicateIntegrationError,
+    IntegrationNotFoundError,
+    IntegrationPermissionError,
+    IntegrationValidationError,
+)
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 

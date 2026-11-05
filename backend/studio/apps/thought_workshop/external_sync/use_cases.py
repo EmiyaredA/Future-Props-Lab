@@ -5,36 +5,36 @@ from datetime import timedelta
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.integrations.external.catalog import ExternalConnections
-from app.integrations.external.contracts import ExternalError
 from studio.apps.thought_workshop.external_sync.binding import bind_note
 from studio.apps.thought_workshop.external_sync.models import (
     ArticleSyncAsset,
     ArticleSyncStep,
     ArticleSyncTask,
 )
+from studio.apps.thought_workshop.external_sync.ports import ArticleConnections
 from studio.apps.thought_workshop.external_sync.preview import preview_note
 from studio.apps.thought_workshop.external_sync.records import ArticleSyncRecords, task_out
 from studio.apps.thought_workshop.external_sync.schemas import ArticleSyncReconcileOut
+from studio.contracts.integrations.external_documents import ExternalError
 from studio.runtime.time import utc_now
 
 
 class ArticleSync(ArticleSyncRecords):
-    def __init__(self, session, owner_user_id, principal, transport=None):
+    def __init__(self, session, owner_user_id, principal, *, connections: ArticleConnections):
         super().__init__(session, owner_user_id, principal)
-        self.transport = transport
+        self.connections = connections
 
     async def bind(self, note_id, body):
         return await bind_note(
             self,
-            ExternalConnections(self.session, self.owner_user_id, self.transport),
+            self.connections,
             note_id,
             body,
         )
 
     async def preview(self, note_id, body):
         async def read_target(connection_id, document_id):
-            connections = ExternalConnections(self.session, self.owner_user_id, self.transport)
+            connections = self.connections
             revision = (await connections.get(connection_id)).revision
             client = await connections.client(connection_id, expected_revision=revision)
             await self.session.rollback()
@@ -76,9 +76,7 @@ class ArticleSync(ArticleSyncRecords):
         document_id, expected = task.remote["document_id"], task.remote["fingerprint"]
         remote_revision = task.remote["revision"]
         task_id = task.id
-        client = await ExternalConnections(self.session, self.owner_user_id, self.transport).client(
-            connection_id, expected_revision=connection_revision
-        )
+        client = await self.connections.client(connection_id, expected_revision=connection_revision)
         remote = await client.read(document_id)
         if remote.fingerprint != expected or remote.revision != remote_revision:
             raise ExternalError("飞书内容已变化，请重新预览再确认", 409, "remote_changed")
@@ -92,9 +90,7 @@ class ArticleSync(ArticleSyncRecords):
             or note.revision != task.note_revision
         ):
             raise ExternalError("文章或绑定已变化，请重新预览", 409)
-        await ExternalConnections(self.session, self.owner_user_id).require_enabled(
-            connection_id, expected_revision=connection_revision
-        )
+        await self.connections.require_enabled(connection_id, expected_revision=connection_revision)
         try:
             result = await self.session.execute(
                 update(ArticleSyncTask)
@@ -159,9 +155,7 @@ class ArticleSync(ArticleSyncRecords):
                 ArticleSyncStep.task_id == task_id, ArticleSyncStep.status == "pending"
             )
         )
-        client = await ExternalConnections(self.session, self.owner_user_id, self.transport).client(
-            connection_id, expected_revision=connection_revision
-        )
+        client = await self.connections.client(connection_id, expected_revision=connection_revision)
         remote = await client.read(expected["document_id"])
         task = await self.get_task(note_id, task_id)
         if task.status != "needs_review":
@@ -173,7 +167,7 @@ class ArticleSync(ArticleSyncRecords):
         )
         if safe:
             await self.note(note_id)
-            await ExternalConnections(self.session, self.owner_user_id).require_enabled(
+            await self.connections.require_enabled(
                 connection_id, expected_revision=connection_revision
             )
             binding = await self.binding(note_id)

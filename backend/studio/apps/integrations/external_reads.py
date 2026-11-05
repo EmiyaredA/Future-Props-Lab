@@ -2,8 +2,8 @@
 
 import asyncio
 
-from app.integrations.external.catalog import ExternalConnections
-from app.integrations.external.contracts import ExternalError
+from studio.apps.integrations.external.catalog import ExternalConnections
+from studio.contracts.integrations.external_documents import ExternalError
 
 
 async def guarded(operation, check):
@@ -30,7 +30,7 @@ async def guarded(operation, check):
 
 
 class ExternalReads:
-    def __init__(self, database, transport=None, *, cipher=None):
+    def __init__(self, database, transport=None, *, cipher):
         self.cipher = cipher
         self.database, self.transport = database, transport
 

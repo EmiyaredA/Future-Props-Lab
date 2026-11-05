@@ -6,10 +6,10 @@ import httpx
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 
-from app.integrations.external.contracts import ExternalError
 from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
+from studio.contracts.integrations.external_documents import ExternalError
 from studio.contracts.integrations.external_sync import (
     ExternalClose,
     ExternalRead,

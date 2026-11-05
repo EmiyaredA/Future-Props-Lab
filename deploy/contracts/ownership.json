@@ -3791,48 +3791,6 @@
       "model": "PlatformSetting"
     },
     {
-      "table": "integration_external_connections",
-      "service": "integrations",
-      "module": "app.integrations.external.models",
-      "model": "ExternalConnection"
-    },
-    {
-      "table": "integration_tool_apis",
-      "service": "integrations",
-      "module": "app.integrations.models",
-      "model": "ToolApiIntegration"
-    },
-    {
-      "table": "integration_mcp_servers",
-      "service": "integrations",
-      "module": "app.integrations.models",
-      "model": "McpIntegration"
-    },
-    {
-      "table": "integration_mcp_tools",
-      "service": "integrations",
-      "module": "app.integrations.models",
-      "model": "McpDiscoveredTool"
-    },
-    {
-      "table": "integration_skills",
-      "service": "integrations",
-      "module": "app.integrations.models",
-      "model": "SkillIntegration"
-    },
-    {
-      "table": "integration_skill_versions",
-      "service": "integrations",
-      "module": "app.integrations.models",
-      "model": "SkillVersion"
-    },
-    {
-      "table": "integration_checks",
-      "service": "integrations",
-      "module": "app.integrations.models",
-      "model": "IntegrationCheck"
-    },
-    {
       "table": "tool_navigation_items",
       "service": "tools",
       "module": "app.tool_navigation.models",
@@ -4485,6 +4443,48 @@
       "service": "integrations",
       "module": "studio.apps.integrations.storage.demo_records",
       "model": "DemoToolInstallation"
+    },
+    {
+      "table": "integration_external_connections",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.external_models",
+      "model": "ExternalConnection"
+    },
+    {
+      "table": "integration_tool_apis",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.models",
+      "model": "ToolApiIntegration"
+    },
+    {
+      "table": "integration_mcp_servers",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.models",
+      "model": "McpIntegration"
+    },
+    {
+      "table": "integration_mcp_tools",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.models",
+      "model": "McpDiscoveredTool"
+    },
+    {
+      "table": "integration_skills",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.models",
+      "model": "SkillIntegration"
+    },
+    {
+      "table": "integration_skill_versions",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.models",
+      "model": "SkillVersion"
+    },
+    {
+      "table": "integration_checks",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.models",
+      "model": "IntegrationCheck"
     },
     {
       "table": "integration_native_mcp_jobs",

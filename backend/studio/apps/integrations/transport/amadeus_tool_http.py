@@ -6,8 +6,8 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict
 
-from app.integrations.http_bindings import mcp_catalog, tool_catalog
 from studio.apps.integrations.amadeus_tool_calls import ToolCall
+from studio.apps.integrations.transport.bindings import mcp_catalog, tool_catalog
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.integrations.integration_intents import TOOL_CALL_PATH, digest
 

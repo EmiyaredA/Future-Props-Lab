@@ -5,10 +5,8 @@ from datetime import timedelta
 import httpx
 from sqlalchemy import delete, select, update
 
-from app.integrations.external.blocks import feishu_tree
-from app.integrations.external.catalog import ExternalConnections
-from app.integrations.external.contracts import ExternalError, ImageSource
-from app.integrations.external.feishu_verification import (
+from studio.apps.integrations.clients.document_blocks import feishu_tree
+from studio.apps.integrations.clients.document_verification import (
     assert_snapshot,
     verify_append,
     verify_delete,
@@ -23,6 +21,7 @@ from studio.apps.thought_workshop.external_sync.models import (
 )
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
 from studio.apps.thought_workshop.website.asset_metadata import read_bytes
+from studio.contracts.integrations.external_documents import ExternalError, ImageSource
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
@@ -31,9 +30,9 @@ from studio.runtime.time import utc_now
 class ArticleSyncRunner(PollingTaskRunner):
     runner_name = "article-external-sync"
 
-    def __init__(self, actor_allowed, transport=None, *, sessions):
+    def __init__(self, actor_allowed, *, sessions, connections):
         super().__init__()
-        self.actor_allowed, self.transport, self.sessions = actor_allowed, transport, sessions
+        self.actor_allowed, self.connections, self.sessions = actor_allowed, connections, sessions
 
     async def recover(self):
         async with self.sessions() as session:
@@ -91,14 +90,14 @@ class ArticleSyncRunner(PollingTaskRunner):
             raise ExternalError("文章、知识库或绑定已变化，已停止同步", 409)
         if not await self.actor_allowed(session, task.owner_user_id, task.actor):
             raise ExternalError("执行者权限已变化，已停止同步", 403)
-        await ExternalConnections(session, task.owner_user_id).get(task.connection_id)
+        await self.connections(session, task.owner_user_id).get(task.connection_id)
         return task
 
     async def before_step(self, task_id, client):
         async with self.sessions() as session:
             task = await self.context(session, task_id)
             expected = dict(task.checkpoint.get("remote", task.remote))
-            await ExternalConnections(session, task.owner_user_id).client(
+            await self.connections(session, task.owner_user_id).client(
                 task.connection_id, expected_revision=task.connection_revision
             )
         remote = await client.read(expected["document_id"])
@@ -108,7 +107,7 @@ class ArticleSyncRunner(PollingTaskRunner):
     async def begin_step(self, task_id, kind):
         async with self.sessions() as session:
             task = await self.context(session, task_id)
-            await ExternalConnections(session, task.owner_user_id).require_enabled(
+            await self.connections(session, task.owner_user_id).require_enabled(
                 task.connection_id, expected_revision=task.connection_revision
             )
             step = ArticleSyncStep(task_id=task_id, kind=kind)
@@ -162,9 +161,9 @@ class ArticleSyncRunner(PollingTaskRunner):
                     dict(task.content),
                     dict(task.remote),
                 )
-                client = await ExternalConnections(
-                    session, task.owner_user_id, self.transport
-                ).client(task.connection_id, expected_revision=task.connection_revision)
+                client = await self.connections(session, task.owner_user_id).client(
+                    task.connection_id, expected_revision=task.connection_revision
+                )
             document_id = remote["document_id"]
             if not await client.can_write(document_id):
                 raise ExternalError("飞书目标文档不可编辑", 403)

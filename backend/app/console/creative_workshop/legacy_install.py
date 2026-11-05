@@ -17,17 +17,17 @@ from app.console.creative_workshop.schemas import (
     CreativeInstallPreviewOut,
     CreativeStdioSetupIn,
 )
-from app.integrations.models import (
+from app.runtime.credentials import encrypt_secret
+from studio.apps.integrations.skills.archive import SkillArchiveStorage
+from studio.apps.integrations.storage.models import (
     McpIntegration,
     SkillIntegration,
     SkillVersion,
     ToolApiIntegration,
 )
-from app.integrations.schemas import McpCreateIn
-from app.integrations.skills.archive import SkillArchiveStorage
-from app.runtime.credentials import encrypt_secret
 from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.integrations.catalog import McpCreateIn
 from studio.runtime.ids import new_id
 
 

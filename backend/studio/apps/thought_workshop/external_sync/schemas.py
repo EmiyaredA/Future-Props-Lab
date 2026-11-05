@@ -3,7 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.integrations.external.schemas import ExternalTargetInput
+from studio.contracts.integrations.external_connections import ExternalTargetInput
 
 
 class ArticleBindingInput(ExternalTargetInput):

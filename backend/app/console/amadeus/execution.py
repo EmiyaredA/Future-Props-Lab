@@ -21,7 +21,8 @@ class OwnedRun(RunOut):
 
 
 class CodeAgentRuns:
-    def __init__(self, sessions, settings):
+    def __init__(self, sessions, settings, *, skills):
+        self.skills = skills
         self.settings = settings
         self.sessions, self.tasks = sessions, {}
 
@@ -111,7 +112,11 @@ class CodeAgentRuns:
                         bind_owner(session, run.owner_user_id)
                         identity = selected.removeprefix("skill:")
                         skill_snapshots[identity] = await load_skill(
-                            session, run.owner_user_id, run.conversation_id, identity
+                            session,
+                            run.owner_user_id,
+                            run.conversation_id,
+                            identity,
+                            catalog=self.skills(session, run.owner_user_id),
                         )
             if skill_snapshots:
                 async with self.sessions() as session:

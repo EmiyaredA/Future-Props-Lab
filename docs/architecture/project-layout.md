@@ -213,6 +213,8 @@ backend/
 
 `backend/studio/apps/creative_workshop/` 拥有 Creative 自有表、安装 outbox、文件和独立应用。公开目录复用旧站 HTTP 契约，账号写入继续由 CAS 和持久回执保护。独立应用按签名请求从 Identity 查询作者显示名，只读取 Creative 自有目录中的封面及 Skill 文件。`source_http.py` 根据网关签发的请求体证据，经 Integrations 的 `creative_sources_http.py` 读取同账号快照并核对 Skill 归档摘要。`preview_http.py` 通过按批次摘要绑定的授权查验目标名称与已安装状态。`stdio_http.py` 按安装记录和配置摘要委托 Integrations，环境值由 Integrations 加密保存。Creative 验签后更新安装投影，原安装回执保持可重放。镜像和浏览器入口可独立构建，`deploy/creative.compose.yaml` 提供隔离验收装配。作品认证与历史迁移仍是上线门禁。
 
+`studio/apps/integrations/transport/` 的目录与外部连接路由由两种装配共用；请求数据、MCP 发现结果和外部文档协议归 `studio/contracts/integrations/`，记录归 `storage/`，权限判定归 `rules/access.py`。网站的 `assembly/website/integrations.py` 显式注入密钥加密器、MCP 客户端和 Skill 存储，目录实现不再回退读取全局配置。归档安全校验器归 `clients/skill_archive.py`，账号布局和删除暂存归 `skills/archive.py`，创作工坊只复用前者。思绪同步入口与执行器通过显式连接工厂获取已授权快照和文档能力，不自行构造集成存储；快照不含密文或 ORM。`runtime/secrets.py` 提供显式密钥的加密与诊断脱敏，不导入配置。现存目录类仍兼有 SQL 和用例规则，后续按事务端口分离；本批不改迁移内容或未知结果恢复语义。
+
 `backend/studio/apps/integrations/` 拥有独立工具、MCP、Skills、外部连接 HTTP 装配、自有迁移和执行回执。`studio/contracts/integrations/integration_intents.py` / `integration_client.py` 将来源账号请求、资源与输入摘要绑定到 Identity 固定执行意图；Models 自有验证额度和演示安装回执保留跨服务幂等，不读取 Integrations 数据库。飞书同步由私有固定步骤协议执行，未知供应商响应不能自动重放。Skills 文件按本服务已提交记录恢复。`native_mcp.py` / `native_http.py` 对接主动连接的 Mac MCP worker，容器不持有主机命令、个人环境或目录。`deploy/integrations.compose.yaml` 只挂载所属状态、只读配置与用途限定凭据，外联使用单独网络；是否启用由 TOML 中明确选定的镜像决定。完整容器、原生与浏览器验收仍为正式切换前置条件。
 
 `studio/apps/integrations/storage/catalog_migration.py` 提供 Tool API、MCP 服务与发现工具、外部连接和检查历史的数据集。独立回环维护入口使用目标私有 TOML 的原加密密钥校验凭据，导入事务保留密文并提交批次回执。
@@ -357,14 +359,12 @@ Future-Props-Lab/
 ├── backend/studio/config/ # 独立 TOML 格式、字段映射与一次性 .env 转换；不导入 app 或数据库
 ├── backend/config.example.toml # 无真实密钥的配置示例；私有 config.toml 不提交、不打包
 ├── backend/app/
-│   ├── problem_details.py # 统一协议错误映射
 │   ├── runtime/       # 尚未迁出的凭据适配
 │   ├── capabilities/  # 有契约的共享能力：agents、web_access
 │   ├── console/       # 尚未迁出的治理、助手和创作用例
 │   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 │   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
-│   ├── tool_navigation/ # 工具目录状态与抖音/B站视频下载；自有 models/schemas/routes
-│   └── integrations/ # 账号工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
+│   └── tool_navigation/ # 工具目录状态与抖音/B站视频下载；自有 models/schemas/routes
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -470,11 +470,11 @@ Future-Props-Lab/
   当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。
 `web/src/features/applications/ApplicationCard.tsx` 拥有应用目录的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。
 
-- `integrations/` 拥有独立于工具导航的账号集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
+- `studio/apps/integrations/` 拥有独立于工具导航的账号集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
   `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
-  `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
-- `integrations/external/` 管理账号外部连接、加密应用凭据与飞书鉴权；`contracts.py` 和
-  `blocks.py` 接收明确的文档内容与图片素材，`feishu_verification.py` 核验远端块结果，
+  `storage/check_history.py` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
+- `studio/apps/integrations/external/` 管理账号外部连接、加密应用凭据与飞书鉴权；`studio/contracts/integrations/external_documents.py` 和
+  `studio/apps/integrations/clients/document_blocks.py` 接收明确的文档内容与图片素材，`clients/document_verification.py` 核验远端块结果，
   不读取思绪工坊 ORM。`/docx/` 链接直接作为文档标识；知识库 `/wiki/` 链接只提取节点标识，经飞书开放接口解析为 docx 后再读写。服务器不请求用户粘贴的主机。
   `apps/thought_workshop/external_sync/` 拥有文章绑定、内容导出快照、持久任务和步骤核验；
   `studio/apps/identity/website_access/external_sync.py` 为执行器提供当前操作者权限检查。

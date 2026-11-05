@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.integrations.models import SkillIntegration, SkillVersion
+from studio.apps.integrations.storage.models import SkillIntegration, SkillVersion
 from studio.contracts.integrations.skill_migration import DIGEST, VERSION
 from studio.contracts.management.migration_batches import MigrationBatch, MigrationPage
 from studio.contracts.management.project_history import HistoryRecord, Identifier

@@ -7,8 +7,8 @@ from fastapi import HTTPException
 from jsonschema import ValidationError
 from sqlalchemy import select, text, update
 
-from app.integrations.common import IntegrationNotFoundError, IntegrationNotStarted
-from app.integrations.models import McpIntegration, ToolApiIntegration
+from studio.apps.integrations.storage.models import McpIntegration, ToolApiIntegration
+from studio.contracts.integrations.errors import IntegrationNotFoundError, IntegrationNotStarted
 from studio.contracts.integrations.integration_intents import AmadeusToolOutcome
 from studio.runtime.time import utc_now
 

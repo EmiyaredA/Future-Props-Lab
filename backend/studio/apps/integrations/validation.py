@@ -9,17 +9,17 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy import select, text
 
-from app.integrations.common import IntegrationNotStarted
-from app.integrations.models import McpIntegration, ToolApiIntegration
-from app.integrations.schemas import (
+from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
+from studio.apps.integrations.storage.models import McpIntegration, ToolApiIntegration
+from studio.apps.integrations.storage.native_mcp_records import NativeMcpJob
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.integrations.catalog import (
     ToolApiValidateIn,
     ValidationAttemptListOut,
     ValidationAttemptOut,
     ValidationReconcileOut,
 )
-from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
-from studio.apps.integrations.storage.native_mcp_records import NativeMcpJob
-from studio.contracts.identity.claims import HEADER
+from studio.contracts.integrations.errors import IntegrationNotStarted
 from studio.contracts.integrations.integration_intents import IntegrationScope, digest
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now

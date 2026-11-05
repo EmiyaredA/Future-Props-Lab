@@ -8,13 +8,12 @@ from pathlib import Path
 
 from sqlalchemy import select
 
-from app.integrations.models import (
+from studio.apps.integrations.storage.models import (
     McpIntegration,
     SkillIntegration,
     SkillVersion,
     ToolApiIntegration,
 )
-from studio.config.settings import get_settings
 from studio.contracts.creative_workshop.creative_source_snapshot import CreativeSource
 
 
@@ -45,7 +44,7 @@ def skill_archive(root: Path, maximum: int, expanded_limit: int, file_limit: int
 
 
 class IntegrationCreativeSources:
-    def __init__(self, session, *, settings=None):
+    def __init__(self, session, *, settings):
         self.session = session
         self.settings = settings
 
@@ -95,7 +94,7 @@ class IntegrationCreativeSources:
             for part in (identity, selected)
         ):
             raise ValueError("Skill 来源标识无效")
-        settings = self.settings or get_settings()
+        settings = self.settings
         settings.account_path(owner)  # validate the authenticated account component
         root = (
             settings.runtime_path

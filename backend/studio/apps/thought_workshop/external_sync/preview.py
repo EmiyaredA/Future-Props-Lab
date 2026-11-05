@@ -3,8 +3,7 @@
 import httpx
 from sqlalchemy import text
 
-from app.integrations.external.blocks import feishu_tree
-from app.integrations.external.contracts import ExternalError
+from studio.apps.integrations.clients.document_blocks import feishu_tree
 from studio.apps.thought_workshop.content_exports import resolve_assets
 from studio.apps.thought_workshop.external_sync.content import (
     TABLE_SNAPSHOT,
@@ -14,6 +13,7 @@ from studio.apps.thought_workshop.external_sync.content import (
 from studio.apps.thought_workshop.external_sync.models import ArticleSyncAsset, ArticleSyncTask
 from studio.apps.thought_workshop.external_sync.schemas import ArticleSyncPreview, SnapshotBlock
 from studio.apps.thought_workshop.multitable.content import project as project_tables
+from studio.contracts.integrations.external_documents import ExternalError
 
 
 def actor_snapshot(principal):

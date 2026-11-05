@@ -50,6 +50,9 @@ PUBLIC_CLIENT_MODULES = frozenset(
         "studio.apps.identity.clients.certification_http",
         "studio.apps.identity.clients.certification_records",
         "studio.apps.integrations.clients.authority",
+        "studio.apps.integrations.clients.document_blocks",
+        "studio.apps.integrations.clients.document_verification",
+        "studio.apps.integrations.clients.skill_archive",
     ]
 )
 PUBLIC_CLIENT_PARENTS = frozenset(
@@ -307,7 +310,7 @@ def source_closure(root: Path, service):
                     "app.apps",
                     "studio.apps.model_service",
                     "app.console.models",
-                    "app.integrations.models",
+                    "studio.apps.integrations.storage.models",
                     "studio.apps.identity",
                     "studio.apps.integrations",
                     "studio.apps.visual_workshop",
@@ -405,7 +408,9 @@ def source_closure(root: Path, service):
                     "studio.assembly.http_dependencies",
                     "studio.runtime.database.website",
                 }
-                or name.startswith(("app.apps.", "app.integrations.", "studio.apps.model_service."))
+                or name.startswith(
+                    ("app.apps.", "studio.apps.integrations.", "studio.apps.model_service.")
+                )
                 or name.startswith("app.console.governance.")
             ):
                 raise ValueError(f"Amadeus 镜像包含越界依赖：{name}")

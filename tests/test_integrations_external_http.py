@@ -10,7 +10,7 @@ import httpx
 from PIL import Image
 from sqlalchemy import select
 
-from app.integrations.external.blocks import feishu_tree
+from studio.apps.integrations.clients.document_blocks import feishu_tree
 from studio.apps.integrations.records import ExternalExecution, ExternalStepReceipt
 from studio.contracts.integrations.external_sync import (
     ExternalAsset,

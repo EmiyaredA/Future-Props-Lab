@@ -5,8 +5,6 @@ from app.console.routes.amadeus import router as amadeus_router
 from app.console.routes.cloud_control import router as cloud_control_router
 from app.console.routes.code_agents import router as code_agents_router
 from app.console.routes.creative_workshop import router as creative_workshop_router
-from app.integrations.external.routes import router as external_connections_router
-from app.integrations.routes import router as integrations_router
 from app.tool_navigation.routes import router as tool_navigation_router
 from app.tool_navigation.video_download_routes import router as video_download_router
 from studio.apps.agent_workbench.transport.website import router as agent_workbench_router
@@ -19,6 +17,10 @@ from studio.apps.identity.transport.website.account_management import router as 
 from studio.apps.identity.transport.website.accounts import router as accounts_router
 from studio.apps.identity.transport.website.project_markers import router as project_markers_router
 from studio.apps.identity.transport.website.registration import router as registration_router
+from studio.apps.integrations.transport.catalog_http import router as integrations_router
+from studio.apps.integrations.transport.connections_http import (
+    router as external_connections_router,
+)
 from studio.apps.interview_assistant.transport.website import router as interview_assistant_router
 from studio.apps.media_rendering.transport.website import (
     image_crop,

@@ -8,7 +8,7 @@ from time import monotonic
 
 import httpx
 
-from .contracts import (
+from studio.contracts.integrations.external_documents import (
     ConnectionCredentials,
     DocumentTarget,
     ExternalError,

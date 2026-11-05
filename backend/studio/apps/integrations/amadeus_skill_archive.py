@@ -10,8 +10,8 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 from anyio.to_thread import run_sync
 
-from app.integrations.skills.archive import SkillArchiveStorage
-from app.integrations.skills.catalog import SkillCatalog
+from studio.apps.integrations.skills.archive import SkillArchiveStorage
+from studio.apps.integrations.skills.catalog import SkillCatalog
 from studio.contracts.amadeus.amadeus_skills import SkillPin
 from studio.runtime.database.operation_receipts import OperationError
 

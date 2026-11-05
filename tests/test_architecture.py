@@ -83,6 +83,7 @@ def _backend_route_files() -> list[Path]:
         REPO_ROOT / "backend/studio/apps/audio_annotation/transport",
         BACKEND_APP / "console" / "routes",
         REPO_ROOT / "backend/studio/apps/model_service/transport/website",
+        REPO_ROOT / "backend/studio/apps/integrations/transport",
         *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
     ]
     files = [path for root in roots if root.is_dir() for path in _python_files(root)]
@@ -451,7 +452,8 @@ def test_orm_models_only_depend_on_allowed_runtime_primitives() -> None:
     roots = [
         REPO_ROOT / "backend/studio/runtime/database/project_operations.py",
         REPO_ROOT / "backend/studio/apps/asset_library/storage/models.py",
-        BACKEND_APP / "integrations" / "models.py",
+        REPO_ROOT / "backend/studio/apps/integrations/storage/models.py",
+        REPO_ROOT / "backend/studio/apps/integrations/storage/external_models.py",
         BACKEND_APP / "tool_navigation" / "models.py",
         *(BACKEND_APP / "apps").glob("*/models.py"),
         *(
@@ -895,7 +897,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/studio/apps/galgame_workshop",
         "backend/studio/apps/director_desk",
         "backend/studio/apps/model_service",
-        "backend/app/integrations",
+        "backend/studio/apps/integrations",
         "backend/studio/apps/model_service/demonstration",
         "backend/app/tool_navigation",
         "db/migrations/versions",

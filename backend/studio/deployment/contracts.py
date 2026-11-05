@@ -155,7 +155,7 @@ def table_owner(module, table):
         return "assets"
     if module.startswith("studio.apps.model_service."):
         return "models"
-    if module.startswith("app.integrations."):
+    if module.startswith("studio.apps.integrations."):
         return "integrations"
     if module.startswith("app.tool_navigation."):
         return "tools"

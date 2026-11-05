@@ -7,14 +7,18 @@ from copy import deepcopy
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
-from app.integrations.external.blocks import feishu_tree
-from app.integrations.external.catalog import ExternalConnections
-from app.integrations.external.contracts import ExternalError, ImageSource, RemoteDocument
-from app.integrations.external.feishu_verification import (
+from studio.apps.integrations.clients.document_blocks import feishu_tree
+from studio.apps.integrations.clients.document_verification import (
     assert_snapshot,
     verify_append,
     verify_delete,
     verify_image,
+)
+from studio.apps.integrations.external.catalog import ExternalConnections
+from studio.contracts.integrations.external_documents import (
+    ExternalError,
+    ImageSource,
+    RemoteDocument,
 )
 from studio.runtime.time import utc_now
 
@@ -45,7 +49,7 @@ def canonical_tree(tree):
 
 
 class ExternalSteps:
-    def __init__(self, database, transport=None, *, cipher=None):
+    def __init__(self, database, transport=None, *, cipher):
         self.cipher = cipher
         self.database, self.transport = database, transport
 

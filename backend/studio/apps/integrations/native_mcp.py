@@ -7,13 +7,13 @@ from uuid import uuid4
 
 from sqlalchemy import select, text, update
 
-from app.integrations.common import IntegrationNotStarted
-from app.integrations.mcp.client import DiscoveredTool, DiscoveryResult
-from app.integrations.models import McpIntegration
 from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
+from studio.apps.integrations.storage.models import McpIntegration
 from studio.apps.integrations.storage.native_mcp_records import NativeMcpJob, NativeMcpObservation
 from studio.contracts.agent_workbench.native import NativeLease
+from studio.contracts.integrations.errors import IntegrationNotStarted
 from studio.contracts.integrations.integration_intents import digest
+from studio.contracts.integrations.mcp import DiscoveredTool, DiscoveryResult
 from studio.contracts.integrations.native import (
     OPERATIONS,
     McpHostObservation,

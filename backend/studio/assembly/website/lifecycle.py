@@ -82,7 +82,13 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await recover_interrupted_visual_assistant_runs(sessions=sessions)
     await recover_interrupted_model_test_runs(sessions)
     await recover_interrupted_amadeus_runs(sessions=sessions)
-    lifespan_app.state.code_agent_runs = CodeAgentRuns(sessions=sessions, settings=settings)
+    lifespan_app.state.code_agent_runs = CodeAgentRuns(
+        sessions=sessions,
+        settings=settings,
+        skills=lambda session, owner: lifespan_app.state.integration_bindings.skills(
+            None, session, owner
+        ),
+    )
     installer = Installer(local_root(settings))
     local_runtime = LocalRuntime(installer)
     local_models = LocalModels(sessions, installer, local_runtime)
@@ -98,7 +104,11 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
                 sessions=sessions,
                 executor_status=lifespan_app.state.interview_executor_status,
             ),
-            ArticleSyncRunner(external_sync_actor_allowed, sessions=sessions),
+            ArticleSyncRunner(
+                external_sync_actor_allowed,
+                sessions=sessions,
+                connections=lifespan_app.state.article_connections,
+            ),
             ModelTemplateSyncRunner(sessions=sessions),
             VisualGenerationRunner(
                 claim_admission=claim_visual_capacity,

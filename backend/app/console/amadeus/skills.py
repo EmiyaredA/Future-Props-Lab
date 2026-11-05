@@ -7,14 +7,12 @@ import shutil
 
 from app.console.amadeus import files
 from app.console.amadeus.skill_files import read_skill_file as read_skill_file
-from app.integrations.skills.catalog import SkillCatalog
 from studio.runtime.database.operation_receipts import OperationError
 
 
 async def load_skill(
-    session, owner_user_id: str, conversation_id: str, skill_id: str
+    session, owner_user_id: str, conversation_id: str, skill_id: str, *, catalog
 ) -> dict[str, str]:
-    catalog = SkillCatalog(session, owner_user_id)
     try:
         skill = await catalog.get(skill_id)
     except Exception as exc:

@@ -2,7 +2,11 @@
 
 from sqlalchemy import select
 
-from app.integrations.models import McpIntegration, SkillIntegration, ToolApiIntegration
+from studio.apps.integrations.storage.models import (
+    McpIntegration,
+    SkillIntegration,
+    ToolApiIntegration,
+)
 from studio.contracts.creative_workshop.installation_migration import (
     DATASET,
     PAGE_SIZE,

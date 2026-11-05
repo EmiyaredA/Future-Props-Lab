@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import shutil
 import zipfile
+from functools import partial
 
 import pytest
 from fastapi import UploadFile
@@ -19,15 +20,15 @@ from app.console.creative_workshop.schemas import (
     CreativeInstallPreviewIn,
     CreativeStdioSetupIn,
 )
-from app.integrations.models import (
+from studio.apps.identity.storage.models.accounts import User
+from studio.apps.integrations.storage.models import (
     McpIntegration,
     SkillIntegration,
     SkillVersion,
     ToolApiIntegration,
 )
-from studio.apps.identity.storage.models.accounts import User
 from studio.contracts.identity.principal import StudioPrincipal
-from website_test_support import SessionLocal
+from website_test_support import SessionLocal, settings
 
 
 @pytest.fixture(autouse=True)
@@ -43,7 +44,7 @@ def creative_author_adapter():
             **previous,
             "creative_authors_factory": LegacyCreativeAuthors,
             "creative_archives_factory": LegacyCreativeArchives,
-            "creative_sources_factory": LegacyCreativeSources,
+            "creative_sources_factory": partial(LegacyCreativeSources, settings=settings),
             "creative_installer_factory": LegacyCreativeInstaller,
         }
     )

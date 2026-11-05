@@ -142,9 +142,9 @@ def test_llm_owns_models_schemas_and_routes() -> None:
 
 
 def test_integrations_owns_models_schemas_and_routes() -> None:
-    assert (BACKEND_APP / "integrations" / "models.py").is_file()
-    assert (BACKEND_APP / "integrations" / "schemas.py").is_file()
-    assert (BACKEND_APP / "integrations" / "routes.py").is_file()
+    assert (STUDIO_APPS / "integrations/storage/models.py").is_file()
+    assert (CONTRACTS / "integrations/catalog.py").is_file()
+    assert (STUDIO_APPS / "integrations/transport/catalog_http.py").is_file()
     assert not (BACKEND_APP / "models" / "integrations.py").exists()
     assert not (BACKEND_APP / "schemas" / "integrations.py").exists()
     assert not (BACKEND_APP / "routes" / "integrations.py").exists()

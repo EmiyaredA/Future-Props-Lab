@@ -19,12 +19,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from tests.test_tools_navigation_migration import available_ports, listener
 
-from app.integrations.external.models import ExternalConnection
-from app.runtime.credentials import SecretCipher
 from db.migrations import apply_migrations
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.identity.storage.models.accounts import User
+from studio.apps.integrations.storage.external_models import ExternalConnection
 from studio.apps.integrations.storage.migrations.registry import (
     MIGRATIONS as INTEGRATION_MIGRATIONS,
 )
@@ -45,6 +44,7 @@ from studio.assembly.independent.thought_workshop.maintenance import DATASETS, P
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+from studio.runtime.secrets import SecretCipher
 
 ORIGINAL = b"isolated original for the old Feishu task"
 

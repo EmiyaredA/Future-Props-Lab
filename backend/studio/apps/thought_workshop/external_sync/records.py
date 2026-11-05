@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from sqlalchemy import delete, select
 
-from app.integrations.external.contracts import ExternalError
 from studio.apps.thought_workshop.external_sync.models import (
     ArticleSyncBinding,
     ArticleSyncStep,
@@ -15,6 +14,7 @@ from studio.apps.thought_workshop.external_sync.schemas import (
 )
 from studio.apps.thought_workshop.notes import Notes
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase
+from studio.contracts.integrations.external_documents import ExternalError
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc
 

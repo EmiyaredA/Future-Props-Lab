@@ -2,7 +2,7 @@
 
 from copy import deepcopy
 
-from .contracts import ExternalError
+from studio.contracts.integrations.external_documents import ExternalError
 
 
 def clean_block(block):

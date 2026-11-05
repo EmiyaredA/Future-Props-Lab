@@ -13,11 +13,6 @@ from app.console.creative_workshop.legacy_install import LegacyCreativeInstaller
 from app.console.creative_workshop.legacy_sources import LegacyCreativeSources
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
-from app.integrations.external.catalog import ExternalConnections
-from app.integrations.http_bindings import IntegrationBindings
-from app.integrations.mcp import McpCatalog
-from app.integrations.skills.catalog import SkillCatalog
-from app.integrations.tool_apis import ToolApiCatalog
 from app.tool_navigation.video_download import VideoDownloads
 from app.tool_navigation.video_download_dependencies import probe_deps
 from app.tool_navigation.video_download_execution import _run_yt_dlp
@@ -59,6 +54,7 @@ from studio.apps.portal.storage.documents import InstalledDocuments
 from studio.apps.portal.use_cases.documents import DeveloperDocuments
 from studio.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
 from studio.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
+from studio.apps.thought_workshop.external_sync.use_cases import ArticleSync
 from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
 from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 from studio.apps.thought_workshop.legacy_writing import LegacyWritingModels
@@ -69,6 +65,7 @@ from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.assembly.annotation import document_editor
 from studio.assembly.website.account_provisioning import create_account
+from studio.assembly.website.integrations import integration_bindings
 from studio.assembly.website.media import bind_media
 from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
 from studio.config import REPO_ROOT
@@ -114,13 +111,14 @@ def bind_components(app, settings, database):
         authenticate_database_request, allowed_origins=tuple(settings.cors_origin_list)
     )
     app.state.studio_socket_auth = authenticate_database_websocket
-    app.state.integration_bindings = IntegrationBindings(
-        tool_apis=lambda _request, session, owner: ToolApiCatalog(
-            session, owner, demo_tools=app.state.demo_runtime.tool_reply
-        ),
-        mcp=lambda _request, session, owner: McpCatalog(session, owner),
-        skills=lambda _request, session, owner: SkillCatalog(session, owner),
-        external=lambda _request, session, owner: ExternalConnections(session, owner),
+    app.state.integration_bindings = integration_bindings(
+        settings, app.state.demo_runtime.tool_reply
+    )
+    app.state.article_connections = lambda session, owner: app.state.integration_bindings.external(
+        None, session, owner
+    )
+    app.state.article_sync = lambda session, owner, principal: ArticleSync(
+        session, owner, principal, connections=app.state.article_connections(session, owner)
     )
     app.state.model_catalog_bindings = CatalogBindings(
         defaults=LegacyCatalogDefaults,
@@ -155,7 +153,7 @@ def bind_components(app, settings, database):
             "presentation_import": import_legacy_presentation,
             "creative_authors_factory": LegacyCreativeAuthors,
             "creative_archives_factory": LegacyCreativeArchives,
-            "creative_sources_factory": LegacyCreativeSources,
+            "creative_sources_factory": partial(LegacyCreativeSources, settings=settings),
             "creative_installer_factory": LegacyCreativeInstaller,
         }
     )
@@ -172,7 +170,11 @@ def bind_components(app, settings, database):
     app.state.workbench_event_stream = partial(stream_events, sessions=sessions)
     app.state.account_creator = create_account
     app.state.account_storage_check = upgrade_pending
-    app.state.code_agent_runs = CodeAgentRuns(sessions=sessions, settings=settings)
+    app.state.code_agent_runs = CodeAgentRuns(
+        sessions=sessions,
+        settings=settings,
+        skills=lambda session, owner: app.state.integration_bindings.skills(None, session, owner),
+    )
     app.state.cloud_desktop = DesktopConnection(
         sessions=sessions, settings_reader=get_cloud_settings, attempts=app.state.auth_attempts
     )

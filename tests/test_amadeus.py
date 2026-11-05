@@ -15,6 +15,7 @@ import httpx
 import pytest
 from sqlalchemy import select
 
+import integration_test_support as integration_dependencies
 from app.console.amadeus.conversations import Conversations
 from app.console.amadeus.files import read_file_bytes, work_root, write_file
 from app.console.amadeus.model_bridge import stream_model_turn
@@ -204,13 +205,15 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
 async def test_amadeus_tool_api_execute_checks_revision_schema_and_connection(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from app.integrations.tool_apis import catalog as tool_catalog
+    from studio.apps.integrations.tool_apis import catalog as tool_catalog
 
     class MockSession:
         async def rollback(self) -> None:
             pass
 
-    catalog = tool_catalog.ToolApiCatalog(MockSession(), "test-user")
+    catalog = tool_catalog.ToolApiCatalog(
+        MockSession(), "test-user", cipher=integration_dependencies.cipher()
+    )
     row = SimpleNamespace(secret_ciphertext="")
     snapshot = SimpleNamespace(
         enabled=True,
@@ -250,7 +253,7 @@ async def test_amadeus_tool_api_execute_checks_revision_schema_and_connection(
 async def test_amadeus_mcp_execute_checks_discovery_and_redacts_sensitive_result(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from app.integrations.mcp import catalog as mcp_catalog
+    from studio.apps.integrations.mcp import catalog as mcp_catalog
 
     class MockSession:
         async def scalar(self, _query: object) -> SimpleNamespace | None:
@@ -263,7 +266,9 @@ async def test_amadeus_mcp_execute_checks_discovery_and_redacts_sensitive_result
         async def call(self, **_kwargs: object) -> dict[str, str]:
             return {"text": "secret response"}
 
-    catalog = mcp_catalog.McpCatalog(MockSession(), "test-user", client=MockClient())
+    catalog = mcp_catalog.McpCatalog(
+        MockSession(), "test-user", client=MockClient(), cipher=integration_dependencies.cipher()
+    )
     row = SimpleNamespace(bearer_ciphertext="", environment_ciphertext="")
     snapshot = SimpleNamespace(
         enabled=True,
@@ -444,11 +449,14 @@ async def test_amadeus_skill_keeps_loaded_version(
         async def rollback(self) -> None:
             pass
 
-    monkeypatch.setattr(skills, "SkillCatalog", Catalog)
     monkeypatch.setattr(files, "work_root", lambda *_args, **_kwargs: tmp_path / "session")
-    first = await skills.load_skill(Session(), "test-user", "conversation", "skill")
+    first = await skills.load_skill(
+        Session(), "test-user", "conversation", "skill", catalog=Catalog()
+    )
     state["default"] = "v2"
-    again = await skills.load_skill(Session(), "test-user", "conversation", "skill")
+    again = await skills.load_skill(
+        Session(), "test-user", "conversation", "skill", catalog=Catalog()
+    )
     assert (first["version"], first["content"]) == ("v1", "v1")
     assert (again["version"], again["content"]) == ("v1", "v1")
     (tmp_path / "session" / "skills" / "skill" / "v1" / "guide.txt").write_text("固定版本附属文件")
@@ -472,7 +480,7 @@ async def test_amadeus_skill_keeps_loaded_version(
 async def test_amadeus_cancel_marks_external_result_unknown(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from app.integrations.tool_apis.catalog import ToolApiCatalog
+    from studio.apps.integrations.tool_apis.catalog import ToolApiCatalog
 
     await _test_user()
     started = asyncio.Event()

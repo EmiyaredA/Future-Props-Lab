@@ -2,11 +2,11 @@
 
 from sqlalchemy import delete, select, text
 
-from app.integrations.external.contracts import ExternalError
 from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
 from studio.apps.thought_workshop.external_sync.models import ArticleSyncAsset, ArticleSyncStep
 from studio.apps.thought_workshop.external_sync.records import task_out
 from studio.apps.thought_workshop.external_sync.schemas import ArticleSyncReconcileOut
+from studio.contracts.integrations.external_documents import ExternalError
 from studio.contracts.integrations.external_sync import ExternalStepEvidence, ExternalStepProof
 from studio.runtime.time import utc_now
 

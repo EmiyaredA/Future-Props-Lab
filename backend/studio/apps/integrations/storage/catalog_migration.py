@@ -10,8 +10,8 @@ from cryptography.fernet import InvalidToken
 from pydantic import Field
 from sqlalchemy.orm import DeclarativeBase
 
-from app.integrations.external.models import ExternalConnection
-from app.integrations.models import (
+from studio.apps.integrations.storage.external_models import ExternalConnection
+from studio.apps.integrations.storage.models import (
     IntegrationCheck,
     McpDiscoveredTool,
     McpIntegration,

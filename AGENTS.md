@@ -71,11 +71,14 @@
   安全规范化、摘要及归档编解码归 `studio/runtime/files/`。目录暂存机制不决定应用布局，
   `runtime/database/project_files.py` 通过创建／删除布局接口执行原有事务补偿。
   导演台使用自有 `storage/file_paths.py`，两套装配显式提供存储，不继承素材库布局或读取全局配置。
+- 集成中心目录、外部连接与 Skill 操作共用 `studio/apps/integrations/` 实现，依赖由网站和
+  独立装配显式提供；不得在目录构造器回退读取全局配置、创建默认加密器或查找全局客户端。
+  公共 DTO 和 MCP 能力协议归 `studio/contracts/integrations/`，密钥加密机制归 `runtime/secrets.py`。
 - 音频标注文档编辑由 `EditDocument` 执行版本判断与纯转换，`DocumentEdits` 在一个事务内提交
   CAS 与回执；并发失败复查原请求回执，取消回滚。HTTP 层只映射领域错误。
 - `backend/studio/` 全树纳入文件和目录行数预算；迁移路径同时更新入口、镜像闭包、打包、
   契约归属和测试。不得用空目录、软链接或永久转发表示迁移完成。
-- `backend/app/` 暂时保留 `capabilities/`、`console/`、`integrations/`、
+- `backend/app/` 暂时保留 `capabilities/`、`console/`、
   `tool_navigation/` 的未归并实现。新业务进入 `studio`；后续迁移须按真实
   所有者分配这些实现，不能把它们整体搬入一个通用兼容包。`app/apps/` 已无业务源码。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和

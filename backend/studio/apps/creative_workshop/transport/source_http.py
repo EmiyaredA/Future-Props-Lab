@@ -10,7 +10,6 @@ from fastapi import APIRouter, HTTPException, Request
 from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
 from app.console.creative_workshop.files import CreativeFileError
 from app.console.creative_workshop.schemas import CreativeImportIn, CreativeItemOut
-from app.integrations.common import IntegrationValidationError
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.creative_workshop.creative_source_evidence import (
     PURPOSE,
@@ -25,6 +24,7 @@ from studio.contracts.creative_workshop.creative_source_snapshot import (
 from studio.contracts.creative_workshop.creative_transport import CreativeAttestedRequest
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.integrations.errors import IntegrationValidationError
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 router = APIRouter()

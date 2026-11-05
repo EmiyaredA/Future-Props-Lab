@@ -211,7 +211,7 @@ def test_integrations_image_refuses_foreign_storage_and_native_executors(tmp_pat
 def test_integrations_image_packages_owned_http_and_only_file_value_contracts():
     closure = source_closure(ROOT, "integrations")
     assert "studio.assembly.independent.integrations.application" in closure
-    assert "app.integrations.routes" in closure
+    assert "studio.apps.integrations.transport.catalog_http" in closure
     assert "studio.contracts.asset_library.incoming" in closure
     assert not any(
         name.startswith(

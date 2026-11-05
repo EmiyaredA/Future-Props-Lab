@@ -19,15 +19,6 @@ from app.console.creative_workshop.models import (
     CreativeInstallation,
 )
 from app.console.models.platform_governance import PlatformSetting
-from app.integrations.external.models import ExternalConnection
-from app.integrations.models import (
-    IntegrationCheck,
-    McpDiscoveredTool,
-    McpIntegration,
-    SkillIntegration,
-    SkillVersion,
-    ToolApiIntegration,
-)
 from app.tool_navigation.models import (
     ToolNavigationItem,
 )
@@ -71,6 +62,15 @@ from studio.apps.identity.storage.models.accounts import (
 from studio.apps.identity.storage.models.registration import (
     RegistrationInviteCode,
     RegistrationRedemption,
+)
+from studio.apps.integrations.storage.external_models import ExternalConnection
+from studio.apps.integrations.storage.models import (
+    IntegrationCheck,
+    McpDiscoveredTool,
+    McpIntegration,
+    SkillIntegration,
+    SkillVersion,
+    ToolApiIntegration,
 )
 from studio.apps.interview_assistant.storage.models import InterviewPreparation, InterviewRoom
 from studio.apps.model_service.storage.models.call_log import LlmCallLog

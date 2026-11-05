@@ -3,7 +3,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.integrations.external.contracts import ExternalError, RemoteDocument
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.external_sync.binding import bind_note
 from studio.apps.thought_workshop.external_sync.preview import preview_note
@@ -28,6 +27,7 @@ from studio.apps.thought_workshop.synchronization.sync_transport import (
 )
 from studio.assembly.http_dependencies import OwnerDep, StudioAuth
 from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.integrations.external_documents import ExternalError, RemoteDocument
 from studio.contracts.integrations.external_sync import (
     ExternalBindingTarget,
     ExternalClose,

@@ -4,12 +4,18 @@ import httpx
 import pytest
 from tests.test_integrations import _clear_integrations, _FakeMcpClient
 
-from app.integrations.common import IntegrationNotFoundError
-from app.integrations.mcp import McpCatalog
-from app.integrations.schemas import McpCreateIn, McpUpdateIn, ToolApiCreateIn, ToolApiUpdateIn
-from app.integrations.tool_apis import ToolApiCatalog
+import integration_test_support as integration_dependencies
+from studio.apps.integrations.mcp.catalog import McpCatalog
+from studio.apps.integrations.tool_apis.catalog import ToolApiCatalog
 from studio.assembly.http_dependencies import SessionDep, require_studio_auth
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.integrations.catalog import (
+    McpCreateIn,
+    McpUpdateIn,
+    ToolApiCreateIn,
+    ToolApiUpdateIn,
+)
+from studio.contracts.integrations.errors import IntegrationNotFoundError
 from studio.runtime.revisions import RevisionConflictError
 from website_test_support import SessionLocal, app
 
@@ -18,7 +24,9 @@ from website_test_support import SessionLocal, app
 async def test_identity_map_and_child_records_require_explicit_workspace():
     await _clear_integrations()
     async with SessionLocal() as session:
-        mcp = McpCatalog(session, "test-user", client=_FakeMcpClient())
+        mcp = McpCatalog(
+            session, "test-user", client=_FakeMcpClient(), cipher=integration_dependencies.cipher()
+        )
         row = await mcp.create(
             McpCreateIn(
                 name="Owned MCP",
@@ -27,7 +35,12 @@ async def test_identity_map_and_child_records_require_explicit_workspace():
             )
         )
         await mcp.validate(row.id)
-        foreign = McpCatalog(session, "unrelated")
+        foreign = McpCatalog(
+            session,
+            "unrelated",
+            cipher=integration_dependencies.cipher(),
+            client=integration_dependencies.client(),
+        )
         for action in [foreign.get, foreign.tools, foreign.validate]:
             with pytest.raises(IntegrationNotFoundError):
                 await action(row.id)
@@ -45,7 +58,9 @@ async def test_sensitive_validation_preview_requires_its_existing_permission(
 ):
     await _clear_integrations()
     async with SessionLocal() as session:
-        item = await ToolApiCatalog(session, "test-user").create(
+        item = await ToolApiCatalog(
+            session, "test-user", cipher=integration_dependencies.cipher()
+        ).create(
             ToolApiCreateIn(
                 name="Sensitive fixture",
                 url="http://127.0.0.1/tool",
@@ -56,7 +71,7 @@ async def test_sensitive_validation_preview_requires_its_existing_permission(
     async def reply(*_args):
         return 200, "application/json", '{"private":"fixture data"}'
 
-    monkeypatch.setattr("app.integrations.tool_apis.catalog._invoke", reply)
+    monkeypatch.setattr("studio.apps.integrations.tool_apis.catalog._invoke", reply)
     original = app.dependency_overrides.get(require_studio_auth)
     try:
 
@@ -99,7 +114,9 @@ async def test_mcp_timeout_is_a_structured_failed_check():
             raise TimeoutError
 
     async with SessionLocal() as session:
-        catalog = McpCatalog(session, "test-user", client=TimeoutMcp())
+        catalog = McpCatalog(
+            session, "test-user", client=TimeoutMcp(), cipher=integration_dependencies.cipher()
+        )
         row = await catalog.create(
             McpCreateIn(name="Timeout MCP", transport="stdio", command="/fixture")
         )
@@ -121,7 +138,9 @@ async def test_configuration_changed_during_validation_is_not_overwritten(kind):
                 async with SessionLocal() as writer:
                     values = body.model_dump()
                     values["description"] = "new config"
-                    await ToolApiCatalog(writer, "test-user").update(
+                    await ToolApiCatalog(
+                        writer, "test-user", cipher=integration_dependencies.cipher()
+                    ).update(
                         row.id,
                         ToolApiUpdateIn(
                             **values,
@@ -130,7 +149,12 @@ async def test_configuration_changed_during_validation_is_not_overwritten(kind):
                     )
                 return httpx.Response(200, json={"ok": True})
 
-            catalog = ToolApiCatalog(session, "test-user", transport=httpx.MockTransport(handler))
+            catalog = ToolApiCatalog(
+                session,
+                "test-user",
+                transport=httpx.MockTransport(handler),
+                cipher=integration_dependencies.cipher(),
+            )
         else:
             body = McpCreateIn(name="Concurrent MCP", transport="stdio", command="/fixture")
 
@@ -139,7 +163,12 @@ async def test_configuration_changed_during_validation_is_not_overwritten(kind):
                     async with SessionLocal() as writer:
                         values = body.model_dump()
                         values["description"] = "new config"
-                        await McpCatalog(writer, "test-user").update(
+                        await McpCatalog(
+                            writer,
+                            "test-user",
+                            cipher=integration_dependencies.cipher(),
+                            client=integration_dependencies.client(),
+                        ).update(
                             row.id,
                             McpUpdateIn(
                                 **values,
@@ -148,7 +177,9 @@ async def test_configuration_changed_during_validation_is_not_overwritten(kind):
                         )
                     return await super().discover(**kwargs)
 
-            catalog = McpCatalog(session, "test-user", client=ChangedMcp())
+            catalog = McpCatalog(
+                session, "test-user", client=ChangedMcp(), cipher=integration_dependencies.cipher()
+            )
         row = await catalog.create(body)
         with pytest.raises(RevisionConflictError):
             if kind == "tool":

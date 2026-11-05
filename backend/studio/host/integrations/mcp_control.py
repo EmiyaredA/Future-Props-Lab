@@ -5,10 +5,10 @@ import os
 from dataclasses import asdict
 from pathlib import Path
 
-from app.integrations.common import redact_structure
-from app.integrations.mcp.client import OfficialMcpDiscoveryClient
+from studio.apps.integrations.mcp.client import OfficialMcpDiscoveryClient
 from studio.contracts.integrations.integration_intents import digest
 from studio.contracts.integrations.native import McpLaunch, McpNativePayload
+from studio.runtime.secrets import redact_structure
 
 
 class McpControl:

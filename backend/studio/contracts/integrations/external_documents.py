@@ -21,6 +21,15 @@ class ExternalError(Exception):
         self.status, self.code, self.provider_code = status, code, provider_code
 
 
+@dataclass(frozen=True)
+class ConnectionSnapshot:
+    """An authorized connection revision; never carries ciphertext or ORM state."""
+
+    id: str
+    revision: int
+    enabled: bool
+
+
 def fingerprint(value: Any) -> str:
     return hashlib.sha256(
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()

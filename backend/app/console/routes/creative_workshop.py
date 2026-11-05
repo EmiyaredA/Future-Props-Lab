@@ -19,8 +19,8 @@ from app.console.creative_workshop.schemas import (
     CreativeRevisionIn,
     CreativeStdioSetupIn,
 )
-from app.integrations.common import IntegrationValidationError
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.contracts.integrations.errors import IntegrationValidationError
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.files.raster import RasterPreviewError
 

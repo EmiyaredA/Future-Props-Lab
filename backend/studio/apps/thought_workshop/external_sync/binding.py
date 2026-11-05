@@ -3,9 +3,9 @@
 from sqlalchemy import text, update
 from sqlalchemy.exc import IntegrityError
 
-from app.integrations.external.contracts import ExternalError
 from studio.apps.thought_workshop.external_sync.models import ArticleSyncBinding
 from studio.apps.thought_workshop.external_sync.records import binding_out
+from studio.contracts.integrations.external_documents import ExternalError
 from studio.runtime.revisions import RevisionConflictError
 
 

@@ -5,7 +5,7 @@ from dataclasses import replace
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 
-from app.integrations.creative_sources import IntegrationCreativeSources
+from studio.apps.integrations.storage.creative_sources import IntegrationCreativeSources
 from studio.contracts.creative_workshop.creative_source_evidence import (
     SOURCE_TRANSFER,
     verify_source_request,

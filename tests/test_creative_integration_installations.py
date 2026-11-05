@@ -16,18 +16,18 @@ from cryptography.fernet import Fernet
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from app.integrations.models import (
-    McpIntegration,
-    SkillIntegration,
-    SkillVersion,
-    ToolApiIntegration,
-)
 from studio.apps.integrations.creative_installations import CreativeInstallations
 from studio.apps.integrations.storage.creative_records import (
     CreativeInstalledPart,
     CreativeInstallReceipt,
 )
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
+from studio.apps.integrations.storage.models import (
+    McpIntegration,
+    SkillIntegration,
+    SkillVersion,
+    ToolApiIntegration,
+)
 from studio.apps.integrations.storage.service_models import MODELS
 from studio.config.settings import Settings
 from studio.contracts.creative_workshop.creative_integrations import (

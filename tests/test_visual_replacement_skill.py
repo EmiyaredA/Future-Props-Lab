@@ -345,7 +345,7 @@ def test_input_snapshot_is_not_interpreted_as_local_media(modules, record, tmp_p
 
 
 def test_single_skill_zip_accepted_by_app_importer(tmp_path):
-    from app.integrations.skills.archive import SkillArchiveStager
+    from studio.apps.integrations.clients.skill_archive import SkillArchiveStager
 
     archive = tmp_path / "skill.zip"
     with zipfile.ZipFile(archive, "w") as file:

@@ -17,8 +17,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from tests.test_tools_navigation_migration import available_ports, listener
 
-from app.integrations.external.models import ExternalConnection
-from app.integrations.models import (
+from db.migrations import apply_migrations
+from studio.apps.identity.storage.models.accounts import User
+from studio.apps.integrations.skills.archive import SkillArchiveStorage
+from studio.apps.integrations.skills.catalog import SkillCatalog
+from studio.apps.integrations.storage.external_models import ExternalConnection
+from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
+from studio.apps.integrations.storage.models import (
     IntegrationCheck,
     McpDiscoveredTool,
     McpIntegration,
@@ -26,18 +31,13 @@ from app.integrations.models import (
     SkillVersion,
     ToolApiIntegration,
 )
-from app.integrations.skills.archive import SkillArchiveStorage
-from app.integrations.skills.catalog import SkillCatalog
-from app.runtime.credentials import SecretCipher
-from db.migrations import apply_migrations
-from studio.apps.identity.storage.models.accounts import User
-from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
 from studio.apps.integrations.storage.service_models import MODELS
 from studio.assembly.independent.integrations.maintenance import DATASETS, PREFIX
 from studio.contracts.integrations.skill_migration import PREFIX as ORIGINALS
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+from studio.runtime.secrets import SecretCipher
 
 
 def create_legacy_catalog(path, owner, cipher):

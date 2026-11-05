@@ -7,9 +7,9 @@ from sqlalchemy import event, exists, inspect, select
 
 from app.console.creative_workshop.files import resolve_file
 from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-from app.integrations.skills.archive import SkillArchiveStager
 from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
 from studio.apps.creative_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.integrations.clients.skill_archive import SkillArchiveStager
 from studio.runtime.database.sessions import Database, ServiceSession, ServiceStorageError
 
 

@@ -9,13 +9,15 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.integrations.common import (
-    DuplicateIntegrationError,
-    IntegrationNotFoundError,
-    IntegrationValidationError,
+from studio.apps.integrations.clients.skill_archive import SKILL_MD_MAX_BYTES, StagedSkillArchive
+from studio.apps.integrations.skills.preview import (
+    list_skill_files,
+    read_skill_image,
+    read_skill_text,
 )
-from app.integrations.models import SkillIntegration, SkillVersion
-from app.integrations.schemas import (
+from studio.apps.integrations.storage.models import SkillIntegration, SkillVersion
+from studio.contracts.asset_library.incoming import IncomingFile
+from studio.contracts.integrations.catalog import (
     SkillCatalogOut,
     SkillFileListOut,
     SkillFileTextOut,
@@ -25,14 +27,11 @@ from app.integrations.schemas import (
     SkillUpdateIn,
     SkillVersionOut,
 )
-from app.integrations.skills.archive import (
-    SKILL_MD_MAX_BYTES,
-    SkillArchiveStorage,
-    StagedSkillArchive,
+from studio.contracts.integrations.errors import (
+    DuplicateIntegrationError,
+    IntegrationNotFoundError,
+    IntegrationValidationError,
 )
-from app.integrations.skills.preview import list_skill_files, read_skill_image, read_skill_text
-from studio.config.settings import get_settings
-from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.database.ownership import require_owner_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
@@ -52,10 +51,10 @@ def _version_out(row: SkillVersion) -> SkillVersionOut:
 
 
 class SkillCatalog:
-    def __init__(self, session: AsyncSession, owner_user_id: str, *, storage=None) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, storage) -> None:
         self.session = session
         self.owner_user_id = require_owner_id(owner_user_id, subject="Skill catalog")
-        self.storage = storage or SkillArchiveStorage(get_settings(), self.owner_user_id)
+        self.storage = storage
 
     async def _get(self, skill_id: str) -> SkillIntegration:
         row = await self.session.get(SkillIntegration, skill_id)

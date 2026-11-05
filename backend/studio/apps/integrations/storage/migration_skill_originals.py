@@ -4,13 +4,13 @@ from asyncio import to_thread
 
 from sqlalchemy import select, text
 
-from app.integrations.models import SkillIntegration, SkillVersion
 from studio.apps.integrations.storage.catalog_migration import IntegrationsImportReceipt
 from studio.apps.integrations.storage.migration_skill_files import (
     checked_member,
     inventory_version,
     version_directory,
 )
+from studio.apps.integrations.storage.models import SkillIntegration, SkillVersion
 from studio.contracts.integrations.skill_migration import file_receipt
 from studio.runtime.database.migration_receipts import has_receipt, record_receipt
 from studio.runtime.files.migration_files import (

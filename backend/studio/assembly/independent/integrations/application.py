@@ -9,28 +9,26 @@ from sqlalchemy.exc import OperationalError
 from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.integrations.external.catalog import ExternalConnections
-from app.integrations.external.contracts import ExternalError
-from app.integrations.external.routes import router as external_router
-from app.integrations.http_bindings import IntegrationBindings
-from app.integrations.mcp import McpCatalog
-from app.integrations.mcp.client import OfficialMcpDiscoveryClient
-from app.integrations.routes import router
-from app.integrations.skills.archive import SkillArchiveStorage
-from app.integrations.skills.catalog import SkillCatalog
-from app.integrations.tool_apis import ToolApiCatalog
-from app.runtime.credentials import SecretCipher
 from studio.apps.integrations.amadeus_tool_calls import recover_tool_calls
 from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
 from studio.apps.integrations.creative_installations import CreativeInstallations
 from studio.apps.integrations.demo_tools import DemoToolInstallations
+from studio.apps.integrations.external.catalog import ExternalConnections
 from studio.apps.integrations.external_reads import ExternalReads
 from studio.apps.integrations.external_steps import ExternalSteps
+from studio.apps.integrations.mcp.catalog import McpCatalog
+from studio.apps.integrations.mcp.client import OfficialMcpDiscoveryClient
 from studio.apps.integrations.skill_files import reconcile_skill_files
+from studio.apps.integrations.skills.archive import SkillArchiveStorage
+from studio.apps.integrations.skills.catalog import SkillCatalog
 from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
 from studio.apps.integrations.storage.service_models import MODELS
+from studio.apps.integrations.tool_apis.catalog import ToolApiCatalog
 from studio.apps.integrations.transport.amadeus_skill_http import router as amadeus_skill_router
 from studio.apps.integrations.transport.amadeus_tool_http import router as amadeus_tool_router
+from studio.apps.integrations.transport.bindings import IntegrationBindings
+from studio.apps.integrations.transport.catalog_http import router
+from studio.apps.integrations.transport.connections_http import router as external_router
 from studio.apps.integrations.transport.creative_http import CreativeRequestLimit
 from studio.apps.integrations.transport.creative_http import router as creative_router
 from studio.apps.integrations.transport.creative_preview_http import (
@@ -47,6 +45,7 @@ from studio.apps.integrations.validation import ValidationRecovery
 from studio.assembly.http_dependencies import require_studio_auth
 from studio.contracts.creative_workshop.creative_stdio import PRIVATE_STDIO
 from studio.contracts.identity.errors import AccountError
+from studio.contracts.integrations.external_documents import ExternalError
 from studio.contracts.integrations.external_sync import MAX_EXTERNAL_STEP_BYTES
 from studio.contracts.integrations.integration_intents import TOOL_CALL_MAX_BYTES, TOOL_CALL_PATH
 from studio.runtime.database.migrations import check
@@ -61,6 +60,7 @@ from studio.runtime.http.problem_details import (
 )
 from studio.runtime.http.request_limit import RequestLimit
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.secrets import SecretCipher
 from studio.runtime.tasks.polling import RunnerSupervisor
 
 

@@ -13,19 +13,17 @@ from pydantic import ValidationError
 from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError
 
-from app.integrations.models import (
-    McpIntegration,
-    SkillIntegration,
-    SkillVersion,
-    ToolApiIntegration,
-)
-from app.integrations.schemas import McpCreateIn, ToolApiCreateIn
-from app.integrations.skills.archive import SkillArchiveStorage
-from app.runtime.credentials import SecretCipher
+from studio.apps.integrations.skills.archive import SkillArchiveStorage
 from studio.apps.integrations.storage.creative_records import (
     CreativeInstallCancellation,
     CreativeInstalledPart,
     CreativeInstallReceipt,
+)
+from studio.apps.integrations.storage.models import (
+    McpIntegration,
+    SkillIntegration,
+    SkillVersion,
+    ToolApiIntegration,
 )
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.creative_workshop.creative_integrations import (
@@ -36,9 +34,11 @@ from studio.contracts.creative_workshop.creative_integrations import (
 from studio.contracts.creative_workshop.creative_integrations import (
     part_fingerprint as fingerprint,
 )
+from studio.contracts.integrations.catalog import McpCreateIn, ToolApiCreateIn
 from studio.contracts.integrations.integration_intents import digest
 from studio.runtime.files.skill_tree import skill_tree_sha256
 from studio.runtime.ids import new_id
+from studio.runtime.secrets import SecretCipher
 
 Authorize = Callable[[], Awaitable[CreativeOperationGrant]]
 

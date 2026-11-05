@@ -2,7 +2,7 @@
 
 from uuid import uuid4
 
-from .contracts import ExternalError
+from studio.contracts.integrations.external_documents import ExternalError
 
 
 def feishu_tree(nodes: list[dict]) -> dict:

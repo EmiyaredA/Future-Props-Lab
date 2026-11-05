@@ -12,7 +12,6 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.integrations.models import ToolApiIntegration
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
@@ -22,6 +21,7 @@ from studio.apps.integrations.storage.demo_records import DemoToolInstallation
 from studio.apps.integrations.storage.migrations.registry import (
     MIGRATIONS as INTEGRATION_MIGRATIONS,
 )
+from studio.apps.integrations.storage.models import ToolApiIntegration
 from studio.apps.integrations.validation import ValidationCapacityClient
 from studio.apps.model_service.audit.audit_client import ModelAuditClient
 from studio.apps.model_service.audit.audit_delivery import ModelAuditDelivery

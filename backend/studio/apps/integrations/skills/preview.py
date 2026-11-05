@@ -2,9 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path, PurePosixPath
 
-from app.integrations.common import IntegrationNotFoundError, IntegrationValidationError
-from app.integrations.schemas import SkillFileListOut, SkillFileOut, SkillFileTextOut
-from app.integrations.skills.archive import SKILL_MD_MAX_BYTES
+from studio.apps.integrations.clients.skill_archive import SKILL_MD_MAX_BYTES
+from studio.contracts.integrations.catalog import SkillFileListOut, SkillFileOut, SkillFileTextOut
+from studio.contracts.integrations.errors import (
+    IntegrationNotFoundError,
+    IntegrationValidationError,
+)
 
 IMAGE_MEDIA_TYPES = {
     ".png": "image/png",

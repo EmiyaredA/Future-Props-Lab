@@ -6,8 +6,7 @@ from uuid import uuid4
 
 from sqlalchemy import delete, select, update
 
-from app.integrations.external.blocks import feishu_tree
-from app.integrations.external.contracts import ExternalError
+from studio.apps.integrations.clients.document_blocks import feishu_tree
 from studio.apps.thought_workshop.external_sync.models import (
     ArticleSyncAsset,
     ArticleSyncBinding,
@@ -16,6 +15,7 @@ from studio.apps.thought_workshop.external_sync.models import (
 )
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
 from studio.apps.thought_workshop.synchronization.sync_transport import MAX_SNAPSHOT
+from studio.contracts.integrations.external_documents import ExternalError
 from studio.contracts.integrations.external_sync import (
     ExternalCheckpoint,
     ExternalDocumentSnapshot,

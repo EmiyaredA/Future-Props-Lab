@@ -4,15 +4,21 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
-from app.runtime.credentials import SecretCipher
-from studio.config.settings import get_settings
+from studio.apps.integrations.external.feishu import FeishuClient
+from studio.apps.integrations.storage.external_models import ExternalConnection
+from studio.contracts.integrations.external_connections import (
+    ExternalConnectionList,
+    ExternalConnectionOut,
+    ExternalTargetOut,
+)
+from studio.contracts.integrations.external_documents import (
+    ConnectionCredentials,
+    ConnectionSnapshot,
+    ExternalError,
+    document_target,
+)
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
-
-from .contracts import ConnectionCredentials, ExternalError, document_target
-from .feishu import FeishuClient
-from .models import ExternalConnection
-from .schemas import ExternalConnectionList, ExternalConnectionOut, ExternalTargetOut
 
 
 def connection_out(row) -> ExternalConnectionOut:
@@ -31,11 +37,11 @@ def connection_out(row) -> ExternalConnectionOut:
 
 
 class ExternalConnections:
-    def __init__(self, session, owner_user_id, transport=None, *, cipher=None):
-        self.cipher = cipher or SecretCipher(get_settings().fpl_secrets_key)
+    def __init__(self, session, owner_user_id, transport=None, *, cipher):
+        self.cipher = cipher
         self.session, self.owner_user_id, self.transport = session, owner_user_id, transport
 
-    async def get(self, id):
+    async def _get(self, id):
         row = await self.session.scalar(
             select(ExternalConnection).where(
                 ExternalConnection.id == id, ExternalConnection.owner_user_id == self.owner_user_id
@@ -44,6 +50,14 @@ class ExternalConnections:
         if row is None:
             raise ExternalError("连接不存在", 404, "not_found")
         return row
+
+    async def get(self, id):
+        row = await self._get(id)
+        return ConnectionSnapshot(row.id, row.revision, row.enabled)
+
+    async def require_enabled(self, id, *, expected_revision=None):
+        row = await self._enabled(id, expected_revision=expected_revision)
+        return ConnectionSnapshot(row.id, row.revision, row.enabled)
 
     async def list(self):
         rows = await self.session.scalars(
@@ -54,7 +68,7 @@ class ExternalConnections:
         return ExternalConnectionList(items=[connection_out(r) for r in rows])
 
     async def save(self, body, id=None):
-        row = await self.get(id) if id else None
+        row = await self._get(id) if id else None
         secret = (
             self.cipher.encrypt(body.app_secret)
             if body.app_secret
@@ -86,7 +100,7 @@ class ExternalConnections:
                 )
                 if result.rowcount != 1:
                     await self.session.rollback()
-                    current = connection_out(await self.get(id))
+                    current = connection_out(await self._get(id))
                     raise RevisionConflictError(
                         body.expected_revision, current.revision, current.model_dump(mode="json")
                     )
@@ -100,8 +114,8 @@ class ExternalConnections:
         await self.session.refresh(row)
         return connection_out(row)
 
-    async def require_enabled(self, id, *, expected_revision=None):
-        row = await self.get(id)
+    async def _enabled(self, id, *, expected_revision=None):
+        row = await self._get(id)
         if not row.enabled:
             raise ExternalError("连接已停用", 409, "connection_disabled")
         if expected_revision is not None and row.revision != expected_revision:
@@ -109,13 +123,13 @@ class ExternalConnections:
         return row
 
     async def client(self, id, *, expected_revision=None):
-        row = await self.require_enabled(id, expected_revision=expected_revision)
+        row = await self._enabled(id, expected_revision=expected_revision)
         credentials = ConnectionCredentials(row.app_id, self.cipher.decrypt(row.secret_ciphertext))
         await self.session.rollback()
         return FeishuClient(credentials, self.transport)
 
     async def check(self, id):
-        row = await self.get(id)
+        row = await self._get(id)
         revision = row.revision
         client = await self.client(id)
         try:
@@ -136,7 +150,7 @@ class ExternalConnections:
             await self.session.rollback()
             raise ExternalError("检查期间配置发生变化，请重新检查", 409)
         await self.session.commit()
-        return connection_out(await self.get(id))
+        return connection_out(await self._get(id))
 
     async def resolve_document(self, id, url) -> tuple[str, str]:
         parsed = document_target(url)

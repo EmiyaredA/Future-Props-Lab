@@ -6,8 +6,8 @@ from uuid import UUID
 
 from sqlalchemy import select
 
-from app.integrations.models import SkillIntegration, SkillVersion
-from app.integrations.skills.archive import SkillArchiveStorage
+from studio.apps.integrations.skills.archive import SkillArchiveStorage
+from studio.apps.integrations.storage.models import SkillIntegration, SkillVersion
 
 
 def identity(value):

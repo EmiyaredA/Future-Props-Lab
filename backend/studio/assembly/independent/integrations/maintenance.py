@@ -1,6 +1,5 @@
 """Explicit read-only catalogue export and Integrations-owned import."""
 
-from app.runtime.credentials import SecretCipher
 from studio.apps.integrations.storage.catalog_migration import (
     DATASETS as CATALOG,
 )
@@ -21,6 +20,7 @@ from studio.apps.integrations.transport.skill_originals_migration_http import mo
 from studio.contracts.integrations.skill_migration import PREFIX as ORIGINALS
 from studio.runtime.database.migration_apps import export_app, import_app
 from studio.runtime.database.project_history_migration import mount_project_history
+from studio.runtime.secrets import SecretCipher
 
 PREFIX = "/v1/migration/integrations"
 TRANSPORT = {"maximum": 32 * 1024 * 1024, "streaming_prefix": ORIGINALS + "/"}

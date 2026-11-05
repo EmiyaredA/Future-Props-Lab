@@ -1,7 +1,7 @@
 """Recovery-site adapter for safe Skill extraction into Creative-owned staging."""
 
 from app.console.creative_workshop.files import resolve_file
-from app.integrations.skills.archive import SkillArchiveStager
+from studio.apps.integrations.clients.skill_archive import SkillArchiveStager
 from studio.config.settings import get_settings
 
 

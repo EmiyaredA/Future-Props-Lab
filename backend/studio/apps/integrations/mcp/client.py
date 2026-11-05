@@ -1,39 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any
 
 from studio.config.settings import Settings
+from studio.contracts.integrations.mcp import DiscoveredTool, DiscoveryResult
 from studio.runtime.http.outbound_urls import require_safe_integration_http_url
-
-
-@dataclass(frozen=True)
-class DiscoveredTool:
-    name: str
-    description: str
-    input_schema: dict[str, Any]
-
-
-@dataclass(frozen=True)
-class DiscoveryResult:
-    server_name: str
-    server_version: str
-    protocol_version: str
-    tools: tuple[DiscoveredTool, ...]
-
-
-class McpDiscoveryClient(Protocol):
-    async def discover(
-        self,
-        *,
-        transport: str,
-        url: str,
-        command: str,
-        arguments: list[str],
-        bearer_token: str,
-        environment: dict[str, str],
-    ) -> DiscoveryResult: ...
 
 
 class OfficialMcpDiscoveryClient:
