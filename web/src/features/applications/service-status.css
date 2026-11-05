@@ -6,6 +6,7 @@
   grid-row: 1;
   position: relative;
   z-index: 1;
+  align-self: center;
   justify-self: end;
   display: inline-flex;
   align-items: center;
@@ -13,7 +14,9 @@
   min-height: 24px;
   padding: 0;
   border: 0;
+  appearance: none;
   background: transparent;
+  box-shadow: none;
   color: var(--muted);
   font-size: 11px;
   white-space: nowrap;
@@ -33,6 +36,7 @@
 }
 .application-service-status[data-phase="running"] .application-status-dot {
   background: #22a66d;
+  box-shadow: 0 0 5px rgb(34 166 109 / 55%);
 }
 .application-service-status:is(
     [data-phase="degraded"],
