@@ -6,10 +6,16 @@ from typing import Literal
 from uuid import uuid5
 
 from fastapi import HTTPException
-from pydantic import Field
+from pydantic import Field, ValidationError
 from sqlalchemy import func, literal, select, text
 from sqlalchemy.exc import IntegrityError
 
+from studio.apps.thought_workshop.external_sync.models import (
+    ArticleSyncAsset,
+    ArticleSyncBinding,
+    ArticleSyncStep,
+    ArticleSyncTask,
+)
 from studio.apps.thought_workshop.knowledge_tools.models import (
     ThoughtCheckpoint,
     ThoughtDocumentReference,
@@ -66,6 +72,14 @@ from .migration_multitable import (
     table_note,
 )
 from .migration_pins import template_files
+from .migration_sync_records import (
+    SyncAsset,
+    SyncBinding,
+    SyncStep,
+    SyncTask,
+    legacy_task,
+    validate_sync,
+)
 from .migration_workspace_records import (
     ArticleMember,
     Checkpoint,
@@ -252,6 +266,10 @@ DATASETS = (
         primary=("user_id", "request_id"),
     ),
     NOTE_RECEIPTS,
+    Dataset("sync-bindings", ArticleSyncBinding, SyncBinding),
+    Dataset("sync-tasks", ArticleSyncTask, SyncTask, per_page=1),
+    Dataset("sync-steps", ArticleSyncStep, SyncStep),
+    Dataset("sync-assets", ArticleSyncAsset, SyncAsset, primary=("task_id", "asset_id")),
 )
 TREE = """
 WITH RECURSIVE ordered(id, knowledge_base_id, depth) AS (
@@ -317,6 +335,8 @@ def ownership(orm):
         )
     if orm in {PublishedArticleRow, ArticleMemberRow}:
         return PublicationRow, ((PublicationRow, PublicationRow.id == orm.publication_id),)
+    if orm in {ArticleSyncAsset, ArticleSyncStep}:
+        return ArticleSyncTask, ((ArticleSyncTask, ArticleSyncTask.id == orm.task_id),)
     return orm, ()
 
 
@@ -356,7 +376,12 @@ async def page(sessions, plan, dataset, owner, after):
                 .order_by(column)
                 .limit(dataset.page_size + 1)
             )
-            if dataset.key == "cursor":
+            if orm is ArticleSyncTask:
+                try:
+                    rows = [await legacy_task(db, row) for row in result]
+                except ValidationError:
+                    raise conflict("migration_thought_sync_history_invalid") from None
+            elif dataset.key == "cursor":
                 rows = [
                     dataset.shape.model_validate(
                         {
@@ -390,6 +415,16 @@ async def page(sessions, plan, dataset, owner, after):
 
 
 async def validate_workspace_row(db, dataset, record, owner, allowed_owners):
+    if dataset.orm in {ArticleSyncBinding, ArticleSyncTask}:
+        await validate_sync(db, record, owner)
+    if dataset.orm in {ArticleSyncAsset, ArticleSyncStep}:
+        task = await db.get(ArticleSyncTask, record.task_id)
+        if task is None or task.owner_user_id != owner:
+            raise conflict("migration_thought_sync_task_owner_conflict")
+        if dataset.orm is ArticleSyncAsset and record.asset_id not in task.content.get(
+            "asset_ids", []
+        ):
+            raise conflict("migration_thought_sync_asset_unreferenced")
     if dataset is NOTE_RECEIPTS:
         note = await db.get(ThoughtNote, record.resource_id)
         if note is None or note.owner_user_id != owner or record.result["revision"] > note.revision:

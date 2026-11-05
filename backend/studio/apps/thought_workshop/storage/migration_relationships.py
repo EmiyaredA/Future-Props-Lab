@@ -5,6 +5,7 @@ import hashlib
 from sqlalchemy import select, text
 
 from studio.apps.thought_workshop.errors import ThoughtError
+from studio.apps.thought_workshop.external_sync.models import ArticleSyncAsset, ArticleSyncTask
 from studio.apps.thought_workshop.knowledge_tools.models import (
     ThoughtDocumentReference,
     ThoughtTemplateAsset,
@@ -49,6 +50,7 @@ ASSET_LINKS = {
     "note_assets": (ThoughtNoteAsset.note_id, ThoughtNoteAsset.asset_id),
     "history_assets": (ThoughtHistoryAsset.history_id, ThoughtHistoryAsset.asset_id),
     "table_assets": (DataAsset.note_id, DataAsset.asset_id),
+    "sync_assets": (ArticleSyncAsset.task_id, ArticleSyncAsset.asset_id),
     "template_assets": (ThoughtTemplateAsset.template_id, ThoughtTemplateAsset.asset_id),
 }
 
@@ -63,6 +65,20 @@ async def link_digest(db, parent, asset):
         digest.update(f"{parent_id}/{asset_id}\n".encode())
         count += 1
     return {"record_count": count, "sha256": digest.hexdigest()}
+
+
+async def verify_sync_assets(db):
+    active = await db.stream(
+        select(ArticleSyncTask.id, ArticleSyncTask.content)
+        .where(ArticleSyncTask.status.in_(("preview", "queued", "running", "needs_review")))
+        .execution_options(yield_per=128)
+    )
+    async for task_id, content in active:
+        actual = await db.scalars(
+            select(ArticleSyncAsset.asset_id).where(ArticleSyncAsset.task_id == task_id)
+        )
+        if set(actual) != set(content.get("asset_ids", [])):
+            raise conflict("migration_thought_sync_asset_coverage_invalid")
 
 
 async def relationship_inventory(sessions):
@@ -112,6 +128,7 @@ async def relationship_inventory(sessions):
             for target in sorted(stored):
                 digest.update(f"{identifier}/{target}\n".encode())
                 count += 1
+        await verify_sync_assets(db)
         files = {
             name: await link_digest(db, parent, asset)
             for name, (parent, asset) in ASSET_LINKS.items()
