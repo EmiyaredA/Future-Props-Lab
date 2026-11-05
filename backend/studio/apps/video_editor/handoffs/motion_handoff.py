@@ -13,7 +13,7 @@ from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import VideoEditorProjectCreateIn, VideoEditorTimelineBatchIn
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
 from studio.apps.video_editor.timeline import VideoEditorTimelines
-from studio.config.settings import get_settings
+from studio.config.settings import Settings
 
 
 async def import_motion_export(
@@ -21,6 +21,7 @@ async def import_motion_export(
     owner_user_id: str,
     source: Path,
     *,
+    settings: Settings,
     filename: str,
     duration_us: int,
     target_project_id: str | None,
@@ -39,7 +40,7 @@ async def import_motion_export(
         project_id = created.id
     staged: Path | None = None
     try:
-        library = AssetLibrary(session, get_settings())
+        library = AssetLibrary(session, settings)
         asset, staged = await library.stage_local_copy(
             source,
             owner_user_id=owner_user_id,

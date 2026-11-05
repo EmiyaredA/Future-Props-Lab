@@ -22,17 +22,17 @@ from studio.apps.motion_compositor.snapshot_format import (
     archive_asset,
     archive_manifest,
 )
-from studio.config.settings import get_settings
+from studio.config.settings import Settings
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.motion_compositor.document import MotionComposition
 
 
 class MotionSnapshots:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
         self.projects = MotionProjects(session, owner_user_id)
-        self.settings = get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
         self.library = AssetLibrary(session, self.settings)
 

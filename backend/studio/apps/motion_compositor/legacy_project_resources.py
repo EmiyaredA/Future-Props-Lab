@@ -5,15 +5,14 @@ from sqlalchemy import select
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.motion_compositor.projects import MotionInvalid
-from studio.config.settings import get_settings
 from studio.contracts.motion_compositor.document import MotionComposition
 from studio.runtime.database.project_files import creating_project_layout, deleting_project_layout
 
 
 class LegacyProjectResources:
-    def __init__(self, session, owner_user_id):
+    def __init__(self, session, owner_user_id, *, storage: AssetStorage):
         self.session, self.owner_user_id = session, owner_user_id
-        self.storage = AssetStorage(get_settings())
+        self.storage = storage
 
     def create_layout(self, identity):
         return creating_project_layout(

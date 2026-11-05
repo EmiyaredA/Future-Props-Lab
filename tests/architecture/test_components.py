@@ -23,9 +23,12 @@ def test_interview_file_scope_is_explicit():
             assert node.args.kw_defaults[index] is None
 
 
-def test_models_never_select_process_global_configuration():
+@pytest.mark.parametrize(
+    "application", ["asset_library", "model_service", "motion_compositor", "presentation_workshop"]
+)
+def test_migrated_apps_never_select_process_global_configuration(application):
     violations = []
-    for path in (STUDIO / "apps/model_service").rglob("*.py"):
+    for path in (STUDIO / "apps" / application).rglob("*.py"):
         for node in ast.walk(ast.parse(path.read_text())):
             if isinstance(node, ast.Name) and node.id == "get_settings":
                 violations.append(str(path.relative_to(ROOT)))

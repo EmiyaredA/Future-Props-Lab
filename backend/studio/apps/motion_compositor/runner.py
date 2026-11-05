@@ -110,7 +110,9 @@ class MotionExportRunner(PollingTaskRunner):
         try:
             async with self.session_factory() as session:
                 bind_owner(session, owner_user_id)
-                assets = await MotionAssets(session, owner_user_id).paths(task.project_id)
+                assets = await MotionAssets(session, owner_user_id, settings=self.settings).paths(
+                    task.project_id
+                )
             document = MotionComposition.model_validate(task.snapshot_document)
             payload = task.request_payload
             start = int(payload["startFrame"])

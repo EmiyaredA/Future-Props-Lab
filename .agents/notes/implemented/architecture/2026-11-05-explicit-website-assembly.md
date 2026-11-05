@@ -34,3 +34,11 @@ session-scoped adapter keys still select the compatibility implementation.
 Presentation exchange, media, scene, and website assembly checks passed 64
 tests. The Thought attachment limit fixture now targets the serving app as
 well. The ordered Models and Thought regression passed 36 tests.
+
+## Motion adapter follow-up
+
+Motion's website operations and background export pass the owning application's
+configuration explicitly. Legacy project resources use the storage supplied at
+assembly. The Video Editor handoff receives the same configuration so its
+media copy uses the same website data root. Architecture tests guard the
+Assets, Models, Motion and Presentation packages against global settings lookup.

@@ -17,18 +17,19 @@ from studio.apps.motion_compositor.schemas import (
 )
 from studio.apps.motion_compositor.storage.models import MotionDocument, MotionTask
 from studio.apps.video_editor.handoffs.motion_handoff import import_motion_export
-from studio.config.settings import get_settings
+from studio.config.settings import Settings
 from studio.contracts.motion_compositor.document import MotionComposition
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 
 
 class MotionExports:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
         self.projects = MotionProjects(session, owner_user_id)
-        self.storage = AssetStorage(get_settings())
+        self.settings = settings
+        self.storage = AssetStorage(settings)
 
     def _out(self, row: MotionTask) -> ExportOut:
         base = f"/v1/motion-compositor/projects/{row.project_id}/exports/{row.id}"
@@ -158,6 +159,7 @@ class MotionExports:
             self.session,
             self.owner_user_id,
             source,
+            settings=self.settings,
             filename=filename,
             duration_us=duration_us,
             target_project_id=body.target_project_id,

@@ -2,13 +2,13 @@
 
 ## Studio 组件归属迁移
 
-所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。`backend/app/` 暂时保留素材、部分治理、Agent 等尚未归并的实现；这部分和逐用例解耦仍属于后续迁移，不能把命名空间迁移视为整个方案验收完成。
+所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。`backend/app/` 暂时保留 Agent CLI 和连接治理兼容实现；这部分和逐用例解耦仍属于后续迁移，不能把命名空间迁移视为整个方案验收完成。
 
 已落地的目录骨架如下（以仓库根目录下为第一级，展开至第四级）：
 
 ```text
 backend/
-├── app/                          # 尚未归并的网站兼容实现
+├── app/                          # Agent CLI 与连接治理兼容实现
 └── studio/
     ├── apps/
     │   ├── agent_workbench/
@@ -1110,3 +1110,5 @@ Models 的 `storage/visual_generation_files.py` 拥有生成任务的账号输�
 兼容网站的浏览器入口为 `web/src/app/entries/website-bootstrap.ts`，先建立不依赖 React 的加载失败反馈，再动态载入 `website.tsx` 装配认证、QueryClient 与页面壳。独立 HTML 和兼容网站都从 `entries/` 启动；URL 与页面组合继续归 `routing/`，启动移动不增加新路由。
 
 Web 通用 UI 验收放在 `web/tests/shared/`，API、SSE、下载与传输验收放在 `web/tests/platform/`；共用初始化仍由 `web/tests/setup.ts` 提供。Vitest 的递归发现规则覆盖两个目录；业务测试随所属 feature 批次迁移。
+
+网站素材、演示和特效适配器接收当前应用的配置或已构造的存储。特效网站 HTTP 操作从当前请求的应用取得配置，后台导出从其装配获得同一配置。演示和特效的旧站资源工厂仍由会话适配器键选择，逐用例解耦继续按业务批次推进。
