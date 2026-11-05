@@ -11,7 +11,7 @@ import { setResponsiveTheme } from "./responsive-capture";
 test("administrators explicitly import private notes then publish through the ordinary dialog", async ({
   page,
 }, info) => {
-  test.setTimeout(90000);
+  test.setTimeout(120_000);
   await page.goto("/apps/thought-workshop/community");
   await page
     .getByRole("button", { name: "导入现有官方文档", exact: true })
@@ -20,9 +20,18 @@ test("administrators explicitly import private notes then publish through the or
   await expect(dialog).toContainText("12 个私人知识库");
   await expect(dialog).toContainText("93 篇文章");
   await expect(dialog).toContainText("不会自动发布");
+  const imported = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).pathname === community + "/official-import" &&
+      response.request().method() === "POST",
+    { timeout: 60_000 },
+  );
   await dialog
     .getByRole("button", { name: "导入到当前账号", exact: true })
     .click();
+  const receipt = await imported;
+  expect(receipt.ok(), await receipt.text()).toBe(true);
+  await expect(dialog).toBeHidden();
   await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible({
     timeout: 20000,
   });

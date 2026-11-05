@@ -1,3 +1,4 @@
+import { pickProjectMore } from "./thought-helpers";
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import fs from "node:fs/promises";
 import { unzipSync, strFromU8 } from "fflate";
@@ -148,10 +149,13 @@ test("全局入口仅在库外显示，三类知识库保留返回入口和独�
     },
   ]) {
     await page.goto(resource.path);
+    const directory = page.getByRole("button", {
+      name: resource.name === "private" ? "笔记目录" : "目录",
+      exact: true,
+    });
     for (const width of [1600, 768, 390]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
-      if (width <= 1200)
-        await page.getByRole("button", { name: "目录", exact: true }).click();
+      if (width <= 1200) await directory.click();
       await expect(sidebar).toBeVisible();
       await expect(
         sidebar.getByRole("navigation", { name: "思绪工坊入口" }),
@@ -182,7 +186,7 @@ test("全局入口仅在库外显示，三类知识库保留返回入口和独�
       if (width <= 1200) await page.keyboard.press("Escape");
     }
     await page.reload();
-    await page.getByRole("button", { name: "目录", exact: true }).click();
+    await directory.click();
     const back = sidebar.getByRole("button", {
       name: resource.back,
       exact: true,
@@ -263,12 +267,7 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
     );
   }
   await page.goto(`/apps/thought-workshop/knowledge-bases/${kb.id}`);
-  await page
-    .getByRole("button", { name: "知识库更多操作", exact: true })
-    .click();
-  await page
-    .getByRole("menuitem", { name: "发布到知识社区", exact: true })
-    .click();
+  await pickProjectMore(page, "发布到知识社区");
   const publish = page.getByRole("alertdialog", {
     name: "发布到知识社区",
     exact: true,
