@@ -317,7 +317,9 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 
 先运行 `npm run services:build:web -- director`，把返回目录作为 `--web-release` 传给 `npm run services:build -- director --build`。叠加 `deploy/director.compose.yaml` 并配置 `FPL_DIRECTOR_IMAGE`、`FPL_DIRECTOR_STATE` 和 Identity 公钥。在隔离空卷上显式运行 `director migrate` 后启动。Director 自己持有项目、动作库、文件和编辑器会话。服务重启后，浏览器重新建立编辑会话。
 
-三容器验收 `fpl-director-browser-65f3dcb78d` 验证了 390px 项目列表、WebGL 编辑器深链接和初始化保存、旧程序版本写入拒绝、回环公网监听的匿名保护，以及 Director 容器重启后原文件读回。浏览器版本为 `c6ba2149dd0e285ed7bc`，镜像为 `fpl/director:f4c0e8bde89255b83a46`。导演台项目和动作文件已有隔离迁移验收，服务保留正式历史数据和整站就绪门禁。
+三容器验收 `fpl-director-browser-65f3dcb78d` 验证了 390px 项目列表、WebGL 编辑器深链接和初始化保存、旧程序版本写入拒绝、回环公网监听的匿名保护，以及 Director 容器重启后原文件读回。浏览器版本为 `c6ba2149dd0e285ed7bc`，镜像为 `fpl/director:f4c0e8bde89255b83a46`。当前 `/ready` 复核数据库和持锁启动恢复，并要求挂载与公开契约匹配的浏览器发布。导演台项目和动作文件的正式迁移仍纳入整站切换门禁。
+
+单服务隔离 Compose 使用 `fpl/director:de04634c7c5489374541` 显式初始化空卷。容器的就绪探针和导演台页面返回同一发布版本 `532c838eebe1af788dbf`。
 
 ### Models 历史目录与凭据
 

@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -48,8 +49,10 @@ def create_app(*, state_root, catalog, public_key, schema_path=None, web_root=No
             try:
                 check(database.path, "director", MIGRATIONS)
                 await storage.recover(database.sessions)
+                _app.state.recovered = True
                 yield
             finally:
+                _app.state.recovered = False
                 await database.close()
 
     app = FastAPI(
@@ -58,6 +61,7 @@ def create_app(*, state_root, catalog, public_key, schema_path=None, web_root=No
     app.state.database = database
     app.state.director_storage = storage
     app.state.director_editor = DirectorEditorSessions(database.sessions)
+    app.state.recovered = False
     app.add_middleware(SignedIdentity, service="director", public_key=public_key, catalog=catalog)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -69,6 +73,7 @@ def create_app(*, state_root, catalog, public_key, schema_path=None, web_root=No
         expected = public_contract(published, "director", catalog)
         if public_contract(app.openapi(), "director", catalog) != expected:
             raise ValueError("导演台公开接口与发布契约不匹配")
+    release = None
     if web_root is not None:
         release = load_release(web_root, "director")
         if schema_path is None or release.api_sha256 != expected:
@@ -81,6 +86,14 @@ def create_app(*, state_root, catalog, public_key, schema_path=None, web_root=No
 
     @app.get("/ready")
     async def ready():
-        raise HTTPException(503, "director_cutover_incomplete")
+        if release is None or not app.state.recovered:
+            raise HTTPException(503, "director_release_or_storage_unavailable")
+        try:
+            check(database.path, "director", MIGRATIONS)
+        except ValueError:
+            raise HTTPException(503, "director_schema_unavailable") from None
+        async with database.sessions() as session:
+            await session.execute(text("SELECT 1"))
+        return {"status": "ready", "service": "director", "version": release.build_id}
 
     return app

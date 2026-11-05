@@ -2,14 +2,17 @@
 
 import asyncio
 import hashlib
+import json
 from pathlib import Path
 
 import httpx
+import pytest
 from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
 from studio.apps.director_desk.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.director_desk.application import create_app
+from studio.contracts.gateway.protocol_hash import public_contract
 from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,12 +25,15 @@ async def test_director_isolated_api_files_and_editor_recovery(scenario, tmp_pat
     state = tmp_path / "director"
     apply(state / "service.db", "director", MIGRATIONS)
 
-    def application():
+    schema_path = ROOT / "web/src/generated/openapi.json"
+
+    def application(web_root=None):
         return create_app(
             state_root=state,
             catalog=CATALOG,
             public_key=case.key.public_key(),
-            schema_path=ROOT / "web/src/generated/openapi.json",
+            schema_path=schema_path,
+            web_root=web_root,
         )
 
     app = application()
@@ -105,8 +111,42 @@ async def test_director_isolated_api_files_and_editor_recovery(scenario, tmp_pat
             "director-desk", project, owner_user_id=case.viewer
         )
 
-    restarted = application()
+    web = tmp_path / "director-web"
+    web.mkdir()
+    entry = b"<!doctype html><title>Director release</title>"
+    index = web / "index.html"
+    index.write_bytes(entry)
+    build = "a" * 20
+    (web / "build.json").write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "service": "director",
+                "build_id": build,
+                "entry": index.name,
+                "api_sha256": public_contract(
+                    json.loads(schema_path.read_text()), "director", CATALOG
+                ),
+                "files": [
+                    {
+                        "path": index.name,
+                        "sha256": hashlib.sha256(entry).hexdigest(),
+                        "bytes": len(entry),
+                    }
+                ],
+            }
+        )
+    )
+    restarted = application(web)
+    async with client(restarted) as api:
+        assert (await api.get("/ready")).status_code == 503
     async with restarted.router.lifespan_context(restarted), client(restarted) as api:
+        assert (await api.get("/ready")).json() == {
+            "status": "ready",
+            "service": "director",
+            "version": build,
+        }
+        assert (await api.get("/apps/director-desk")).content == entry
         assert (await call(api, "GET", f"{item}/files/{digest}")).content == body
         assert (await call(api, "GET", item)).json()["revision"] == 1
         assert (await call(api, "POST", f"{item}/tools", json=request)).status_code == 409
@@ -120,6 +160,11 @@ async def test_director_isolated_api_files_and_editor_recovery(scenario, tmp_pat
         assert (await call(api, "GET", item)).status_code == 404
         assert (await call(api, "GET", f"{item}/files/{digest}")).status_code == 404
         assert (await call(api, "GET", f"{library}/{digest}")).status_code == 404
+    async with client(restarted) as api:
+        assert (await api.get("/ready")).status_code == 503
+    index.write_bytes(b"bad release")
+    with pytest.raises(ValueError, match="程序资源"):
+        application(web)
 
 
 async def test_upload_cannot_recreate_a_concurrently_deleted_project(tmp_path):
