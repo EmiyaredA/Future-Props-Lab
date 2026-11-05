@@ -1,11 +1,12 @@
 """Preserve owned inference task state and its exact input and output associations."""
 
 from datetime import datetime
-from typing import Annotated, Literal
+from typing import Literal
 
 from pydantic import Field, JsonValue, TypeAdapter, ValidationError, model_validator
 from sqlalchemy import select
 
+from studio.apps.model_service.storage.migration_originals import OutputKey, StorageKey
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.storage.models.model_inference import (
     ModelInferenceAsset,
@@ -17,10 +18,6 @@ from studio.contracts.management.project_history import HistoryRecord, Identifie
 from studio.contracts.model_service.task_execution import TaskExecutionInfo
 from studio.runtime.database.project_history_migration import ProjectDataset, blocked
 
-INPUT_KEY = r"[a-f0-9]{32}"
-OUTPUT_KEY = rf"(?:{INPUT_KEY}|native-[a-f0-9]{{8}}(?:-[a-f0-9]{{4}}){{3}}-[a-f0-9]{{12}})"
-InputKey = Annotated[str, Field(pattern=f"^{INPUT_KEY}$")]
-OutputKey = Annotated[str, Field(pattern=f"^{OUTPUT_KEY}$")]
 IDENTIFIERS = TypeAdapter(list[Identifier])
 
 
@@ -69,7 +66,7 @@ class InferenceTask(HistoryRecord):
 class InferenceAsset(HistoryRecord):
     id: Identifier
     task_id: Identifier | None
-    storage_key: InputKey
+    storage_key: StorageKey
     filename: str
     mime_type: str
     media_kind: Literal["audio", "image", "video"]

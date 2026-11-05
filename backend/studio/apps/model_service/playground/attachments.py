@@ -108,7 +108,12 @@ class ModelTestAttachments:
         return self.settings.account_model_test_path(self.owner_user_id, "attachments")
 
     async def _conversation(self, conversation_id: str) -> ModelTestConversation:
-        row = await self.session.get(ModelTestConversation, conversation_id)
+        row = await self.session.scalar(
+            select(ModelTestConversation).where(
+                ModelTestConversation.id == conversation_id,
+                ModelTestConversation.owner_user_id == self.owner_user_id,
+            )
+        )
         if row is None:
             raise AttachmentError("对话不存在", code="not_found", status=404)
         return row
@@ -214,8 +219,19 @@ class ModelTestAttachments:
                 await upload.close()
 
     async def _attachment(self, conversation_id: str, attachment_id: str) -> ModelTestAttachment:
-        row = await self.session.get(ModelTestAttachment, attachment_id)
-        if row is None or row.conversation_id != conversation_id:
+        row = await self.session.scalar(
+            select(ModelTestAttachment)
+            .join(
+                ModelTestConversation,
+                ModelTestConversation.id == ModelTestAttachment.conversation_id,
+            )
+            .where(
+                ModelTestAttachment.id == attachment_id,
+                ModelTestAttachment.conversation_id == conversation_id,
+                ModelTestConversation.owner_user_id == self.owner_user_id,
+            )
+        )
+        if row is None:
             raise AttachmentError("图片附件不存在", code="not_found", status=404)
         return row
 

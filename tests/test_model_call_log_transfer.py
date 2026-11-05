@@ -18,7 +18,7 @@ from tests.test_tools_navigation_migration import available_ports, listener
 from db.migrations.runner import apply_migrations
 from studio.apps.model_service.generation.outcomes import SUBMISSION_INTERRUPTED_MESSAGE
 from studio.apps.model_service.inference.runner import InferenceRunner
-from studio.apps.model_service.storage.migration_inference_files import PREFIX
+from studio.apps.model_service.storage.migration_originals import INFERENCE
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.storage.models.model_inference import (
@@ -28,6 +28,8 @@ from studio.apps.model_service.storage.models.model_inference import (
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+
+PREFIX = INFERENCE.prefix
 
 
 def seed_inference(database, root, owner, call):
@@ -217,7 +219,7 @@ def test_models_history_preserves_owned_payloads_and_replays_after_restart(tmp_p
             assert [row.request_payload for row in other_page.batch.records] == [
                 {"prompt": "other"}
             ]
-            for dataset, count in zip(HISTORY[1:], (2, 1), strict=True):
+            for dataset, count in zip(HISTORY[1:3], (2, 1), strict=True):
                 assert transfer(client, plan, source, destination, dataset)["record_count"] == count
             originals = manifest(client, source, owner, headers, complete=True)
             assert len(originals) == 2 and originals[1].size > 32 * 1024 * 1024
