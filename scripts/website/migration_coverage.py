@@ -1,4 +1,4 @@
-"""List migration coverage against the sealed source schema without reading private records."""
+"""Report sealed migration coverage without returning private record contents."""
 
 import argparse
 import json
@@ -109,7 +109,39 @@ def registered_owners(catalog):
     return owners
 
 
-def platform_partitions(database, partition):
+LEGACY_AGENT_IDS = {"codex", "claude-code", "opencode", "dsh", "pi"}
+LEGACY_AGENT_PURPOSES = {"amadeus", "visual_acceptance", "interview_preparation"}
+LEGACY_AGENT_SLOTS = {
+    f"{agent}:{purpose}" for agent in LEGACY_AGENT_IDS for purpose in LEGACY_AGENT_PURPOSES
+}
+
+
+def retired_agent_grants(payload):
+    try:
+        value = json.loads(payload)
+    except (TypeError, ValueError):
+        return False
+    if (
+        not isinstance(value, dict)
+        or value.keys() != {"grants", "managed"}
+        or not isinstance(value["grants"], list)
+        or not isinstance(value["managed"], list)
+    ):
+        return False
+    for grant in value["grants"]:
+        if (
+            not isinstance(grant, dict)
+            or grant.keys() != {"user_id", "agent_id", "purpose"}
+            or not all(isinstance(item, str) for item in grant.values())
+            or not 1 <= len(grant["user_id"]) <= 36
+            or grant["agent_id"] not in LEGACY_AGENT_IDS
+            or grant["purpose"] not in LEGACY_AGENT_PURPOSES
+        ):
+            return False
+    return all(isinstance(slot, str) and slot in LEGACY_AGENT_SLOTS for slot in value["managed"])
+
+
+def platform_partitions(database, partition, owner_ids):
     def owner(key):
         if key in partition["keys"]:
             return partition["keys"][key]
@@ -122,14 +154,28 @@ def platform_partitions(database, partition):
             "unassigned",
         )
 
-    result = {}
+    result, retained = {}, {}
     pending = 0
-    for key, count in database.execute("SELECT id, count(*) FROM platform_settings GROUP BY id"):
+    for key, old_grants in database.execute(
+        "SELECT id, CASE WHEN id = 'code_agents' THEN payload END FROM platform_settings"
+    ):
         service = owner(key)
-        result[service] = result.get(service, 0) + count
-        if service != "models" or (key not in POLICIES and not key.startswith(DEFAULT_PREFIX)):
-            pending += count
-    return result, pending
+        result[service] = result.get(service, 0) + 1
+        if key == "code_agents" and service == "agent-runtime" and retired_agent_grants(old_grants):
+            retained[service] = retained.get(service, 0) + 1
+        elif service != "models" or (
+            key not in POLICIES
+            and (
+                not key.startswith(DEFAULT_PREFIX)
+                or key.removeprefix(DEFAULT_PREFIX) not in owner_ids
+            )
+        ):
+            pending += 1
+    return {
+        "partitions": result,
+        "pending_records": pending,
+        "rollback_records": retained,
+    }
 
 
 OPERATION_DATASETS = {
@@ -172,7 +218,13 @@ def operation_partitions(database):
             "SELECT resource_kind, count(*) FROM project_operation_receipts GROUP BY resource_kind"
         )
     )
-    return counts, sum(count for kind, count in counts.items() if kind not in OPERATION_DATASETS)
+    return {
+        "partitions": counts,
+        "pending_records": sum(
+            count for kind, count in counts.items() if kind not in OPERATION_DATASETS
+        ),
+        "datasets": OPERATION_DATASETS,
+    }
 
 
 def coverage(snapshot, catalog, owner_ids):
@@ -193,7 +245,7 @@ def coverage(snapshot, catalog, owner_ids):
                 continue
             count = table_count(database, name)
             partition = (
-                platform_partitions(database, catalog["partitions"][name])
+                platform_partitions(database, catalog["partitions"][name], owner_ids)
                 if name == "platform_settings"
                 else None
             )
@@ -201,7 +253,12 @@ def coverage(snapshot, catalog, owner_ids):
                 partition = operation_partitions(database)
             journal = layout_journal(database, owner_ids) if name == LAYOUT_JOURNAL else None
             if partition is not None and count:
-                status = "transfer_pending" if partition[1] else "dataset_registered"
+                if partition["pending_records"]:
+                    status = "transfer_pending"
+                elif sum(partition.get("rollback_records", {}).values()) == count:
+                    status = "retained_for_rollback"
+                else:
+                    status = "dataset_registered"
             elif journal is not None:
                 status = (
                     "source_layout_blocked"
@@ -229,9 +286,9 @@ def coverage(snapshot, catalog, owner_ids):
             if name in REBUILDS:
                 item["dataset"] = REBUILDS[name]
             if partition is not None:
-                item["partitions"], item["pending_records"] = partition
-                if name == "project_operation_receipts":
-                    item["datasets"] = OPERATION_DATASETS
+                item.update(partition)
+                if partition.get("rollback_records"):
+                    item["retained_in"] = "sealed_snapshot"
             if journal is not None:
                 item.update(journal)
             output.append(item)

@@ -26,7 +26,7 @@ from scripts.website.migrate_model_catalog import POLICIES as MODEL_POLICIES
 from scripts.website.migrate_presentation import PRESENTATION_RECORDS, PRESENTATION_REFERENCES
 from scripts.website.migrate_remote_preferences import PREFERENCES
 from scripts.website.migrate_tools_navigation import NAVIGATION
-from scripts.website.migration_coverage import inspect_bundle
+from scripts.website.migration_coverage import inspect_bundle, platform_partitions
 from scripts.website.migration_transfer import pages, transfer
 from tests.presentation_helpers import element, sample_document
 from tests.test_tools_navigation_migration import available_ports, listener
@@ -139,6 +139,8 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
     assert indexed["agent_workbench_search"]["status"] == "rebuild_registered"
     assert indexed["model_catalog_state"]["dataset"] == "models.catalog-state"
     assert indexed["interview_rooms"]["dataset"] == "interview.rooms"
+    assert indexed["platform_settings"]["rollback_records"] == {"agent-runtime": 1}
+    assert indexed["platform_settings"]["pending_records"] == 0
     with pytest.raises(ValueError, match="清单摘要"):
         inspect_bundle(snapshot_db.parent.parent, plan=plan, manifest_sha256="0" * 64, catalog={})
     for service, migrations, datasets in (
@@ -770,3 +772,33 @@ def test_snapshot_rejects_external_absolute_model_link(tmp_path):
     link.symlink_to(outside)
     with pytest.raises(ValueError, match="外部或失效链接"):
         legacy_snapshot.runtime_inventory(runtime, allow_legacy_python_link=True)
+
+
+def test_coverage_archives_known_legacy_agent_grants_and_flags_unknown_settings():
+    owner = str(uuid4())
+    policy = json.loads((ROOT / "deploy/contracts/ownership.json").read_text())["partitions"][
+        "platform_settings"
+    ]
+    grant = {"user_id": owner, "agent_id": "codex", "purpose": "amadeus"}
+    with closing(sqlite3.connect(":memory:")) as database:
+        database.execute("CREATE TABLE platform_settings (id TEXT PRIMARY KEY, payload JSON)")
+        database.executemany(
+            "INSERT INTO platform_settings VALUES (?, ?)",
+            [
+                ("code_agents", json.dumps({"grants": [grant], "managed": ["codex:amadeus"]})),
+                ("account_defaults:" + owner, "{}"),
+            ],
+        )
+        expected = {
+            "partitions": {"agent-runtime": 1, "models": 1},
+            "pending_records": 0,
+            "rollback_records": {"agent-runtime": 1},
+        }
+        assert platform_partitions(database, policy, {owner}) == expected
+        database.execute("INSERT INTO platform_settings VALUES ('unknown-setting','{}')")
+        database.execute("UPDATE platform_settings SET payload='{}' WHERE id='code_agents'")
+        assert platform_partitions(database, policy, set()) == {
+            "partitions": {"agent-runtime": 1, "models": 1, "unassigned": 1},
+            "pending_records": 3,
+            "rollback_records": {},
+        }
