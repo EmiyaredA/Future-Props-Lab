@@ -7,6 +7,7 @@ import pytest
 
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
 from app.main import app
+from app.runtime.db import SessionLocal
 from db.migrations.registry import LATEST_MIGRATION_ID
 from db.migrations.runner import apply_migrations, check_migrations, connect_database
 from test_code_agents import configured, wait_run  # noqa: F401
@@ -157,7 +158,7 @@ async def test_plan_to_agent_adds_draft_only_after_restored_approval():
         assert agent["run"]["status"] == "waiting_approval"
         action = (await client.get(root)).json()["actions"][0]
         await app.state.code_agent_runs.close()
-        await recover_interrupted_amadeus_runs()
+        await recover_interrupted_amadeus_runs(sessions=SessionLocal)
         restored = (await client.get(root)).json()["actions"][0]
         assert (
             restored["status"] == "pending"
@@ -188,7 +189,7 @@ async def test_question_survives_recovery_and_answer_is_single_use():
         original = await start(client, root, mode="plan")
         assert original["run"]["status"] == "waiting_question"
         await app.state.code_agent_runs.close()
-        await recover_interrupted_amadeus_runs()
+        await recover_interrupted_amadeus_runs(sessions=SessionLocal)
         question = (await client.get(root)).json()["questions"][0]
         assert question["status"] == "pending"
         answer = await client.post(

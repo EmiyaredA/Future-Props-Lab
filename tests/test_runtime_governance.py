@@ -54,15 +54,15 @@ async def test_quota_voice_release_and_persistent_task_ownership():
             scopes=frozenset({"studio:read", "studio:write"}),
             platform_role="user",
         )
-        first = await acquire(principal, voice=True)
+        first = await acquire(principal, voice=True, sessions=SessionLocal)
         with pytest.raises(AccountError, match="runtime_quota_exceeded"):
-            await acquire(principal, voice=True)
-        second = await acquire(principal)
+            await acquire(principal, voice=True, sessions=SessionLocal)
+        second = await acquire(principal, sessions=SessionLocal)
         with pytest.raises(AccountError, match="runtime_quota_exceeded"):
-            await acquire(principal)
-        await release(first)
-        await release(second)
-        lease = await acquire(principal)
+            await acquire(principal, sessions=SessionLocal)
+        await release(first, sessions=SessionLocal)
+        await release(second, sessions=SessionLocal)
+        lease = await acquire(principal, sessions=SessionLocal)
         async with SessionLocal() as session:
             task = ModelTestGenerationTask(
                 owner_user_id=owner_user_id,
@@ -78,18 +78,18 @@ async def test_quota_voice_release_and_persistent_task_ownership():
             await attach(session, lease, "model", [task.id])
             await session.commit()
             task_id = task.id
-        await release(lease)
-        await recover_admissions()
+        await release(lease, sessions=SessionLocal)
+        await recover_admissions(sessions=SessionLocal)
         async with SessionLocal() as session:
             row = await session.get(RuntimeAdmission, lease)
             assert row.user_id == user_id and row.task_ids == [task_id] and row.released_at is None
             task = await session.get(ModelTestGenerationTask, task_id)
             task.status = "completed"
             await session.commit()
-        first = await acquire(principal)
+        first = await acquire(principal, sessions=SessionLocal)
         async with SessionLocal() as session:
             assert (await session.get(RuntimeAdmission, lease)).released_at is not None
-        await release(first)
+        await release(first, sessions=SessionLocal)
 
 
 @pytest.mark.asyncio

@@ -16,17 +16,16 @@ from app.llm.models import (
 )
 from app.llm.providers.agent import HttpAgentAdapter
 from app.runtime.credentials import decrypt_secret
-from app.runtime.db import SessionLocal
-from studio.apps.visual_workshop.assistant.actions import (
-    action_out,
-    cancel_active_actions,
-    persist_agent_event,
-)
 from studio.apps.visual_workshop.assistant.conversations import (
     PreparedAssistantGeneration,
     message_out,
 )
 from studio.apps.visual_workshop.assistant.tools import build_visual_agent_definition
+from studio.apps.visual_workshop.assistant_action_records import (
+    cancel_active_actions,
+    persist_agent_event,
+)
+from studio.apps.visual_workshop.assistant_values import action_out
 from studio.apps.visual_workshop.assistant_values import sse_frame as _event
 from studio.apps.visual_workshop.storage.models import (
     VisualAssistantAction,
@@ -49,6 +48,7 @@ def build_model_adapter(prepared: PreparedAssistantGeneration, api_key: str) -> 
 async def _settle(
     prepared: PreparedAssistantGeneration,
     *,
+    sessions,
     run_id: str,
     content: str,
     status: str,
@@ -64,7 +64,7 @@ async def _settle(
     finish_reason: str,
 ) -> tuple[VisualAssistantMessage, list, LlmCallLog, int]:
     latency_ms = max(0, round((time.monotonic() - started) * 1000))
-    async with SessionLocal() as session:
+    async with sessions() as session:
         bind_owner(session.sync_session, prepared.owner_user_id)
         message = await session.get(VisualAssistantMessage, prepared.assistant_message_id)
         conversation = await session.get(VisualAssistantConversation, prepared.conversation_id)
@@ -155,6 +155,7 @@ async def _settle(
 async def assistant_events(
     prepared: PreparedAssistantGeneration,
     *,
+    sessions,
     admission=None,
 ) -> AsyncIterator[bytes]:
     sequence = 0
@@ -171,6 +172,7 @@ async def assistant_events(
         video_model_id=prepared.video_model_id,
         video_model_slug=prepared.video_model_slug,
         admission=admission,
+        sessions=sessions,
     )
     adapter = build_model_adapter(prepared, key)
     harness = AgentHarness(
@@ -252,7 +254,7 @@ async def assistant_events(
                     "run_cancelled",
                 }:
                     actions = await persist_agent_event(
-                        prepared.owner_user_id, prepared.assistant_message_id, event
+                        sessions, prepared.owner_user_id, prepared.assistant_message_id, event
                     )
                     yield _event(
                         "step",
@@ -313,6 +315,7 @@ async def assistant_events(
             if run_status == RunStatus.COMPLETED:
                 message, actions, log, revision = await _settle(
                     prepared,
+                    sessions=sessions,
                     run_id=harness.run_id,
                     content=result.final_text,
                     status="completed",
@@ -346,10 +349,11 @@ async def assistant_events(
                 return
             error_message = result.reason or "Agent 未完成本轮任务"
             await cancel_active_actions(
-                prepared.owner_user_id, prepared.assistant_message_id, error_message
+                sessions, prepared.owner_user_id, prepared.assistant_message_id, error_message
             )
             message, actions, log, revision = await _settle(
                 prepared,
+                sessions=sessions,
                 run_id=harness.run_id,
                 content=result.final_text,
                 status="error",
@@ -382,11 +386,12 @@ async def assistant_events(
         await harness.abort()
         task.cancel()
         await cancel_active_actions(
-            prepared.owner_user_id, prepared.assistant_message_id, "用户停止生成"
+            sessions, prepared.owner_user_id, prepared.assistant_message_id, "用户停止生成"
         )
         await asyncio.shield(
             _settle(
                 prepared,
+                sessions=sessions,
                 run_id=harness.run_id,
                 content=content,
                 status="cancelled",
@@ -412,10 +417,11 @@ async def assistant_events(
         )
         message_text = "模型调用超时" if timeout else "Agent 运行失败"
         await cancel_active_actions(
-            prepared.owner_user_id, prepared.assistant_message_id, message_text
+            sessions, prepared.owner_user_id, prepared.assistant_message_id, message_text
         )
         message, actions, log, revision = await _settle(
             prepared,
+            sessions=sessions,
             run_id=harness.run_id,
             content=content,
             status="error",

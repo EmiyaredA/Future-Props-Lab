@@ -3,16 +3,15 @@
 import asyncio
 import json
 
-from app.runtime.db import SessionLocal
 from studio.apps.agent_workbench.events import valid_auth
 from studio.apps.agent_workbench.execution.storage import get_chat, latest_turn_version
 
 
-async def stream(request, principal, chat_id, ready=None):
+async def stream(request, principal, chat_id, ready=None, *, sessions):
     previous = None
     owner = principal.user_id
     while not await request.is_disconnected():
-        async with SessionLocal() as db:
+        async with sessions() as db:
             if not await valid_auth(db, principal):
                 break
             await get_chat(db, owner, chat_id)

@@ -7,7 +7,6 @@ from app.console.models import AuthSession, ManagementApiKey, User
 from app.console.schemas.platform_governance import RuntimeQuotas
 from app.llm.models.runtime_admission import RuntimeAdmission as Admission
 from app.orm import RUNTIME_QUOTA_TASK_MODELS
-from app.runtime.db import SessionLocal
 from studio.contracts.identity.errors import AccountError
 from studio.runtime.time import utc_now
 
@@ -99,8 +98,8 @@ async def check_capacity(
         raise AccountError("runtime_quota_exceeded")
 
 
-async def acquire(principal, *, voice=False, weight=1):
-    async with SessionLocal() as session:
+async def acquire(principal, *, sessions, voice=False, weight=1):
+    async with sessions() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
         role = principal.platform_role or ("admin" if principal.is_platform_admin else "user")
         await check_capacity(
@@ -157,18 +156,18 @@ async def attach(session, lease_id, kind, task_ids):
         row.released_at = utc_now()
 
 
-async def release(lease_id):
+async def release(lease_id, *, sessions):
     if not lease_id:
         return
-    async with SessionLocal() as session:
+    async with sessions() as session:
         row = await session.get(Admission, lease_id)
         if row is not None and not row.task_ids:
             row.released_at = utc_now()
             await session.commit()
 
 
-async def recover_admissions():
-    async with SessionLocal() as session:
+async def recover_admissions(*, sessions):
+    async with sessions() as session:
         await session.execute(text("BEGIN IMMEDIATE"))
         await session.execute(
             update(Admission)

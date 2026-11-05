@@ -78,6 +78,7 @@ from app.llm.provider_transports import ProviderTransports
 from app.runtime.db import SessionLocal, close_website_database
 from db.migrations import apply_migrations
 from db.migrations.registry import LATEST_MIGRATION_ID
+from studio.apps.agent_workbench.events import stream_events
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
 from studio.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
 from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
@@ -145,10 +146,10 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     async with SessionLocal() as session:
         await interrupt_workbench_runs(session)
     lifespan_app.state.workbench_runs = WorkbenchRuns(sessions=SessionLocal, settings=settings)
-    await recover_admissions()
-    await recover_interrupted_visual_assistant_runs()
+    await recover_admissions(sessions=SessionLocal)
+    await recover_interrupted_visual_assistant_runs(sessions=SessionLocal)
     await recover_interrupted_model_test_runs(SessionLocal)
-    await recover_interrupted_amadeus_runs()
+    await recover_interrupted_amadeus_runs(sessions=SessionLocal)
     lifespan_app.state.code_agent_runs = CodeAgentRuns(sessions=SessionLocal, settings=settings)
     installer = Installer(local_root(settings))
     local_runtime = LocalRuntime(installer)
@@ -162,7 +163,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             ),
             InterviewPreparationRunner(interview_actor_allowed, sessions=SessionLocal),
             ArticleSyncRunner(external_sync_actor_allowed, sessions=SessionLocal),
-            ModelTemplateSyncRunner(),
+            ModelTemplateSyncRunner(sessions=SessionLocal),
             VisualGenerationRunner(
                 claim_admission=claim_visual_capacity,
                 queue_candidates=visual_queue_candidates,
@@ -234,7 +235,12 @@ app.state.model_catalog_bindings = CatalogBindings(
     task_usage=LegacyCatalogTaskUsage,
 )
 app.state.model_credential_reader = snapshot_from_principal
-app.state.model_admission = AdmissionBindings(acquire, release, attach, admit_generation_tasks)
+app.state.model_admission = AdmissionBindings(
+    partial(acquire, sessions=SessionLocal),
+    partial(release, sessions=SessionLocal),
+    attach,
+    admit_generation_tasks,
+)
 app.state.model_provider_transports = ProviderTransports(resolve=mock_transport)
 app.state.model_library_outputs = LibraryOutputBindings(
     for_request=lambda _request, session, owner: LegacyLibraryOutputs(session, settings, owner)
@@ -268,6 +274,7 @@ app.state.thought_writing = WritingBindings(
     for_request=lambda _request, owner: LegacyWritingModels(SessionLocal, owner)
 )
 app.state.workbench_native = LocalSourceAccess()
+app.state.workbench_event_stream = partial(stream_events, sessions=SessionLocal)
 app.state.account_creator = create_account
 app.state.account_storage_check = upgrade_pending
 app.state.code_agent_runs = CodeAgentRuns(sessions=SessionLocal, settings=settings)

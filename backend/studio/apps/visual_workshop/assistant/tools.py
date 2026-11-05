@@ -18,7 +18,6 @@ from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.assistant_tool_values import apply_operations as _apply_operations
 from studio.apps.visual_workshop.assistant_tool_values import (
     build_visual_agent_definition as build_definition,
@@ -48,8 +47,10 @@ def _scope_owner(context: ToolExecutionContext) -> str:
     return owner_user_id
 
 
-async def visual_context_source(owner_user_id: str, project_id: str) -> list[ContextFragment]:
-    async with SessionLocal() as session:
+async def visual_context_source(
+    owner_user_id: str, project_id: str, *, sessions
+) -> list[ContextFragment]:
+    async with sessions() as session:
         bind_owner(session.sync_session, owner_user_id)
         project = await session.get(VisualWorkshopProject, project_id)
         canvas = await VisualCanvasDocuments(session).get(project_id)
@@ -149,10 +150,12 @@ async def visual_context_source(owner_user_id: str, project_id: str) -> list[Con
     ]
 
 
-async def _read_canvas(arguments: dict[str, Any], context: ToolExecutionContext) -> Observation:
+async def _read_canvas(
+    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions
+) -> Observation:
     del arguments
     project_id = str(context.scope["project_id"])
-    async with SessionLocal() as session:
+    async with sessions() as session:
         bind_owner(session.sync_session, _scope_owner(context))
         canvas = await VisualCanvasDocuments(session).get(project_id)
     data = {
@@ -169,12 +172,14 @@ async def _read_canvas(arguments: dict[str, Any], context: ToolExecutionContext)
     )
 
 
-async def _list_assets(arguments: dict[str, Any], context: ToolExecutionContext) -> Observation:
+async def _list_assets(
+    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions
+) -> Observation:
     project_id = str(context.scope["project_id"])
     kind = str(arguments.get("kind") or "").strip()
     query = str(arguments.get("query") or "").strip()
     limit = min(50, max(1, int(arguments.get("limit") or 20)))
-    async with SessionLocal() as session:
+    async with sessions() as session:
         bind_owner(session.sync_session, _scope_owner(context))
         reference_ids = select(VisualProjectAssetReference.asset_id).where(
             VisualProjectAssetReference.project_id == project_id
@@ -213,10 +218,10 @@ async def _list_assets(arguments: dict[str, Any], context: ToolExecutionContext)
 
 
 async def _list_generation_options(
-    arguments: dict[str, Any], context: ToolExecutionContext
+    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions
 ) -> Observation:
     del arguments
-    async with SessionLocal() as session:
+    async with sessions() as session:
         bind_owner(session.sync_session, _scope_owner(context))
         options = await VisualGeneration(session).options()
     data = options.model_dump(mode="json")
@@ -230,11 +235,11 @@ async def _list_generation_options(
 
 
 async def _inspect_generation_task(
-    arguments: dict[str, Any], context: ToolExecutionContext
+    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions
 ) -> Observation:
     project_id = str(context.scope["project_id"])
     task_id = str(arguments.get("task_id") or "")
-    async with SessionLocal() as session:
+    async with sessions() as session:
         bind_owner(session.sync_session, _scope_owner(context))
         task = await session.get(VisualGenerationTask, task_id)
         if task is None or task.project_id != project_id:
@@ -256,11 +261,11 @@ async def _inspect_generation_task(
 
 
 async def _apply_canvas_changes(
-    arguments: dict[str, Any], context: ToolExecutionContext
+    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions
 ) -> Observation:
     project_id = str(context.scope["project_id"])
     operations = list(arguments.get("operations") or [])
-    async with SessionLocal() as session:
+    async with sessions() as session:
         bind_owner(session.sync_session, _scope_owner(context))
         documents = VisualCanvasDocuments(session)
         current = await documents.get(project_id)
@@ -310,7 +315,7 @@ async def _apply_canvas_changes(
 
 
 async def _start_generation_on_canvas(
-    arguments: dict[str, Any], context: ToolExecutionContext, *, admission=None
+    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions, admission=None
 ) -> Observation:
     project_id = str(context.scope["project_id"])
     task_payload = dict(arguments.get("task") or {})
@@ -319,7 +324,7 @@ async def _start_generation_on_canvas(
     configured_model_id = context.scope.get(f"{generation_kind}_model_id")
     if generation_kind in {"image", "video"} and configured_model_id:
         task_payload["model_id"] = str(configured_model_id)
-    async with SessionLocal() as session:
+    async with sessions() as session:
         bind_owner(session.sync_session, _scope_owner(context))
         documents = VisualCanvasDocuments(session)
         current = await documents.get(project_id)
@@ -406,27 +411,36 @@ async def _start_generation_on_canvas(
     )
 
 
-def tool_handlers(admission):
+def tool_handlers(sessions, admission):
     return {
-        "read_canvas": _read_canvas,
-        "list_project_assets": _list_assets,
-        "list_generation_options": _list_generation_options,
-        "inspect_generation_task": _inspect_generation_task,
-        "apply_canvas_changes": _apply_canvas_changes,
-        "start_generation_on_canvas": partial(_start_generation_on_canvas, admission=admission),
+        "read_canvas": partial(_read_canvas, sessions=sessions),
+        "list_project_assets": partial(_list_assets, sessions=sessions),
+        "list_generation_options": partial(_list_generation_options, sessions=sessions),
+        "inspect_generation_task": partial(_inspect_generation_task, sessions=sessions),
+        "apply_canvas_changes": partial(_apply_canvas_changes, sessions=sessions),
+        "start_generation_on_canvas": partial(
+            _start_generation_on_canvas, sessions=sessions, admission=admission
+        ),
     }
 
 
 def visual_agent_tools(
-    *, image_model_id: str | None = None, video_model_id: str | None = None, admission=None
+    *,
+    sessions,
+    image_model_id: str | None = None,
+    video_model_id: str | None = None,
+    admission=None,
 ) -> tuple[ToolBinding, ...]:
     return bind_tools(
-        tool_handlers(admission), image_model_id=image_model_id, video_model_id=video_model_id
+        tool_handlers(sessions, admission),
+        image_model_id=image_model_id,
+        video_model_id=video_model_id,
     )
 
 
 def build_visual_agent_definition(
     *,
+    sessions,
     owner_user_id: str,
     project_id: str,
     model: str,
@@ -438,8 +452,8 @@ def build_visual_agent_definition(
     admission=None,
 ) -> AgentDefinition:
     return build_definition(
-        context_source=lambda: visual_context_source(owner_user_id, project_id),
-        handlers=tool_handlers(admission),
+        context_source=lambda: visual_context_source(owner_user_id, project_id, sessions=sessions),
+        handlers=tool_handlers(sessions, admission),
         model=model,
         tools_enabled=tools_enabled,
         image_model_id=image_model_id,

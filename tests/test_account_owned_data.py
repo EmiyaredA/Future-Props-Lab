@@ -435,8 +435,8 @@ async def test_shared_template_can_target_one_account_without_disclosing_private
                 json={"expected_revision": job["revision"]},
             )
             assert started.status_code == 200, started.text
-            await ModelTemplateSyncRunner().process_once()
-            await ModelTemplateSyncRunner().process_once()
+            await ModelTemplateSyncRunner(sessions=SessionLocal).process_once()
+            await ModelTemplateSyncRunner(sessions=SessionLocal).process_once()
             own = (await owner.get("/v1/model-providers")).json()
             foreign = (await other.get("/v1/model-providers")).json()
             assert any(item["name"] == "Shared allocation" for item in own["suppliers"])

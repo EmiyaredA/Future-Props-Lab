@@ -18,7 +18,6 @@ from app.console.models import User
 from app.llm.models import ModelSupplier
 from app.llm.models.model_templates import ModelTemplateSyncItem as Item
 from app.llm.models.model_templates import ModelTemplateSyncJob as Job
-from app.runtime.db import SessionLocal
 from studio.contracts.identity.errors import AccountError
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
@@ -57,7 +56,7 @@ async def job_view(session, job_id):
 
 
 async def preview_sync(
-    session, principal, role, expected_template_revision, client_ip, *, account_ids=None
+    session, principal, role, expected_template_revision, client_ip, *, sessions, account_ids=None
 ):
     principal = await begin_governance(session, principal)
     require_platform_admin(principal)
@@ -75,7 +74,7 @@ async def preview_sync(
     # Read snapshots with explicit account catalog filters. Each reader is short-lived.
     snapshots = []
     for account in targets:
-        async with SessionLocal() as reader:
+        async with sessions() as reader:
             providers, models, revision = await catalog_rows(reader, account.id)
             suppliers = list(
                 await reader.scalars(
@@ -147,12 +146,16 @@ class ModelTemplateSyncRunner(PollingTaskRunner):
     runner_name = "model-template-sync"
     poll_interval_seconds = 1.0
 
+    def __init__(self, sessions):
+        super().__init__()
+        self.sessions = sessions
+
     async def recover(self):
         # An item and its catalog change commit together. Uncommitted work is safe to resume.
         return None
 
     async def process_once(self):
-        async with SessionLocal() as session:
+        async with self.sessions() as session:
             ids = list(
                 await session.scalars(
                     select(Job.id)
@@ -161,7 +164,7 @@ class ModelTemplateSyncRunner(PollingTaskRunner):
                 )
             )
         for job_id in ids:
-            async with SessionLocal() as session:
+            async with self.sessions() as session:
                 await session.execute(text("BEGIN IMMEDIATE"))
                 job = await session.get(Job, job_id)
                 item = await session.scalar(

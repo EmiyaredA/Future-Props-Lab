@@ -108,7 +108,7 @@ async def test_template_preview_secret_preservation_and_initialization():
             json={"expected_revision": job["revision"]},
         )
         assert started.status_code == 200, started.text
-        worker = ModelTemplateSyncRunner()
+        worker = ModelTemplateSyncRunner(sessions=SessionLocal)
         for _ in range(len(job["items"]) + 1):
             await worker.process_once()
         finished = (

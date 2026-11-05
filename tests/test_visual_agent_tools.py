@@ -48,7 +48,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
 
     tool = next(
         item
-        for item in visual_agent_tools(image_model_id=model.id)
+        for item in visual_agent_tools(image_model_id=model.id, sessions=SessionLocal)
         if item.name == "start_generation_on_canvas"
     )
     transport = httpx.ASGITransport(app=app)

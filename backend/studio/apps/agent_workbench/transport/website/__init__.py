@@ -6,7 +6,6 @@ from fastapi.responses import StreamingResponse
 from app.deps import OwnerDep, SessionDep, StudioAuth
 from studio.apps.agent_workbench import reading, sources
 from studio.apps.agent_workbench.attachments import attachment_reference
-from studio.apps.agent_workbench.events import stream_events
 from studio.apps.agent_workbench.schemas import (
     WorkbenchCandidate,
     WorkbenchEvent,
@@ -220,7 +219,7 @@ def event_response(request, principal, after, session_id=None):
                 raise ValueError
         except ValueError as exc:
             raise HTTPException(422, "事件游标无效") from exc
-    stream = getattr(request.app.state, "workbench_event_stream", stream_events)
+    stream = request.app.state.workbench_event_stream
     return StreamingResponse(
         stream(request, principal, after, session_id),
         media_type="text/event-stream",

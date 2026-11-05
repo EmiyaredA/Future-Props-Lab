@@ -47,6 +47,7 @@ async def preview(
         body.expected_template_revision,
         client_ip(request),
         account_ids=body.account_ids,
+        sessions=request.app.state.database.sessions,
     )
 
 

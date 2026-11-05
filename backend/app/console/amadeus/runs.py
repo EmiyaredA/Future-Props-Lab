@@ -3,7 +3,6 @@
 from app.console.amadeus.run_records import RunRecords
 from app.console.amadeus.run_recovery import recover_runs
 from app.console.governance.code_agents import resolve
-from app.runtime.db import SessionLocal
 
 
 class Runs(RunRecords):
@@ -16,7 +15,7 @@ class Runs(RunRecords):
         super().__init__(session, principal, resolve_agent=connection)
 
 
-async def recover_interrupted_amadeus_runs() -> None:
+async def recover_interrupted_amadeus_runs(*, sessions) -> None:
     """Settle process-owned work before accepting new runs after startup."""
-    async with SessionLocal() as session:
+    async with sessions() as session:
         await recover_runs(session)

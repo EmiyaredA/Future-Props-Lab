@@ -258,7 +258,7 @@ async def test_template_sync_preserves_supplier_connection_model_ids_and_custom_
                 json={"expected_revision": job["revision"]},
             )
             assert started.status_code == 200, started.text
-            runner = ModelTemplateSyncRunner()
+            runner = ModelTemplateSyncRunner(sessions=SessionLocal)
             for _ in range(len(job["items"]) + 1):
                 await runner.process_once()
             after = (await member.get("/v1/model-providers")).json()

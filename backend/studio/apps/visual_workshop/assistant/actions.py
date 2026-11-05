@@ -2,15 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import select, update
 
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.assistant_action_records import ACTIVE_ACTION_STATUSES
-from studio.apps.visual_workshop.assistant_action_records import (
-    cancel_active_actions as cancel_actions,
-)
-from studio.apps.visual_workshop.assistant_action_records import (
-    persist_agent_event as store_agent_event,
-)
-from studio.apps.visual_workshop.assistant_values import action_out as action_out
 from studio.apps.visual_workshop.storage.models import (
     VisualAssistantAction,
     VisualAssistantConversation,
@@ -19,16 +11,8 @@ from studio.apps.visual_workshop.storage.models import (
 from studio.runtime.time import utc_now
 
 
-async def persist_agent_event(owner_user_id, message_id, event):
-    return await store_agent_event(SessionLocal, owner_user_id, message_id, event)
-
-
-async def cancel_active_actions(owner_user_id, message_id, reason):
-    await cancel_actions(SessionLocal, owner_user_id, message_id, reason)
-
-
-async def recover_interrupted_visual_assistant_runs() -> None:
-    async with SessionLocal() as session:
+async def recover_interrupted_visual_assistant_runs(*, sessions) -> None:
+    async with sessions() as session:
         message_rows = list(
             (
                 await session.execute(

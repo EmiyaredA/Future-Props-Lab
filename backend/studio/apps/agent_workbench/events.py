@@ -3,7 +3,6 @@
 from sqlalchemy import select
 
 from app.console.models import AuthSession, User
-from app.runtime.db import SessionLocal
 from studio.apps.agent_workbench.change_stream import event_page as event_page
 from studio.apps.agent_workbench.change_stream import stream_events as authenticated_stream
 from studio.runtime.database.ownership import bind_owner
@@ -34,9 +33,7 @@ async def valid_auth(db, principal):
     )
 
 
-async def stream_events(
-    request, principal, after, session_id=None, sessions=SessionLocal, authorizer=None
-):
+async def stream_events(request, principal, after, session_id=None, *, sessions, authorizer=None):
     async def local_authorizer(_request, current):
         async with sessions() as db:
             bind_owner(db, current.user_id)

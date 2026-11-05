@@ -746,7 +746,7 @@ async def test_amadeus_startup_recovery_interrupts_run_without_replay() -> None:
                 )
             )
             await session.commit()
-        await recover_interrupted_amadeus_runs()
+        await recover_interrupted_amadeus_runs(sessions=SessionLocal)
         recovered = (await client.get(root + f"/runs/{identity}")).json()
         assert recovered["run"]["status"] == "interrupted"
         assert recovered["run"]["partial_text"] == "已收到部分回复"

@@ -177,7 +177,13 @@ async def stream(request: Request, chat_id: str, db: SessionDep, principal: Stud
     await storage.get_chat(db, principal.user_id, chat_id)
     await db.rollback()
     return StreamingResponse(
-        events.stream(request, principal, chat_id, request.app.state.workbench_runs.ready_turn),
+        events.stream(
+            request,
+            principal,
+            chat_id,
+            request.app.state.workbench_runs.ready_turn,
+            sessions=request.app.state.database.sessions,
+        ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"},
     )

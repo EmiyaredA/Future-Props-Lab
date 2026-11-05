@@ -178,7 +178,7 @@ async def test_dispatch_fifo_concurrent_claim_restart_and_cancel_race(monkeypatc
             json={"expected_revision": tasks[2]["revision"]},
         )
         assert cancelled.status_code == 409 and cancelled.json()["current"]["status"] == "pending"
-        await recover_admissions()
+        await recover_admissions(sessions=SessionLocal)
         await worker.recover()
         assert len(await leases(user)) == 3
         # Queue state survives a new runner instance, without resubmitting accepted work.

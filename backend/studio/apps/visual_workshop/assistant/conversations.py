@@ -21,9 +21,9 @@ from app.llm.models import (
     ModelProvider,
 )
 from app.llm.providers.streaming import ChatMessageInput
-from studio.apps.visual_workshop.assistant.actions import action_out
 from studio.apps.visual_workshop.assistant.attachments import VisualAssistantAttachmentMixin
 from studio.apps.visual_workshop.assistant_input_values import canvas_context
+from studio.apps.visual_workshop.assistant_values import action_out
 from studio.apps.visual_workshop.assistant_values import message_out as message_out
 from studio.apps.visual_workshop.schemas.workshop import (
     VisualAssistantActionOut,
