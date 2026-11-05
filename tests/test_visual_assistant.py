@@ -730,6 +730,7 @@ async def test_visual_agent_approval_updates_canvas_and_persists_steps(
     original_wait = approval_broker.wait
 
     async def auto_approve(**kwargs):
+        await kwargs["on_registered"]()
         return ApprovalResolution("approve", kwargs["proposal_canvas_revision"])
 
     monkeypatch.setattr(

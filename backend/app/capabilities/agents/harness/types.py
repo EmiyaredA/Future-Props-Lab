@@ -56,6 +56,8 @@ class ToolExecutionContext:
     tool_call_id: str
     scope: dict[str, Any]
     approved_canvas_revision: int | None = None
+    approval_id: str | None = None
+    approval_authorization: str | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)

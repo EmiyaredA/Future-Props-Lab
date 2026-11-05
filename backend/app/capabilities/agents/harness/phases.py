@@ -183,6 +183,8 @@ async def execute_tool_phase(
     round_index: int,
     scope: dict[str, object],
     approved_canvas_revision: int | None,
+    approval_id: str | None = None,
+    approval_authorization: str | None = None,
 ) -> Observation:
     started = time.perf_counter()
     await emit_event(
@@ -208,6 +210,8 @@ async def execute_tool_phase(
                     tool_call_id=action.call.id,
                     scope=scope,
                     approved_canvas_revision=approved_canvas_revision,
+                    approval_id=approval_id,
+                    approval_authorization=approval_authorization,
                 ),
             )
     except TimeoutError:
@@ -272,27 +276,30 @@ async def approval_phase(
 ) -> list[Observation]:
     approval_id = str(uuid4())
     proposal_revision = int(scope.get("canvas_revision") or 0)
-    await emit_event(
-        listener,
-        AgentEvent(
-            "approval_requested",
-            run_id,
-            round_index,
-            {
-                "approval_id": approval_id,
-                "canvas_revision": proposal_revision,
-                "actions": [
-                    {
-                        "action_id": item.call.id,
-                        "tool_name": item.binding.name,
-                        "effect": item.binding.effect,
-                        "summary": item.summary,
-                    }
-                    for item in actions
-                ],
-            },
-        ),
-    )
+
+    async def announce():
+        await emit_event(
+            listener,
+            AgentEvent(
+                "approval_requested",
+                run_id,
+                round_index,
+                {
+                    "approval_id": approval_id,
+                    "canvas_revision": proposal_revision,
+                    "actions": [
+                        {
+                            "action_id": item.call.id,
+                            "tool_name": item.binding.name,
+                            "effect": item.binding.effect,
+                            "summary": item.summary,
+                        }
+                        for item in actions
+                    ],
+                },
+            ),
+        )
+
     try:
         resolution = await approvals.wait(
             run_id=run_id,
@@ -300,6 +307,7 @@ async def approval_phase(
             scope=scope,
             proposal_canvas_revision=proposal_revision,
             timeout_seconds=timeout_seconds,
+            on_registered=announce,
         )
     except TimeoutError:
         resolution = None
@@ -336,6 +344,8 @@ async def approval_phase(
                 round_index=round_index,
                 scope=scope,
                 approved_canvas_revision=approved_revision,
+                approval_id=approval_id,
+                approval_authorization=resolution.authorization,
             )
         if observation.success and "canvas_revision" in observation.data:
             scope["canvas_revision"] = observation.data["canvas_revision"]

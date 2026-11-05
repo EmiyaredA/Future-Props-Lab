@@ -1,6 +1,7 @@
 """Check scoped assistant content projections and aborted attachment retention."""
 
 import base64
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -9,6 +10,7 @@ from tests.test_independent_project_catalog import authorize
 from tests.test_visual_compositions_service import png
 from tests.test_visual_node_review_service import review_mesh
 
+from app.capabilities.agents.harness import ToolExecutionContext
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied
 from fpl_runtime.claims import HEADER
@@ -18,7 +20,9 @@ from fpl_runtime.visual_assistant import (
     SOURCE,
     AttachmentInputQuery,
     CanvasAssetSearch,
+    approval_path,
 )
+from fpl_visual.assistant_canvas_actions import AssistantCanvasActions
 
 
 async def test_visual_assistant_reads_only_prepared_project_attachments(
@@ -131,3 +135,64 @@ async def test_visual_assistant_reads_only_prepared_project_attachments(
             await references.abort_after_rollback(db, prepared)
             await app.state.reference_delivery.process_once()
             assert (await inputs(query)).status_code == 422
+
+
+async def test_canvas_tools_only_write_the_approved_project_revision(
+    scenario,  # noqa: F811
+    tmp_path,
+):
+    case = scenario
+    async with review_mesh(case, tmp_path) as (visual, send, _faults), visual() as app:
+        reply = await send("POST", SOURCE, json={"title": "Approved Canvas", "kind": "canvas"})
+        assert reply.status_code == 200, reply.text
+        project = reply.json()["id"]
+        await app.state.reference_delivery.process_once()
+        root = f"{SOURCE}/{project}/conversations"
+        reply = await send("POST", root)
+        assert reply.status_code == 200, reply.text
+        conversation = reply.json()["id"]
+        run_id, approval_id = uuid4().hex, uuid4().hex
+        path = approval_path(project, conversation, run_id, approval_id)
+        headers = await authorize(case, "visual", "POST", path)
+        action = AssistantCanvasActions(
+            app.state,
+            SimpleNamespace(
+                owner=case.viewer,
+                scope=SimpleNamespace(
+                    project_id=project, conversation_id=conversation, run_id=run_id
+                ),
+            ),
+        )
+        context = ToolExecutionContext(
+            run_id,
+            "edit",
+            {},
+            approved_canvas_revision=0,
+            approval_id=approval_id,
+            approval_authorization=headers[HEADER],
+        )
+        arguments = {
+            "operations": [
+                {
+                    "op": "add",
+                    "node": {
+                        "id": "approved-node",
+                        "kind": "text",
+                        "title": "Approved edit",
+                        "position": {"x": 0, "y": 0},
+                    },
+                }
+            ]
+        }
+        forbidden = await action.apply_canvas_changes(
+            arguments,
+            ToolExecutionContext(run_id, "edit", {}),
+        )
+        assert forbidden.error_code == "approval_not_found"
+        updated = await action.apply_canvas_changes(arguments, context)
+        assert updated.success, updated.model_text
+        assert updated.data["canvas_revision"] == 1
+        assert updated.data["nodes"][0]["id"] == "approved-node"
+        stale = await action.apply_canvas_changes(arguments, context)
+        assert stale.error_code == "canvas_conflict"
+        assert stale.data["canvas_revision"] == 1

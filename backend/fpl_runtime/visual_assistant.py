@@ -116,6 +116,17 @@ def message_source(method, path):
     )
 
 
+def approval_source(method, path):
+    return method == "POST" and re.fullmatch(
+        rf"{SOURCE}/({ID})/conversations/({ID})/runs/({ID})/approvals/({ID})", path
+    )
+
+
+def approval_path(project_id, conversation_id, run_id, approval_id):
+    base = f"{SOURCE}/{project_id}/conversations/{conversation_id}/runs/{run_id}"
+    return f"{base}/approvals/{approval_id}"
+
+
 def model_target(method, path):
     return method == "POST" and re.fullmatch(
         rf"{MODEL_RUNS}/({ID})/({ID})/({ID})/(begin|round/[0-5]|settle)/({DIGEST})", path

@@ -124,6 +124,8 @@ async def test_approval_uses_the_proposal_revision_instead_of_rebasing() -> None
     approved_revisions: list[int | None] = []
 
     async def write_tool(_arguments, context):
+        assert context.approval_authorization == "in-memory-test-context"
+        assert "in-memory-test-context" not in repr(context)
         approved_revisions.append(context.approved_canvas_revision)
         return Observation(
             context.tool_call_id,
@@ -157,17 +159,14 @@ async def test_approval_uses_the_proposal_revision_instead_of_rebasing() -> None
         if event.type != "approval_requested":
             return
 
-        async def approve() -> None:
-            await asyncio.sleep(0)
-            await broker.resolve(
-                run_id=event.run_id,
-                approval_id=str(event.payload["approval_id"]),
-                scope={"project_id": "p1", "conversation_id": "c1"},
-                decision="approve",
-                canvas_revision=99,
-            )
-
-        asyncio.create_task(approve())
+        await broker.resolve(
+            run_id=event.run_id,
+            approval_id=str(event.payload["approval_id"]),
+            scope={"project_id": "p1", "conversation_id": "c1"},
+            decision="approve",
+            canvas_revision=99,
+            authorization="in-memory-test-context",
+        )
 
     result = await harness.run(
         messages=[AgentMessage(role="user", text="更新画布")],

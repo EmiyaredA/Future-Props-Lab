@@ -21,6 +21,7 @@ from app.runtime.revisions import RevisionConflictError
 from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.project_errors import ProjectResourceError
+from fpl_runtime.visual_assistant import approval_source
 
 from .projects import Projects
 from .segment_handoffs import require_canvas_unreserved
@@ -142,6 +143,15 @@ class CanvasWrites:
         return await self._save(
             project_id, row, body, method="PUT", path=f"{PREFIX}/{project_id}/canvas"
         )
+
+    async def apply_approved(self, project_id, body, path):
+        approval = approval_source("POST", path)
+        if not approval or approval[1] != project_id:
+            raise ProjectResourceError("审批与画布不匹配", "approval_not_found", 404)
+        row = await self.projects.canvas_row(project_id)
+        if row.revision != body.expected_revision:
+            raise conflict(body.expected_revision, canvas_out(row))
+        return await self._save(project_id, row, body, method="POST", path=path)
 
     async def apply_operations(self, project_id, body):
         row = await self.projects.canvas_row(project_id)

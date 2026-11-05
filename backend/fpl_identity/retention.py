@@ -25,7 +25,7 @@ from fpl_runtime.retention_authority import (
 )
 from fpl_runtime.video_assets import SOURCE as VIDEO
 from fpl_runtime.video_handoff import handoff_target
-from fpl_runtime.visual_assistant import conversation_retention, message_source
+from fpl_runtime.visual_assistant import approval_source, conversation_retention, message_source
 from fpl_runtime.visual_review import start_source as visual_review_start
 from fpl_runtime.visual_samples import evidence_resource, sample_source
 
@@ -72,9 +72,11 @@ def _visual_canvas_source(body):
     output = re.fullmatch(
         re.escape(project) + r"/nodes/[^/]{1,64}/outputs/[^/]{1,128}", body.source_path
     )
+    approval = approval_source(body.source_method, body.source_path)
     return canvas_metadata(body.caller, change) and (
         (body.source_method, body.source_path)
         in {("PUT", canvas), ("POST", canvas + "/operations")}
+        or (approval and approval[1] == change.resource_id)
         or (body.source_method == "POST" and outputs is not None)
         or (body.source_method == "DELETE" and output is not None)
     )

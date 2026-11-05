@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 from time import monotonic
 from typing import Any, Literal
 
@@ -18,6 +19,7 @@ class ApprovalConflictError(Exception):
 class ApprovalResolution:
     decision: Literal["approve", "reject"]
     canvas_revision: int
+    authorization: str | None = field(default=None, repr=False)
 
 
 @dataclass
@@ -43,6 +45,7 @@ class ApprovalBroker:
         scope: dict[str, Any],
         proposal_canvas_revision: int,
         timeout_seconds: float,
+        on_registered: Callable[[], Awaitable[None]] | None = None,
     ) -> ApprovalResolution:
         loop = asyncio.get_running_loop()
         pending = PendingApproval(
@@ -60,6 +63,8 @@ class ApprovalBroker:
             self._pending[key] = pending
         try:
             async with asyncio.timeout(timeout_seconds):
+                if on_registered is not None:
+                    await on_registered()
                 return await pending.future
         finally:
             async with self._lock:
@@ -73,6 +78,7 @@ class ApprovalBroker:
         scope: dict[str, Any],
         decision: Literal["approve", "reject"],
         canvas_revision: int,
+        authorization: str | None = None,
     ) -> None:
         del canvas_revision
         async with self._lock:
@@ -91,6 +97,7 @@ class ApprovalBroker:
                     # revision is only proof of what the user is currently seeing;
                     # tools must CAS against the revision used to build the proposal.
                     canvas_revision=pending.proposal_canvas_revision,
+                    authorization=authorization if decision == "approve" else None,
                 )
             )
 
