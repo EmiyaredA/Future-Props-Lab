@@ -1,4 +1,4 @@
-"""Real workbench containers plus an outbound native collector; synthetic data only."""
+"""Real workbench containers plus outbound collection and execution workers."""
 
 import argparse
 import json
@@ -42,11 +42,22 @@ def exercise(
     subprocess.run(["git", "check-ignore", "--quiet", str(root)], check=True, cwd=ROOT)
     root.mkdir(mode=0o700)
     control = not gateway_image.startswith("caddy@")
-    for name in ("identity", "agents", "gateway", "portal", "assets", "rendering", "native"):
+    for name in (
+        "identity",
+        "agents",
+        "gateway",
+        "portal",
+        "assets",
+        "rendering",
+        "native",
+        "execution-profiles",
+        "execution-protected",
+    ):
         (root / name).mkdir(mode=0o700)
     gateway_token, service_token, lane_token, worker_token = [
         secrets.token_urlsafe(48) for _ in range(4)
     ]
+    execution_token = secrets.token_urlsafe(48)
     assets_token = secrets.token_urlsafe(48)
     rendering_token = secrets.token_urlsafe(48)
     gateway_service_token = secrets.token_urlsafe(48)
@@ -101,6 +112,8 @@ def exercise(
         "identity-token": service_token.encode(),
         "native-ingress": lane_token.encode(),
         "workers.json": json.dumps({"fixture-collector": worker_token}).encode(),
+        "execution-workers.json": json.dumps({"fixture-executor": execution_token}).encode(),
+        "execution-token": execution_token.encode(),
         "service-credentials.json": json.dumps(
             {
                 "agents": service_token,
@@ -192,6 +205,7 @@ def exercise(
             "FPL_AGENTS_IDENTITY_TOKEN": str(root / "identity-token"),
             "FPL_AGENTS_NATIVE_INGRESS": str(root / "native-ingress"),
             "FPL_AGENTS_WORKERS": str(root / "workers.json"),
+            "FPL_AGENTS_EXECUTION_WORKERS": str(root / "execution-workers.json"),
             "FPL_GATEWAY_CONFIG": str(root / "Caddyfile"),
             "FPL_LOCAL_PORT": str(local_port),
             "FPL_PUBLIC_PORT": str(public_port),
@@ -233,6 +247,8 @@ def exercise(
         project,
         "--file",
         str(ROOT / "deploy/compose.yaml"),
+        "--file",
+        str(ROOT / "deploy/agents-execution.compose.yaml"),
     ]
     if models_image:
         prefix.extend(["--file", str(ROOT / "deploy/models.compose.yaml")])
@@ -257,6 +273,7 @@ def exercise(
             service_token,
             lane_token,
             worker_token,
+            execution_token,
             password,
             assets_token,
             rendering_token,
@@ -294,9 +311,10 @@ def exercise(
             time.sleep(0.2)
         raise RuntimeError("Wait failed: " + path + " (" + last + ")")
 
-    collector, native_worker = None, None
+    collector, execution_worker, native_worker = None, None, None
     native_model_log = (root / "native-model-worker.log").open("w")
     collector_log = (root / "collector.log").open("w")
+    execution_log = (root / "execution-worker.log").open("w")
     checks = []
     try:
         compose("config", "--quiet")
@@ -351,6 +369,29 @@ def exercise(
             cwd=ROOT,
             env={**environment, "PYTHONPATH": str(ROOT / "backend")},
             stdout=collector_log,
+            stderr=subprocess.STDOUT,
+        )
+        execution_worker = subprocess.Popen(
+            [
+                sys.executable,
+                "-m",
+                "studio.host.agent_execution.workbench_worker",
+                "--bridge",
+                native_base + "/agents",
+                "--worker-token",
+                str(root / "execution-token"),
+                "--config",
+                str(root / "agents.toml"),
+                "--agent-state-root",
+                str(root / "execution-profiles"),
+                "--protected-state-root",
+                str(root / "execution-protected"),
+                "--state-root",
+                str(root / "execution-worker"),
+            ],
+            cwd=ROOT,
+            env={**environment, "PYTHONPATH": str(ROOT / "backend")},
+            stdout=execution_log,
             stderr=subprocess.STDOUT,
         )
         if models_image:
@@ -528,6 +569,7 @@ def exercise(
                     integration_fixture.check(client, unsafe, compose, wait, browser_check)
                 )
             if status_fixture:
+                status_fixture.follow(compose)
                 checks.append(status_fixture.check(client, compose, started, wait, history))
             if assets_image:
                 from assets_docker_checks import exercise_assets
@@ -571,8 +613,6 @@ def exercise(
                 )
             if portal_image:
                 wait(client, "/")
-                if status_fixture:
-                    status_fixture.follow(compose)
                 stable = {
                     service: started(service)
                     for service in (
@@ -595,7 +635,7 @@ def exercise(
                                 "password": password,
                                 "output": str(root / "portal-browser"),
                                 "repo": str(ROOT),
-                                "serviceStatus": bool(status_fixture),
+                                "checkUndeployedApplication": bool(status_fixture),
                             }
                         ),
                         capture_output=True,
@@ -736,6 +776,14 @@ def exercise(
                 collector.kill()
                 collector.wait(timeout=5)
         collector_log.close()
+        if execution_worker is not None:
+            execution_worker.terminate()
+            try:
+                execution_worker.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                execution_worker.kill()
+                execution_worker.wait(timeout=5)
+        execution_log.close()
         if native_worker is not None:
             native_worker.terminate()
             try:

@@ -28,15 +28,16 @@ try {
   for (const section of ["home", "apps"]) {
     await page.goto(new URL(section === "home" ? "/" : "/apps", origin).href);
     await expect(page.getByRole("heading", {name: section === "home" ? "今天想从哪里开始？" : "应用", exact: true})).toBeVisible();
-    if (section === "apps" && options.serviceStatus) {
-      const status = page.getByRole("button", {name: "查看Agent 工作台服务状态：运行中", exact: true});
+    if (section === "apps" && options.checkUndeployedApplication) {
+      const status = page.getByRole("button", {name: "查看演示工坊服务状态：未部署", exact: true});
       await expect(status).toBeVisible({timeout: 15000});
       await status.focus();
       await page.keyboard.press("Enter");
-      await expect(page.getByRole("region", {name: "Agent 工作台服务状态", exact: true})).toContainText("服务已就绪");
-      await expect(page.getByRole("region", {name: "Agent 工作台服务状态", exact: true})).toContainText("最近检查");
+      const details = page.getByRole("region", {name: "演示工坊服务状态", exact: true});
+      await expect(details).toContainText("此服务尚未部署");
+      await expect(details).toContainText("最近检查");
       await expect(page).toHaveURL(new URL("/apps", origin).href);
-      checks.push("actual service status expands by keyboard without navigating the application card");
+      checks.push("an undeployed application's observed status expands by keyboard without navigating the card");
     }
     for (const width of [390, 768, 1600]) {
       await page.setViewportSize({width, height: 1000});
@@ -49,10 +50,12 @@ try {
       }
     }
   }
-  await page.getByRole("button", {name: "打开Agent 工作台", exact: true}).first().click();
-  await expect(page).toHaveURL(new URL("/agents", origin).href);
+  await page.getByRole("link", {name: "云控", exact: true}).click();
+  await expect(page).toHaveURL(new URL("/cloud-control", origin).href);
+  await expect(page.getByRole("heading", {name: "云控", exact: true})).toBeVisible();
+  await page.goto(new URL("/agents", origin).href);
   await expect(page.getByRole("region", {name: "Agent 工作台"})).toBeVisible();
-  checks.push("portal login, homepage, application catalogue and shared-session Agents navigation");
+  checks.push("portal login, homepage, application catalogue, Cloud Control link and shared-session Agents entry");
   await page.goto(new URL("/docs.html", origin).href);
   await expect(page.locator(".docs-shell")).toBeVisible();
   await expect(page.locator("h1").first()).toBeVisible();

@@ -107,10 +107,23 @@ class StatusFixture:
     def check(self, client, compose, started, wait, history):
         path = "/v1/automation/services"
         self.publish(compose)
-        response = wait(client, path)
+
+        def recovered(response):
+            if response.status_code != 200:
+                return False
+            values = {row["service_id"]: row for row in response.json()["services"]}
+            agents = values["agents"]
+            # Agents is ready itself. The reduced CI stack omits its Agent Runtime dependency.
+            dependencies = {row["service_id"]: row["phase"] for row in agents["dependencies"]}
+            return (
+                agents["phase"] == "degraded"
+                and dependencies == {"agent-runtime": "not_deployed"}
+                and values["portal"]["phase"] == "running"
+            )
+
+        response = wait(client, path, recovered)
         assert "no-store" in response.headers["cache-control"]
         values = {s["service_id"]: s for s in response.json()["services"]}
-        assert values["agents"]["phase"] == "running", values["agents"]
         assert values["portal"]["phase"] == "running", values["portal"]
         assert values["visual"]["phase"] == "not_deployed"
         stable = {name: started(name) for name in ("gateway", "identity", "agents", "management")}
