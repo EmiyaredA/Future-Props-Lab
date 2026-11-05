@@ -127,15 +127,50 @@ test("filters tools and records external usage", async ({ page }) => {
 });
 
 test("opens the local video frame exporter", async ({ page }) => {
+  await page.addInitScript(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = (resource, init) => {
+      if (
+        resource instanceof Request &&
+        new URL(resource.url).pathname.endsWith(
+          "/tool-navigation/tools/video-frame-exporter/use",
+        )
+      ) {
+        sessionStorage.setItem(
+          "tool-use-dispatch",
+          JSON.stringify({
+            keepalive: resource.keepalive,
+            pathname: location.pathname,
+          }),
+        );
+      }
+      return originalFetch(resource, init);
+    };
+  });
+  let releaseUsage!: () => void;
+  const delayedUsage = new Promise<void>((resolve) => {
+    releaseUsage = resolve;
+  });
+  const usagePath = "**/v1/tool-navigation/tools/video-frame-exporter/use";
+  await page.route(usagePath, async (route) => {
+    await delayedUsage;
+    await route.fallback();
+  });
   await page.goto("/tools");
-  const usage = page.waitForRequest(
-    "**/v1/tool-navigation/tools/video-frame-exporter/use",
-  );
-  await page.getByRole("button", { name: "打开视频帧导出" }).click();
-  await usage;
-
-  await expect(page).toHaveURL(/\/tools\/video-frame-exporter$/);
-  await expect(page.getByRole("heading", { name: "视频帧导出" })).toBeVisible();
+  try {
+    const usage = page.waitForRequest(usagePath);
+    await page.getByRole("button", { name: "打开视频帧导出" }).click();
+    expect((await usage).method()).toBe("POST");
+    await expect(page).toHaveURL(/\/tools\/video-frame-exporter$/);
+    await expect(
+      page.getByRole("heading", { name: "视频帧导出" }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(() => sessionStorage.getItem("tool-use-dispatch")),
+    ).toBe(JSON.stringify({ keepalive: true, pathname: "/tools" }));
+  } finally {
+    releaseUsage();
+  }
   await expect(page.getByText("视频仅在本地处理")).toBeVisible();
   await expect(
     page.getByRole("button", { name: "工具导航", exact: true }),

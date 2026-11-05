@@ -128,8 +128,20 @@ export function ToolNavigationPage({
   });
 
   const usageMutation = useMutation({
-    mutationFn: (toolId: string) => recordToolUse(toolId),
-    onMutate: async (toolId) => {
+    networkMode: "always",
+    retry: false,
+    mutationFn: ({
+      toolId,
+      openAfterDispatch,
+    }: {
+      toolId: string;
+      openAfterDispatch?: () => void;
+    }) => {
+      const receipt = recordToolUse(toolId);
+      openAfterDispatch?.();
+      return receipt;
+    },
+    onMutate: async ({ toolId }) => {
       await queryClient.cancelQueries({ queryKey: STATE_KEY });
       const previous = queryClient.getQueryData<ToolNavigationState>(STATE_KEY);
       const current = optimisticItem(previous, toolId);
@@ -149,7 +161,7 @@ export function ToolNavigationPage({
         mergeStateItem(state, item),
       );
     },
-    onError: (_error, _toolId, context) => {
+    onError: (_error, _variables, context) => {
       queryClient.setQueryData(STATE_KEY, context?.previous);
       setNotice("最近使用记录保存失败，但工具仍可正常使用。");
     },
@@ -213,10 +225,18 @@ export function ToolNavigationPage({
   const openTool = (tool: ToolDefinition) => {
     if (tool.target.kind === "external") {
       window.open(tool.target.href, "_blank", "noopener,noreferrer");
-    } else {
-      onOpenInternal(tool.target.path);
+      if (canWrite) usageMutation.mutate({ toolId: tool.id });
+      return;
     }
-    if (canWrite) usageMutation.mutate(tool.id);
+    const { path } = tool.target;
+    if (canWrite) {
+      usageMutation.mutate({
+        toolId: tool.id,
+        openAfterDispatch: () => onOpenInternal(path),
+      });
+    } else {
+      onOpenInternal(path);
+    }
   };
 
   const submitSearch = (event: FormEvent) => event.preventDefault();

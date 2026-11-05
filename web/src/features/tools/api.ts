@@ -85,10 +85,9 @@ export async function setToolFavorite(
 export async function recordToolUse(
   toolId: string,
 ): Promise<ToolNavigationItem> {
-  return unwrap(
-    await api.POST("/v1/tool-navigation/tools/{tool_id}/use", {
-      params: { path: { tool_id: toolId } },
-    }),
+  return fetchApiJson<ToolNavigationItem>(
+    `/v1/tool-navigation/tools/${encodeURIComponent(toolId)}/use`,
+    { method: "POST", keepalive: true },
   );
 }
 
