@@ -6,10 +6,10 @@ from datetime import datetime
 from pydantic import ValidationError
 from sqlalchemy import select
 
-from app.capabilities.asset_store import ProjectSnapshotError
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.outputs.queries import output_out
 from studio.apps.visual_workshop.outputs.schemas import VisualNodeOutputOut
+from studio.runtime.files.project_archives import ProjectSnapshotError
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now
 

@@ -8,8 +8,8 @@ from pptx.opc.package import Part
 from pptx.opc.packuri import PackURI
 from pptx.oxml.xmlchemy import OxmlElement
 
-from app.capabilities.asset_store.svg import tint_svg
 from studio.apps.presentation_workshop.pptx_styles import apply_shape_style
+from studio.runtime.files.svg import tint_svg
 
 SVG_NS = "http://schemas.microsoft.com/office/drawing/2016/SVG/main"
 IMAGE_REL = "http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"

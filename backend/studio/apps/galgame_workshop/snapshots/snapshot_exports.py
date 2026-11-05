@@ -8,11 +8,6 @@ from tempfile import TemporaryDirectory
 import httpx
 from sqlalchemy import select
 
-from app.capabilities.asset_store.project_snapshots import (
-    ProjectSnapshotError,
-    SnapshotAssetSource,
-    export_project_snapshot,
-)
 from studio.apps.galgame_workshop.project_values import project_out
 from studio.apps.galgame_workshop.snapshot_values import snapshot_asset_record
 from studio.apps.galgame_workshop.storage.models import (
@@ -32,6 +27,11 @@ from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.motion_compositor.motion_preview import FrameFile
 from studio.contracts.motion_compositor.motion_snapshot import SnapshotScope
+from studio.runtime.files.project_archives import (
+    ProjectSnapshotError,
+    SnapshotAssetSource,
+    export_project_snapshot,
+)
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.http.framed_media import SIZE, FramedInputs
 

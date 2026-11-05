@@ -4,12 +4,12 @@ from uuid import uuid4
 
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from studio.apps.video_editor.storage.service_models import VideoImportBatch
 from studio.contracts.galgame_workshop.galgame_handoff import (
     VideoHandoffReceipt,
     handoff_source_digest,
 )
+from studio.runtime.files.project_archives import ProjectSnapshotError
 
 ACTIVE = {"staging", "commit", "published"}
 

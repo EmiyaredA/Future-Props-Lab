@@ -5,7 +5,6 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import ValidationError
 
-from app.capabilities.asset_store.policy import download_filename
 from studio.apps.asset_library.galgame.galgame_audio_digest import (
     audio_original,
     digest_original,
@@ -43,6 +42,7 @@ from studio.contracts.galgame_workshop.galgame_snapshot import snapshot_files_ta
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.motion_compositor.motion_snapshot import MAX_SCOPE_BYTES, SnapshotScope
+from studio.runtime.files.names import download_filename
 from studio.runtime.http.framed_media import content_length, stream_files
 
 router = APIRouter(include_in_schema=False)

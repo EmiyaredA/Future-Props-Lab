@@ -6,10 +6,10 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from studio.apps.visual_workshop.schemas.workshop import VisualProjectSnapshotImportOut
 from studio.apps.visual_workshop.snapshots.snapshot_exports import SnapshotExports
 from studio.contracts.visual_workshop.visual_assistant import SOURCE
+from studio.runtime.files.project_archives import ProjectSnapshotError
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 
 router = APIRouter(prefix=SOURCE, tags=["visual-workshop"])

@@ -29,7 +29,7 @@ router = APIRouter(prefix="/director-desk", tags=["director-desk"])
 
 
 def storage(request: Request):
-    return getattr(request.app.state, "director_storage", None)
+    return request.app.state.director_storage
 
 
 def mapped(exc: DirectorDeskError) -> HTTPException:

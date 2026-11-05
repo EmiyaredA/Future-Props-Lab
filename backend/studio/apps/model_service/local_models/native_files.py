@@ -8,9 +8,9 @@ from uuid import uuid4
 
 from sqlalchemy import text
 
-from app.capabilities.asset_store.policy import validate_file_structure
 from studio.apps.model_service.storage.native_records import NativeModelJob
 from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.files.inspection import validate_file_structure
 
 
 async def accept_result(broker, worker, job_id, lease_id, description, chunks):

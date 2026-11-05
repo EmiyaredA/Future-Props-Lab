@@ -4,9 +4,9 @@ import sqlite3
 import pytest
 from tests.presentation_helpers import sample_document
 
-from app.capabilities.asset_store.svg import normalize_svg, tint_svg
 from db.migrations.versions.r0058_presentation_media import SQL
 from studio.apps.presentation_workshop.schemas.document import PresentationDocument
+from studio.runtime.files.svg import normalize_svg, tint_svg
 from website_test_support import app
 
 SVG = (

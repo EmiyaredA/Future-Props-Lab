@@ -3,7 +3,6 @@ from sqlalchemy import select, text
 from app.capabilities.asset_store.image_thumbnails import ThumbnailSource, asset_thumbnail
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.thought_workshop.multitable.storage import asset_ids, snapshot
 from studio.apps.thought_workshop.publication.access import (
@@ -19,6 +18,7 @@ from studio.apps.thought_workshop.publication.sessions import source_sessions
 from studio.apps.thought_workshop.schemas.document import file_ids
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
 from studio.config.settings import get_settings
+from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.files.image_sizes import ThumbnailSize
 

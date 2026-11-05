@@ -9,7 +9,6 @@ from threading import BoundedSemaphore
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from app.capabilities.asset_store.svg import normalize_svg
 from studio.apps.presentation_workshop.asset_references import (
     document_references,
     rendered_asset_ids,
@@ -18,6 +17,7 @@ from studio.apps.presentation_workshop.pptx_export import write_pptx
 from studio.apps.presentation_workshop.projects import PresentationError, Presentations
 from studio.apps.presentation_workshop.schemas.document import PresentationProjectOut
 from studio.apps.presentation_workshop.templates.resolver import resolve_document
+from studio.runtime.files.svg import normalize_svg
 from studio.runtime.revisions import RevisionConflictError
 
 EXPORT_SLOTS = BoundedSemaphore(2)

@@ -10,7 +10,6 @@ from starlette.background import BackgroundTask
 from app.capabilities.asset_store import (
     AssetStorage,
     ProjectFolderError,
-    ProjectSnapshotError,
     VisualAssets,
     open_project_folder,
 )
@@ -43,6 +42,7 @@ from studio.contracts.asset_library.files import (
 )
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.files.project_archives import ProjectSnapshotError
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
 

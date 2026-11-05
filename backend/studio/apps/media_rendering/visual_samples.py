@@ -12,7 +12,6 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.media_rendering.inspection import inspect_media, verify_video
 from app.capabilities.media_rendering.review_images import review_jpeg
 from app.capabilities.media_rendering.sample_positions import review_positions
@@ -30,6 +29,7 @@ from studio.contracts.visual_workshop.visual_samples import (
     SamplePlan,
     render_target,
 )
+from studio.runtime.files.digests import sha256_file
 from studio.runtime.http.framed_media import content_length, stream_files
 
 from .scoped_originals import original_files

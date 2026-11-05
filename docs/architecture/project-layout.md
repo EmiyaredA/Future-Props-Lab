@@ -713,7 +713,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 - `knowledge.py`：知识库元数据、封面归属、首页创建、库级 revision/CAS、整库删除与恢复。
 - `directory.py`：库内嵌套文档树、移动排序、循环校验；移动正文归属时推进文档 revision。
 - `notes.py`：显式知识库归属下的正文读写、自动保存冲突快照、文件引用投影。
-- `attachments.py`：附件上传；公共类型与签名校验由 `capabilities/asset_store/policy.py` 拥有。
+- `attachments.py`：附件上传；允许格式由 `studio/contracts/asset_library/file_types.py` 声明，字节签名与完整文件检查分别由 `studio/runtime/files/content_types.py`、`inspection.py` 执行。
 - `portability.py` / `archive_structure.py`：v3 备份的预检、磁盘暂存、短事务与失败补偿。
 - `legacy_import.py`：唯一的 v1/v2 备份转换边界。生产读写没有旧笔记本模型、接口或默认知识库回退。
 - `schemas/document.py`：无业务依赖的富文本允许列表、搜索文本与文件引用投影；正文保持 v2。
@@ -814,6 +814,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 ## 导演台
 
 `backend/studio/apps/director_desk/` 拥有账号项目记录和用户动作库。
+`storage/file_paths.py` 独立拥有导演台路径和中断删除恢复，不继承素材库适配器。网站与独立服务显式注入该存储；文件和动作适配不自行读取全局配置。目录移入暂存、还原和清理由 `studio/runtime/files/directory_staging.py` 实现，创建／删除布局接口由 `runtime/files/project_layout.py` 定义，`runtime/database/project_files.py` 保持原有事务补偿顺序。项目归档格式与大小校验由 `runtime/files/project_archives.py` 编解码，各业务仍负责项目、文档、素材归属和事务规则。
 `director_desk_projects.document` 是编辑器写出的瘦 JSON：戏段、实体和资源引用。
 模型、贴图和视频按内容 SHA-256 放在 `applications/director-desk/projects/{id}/files/`，
 不进入 SQLite，也不给共享 `VisualAsset` 增加外键。
@@ -837,7 +838,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 使用 `tests/fixtures/presentation_crop_cases.json` 共用测试向量。图片尺寸仅在读取素材后取得，
 不进入文稿结构；浏览器缩略图和放映共用渲染器，PPTX 使用经 EXIF 校正后的素材尺寸。
 
-图片与矢量素材的校验、预检与规范化归属公共 `backend/app/capabilities/asset_store/svg.py`，只支持受限自包含 SVG；
+图片与矢量素材的校验、预检与规范化归属公共 `backend/studio/runtime/files/svg.py`，只支持受限自包含 SVG；
 `/v1/files/svg/preview` 不持久化，上传继续走公共文件用例。文件列表默认排除 SVG，文件管理与演示工坊显式启用。
 迁移 `0058_presentation_media` 只补齐确定性媒体外观缺省值，不改变文稿版本、revision 或更新时间。
 演示工坊前端的 `usePresentationMedia` 统一插入和替换素材，`PresentationImages` 拥有文件搜索与分页，

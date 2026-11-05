@@ -29,6 +29,7 @@ from studio.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
 from studio.apps.audio_annotation.projects import AudioAnnotationProjects
 from studio.apps.audio_annotation.transcription import legacy_transcribe
 from studio.apps.director_desk.agent_session import DirectorEditorSessions
+from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.apps.gateway.storage.website_resources import WebsiteResources
 from studio.apps.gateway.use_cases.resource_links import ResourceLinks
 from studio.apps.identity.transport.database_auth import (
@@ -104,6 +105,7 @@ def bind_components(app, settings, database):
     app.state.annotation_transcriber = lambda _request, session: partial(legacy_transcribe, session)
     app.state.annotation_staging = None
     app.state.director_editor = DirectorEditorSessions(sessions)
+    app.state.director_storage = DirectorStorage(settings.runtime_path)
     app.state.code_agent_catalog = lambda _request, *, can_enable: code_agent_catalog(
         can_enable=can_enable
     )

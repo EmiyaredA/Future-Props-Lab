@@ -6,10 +6,6 @@ from uuid import UUID
 from pydantic import BaseModel
 from sqlalchemy import text, update
 
-from app.capabilities.asset_store.project_snapshots import (
-    ProjectSnapshotError,
-    stage_project_snapshot,
-)
 from studio.apps.asset_library.clients.archive_delivery import FileBatchDelivery, reserve_import
 from studio.apps.asset_library.clients.archive_transfer import (
     HashingUpload,
@@ -27,6 +23,7 @@ from studio.apps.video_editor.storage.models import VideoEditorProject, VideoEdi
 from studio.apps.video_editor.storage.service_models import VideoImportBatch
 from studio.contracts.thought_workshop.thought_archives import ArchiveBatchKey, ArchiveFileKey
 from studio.contracts.video_editor.video_snapshot import VideoArchiveManifest
+from studio.runtime.files.project_archives import ProjectSnapshotError, stage_project_snapshot
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.time import utc_now
 

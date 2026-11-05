@@ -9,7 +9,6 @@ from pathlib import Path
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from studio.assembly.website.models import LAYOUT_PROJECT_MODELS
@@ -19,6 +18,7 @@ from studio.contracts.asset_library.files import (
     StorageLayoutMigrationOut,
     StorageLayoutStatusOut,
 )
+from studio.runtime.files.digests import sha256_file
 
 _migration_lock = asyncio.Lock()
 

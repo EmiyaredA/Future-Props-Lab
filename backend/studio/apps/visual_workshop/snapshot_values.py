@@ -2,9 +2,9 @@
 
 from pathlib import Path
 
-from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
 from studio.contracts.asset_library.project_snapshots import ProjectSnapshotImportWarning
+from studio.runtime.files.project_archives import ProjectSnapshotError
 
 
 def canvas_asset_ids(nodes: list[dict]) -> set[str]:

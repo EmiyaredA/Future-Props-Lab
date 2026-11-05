@@ -7,7 +7,6 @@ import json
 from pathlib import Path
 from uuid import uuid4
 
-from app.capabilities.asset_store.svg import normalize_svg
 from studio.apps.presentation_workshop.exchange.archives import MAX_BYTES, read_package
 from studio.apps.presentation_workshop.exchange.contracts import ImportPreview, ParsedPresentation
 from studio.apps.presentation_workshop.exchange.pptx_import import read_pptx
@@ -15,6 +14,7 @@ from studio.apps.presentation_workshop.projects import PresentationError, Presen
 from studio.apps.presentation_workshop.scene_edits import remap
 from studio.apps.presentation_workshop.schemas.document import PresentationProjectIn
 from studio.contracts.asset_library.incoming import IncomingFile
+from studio.runtime.files.svg import normalize_svg
 
 
 async def parse_upload(upload: IncomingFile) -> ParsedPresentation:

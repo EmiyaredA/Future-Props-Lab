@@ -8,12 +8,12 @@ from anyio.to_thread import run_sync
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
 
-from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.media_rendering.audio_matching import AudioMatchError, match_audio
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.motion_compositor.motion_preview import sha256
 from studio.contracts.video_editor.video_audio import AUDIO_SEAMS, AudioSeamRequest, audio_target
+from studio.runtime.files.digests import sha256_file
 
 from .video_frames import active
 from .video_originals import download_original

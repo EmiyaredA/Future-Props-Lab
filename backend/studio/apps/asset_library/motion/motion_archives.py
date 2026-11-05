@@ -5,7 +5,6 @@ from uuid import UUID
 from anyio.to_thread import run_sync
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.models import VisualAsset
 from studio.apps.asset_library.archive_staging import ArchiveFileStaging, conflict
 from studio.apps.asset_library.deletions import schedule
@@ -19,6 +18,7 @@ from studio.contracts.motion_compositor.motion_snapshot import (
     MAX_ARCHIVE_BYTES,
     MotionArchiveManifest,
 )
+from studio.runtime.files.digests import sha256_file
 
 
 class ScopedProjectArchives(ArchiveFileStaging):

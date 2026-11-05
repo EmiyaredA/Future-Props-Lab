@@ -9,17 +9,14 @@ from uuid import uuid4
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.policy import (
-    ALLOWED_FILES,
-    display_name_without_original_extension,
-    looks_like,
-    normalize_content_type,
-    validate_file_structure,
-)
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from studio.config.settings import Settings
 from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.file_types import ALLOWED_FILES
 from studio.contracts.asset_library.incoming import IncomingFile
+from studio.runtime.files.content_types import looks_like, normalize_content_type
+from studio.runtime.files.inspection import validate_file_structure
+from studio.runtime.files.names import display_name_without_original_extension
 
 
 class AssetLibrary:
@@ -107,7 +104,7 @@ class AssetLibrary:
             if not await asyncio.to_thread(validate_file_structure, temp_path, extension):
                 raise AssetError("文件内容或内部结构无效", code="invalid_file_content")
             if extension == ".svg":
-                from app.capabilities.asset_store.svg import normalize_svg
+                from studio.runtime.files.svg import normalize_svg
 
                 try:
                     normalized = normalize_svg(temp_path.read_text(encoding="utf-8-sig"))

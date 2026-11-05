@@ -6,11 +6,11 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from studio.apps.galgame_workshop.schemas import GalgameProjectSnapshotImportOut
 from studio.apps.galgame_workshop.snapshots.snapshot_exports import SnapshotExports
 from studio.apps.galgame_workshop.transport.asset_read_routes import read_assets
 from studio.contracts.galgame_workshop.galgame_assets import SOURCE
+from studio.runtime.files.project_archives import ProjectSnapshotError
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 
 router = APIRouter(prefix=SOURCE, tags=["galgame-workshop"])

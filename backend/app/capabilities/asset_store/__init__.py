@@ -9,7 +9,6 @@ _EXPORTS = MappingProxyType(
         "asset_out": ("app.capabilities.asset_store.assets", "asset_out"),
         "folder_out": ("app.capabilities.asset_store.assets", "folder_out"),
         "AssetLibrary": ("app.capabilities.asset_store.library", "AssetLibrary"),
-        "download_filename": ("app.capabilities.asset_store.policy", "download_filename"),
         "ProjectFolderError": (
             "app.capabilities.asset_store.project_folders",
             "ProjectFolderError",
@@ -21,38 +20,6 @@ _EXPORTS = MappingProxyType(
         "open_project_folder": (
             "app.capabilities.asset_store.project_folders",
             "open_project_folder",
-        ),
-        "ExportedProjectSnapshot": (
-            "app.capabilities.asset_store.project_snapshots",
-            "ExportedProjectSnapshot",
-        ),
-        "ProjectSnapshotError": (
-            "app.capabilities.asset_store.project_snapshots",
-            "ProjectSnapshotError",
-        ),
-        "SnapshotAssetSource": (
-            "app.capabilities.asset_store.project_snapshots",
-            "SnapshotAssetSource",
-        ),
-        "StagedProjectSnapshot": (
-            "app.capabilities.asset_store.project_snapshots",
-            "StagedProjectSnapshot",
-        ),
-        "cleanup_snapshot_staging": (
-            "app.capabilities.asset_store.project_snapshots",
-            "cleanup_snapshot_staging",
-        ),
-        "export_project_snapshot": (
-            "app.capabilities.asset_store.project_snapshots",
-            "export_project_snapshot",
-        ),
-        "move_staged_asset": (
-            "app.capabilities.asset_store.project_snapshots",
-            "move_staged_asset",
-        ),
-        "stage_project_snapshot": (
-            "app.capabilities.asset_store.project_snapshots",
-            "stage_project_snapshot",
         ),
         "AssetStorage": ("app.capabilities.asset_store.storage", "AssetStorage"),
     }

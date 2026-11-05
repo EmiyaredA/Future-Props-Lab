@@ -2,12 +2,12 @@
 
 import json
 
-from app.capabilities.asset_store.policy import download_filename
 from studio.apps.visual_workshop.schemas.workshop import (
     VisualAssistantAssetPart,
     VisualAssistantContentPart,
     VisualAssistantTextPart,
 )
+from studio.runtime.files.names import download_filename
 
 MAX_MESSAGE_DOCUMENT_CHARS = 100_000
 CANVAS_CONTEXT_LIMIT = 32_000

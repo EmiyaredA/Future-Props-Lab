@@ -4,7 +4,6 @@ from uuid import uuid4
 
 from sqlalchemy import delete, select
 
-from app.capabilities.asset_store.policy import ALLOWED_FILES, looks_like, validate_file_structure
 from studio.apps.model_service.inference.storage import InferenceStorage
 from studio.apps.model_service.inference.storage import root as root
 from studio.apps.model_service.library.inputs import ExactInput
@@ -12,8 +11,11 @@ from studio.apps.model_service.library.inputs import LocalInput as LocalInput
 from studio.apps.model_service.storage.models.model_inference import ModelInferenceAsset
 from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.file_types import ALLOWED_FILES
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.contracts.model_service.schemas.model_inference import InferenceAssetOut
+from studio.runtime.files.content_types import looks_like
+from studio.runtime.files.inspection import validate_file_structure
 
 
 class InferenceAssets:

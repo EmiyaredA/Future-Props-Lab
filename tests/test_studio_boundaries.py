@@ -220,6 +220,18 @@ def test_module_files_do_not_shadow_packages():
     assert not collisions, "Module/package name collisions: " + ", ".join(collisions)
 
 
+def test_director_files_are_owned_without_asset_library_or_global_configuration():
+    from studio.deployment.images import source_closure
+
+    assert not any(
+        name.startswith(("app.capabilities.asset_store", "studio.apps.asset_library"))
+        for name in source_closure(ROOT, "director")
+    )
+    for name in ("files.py", "motions.py", "projects.py", "storage/file_paths.py"):
+        path = STUDIO / "apps/director_desk" / name
+        assert "get_settings" not in path.read_text()
+
+
 def test_asset_and_media_contracts_load_without_runtime_implementations():
     code = """
 import importlib

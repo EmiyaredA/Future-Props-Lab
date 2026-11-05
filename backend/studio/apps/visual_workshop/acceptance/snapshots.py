@@ -4,7 +4,6 @@ from copy import deepcopy
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store import ProjectSnapshotError
 from studio.apps.visual_workshop.acceptance.models import (
     AcceptanceAssetReference,
     AcceptanceRepairDraft,
@@ -19,6 +18,7 @@ from studio.apps.visual_workshop.acceptance.schemas import (
     AcceptanceResult,
     AcceptanceSnapshot,
 )
+from studio.runtime.files.project_archives import ProjectSnapshotError
 from studio.runtime.ids import new_id
 
 

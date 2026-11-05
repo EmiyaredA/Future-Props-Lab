@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 from fastapi import HTTPException
 from sqlalchemy import text
 
-from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from studio.apps.asset_library.clients.archive_transfer import (
     ArchiveTransport,
     SnapshotArchiveAsset,
@@ -47,6 +46,7 @@ from studio.contracts.galgame_workshop.galgame_snapshot import (
     IMPORT,
 )
 from studio.contracts.gateway.protocol_hash import public_contract
+from studio.runtime.files.project_archives import cleanup_snapshot_staging
 from studio.runtime.http.capability_client import CapabilityClient
 from studio.runtime.http.web import attach_web, load_release
 

@@ -7,7 +7,6 @@ import re
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.director_desk.files import DirectorDeskFiles
 from studio.apps.director_desk.projects import DirectorDeskError
 from studio.apps.director_desk.schemas import (
@@ -15,6 +14,7 @@ from studio.apps.director_desk.schemas import (
     DirectorMotionOut,
     DirectorMotionWrite,
 )
+from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.apps.director_desk.storage.models import DirectorDeskUserMotion
 from studio.runtime.time import utc_now
 
@@ -36,9 +36,7 @@ def file_keys(value: object) -> set[str]:
 
 
 class DirectorDeskMotions:
-    def __init__(
-        self, session: AsyncSession, owner_user_id: str, *, storage: AssetStorage | None = None
-    ):
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, storage: DirectorStorage):
         self.session = session
         self.owner_user_id = owner_user_id
         self.files = DirectorDeskFiles(session, owner_user_id, storage=storage)

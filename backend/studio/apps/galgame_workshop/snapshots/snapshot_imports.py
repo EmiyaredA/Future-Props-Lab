@@ -8,10 +8,6 @@ import httpx
 from pydantic import BaseModel, ValidationError
 from sqlalchemy import text, update
 
-from app.capabilities.asset_store.project_snapshots import (
-    ProjectSnapshotError,
-    stage_project_snapshot,
-)
 from studio.apps.asset_library.clients.archive_delivery import FileBatchDelivery, reserve_import
 from studio.apps.asset_library.clients.archive_transfer import (
     HashingUpload,
@@ -40,6 +36,7 @@ from studio.contracts.galgame_workshop.galgame_snapshot import (
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.thought_workshop.thought_archives import ArchiveBatchKey, ArchiveFileKey
+from studio.runtime.files.project_archives import ProjectSnapshotError, stage_project_snapshot
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.time import utc_now
 

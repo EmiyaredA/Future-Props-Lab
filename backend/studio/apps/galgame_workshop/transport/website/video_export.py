@@ -3,7 +3,6 @@ from __future__ import annotations
 from fastapi import APIRouter, status
 from fastapi.responses import FileResponse, Response
 
-from app.capabilities.asset_store.policy import download_filename
 from studio.apps.galgame_workshop.schemas import (
     GalgameVideoExportCreateIn,
     GalgameVideoExportFrameIn,
@@ -17,6 +16,7 @@ from studio.apps.galgame_workshop.video.video_export import GalgameVideoExports
 from studio.assembly.http_dependencies import SessionDep
 from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
+from studio.runtime.files.names import download_filename
 
 router = APIRouter()
 

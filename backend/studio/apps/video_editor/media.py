@@ -9,7 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.video_editor.asset_output import asset_output
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
@@ -29,6 +28,7 @@ from studio.apps.video_editor.storage.models import (
 )
 from studio.apps.video_editor.timeline_file_removal import without_file
 from studio.config.settings import Settings, get_settings
+from studio.contracts.asset_library.file_types import VIDEO_EDITABLE_EXTENSIONS
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.revisions import RevisionConflictError, require_revision_write
 from studio.runtime.time import iso_utc, utc_now

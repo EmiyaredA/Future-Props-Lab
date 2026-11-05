@@ -11,7 +11,6 @@ from app.capabilities.asset_store import (
     AssetStorage,
     ProjectFolderError,
     VisualAssets,
-    download_filename,
     open_library_folder,
 )
 from app.capabilities.asset_store.account_upgrade import (
@@ -52,6 +51,7 @@ from studio.contracts.asset_library.files import (
     VisualAssetPatchIn,
 )
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
+from studio.runtime.files.names import download_filename
 
 router = APIRouter(tags=["file-management"])
 
@@ -389,7 +389,7 @@ async def download_file(
 
 @router.post("/files/svg/preview", response_model=SvgPreviewOut)
 async def preview_svg(body: SvgPreviewIn, _owner_user_id: OwnerDep) -> SvgPreviewOut:
-    from app.capabilities.asset_store.svg import normalize_svg
+    from studio.runtime.files.svg import normalize_svg
 
     try:
         return SvgPreviewOut(**normalize_svg(body.svg))

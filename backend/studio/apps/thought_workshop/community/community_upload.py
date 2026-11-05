@@ -9,7 +9,6 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
-from app.capabilities.asset_store.policy import normalize_content_type
 from studio.apps.thought_workshop.account_directory import HttpAccountDirectory
 from studio.apps.thought_workshop.archives.archive_delivery import FileBatchDelivery
 from studio.apps.thought_workshop.community.community_edits import require_actor
@@ -28,6 +27,7 @@ from studio.apps.thought_workshop.storage.community_upload_records import Though
 from studio.apps.thought_workshop.website.account_directory import directory
 from studio.contracts.thought_workshop.community_uploads import CommunityUploadScope, public_path
 from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadDescription
+from studio.runtime.files.content_types import normalize_content_type
 from studio.runtime.http.capability_client import CapabilityUnavailable
 
 

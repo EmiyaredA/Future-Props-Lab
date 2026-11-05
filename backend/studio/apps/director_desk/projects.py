@@ -3,8 +3,6 @@ from __future__ import annotations
 from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.project_transactions import deleting_project_layout
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.director_desk.schemas import (
     DirectorDocument,
     DirectorProjectCreate,
@@ -13,8 +11,9 @@ from studio.apps.director_desk.schemas import (
     DirectorProjectPatch,
     DirectorProjectSummary,
 )
+from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.apps.director_desk.storage.models import DirectorDeskProject
-from studio.config.settings import get_settings
+from studio.runtime.database.project_files import deleting_project_layout
 from studio.runtime.database.project_records import (
     delete_revisioned_project,
     load_owned_project,
@@ -112,9 +111,7 @@ class DirectorDeskProjects:
         await self.session.commit()
         return await self.get(project_id)
 
-    async def delete(
-        self, project_id: str, revision: int, *, storage: AssetStorage | None = None
-    ) -> None:
+    async def delete(self, project_id: str, revision: int, *, storage: DirectorStorage) -> None:
         await self.session.rollback()
         await self.session.execute(text("BEGIN IMMEDIATE"))
         row = await self.row(project_id)
@@ -124,7 +121,7 @@ class DirectorDeskProjects:
             )
         async with deleting_project_layout(
             self.session,
-            storage if storage is not None else AssetStorage(get_settings()),
+            storage,
             "director-desk",
             project_id,
             owner_user_id=self.owner_user_id,

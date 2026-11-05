@@ -9,7 +9,6 @@ from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )
-from app.capabilities.asset_store.policy import REFERENCE_IMAGE_MIME_TYPES
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.model_service.catalog.visual import generation_options
 from studio.apps.model_service.catalog.visual_generation import (
@@ -51,6 +50,7 @@ from studio.apps.visual_workshop.storage.models import (
 )
 from studio.apps.visual_workshop.website.composition import create_composition, retry_composition
 from studio.config.settings import Settings, get_settings
+from studio.contracts.asset_library.file_types import REFERENCE_IMAGE_MIME_TYPES
 from studio.contracts.model_service.schemas.visual_catalog import GenerationOptionsOut
 from studio.runtime.tasks.task_admission import TaskAdmission
 from studio.runtime.time import utc_now

@@ -5,7 +5,6 @@ from pathlib import Path
 
 from sqlalchemy import delete, select, update
 
-from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from studio.apps.thought_workshop.content_exports import resolve_assets
 from studio.apps.thought_workshop.directory import Directory
 from studio.apps.thought_workshop.errors import ThoughtError
@@ -39,6 +38,7 @@ from studio.apps.thought_workshop.notes import Notes, note_out
 from studio.apps.thought_workshop.schemas.document import attachment_nodes, file_ids, image_ids
 from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now

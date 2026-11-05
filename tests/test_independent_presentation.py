@@ -288,7 +288,7 @@ async def check_exports(api, call, project, snapshot, asset):
     package = await call(api, "POST", prefix + "/fplppt", json=revision)
     assert package.status_code == 200, package.text
     with zipfile.ZipFile(io.BytesIO(package.content)) as archive:
-        from app.capabilities.asset_store.svg import normalize_svg
+        from studio.runtime.files.svg import normalize_svg
 
         assert archive.read("assets/" + asset) == normalize_svg(SVG.decode())["svg"].encode()
     pptx = await call(api, "POST", prefix, json=revision)

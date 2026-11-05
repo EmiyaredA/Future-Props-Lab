@@ -12,7 +12,6 @@ from app.capabilities.asset_store.asset_scope import ensure_library_managed, is_
 from app.capabilities.asset_store.folders import AssetFolders
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
-from app.capabilities.asset_store.policy import display_name_without_original_extension
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
 from studio.apps.asset_library.references.references import protect_references
 from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
@@ -23,6 +22,7 @@ from studio.contracts.asset_library.files import (
     VisualAssetPatchIn,
 )
 from studio.contracts.asset_library.incoming import IncomingFile
+from studio.runtime.files.names import display_name_without_original_extension
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 

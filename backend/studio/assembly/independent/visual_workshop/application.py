@@ -9,7 +9,6 @@ from fastapi import Depends, HTTPException
 from sqlalchemy import text
 
 from app.capabilities.agents.harness import ApprovalBroker
-from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from studio.apps.asset_library.clients.archive_transfer import (
     ArchiveTransport,
     SnapshotArchiveAsset,
@@ -78,6 +77,7 @@ from studio.contracts.visual_workshop.visual_snapshot import (
     ARCHIVE_PURPOSE,
     IMPORT,
 )
+from studio.runtime.files.project_archives import cleanup_snapshot_staging
 from studio.runtime.http.capability_client import CapabilityClient
 from studio.runtime.http.request_limit import RequestLimit
 from studio.runtime.http.web import attach_web, load_release

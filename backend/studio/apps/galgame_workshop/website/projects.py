@@ -4,10 +4,6 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.project_transactions import (
-    creating_project_layout,
-    deleting_project_layout,
-)
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from studio.apps.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
@@ -29,6 +25,7 @@ from studio.apps.galgame_workshop.storage.models import (
 from studio.apps.galgame_workshop.story.story import default_story_document
 from studio.config.settings import get_settings
 from studio.runtime.database.operation_receipts import forget
+from studio.runtime.database.project_files import creating_project_layout, deleting_project_layout
 from studio.runtime.database.project_records import (
     delete_revisioned_project,
     list_owned_projects,

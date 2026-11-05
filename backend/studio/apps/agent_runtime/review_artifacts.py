@@ -11,11 +11,11 @@ from uuid import UUID
 from anyio.to_thread import run_sync
 from fastapi import HTTPException
 
-from app.capabilities.asset_store.digests import sha256_file
 from studio.contracts.asset_library.descriptions import ID
 from studio.contracts.motion_compositor.motion_preview import DIGEST
 from studio.contracts.visual_workshop.visual_agent_review import MAX_EXTRA_FRAMES
 from studio.contracts.visual_workshop.visual_samples import MAX_FRAME_BYTES
+from studio.runtime.files.digests import sha256_file
 
 RECOVERY_GRACE = timedelta(hours=1)
 PNG = b"\x89PNG\r\n\x1a\n"

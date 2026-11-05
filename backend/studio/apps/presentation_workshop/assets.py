@@ -8,7 +8,6 @@ from uuid import uuid4
 
 import httpx
 
-from app.capabilities.asset_store.svg import MAX_SVG_BYTES, normalize_svg
 from studio.apps.presentation_workshop.asset_references import document_references, validate_assets
 from studio.apps.presentation_workshop.project_errors import PresentationError
 from studio.contracts.asset_library.references import PrepareReferenceChange
@@ -19,6 +18,7 @@ from studio.contracts.presentation_workshop.presentation_assets import (
     PresentationAsset,
     PresentationQuery,
 )
+from studio.runtime.files.svg import MAX_SVG_BYTES, normalize_svg
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.project_errors import ProjectResourceError
 

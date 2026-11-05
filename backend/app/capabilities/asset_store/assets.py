@@ -22,7 +22,6 @@ from app.capabilities.asset_store.models import (
     VisualAssetFolder,
     VisualProjectAssetReference,
 )
-from app.capabilities.asset_store.policy import display_name_without_original_extension
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
 from studio.contracts.asset_library.files import (
     LibraryAssetImportIn,
@@ -35,6 +34,7 @@ from studio.contracts.asset_library.files import (
 )
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.database.orm_base import Base
+from studio.runtime.files.names import display_name_without_original_extension
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 

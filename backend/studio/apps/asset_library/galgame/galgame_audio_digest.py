@@ -3,11 +3,11 @@
 from anyio.to_thread import run_sync
 
 from app.capabilities.asset_store.asset_scope import is_library_asset
-from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.galgame_workshop.galgame_annotation_source import AudioDigest
+from studio.runtime.files.digests import sha256_file
 
 
 async def audio_original(session, settings, asset_id):

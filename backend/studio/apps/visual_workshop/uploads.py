@@ -9,7 +9,6 @@ import httpx
 from pydantic import Field, ValidationError
 from sqlalchemy import text
 
-from app.capabilities.asset_store.policy import normalize_content_type
 from studio.apps.visual_workshop.canvas_asset_values import expected_assets
 from studio.apps.visual_workshop.canvas_documents import CanvasDocuments, VisualCanvasError
 from studio.apps.visual_workshop.canvas_values import canvas_out
@@ -24,6 +23,7 @@ from studio.apps.visual_workshop.schemas.workshop import (
 from studio.contracts.asset_library.references import PrepareReferenceChange
 from studio.contracts.thought_workshop.thought_assets import AssetDescription
 from studio.contracts.visual_workshop.visual_upload import VisualUpload
+from studio.runtime.files.content_types import normalize_content_type
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.ids import new_id
 from studio.runtime.project_errors import ProjectResourceError

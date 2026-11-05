@@ -4,8 +4,13 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.capabilities.asset_store.storage import AssetStorage, StagedProjectRoot
 from studio.apps.director_desk.storage.models import DirectorDeskProject
+from studio.runtime.files.directory_staging import (
+    StagedDirectory,
+    purge_directory,
+    restore_directory,
+    stage_directory,
+)
 
 APPLICATION = "director-desk"
 STAGED = re.compile(r"^([a-f0-9-]{36})--trash--[a-f0-9]{32}$")
@@ -33,9 +38,15 @@ class DirectorStorageSettings:
         return path
 
 
-class DirectorStorage(AssetStorage):
+class DirectorStorage:
     def __init__(self, root):
         self.settings = DirectorStorageSettings(root)
+
+    @staticmethod
+    def _segment(value):
+        if not value or Path(value).name != value or value in {".", ".."}:
+            raise ValueError("invalid storage path segment")
+        return value
 
     def project_root(self, application_id, project_id, *, owner_user_id):
         if application_id != APPLICATION:
@@ -47,8 +58,12 @@ class DirectorStorage(AssetStorage):
         )
 
     def stage_project_root(self, application_id, project_id, *, owner_user_id):
-        self.settings.checked_path(".trash", self._segment(owner_user_id), APPLICATION)
-        return super().stage_project_root(application_id, project_id, owner_user_id=owner_user_id)
+        original = self.project_root(application_id, project_id, owner_user_id=owner_user_id)
+        trash = self.settings.checked_path(".trash", self._segment(owner_user_id), APPLICATION)
+        return stage_directory(original, trash, self._segment(project_id))
+
+    restore_staged_root = staticmethod(restore_directory)
+    purge_staged_root = staticmethod(purge_directory)
 
     async def recover(self, sessions):
         trash = self.settings.checked_path(".trash")
@@ -66,7 +81,7 @@ class DirectorStorage(AssetStorage):
                     project_id = name[1]
                     row = await session.get(DirectorDeskProject, project_id)
                     original = self.project_root(APPLICATION, project_id, owner_user_id=owner.name)
-                    staged = StagedProjectRoot(original=original, staged=path)
+                    staged = StagedDirectory(original=original, staged=path)
                     if row is None:
                         self.purge_staged_root(staged)
                     elif original.exists():

@@ -3,14 +3,11 @@
 from sqlalchemy import select
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.project_transactions import (
-    creating_project_layout,
-    deleting_project_layout,
-)
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.motion_compositor.projects import MotionInvalid
 from studio.config.settings import get_settings
 from studio.contracts.motion_compositor.document import MotionComposition
+from studio.runtime.database.project_files import creating_project_layout, deleting_project_layout
 
 
 class LegacyProjectResources:

@@ -8,7 +8,6 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.policy import download_filename
 from app.console.file_library import LibraryFolderArchiveError
 from studio.apps.asset_library.transport.service.context import archive as archive_cases
 from studio.apps.asset_library.transport.service.context import cases
@@ -26,6 +25,7 @@ from studio.contracts.asset_library.files import (
     VisualAssetOut,
     VisualAssetPatchIn,
 )
+from studio.runtime.files.names import download_filename
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 
 router = APIRouter(tags=["file-management"])
@@ -275,7 +275,7 @@ async def download_file(
 
 @router.post("/files/svg/preview", response_model=SvgPreviewOut)
 async def preview_svg(body: SvgPreviewIn, _owner_user_id: OwnerDep) -> SvgPreviewOut:
-    from app.capabilities.asset_store.svg import normalize_svg
+    from studio.runtime.files.svg import normalize_svg
 
     try:
         return SvgPreviewOut(**normalize_svg(body.svg))

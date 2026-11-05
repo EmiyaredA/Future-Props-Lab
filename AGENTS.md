@@ -67,6 +67,10 @@
 - `studio/runtime/database/` 拥有数据库、ORM 和迁移原语，`http/` 拥有传输适配，
   `tasks/` 拥有任务机制，`files/` 与 `messaging/` 拥有通用文件和签名载荷机制。
   业务状态转换、账号归属与原子提交规则仍属于业务所有者。
+- 文件格式表归 `studio/contracts/asset_library/file_types.py`；字节检测、完整文件校验、SVG
+  安全规范化、摘要及归档编解码归 `studio/runtime/files/`。目录暂存机制不决定应用布局，
+  `runtime/database/project_files.py` 通过创建／删除布局接口执行原有事务补偿。
+  导演台使用自有 `storage/file_paths.py`，两套装配显式提供存储，不继承素材库布局或读取全局配置。
 - 音频标注文档编辑由 `EditDocument` 执行版本判断与纯转换，`DocumentEdits` 在一个事务内提交
   CAS 与回执；并发失败复查原请求回执，取消回滚。HTTP 层只映射领域错误。
 - `backend/studio/` 全树纳入文件和目录行数预算；迁移路径同时更新入口、镜像闭包、打包、

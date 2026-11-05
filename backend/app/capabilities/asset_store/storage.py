@@ -1,13 +1,17 @@
 from __future__ import annotations
 
-import os
 import shutil
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 from uuid import uuid4
 
 from studio.config.settings import Settings
+from studio.runtime.files.directory_staging import (
+    StagedDirectory,
+    purge_directory,
+    restore_directory,
+    stage_directory,
+)
 
 TARGET_STORAGE_VERSION = 2
 
@@ -20,12 +24,6 @@ class StoredAsset(Protocol):
     galgame_project_id: str | None
     video_editor_project_id: str | None
     motion_compositor_project_id: str | None
-
-
-@dataclass(frozen=True)
-class StagedProjectRoot:
-    original: Path
-    staged: Path
 
 
 class AssetStorage:
@@ -185,25 +183,11 @@ class AssetStorage:
 
     def stage_project_root(
         self, application_id: str, project_id: str, *, owner_user_id: str
-    ) -> StagedProjectRoot | None:
+    ) -> StagedDirectory | None:
         owner_user_id = self._segment(owner_user_id)
         original = self.project_root(application_id, project_id, owner_user_id=owner_user_id)
-        if not original.exists():
-            return None
         trash = self.settings.storage_trash_path / owner_user_id / application_id
-        trash.mkdir(parents=True, exist_ok=True)
-        staged = trash / f"{self._segment(project_id)}--trash--{uuid4().hex}"
-        os.replace(original, staged)
-        return StagedProjectRoot(original=original, staged=staged)
+        return stage_directory(original, trash, self._segment(project_id))
 
-    @staticmethod
-    def restore_staged_root(staged: StagedProjectRoot | None) -> None:
-        if staged is None or not staged.staged.exists():
-            return
-        staged.original.parent.mkdir(parents=True, exist_ok=True)
-        os.replace(staged.staged, staged.original)
-
-    @staticmethod
-    def purge_staged_root(staged: StagedProjectRoot | None) -> None:
-        if staged is not None:
-            shutil.rmtree(staged.staged, ignore_errors=True)
+    restore_staged_root = staticmethod(restore_directory)
+    purge_staged_root = staticmethod(purge_directory)

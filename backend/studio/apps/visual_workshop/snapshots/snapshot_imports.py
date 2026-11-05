@@ -8,10 +8,6 @@ from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import text, update
 from sqlalchemy.exc import IntegrityError
 
-from app.capabilities.asset_store.project_snapshots import (
-    ProjectSnapshotError,
-    stage_project_snapshot,
-)
 from studio.apps.asset_library.clients.archive_delivery import FileBatchDelivery, reserve_import
 from studio.apps.asset_library.clients.archive_transfer import (
     HashingUpload,
@@ -32,6 +28,7 @@ from studio.contracts.visual_workshop.visual_snapshot import (
     VisualArchiveFolder,
     VisualArchiveManifest,
 )
+from studio.runtime.files.project_archives import ProjectSnapshotError, stage_project_snapshot
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now

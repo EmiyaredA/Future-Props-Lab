@@ -4,10 +4,6 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.models import VisualAsset, VisualProjectAssetReference
-from app.capabilities.asset_store.project_transactions import (
-    creating_project_layout,
-    deleting_project_layout,
-)
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
@@ -25,6 +21,7 @@ from studio.apps.visual_workshop.storage.models import (
 )
 from studio.config.settings import get_settings
 from studio.runtime.database.operation_receipts import forget
+from studio.runtime.database.project_files import creating_project_layout, deleting_project_layout
 from studio.runtime.database.project_records import (
     delete_revisioned_project,
     list_owned_projects,

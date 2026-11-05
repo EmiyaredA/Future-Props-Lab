@@ -10,18 +10,17 @@ from uuid import uuid4
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.director_desk.projects import DirectorDeskError, DirectorDeskProjects
 from studio.apps.director_desk.schemas import FILE_KEY, DirectorFileOut
-from studio.config.settings import get_settings
+from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.contracts.asset_library.incoming import IncomingFile
 
 MAX_FILE_BYTES = 512 * 1024 * 1024
 CHUNK = 1024 * 1024
 
 
-def application_dir(owner_user_id: str, storage: AssetStorage | None = None) -> Path:
-    settings = storage.settings if storage is not None else get_settings()
+def application_dir(owner_user_id: str, storage: DirectorStorage) -> Path:
+    settings = storage.settings
     if not owner_user_id or Path(owner_user_id).name != owner_user_id:
         raise DirectorDeskError("账号无效", 422, "invalid_account")
     return local_directory(settings.account_path(owner_user_id), "applications", "director-desk")
@@ -36,13 +35,11 @@ def local_directory(root: Path, *parts: str) -> Path:
 
 
 class DirectorDeskFiles:
-    def __init__(
-        self, session: AsyncSession, owner_user_id: str, *, storage: AssetStorage | None = None
-    ):
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, storage: DirectorStorage):
         self.session = session
         self.owner_user_id = owner_user_id
         self.projects = DirectorDeskProjects(session, owner_user_id)
-        self.storage = storage if storage is not None else AssetStorage(get_settings())
+        self.storage = storage
 
     def project_dir(self, project_id: str) -> Path:
         project = self.storage.project_root(

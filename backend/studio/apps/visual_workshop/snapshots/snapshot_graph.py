@@ -6,7 +6,6 @@ from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, ValidationError
 from sqlalchemy import inspect
 
-from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from studio.apps.visual_workshop.acceptance.models import (
     AcceptanceAssetReference,
     AcceptanceRepairDraft,
@@ -33,6 +32,7 @@ from studio.apps.visual_workshop.snapshot_values import (
     validated_folders,
 )
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
+from studio.runtime.files.project_archives import ProjectSnapshotError
 from studio.runtime.time import utc_now
 
 OWNED_RECORDS = {

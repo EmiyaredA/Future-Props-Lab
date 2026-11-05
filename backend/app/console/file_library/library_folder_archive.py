@@ -19,14 +19,15 @@ from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
 )
-from app.capabilities.asset_store.policy import ALLOWED_FILES, download_filename
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.config.settings import Settings
+from studio.contracts.asset_library.file_types import ALLOWED_FILES
 from studio.contracts.asset_library.files import (
     LibraryFolderImportOut,
     LibraryFolderImportSkippedOut,
 )
 from studio.contracts.asset_library.incoming import IncomingFile
+from studio.runtime.files.names import download_filename
 
 STAGING_DIRNAME = "library-folder-archives"
 

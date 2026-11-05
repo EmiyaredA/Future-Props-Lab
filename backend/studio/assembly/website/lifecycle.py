@@ -10,7 +10,6 @@ from app.capabilities.asset_store.layout_migration import (
     reconcile_project_trash,
     reconcile_snapshot_imports,
 )
-from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.amadeus.runs import recover_interrupted_amadeus_runs
@@ -51,6 +50,7 @@ from studio.apps.visual_workshop.assistant.actions import recover_interrupted_vi
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.host.local_models.installer import Installer
 from studio.host.local_models.runtime import LocalRuntime
+from studio.runtime.files.project_archives import cleanup_snapshot_staging
 from studio.runtime.tasks.polling import RunnerSupervisor
 
 

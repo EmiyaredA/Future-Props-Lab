@@ -8,7 +8,6 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
@@ -29,6 +28,7 @@ from studio.apps.galgame_workshop.storage.models import (
 from studio.apps.galgame_workshop.video.video_export_planning import EXPORT_PACKAGING_POLICY
 from studio.config.settings import Settings
 from studio.runtime.database.ownership import bind_owner, require_owner_id
+from studio.runtime.files.digests import sha256_file
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 

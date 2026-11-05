@@ -7,21 +7,12 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store import (
-    AssetStorage,
-    ExportedProjectSnapshot,
-    ProjectSnapshotError,
-    SnapshotAssetSource,
-    export_project_snapshot,
-    move_staged_asset,
-    stage_project_snapshot,
-)
+from app.capabilities.asset_store import AssetStorage
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
     VisualProjectAssetReference,
 )
-from app.capabilities.asset_store.project_transactions import importing_project_layout
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
 from studio.apps.model_service.catalog.visual import resolve_snapshot_models, snapshot_model_labels
 from studio.apps.visual_workshop.acceptance.snapshots import export_acceptance, import_acceptance
@@ -47,6 +38,15 @@ from studio.apps.visual_workshop.storage.models import (
 from studio.apps.visual_workshop.website.projects import project_out
 from studio.config.settings import Settings
 from studio.contracts.asset_library.incoming import IncomingFile
+from studio.runtime.database.project_files import importing_project_layout
+from studio.runtime.files.project_archives import (
+    ExportedProjectSnapshot,
+    ProjectSnapshotError,
+    SnapshotAssetSource,
+    export_project_snapshot,
+    move_staged_asset,
+    stage_project_snapshot,
+)
 from studio.runtime.ids import new_id
 
 

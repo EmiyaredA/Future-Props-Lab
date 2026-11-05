@@ -9,7 +9,6 @@ from threading import Event
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import (
     VisualAsset,
@@ -27,6 +26,7 @@ from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, Vi
 from studio.apps.visual_workshop.outputs import register_imported_output
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
 from studio.config.settings import Settings
+from studio.runtime.files.digests import sha256_file
 from studio.runtime.time import utc_now
 
 

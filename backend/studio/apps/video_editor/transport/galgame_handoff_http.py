@@ -3,7 +3,6 @@
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 
-from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from studio.apps.video_editor.storage.galgame_handoff_records import handoff_status
 from studio.contracts.galgame_workshop.galgame_handoff import (
     VIDEO_ARCHIVE_HEADER,
@@ -14,6 +13,7 @@ from studio.contracts.galgame_workshop.galgame_handoff import (
 )
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
+from studio.runtime.files.project_archives import ProjectSnapshotError
 
 router = APIRouter(include_in_schema=False)
 

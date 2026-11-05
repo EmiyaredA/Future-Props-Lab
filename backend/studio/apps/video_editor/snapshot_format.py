@@ -5,9 +5,9 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
-from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from studio.apps.video_editor.schemas import VideoEditorProjectCreateIn, parse_timeline_document
 from studio.apps.video_editor.snapshot_queries import timeline_asset_ids
+from studio.runtime.files.project_archives import ProjectSnapshotError
 
 
 def _copy_title(title: str) -> str:

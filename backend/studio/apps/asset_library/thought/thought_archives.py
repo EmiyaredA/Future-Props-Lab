@@ -3,7 +3,6 @@
 from sqlalchemy import select, text
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from studio.apps.asset_library.archive_staging import ArchiveFileStaging, conflict
 from studio.apps.asset_library.deletions import schedule
 from studio.apps.asset_library.storage.service_models import (
@@ -13,6 +12,7 @@ from studio.apps.asset_library.storage.service_models import (
     ThoughtArchiveFile,
 )
 from studio.apps.asset_library.thought.thought_uploads import IMAGE_EXTENSIONS
+from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.contracts.thought_workshop.thought_archives import ArchiveProjection
 from studio.runtime.ids import new_id
 

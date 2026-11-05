@@ -8,11 +8,6 @@ from tempfile import TemporaryDirectory
 import httpx
 from fastapi import HTTPException
 
-from app.capabilities.asset_store.project_snapshots import (
-    ProjectSnapshotError,
-    SnapshotAssetSource,
-    export_project_snapshot,
-)
 from studio.apps.video_editor.projects import VideoEditorProjects, project_out
 from studio.apps.video_editor.snapshot_queries import output_asset_ids, timeline_asset_ids
 from studio.apps.video_editor.timeline_read import VideoTimelineRead
@@ -22,6 +17,11 @@ from studio.contracts.motion_compositor.motion_preview import FrameFile
 from studio.contracts.motion_compositor.motion_snapshot import SnapshotScope
 from studio.contracts.video_editor.video_assets import PREFIX, VideoAsset
 from studio.contracts.video_editor.video_snapshot import PURPOSE
+from studio.runtime.files.project_archives import (
+    ProjectSnapshotError,
+    SnapshotAssetSource,
+    export_project_snapshot,
+)
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.http.framed_media import SIZE, FramedInputs
 

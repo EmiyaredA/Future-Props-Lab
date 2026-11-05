@@ -9,7 +9,6 @@ from uuid import uuid4
 from anyio.to_thread import run_sync
 from sqlalchemy import text
 
-from app.capabilities.asset_store.digests import sha256_file
 from studio.apps.model_service.admission.admission import settle
 from studio.apps.model_service.generation.driver import GenerationTaskDriver, GenerationTaskStore
 from studio.apps.model_service.generation.media import download_generated_media, read_data_uri
@@ -32,6 +31,7 @@ from studio.apps.model_service.storage.visual_generation_records import (
 from studio.apps.model_service.visual.visual_generation_queue import claim
 from studio.apps.model_service.visual.visual_generation_retention import ProviderRetention
 from studio.contracts.asset_library.descriptions import LibraryAssetDescription
+from studio.runtime.files.digests import sha256_file
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 

@@ -38,7 +38,7 @@ class MediaPreviews:
             / f"{info.revision}-{size}.webp"
         )
         if info.mime_type == "image/svg+xml":
-            from app.capabilities.asset_store.svg import MAX_SVG_BYTES, normalize_svg
+            from studio.runtime.files.svg import MAX_SVG_BYTES, normalize_svg
 
             if source.stat().st_size > MAX_SVG_BYTES:
                 raise AssetError("SVG 超过预览限制", code="invalid_svg")

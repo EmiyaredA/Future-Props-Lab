@@ -11,7 +11,6 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
 
-from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
 from studio.apps.asset_library.clients.archive_transfer import (
     ArchiveTransport,
     SnapshotArchiveAsset,
@@ -75,6 +74,7 @@ from studio.contracts.video_editor.video_snapshot import (
 )
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database
+from studio.runtime.files.project_archives import cleanup_snapshot_staging
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.capability_client import CapabilityClient
 from studio.runtime.http.problem_details import (

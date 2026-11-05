@@ -6,14 +6,15 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.storage import AssetStorage, StagedProjectRoot
+from studio.runtime.files.directory_staging import StagedDirectory
+from studio.runtime.files.project_layout import ProjectCreationLayout, ProjectDeletionLayout
 
 RESTORE_ATTEMPTS = 2
 
 
 def _restore_staged_root(
-    storage: AssetStorage,
-    staged: StagedProjectRoot | None,
+    storage: ProjectDeletionLayout,
+    staged: StagedDirectory | None,
 ) -> None:
     last_error: OSError | None = None
     for _ in range(RESTORE_ATTEMPTS):
@@ -29,7 +30,7 @@ def _restore_staged_root(
 @asynccontextmanager
 async def creating_project_layout(
     session: AsyncSession,
-    storage: AssetStorage,
+    storage: ProjectCreationLayout,
     application_id: str,
     project_id: str,
     *,
@@ -52,7 +53,7 @@ async def creating_project_layout(
 @asynccontextmanager
 async def importing_project_layout(
     session: AsyncSession,
-    storage: AssetStorage,
+    storage: ProjectCreationLayout,
     application_id: str,
     project_id: str,
     *,
@@ -88,7 +89,7 @@ async def importing_project_layout(
 @asynccontextmanager
 async def deleting_project_layout(
     session: AsyncSession,
-    storage: AssetStorage,
+    storage: ProjectDeletionLayout,
     application_id: str,
     project_id: str,
     *,

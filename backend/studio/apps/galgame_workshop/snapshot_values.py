@@ -6,12 +6,12 @@ from pathlib import Path, PurePosixPath
 
 from pydantic import BaseModel, Field, ValidationError
 
-from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
 from studio.apps.galgame_workshop.assets.asset_support import ProjectAssetFile
 from studio.apps.galgame_workshop.schemas import GalgameStoryProject, GalgameWorkshopProjectCreateIn
 from studio.apps.galgame_workshop.schemas.asr import GalgameTranscriptSegmentOut
 from studio.apps.galgame_workshop.storage.models import GalgameAssetMetadata
 from studio.contracts.asset_library.project_snapshots import ProjectSnapshotImportWarning
+from studio.runtime.files.project_archives import ProjectSnapshotError
 
 
 def _fallback_category(asset: ProjectAssetFile) -> str:

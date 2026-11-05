@@ -6,17 +6,8 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store import (
-    AssetStorage,
-    ExportedProjectSnapshot,
-    ProjectSnapshotError,
-    SnapshotAssetSource,
-    export_project_snapshot,
-    move_staged_asset,
-    stage_project_snapshot,
-)
+from app.capabilities.asset_store import AssetStorage
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.project_transactions import importing_project_layout
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
 from studio.apps.galgame_workshop.schemas import GalgameProjectSnapshotImportOut
 from studio.apps.galgame_workshop.snapshot_values import (
@@ -39,6 +30,15 @@ from studio.apps.model_service.catalog.transcription import (
 )
 from studio.config.settings import Settings
 from studio.contracts.asset_library.incoming import IncomingFile
+from studio.runtime.database.project_files import importing_project_layout
+from studio.runtime.files.project_archives import (
+    ExportedProjectSnapshot,
+    ProjectSnapshotError,
+    SnapshotAssetSource,
+    export_project_snapshot,
+    move_staged_asset,
+    stage_project_snapshot,
+)
 from studio.runtime.ids import new_id
 
 

@@ -5,9 +5,9 @@ from pathlib import Path
 from sqlalchemy import select
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.file_types import VIDEO_EDITABLE_EXTENSIONS
 from studio.contracts.video_editor.video_assets import VideoAsset
 
 

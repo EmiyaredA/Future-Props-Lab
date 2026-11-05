@@ -4,7 +4,6 @@ import hashlib
 
 from sqlalchemy import text, update
 
-from app.capabilities.asset_store.svg import normalize_svg
 from studio.apps.asset_library.clients.archive_delivery import FileBatchDelivery, reserve_import
 from studio.apps.presentation_workshop.asset_references import document_references, validate_assets
 from studio.apps.presentation_workshop.exchange.transfers import remap_document
@@ -18,6 +17,7 @@ from studio.apps.presentation_workshop.storage.service_models import Presentatio
 from studio.contracts.presentation_workshop.presentation_archives import PresentationManifest
 from studio.contracts.thought_workshop.thought_archives import ArchiveBatchKey, ArchiveFileKey
 from studio.runtime.files.signed_payloads import ModelOutputDescription
+from studio.runtime.files.svg import normalize_svg
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now

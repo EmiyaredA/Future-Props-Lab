@@ -5,7 +5,6 @@ import asyncio
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from studio.apps.audio_annotation.models import AudioAnnotationDocument, AudioAnnotationProject
@@ -29,6 +28,7 @@ from studio.apps.galgame_workshop.task_views import annotation_task_out as _task
 from studio.config.settings import Settings, get_settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.galgame_workshop.galgame_annotation_source import AnnotationSource
+from studio.runtime.files.digests import sha256_file
 
 
 class GalgameAnnotationImports:

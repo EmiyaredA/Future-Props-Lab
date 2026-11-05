@@ -5,8 +5,8 @@ from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
 )
-from app.capabilities.asset_store.policy import display_name_without_original_extension
 from studio.contracts.asset_library.files import VisualAssetFolderOut, VisualAssetOut
+from studio.runtime.files.names import display_name_without_original_extension
 from studio.runtime.time import iso_utc
 
 

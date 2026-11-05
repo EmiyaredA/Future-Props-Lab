@@ -10,11 +10,6 @@ import httpx
 from pydantic import TypeAdapter
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.project_snapshots import (
-    ProjectSnapshotError,
-    SnapshotAssetSource,
-    export_project_snapshot,
-)
 from studio.apps.visual_workshop.acceptance.snapshots import export_acceptance
 from studio.apps.visual_workshop.outputs.snapshots import export_outputs
 from studio.apps.visual_workshop.project_values import project_out
@@ -34,6 +29,11 @@ from studio.contracts.visual_workshop.visual_snapshot import (
     SnapshotAssetQuery,
     SnapshotFiles,
     SnapshotModels,
+)
+from studio.runtime.files.project_archives import (
+    ProjectSnapshotError,
+    SnapshotAssetSource,
+    export_project_snapshot,
 )
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.http.framed_media import SIZE, FramedInputs

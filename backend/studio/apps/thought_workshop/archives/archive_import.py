@@ -11,7 +11,6 @@ from uuid import UUID
 from anyio.to_thread import run_sync
 from sqlalchemy import select, text
 
-from app.capabilities.asset_store.policy import normalize_content_type
 from studio.apps.thought_workshop.archive_files import extract_archive
 from studio.apps.thought_workshop.archives.archive_delivery import begin_import
 from studio.apps.thought_workshop.errors import ThoughtError
@@ -34,6 +33,7 @@ from studio.contracts.thought_workshop.thought_archives import (
     ArchiveProjection,
 )
 from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadDescription
+from studio.runtime.files.content_types import normalize_content_type
 from studio.runtime.http.capability_client import CapabilityUnavailable
 
 RESOURCE_MODELS = {

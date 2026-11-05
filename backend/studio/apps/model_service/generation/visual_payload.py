@@ -1,6 +1,5 @@
 """Normalize Visual task arguments using scoped, owner-provided reference metadata."""
 
-from app.capabilities.asset_store.policy import download_filename
 from studio.apps.model_service.catalog.visual_generation import VisualGenerationValidationError
 from studio.apps.model_service.providers import autodl_workflows
 from studio.apps.model_service.providers.seedance_parameters import normalize_video_parameters
@@ -15,6 +14,7 @@ from studio.contracts.model_service.generation_tasks import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
+from studio.runtime.files.names import download_filename
 
 
 async def prepare_visual_payload(

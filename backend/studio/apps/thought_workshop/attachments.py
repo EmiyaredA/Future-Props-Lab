@@ -3,9 +3,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
 from studio.config.settings import Settings
+from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.contracts.asset_library.incoming import IncomingFile
 
 

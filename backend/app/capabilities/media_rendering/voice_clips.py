@@ -5,7 +5,7 @@ import math
 import struct
 from pathlib import Path
 
-from app.capabilities.asset_store.digests import sha256_file
+from studio.runtime.files.digests import sha256_file
 
 
 async def _run_checked(args: list[str], *, capture: bool = False) -> bytes:
