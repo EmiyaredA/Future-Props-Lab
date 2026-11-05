@@ -141,7 +141,7 @@ Galgame 剪辑交接由 `fpl_galgame/handoff_jobs.py`、`handoff_runner.py` 协�
 
 `backend/fpl_agents/` 装配独立工作台，拥有自有迁移、原生任务、来源订阅、投影回执、协调器与私有协议；复用工作台的阅读、搜索、CAS 和投影用例，不加载账号 ORM 或 Mac 解析器。`fpl_runtime/http_dependencies.py` 只消费签名身份；`change_stream.py` 使用显式实时授权与数据库会话，旧 `events.py` 保留单体身份适配。
 
-Agents 的 `execution_discovery.py` 拥有账号项目发现、登记和创建对话的 Mac 任务边界，`execution_native_http.py` 装配专用回环凭据与租约。`fpl_runtime/workbench_execution.py` 保存范围与结果契约。`fpl_host/workbench_worker.py` 在受信 Mac 核对项目根与 CLI 签名。工作台的 `execution/turn_records.py` 保存兼容站和独立服务共用的轮次事务原语。
+Agents 的 `execution_discovery.py` 拥有账号项目发现、登记和创建对话的 Mac 任务边界，`execution_native_http.py` 装配专用回环凭据与租约。`fpl_runtime/workbench_execution.py` 保存范围与结果契约。`fpl_host/workbench_worker.py` 在受信 Mac 核对项目根与 CLI 签名。工作台的 `execution/turn_records.py` 保存兼容站和独立服务共用的轮次事务原语。 `execution/project_tools.py` 持有项目文件与命令工具，运行端提供实时授权和审批回调。
 
 `fpl_host/deployment_preflight.py` 在主机启动或 `--check` 时，只读检查本次选中服务各自数据库的服务归属、迁移前缀与 checksum；仅管理端模式不要求未启动的业务服务。未知已配置服务及缺少状态目录时拒绝部署，不创建数据库或应用迁移。启动动作与管理 worker 在所有预检成功后才执行。
 
