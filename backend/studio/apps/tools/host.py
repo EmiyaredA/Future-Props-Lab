@@ -8,7 +8,6 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy import select, update
 
-from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
 from studio.apps.tools.storage.service_models import ToolsNativeJob
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.asset_library.reveal import REVEAL_APPLICATIONS, reveal_payload
@@ -20,6 +19,7 @@ from studio.contracts.tools.tools_native import (
     VIDEO_PROBES,
 )
 from studio.contracts.tools.tools_video import DOWNLOAD_VIDEO, VideoDownloadInput
+from studio.contracts.tools.video_download import BinaryStatus, VideoDownloadDepsOut
 from studio.runtime.tasks.native_queue import NativeQueue, NativeQueueError
 from studio.runtime.time import utc_now
 

@@ -16,9 +16,6 @@ from app.console.amadeus.models import (
 from app.console.cloud_control.models import CloudFactor, CloudUnlock
 from app.console.cloud_control.preference_models import DesktopPreference
 from app.console.models.platform_governance import PlatformSetting
-from app.tool_navigation.models import (
-    ToolNavigationItem,
-)
 from studio.apps.agent_workbench.execution.models import (
     WorkbenchChat,
     WorkbenchProject,
@@ -144,6 +141,7 @@ from studio.apps.thought_workshop.storage.models import (
     ThoughtNoteAsset,
     ThoughtNoteHistory,
 )
+from studio.apps.tools.storage.navigation_models import ToolNavigationItem
 from studio.apps.video_editor.storage.models import (
     VideoEditorAssetMetadata,
     VideoEditorOperationBatch,

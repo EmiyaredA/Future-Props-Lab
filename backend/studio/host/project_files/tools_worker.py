@@ -13,8 +13,6 @@ from uuid import UUID
 
 import httpx
 
-from app.tool_navigation.video_download_dependencies import probe_deps
-from app.tool_navigation.video_download_errors import VideoDownloadError
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.asset_library.reveal import (
     PROJECT_REVEAL,
@@ -28,7 +26,9 @@ from studio.contracts.tools.tools_video import (
     VideoDownloadInput,
     VideoDownloadResult,
 )
+from studio.contracts.tools.video_errors import VideoDownloadError
 from studio.host.project_files.tools_video import VideoWorkspace
+from studio.host.project_files.video_dependencies import probe_deps
 from studio.host.receipts import ReceiptStore
 from studio.host.transport import LeaseEnded, NativeTransport, ProtocolConflict
 from studio.runtime.lifecycle.locking import service_lock

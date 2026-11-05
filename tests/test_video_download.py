@@ -7,7 +7,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from app.tool_navigation import video_download as vd
+from studio.apps.tools.video_downloads import local_jobs as vd
 from website_test_support import app
 
 
@@ -50,7 +50,7 @@ def test_network_hint_prefers_fresh_cookies_over_generic_403() -> None:
 
 
 def test_douyin_sign_and_stream_pick() -> None:
-    from app.tool_navigation import video_download_douyin as douyin
+    from studio.host.project_files import douyin as douyin
 
     signed = douyin.sign_detail_query(
         "7693736628409355530",

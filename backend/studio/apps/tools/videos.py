@@ -6,17 +6,17 @@ from uuid import uuid4
 
 from pydantic import ValidationError
 
-from app.tool_navigation.video_download_contracts import (
-    VideoDownloadAssetOut,
-    VideoDownloadJobCreate,
-    VideoDownloadJobOut,
-)
-from app.tool_navigation.video_download_errors import VideoDownloadError
-from app.tool_navigation.video_download_source import extract_video_url
 from studio.apps.tools.storage.service_models import ToolsNativeJob
 from studio.contracts.agent_workbench.native import NativeOutcome
 from studio.contracts.tools.tools_native import PROBE_VIDEO_SUBMIT
 from studio.contracts.tools.tools_video import DOWNLOAD_VIDEO, VideoDownloadResult
+from studio.contracts.tools.video_download import (
+    VideoDownloadAssetOut,
+    VideoDownloadJobCreate,
+    VideoDownloadJobOut,
+)
+from studio.contracts.tools.video_errors import VideoDownloadError
+from studio.contracts.tools.video_sources import extract_video_url
 from studio.runtime.tasks.native_queue import NativeQueueError
 from studio.runtime.time import iso_utc, utc_now
 

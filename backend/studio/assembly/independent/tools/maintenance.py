@@ -2,7 +2,6 @@
 
 from functools import partial
 
-from app.tool_navigation.models import ToolNavigationItem
 from studio.apps.tools.navigation_migration import (
     TOOL_ID,
     NavigationBatch,
@@ -12,6 +11,7 @@ from studio.apps.tools.navigation_migration import (
     navigation_inventory,
 )
 from studio.apps.tools.storage.migrations.registry import MIGRATIONS
+from studio.apps.tools.storage.navigation_models import ToolNavigationItem
 from studio.apps.tools.storage.service_models import ToolsNavigationImportReceipt
 from studio.runtime.database.migration_apps import export_app, import_app, mount_dataset
 

@@ -2,7 +2,7 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.tool_navigation.models import ToolNavigationItem
+from studio.apps.tools.storage.navigation_models import ToolNavigationItem
 from website_test_support import SessionLocal, app
 
 

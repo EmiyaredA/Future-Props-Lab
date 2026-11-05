@@ -3,7 +3,7 @@
 import shutil
 import subprocess
 
-from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
+from studio.contracts.tools.video_download import BinaryStatus, VideoDownloadDepsOut
 
 
 def _probe_binary(name: str, *, version_flag: str = "--version") -> BinaryStatus:

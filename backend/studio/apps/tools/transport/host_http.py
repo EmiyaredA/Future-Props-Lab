@@ -13,12 +13,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.datastructures import Headers
 from starlette.responses import JSONResponse
 
-from app.tool_navigation.video_download_contracts import (
-    VideoDownloadDepsOut,
-    VideoDownloadJobCreate,
-    VideoDownloadJobOut,
-)
-from app.tool_navigation.video_download_errors import VideoDownloadError
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 from studio.contracts.asset_library.reveal import (
@@ -35,6 +29,12 @@ from studio.contracts.tools.tools_video import (
     VIDEO_JOB_PATH,
     VideoDownloadResult,
 )
+from studio.contracts.tools.video_download import (
+    VideoDownloadDepsOut,
+    VideoDownloadJobCreate,
+    VideoDownloadJobOut,
+)
+from studio.contracts.tools.video_errors import VideoDownloadError
 from studio.runtime.http.dependencies import StudioAuth
 
 public = APIRouter()

@@ -5,9 +5,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.tool_navigation.video_download import VideoDownloads
-from app.tool_navigation.video_download_contracts import VideoDownloadJobCreate
-from app.tool_navigation.video_download_errors import VideoDownloadError
+from studio.apps.tools.video_downloads.local_jobs import VideoDownloads
+from studio.contracts.tools.video_download import VideoDownloadJobCreate
+from studio.contracts.tools.video_errors import VideoDownloadError
 
 
 async def test_shutdown_drains_before_storage_closes_and_instances_are_isolated(tmp_path):

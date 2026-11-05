@@ -4,16 +4,16 @@ import shutil
 from pathlib import Path
 from uuid import UUID
 
-from app.tool_navigation.video_download_errors import VideoDownloadError
-from app.tool_navigation.video_download_execution import (
+from studio.contracts.tools.tools_video import VideoDownloadInput, VideoDownloadResult
+from studio.contracts.tools.video_errors import VideoDownloadError
+from studio.contracts.tools.video_sources import validate_video_url
+from studio.host.project_files.video_execution import (
     MIME_BY_EXTENSION,
     _find_media,
     _read_title,
     _run_yt_dlp,
     _safe_filename,
 )
-from app.tool_navigation.video_download_source import validate_video_url
-from studio.contracts.tools.tools_video import VideoDownloadInput, VideoDownloadResult
 
 
 class VideoWorkspace:

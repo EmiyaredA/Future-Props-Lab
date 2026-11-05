@@ -8,7 +8,7 @@ from fastapi import HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import func, select, text
 
-from app.tool_navigation.models import ToolNavigationItem
+from studio.apps.tools.storage.navigation_models import ToolNavigationItem
 from studio.apps.tools.storage.service_models import ToolsNavigationImportReceipt
 from studio.contracts.management.migration_batches import (
     MAX_RECORDS,

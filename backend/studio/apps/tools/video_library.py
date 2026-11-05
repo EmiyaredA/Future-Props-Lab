@@ -5,12 +5,12 @@ from contextlib import aclosing
 
 import httpx
 
-from app.tool_navigation.video_download_contracts import VideoDownloadAssetOut
-from app.tool_navigation.video_download_errors import VideoDownloadError
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.tools.tools_video import VIDEO_JOB_PATH
 from studio.contracts.tools.tools_video_library import ToolLibraryDescription, library_path
+from studio.contracts.tools.video_download import VideoDownloadAssetOut
+from studio.contracts.tools.video_errors import VideoDownloadError
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 

@@ -359,7 +359,7 @@ def test_tools_image_only_packages_owned_navigation_and_safe_mounts():
     closure = source_closure(ROOT, "tools")
     assert (
         "studio.assembly.independent.tools.application" in closure
-        and "app.tool_navigation.models" in closure
+        and "studio.apps.tools.storage.navigation_models" in closure
     )
     assert not any(
         name.startswith(

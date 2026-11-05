@@ -133,6 +133,7 @@ def test_migrated_packages_have_one_source_owner():
         ROOT / "backend/app/capabilities/media_rendering",
         ROOT / "backend/app/integrations",
         ROOT / "backend/app/console/creative_workshop",
+        ROOT / "backend/app/tool_navigation",
         ROOT / "backend/app/console/file_library",
     ):
         assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"

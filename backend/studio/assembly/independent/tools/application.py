@@ -9,13 +9,15 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.tool_navigation.models import ToolNavigationItem
-from app.tool_navigation.routes import router
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.tools.host import ToolsHost
 from studio.apps.tools.storage.migrations.registry import MIGRATIONS
+from studio.apps.tools.storage.navigation import NavigationRecords
+from studio.apps.tools.storage.navigation_models import ToolNavigationItem
 from studio.apps.tools.storage.service_models import ToolsDownloadArtifact, ToolsNativeJob
 from studio.apps.tools.transport.host_http import NativeIngress, native, public
+from studio.apps.tools.transport.navigation_http import router
+from studio.apps.tools.use_cases.navigation import ToolNavigation
 from studio.apps.tools.video_library import VideoLibrary
 from studio.apps.tools.videos import Videos
 from studio.assembly.http_dependencies import require_studio_auth
@@ -32,6 +34,7 @@ from studio.runtime.http.problem_details import (
 from studio.runtime.http.request_limit import RequestLimit
 from studio.runtime.http.web import attach_web, load_release
 from studio.runtime.lifecycle.locking import service_lock
+from studio.runtime.time import utc_now
 
 PAGES = ("/tools", "/tools/video-frame-exporter", "/tools/video-downloader")
 
@@ -89,6 +92,7 @@ def create_app(
         title="FPL Tools", docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan
     )
     app.state.database = database
+    app.state.tool_navigation = ToolNavigation(NavigationRecords(database.sessions), clock=utc_now)
     app.state.storage_checked = False
     app.state.identity_public_key = public_key
     app.state.tools_host = ToolsHost(database, identity)

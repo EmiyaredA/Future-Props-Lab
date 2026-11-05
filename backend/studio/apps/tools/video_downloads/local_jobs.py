@@ -6,29 +6,17 @@ import asyncio
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from app.tool_navigation.video_download_contracts import BinaryStatus as BinaryStatus
-from app.tool_navigation.video_download_contracts import (
-    VideoDownloadAssetOut as VideoDownloadAssetOut,
-)
-from app.tool_navigation.video_download_contracts import (
-    VideoDownloadDepsOut as VideoDownloadDepsOut,
-)
-from app.tool_navigation.video_download_contracts import (
-    VideoDownloadJobCreate as VideoDownloadJobCreate,
-)
-from app.tool_navigation.video_download_contracts import VideoDownloadJobOut as VideoDownloadJobOut
-from app.tool_navigation.video_download_dependencies import probe_deps as probe_deps
-from app.tool_navigation.video_download_errors import VideoDownloadError
-from app.tool_navigation.video_download_execution import (
-    _find_media,
-    _read_title,
-    _safe_filename,
-)
-from app.tool_navigation.video_download_execution import (
-    _network_hint as _network_hint,
-)
-from app.tool_navigation.video_download_source import extract_video_url
-from app.tool_navigation.video_download_source import validate_video_url as validate_video_url
+from studio.contracts.tools.video_download import BinaryStatus as BinaryStatus
+from studio.contracts.tools.video_download import VideoDownloadAssetOut as VideoDownloadAssetOut
+from studio.contracts.tools.video_download import VideoDownloadDepsOut as VideoDownloadDepsOut
+from studio.contracts.tools.video_download import VideoDownloadJobCreate as VideoDownloadJobCreate
+from studio.contracts.tools.video_download import VideoDownloadJobOut as VideoDownloadJobOut
+from studio.contracts.tools.video_errors import VideoDownloadError
+from studio.contracts.tools.video_sources import extract_video_url
+from studio.contracts.tools.video_sources import validate_video_url as validate_video_url
+from studio.host.project_files.video_dependencies import probe_deps as probe_deps
+from studio.host.project_files.video_execution import _find_media, _read_title, _safe_filename
+from studio.host.project_files.video_execution import _network_hint as _network_hint
 from studio.runtime.ids import new_id
 from studio.runtime.time import iso_utc, utc_now
 

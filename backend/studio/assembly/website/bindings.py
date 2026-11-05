@@ -9,10 +9,6 @@ from app.console.amadeus.execution import CodeAgentRuns
 from app.console.cloud_control.desktop import DesktopConnection
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
-from app.tool_navigation.video_download import VideoDownloads
-from app.tool_navigation.video_download_dependencies import probe_deps
-from app.tool_navigation.video_download_execution import _run_yt_dlp
-from app.tool_navigation.video_download_library import ingest_library
 from studio.apps.agent_workbench.events import stream_events
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
 from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
@@ -56,6 +52,9 @@ from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetada
 from studio.apps.thought_workshop.legacy_writing import LegacyWritingModels
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
 from studio.apps.thought_workshop.writing import WritingBindings
+from studio.apps.tools.video_downloads.local_jobs import VideoDownloads
+from studio.apps.tools.storage.navigation import NavigationRecords
+from studio.apps.tools.use_cases.navigation import ToolNavigation
 from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
 from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
@@ -65,9 +64,13 @@ from studio.assembly.website.creative import bind_creative
 from studio.assembly.website.integrations import integration_bindings
 from studio.assembly.website.media import bind_media
 from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
+from studio.assembly.website.video_library import ingest_library
 from studio.config import REPO_ROOT
 from studio.config.settings import get_cloud_settings
+from studio.host.project_files.video_dependencies import probe_deps
+from studio.host.project_files.video_execution import _run_yt_dlp
 from studio.runtime.http.rate_limit import AttemptLimiter
+from studio.runtime.time import utc_now
 
 
 def bind_components(app, settings, database):
@@ -79,6 +82,7 @@ def bind_components(app, settings, database):
     )
     app.state.certifiable_projects = CERTIFIABLE_PROJECT_ROOTS
     sessions = database.sessions
+    app.state.tool_navigation = ToolNavigation(NavigationRecords(database.sessions), clock=utc_now)
     bind_media(app, settings, sessions)
     app.state.video_downloads = VideoDownloads(
         root=settings.runtime_path / "tool-navigation" / "video-download",

@@ -365,7 +365,6 @@ Future-Props-Lab/
 │   ├── capabilities/  # 有契约的共享能力：agents、web_access
 │   ├── console/       # 尚未迁出的治理与助手用例
 │   │   └── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
-│   └── tool_navigation/ # 工具目录状态与抖音/B站视频下载；自有 models/schemas/routes
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -463,9 +462,13 @@ Future-Props-Lab/
   这些模块不拥有 Bot、工具调用、知识库、电话或持久化实时会话。
 - 后端不增加通用 `services/`、`domain/`、`platform/` 或 `product/` 分层。需要拆分大型模块
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
-- 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 持久化稳定工具 ID 对应的收藏与
+- 工具目录由 Web 静态注册表维护；后端 `studio/apps/tools/storage/navigation.py` 持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。空间占用与 Codex 模型源页面和主机操作 API 已移除。
-  视频下载用例调用本机 `yt-dlp`/`ffmpeg`，仅允许抖音与哔哩哔哩链接，任务与临时文件保存在运行时目录，可选写入文件库。
+  `use_cases/navigation.py` 定义账号、时钟和原子存储端口，网站及独立服务共用；HTTP 不接收数据库会话。
+  `studio/host/project_files/video_*` 与 `douyin.py` 拥有本机下载和依赖探测，公开形状及来源规则归
+  `studio/contracts/tools/`。网站临时下载生命周期归 `apps/tools/video_downloads/local_jobs.py`，关闭时等待已接受任务；
+  独立服务使用现有持久任务及回执。素材入库由 `assembly/website/video_library.py` 显式连接素材所有者，
+  两种下载状态实现尚待后续统一端口，不因目录迁移视为完成。
 - `web/src/features/cloud-control/` 拥有云控两栏／三栏布局、远程画面与验证界面；文件阅读和命令展示仍由 `web/src/features/agent-workbench/` 拥有，通过显式阅读容器接入云控。`backend/app/console/cloud_control/` 拥有按账号的 TOTP、桌面 Session 与空闲锁定、可信本机配置保存和 guacd 隧道。工作台仍可从 `/agents` 阅读已同步的原端会话。
   API、SSE 与后台采集同时检查 `cloud-control.access`，身份降级后保留原账号副本和检查点。
   当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。

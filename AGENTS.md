@@ -74,6 +74,8 @@
 - 集成中心目录、外部连接与 Skill 操作共用 `studio/apps/integrations/` 实现，依赖由网站和
   独立装配显式提供；不得在目录构造器回退读取全局配置、创建默认加密器或查找全局客户端。
   公共 DTO 和 MCP 能力协议归 `studio/contracts/integrations/`，密钥加密机制归 `runtime/secrets.py`。
+- 工具导航收藏和使用次数通过 `studio/apps/tools/use_cases/navigation.py` 的显式存储与时钟端口执行。
+  存储每操作持有短事务，不向 HTTP 或业务传递会话；次数增量的未知提交不能自动重试。
 - 创作工坊的发布过滤在 `studio/apps/creative_workshop/rules/publication.py` 保持纯函数；
   作者目录、来源、归档和文件设置通过 `CreativeResources` 显式传入，不写入 Session 服务定位表。
   安装用例调用注入端口，兼容网站跨表存储与独立投递分别由装配选择；不得回退读取全局配置。
@@ -81,8 +83,7 @@
   CAS 与回执；并发失败复查原请求回执，取消回滚。HTTP 层只映射领域错误。
 - `backend/studio/` 全树纳入文件和目录行数预算；迁移路径同时更新入口、镜像闭包、打包、
   契约归属和测试。不得用空目录、软链接或永久转发表示迁移完成。
-- `backend/app/` 暂时保留 `capabilities/`、`console/`、
-  `tool_navigation/` 的未归并实现。新业务进入 `studio`；后续迁移须按真实
+- `backend/app/` 暂时保留 `capabilities/`、`console/` 的未归并实现。新业务进入 `studio`；后续迁移须按真实
   所有者分配这些实现，不能把它们整体搬入一个通用兼容包。`app/apps/` 已无业务源码。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、

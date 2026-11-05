@@ -5,7 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
-from app.tool_navigation.video_download import (
+from studio.apps.tools.video_downloads.local_jobs import (
     VideoDownloadDepsOut,
     VideoDownloadError,
     VideoDownloadJobCreate,

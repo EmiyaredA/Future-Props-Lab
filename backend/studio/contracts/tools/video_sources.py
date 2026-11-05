@@ -3,7 +3,7 @@
 import re
 from urllib.parse import parse_qs, urlsplit, urlunsplit
 
-from app.tool_navigation.video_download_errors import VideoDownloadError
+from studio.contracts.tools.video_errors import VideoDownloadError
 
 _ALLOWED_HOST_SUFFIXES = (
     "bilibili.com",

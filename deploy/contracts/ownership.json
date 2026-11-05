@@ -3773,12 +3773,6 @@
       "model": "PlatformSetting"
     },
     {
-      "table": "tool_navigation_items",
-      "service": "tools",
-      "module": "app.tool_navigation.models",
-      "model": "ToolNavigationItem"
-    },
-    {
       "table": "agent_runtime_connection_jobs",
       "service": "agent-runtime",
       "module": "studio.apps.agent_runtime.storage.service_models",
@@ -5115,6 +5109,12 @@
       "service": "thought",
       "module": "studio.apps.thought_workshop.storage.upload_records",
       "model": "ThoughtUploadIntent"
+    },
+    {
+      "table": "tool_navigation_items",
+      "service": "tools",
+      "module": "studio.apps.tools.storage.navigation_models",
+      "model": "ToolNavigationItem"
     },
     {
       "table": "tools_native_jobs",

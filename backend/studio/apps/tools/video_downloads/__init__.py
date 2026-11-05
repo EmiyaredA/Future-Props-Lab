@@ -1,0 +1,1 @@
+"""Local download lifecycle adapters."""

@@ -83,10 +83,10 @@ async def test_tools_library_reveal_is_local_and_replays_a_lost_worker_acknowled
     tmp_path,
     monkeypatch,
 ):
-    from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
     from studio.apps.tools import host as tools_host
     from studio.contracts.identity.claims import HEADER, Actor, issue_context, verify_context
     from studio.contracts.tools.tools_native import OPEN_PATH, VIDEO_DEPS_PATH, ToolsNativeOptions
+    from studio.contracts.tools.video_download import BinaryStatus, VideoDownloadDepsOut
     from studio.host.project_files.tools_worker import ToolsWorker
     from studio.host.transport import NativeTransport
 
@@ -257,7 +257,7 @@ def test_tools_worker_uses_only_the_owned_library_path(tmp_path):
 def test_tools_native_download_workspace_binds_bytes_without_exposing_paths(tmp_path):
     from uuid import uuid4
 
-    from app.tool_navigation.video_download_errors import VideoDownloadError
+    from studio.contracts.tools.video_errors import VideoDownloadError
     from studio.host.project_files.tools_video import VideoWorkspace
 
     calls = []
@@ -288,10 +288,10 @@ def test_tools_native_download_workspace_binds_bytes_without_exposing_paths(tmp_
 async def test_tools_download_artifact_commit_checks_digest_and_replays_after_reopen(tmp_path):
     from hashlib import sha256
 
-    from app.tool_navigation.video_download_errors import VideoDownloadError
     from studio.apps.tools.storage.service_models import ToolsDownloadArtifact, ToolsNativeJob
     from studio.apps.tools.video_files import DownloadFiles
     from studio.contracts.tools.tools_video import DOWNLOAD_VIDEO, VideoDownloadResult
+    from studio.contracts.tools.video_errors import VideoDownloadError
     from studio.runtime.database.sessions import Database
     from studio.runtime.tasks.native_queue import NativeQueue
     from studio.runtime.time import utc_now
@@ -349,11 +349,11 @@ async def test_tools_native_video_replays_delivery_and_serves_owned_bytes(
 ):
     from sqlalchemy import select
 
-    from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
     from studio.apps.asset_library.storage.models import VisualAsset
     from studio.apps.identity.clients.authorization import LiveAuthorization
     from studio.contracts.tools.tools_native import ToolsNativeOptions
     from studio.contracts.tools.tools_video import VIDEO_JOB_PATH
+    from studio.contracts.tools.video_download import BinaryStatus, VideoDownloadDepsOut
     from studio.host.project_files.tools_worker import ToolsWorker
     from studio.host.transport import NativeTransport
 

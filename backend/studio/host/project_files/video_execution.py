@@ -7,9 +7,9 @@ import subprocess
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from app.tool_navigation.video_download_douyin import fetch_douyin_media
-from app.tool_navigation.video_download_errors import VideoDownloadError
-from app.tool_navigation.video_download_source import normalize_host
+from studio.contracts.tools.video_errors import VideoDownloadError
+from studio.contracts.tools.video_sources import normalize_host
+from studio.host.project_files.douyin import fetch_douyin_media
 
 VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".mov", ".m4v"}
 MIME_BY_EXTENSION = {

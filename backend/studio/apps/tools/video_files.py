@@ -7,9 +7,9 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import text
 
-from app.tool_navigation.video_download_errors import VideoDownloadError
 from studio.apps.tools.storage.service_models import ToolsDownloadArtifact, ToolsNativeJob
 from studio.contracts.tools.tools_video import DOWNLOAD_VIDEO, VideoDownloadResult
+from studio.contracts.tools.video_errors import VideoDownloadError
 
 
 class DownloadFiles:

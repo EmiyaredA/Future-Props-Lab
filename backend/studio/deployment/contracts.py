@@ -157,7 +157,7 @@ def table_owner(module, table):
         return "models"
     if module.startswith("studio.apps.integrations."):
         return "integrations"
-    if module.startswith("app.tool_navigation."):
+    if module.startswith("studio.apps.tools."):
         return "tools"
     if module.startswith("app.console.cloud_control."):
         return "remote" if table == "cloud_desktop_preferences" else "identity"

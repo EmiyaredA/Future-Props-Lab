@@ -151,9 +151,9 @@ def test_integrations_owns_models_schemas_and_routes() -> None:
 
 
 def test_tool_navigation_owns_models_schemas_and_routes() -> None:
-    assert (BACKEND_APP / "tool_navigation" / "models.py").is_file()
-    assert (BACKEND_APP / "tool_navigation" / "schemas.py").is_file()
-    assert (BACKEND_APP / "tool_navigation" / "routes.py").is_file()
+    assert (STUDIO_APPS / "tools/storage/navigation_models.py").is_file()
+    assert (CONTRACTS / "tools/navigation.py").is_file()
+    assert (STUDIO_APPS / "tools/transport/navigation_http.py").is_file()
     assert not (BACKEND_APP / "models" / "tool_navigation.py").exists()
     assert not (BACKEND_APP / "schemas" / "tool_navigation.py").exists()
     assert not (BACKEND_APP / "routes" / "tool_navigation.py").exists()

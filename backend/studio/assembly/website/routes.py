@@ -4,8 +4,6 @@ from app.console.routes.amadeus import require_amadeus_session
 from app.console.routes.amadeus import router as amadeus_router
 from app.console.routes.cloud_control import router as cloud_control_router
 from app.console.routes.code_agents import router as code_agents_router
-from app.tool_navigation.routes import router as tool_navigation_router
-from app.tool_navigation.video_download_routes import router as video_download_router
 from studio.apps.agent_workbench.transport.website import router as agent_workbench_router
 from studio.apps.asset_library.transport.website.files import router as file_management_router
 from studio.apps.audio_annotation.routes import router as audio_annotation_router
@@ -66,6 +64,8 @@ from studio.apps.thought_workshop.transport.website.community_tables import (
 from studio.apps.thought_workshop.transport.website.external_sync import (
     router as article_sync_router,
 )
+from studio.apps.tools.transport.download_http import router as video_download_router
+from studio.apps.tools.transport.navigation_http import router as tool_navigation_router
 from studio.apps.video_editor.transport.website.compatibility import router as video_editor_router
 from studio.apps.visual_workshop.acceptance.review_routes import router as visual_review_router
 from studio.apps.visual_workshop.acceptance.routes import router as visual_acceptance_router

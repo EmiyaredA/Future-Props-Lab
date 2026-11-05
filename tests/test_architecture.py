@@ -84,9 +84,12 @@ def _backend_route_files() -> list[Path]:
         BACKEND_APP / "console" / "routes",
         REPO_ROOT / "backend/studio/apps/model_service/transport/website",
         REPO_ROOT / "backend/studio/apps/integrations/transport",
+        REPO_ROOT / "backend/studio/apps/tools/transport/navigation_http.py",
+        REPO_ROOT / "backend/studio/apps/tools/transport/download_http.py",
         *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
     ]
     files = [path for root in roots if root.is_dir() for path in _python_files(root)]
+    files.extend(root for root in roots if root.is_file())
     files.extend((REPO_ROOT / "backend/studio/apps").glob("*/transport/website.py"))
     for package in ("integrations", "tool_navigation", "demo_runtime"):
         candidate = BACKEND_APP / package / "routes.py"
@@ -454,7 +457,7 @@ def test_orm_models_only_depend_on_allowed_runtime_primitives() -> None:
         REPO_ROOT / "backend/studio/apps/asset_library/storage/models.py",
         REPO_ROOT / "backend/studio/apps/integrations/storage/models.py",
         REPO_ROOT / "backend/studio/apps/integrations/storage/external_models.py",
-        BACKEND_APP / "tool_navigation" / "models.py",
+        REPO_ROOT / "backend/studio/apps/tools/storage/navigation_models.py",
         *(BACKEND_APP / "apps").glob("*/models.py"),
         *(
             (BACKEND_APP / "console" / "models").glob("*.py")
@@ -899,7 +902,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/studio/apps/model_service",
         "backend/studio/apps/integrations",
         "backend/studio/apps/model_service/demonstration",
-        "backend/app/tool_navigation",
+        "backend/studio/apps/tools",
         "db/migrations/versions",
         "docs/architecture",
         "docs/operations",

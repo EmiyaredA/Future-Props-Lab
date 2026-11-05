@@ -19,7 +19,7 @@ from urllib.parse import parse_qs, urlencode, urlsplit
 
 import httpx
 
-from app.tool_navigation.video_download_errors import VideoDownloadError
+from studio.contracts.tools.video_errors import VideoDownloadError
 
 _DOUYIN_HOST = "https://www.douyin.com/"
 _DETAIL_API = "https://www.douyin.com/aweme/v1/web/aweme/detail/"

@@ -2,11 +2,11 @@
 
 from pathlib import Path
 
-from app.tool_navigation.video_download import VideoDownloadAssetOut, VideoDownloadJob
-from app.tool_navigation.video_download_errors import VideoDownloadError
-from app.tool_navigation.video_download_execution import MIME_BY_EXTENSION, VIDEO_EXTENSIONS
 from studio.apps.asset_library.storage.uploads import AssetLibrary
+from studio.apps.tools.video_downloads.local_jobs import VideoDownloadAssetOut, VideoDownloadJob
 from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.tools.video_errors import VideoDownloadError
+from studio.host.project_files.video_execution import MIME_BY_EXTENSION, VIDEO_EXTENSIONS
 
 
 async def ingest_library(
