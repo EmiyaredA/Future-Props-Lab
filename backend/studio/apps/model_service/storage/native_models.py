@@ -10,7 +10,7 @@ from datetime import timedelta
 from pathlib import Path
 
 import jwt
-from sqlalchemy import func, select, text
+from sqlalchemy import func, select, text, update
 
 from studio.apps.model_service.generation.outcomes import (
     SUBMISSION_INTERRUPTED_MESSAGE,
@@ -250,6 +250,9 @@ class NativeModelBroker(PollingTaskRunner):
             if prior:
                 if prior.fingerprint != fingerprint:
                     raise OperationError("request_id 已用于其他操作", "idempotency_conflict", 409)
+                if "error" in prior.result:
+                    failure = prior.result["error"]
+                    raise OperationError(failure["message"], failure["code"], failure["status"])
                 return LocalModelOut.model_validate(prior.result)
             state = await self._observation(session)
             if state is None:
@@ -567,6 +570,30 @@ class NativeModelBroker(PollingTaskRunner):
 
     async def recover(self):
         await self.retention.cleanup(startup=True)
+        jobs = NativeModelJob.__table__.c
+        submitted = (
+            select(1)
+            .where(
+                jobs.operation.in_(("models.install", "models.repair")),
+                jobs.payload["model_id"].as_string() == LocalModelInstallation.id,
+                jobs.payload["target_revision"].as_integer() == LocalModelInstallation.revision,
+                jobs.applied_at.is_(None),
+            )
+            .exists()
+        )
+        async with self.database.sessions() as session:
+            await session.execute(
+                update(LocalModelInstallation)
+                .where(LocalModelInstallation.status == "installing", ~submitted)
+                .values(
+                    status="failed",
+                    enabled=False,
+                    error_message="安装已中断，请主动重试",
+                    revision=LocalModelInstallation.revision + 1,
+                    updated_at=utc_now(),
+                )
+            )
+            await session.commit()
 
     async def process_once(self):
         await self.retention.cleanup()

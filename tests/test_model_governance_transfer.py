@@ -24,8 +24,11 @@ from studio.apps.model_service.storage.models.runtime_admission import RuntimeAd
 from studio.apps.model_service.storage.service_models import TemplateSyncAuthority
 from studio.apps.model_service.template_sync import TemplateSynchronization
 from studio.contracts.management.migration_batches import MigrationPlan
+from studio.contracts.model_service.schemas.local_models import LocalModelOut
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+
+MODEL = "qwen3-tts-0.6b-base"
 
 
 def seed_governance(path, admin, owner, cipher):
@@ -73,6 +76,42 @@ def seed_governance(path, admin, owner, cipher):
             """INSERT INTO runtime_admissions (id, user_id, owner_user_id, platform_role)
                VALUES (?, ?, ?, 'admin')""",
             (synchronous, str(admin), str(admin)),
+        )
+        db.execute(
+            """INSERT INTO local_model_installations (
+                 id, status, enabled, progress, revision, updated_at
+               ) VALUES (?, 'installed', 1, 100, 3, '2025-01-01 00:00:00')""",
+            (MODEL,),
+        )
+        snapshot = LocalModelOut(
+            id=MODEL,
+            label="fixture",
+            repository="fixture",
+            license="fixture",
+            model_revision="fixture",
+            download_bytes=1024,
+            required_disk_bytes=2048,
+            compatible=True,
+            status="installed",
+            enabled=True,
+            loaded=False,
+            busy=False,
+            progress=100,
+            revision=1,
+        ).model_dump()
+        db.executemany(
+            """INSERT INTO local_model_operations (
+                 model_id, request_id, fingerprint, result, created_at
+               ) VALUES (?, ?, ?, ?, '2025-01-01 00:00:00')""",
+            [(MODEL, f"安装-{index:02}", "b" * 64, json.dumps(snapshot)) for index in range(32)]
+            + [
+                (
+                    MODEL,
+                    "卸载失败",
+                    "c" * 64,
+                    '{"error":{"message":"无法清理","code":"cleanup_failed","status":409}}',
+                )
+            ],
         )
     return job, synchronous
 
@@ -139,7 +178,7 @@ def test_models_governance_transfer_preserves_targets_and_rejects_live_peer_leas
             + "\n"
         )
 
-    jobs, items, admissions = HISTORY[9:12]
+    jobs, items, admissions, installations, operations = HISTORY[9:14]
     headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
     options = {"module": "studio.assembly.independent.model_service.cli", "prefix": jobs.prefix}
     src_port, dst_port = available_ports()
@@ -175,6 +214,10 @@ def test_models_governance_transfer_preserves_targets_and_rejects_live_peer_leas
         lease = next(pages(client, source, headers, plan, owner, admissions)).batch
         assert item.records[0].owner_user_id == str(owner)
         assert lease.records[0].released_at is not None
+        assert (
+            client.get(f"{source}{installations.prefix}/{owner}", headers=headers).status_code
+            == 409
+        )
         use_key(Fernet.generate_key())
         with target_listener() as destination:
             rejected = submit(destination, jobs, job)
@@ -195,9 +238,15 @@ def test_models_governance_transfer_preserves_targets_and_rejects_live_peer_leas
             assert rejected.json()["code"] == "migration_model_external_admission_active"
             assert submit(destination, admissions, lease).status_code == 200
         with target_listener() as destination:
-            for dataset in (jobs, items, admissions):
+            for dataset, count in (
+                (jobs, 1),
+                (items, 1),
+                (admissions, 2),
+                (installations, 1),
+                (operations, 33),
+            ):
                 report = transfer(client, plan, source, destination, dataset)
-                assert report["record_count"] == (2 if dataset is admissions else 1)
+                assert report["record_count"] == count
                 assert transfer(client, plan, source, destination, dataset) == report
     asyncio.run(verify_recovery(target, admin, job_id, synchronous))
     assert digest(legacy) == plan.source_database_sha256

@@ -338,6 +338,10 @@ uv run python -m scripts.website.migrate_model_catalog --plan "$plan" \
 
 同一命令还导入模板同步历史和额度记录。同步批次以原发起人分组，目标账号保持原值。目标用原配置密钥验证快照中的供应商凭据。缺少新版签名授权的旧同步任务由正常执行器跳过待处理项，保留已完成结果。额度记录校验账号和任务归属。仍占用额度的旧 Visual、视觉验收和 Galgame 转录任务必须在封存前结清，已结清记录随历史导入。Models 启动时释放旧实例的同步请求额度并继续核对自有任务。
 
+本机模型的安装状态、修订及操作回执按部署分区导入。原操作请求重放时返回同一结果或错误。旧安装若无对应的持久原生命令，启动时会记录为中断并等待管理员重试。模型权重与 Python 环境保留在封存运行树，Mac worker 使用明确的恢复目录并重新核对权重，Models 数据卷只接收状态和回执。
+
+隔离 Mac 演练从换目录的副本按清单校验 Qwen3 TTS 0.6B 和 1.7B 权重。0.6B 使用合成参考录音生成 24 kHz WAV，输出 SHA256 与回执一致。Gateway 到真实 Mac worker 的端到端链路仍由完整 Compose 验收覆盖。
+
 ### 封存来源覆盖检查
 
 用 `uv run python -m scripts.website.migration_coverage --snapshot "$sealed_snapshot" --manifest-sha256 "$manifest_sha256" --plan "$plan"` 核对来源实际表和已登记的数据集。报告只列表、归属、分区和记录数。有记录的未迁移表、未归属表和待重建索引会以退出码 2 阻止通过。来源覆盖仍需和目标导入回执、文件摘要及旧站恢复结果一起验收。

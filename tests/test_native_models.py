@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import io
+import json
 import os
 import subprocess
 import sys
@@ -21,7 +22,10 @@ from studio.apps.model_service.generation.outcomes import SUBMISSION_INTERRUPTED
 from studio.apps.model_service.inference.runner import InferenceRunner
 from studio.apps.model_service.local_models.authorization import LocalModelActionAuthorization
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
-from studio.apps.model_service.storage.models.local_models import LocalModelInstallation
+from studio.apps.model_service.storage.models.local_models import (
+    LocalModelInstallation,
+    LocalModelOperation,
+)
 from studio.apps.model_service.storage.models.model_inference import (
     ModelInferenceAsset,
     ModelInferenceTask,
@@ -44,6 +48,7 @@ from studio.host.local_models.models_control import ModelsControl
 from studio.host.local_models.models_transport import ModelsTransport
 from studio.host.local_models.models_worker import ModelsWorker
 from studio.runtime.database.migrations import apply
+from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.sessions import Database
 
 MODEL = "qwen3-tts-0.6b-base"
@@ -443,9 +448,46 @@ async def test_admin_action_preserves_cas_and_original_request_authority(case):
         await stop(worker)
 
 
-async def test_public_or_wrong_purpose_native_management_is_rejected(case):
-    from studio.runtime.database.operation_receipts import OperationError
+async def test_recovery_keeps_native_install_and_replays_legacy_cleanup_error(case):
+    path = "/v1/platform/local-models/" + MODEL + "/actions"
+    authorization = LocalModelActionAuthorization(
+        "alpha", assertion(case, path=path, role="admin", local=True), "POST", path
+    )
+    repair = LocalModelActionIn(request_id="native-repair", expected_revision=1, action="repair")
+    assert (await case.broker.action(MODEL, repair, authorization=authorization)).status == (
+        "installing"
+    )
+    other = "qwen3-tts-1.7b-base"
+    cleanup = LocalModelActionIn(request_id="旧卸载", expected_revision=0, action="uninstall")
+    async with case.database.sessions() as session:
+        session.add(LocalModelInstallation(id=other, status="installing", revision=4))
+        session.add(
+            LocalModelOperation(
+                model_id=MODEL,
+                request_id=cleanup.request_id,
+                fingerprint=hashlib.sha256(
+                    json.dumps(cleanup.model_dump(), sort_keys=True).encode()
+                ).hexdigest(),
+                result={"error": {"message": "无法清理", "code": "cleanup_failed", "status": 409}},
+            )
+        )
+        await session.commit()
+    await case.broker.recover()
+    async with case.database.sessions() as session:
+        pending = await session.get(LocalModelInstallation, MODEL)
+        interrupted = await session.get(LocalModelInstallation, other)
+        assert (pending.status, pending.revision) == ("installing", 2)
+        assert (interrupted.status, interrupted.enabled, interrupted.revision) == (
+            "failed",
+            False,
+            5,
+        )
+    with pytest.raises(OperationError) as replayed:
+        await case.broker.action(MODEL, cleanup, authorization=authorization)
+    assert (replayed.value.code, replayed.value.status) == ("cleanup_failed", 409)
 
+
+async def test_public_or_wrong_purpose_native_management_is_rejected(case):
     path = "/v1/platform/local-models/" + MODEL + "/actions"
     body = LocalModelActionIn(request_id="never-run", expected_revision=1, action="uninstall")
     remote = LocalModelActionAuthorization(

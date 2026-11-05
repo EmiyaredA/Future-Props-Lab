@@ -31,7 +31,12 @@ class DatasetTransfer:
 def project_datasets(prefix, entries):
     return tuple(
         DatasetTransfer(
-            item.name, f"{prefix}/{item.suffix}", item.page, item.key, page_size=item.page_size
+            item.name,
+            f"{prefix}/{item.suffix}",
+            item.page,
+            item.key,
+            platform=getattr(item, "platform", False),
+            page_size=item.page_size,
         )
         for item in entries
     )

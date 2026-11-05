@@ -34,6 +34,7 @@ class ProjectDataset:
     parent_key: str = "project_id"
     materialize: Callable | None = None
     owner_key: str = "owner_user_id"
+    platform: bool = False
 
     @property
     def suffix(self):
@@ -61,6 +62,9 @@ def blocked(code):
 
 
 async def inventory(sessions, plan, dataset):
+    if dataset.platform:
+        async with sessions() as session:
+            return {"record_count": await session.scalar(dataset.select(func.count()))}
     owner = dataset.owner_column
     async with sessions(info={"allow_system_reads": True}) as session:
         if dataset.project is not None and dataset.owns_record:
@@ -85,12 +89,10 @@ async def inventory(sessions, plan, dataset):
 
 async def read_page(sessions, plan, dataset, owner, after):
     key = dataset.key_for(dataset.model)
-    query = (
-        dataset.select(dataset.model)
-        .where(dataset.owner_column == str(owner), key > (after or ""))
-        .order_by(key)
-        .limit(dataset.page_size + 1)
-    )
+    query = dataset.select(dataset.model).where(key > (after or ""))
+    if not dataset.platform:
+        query = query.where(dataset.owner_column == str(owner))
+    query = query.order_by(key).limit(dataset.page_size + 1)
     try:
         async with sessions(info={"owner_user_id": str(owner)}) as session:
             rows = list(await session.scalars(query))
@@ -141,7 +143,7 @@ async def ingest(sessions, dataset, receipt_model, batch):
                 if dataset.materialize is not None
                 else record.model_dump()
             )
-            if dataset.owns_record:
+            if dataset.owns_record and not dataset.platform:
                 values[dataset.owner_key] = owner
             session.add(dataset.model(**values))
             if dataset.projection is not None:
@@ -169,6 +171,7 @@ def mount_project_history(app, plan, sessions, prefix, datasets, receipt_model, 
             page=partial(read_page, sessions, plan, dataset),
             ingest=partial(ingest, sessions, dataset, receipt_model) if source is None else None,
             source=source,
+            platform=dataset.platform,
         )
 
 

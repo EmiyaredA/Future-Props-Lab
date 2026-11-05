@@ -8,6 +8,7 @@ from pydantic import Field, JsonValue
 from studio.apps.model_service.storage.migration_governance import DATASETS as GOVERNANCE
 from studio.apps.model_service.storage.migration_governance import bind_governance
 from studio.apps.model_service.storage.migration_inference import DATASETS as INFERENCE
+from studio.apps.model_service.storage.migration_local_models import DATASETS as LOCAL_MODELS
 from studio.apps.model_service.storage.migration_playground import DATASETS as PLAYGROUND
 from studio.apps.model_service.storage.migration_playground_tasks import DATASETS as TEST_TASKS
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
@@ -47,8 +48,8 @@ OWNED_HISTORY = (
     *PLAYGROUND,
     *TEST_TASKS,
 )
-DATASETS = (*OWNED_HISTORY, *GOVERNANCE)
+DATASETS = (*OWNED_HISTORY, *GOVERNANCE, *LOCAL_MODELS)
 
 
 def maintenance_datasets(plan, *, legacy, cipher):
-    return (*OWNED_HISTORY, *bind_governance(plan, legacy=legacy, cipher=cipher))
+    return (*OWNED_HISTORY, *bind_governance(plan, legacy=legacy, cipher=cipher), *LOCAL_MODELS)
