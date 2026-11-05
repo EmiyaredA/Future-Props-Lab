@@ -42,8 +42,7 @@ async def verify(
     db: SessionDep,
     principal: StudioAuth,
 ):
-    access.require_enabled(
-        principal, local=getattr(request.state, "website_local", False), desktop=body.desktop
-    )
+    local = getattr(request.state, "website_local", False)
+    access.require_enabled(principal, local=local, desktop=body.desktop)
     require_recent_reauthentication(principal)
-    await access.verify(db, principal, body.code, desktop=body.desktop)
+    await access.verify(db, principal, body.code, desktop=body.desktop, public=not local)

@@ -57,8 +57,8 @@ class CloudSetupWorker:
             assert_setup_account(settings, owner)
             if lease.operation == SAVE:
                 body = CloudSetupUpdate.model_validate(lease.payload)
-                self.require_factor(settings, body, enrolled)
-                await self.save(lease, owner, settings, body)
+                self.require_factor(body, enrolled)
+                await self.save(lease, owner, body)
                 await asyncio.to_thread(self.synchronize)
             raw = config_bytes(self.config)
             settings = Settings(_config_file=self.config, _read_environment=False)
@@ -76,15 +76,11 @@ class CloudSetupWorker:
             )
 
     @staticmethod
-    def require_factor(settings, body, enrolled):
-        if (
-            body.public_enabled
-            and not settings.fpl_cloud_control_public_desktop_vnc_only
-            and not enrolled
-        ):
+    def require_factor(body, enrolled):
+        if body.public_enabled and not enrolled:
             raise HTTPException(409, "请先在本机登记验证器")
 
-    async def save(self, lease, owner, settings, body):
+    async def save(self, lease, owner, body):
         edit = setup_edit(owner, body)
         loop = asyncio.get_running_loop()
 
@@ -92,7 +88,7 @@ class CloudSetupWorker:
             # The CAS lock is held here; confirm the exact browser request just
             # before applying the authorized fields.
             confirmed = asyncio.run_coroutine_threadsafe(self.authority(lease), loop).result(5)
-            self.require_factor(settings, body, confirmed)
+            self.require_factor(body, confirmed)
             edit(document)
 
         await asyncio.to_thread(replace_config, self.config, body.revision, update)

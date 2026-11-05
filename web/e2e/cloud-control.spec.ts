@@ -488,7 +488,7 @@ test("cloud settings only configure desktop connection on wide and narrow screen
     enabled: true,
     public_enabled: false,
     public_desktop_vnc_only: true,
-    enrolled: false,
+    enrolled: true,
     guacd_ready: true,
     screen_sharing_ready: true,
   };

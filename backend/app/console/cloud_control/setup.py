@@ -68,11 +68,7 @@ async def save_setup(db, principal, body):
     settings = get_cloud_settings()
     assert_setup_account(settings, principal.user_id)
     owner = principal.user_id
-    if (
-        body.public_enabled
-        and not settings.fpl_cloud_control_public_desktop_vnc_only
-        and not await enrolled(db, owner)
-    ):
+    if body.public_enabled and not await enrolled(db, owner):
         raise HTTPException(409, "请先在本机登记验证器")
     await db.rollback()
     await asyncio.to_thread(replace_config, CONFIG_FILE, body.revision, setup_edit(owner, body))

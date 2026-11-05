@@ -387,6 +387,9 @@ async def test_local_project_picker_keeps_recent_projects_private(monkeypatch, t
         path = f"{WORKBENCH}/chats/{opened.json()['id']}"
         remote.cookies.update(client.cookies)
         remote.headers["X-CSRF-Token"] = client.headers["X-CSRF-Token"]
+        assert (
+            await remote.post("/v1/auth/reauth", json={"password": PASSWORD})
+        ).status_code == 204
         assert (await remote.get(catalog)).json()["recent_projects"] == []
         assert (
             await remote.post(WORKBENCH + "/chats", json={**body, "project_id": "legacy"})
@@ -638,6 +641,17 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
     configure(monkeypatch, owner)
     settings = get_settings()
     if not local:
+        enroll_client, owner = await admin_client()
+        configure(monkeypatch, owner)
+        async with aclosing(enroll_client):
+            key = (await enroll_client.post(CLOUD + "/totp/enroll")).json()["secret"]
+            counter = int(access.time.time()) // 30
+            confirmed = await enroll_client.post(
+                CLOUD + "/totp/confirm", json={"code": access.totp(key, counter)}
+            )
+            assert confirmed.status_code == 204
+            client.cookies = enroll_client.cookies
+            client.headers["X-CSRF-Token"] = client.cookies["fpl_csrf"]
         monkeypatch.setattr(settings, "fpl_cloud_control_public_desktop_vnc_only", True)
         monkeypatch.setattr(settings, "fpl_remote_web_origin", "https://test")
     received = asyncio.Queue()
@@ -667,8 +681,16 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
     async with server, aclosing(client), asyncio.timeout(10):
         if not local:
             status = (await client.get(CLOUD + "/status")).json()
-            assert status["desktop_configured"] and status["desktop_authorized"]
+            assert status["desktop_configured"] and not status["desktop_authorized"]
             assert not status["enabled"] and not status["enrolled"]
+            auth = {"code": access.totp(key, counter + 1), "desktop": True}
+            premature = await client.post(CLOUD + "/totp/verify", json=auth)
+            assert premature.status_code == 403
+            assert premature.json()["code"] == "reauthentication_required"
+            assert (
+                await client.post("/v1/auth/reauth", json={"password": PASSWORD})
+            ).status_code == 204
+            assert (await client.post(CLOUD + "/totp/verify", json=auth)).status_code == 204
             catalog = (await client.get(WORKBENCH + "/execution/catalog")).json()
             assert not catalog["enabled"]
             monkeypatch.setattr(settings, "fpl_cloud_control_public_enabled", False)
@@ -811,15 +833,13 @@ async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tm
             "host_label": "Mac test",
             "public_enabled": False,
         }
-        if not vnc_only:
-            blocked = await client.put(CLOUD + "/settings", json={**body, "public_enabled": True})
-            assert blocked.status_code == 409
-        body["public_enabled"] = vnc_only
+        blocked = await client.put(CLOUD + "/settings", json={**body, "public_enabled": True})
+        assert blocked.status_code == 409
         saved = await client.put(CLOUD + "/settings", json=body)
         assert saved.status_code == 200, saved.text
         assert "secrets_key" not in saved.text
         assert saved.json()["guacd_ready"]
-        assert saved.json()["public_enabled"] is vnc_only
+        assert saved.json()["public_enabled"] is False
         assert "# keep" in file.read_text()
         assert "projects" not in first and "projects" not in saved.json()
         assert config.get_cloud_settings().fpl_cloud_control_projects["legacy"].user_ids == [
@@ -897,6 +917,9 @@ async def test_public_desktop_proof_outlives_agent_unlock_until_session_logout(m
         remote.headers["X-CSRF-Token"] = remote.cookies["fpl_csrf"]
         login = {"password": "temporary"}
         assert (await remote.post(CLOUD + "/desktop/connect", json=login)).status_code == 403
+        assert (
+            await remote.post("/v1/auth/reauth", json={"password": PASSWORD})
+        ).status_code == 204
         result = await remote.post(
             CLOUD + "/totp/verify",
             json={

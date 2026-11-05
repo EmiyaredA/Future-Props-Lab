@@ -68,10 +68,11 @@ async def desktop_authorized(db, principal, *, local):
     if not _allowed(settings, principal, local=local, desktop=True):
         return False
     query = session_query(principal)
-    if not local and not settings.fpl_cloud_control_public_desktop_vnc_only:
+    if not local:
         query = query.join(CloudUnlock, CloudUnlock.session_id == AuthSession.id).where(
             CloudUnlock.owner_user_id == principal.user_id,
             CloudUnlock.desktop_verified.is_(True),
+            AuthSession.reauthenticated_at > AuthSession.created_at,
         )
     return bool(await db.scalar(query))
 
@@ -79,9 +80,12 @@ async def desktop_authorized(db, principal, *, local):
 async def unlock_expiry(db, principal, *, local, settings=None):
     if not _allowed(settings or get_cloud_settings(), principal, local=local, desktop=False):
         return 0
+    sessions = session_query(principal)
+    if not local:
+        sessions = sessions.where(AuthSession.reauthenticated_at > AuthSession.created_at)
     row = await db.scalar(
         select(CloudUnlock.expires_at).where(
-            CloudUnlock.session_id.in_(session_query(principal)),
+            CloudUnlock.session_id.in_(sessions),
             CloudUnlock.owner_user_id == principal.user_id,
         )
     )
@@ -127,9 +131,17 @@ def totp(secret, counter):
     return f"{value % 1000000:06}"
 
 
-async def verify(db, principal, code, *, enroll=False, desktop=False):
+async def verify(db, principal, code, *, enroll=False, desktop=False, public=False):
     owner = principal.user_id
     await begin_factor_update(db, principal)
+    if (
+        public
+        and await db.scalar(
+            session_query(principal).where(AuthSession.reauthenticated_at > AuthSession.created_at)
+        )
+        is None
+    ):
+        raise HTTPException(403, {"code": "reauthentication_required", "message": "请重新验证密码"})
     row = await db.get(CloudFactor, owner)
     now = int(time.time())
     if not row or not (row.pending_secret if enroll else row.secret):
