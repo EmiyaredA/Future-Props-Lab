@@ -61,7 +61,9 @@ test("knowledge creation dialogs own their styles on a cold route and stay insid
   expect((await created).ok()).toBe(true);
   await expect(dialog).not.toBeVisible();
   await expect(
-    page.getByRole("heading", { name: "窄屏知识库", exact: true }),
+    page
+      .getByRole("navigation", { name: "文档路径" })
+      .getByRole("button", { name: "窄屏知识库", exact: true }),
   ).toBeVisible();
 });
 

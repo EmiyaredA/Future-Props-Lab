@@ -8,9 +8,11 @@ test("all static surfaces fit their viewport", async ({ page }, info) => {
   for (const path of staticPaths) {
     await page.goto(path);
     await expect(page.locator("#root")).not.toBeEmpty();
-    await expect(page.getByRole("heading").first()).toBeVisible({
-      timeout: 15000,
-    });
+    const ready =
+      path === "/files"
+        ? page.getByRole("button", { name: "上传文件", exact: true })
+        : page.getByRole("heading").first();
+    await expect(ready, `页面入口 ${path}`).toBeVisible({ timeout: 15000 });
     for (const size of process.env.FPL_RESPONSIVE_SCAN
       ? [viewports[0], viewports[4]]
       : viewports) {
