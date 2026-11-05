@@ -1102,3 +1102,5 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 Models 的 `storage/visual_generation_files.py` 拥有生成任务的账号输入暂存和输出目录、文件标识与符号链接检查；`visual_generation_batches.py` 拥有账号会话内的批次身份／摘要读取。`visual/visual_generation_intake.py`、Runner、Results 与 Retention 分别显式接收自己的依赖，结果读取不加载或调用 Runner，执行不依赖提交组件。预检只接收所需原件客户端及临时上传配置；统一 Driver 继续裁决任务终态，短事务与未知提交保留语义不变。
 
 `studio/runtime/files/raster.py` 是栅格缩略图的唯一解码、方向校正、透明 WebP 和原子落盘实现；每个网站／独立应用装配自己的有界实例，头像使用独立额度。Assets 的 `previews/thumbnails.py` 只拥有账号版本缓存路径与素材错误映射。模型附件／结果、创作封面与社区文件显式接收预览器，不访问全局实例；旧 Identity `profile_images.py` 转发模块已删除。头像路径、暂存、提交、删除与启动清理由当前应用配置决定。解码取消经过公共 I/O 完成屏障，防止重复取消提前释放并发槽。
+
+架构验收集中在 `tests/architecture/`：`test_repository.py` 负责依赖方向、源码体量与工程入口，`test_ownership.py` 检查目录所有权，`test_components.py` 守住已迁移组件的显式装配与纯契约边界。pytest 从 `tests/` 递归发现这些用例，继续使用根级隔离配置 fixture。其余测试目录按后续业务批次归位。

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 BACKEND_APP = REPO_ROOT / "backend" / "app"
 STUDIO_APPS = REPO_ROOT / "backend/studio/apps"
 CONTRACTS = REPO_ROOT / "backend/studio/contracts"
