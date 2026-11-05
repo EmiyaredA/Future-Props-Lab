@@ -135,6 +135,7 @@ class AssistantModelRuns:
                 model_signature=fixed_connection_signature(pair),
                 model_plan=model.model_dump(),
                 request_summary=request.request_summary,
+                credential_attribution=snapshot_from_actor(actor).as_kwargs(),
                 trace_id=request.trace_id,
                 lease_id=lease,
             )
@@ -246,10 +247,16 @@ class AssistantModelRuns:
             await db.commit()
 
     async def settle(self, actor, request):
-        owner = actor.user_id
+        return await self.settle_for(
+            actor.user_id, request, attribution=snapshot_from_actor(actor).as_kwargs()
+        )
+
+    async def settle_for(self, owner, request, *, trace_id=None, attribution=None):
         async with self.sessions(info={"owner_user_id": owner}) as db:
             await db.execute(text("BEGIN IMMEDIATE"))
             row = await self.row(db, owner, request)
+            if trace_id is not None and row.trace_id != trace_id:
+                raise ProjectResourceError("模型对话运行不存在")
             if row.settlement is not None:
                 if row.settlement_sha256 != request.digest:
                     raise conflict("模型对话已结算", "visual_assistant_settlement_conflict")
@@ -288,7 +295,7 @@ class AssistantModelRuns:
                 status="success" if request.status == "completed" else "error",
                 error_message=request.error_message,
                 **row.usage,
-                **snapshot_from_actor(actor).as_kwargs(),
+                **(row.credential_attribution or attribution or {}),
             )
             row.state = "settled"
             row.settlement_sha256 = request.digest

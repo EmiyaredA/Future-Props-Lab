@@ -20,6 +20,7 @@ from fpl_runtime.asset_references import PrepareReferenceChange
 from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
 from fpl_runtime.project_errors import ProjectResourceError
 
+from .assistant_dispatch_records import VisualAssistantDispatch
 from .canvas_writes import conflict
 from .generation_dispatch_records import VisualGenerationDispatch
 from .projects import Projects
@@ -83,6 +84,14 @@ class ProjectDeletion:
         )
         if pending is not None:
             raise ProjectResourceError("生成期间不能删除项目", "conversation_busy", 409)
+
+        settling = await self.session.scalar(
+            select(VisualAssistantDispatch.run_id)
+            .where(VisualAssistantDispatch.project_id == project_id)
+            .limit(1)
+        )
+        if settling is not None:
+            raise ProjectResourceError("项目对话仍在结算", "conversation_busy", 409)
 
     async def _conversations(self, project_id):
         return list(

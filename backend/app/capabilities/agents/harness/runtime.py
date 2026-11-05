@@ -42,12 +42,13 @@ class ReactiveToolLoop:
         definition: AgentDefinition,
         scope: dict[str, object],
         approvals: ApprovalBroker | None = None,
+        run_id: str | None = None,
     ) -> None:
         self.adapter = adapter
         self.definition = definition
         self.scope = dict(scope)
         self.approvals = approvals or approval_broker
-        self.run_id = str(uuid4())
+        self.run_id = run_id or str(uuid4())
         self._abort = asyncio.Event()
         self._running = False
         self._listeners: list[EventListener] = []

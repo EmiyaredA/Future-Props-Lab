@@ -50,12 +50,13 @@ def assistant_grant(grant):
             MODEL_TARGET,
         ):
             return True
-        target = input_target(grant.target_method, grant.target_path)
-        return bool(
-            target
-            and target.groups()[:2] == message.groups()
-            and (grant.purpose, grant.target_service) == (INPUT_PURPOSE, "assets")
-        )
+        if (grant.purpose, grant.target_service) == (INPUT_PURPOSE, "assets"):
+            target = input_target(grant.target_method, grant.target_path)
+        elif (grant.purpose, grant.target_service) == (ASSET_PURPOSE, "assets"):
+            target = attachment_target(grant.target_method, grant.target_path)
+        else:
+            return False
+        return bool(target and target.groups()[:2] == message.groups())
     source = conversation_source(grant.source_path)
     if source is None:
         return False
@@ -146,13 +147,25 @@ class AttachmentImage(BaseModel):
     byte_size: int = Field(ge=1)
 
 
-class AttachmentInput(AttachmentMetadata):
+class AttachmentContext(AttachmentMetadata):
     original_filename: str
     media_kind: str
+
+
+class AttachmentInput(AttachmentContext):
     image: AttachmentImage | None = None
     text: str = ""
     warning: str | None = None
 
 
+class CanvasAssetContextQuery(LibraryAssetQuery):
+    asset_ids: list[str] = Field(min_length=1, max_length=64)
+
+    def path(self, project_id, conversation_id):
+        return f"{INPUT_PREFIX}/{project_id}/{conversation_id}/context/{self.digest}"
+
+
 def input_target(method, path):
-    return method == "POST" and re.fullmatch(rf"{INPUT_PREFIX}/({ID})/({ID})/({DIGEST})", path)
+    return method == "POST" and re.fullmatch(
+        rf"{INPUT_PREFIX}/({ID})/({ID})/(?:context/)?({DIGEST})", path
+    )

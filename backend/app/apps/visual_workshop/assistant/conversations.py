@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from uuid import uuid4
 
@@ -11,6 +10,7 @@ from app.apps.visual_workshop.assistant.actions import action_out
 from app.apps.visual_workshop.assistant.attachments import (
     VisualAssistantAttachmentMixin,
 )
+from app.apps.visual_workshop.assistant_input_values import canvas_context
 from app.apps.visual_workshop.assistant_values import message_out as message_out
 from app.apps.visual_workshop.models import (
     VisualAssistantAction,
@@ -47,9 +47,6 @@ from app.llm.providers.streaming import ChatMessageInput
 from app.runtime.config import Settings, get_settings
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now
-
-CANVAS_CONTEXT_LIMIT = 32_000
-TEXT_NODE_LIMIT = 4_000
 
 
 class AssistantNotFoundError(Exception):
@@ -413,55 +410,7 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
                     .all()
                 )
             }
-        serialized: list[str] = []
-        used = 0
-        omitted = 0
-        for node in nodes:
-            if not isinstance(node, dict):
-                continue
-            compact: dict[str, object] = {
-                "id": node.get("id"),
-                "kind": node.get("kind"),
-                "title": node.get("title"),
-                "position": node.get("position"),
-            }
-            if node.get("kind") == "text":
-                text = str(node.get("text") or "")
-                compact["text"] = text[:TEXT_NODE_LIMIT]
-                if len(text) > TEXT_NODE_LIMIT:
-                    compact["text_truncated"] = True
-            asset_id = str(node.get("asset_id") or "")
-            if asset_id:
-                asset = assets.get(asset_id)
-                compact["asset"] = {
-                    "id": asset_id,
-                    "name": asset.display_name if asset else "素材不可用",
-                    "media_kind": asset.media_kind if asset else node.get("kind"),
-                    "mime_type": asset.mime_type if asset else None,
-                    "byte_size": asset.byte_size if asset else None,
-                }
-            if node.get("generation_task_id"):
-                compact["generation_task_id"] = node.get("generation_task_id")
-            item = json.dumps(compact, ensure_ascii=False, separators=(",", ":"))
-            if used + len(item) > CANVAS_CONTEXT_LIMIT:
-                omitted += 1
-                continue
-            serialized.append(item)
-            used += len(item)
-        suffix = f"\n另有 {omitted} 个节点因上下文长度限制未列出。" if omitted else ""
-        snapshot = "[" + ",".join(serialized) + "]" + suffix
-        system = (
-            "你是 Future Props Lab 视觉工坊中的项目对话助手。"
-            "你可以理解画布和素材、提出创作建议、检查方案并给出清晰步骤。"
-            "你不能直接修改画布，也不能声称已经创建、删除或更新了节点；"
-            "当用户要求修改时，请明确提供可执行建议。\n"
-            f"当前项目：{project.title}\n当前画布节点：{snapshot}"
-        )
-        return system, {
-            "node_count": len(nodes),
-            "included_nodes": len(serialized),
-            "omitted": omitted,
-        }
+        return canvas_context(project.title, nodes, assets)
 
     async def _position(self, conversation_id: str) -> int:
         current = (

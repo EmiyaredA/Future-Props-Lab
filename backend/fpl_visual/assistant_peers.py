@@ -11,15 +11,22 @@ from fpl_runtime.delegation import RequestGrant
 from fpl_runtime.project_errors import ProjectResourceError
 from fpl_runtime.visual_assistant import (
     ASSET_PURPOSE,
+    INPUT_PURPOSE,
     MODEL_PURPOSE,
     MODEL_TARGET,
+    AttachmentContext,
+    AttachmentInput,
+    AttachmentInputQuery,
     AttachmentMetadata,
     AttachmentQuery,
+    CanvasAssetContextQuery,
 )
 
 from .catalog_http import lookup
 
 ATTACHMENTS = TypeAdapter(list[AttachmentMetadata])
+INPUTS = TypeAdapter(list[AttachmentInput])
+CONTEXT = TypeAdapter(list[AttachmentContext])
 
 
 class AssistantPeers:
@@ -70,13 +77,15 @@ class AssistantPeers:
                 "对话素材暂不可读", "conversation_assets_unavailable", 503
             ) from exc
 
-    async def prepare(self, session, project_id, conversation_id, expected_revision, request_id):
+    async def prepare(
+        self, session, project_id, conversation_id, expected_revision, request_id, *, retained=()
+    ):
         change = PrepareReferenceChange(
             request_id=request_id,
             resource_kind="conversation",
             resource_id=conversation_id,
             expected_resource_revision=expected_revision,
-            asset_ids=[],
+            asset_ids=sorted(retained),
             visual_conversation_project=project_id,
         )
         try:
@@ -99,3 +108,88 @@ class AssistantPeers:
             raise ProjectResourceError(
                 "对话素材引用结果未确认", "retention_unconfirmed", 503
             ) from exc
+
+    async def input_query(self, project_id, conversation_id, query, projection, *, exact):
+        peer = self.request.app.state.capabilities
+        try:
+            target = query.path(project_id, conversation_id)
+            grant = RequestGrant(
+                "visual",
+                INPUT_PURPOSE,
+                self.request.method,
+                self.request.url.path,
+                "assets",
+                "POST",
+                target,
+            )
+            token = await peer.authorize_request(self.assertion, grant)
+            response = await peer.client.post(
+                "http://assets:8080" + target,
+                headers={HEADER: token},
+                json=query.model_dump(),
+                timeout=httpx.Timeout(60, connect=5),
+            )
+            if response.status_code in (401, 403, 404, 409, 413, 422):
+                error = response.json()
+                raise ProjectResourceError(
+                    error.get("title") or "附件输入不可用",
+                    error.get("code") or "assistant_asset_unavailable",
+                    response.status_code,
+                )
+            response.raise_for_status()
+            rows = projection.validate_json(response.content)
+            actual = [row.id for row in rows]
+            if (
+                actual != sorted(set(actual))
+                or not set(actual).issubset(query.asset_ids)
+                or (exact and actual != query.asset_ids)
+            ):
+                raise ValueError("附件投影不符合已授权的集合")
+            return {row.id: row for row in rows}
+        except CapabilityDenied as exc:
+            raise ProjectResourceError(
+                "附件授权已撤销", "assistant_asset_denied", exc.status
+            ) from exc
+        except (CapabilityUnavailable, httpx.HTTPError, ValueError) as exc:
+            raise ProjectResourceError(
+                "附件输入暂不可用", "assistant_asset_unavailable", 503
+            ) from exc
+
+    async def input_assets(self, project_id, conversation_id, asset_ids):
+        return await self.project_inputs(
+            project_id,
+            conversation_id,
+            asset_ids,
+            AttachmentInputQuery,
+            INPUTS,
+            batch_size=5,
+            exact=True,
+        )
+
+    async def canvas_context(self, project_id, conversation_id, asset_ids):
+        return await self.project_inputs(
+            project_id,
+            conversation_id,
+            asset_ids,
+            CanvasAssetContextQuery,
+            CONTEXT,
+            batch_size=64,
+            exact=False,
+        )
+
+    async def project_inputs(
+        self, project_id, conversation_id, asset_ids, query, projection, *, batch_size, exact
+    ):
+        result = {}
+        identities = sorted(set(asset_ids))
+        for start in range(0, len(identities), batch_size):
+            result.update(
+                await self.input_query(
+                    project_id,
+                    conversation_id,
+                    query(asset_ids=identities[start : start + batch_size]),
+                    projection,
+                    exact=exact,
+                )
+            )
+        return result

@@ -180,6 +180,8 @@ Models 的 `assistant_model_runs.py` 负责 Visual 助手的提供方执行租�
 
 Assets 的 `conversation_files.py` 按对话保留集投影助手附件内容。共享 `app/capabilities/asset_store/assistant_media.py` 负责文本、PDF 和 AVIF 的原件读取与兼容限制。Visual 的源回执确定新引用，历史附件仍保留原归属。
 
+Visual 的 `assistant_submission.py` 冻结对话和画布版本，准备附件与模型额度后提交消息与源回执。`assistant_dispatches.py` 在 Visual 持有消息结算，使用短时服务签名向 Models 补交原调用的日志结果。源运行只保存归属、范围和结算数据。
+
 Visual 的 Canvas、工程与历史输出由 `fpl_visual/migration_application.py` 导出及导入。 Visual 与 Galgame 复用 `fpl_runtime/edit_receipt_migration.py`，在 Canvas 或 Story 导入后分账号保留历史操作回执和原响应。迁移阻止跨归属、缺少源文档或回执版本超出当前文档的记录。Canvas 文件保留集合包含当前节点及旧输出，Assets 逐文件校验回执后提交。库内放置通过 Assets 维护入口保留原名称、目录、标识和版本。 Visual 的 `migration_generation.py` 逐账号保留历史生成任务和批次，核对画布或输出的任务来源与批次成员归属。 `migration_acceptance.py` 保留验收定义、历史结果、修复草稿和证据关联，Assets 在核对原件与工程范围后重建验收素材保留集合。
 
 Visual 助手的对话、消息和操作记录由 `fpl_visual/conversations.py` 查询。模型选项由 Models 提供账号投影，附件元数据由 Assets 按项目、对话、精确 ID 和保留引用核验。新建及删除对话与素材引用回执共用 Visual 数据事务。 `fpl_visual/migration_assistant.py` 逐条迁移历史对话、消息、附件和操作。Assets 在画布投影与原件摘要通过后恢复同工程的对话素材引用。 Visual 删除项目时由 `fpl_visual/project_deletion.py` 核对项目版本、画布和对话范围，提交删除与恢复回执。Assets 的 `visual_project_removal.py` 在确认回执后清除画布与对话引用、项目放置和私有原件，保留文件库原件。项目文件、放置和分段交接发布在 Assets 写事务中检查删除准备。 Visual 的素材节点与输出上传由 `fpl_visual/uploads.py` 准备画布引用，Assets 的 `visual_upload_stages.py` 流式验证长度与 SHA256，并在画布事务确认后发布原件和引用。GIF 检查版本与 MP4 同批发布；暂存失败和源回滚由 Assets 的日志与清理生命周期处理。

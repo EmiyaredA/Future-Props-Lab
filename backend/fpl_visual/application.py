@@ -22,6 +22,7 @@ from fpl_runtime.reference_runtime import install_reference_runtime
 from fpl_runtime.request_limit import RequestLimit
 from fpl_runtime.timed_peer import TimedPeer
 from fpl_runtime.video_segment_handoff import VISUAL_HANDOFFS, asset_peer, visual_peer
+from fpl_runtime.visual_assistant_model import SETTLEMENT_DOMAIN
 from fpl_runtime.visual_generation import PEER_DOMAIN
 from fpl_runtime.visual_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, ARCHIVE_PURPOSE, IMPORT
 from fpl_runtime.web import attach_web, load_release
@@ -29,6 +30,7 @@ from fpl_runtime.web import attach_web, load_release
 from .acceptance_nodes_http import router as acceptance_nodes_router
 from .acceptance_options import router as acceptance_options_router
 from .acceptance_samples_http import router as samples_router
+from .assistant_dispatches import AssistantDispatches
 from .assistant_http import router as assistant_router
 from .catalog_http import acceptance as acceptance_catalog_router
 from .catalog_http import generation as generation_catalog_router
@@ -72,6 +74,7 @@ def create_app(
     schema_path=None,
     archive_key=None,
     generation_key=None,
+    assistant_settlement_key=None,
 ):
     if bool(video_segment_key) != bool(segment_assets_key):
         raise ValueError("Visual 分段交接需要独立的 Video 和 Assets 对等凭据")
@@ -120,6 +123,21 @@ def create_app(
     app.state.capabilities = CapabilityClient(
         service="visual", credential=credential, catalog=catalog, transport=transport
     )
+    if assistant_settlement_key is not None and assistant_settlement_key in {
+        credential,
+        generation_key,
+        archive_key,
+        video_segment_key,
+        segment_assets_key,
+    }:
+        raise ValueError("Visual 对话结算凭据必须独立")
+    settlement_peer = (
+        TimedPeer(assistant_settlement_key, domain=SETTLEMENT_DOMAIN)
+        if assistant_settlement_key is not None
+        else None
+    )
+    assistant_dispatches = AssistantDispatches(app.state, settlement_peer)
+    app.state.assistant_dispatches = assistant_dispatches
     if generation_key is not None and generation_key in {
         credential,
         archive_key,
@@ -191,6 +209,8 @@ def create_app(
                 if run_worker:
                     await composition_runner.start()
                     await review_runner.start()
+                    if settlement_peer is not None:
+                        await assistant_dispatches.start()
                     if app.state.generation_runner is not None:
                         await app.state.generation_runner.start()
                     if archive_delivery is not None:
@@ -199,6 +219,7 @@ def create_app(
             finally:
                 if app.state.generation_runner is not None:
                     await app.state.generation_runner.stop()
+                await assistant_dispatches.stop()
                 await review_runner.stop()
                 await composition_runner.stop()
                 if archive_delivery is not None:

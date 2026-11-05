@@ -5207,6 +5207,12 @@
       "model": "VideoMigrationReceipt"
     },
     {
+      "table": "visual_assistant_dispatches",
+      "service": "visual",
+      "module": "fpl_visual.assistant_dispatch_records",
+      "model": "VisualAssistantDispatch"
+    },
+    {
       "table": "visual_generation_decisions",
       "service": "visual",
       "module": "fpl_visual.generation_dispatch_records",

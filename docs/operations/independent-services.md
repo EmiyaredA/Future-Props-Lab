@@ -539,6 +539,8 @@ Visual 生成任务与批次需要 `deploy/visual-generation.compose.yaml`。将
 
 Visual 助手的私网模型轮次需要 Models 的 0019 迁移。Models 绑定账号、项目、对话和运行，持有固定模型签名、额度和唯一调用日志。已完成轮次可按相同摘要重放，提交中断的轮次保持结果未知。公开流式消息与审批仍由整站切换门禁核验。
 
+助手源事务需要 Visual 0010 和 Models 0020 迁移。叠加 `deploy/visual-assistant.compose.yaml`，将独立的 `FPL_VISUAL_ASSISTANT_SETTLEMENT_KEY` 只读挂载到 Visual 与 Models。结算只接受同账号、同运行、同追踪标识的短时服务签名。原始请求授权仅用于当前请求。
+
 ### Galgame 工坊的浏览器版本与故事验收
 
 运行 `npm run services:build:web -- galgame`，将清单目录传给 `npm run services:build -- galgame --build --web-release`。在 `deploy/project-owners.compose.yaml` 中使用 Galgame 专属状态目录和 Identity 凭据。项目列表、总览、编辑和已保存 Story 预演由 Galgame 镜像提供，旧版本写请求返回 409。

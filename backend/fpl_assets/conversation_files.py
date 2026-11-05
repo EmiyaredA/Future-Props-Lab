@@ -16,7 +16,7 @@ from app.capabilities.asset_store.assistant_media import (
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from fpl_runtime.visual_assistant import AttachmentImage, AttachmentInput
+from fpl_runtime.visual_assistant import AttachmentContext, AttachmentImage, AttachmentInput
 
 from .models import AssetReferencePin, AssetReferenceSet, PreparedAssetPin, ReferenceIntent
 from .scoped_project_files import check_project_scope
@@ -129,3 +129,10 @@ def project_input(storage, asset):
         body, warning = read_document(path, asset.mime_type, asset.display_name)
         return metadata.model_copy(update={"text": body, "warning": warning})
     return metadata
+
+
+async def canvas_attachment_context(database, owner, project, identities):
+    async with database.sessions(info={"owner_user_id": owner}) as session:
+        await check_project_scope(session, "visual", project)
+        rows = await scoped_assets(session, project, identities, include_private=False)
+        return [AttachmentContext.model_validate(row, from_attributes=True) for row, _link in rows]

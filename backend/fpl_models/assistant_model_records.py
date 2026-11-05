@@ -25,6 +25,7 @@ class VisualAssistantModelRun(AssistantModelBase):
     model_signature: Mapped[str] = mapped_column(String(64))
     model_plan: Mapped[dict] = mapped_column(JSON)
     request_summary: Mapped[dict] = mapped_column(JSON)
+    credential_attribution: Mapped[dict | None] = mapped_column(JSON)
     trace_id: Mapped[str] = mapped_column(String(128))
     lease_id: Mapped[str] = mapped_column(String(36))
     state: Mapped[str] = mapped_column(String(16), default="open")

@@ -19,6 +19,9 @@ from .motion_preview import sha256
 from .visual_assistant import MODEL_RUNS
 
 MAX_ROUND_BYTES = 256 * 1024**2
+SETTLEMENTS = "/_internal/v1/visual-assistant/model-settlements"
+SETTLEMENT_DOMAIN = b"visual-assistant-settlement"
+MAX_SETTLEMENT_BYTES = 256 * 1024
 Identity = Annotated[str, Field(pattern=rf"^{ID}$")]
 
 
@@ -97,6 +100,18 @@ class AssistantRunSettle(RunScope):
     @property
     def path(self):
         return self.target("settle")
+
+
+class RecoveredAssistantSettlement(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    trace_id: Identity
+    outcome: AssistantRunSettle
+
+    @property
+    def path(self):
+        digest = sha256(self.model_dump_json().encode())
+        return f"{SETTLEMENTS}/{self.outcome.run_id}/{digest}"
 
 
 class TextEvent(BaseModel):

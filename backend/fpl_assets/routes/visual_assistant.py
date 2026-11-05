@@ -8,15 +8,17 @@ from fpl_runtime.claims import HEADER, verify_context
 from fpl_runtime.visual_assistant import (
     ASSET_PREFIX,
     INPUT_PREFIX,
+    AttachmentContext,
     AttachmentInput,
     AttachmentInputQuery,
     AttachmentMetadata,
     AttachmentQuery,
+    CanvasAssetContextQuery,
     attachment_target,
     input_target,
 )
 
-from ..conversation_files import attachment_inputs, attachments
+from ..conversation_files import attachment_inputs, attachments, canvas_attachment_context
 
 router = APIRouter(include_in_schema=False)
 
@@ -48,6 +50,29 @@ async def read_inputs(
     owner = await owner_for(request)
     return await attachment_inputs(
         request.app.state, owner, project_id, conversation_id, body.asset_ids
+    )
+
+
+@router.post(
+    INPUT_PREFIX + "/{project_id}/{conversation_id}/context/{digest}",
+    response_model=list[AttachmentContext],
+)
+async def read_canvas_context(
+    request: Request,
+    project_id: str,
+    conversation_id: str,
+    digest: str,
+    body: CanvasAssetContextQuery,
+):
+    if (
+        not input_target("POST", request.url.path)
+        or body.digest != digest
+        or request.url.path != body.path(project_id, conversation_id)
+    ):
+        raise HTTPException(403, "private_conversation_attachment_query_required")
+    owner = await owner_for(request)
+    return await canvas_attachment_context(
+        request.app.state.database, owner, project_id, body.asset_ids
     )
 
 

@@ -5,10 +5,12 @@ from fastapi.responses import StreamingResponse
 
 from fpl_runtime.visual_assistant import MODEL_RUNS
 from fpl_runtime.visual_assistant_model import (
+    SETTLEMENTS,
     AssistantModelPlan,
     AssistantRound,
     AssistantRunSettle,
     AssistantRunStart,
+    RecoveredAssistantSettlement,
 )
 
 from .catalog_reads import owned_catalog
@@ -62,3 +64,19 @@ async def settle_assistant_run(request: Request, body: AssistantRunSettle):
         _session,
     ):
         return await request.app.state.assistant_model_runs.settle(actor, body)
+
+
+@router.post(SETTLEMENTS + "/{run_id}/{digest}")
+async def recover_assistant_settlement(request: Request, body: RecoveredAssistantSettlement):
+    require_exact(request, body)
+    state = request.app.state
+    peer = state.assistant_settlement_peer
+    if peer is None:
+        raise HTTPException(503, "assistant_settlement_peer_unavailable")
+    if "origin" in request.headers or "cookie" in request.headers:
+        raise HTTPException(403, "assistant_settlement_peer_required")
+    try:
+        owner = peer.owner("POST", request.url.path, request.headers)
+    except ValueError:
+        raise HTTPException(401, "assistant_settlement_peer_required") from None
+    return await state.assistant_model_runs.settle_for(owner, body.outcome, trace_id=body.trace_id)

@@ -22,6 +22,7 @@ from app.runtime.ids import new_id
 from app.runtime.time import iso_utc, utc_now
 from fpl_runtime.project_errors import ProjectResourceError
 
+from .assistant_dispatch_records import VisualAssistantDispatch
 from .canvas_writes import conflict
 from .projects import Projects
 
@@ -166,6 +167,12 @@ class Conversations:
         )
         if pending is not None:
             raise ProjectResourceError(f"生成期间不能{action}对话", "conversation_busy", 409)
+        if action == "删除" and await self.session.scalar(
+            select(VisualAssistantDispatch.run_id)
+            .where(VisualAssistantDispatch.conversation_id == row.id)
+            .limit(1)
+        ):
+            raise ProjectResourceError("对话运行仍在结算", "conversation_busy", 409)
         if row.revision != expected:
             project_id, conversation_id = row.project_id, row.id
             await self.session.rollback()

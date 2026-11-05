@@ -11,6 +11,7 @@ from .versions.v0006 import SQL as SNAPSHOT_IMPORTS
 from .versions.v0007 import SQL as COMPOSITION_DISPATCH
 from .versions.v0008 import SQL as GENERATION_DISPATCH
 from .versions.v0009 import SQL as REVIEW_DISPATCH
+from .versions.v0010 import SQL as ASSISTANT_DISPATCH
 
 MIGRATIONS = (
     Migration("0001_visual_owned_projects", SQL),
@@ -22,4 +23,5 @@ MIGRATIONS = (
     Migration("0007_visual_composition_dispatches", COMPOSITION_DISPATCH),
     Migration("0008_visual_generation_dispatches", GENERATION_DISPATCH),
     Migration("0009_visual_review_dispatches", REVIEW_DISPATCH),
+    Migration("0010_visual_assistant_dispatches", ASSISTANT_DISPATCH),
 )
