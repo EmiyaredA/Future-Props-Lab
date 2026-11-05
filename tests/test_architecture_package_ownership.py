@@ -182,10 +182,9 @@ def test_identity_owns_account_routes_and_contracts() -> None:
 
 
 def test_media_contracts_are_separate_from_website_file_adapters() -> None:
-    for name in ("image_crop.py", "media_info.py"):
+    for name in ("image_crop.py", "media_info.py", "video_frames.py", "previews.py"):
         assert (STUDIO_APPS / "media_rendering/transport/website" / name).is_file()
         assert not (BACKEND_APP / "capabilities/asset_store" / name).exists()
-    assert (BACKEND_APP / "capabilities" / "asset_store" / "routes" / "video_frames.py").is_file()
     for name in ("image_crop.py", "video_frames.py", "media_info.py"):
         assert (CONTRACTS / "media_rendering" / name).is_file()
         assert not (BACKEND_APP / "capabilities/asset_store/schemas" / name).exists()

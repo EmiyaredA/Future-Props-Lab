@@ -37,5 +37,7 @@ def bind_media(app, settings, sessions):
     )
     app.state.media_authorization = lambda request: WebsiteMediaAuthorization(request, sessions)
     app.state.media_reads = lambda request: ReadMedia(
-        sources, processor, app.state.media_authorization(request)
+        sources,
+        processor,
+        app.state.media_authorization(request),
     )

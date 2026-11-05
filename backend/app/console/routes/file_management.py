@@ -3,7 +3,7 @@ from __future__ import annotations
 import shutil
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
@@ -19,12 +19,10 @@ from app.capabilities.asset_store.account_upgrade import (
     migrate_accounts,
     upgrade_status,
 )
-from app.capabilities.asset_store.file_previews import preview_metadata
 from app.capabilities.asset_store.layout_migration import (
     LayoutMigrationBusyError,
     StorageLayoutMigration,
 )
-from app.capabilities.asset_store.thumbnails import ThumbnailSize, thumbnail
 from app.console.file_library import (
     LibraryFolderArchive,
     LibraryFolderArchiveError,
@@ -39,7 +37,6 @@ from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import (
     FILE_CONTENT_HEADERS,
-    FilePreviewOut,
     LibraryAssetImportIn,
     LibraryFolderImportOut,
     StorageLayoutMigrationOut,
@@ -344,18 +341,6 @@ async def delete_file(
     return {"deleted": True}
 
 
-@router.get("/files/{asset_id}/preview", response_model=FilePreviewOut)
-async def preview_file_metadata(
-    session: SessionDep, owner_user_id: OwnerDep, asset_id: str, response: Response
-) -> FilePreviewOut:
-    try:
-        result = await preview_metadata(session, get_settings(), owner_user_id, asset_id)
-    except AssetError as exc:
-        raise asset_http_error(exc) from None
-    response.headers["Cache-Control"] = "private, no-store"
-    return result
-
-
 @router.get("/files/{asset_id}/content", responses={200: {"headers": FILE_CONTENT_HEADERS}})
 async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: str) -> FileResponse:
     try:
@@ -380,42 +365,6 @@ async def preview_file(session: SessionDep, owner_user_id: OwnerDep, asset_id: s
                 if row.mime_type == "image/svg+xml"
                 else {}
             ),
-        },
-    )
-
-
-@router.get(
-    "/files/{asset_id}/thumbnail",
-    response_class=FileResponse,
-    responses={
-        200: {
-            "content": {
-                mime: {"schema": {"type": "string", "format": "binary"}}
-                for mime in ("image/webp", "image/svg+xml")
-            }
-        }
-    },
-)
-async def preview_thumbnail(
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-    asset_id: str,
-    size: ThumbnailSize = 320,
-    page: int = Query(default=1, ge=1),
-) -> FileResponse:
-    try:
-        path, mime_type = await thumbnail(
-            session, get_settings(), owner_user_id, asset_id, size, page
-        )
-    except AssetError as exc:
-        raise asset_http_error(exc) from None
-    return FileResponse(
-        path,
-        media_type=mime_type,
-        headers={
-            "Cache-Control": "private, no-store",
-            "X-Content-Type-Options": "nosniff",
-            "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
         },
     )
 

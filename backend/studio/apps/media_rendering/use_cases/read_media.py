@@ -3,6 +3,8 @@
 from studio.apps.media_rendering.ports import MediaAuthorization, MediaProcessor, MediaSources
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.media_rendering.image_crop import ImageCropIn
+from studio.contracts.media_rendering.output import MediaOutput
+from studio.contracts.media_rendering.video_frames import VideoFramesIn
 
 
 class ReadMedia:
@@ -34,3 +36,36 @@ class ReadMedia:
             output = await self.processor.video_info(source)
             await self.access.ensure_active()
             return output
+
+    async def metadata(self, owner: str, asset_id: str):
+        async with self.sources.borrow(owner, asset_id) as source:
+            self._owned(source, owner, asset_id)
+            output = await self.processor.metadata(source)
+            await self.access.ensure_active()
+            return output
+
+    async def thumbnail(self, owner: str, asset_id: str, size: int, page: int) -> MediaOutput:
+        return await self._output(
+            owner, asset_id, lambda source: self.processor.thumbnail(source, size, page)
+        )
+
+    async def frames(self, owner: str, asset_id: str, body: VideoFramesIn) -> MediaOutput:
+        async def render(source):
+            if source.description.media_kind != "video":
+                raise AssetError("逐帧提取只支持视频文件")
+            return await self.processor.frames(source, body)
+
+        return await self._output(owner, asset_id, render)
+
+    async def _output(self, owner, asset_id, render) -> MediaOutput:
+        output = None
+        try:
+            async with self.sources.borrow(owner, asset_id) as source:
+                self._owned(source, owner, asset_id)
+                output = await render(source)
+                await self.access.ensure_active()
+            return output
+        except BaseException:
+            if output is not None:
+                output.close()
+            raise

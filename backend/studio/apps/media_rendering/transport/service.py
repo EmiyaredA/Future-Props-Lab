@@ -1,56 +1,22 @@
 """Compatible media HTTP operations; source access remains account- and request-bound."""
 
-import shutil
-
-from fastapi import APIRouter, HTTPException, Query, Request, Response
+from fastapi import APIRouter, Query, Request, Response
 from fastapi.responses import FileResponse
-from starlette.background import BackgroundTask
 
-from studio.apps.media_rendering.inputs import input_file
 from studio.contracts.asset_library.files import FilePreviewOut
 from studio.contracts.media_rendering.image_crop import ImageCropIn
 from studio.contracts.media_rendering.media_info import VideoMediaInfoOut
 from studio.contracts.media_rendering.video_frames import VideoFramesIn
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.http.dependencies import OwnerDep
+from studio.runtime.http.media_response import media_response
 
 router = APIRouter(tags=["file-management"])
 
 
-async def execute(request, owner, asset_id, operation, *arguments):
-    state = request.app.state
-    output = None
-    try:
-        async with state.media.capacity:
-            async with input_file(
-                settings=state.settings,
-                capabilities=state.capabilities,
-                owner=owner,
-                assertion=request.state.service_assertion,
-                method=request.method,
-                path=request.url.path,
-                asset_id=asset_id,
-            ) as (info, source):
-                output = await getattr(state.media, operation)(info, source, *arguments)
-        active = await state.identity.status(
-            assertion=request.state.service_assertion,
-            method=request.method,
-            path=request.url.path,
-        )
-        if active is None:
-            raise HTTPException(503, {"code": "identity_unavailable"})
-        if not active:
-            raise HTTPException(401, {"code": "source_authorization_revoked"})
-        return output
-    except BaseException:
-        if operation == "frames" and output is not None:
-            shutil.rmtree(output.parent, ignore_errors=True)
-        raise
-
-
 @router.get("/files/{asset_id}/preview", response_model=FilePreviewOut)
 async def preview_file_metadata(asset_id: str, request: Request, owner_user_id: OwnerDep):
-    return await execute(request, owner_user_id, asset_id, "metadata")
+    return await request.app.state.media_reads(request).metadata(owner_user_id, asset_id)
 
 
 @router.get(
@@ -72,10 +38,12 @@ async def preview_thumbnail(
     size: ThumbnailSize = 320,
     page: int = Query(default=1, ge=1),
 ) -> FileResponse:
-    path, mime = await execute(request, owner_user_id, asset_id, "thumbnail", size, page)
-    return FileResponse(
-        path,
-        media_type=mime,
+    output = await request.app.state.media_reads(request).thumbnail(
+        owner_user_id, asset_id, size, page
+    )
+    mime = output.media_type
+    return media_response(
+        output,
         headers={
             "Cache-Control": "private, no-store",
             "X-Content-Type-Options": "nosniff",
@@ -133,9 +101,5 @@ async def extract_video_frames(
     request: Request,
     owner_user_id: OwnerDep,
 ):
-    path = await execute(request, owner_user_id, asset_id, "frames", body)
-    return FileResponse(
-        path,
-        filename=path.name,
-        background=BackgroundTask(shutil.rmtree, path.parent, ignore_errors=True),
-    )
+    output = await request.app.state.media_reads(request).frames(owner_user_id, asset_id, body)
+    return media_response(output, download=True)

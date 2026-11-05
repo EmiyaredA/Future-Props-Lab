@@ -9,7 +9,7 @@ from tests.test_knowledge_community import COMM, ROOT
 from tests.test_knowledge_community import community as community
 from tests.test_thought_knowledge_tools import doc
 
-from app.capabilities.asset_store.thumbnails import _render, derived_thumbnail
+from app.capabilities.asset_store.image_thumbnails import _render, derived_thumbnail
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
 
@@ -108,8 +108,8 @@ async def test_source_versions_use_distinct_cache_paths_and_unsupported_inputs_f
     from dataclasses import replace
     from types import SimpleNamespace
 
+    from app.capabilities.asset_store.image_thumbnails import ThumbnailSource, asset_thumbnail
     from app.capabilities.asset_store.library import AssetError
-    from app.capabilities.asset_store.thumbnails import ThumbnailSource, asset_thumbnail
 
     source = tmp_path / "source.png"
     source.write_bytes(png())

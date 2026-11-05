@@ -4,6 +4,7 @@ import asyncio
 import io
 import json
 import subprocess
+import zipfile
 from contextlib import AsyncExitStack
 from dataclasses import replace
 from types import SimpleNamespace
@@ -14,10 +15,10 @@ from PIL import Image
 from pypdf import PdfWriter
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 
-from app.capabilities.asset_store import file_previews
-from app.capabilities.asset_store.file_previews import media_thumbnail
 from app.capabilities.asset_store.library import AssetError
+from app.capabilities.media_rendering import preview_metadata as file_previews
 from app.capabilities.media_rendering import preview_metadata as preview_operations
+from app.capabilities.media_rendering.preview_metadata import media_thumbnail
 from studio.contracts.asset_library.media_content import MediaDescription
 from website_test_support import app
 
@@ -167,6 +168,16 @@ async def test_real_video_frame_short_fallback_and_audio_waveform(clients, tmp_p
             assert image.width == 128 and image.height <= 128
             assert image.convert("RGB").getpixel((20, 20))[0] > 200
         assert (await other.get(base + "/thumbnail")).status_code == 404
+        body = {"positions_ms": [0, 100], "max_width": 128}
+        frames = await owner.post(base + "/frames", json=body)
+        assert frames.status_code == 200, frames.text
+        with zipfile.ZipFile(io.BytesIO(frames.content)) as archive:
+            assert len(archive.namelist()) == 2
+            for name in archive.namelist():
+                with Image.open(io.BytesIO(archive.read(name))) as frame:
+                    assert frame.width == 128 and frame.getpixel((20, 20))[0] > 200
+        assert (await other.post(base + "/frames", json=body)).status_code == 404
+        assert not list(app.state.settings.runtime_path.glob("accounts/*/.tmp/outputs/frames-*"))
     audio = tmp_path / "sound.wav"
     subprocess.run(
         [
@@ -257,19 +268,15 @@ async def test_pdf_timeout_and_cancellation_terminate_worker(tmp_path, monkeypat
     assert processes[-1].killed and processes[-1].waited
 
 
-async def test_corrupt_derived_metadata_is_rebuilt_from_original(tmp_path, monkeypatch):
+async def test_corrupt_derived_metadata_is_rebuilt_from_original(tmp_path):
     source = tmp_path / "notes.md"
     source.write_text("实际正文", encoding="utf-8")
     settings = SimpleNamespace(account_path=lambda owner: tmp_path / owner)
     info = MediaDescription("notes", 1, "owner", "document", "text/markdown", "notes.md")
 
-    async def authorized(*_args):
-        return info, source
-
-    monkeypatch.setattr(file_previews, "authorized_source", authorized)
-    result = await file_previews.preview_metadata(None, settings, "owner", info.id)
+    result = await file_previews.describe_preview(settings, info, source)
     assert result.text == "实际正文"
     cached = file_previews.cache_root(settings, info) / "1-preview-v1.json"
     cached.write_text("damaged derived json", encoding="utf-8")
-    recovered = await file_previews.preview_metadata(None, settings, "owner", info.id)
+    recovered = await file_previews.describe_preview(settings, info, source)
     assert recovered == result

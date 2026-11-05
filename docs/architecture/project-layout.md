@@ -121,7 +121,7 @@ backend/
 
 `studio/contracts/asset_library/` 的 `incoming.py`、`errors.py` 和 `files.py` 拥有上传流接口、素材错误与文件协议；流不暴露主机路径或 ORM。`studio/contracts/media_rendering/` 拥有裁切、取帧、媒体信息和角色动画数据，`studio/contracts/video_editor/` 拥有时间线及音频接缝结果，`studio/contracts/motion_compositor/document.py` 拥有特效文档。兼容网站和独立服务消费同一份数据定义；契约导入不读取配置、不加载数据库或媒体执行器。渲染计划中尚含路径的进程内结构仍留在实现侧，不作为跨服务素材接口。
 
-`capabilities/asset_store/file_previews.py` 拥有文件预览授权、受限文本读取和账号／素材版本派生缓存；
+`studio/apps/media_rendering/use_cases/read_media.py` 拥有文件预览、缩略图、裁切、格式读取与取帧的统一用例；素材借用在短查询后结束事务，派生完成后重新核验身份。`contracts/media_rendering/output.py` 定义不含路径的输出句柄，`runtime/http/media_response.py` 在响应完成、发送异常和取消后释放输出；临时文件不使用服务器路径交接，缓存关闭不删除共享派生内容。
 `pdf_preview_worker.py` 在独立进程中读取 PDF 页数并栅格化当前页面，不执行文档脚本。
 `capabilities/media_rendering/file_previews.py` 拥有有超时的媒体时长检查、视频封面和前 60 秒真实音频波形，
 不接触账号或数据库。文件预览接口先完成归属校验并结束读取事务，再进行解码，缓存不能授予访问权。
@@ -136,7 +136,7 @@ backend/
 
 `shared/ui/LoadingScene` 拥有整页、区域与行内的同源琥珀仪表视觉；`LoadingCharacter` 拥有人物播放、暂停、静态回退及动态效果偏好，二者不持有业务状态。`web/public/brand/loading/` 保存仪表 SVG、八张道具 WebP、红莉栖小跑透明视频与首帧；二进制资产由 Git LFS 和生产资源 SHA-256 检查维护。`app/bootLoading.ts` 在 React 挂载前控制同源 HTML 加载场景并在成功或失败时清理。
 
-`capabilities/asset_store/thumbnails.py` 拥有受限解码、方向校正、透明 WebP 与原子落盘；身份、社区和创作用例先授权后调用。
+`capabilities/asset_store/image_thumbnails.py` 与 `runtime/files/raster.py` 拥有受限解码、方向校正、透明 WebP 与原子落盘；身份、社区和创作用例先授权后调用。文件库 HTTP 统一通过 Rendering 用例，旧预览及缩略图转发模块已删除。
 `scripts/generate_image_variants.py` 生成 `web/public/brand/thumbnails/` 下的摘要命名静态派生图和清单，构建执行过期检查。
 接口、入口清单与验收约定见 [`../reference/loading-and-images.md`](../reference/loading-and-images.md)。
 
@@ -871,7 +871,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 - `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
 - `backend/studio/apps/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/conversion.py` 描述正式契约。
 - `backend/studio/apps/audio_annotation/exports.py`：项目 JSON、SRT、已保存片段裁切与识别用例。
-- `backend/app/capabilities/asset_store/video_frames.py`：账号文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`；HTTP 适配在 `capabilities/asset_store/routes/video_frames.py`。
+- `backend/studio/apps/media_rendering/use_cases/read_media.py`：账号文件的逐帧提取与派生输出结算；确定性音频裁切与视频取帧实现暂在 `app/capabilities/media_rendering/audio_clip.py`、`video_frames.py`；HTTP 适配在 `studio/apps/media_rendering/transport/website/video_frames.py`。
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
 - `sdk/python/src/future_props_lab/canvas_example.py`：独立的笔记信息图 SDK 示例，通过正式 API 创建与导出可编辑画板；不参与既有六工坊文档生成，契约回归由 `tests/test_thought_canvas.py` 覆盖。

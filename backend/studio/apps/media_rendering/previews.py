@@ -96,8 +96,6 @@ class MediaPreviews:
             raise AssetError("图片无法解码或超过安全解码上限") from exc
 
     async def frames(self, info, source, body):
-        if info.media_kind != "video":
-            raise AssetError("逐帧提取只支持视频文件")
         root = self.settings.account_path(info.owner_user_id) / ".tmp" / "outputs"
         root.mkdir(parents=True, exist_ok=True, mode=0o700)
         directory = Path(tempfile.mkdtemp(prefix="frames-", dir=root))

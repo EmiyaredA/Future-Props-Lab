@@ -122,9 +122,10 @@
   HTTP `UploadFile` 只在路由中出现，业务用例依赖 `studio.contracts.asset_library.incoming.IncomingFile`。
   素材描述、媒体请求、时间线与特效文档归各所有者的 `studio/contracts/`；导入契约不得加载
   素材 ORM、文件适配或渲染器。接收流的 I/O 适配器负责成功、失败及取消后的关闭。
-- 媒体裁切与格式读取共用 `studio/apps/media_rendering/use_cases/read_media.py`；用例只接收
+- 媒体裁切、格式读取、预览、缩略图和取帧共用 `studio/apps/media_rendering/use_cases/read_media.py`；用例只接收
   素材借用、执行与授权端口。素材存储关闭查询事务后才借出内容，完成处理后重新验证身份。
   文件路径限定在 I/O 适配内，借用句柄不能存入任务、缓存或响应。
+  派生输出使用独立句柄，来源释放不影响输出；授权失败和 HTTP 响应中断均须清理临时输出。
 - 思绪工坊 `publication/` 拥有发布与逐篇授权，社区接口仅使用浏览器 Session；先验证发布记录、当前文章与有效角色，再在独立会话中显式绑定源账号。素材仅开放可读正文实际引用的文件与发布封面；不开放历史、私人目录或普通文件库查询。正文仍由 Notes 用例执行校验、CAS 和历史，回收站事务同步撤回发布，恢复不自动重新发布。
 - 固定账号权限由 `studio/contracts/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
   `studio/contracts/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
