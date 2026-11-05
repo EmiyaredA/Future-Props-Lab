@@ -2,7 +2,7 @@ import { lazy } from "react";
 import type { AuthMe } from "@features/accounts";
 import { accountAllows } from "@features/accounts/permissions";
 import type { StudioPage } from "@app/routes";
-import { ModelInfrastructureHeader } from "./ModelInfrastructureHeader";
+import { ModelInfrastructureHeader } from "@app/layout/ModelInfrastructureHeader";
 
 const ModelServicePage = lazy(() =>
   import("@features/models/catalog").then((module) => ({

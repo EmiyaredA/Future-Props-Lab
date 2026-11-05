@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useStudioSession } from "@app/StudioSession";
-import { PresentationWorkshopRoute } from "@app/layout/PresentationWorkshopRoute";
+import { PresentationWorkshopRoute } from "@app/routing/PresentationWorkshopRoute";
 import type { WorkshopPage } from "@app/routes";
 import { RuntimeAccessProvider } from "@features/accounts";
 import { AmadeusPageProvider } from "@features/amadeus/PageProvider";

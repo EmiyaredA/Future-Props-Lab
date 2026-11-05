@@ -368,7 +368,6 @@ Future-Props-Lab/
 ├── backend/studio/config/ # 独立 TOML 格式、字段映射与一次性 .env 转换；不导入 app 或数据库
 ├── backend/config.example.toml # 无真实密钥的配置示例；私有 config.toml 不提交、不打包
 ├── backend/app/
-│   ├── runtime/       # 尚未迁出的凭据适配
 │   ├── capabilities/  # 尚待迁移的本机 Agent 适配：agents
 │   ├── console/       # 尚未迁出的治理与助手用例
 ├── db/migrations/
@@ -377,7 +376,10 @@ Future-Props-Lab/
 │   └── runner.py      # checksum、连续前缀检查和事务应用
 ├── scripts/website/   # 网站启动、LaunchAgent、数据迁移、临时清理与独立任务工具入口
 ├── web/src/
-│   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
+│   ├── app/           # Studio Session、URL 契约与应用注册表
+│   │   ├── entries/   # 独立应用与网站入口装配
+│   │   ├── routing/   # 页面组合、浏览器历史、导航拦截与事件生命周期
+│   │   └── layout/    # 展示壳、侧栏与页头
 │   ├── docs/          # Markdown 使用正文、分类与上下文目录、搜索、阅读器及旧链接映射
 │   ├── features/      # 账号治理、首页、应用、文件管理、工坊、工具导航、集成中心与模型功能
 │   │   └── amadeus/   # 页面侧栏 UI、后端运行重连、控件选取与原生动态头像源画
@@ -1090,3 +1092,5 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 生成 Driver、模型推理／测试／转录 Runner、Galgame ASR 与视觉验收／助手均显式接收解密器。Models Runner 还必须接收配置，禁止默认全局回退。`runtime/secrets.py` 只提供实例加密机制，不选择密钥；账号复核、准备、执行和结算仍归业务所有者。测试密文帮助函数限定在 `tests/credential_test_support.py`，生产包不提供旧运行时兼容转发。
 
 思绪工坊的文件与社区兼容适配显式接收当前网站配置，`legacy_asset_metadata.py` 接收装配的文件存储；业务包不读取进程全局设置。账号与版本复核仍在读取入口执行。现有 Session 中的素材／账号服务定位仍待后续移除，本批仅消除配置与文件根目录的隐式选择。
+
+`web/src/app/routing/WebsiteRoutes.tsx` 组合已授权页面与展示壳；`ReadOnlyRoutes.tsx`、模型／Agent／演示路由适配位于同目录。`useWebsiteNavigation.ts` 唯一拥有兼容网站的路由状态、浏览器历史与未保存继续回调，卸载时移除浏览器及 Agent 事件监听。业务草稿仍由对应 feature 持有，控制器仅接收是否拦截及继续动作。`app/routes.ts` 保持 URL 类型、解析和生成契约，受保护文档的证据路径无需变更。

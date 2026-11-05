@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import { PRESENTATION_WORKSHOP_MODULE } from "@features/presentation-workshop/module";
-import { WorkshopShell } from "./WorkshopShell";
+import { WorkshopShell } from "@app/layout/WorkshopShell";
 import type { WorkshopPage } from "@app/routes";
 import type { NavigationGuard } from "@features/presentation-workshop/types";
 

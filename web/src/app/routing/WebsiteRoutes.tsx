@@ -1,24 +1,17 @@
+import { useWebsiteNavigation } from "./useWebsiteNavigation";
 import { useRuntimeAccess } from "@features/accounts";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { PresentationWorkshopRoute } from "@app/layout/PresentationWorkshopRoute";
-import { CodeAgentsRoute } from "@app/layout/CodeAgentsRoute";
-import { ModelServiceRoute } from "@app/layout/ModelServiceRoute";
+import { PresentationWorkshopRoute } from "./PresentationWorkshopRoute";
+import { CodeAgentsRoute } from "./CodeAgentsRoute";
+import { ModelServiceRoute } from "./ModelServiceRoute";
 import type { KnowledgeSection } from "@features/thought-workshop/KnowledgeSections";
-import { PageErrorBoundary } from "./PageErrorBoundary";
-import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
+import { PageErrorBoundary } from "@app/PageErrorBoundary";
+import { isWorkshopPage, hasReadOnlyRoute } from "@app/routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { accountAllows } from "@features/accounts/permissions";
 import { CloudControlAccess } from "@features/cloud-control/CloudControlAccess";
 import { CloudControlPage } from "@features/cloud-control/CloudControlPage";
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { StudioShell } from "@app/layout/StudioSidebar";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { useStudioSession } from "@app/StudioSession";
@@ -42,10 +35,6 @@ import {
   isThoughtWorkshopPage,
   isVisualWorkshopPage,
   isVideoEditorPage,
-  parseRoute,
-  pathFor,
-  type AppRoute,
-  type AppPage,
   type StudioPage,
   type WorkshopPage,
 } from "@app/routes";
@@ -152,18 +141,19 @@ function PageBoundary({ children }: { children: ReactNode }) {
   );
 }
 
-export default function App() {
+export default function WebsiteRoutes() {
   const session = useStudioSession();
   const { me } = session;
   const localBrowser = useRuntimeAccess();
-  const [route, setRoute] = useState<AppRoute>(parseRoute);
+  const {
+    route,
+    navigate,
+    navigatePath,
+    replaceRoute,
+    registerNavigationGuard,
+  } = useWebsiteNavigation();
   const [catalogTestModel, setCatalogTestModel] = useState<string | null>(null);
   const [focusModelTab, setFocusModelTab] = useState(false);
-  const navigationGuard = useRef<
-    ((continueNavigation: () => void) => boolean) | null
-  >(null);
-  const routeRef = useRef(route);
-  routeRef.current = route;
   const page = route.page;
   useEffect(() => {
     const key = String(page);
@@ -199,139 +189,10 @@ export default function App() {
       ),
     );
   }, [page, route.projectId, route.documentId, me.user.id]);
-  useEffect(() => {
-    if (window.location.pathname === "/")
-      window.history.replaceState({}, "", "/home");
-    if (window.location.pathname.startsWith("/tools/audio-annotation")) {
-      const current = parseRoute();
-      window.history.replaceState(
-        {},
-        "",
-        pathFor(current.page, current.projectId, current.documentId),
-      );
-    }
-    if (
-      window.location.pathname.startsWith("/apps/agent-workbench") ||
-      /^\/tools\/(storage-usage|codex-model-source)\/?$/.test(
-        window.location.pathname,
-      )
-    ) {
-      const current = parseRoute();
-      window.history.replaceState(
-        {},
-        "",
-        pathFor(current.page, current.projectId, current.documentId) +
-          window.location.search +
-          window.location.hash,
-      );
-    }
-    const pop = () => {
-      const next = parseRoute();
-      if (
-        navigationGuard.current?.(() => {
-          window.history.pushState(
-            {},
-            "",
-            pathFor(next.page, next.projectId, next.documentId) +
-              (next.search ?? ""),
-          );
-          setRoute(next);
-        })
-      ) {
-        const previous = routeRef.current;
-        window.history.pushState(
-          {},
-          "",
-          pathFor(previous.page, previous.projectId, previous.documentId) +
-            (previous.search ?? ""),
-        );
-        return;
-      }
-      setRoute(next);
-    };
-    window.addEventListener("popstate", pop);
-    return () => window.removeEventListener("popstate", pop);
-  }, []);
-  const commitNavigation = (
-    next: AppPage,
-    projectId?: string,
-    documentId?: string,
-    search?: string,
-  ) => {
-    const path = pathFor(next, projectId, documentId) + (search ?? "");
-    if (path !== window.location.pathname + window.location.search)
-      window.history.pushState({}, "", path);
-    setRoute({ page: next, projectId, documentId, search });
-  };
-  const navigate = (
-    next: AppPage,
-    projectId?: string,
-    documentId?: string,
-    search?: string,
-  ) => {
-    const commit = () => commitNavigation(next, projectId, documentId, search);
-    if (navigationGuard.current?.(commit)) return;
-    commit();
-  };
   const navigateModelView = (next: StudioPage, keyboard = false) => {
     setFocusModelTab(keyboard);
     navigate(next);
   };
-  const registerNavigationGuard = useCallback(
-    (guard: ((continueNavigation: () => void) => boolean) | null) => {
-      navigationGuard.current = guard;
-    },
-    [],
-  );
-  const navigatePath = (path: string) => {
-    const next = parseRoute(path);
-    navigate(next.page, next.projectId, next.documentId, next.search);
-  };
-
-  useEffect(() => {
-    const handle = (event: Event) =>
-      navigatePath((event as CustomEvent<string>).detail);
-    const guard = (event: Event) => {
-      const e = event as CustomEvent<() => void>;
-      if (navigationGuard.current?.(e.detail)) e.preventDefault();
-    };
-    window.addEventListener("future-props:navigate", handle);
-    const agentOpen = (event: Event) => {
-      const request = (
-        event as CustomEvent<{
-          path: string;
-          active: () => boolean;
-          opened: () => void;
-        }>
-      ).detail;
-      const next = parseRoute(request.path);
-      const commit = () => {
-        if (!request.active()) return;
-        commitNavigation(next.page, next.projectId, next.documentId);
-        request.opened();
-      };
-      if (!navigationGuard.current?.(commit)) commit();
-    };
-    window.addEventListener("future-props:agent-open", agentOpen);
-    window.addEventListener("future-props:before-navigation", guard);
-    const deferRefresh = (event: Event) => {
-      if (navigationGuard.current) event.preventDefault();
-    };
-    window.addEventListener(
-      "future-props:development-query-refresh",
-      deferRefresh,
-    );
-    return () => {
-      window.removeEventListener("future-props:navigate", handle);
-      window.removeEventListener("future-props:agent-open", agentOpen);
-      window.removeEventListener("future-props:before-navigation", guard);
-      window.removeEventListener(
-        "future-props:development-query-refresh",
-        deferRefresh,
-      );
-    };
-  });
-
   const navigateKnowledgeSection = (section: KnowledgeSection) =>
     navigate(
       section === "private"
@@ -520,18 +381,8 @@ export default function App() {
             const next = project
               ? "thought-workshop-editor"
               : "thought-workshop-notes";
-            if (replace) {
-              window.history.replaceState(
-                {},
-                "",
-                pathFor(next, project, document),
-              );
-              setRoute({
-                page: next,
-                projectId: project,
-                documentId: document,
-              });
-            } else navigate(next, project, document);
+            if (replace) replaceRoute(next, project, document);
+            else navigate(next, project, document);
           }}
           onBack={() => navigate("apps")}
           registerNavigationGuard={registerNavigationGuard}

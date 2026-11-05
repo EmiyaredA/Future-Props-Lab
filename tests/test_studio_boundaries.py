@@ -480,3 +480,18 @@ def test_thought_workshop_does_not_read_global_settings():
             if isinstance(node, ast.Call):
                 name = getattr(node.func, "id", getattr(node.func, "attr", None))
                 assert name not in {"get_settings", "get_cloud_settings"}, path
+
+
+def test_website_page_composition_and_navigation_have_explicit_owners():
+    app = ROOT / "web/src/app"
+    assert not (app / "App.tsx").exists()
+    assert not (app / "ReadOnlyRoutes.tsx").exists()
+    for name in ("CodeAgentsRoute", "ModelServiceRoute", "PresentationWorkshopRoute"):
+        assert not (app / "layout" / f"{name}.tsx").exists()
+        assert (app / "routing" / f"{name}.tsx").is_file()
+    composition = (app / "routing/WebsiteRoutes.tsx").read_text()
+    assert "useWebsiteNavigation()" in composition
+    assert "history.pushState" not in composition
+    assert "history.replaceState" not in composition
+    assert "popstate" not in composition
+    assert (app / "routes.ts").is_file()

@@ -1,6 +1,6 @@
 import { CodeAgentsPage } from "@features/code-agents/CodeAgentsPage";
 import type { StudioPage } from "@app/routes";
-import { ModelInfrastructureHeader } from "./ModelInfrastructureHeader";
+import { ModelInfrastructureHeader } from "@app/layout/ModelInfrastructureHeader";
 
 export function CodeAgentsRoute({
   user,

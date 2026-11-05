@@ -134,6 +134,9 @@
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证
   基础设施，`generated/` 只保存生成契约。
+- Web 的 `app/routing/` 负责页面组合与浏览器导航控制器，`app/layout/` 保留展示壳；
+  未保存拦截、历史回退和 Agent 导航共享 `useWebsiteNavigation`，生命周期结束必须移除监听。
+  URL 类型与解析契约继续由 `app/routes.ts` 拥有，不将导航控制器放入业务 feature。
 - Web 的 `platform/` 与 `shared/` 不得依赖 `features/` 或 `app/`，`features/` 不得依赖
   `app/`；业务代码不得堆回 `web/src/` 根目录。生产请求通过 OpenAPI 生成类型访问后端，
   `generated/` 文件不得手工编辑。

@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import type { AppPage, AppRoute } from "./routes";
+import type { AppPage, AppRoute } from "@app/routes";
 const Files = lazy(() =>
   import("@features/files/ReadOnlyFiles").then((m) => ({
     default: m.ReadOnlyFiles,
