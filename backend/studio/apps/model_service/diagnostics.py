@@ -7,7 +7,6 @@ import httpx
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.catalog.service import ModelCatalogService, ResourceNotFoundError
 from studio.apps.model_service.providers.text import invoke_diagnostic
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
@@ -43,9 +42,10 @@ async def test_model(
     model_id: str,
     credential: CredentialSnapshot | None = None,
     *,
+    cipher,
     transport_options=None,
 ) -> TestModelOut:
-    catalog = ModelCatalogService(session)
+    catalog = ModelCatalogService(session, cipher=cipher)
     model = await catalog.get_model(model_id)
     provider = await session.get(ModelProvider, model.provider_id)
     if provider is None:
@@ -60,7 +60,7 @@ async def test_model(
             else "生成模型请在视觉创作工坊中使用",
             log_id="",
         )
-    key = decrypt_secret(provider.api_key_ciphertext) if provider.api_key_ciphertext else ""
+    key = cipher.decrypt(provider.api_key_ciphertext) if provider.api_key_ciphertext else ""
     snap = credential or CredentialSnapshot()
     trace_id = str(uuid4())
     log = LlmCallLog(

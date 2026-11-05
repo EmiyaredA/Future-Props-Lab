@@ -46,7 +46,13 @@ async def invites(
 )
 async def add_invite(request: Request, session: SessionDep, body: RegistrationInviteIn):
     principal = await _platform_auth(request, session)
-    return await create_invite(session, principal, body, client_ip(request))
+    return await create_invite(
+        session,
+        principal,
+        body,
+        client_ip(request),
+        encrypt=request.app.state.invitation_cipher.encrypt,
+    )
 
 
 @router.patch(
@@ -74,7 +80,13 @@ async def invite_secret(invite_id: str, request: Request, response: Response, se
     principal = await _platform_auth(request, session)
     require_recent_reauthentication(principal)
     response.headers["Cache-Control"] = "no-store"
-    return await reveal_invite(session, principal, invite_id, client_ip(request))
+    return await reveal_invite(
+        session,
+        principal,
+        invite_id,
+        client_ip(request),
+        decrypt=request.app.state.invitation_cipher.decrypt,
+    )
 
 
 @router.get(

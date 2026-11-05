@@ -1,6 +1,5 @@
 from sqlalchemy import select
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.identity.credentials.operations import add_audit_event
 from studio.apps.identity.storage.governance import begin_governance
 from studio.apps.integrations.storage.models import ToolApiIntegration
@@ -68,7 +67,7 @@ async def action(session, principal, service_id, body, client_ip, *, runtime):
     )
 
 
-async def install(session, principal, service_id, expected_catalog_revision, client_ip):
+async def install(session, principal, service_id, expected_catalog_revision, client_ip, *, cipher):
     principal = await begin_governance(session, principal)
     if not principal.allows("configuration.manage"):
         raise AccountError("account_access_required")
@@ -88,14 +87,16 @@ async def install(session, principal, service_id, expected_catalog_revision, cli
         )
     if exists:
         raise AccountError("demo_service_already_installed")
-    revision = await legacy_catalog(session).advance_revision(expected_catalog_revision)
+    revision = await legacy_catalog(session, cipher=cipher).advance_revision(
+        expected_catalog_revision
+    )
     if service_id == "mock_model":
         provider = ModelProvider(
             owner_user_id=principal.owner_user_id,
             name="本地 Mock 模型",
             kind="openai",
             base_url=MOCK_BASE_URL,
-            api_key_ciphertext=encrypt_secret("local-demo-placeholder"),
+            api_key_ciphertext=cipher.encrypt("local-demo-placeholder"),
             enabled=True,
         )
         session.add(provider)

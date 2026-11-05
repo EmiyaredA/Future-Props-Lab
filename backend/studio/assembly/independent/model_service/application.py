@@ -230,7 +230,12 @@ def create_app(
     )
     audit_runner = ModelAuditDelivery(database.sessions, audit)
     demo_installations = (
-        DemoInstallations(database, integration_intents, demo_install_client)
+        DemoInstallations(
+            database,
+            integration_intents,
+            demo_install_client,
+            cipher=SecretCipher(settings.fpl_secrets_key),
+        )
         if demo_install_client is not None
         else None
     )
@@ -330,12 +335,16 @@ def create_app(
         supervisor = RunnerSupervisor((*supervisor.runners, app.state.visual_generation_runner))
 
     app.state.model_catalog_bindings = CatalogBindings(
-        defaults=OwnedCatalogDefaults, task_usage=OwnedCatalogTaskUsage
+        defaults=OwnedCatalogDefaults,
+        task_usage=OwnedCatalogTaskUsage,
+        cipher=SecretCipher(settings.fpl_secrets_key),
     )
     app.state.model_provider_transports = ProviderTransports(resolve=demo.mock_transport)
     app.state.model_stream_access = ModelStreamAccess(for_request=partial(access_check, identity))
     app.state.demo_configuration, app.state.demo_runtime = configuration, demo
-    app.state.demo_services = DemoServices(configuration, demo)
+    app.state.demo_services = DemoServices(
+        configuration, demo, cipher=SecretCipher(settings.fpl_secrets_key)
+    )
     app.state.model_audit_client = audit
     app.state.template_sync = synchronization
     app.state.runner_supervisor = supervisor

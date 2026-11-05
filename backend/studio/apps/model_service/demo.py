@@ -3,7 +3,6 @@
 from sqlalchemy import select, update
 from sqlalchemy.dialects.sqlite import insert
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
 from studio.apps.model_service.audit.audit import add_event
 from studio.apps.model_service.catalog.service import ModelCatalogService
@@ -55,8 +54,9 @@ class DemoConfiguration:
 
 
 class DemoServices:
-    def __init__(self, configuration, runtime):
+    def __init__(self, configuration, runtime, *, cipher):
         self.configuration, self.runtime = configuration, runtime
+        self.cipher = cipher
 
     async def services(self, session):
         return [
@@ -127,6 +127,7 @@ class DemoServices:
             session,
             defaults_store=OwnedCatalogDefaults(session),
             task_usage=OwnedCatalogTaskUsage(session),
+            cipher=self.cipher,
         )
         await catalog.advance_revision(body.expected_catalog_revision)
         provider = ModelProvider(
@@ -134,7 +135,7 @@ class DemoServices:
             name="本地 Mock 模型",
             kind="openai",
             base_url=MOCK_BASE_URL,
-            api_key_ciphertext=encrypt_secret("local-demo-placeholder"),
+            api_key_ciphertext=self.cipher.encrypt("local-demo-placeholder"),
             enabled=True,
         )
         session.add(provider)

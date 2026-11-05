@@ -205,7 +205,7 @@ backend/
 
 `studio/apps/model_service/transcription/catalog_values.py` 定义参数／能力函数所需的模型与供应商值协议，不注册 ORM。`studio/apps/model_service/playground/__init__.py` 只声明包，各消费者直接引用具体测试模块；读取转录能力不会隐式加载文字测试、演示服务或旧数据库。文字、输出交付、生成素材和原生模型端口仍须继续隔离。
 
-`studio/apps/model_service/catalog/default_storage.py` 定义默认选择的显式存储端口，与目录 CAS 使用同一事务；恢复网站在入口装配点和 `catalog/legacy.py` 兼容用例中提供 `legacy_defaults.py`、`legacy_usage.py`，独立实现不得导入这些兼容适配器。旧 `platform_settings` 的 `account_defaults:` 分区归 Models，正式导入仍须业务接口校验与核验。`studio/apps/model_service/storage/models/model_templates.py` 与 `runtime_admission.py` 拥有模板同步和额度记录；旧 Console 模型公开名仅作明确兼容导出，恢复用例继续从模型能力直接导入自有记录。
+`studio/apps/model_service/catalog/credentials.py` 定义目录所需加密、解密和提示接口；目录、诊断、默认项冲突快照及演示安装必须接收装配的加密器，不能查询全局密钥。提示机制归 `studio/runtime/secrets.py`，旧 `app/runtime/secret_hints.py` 已删除。`studio/apps/model_service/catalog/default_storage.py` 定义默认选择的显式存储端口，与目录 CAS 使用同一事务；恢复网站在入口装配点和 `catalog/legacy.py` 兼容用例中提供 `legacy_defaults.py`、`legacy_usage.py`，独立实现不得导入这些兼容适配器。旧 `platform_settings` 的 `account_defaults:` 分区归 Models，正式导入仍须业务接口校验与核验。`studio/apps/model_service/storage/models/model_templates.py` 与 `runtime_admission.py` 拥有模板同步和额度记录；旧 Console 模型公开名仅作明确兼容导出，恢复用例继续从模型能力直接导入自有记录。
 
 `studio/apps/model_service/catalog/http_bindings.py` 提供不可变的每应用目录装配描述与账号绑定的 HTTP 用例依赖；恢复网站在 `assembly/website/bindings.py` 安装旧存储／任务占用适配器，目录、供应商和本地模型挂接路由不再直接构造旧适配器。`routes/models/diagnostics.py` 单独拥有模型诊断协议，避免目录只读装配加载供应商执行栈。`studio/apps/model_service/transport/errors.py` 统一模型操作错误映射，不导入其他路由。独立进程的目录 HTTP 切片验收不等于完整 Models 服务就绪。
 
@@ -1041,7 +1041,7 @@ OpenAPI 导出只构造 HTTP 协议层。测试通过 `tests/website_test_suppor
 
 ## 账号、会话与身份边界
 
-账号、Session、Management API Key 与审计 ORM 位于 `studio/apps/identity/storage/models/accounts.py`，邀请码和兑换记录位于同目录 `registration.py`。凭据操作归 `credentials/`，注册原子操作归 `registration/`，HTTP 入口归 `transport/website/`。账号、注册、Cookie/会话策略与用户名规范化是 `studio/contracts/identity/` 的公开契约；HTTP 前置条件由 `assembly/identity_http.py` 适配，普通消费者不因类型校验加载账号存储。
+账号、Session、Management API Key 与审计 ORM 位于 `studio/apps/identity/storage/models/accounts.py`，邀请码和兑换记录位于同目录 `registration.py`。凭据操作归 `credentials/`，注册原子操作归 `registration/`，邀请码创建与查看的加密能力由两种装配分别注入，HTTP 入口归 `transport/website/`。账号、注册、Cookie/会话策略与用户名规范化是 `studio/contracts/identity/` 的公开契约；HTTP 前置条件由 `assembly/identity_http.py` 适配，普通消费者不因类型校验加载账号存储。
 
 `assembly/website/account_provisioning.py` 注入兼容站模型目录初始化回调，仍与账号创建共用原事务；独立 Identity 使用持久目录事件。原 Console 模型聚合转发和平台协议聚合转发已移除。`platform_settings` 保持原表及已登记键分区，不归入账号私有状态。
 

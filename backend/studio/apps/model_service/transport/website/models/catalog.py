@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from studio.apps.model_service.catalog.defaults import update_defaults
-from studio.apps.model_service.catalog.http_bindings import CatalogDep, DefaultsDep
+from studio.apps.model_service.catalog.http_bindings import CatalogDep, CipherDep, DefaultsDep
 from studio.apps.model_service.catalog.service import (
     CatalogResourceBusyError,
     DuplicateModelError,
@@ -136,8 +136,11 @@ async def defaults(
     owner_user_id: OwnerDep,
     body: ModelDefaultsIn,
     defaults_store: DefaultsDep,
+    cipher: CipherDep,
 ):
     try:
-        return await update_defaults(session, owner_user_id, body, defaults_store=defaults_store)
+        return await update_defaults(
+            session, owner_user_id, body, defaults_store=defaults_store, cipher=cipher
+        )
     except ValueError as exc:
         raise HTTPException(422, {"code": "invalid_default_model", "message": str(exc)}) from None

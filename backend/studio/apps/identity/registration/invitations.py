@@ -6,7 +6,6 @@ from datetime import timedelta
 from sqlalchemy import case, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.credentials import decrypt_secret, encrypt_secret
 from studio.apps.identity.credentials.operations import add_audit_event, complete_login
 from studio.apps.identity.credentials.passwords import validate_password
 from studio.apps.identity.credentials.session_secrets import hash_secret
@@ -75,7 +74,7 @@ async def invite_page(session, *, q="", status="", page=1, page_size=25):
     }
 
 
-async def create_invite(session, principal, body, client_ip):
+async def create_invite(session, principal, body, client_ip, *, encrypt):
     principal = await begin_governance(session, principal)
     require_platform_admin(principal)
     if not body.name.strip():
@@ -87,7 +86,7 @@ async def create_invite(session, principal, body, client_ip):
         validity_days=body.validity_days,
         code_hash=hash_secret(secret),
         code_hint=f"{secret[:8]}…{secret[-4:]}",
-        secret_ciphertext=encrypt_secret(secret),
+        secret_ciphertext=encrypt(secret),
         expires_at=utc_now() + timedelta(days=body.validity_days),
     )
     session.add(row)
@@ -135,7 +134,7 @@ async def change_invite(session, principal, invite_id, body, client_ip):
     return invite_view(row)
 
 
-async def reveal_invite(session, principal, invite_id, client_ip):
+async def reveal_invite(session, principal, invite_id, client_ip, *, decrypt):
     principal = await begin_governance(session, principal)
     require_platform_admin(principal)
     if principal.reauthenticated_at is None or utc_now() - principal.reauthenticated_at > timedelta(
@@ -145,7 +144,7 @@ async def reveal_invite(session, principal, invite_id, client_ip):
     row = await session.get(Invite, invite_id)
     if row is None or row.deleted_at:
         raise AccountError("registration_invite_not_found")
-    secret = decrypt_secret(row.secret_ciphertext)
+    secret = decrypt(row.secret_ciphertext)
     add_audit_event(
         session,
         "registration_invite.secret_revealed",

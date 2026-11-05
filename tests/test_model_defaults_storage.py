@@ -3,6 +3,7 @@
 import sqlite3
 
 import pytest
+from cryptography.fernet import Fernet
 
 from studio.apps.model_service.catalog.defaults import update_defaults
 from studio.apps.model_service.defaults import OwnedCatalogDefaults
@@ -20,6 +21,7 @@ from studio.runtime.database.migrations import apply, check
 from studio.runtime.database.orm_base import Base
 from studio.runtime.database.sessions import Database
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.secrets import SecretCipher
 
 
 def test_defaults_migration_is_owned_idempotent_and_refuses_another_service(tmp_path):
@@ -76,6 +78,7 @@ async def test_default_selection_and_conflict_snapshot_share_the_owned_catalog_t
             "alpha",
             ModelDefaultsIn(expected_revision=0, default_model_ids={"chat": "model"}),
             defaults_store=store,
+            cipher=SecretCipher(Fernet.generate_key().decode()),
         )
         assert view.revision == 1 and view.default_model_ids == {"chat": "model"}
         with pytest.raises(RevisionConflictError) as conflict:
@@ -84,6 +87,7 @@ async def test_default_selection_and_conflict_snapshot_share_the_owned_catalog_t
                 "alpha",
                 ModelDefaultsIn(expected_revision=0, default_model_ids={}),
                 defaults_store=store,
+                cipher=SecretCipher(Fernet.generate_key().decode()),
             )
         assert conflict.value.snapshot["default_model_ids"] == {"chat": "model"}
         assert conflict.value.snapshot["revision"] == 1
@@ -100,6 +104,7 @@ async def test_invalid_selection_rolls_back_catalog_revision_and_cross_account_a
                 "alpha",
                 ModelDefaultsIn(expected_revision=0, default_model_ids={"chat": "foreign-model"}),
                 defaults_store=OwnedCatalogDefaults(session),
+                cipher=SecretCipher(Fernet.generate_key().decode()),
             )
         await session.rollback()
         assert (await session.get(ModelCatalogState, "alpha")).revision == 0

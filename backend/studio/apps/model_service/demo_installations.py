@@ -68,9 +68,10 @@ class DemoInstallClient:
 class DemoInstallations(PollingTaskRunner):
     runner_name = "model-demo-tool-installation"
 
-    def __init__(self, database, intents, client):
+    def __init__(self, database, intents, client, *, cipher):
         super().__init__()
         self.database, self.intents, self.client = database, intents, client
+        self.cipher = cipher
 
     async def start_install(self, session, principal, body, *, assertion, method, path, audits):
         identity = str(
@@ -107,6 +108,7 @@ class DemoInstallations(PollingTaskRunner):
                     session,
                     defaults_store=OwnedCatalogDefaults(session),
                     task_usage=OwnedCatalogTaskUsage(session),
+                    cipher=self.cipher,
                 )
                 await catalog.advance_revision(body.expected_catalog_revision)
                 session.add(

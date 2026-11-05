@@ -137,6 +137,7 @@ def create_app(
     app.state.service_id = "identity"
     app.state.database = database
     app.state.auth_attempts = AttemptLimiter()
+    app.state.invitation_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.cloud_factors = CloudFactors(
         FactorRecords(database.sessions, clock=utc_now),
         cipher=SecretCipher(settings.fpl_secrets_key),

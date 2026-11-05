@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, HTTPException, Request
 
+from studio.apps.model_service.catalog.http_bindings import CipherDep
 from studio.apps.model_service.catalog.service import ResourceNotFoundError
 from studio.apps.model_service.diagnostics import DiagnosticCallError, test_model
 from studio.apps.model_service.transport.provider_bindings import provider_options
@@ -14,7 +15,11 @@ router = APIRouter(tags=["models"])
 
 @router.post("/model-entries/{model_id}/test", response_model=TestModelOut)
 async def run_model_test(
-    session: SessionDep, model_id: str, credential: CallCredentialDep, request: Request
+    session: SessionDep,
+    model_id: str,
+    credential: CallCredentialDep,
+    request: Request,
+    cipher: CipherDep,
 ) -> TestModelOut:
     try:
         return await test_model(
@@ -22,6 +27,7 @@ async def run_model_test(
             model_id,
             credential=credential,
             transport_options=lambda base_url: provider_options(request, base_url),
+            cipher=cipher,
         )
     except ResourceNotFoundError as exc:
         raise HTTPException(404, {"code": "not_found", "message": str(exc)}) from None

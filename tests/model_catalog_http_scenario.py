@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 
 import httpx
+from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, HTTPException
 
@@ -33,6 +34,7 @@ from studio.runtime.database.sessions import Database
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.problem_details import http_exception_handler, revision_conflict_handler
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.secrets import SecretCipher
 
 assert "studio.runtime.database.website" not in sys.modules
 assert "studio.apps.identity.storage.models.accounts" not in sys.modules
@@ -60,7 +62,11 @@ async def scenario():
     routes = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.state.service_id, app.state.database = "models", database
-    app.state.model_catalog_bindings = CatalogBindings(OwnedCatalogDefaults, NoTasks)
+    app.state.model_catalog_bindings = CatalogBindings(
+        cipher=SecretCipher(Fernet.generate_key().decode()),
+        defaults=OwnedCatalogDefaults,
+        task_usage=NoTasks,
+    )
     app.include_router(catalog.router, prefix="/v1")
     app.include_router(suppliers.router, prefix="/v1")
     app.add_exception_handler(HTTPException, http_exception_handler)

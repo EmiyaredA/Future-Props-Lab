@@ -4,8 +4,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.credentials import encrypt_secret
-from app.runtime.secret_hints import encrypted_secret_hint
+from studio.apps.model_service.catalog.credentials import CatalogCipher
 from studio.apps.model_service.catalog.default_storage import CatalogDefaults
 from studio.apps.model_service.catalog.metadata import categories_for_provider
 from studio.apps.model_service.catalog.supplier_records import get_supplier, list_suppliers
@@ -108,10 +107,12 @@ class ModelCatalogService:
         self,
         session: AsyncSession,
         *,
+        cipher: CatalogCipher,
         task_usage: CatalogTaskUsage | None = None,
         defaults_store: CatalogDefaults | None = None,
     ) -> None:
         self.session = session
+        self.cipher = cipher
         self.task_usage = task_usage
         self.defaults_store = defaults_store
 
@@ -199,7 +200,7 @@ class ModelCatalogService:
             base_url=row.base_url,
             enabled=row.enabled,
             has_api_key=bool(row.api_key_ciphertext),
-            api_key_hint=encrypted_secret_hint(row.api_key_ciphertext),
+            api_key_hint=self.cipher.hint(row.api_key_ciphertext),
             models=[_model_out(item) for item in models],
         )
 
@@ -243,7 +244,7 @@ class ModelCatalogService:
             supplier_id=body.supplier_id,
             kind=body.kind,
             base_url=body.base_url,
-            api_key_ciphertext=encrypt_secret(body.api_key) if body.api_key.strip() else "",
+            api_key_ciphertext=self.cipher.encrypt(body.api_key) if body.api_key.strip() else "",
             enabled=body.enabled,
             sort_order=count,
         )
@@ -279,7 +280,7 @@ class ModelCatalogService:
         if body.kind == "local_qwen_tts":
             row.api_key_ciphertext = ""
         elif body.api_key.strip():
-            row.api_key_ciphertext = encrypt_secret(body.api_key)
+            row.api_key_ciphertext = self.cipher.encrypt(body.api_key)
         entries = (
             (
                 await self.session.execute(

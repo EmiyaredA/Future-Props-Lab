@@ -79,10 +79,18 @@ async def make_legacy(path):
                 session_id=auth.id,
             )
             invite = await create_invite(
-                session, principal, RegistrationInviteIn(name="Restored invitation", max_uses=2), ""
+                session,
+                principal,
+                RegistrationInviteIn(name="Restored invitation", max_uses=2),
+                "",
+                encrypt=SecretCipher(get_settings().fpl_secrets_key).encrypt,
             )
             deleted = await create_invite(
-                session, principal, RegistrationInviteIn(name="Deleted invitation"), ""
+                session,
+                principal,
+                RegistrationInviteIn(name="Deleted invitation"),
+                "",
+                encrypt=SecretCipher(get_settings().fpl_secrets_key).encrypt,
             )
             await change_invite(
                 session,

@@ -59,7 +59,12 @@ async def install(
 ):
     principal = await _browser_auth(request, session)
     return await governance.install(
-        session, principal, service_id, body.expected_catalog_revision, client_ip(request)
+        session,
+        principal,
+        service_id,
+        body.expected_catalog_revision,
+        client_ip(request),
+        cipher=request.app.state.model_catalog_bindings.cipher,
     )
 
 

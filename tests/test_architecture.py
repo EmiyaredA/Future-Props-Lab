@@ -417,11 +417,14 @@ def test_generation_features_use_the_shared_task_driver() -> None:
 
 
 def test_secret_hints_and_provider_categories_have_one_owner() -> None:
-    hint_owner = BACKEND_APP / "runtime" / "secret_hints.py"
+    hint_owner = REPO_ROOT / "backend/studio/runtime/secrets.py"
     hint_violations = [
         _relative(path)
-        for path in _python_files(BACKEND_APP)
-        if path != hint_owner and "value[-4:]" in path.read_text(encoding="utf-8")
+        for path in _python_files(REPO_ROOT / "backend")
+        if path != hint_owner
+        and any(
+            pattern in path.read_text(encoding="utf-8") for pattern in ("value[-4:]", "plain[-4:]")
+        )
     ]
     category_violations = [
         _relative(path)
@@ -429,8 +432,9 @@ def test_secret_hints_and_provider_categories_have_one_owner() -> None:
         if path.name != "metadata.py"
         and "def _categories_for_provider" in path.read_text(encoding="utf-8")
     ]
-    assert not hint_violations, "加密密钥提示只能由 runtime.secret_hints 生成：\n" + "\n".join(
-        hint_violations
+    assert not hint_violations, (
+        "加密密钥提示只能由 studio.runtime.secrets 的显式加密器生成：\n"
+        + "\n".join(hint_violations)
     )
     assert not category_violations, "供应商默认类别只能由 catalog.metadata 定义：\n" + (
         "\n".join(category_violations)

@@ -438,3 +438,21 @@ def test_workbench_never_discovers_process_global_configuration():
                 if node.func.attr in {"get_settings", "get_cloud_settings"}:
                     violations.append(str(path.relative_to(STUDIO)))
     assert not violations
+
+
+def test_catalog_and_identity_do_not_load_legacy_credential_helpers():
+    paths = list((STUDIO / "apps/identity").rglob("*.py"))
+    paths += list((STUDIO / "apps/model_service/catalog").rglob("*.py"))
+    paths += [
+        STUDIO / "apps/model_service" / name
+        for name in (
+            "demo.py",
+            "demo_installations.py",
+            "diagnostics.py",
+            "demonstration/website_management.py",
+        )
+    ]
+    for path in paths:
+        assert "app.runtime.credentials" not in set(imports(path)), path
+        assert "app.runtime.secret_hints" not in set(imports(path)), path
+    assert not (ROOT / "backend/app/runtime/secret_hints.py").exists()

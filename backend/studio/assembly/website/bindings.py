@@ -97,6 +97,7 @@ from studio.runtime.time import utc_now
 def bind_components(app, settings, database):
     bind_creative(app, settings)
     app.state.auth_attempts = AttemptLimiter()
+    app.state.invitation_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.assistant_approvals = ApprovalBroker()
     app.state.cloud_factors = CloudFactors(
         FactorRecords(database.sessions, clock=utc_now),
@@ -164,6 +165,7 @@ def bind_components(app, settings, database):
     app.state.model_catalog_bindings = CatalogBindings(
         defaults=LegacyCatalogDefaults,
         task_usage=LegacyCatalogTaskUsage,
+        cipher=SecretCipher(settings.fpl_secrets_key),
     )
     app.state.model_credential_reader = snapshot_from_principal
     app.state.model_admission = AdmissionBindings(

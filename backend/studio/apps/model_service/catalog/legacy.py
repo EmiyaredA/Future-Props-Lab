@@ -5,9 +5,10 @@ from studio.apps.model_service.catalog.legacy_usage import LegacyCatalogTaskUsag
 from studio.apps.model_service.catalog.service import ModelCatalogService
 
 
-def legacy_catalog(session):
+def legacy_catalog(session, *, cipher):
     return ModelCatalogService(
         session,
         task_usage=LegacyCatalogTaskUsage(session),
         defaults_store=LegacyCatalogDefaults(session),
+        cipher=cipher,
     )

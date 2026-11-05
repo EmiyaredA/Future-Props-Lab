@@ -7,6 +7,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from studio.apps.model_service.catalog.credentials import CatalogCipher
 from studio.apps.model_service.catalog.default_storage import CatalogDefaults
 from studio.apps.model_service.catalog.service import ModelCatalogService
 from studio.apps.model_service.catalog.suppliers import ModelSupplierService
@@ -16,6 +17,7 @@ from studio.assembly.http_dependencies import SessionDep, StudioAuth
 
 @dataclass(frozen=True)
 class CatalogBindings:
+    cipher: CatalogCipher
     defaults: Callable[[AsyncSession], CatalogDefaults]
     task_usage: Callable[[AsyncSession], CatalogTaskUsage]
 
@@ -33,6 +35,7 @@ def catalog_case(request: Request, session: SessionDep, _principal: StudioAuth):
         session,
         defaults_store=owner.defaults(session),
         task_usage=owner.task_usage(session),
+        cipher=owner.cipher,
     )
 
 
@@ -42,6 +45,7 @@ def supplier_case(request: Request, session: SessionDep, _principal: StudioAuth)
         session,
         defaults_store=owner.defaults(session),
         task_usage=owner.task_usage(session),
+        cipher=owner.cipher,
     )
 
 
@@ -52,3 +56,10 @@ def default_storage(request: Request, session: SessionDep, _principal: StudioAut
 CatalogDep = Annotated[ModelCatalogService, Depends(catalog_case)]
 SupplierDep = Annotated[ModelSupplierService, Depends(supplier_case)]
 DefaultsDep = Annotated[CatalogDefaults, Depends(default_storage)]
+
+
+def credential_cipher(request: Request, _principal: StudioAuth):
+    return bindings(request).cipher
+
+
+CipherDep = Annotated[CatalogCipher, Depends(credential_cipher)]
