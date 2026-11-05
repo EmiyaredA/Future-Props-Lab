@@ -98,8 +98,16 @@ for (const kind of ["image", "video", "audio"] as const) {
           .locator('[data-node-id="target"] .canvas-node-media')
           .click();
         await page.getByRole("button", { name: "替换素材" }).click();
-        await page.getByRole("tab", { name: "AI 生成" }).click();
+        await page
+          .getByRole("tab", {
+            name: kind === "video" ? "生成设置" : "AI 生成",
+            exact: true,
+          })
+          .click();
         await expect(select).toContainText("舞蹈方案");
+        const minHeight = await select.evaluate(
+          (control) => getComputedStyle(control).minHeight,
+        );
         // Simulate a lazy-loaded thought-workshop stylesheet arriving last.
         await page.addStyleTag({
           content: readFileSync(
@@ -110,7 +118,7 @@ for (const kind of ["image", "video", "audio"] as const) {
             "utf8",
           ),
         });
-        await expect(select).toHaveCSS("min-height", "36px");
+        await expect(select).toHaveCSS("min-height", minHeight);
         await expect(select.locator(".select-chevron")).toHaveCSS(
           "width",
           /^(14|15)px$/,
