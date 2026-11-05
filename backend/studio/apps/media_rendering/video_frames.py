@@ -11,10 +11,10 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import ValidationError
 
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
-from app.capabilities.media_rendering.frame_renderer import render_plan_frame
-from app.capabilities.media_rendering.text_layer import text_layer_png
-from app.capabilities.media_rendering.timeline_ranges import frame_asset_ids, timeline_duration_us
+from studio.apps.media_rendering.local.frame_renderer import render_plan_frame
+from studio.apps.media_rendering.local.inputs import RenderCaptureFrame, RenderPlan
+from studio.apps.media_rendering.local.text_layer import text_layer_png
+from studio.apps.media_rendering.local.timeline_ranges import frame_asset_ids, timeline_duration_us
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.motion_compositor.motion_preview import sha256

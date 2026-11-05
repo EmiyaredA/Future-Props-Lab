@@ -1,6 +1,6 @@
 """Calculate the positions of a Visual review's requested video interval."""
 
-from app.capabilities.media_rendering.sample_positions import review_positions
+from studio.apps.media_rendering.local.sample_positions import review_positions
 from studio.apps.visual_workshop.acceptance.project_access import AcceptanceError
 
 

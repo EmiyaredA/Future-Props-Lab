@@ -3,7 +3,7 @@
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 
-from app.capabilities.media_rendering.render_capacity import galgame_capacity
+from studio.apps.media_rendering.local.render_capacity import galgame_capacity
 from studio.contracts.galgame_workshop.galgame_render import (
     CAPACITY_PREFIX,
     RendererCapacity,

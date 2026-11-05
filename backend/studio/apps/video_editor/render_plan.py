@@ -1,5 +1,5 @@
-"""Compatibility imports for callers migrating to :mod:`app.capabilities.media_rendering`."""
+"""Compatibility imports for callers migrating to :mod:`studio.apps.media_rendering.local`."""
 
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
+from studio.apps.media_rendering.local.inputs import RenderCaptureFrame, RenderPlan
 
 __all__ = ["RenderCaptureFrame", "RenderPlan"]

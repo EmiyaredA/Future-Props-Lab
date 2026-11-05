@@ -13,10 +13,10 @@ import httpx
 from anyio.to_thread import run_sync
 from sqlalchemy import select, text, update
 
-from app.capabilities.media_rendering.chroma_key import bake_image
-from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
-from app.capabilities.media_rendering.video_derivatives import probe_media
-from app.capabilities.media_rendering.video_output import (
+from studio.apps.media_rendering.local.chroma_key import bake_image
+from studio.apps.media_rendering.local.render_engine import RenderCancelled, render_document
+from studio.apps.media_rendering.local.video_derivatives import probe_media
+from studio.apps.media_rendering.local.video_output import (
     verify_clip_merge_output,
     verify_video_output,
 )

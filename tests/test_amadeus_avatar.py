@@ -5,10 +5,10 @@ from pathlib import Path
 
 from PIL import Image
 
-from app.capabilities.media_rendering.live2d.bundle import read_package
-from app.capabilities.media_rendering.live2d.evaluate import parameter_values
-from app.capabilities.media_rendering.live2d.idle import idle_pose
-from app.capabilities.media_rendering.live2d.render import render_frame
+from studio.apps.media_rendering.local.live2d.bundle import read_package
+from studio.apps.media_rendering.local.live2d.evaluate import parameter_values
+from studio.apps.media_rendering.local.live2d.idle import idle_pose
+from studio.apps.media_rendering.local.live2d.render import render_frame
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = ROOT / "web/public/brand/amadeus/amadeus.fpllive2d"

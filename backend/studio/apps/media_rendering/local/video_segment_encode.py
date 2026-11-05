@@ -4,8 +4,8 @@ import subprocess
 from pathlib import Path
 from threading import Event
 
-from .render_engine import RenderCancelled
-from .speed import audio_speed_filters
+from studio.apps.media_rendering.local.render_engine import RenderCancelled
+from studio.apps.media_rendering.local.speed import audio_speed_filters
 
 SEGMENT_QUALITY = {
     "high": ("slow", "18", "256k"),

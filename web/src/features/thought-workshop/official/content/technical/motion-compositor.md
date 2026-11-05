@@ -77,5 +77,5 @@ classDiagram
 ## 代码入口
 
 1. `backend/studio/contracts/motion_compositor/document.py`
-2. `backend/app/capabilities/media_rendering/motion_frames.py`
+2. `backend/studio/apps/media_rendering/local/motion_frames.py`
 3. `backend/studio/apps/motion_compositor/snapshots.py`

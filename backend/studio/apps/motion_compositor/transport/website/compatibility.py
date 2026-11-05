@@ -9,7 +9,7 @@ from fastapi import APIRouter, File, Query, UploadFile
 from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
-from app.capabilities.media_rendering.motion_frames import MotionFrameRenderer
+from studio.apps.media_rendering.local.motion_frames import MotionFrameRenderer
 from studio.apps.motion_compositor.assets import MotionAssets
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionProjects
 from studio.apps.motion_compositor.schemas import (

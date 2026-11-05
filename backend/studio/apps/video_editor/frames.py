@@ -9,16 +9,16 @@ from uuid import uuid4
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
-from app.capabilities.media_rendering.evaluator import (
+from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.media_rendering.local.evaluator import (
     FRAME_COMPOSITOR_VERSION,
     timeline_duration_us,
 )
-from app.capabilities.media_rendering.frame_renderer import render_plan_frame
-from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, text_layer_png
-from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSION
-from studio.apps.asset_library.storage.file_paths import AssetStorage
-from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.media_rendering.local.frame_renderer import render_plan_frame
+from studio.apps.media_rendering.local.inputs import RenderCaptureFrame, RenderPlan
+from studio.apps.media_rendering.local.text_layer import TEXT_RENDER_VERSION, text_layer_png
+from studio.apps.media_rendering.local.video_sampling import VIDEO_SAMPLING_VERSION
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import VideoEditorClip, parse_timeline_document

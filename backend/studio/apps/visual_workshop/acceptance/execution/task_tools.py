@@ -12,10 +12,10 @@ from uuid import uuid4
 from mcp.server import MCPServer
 from mcp.types import ImageContent, TextContent
 
-from app.capabilities.media_rendering.inspection import inspect_media
-from app.capabilities.media_rendering.review_images import review_jpeg
-from app.capabilities.media_rendering.video_frames import extract_frame
-from app.capabilities.media_rendering.video_sampling import source_frame_time
+from studio.apps.media_rendering.local.inspection import inspect_media
+from studio.apps.media_rendering.local.review_images import review_jpeg
+from studio.apps.media_rendering.local.video_frames import extract_frame
+from studio.apps.media_rendering.local.video_sampling import source_frame_time
 
 
 def safe_file(root, name):

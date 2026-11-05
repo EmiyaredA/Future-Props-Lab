@@ -21,7 +21,7 @@ jobs:
         with:
           lfs: false
       - name: Pull backend runtime assets
-        run: git lfs pull --include="backend/app/capabilities/media_rendering/assets/*.ttf,web/public/brand/amadeus/*" --exclude=""
+        run: git lfs pull --include="backend/studio/apps/media_rendering/local/assets/*.ttf,web/public/brand/amadeus/*" --exclude=""
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -76,7 +76,7 @@ jobs:
         with:
           lfs: false
       - name: Pull E2E runtime assets
-        run: git lfs pull --include="backend/app/capabilities/media_rendering/assets/*.ttf,web/public/presentation-templates/*,web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,web/public/brand/presentation-workshop-mark.png,web/public/brand/interview-assistant-mark.png" --exclude=""
+        run: git lfs pull --include="backend/studio/apps/media_rendering/local/assets/*.ttf,web/public/presentation-templates/*,web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,web/public/brand/presentation-workshop-mark.png,web/public/brand/interview-assistant-mark.png" --exclude=""
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -128,7 +128,7 @@ jobs:
           mkdir -p .local/service-split
       - run: npx playwright install --with-deps chromium
       - name: Pull independently owned Portal program assets
-        run: git lfs pull --include="web/public/brand/*-mark.png,web/public/brand/home/*,web/public/brand/thumbnails/*,backend/app/capabilities/media_rendering/assets/*.ttf" --exclude=""
+        run: git lfs pull --include="web/public/brand/*-mark.png,web/public/brand/home/*,web/public/brand/thumbnails/*,backend/studio/apps/media_rendering/local/assets/*.ttf" --exclude=""
       - name: Build the independent browser programs
         run: |
           npm run services:build:web -- agents > .local/service-split/ci-web-build.log

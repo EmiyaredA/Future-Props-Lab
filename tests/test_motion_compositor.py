@@ -12,7 +12,7 @@ import pytest
 from PIL import Image
 from sqlalchemy import select
 
-from app.capabilities.media_rendering.motion_frames import MotionFrameRenderer
+from studio.apps.media_rendering.local.motion_frames import MotionFrameRenderer
 from studio.apps.motion_compositor.projects import MotionNotFound, MotionProjects
 from studio.apps.motion_compositor.runner import MotionExportRunner
 from studio.apps.motion_compositor.storage.models import MotionTask

@@ -12,11 +12,11 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response, StreamingResponse
 from starlette.background import BackgroundTask
 
-from app.capabilities.media_rendering.inspection import inspect_media, verify_video
-from app.capabilities.media_rendering.review_images import review_jpeg
-from app.capabilities.media_rendering.sample_positions import review_positions
-from app.capabilities.media_rendering.video_frames import extract_frame
-from app.capabilities.media_rendering.video_sampling import source_frame_time
+from studio.apps.media_rendering.local.inspection import inspect_media, verify_video
+from studio.apps.media_rendering.local.review_images import review_jpeg
+from studio.apps.media_rendering.local.sample_positions import review_positions
+from studio.apps.media_rendering.local.video_frames import extract_frame
+from studio.apps.media_rendering.local.video_sampling import source_frame_time
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.visual_workshop.visual_review import MAX_IMAGE_BASE64

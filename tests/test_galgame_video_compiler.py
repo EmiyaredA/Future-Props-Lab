@@ -3,12 +3,12 @@ from pathlib import Path
 
 from PIL import Image
 
-from app.capabilities.media_rendering.galgame.compiler import (
+from studio.apps.media_rendering.local.galgame.compiler import (
     FLOATING_TEXT_FONT_ASSET_ID,
     compile_galgame_render_plan,
 )
-from app.capabilities.media_rendering.galgame.dialogue import FONT_REGULAR
-from app.capabilities.media_rendering.galgame.lip_sync import AudioEnvelope
+from studio.apps.media_rendering.local.galgame.dialogue import FONT_REGULAR
+from studio.apps.media_rendering.local.galgame.lip_sync import AudioEnvelope
 from studio.apps.video_editor.frames import render_plan_frame
 
 

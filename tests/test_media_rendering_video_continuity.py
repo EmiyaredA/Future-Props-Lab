@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame
-from app.capabilities.media_rendering.render_engine import (
+from studio.apps.media_rendering.local.inputs import RenderCaptureFrame
+from studio.apps.media_rendering.local.render_engine import (
     RENDER_PRESETS,
     _VideoDecoder,
     render_document,

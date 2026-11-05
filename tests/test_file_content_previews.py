@@ -15,9 +15,9 @@ from PIL import Image
 from pypdf import PdfWriter
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 
-from app.capabilities.media_rendering import preview_metadata as file_previews
-from app.capabilities.media_rendering import preview_metadata as preview_operations
-from app.capabilities.media_rendering.preview_metadata import media_thumbnail
+from studio.apps.media_rendering.local import preview_metadata as file_previews
+from studio.apps.media_rendering.local import preview_metadata as preview_operations
+from studio.apps.media_rendering.local.preview_metadata import media_thumbnail
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.media_content import MediaDescription
 from website_test_support import app

@@ -7,7 +7,7 @@ import pytest
 from PIL import Image
 from sqlalchemy import select
 
-from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
+from studio.apps.media_rendering.local.evaluator import FrameSource, TimelineFrameRenderer
 from studio.apps.video_editor.clip_merging.document import (
     render_snapshot,
     replace_selection,

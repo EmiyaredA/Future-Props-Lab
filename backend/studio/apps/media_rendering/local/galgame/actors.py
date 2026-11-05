@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from app.capabilities.media_rendering.galgame.lip_sync import LipSyncSchedule
-from app.capabilities.media_rendering.galgame.values import (
+from studio.apps.media_rendering.local.galgame.lip_sync import LipSyncSchedule
+from studio.apps.media_rendering.local.galgame.values import (
     CharacterPresentation,
     actor_layout,
     apply_composed_visual_motion,

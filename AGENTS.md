@@ -109,7 +109,9 @@
   供应商原始事件。
 - 图片/视频后台任务的状态转换由 `studio/apps/model_service/generation/driver.GenerationTaskDriver` 唯一编排；各功能
   只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
-- 确定性时间线画面与视频渲染由 `backend/app/capabilities/media_rendering/` 统一拥有；Galgame 直接导出不得
+- 媒体本地适配通过 `studio/deployment/media_modules.py` 逐模块登记可打包范围，不开放媒体存储或用例；
+  预览并发由装配实例持有，禁止模块全局信号量。
+- 确定性时间线画面与视频渲染由 `backend/studio/apps/media_rendering/local/` 统一拥有；Galgame 直接导出不得
   依赖 `video_editor/` 实现，只有显式的视频编辑器交接用例可以跨功能调用。
 - ORM 的 ID/时间默认工厂由 `studio/runtime/ids.py` 与 `studio/runtime/time.py` 维护；各包 ORM 模型只依赖
   `studio.runtime.database.orm_base` 与上述工厂。生产 Python 包不得形成强依赖环。账号项目记录的加载、CAS

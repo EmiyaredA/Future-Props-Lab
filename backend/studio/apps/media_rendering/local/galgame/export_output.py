@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from .timing import PRESETS
+from studio.apps.media_rendering.local.galgame.timing import PRESETS
 
 
 def safe_filename(value: str) -> str:

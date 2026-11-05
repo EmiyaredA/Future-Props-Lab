@@ -5,8 +5,8 @@ from uuid import UUID
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
 
-from app.capabilities.media_rendering.presets import RENDER_PRESETS
-from app.capabilities.media_rendering.timeline_ranges import timeline_duration_us
+from studio.apps.media_rendering.local.presets import RENDER_PRESETS
+from studio.apps.media_rendering.local.timeline_ranges import timeline_duration_us
 from studio.contracts.motion_compositor.motion_preview import sha256
 from studio.contracts.video_editor.timeline_document import (
     VideoEditorChromaKey,

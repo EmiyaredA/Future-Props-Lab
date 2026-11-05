@@ -1,6 +1,6 @@
 """Compatibility imports for the shared timeline evaluator."""
 
-from app.capabilities.media_rendering.evaluator import (
+from studio.apps.media_rendering.local.evaluator import (
     FrameSource,
     TimelineFrameRenderer,
     clip_opacity,

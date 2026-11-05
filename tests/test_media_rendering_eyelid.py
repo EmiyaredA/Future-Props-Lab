@@ -5,8 +5,8 @@ import threading
 
 from PIL import Image
 
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame
-from app.capabilities.media_rendering.render_engine import RENDER_PRESETS, render_document
+from studio.apps.media_rendering.local.inputs import RenderCaptureFrame
+from studio.apps.media_rendering.local.render_engine import RENDER_PRESETS, render_document
 from studio.contracts.video_editor.timeline_document import parse_timeline_document
 
 

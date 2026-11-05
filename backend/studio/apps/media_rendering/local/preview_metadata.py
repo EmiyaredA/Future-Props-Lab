@@ -1,4 +1,8 @@
-"""Authorized, revisioned file previews. Expensive work runs outside the read transaction."""
+"""Authorized derivatives; the owning LocalMediaProcessor bounds concurrent work.
+
+No module-global semaphore: independent applications own independent lifetimes.
+All temporary writes are cleaned on error or cancellation.
+"""
 
 import asyncio
 import json
@@ -6,29 +10,19 @@ import os
 import sys
 from pathlib import Path
 from uuid import uuid4
-from weakref import WeakKeyDictionary
 
-from studio.contracts.asset_library.errors import AssetError
-from studio.contracts.asset_library.files import FilePreviewOut
-from studio.contracts.asset_library.media_content import MediaDescription
-
-from .file_previews import (
+from studio.apps.media_rendering.local.file_previews import (
     audio_waveform,
     media_duration,
     video_cover,
 )
+from studio.contracts.asset_library.errors import AssetError
+from studio.contracts.asset_library.files import FilePreviewOut
+from studio.contracts.asset_library.media_content import MediaDescription
 
-_capacities: WeakKeyDictionary = WeakKeyDictionary()
 TEXT_LIMIT = 64 * 1024
 PDF_TIMEOUT_SECONDS = 30
 TEXT_EXTENSIONS = {".txt", ".md", ".json", ".csv"}
-
-
-def _capacity() -> asyncio.Semaphore:
-    loop = asyncio.get_running_loop()
-    if loop not in _capacities:
-        _capacities[loop] = asyncio.Semaphore(2)
-    return _capacities[loop]
 
 
 def preview_kind(info: MediaDescription) -> str:
@@ -49,7 +43,7 @@ async def pdf_worker(source: Path, action: str, *args: str) -> dict:
     process = await asyncio.create_subprocess_exec(
         sys.executable,
         "-m",
-        "app.capabilities.media_rendering.pdf_preview_worker",
+        "studio.apps.media_rendering.local.pdf_preview_worker",
         str(source),
         action,
         *args,
@@ -90,30 +84,27 @@ async def describe_preview(settings, info: MediaDescription, source: Path) -> Fi
         return FilePreviewOut(kind=kind)
     target = cache_root(settings, info) / f"{info.revision}-preview-v1.json"
     try:
-        async with _capacity():
-            if target.is_file():
-                try:
-                    return FilePreviewOut.model_validate_json(
-                        await asyncio.to_thread(target.read_text)
-                    )
-                except ValueError:
-                    # A damaged derived record can be rebuilt from the authorized original.
-                    pass
-            if kind == "text":
-                result = await asyncio.to_thread(_text_preview, source)
-            elif kind == "pdf":
-                result = FilePreviewOut(kind="pdf", **await pdf_worker(source, "info"))
-            else:
-                duration = await media_duration(source)
-                result = FilePreviewOut(
-                    kind=kind,
-                    duration_seconds=duration,
-                    waveform_seconds=min(duration, 60)
-                    if duration is not None and kind == "audio"
-                    else None,
-                )
-            await asyncio.to_thread(_save_metadata, target, result)
-            return result
+        if target.is_file():
+            try:
+                return FilePreviewOut.model_validate_json(await asyncio.to_thread(target.read_text))
+            except ValueError:
+                # A damaged derived record can be rebuilt from the authorized original.
+                pass
+        if kind == "text":
+            result = await asyncio.to_thread(_text_preview, source)
+        elif kind == "pdf":
+            result = FilePreviewOut(kind="pdf", **await pdf_worker(source, "info"))
+        else:
+            duration = await media_duration(source)
+            result = FilePreviewOut(
+                kind=kind,
+                duration_seconds=duration,
+                waveform_seconds=min(duration, 60)
+                if duration is not None and kind == "audio"
+                else None,
+            )
+        await asyncio.to_thread(_save_metadata, target, result)
+        return result
     except (ValueError, OSError, TimeoutError) as exc:
         raise AssetError("预览读取失败，文件可能损坏或已加密", code="preview_failed") from exc
 
@@ -137,21 +128,20 @@ async def media_thumbnail(
     if kind != "pdf" and page != 1:
         raise AssetError("只有 PDF 支持分页预览", code="preview_page_out_of_range")
     target = cache_root(settings, info) / f"{info.revision}-{size}-{page}-preview-v1.webp"
-    async with _capacity():
-        if target.is_file():
-            return target
-        target.parent.mkdir(parents=True, exist_ok=True)
-        staged = target.with_name(uuid4().hex + ".tmp")
-        try:
-            if kind == "pdf":
-                await pdf_worker(source, "render", str(staged), str(page), str(size))
-            elif kind == "video":
-                await video_cover(source, staged, size)
-            else:
-                await audio_waveform(source, staged, size)
-            os.replace(staged, target)
-        except (ValueError, OSError, TimeoutError) as exc:
-            raise AssetError("内容预览生成失败，请重试或下载原文件", code="preview_failed") from exc
-        finally:
-            staged.unlink(missing_ok=True)
+    if target.is_file():
+        return target
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staged = target.with_name(uuid4().hex + ".tmp")
+    try:
+        if kind == "pdf":
+            await pdf_worker(source, "render", str(staged), str(page), str(size))
+        elif kind == "video":
+            await video_cover(source, staged, size)
+        else:
+            await audio_waveform(source, staged, size)
+        os.replace(staged, target)
+    except (ValueError, OSError, TimeoutError) as exc:
+        raise AssetError("内容预览生成失败，请重试或下载原文件", code="preview_failed") from exc
+    finally:
+        staged.unlink(missing_ok=True)
     return target

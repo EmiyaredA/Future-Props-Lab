@@ -5,8 +5,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
-from app.capabilities.media_rendering.galgame.lip_sync import LipSyncSchedule
+from studio.apps.media_rendering.local.galgame.lip_sync import LipSyncSchedule
+from studio.apps.media_rendering.local.inputs import RenderCaptureFrame, RenderPlan
 from studio.contracts.video_editor.timeline_document import VideoEditorTimelineDocument
 
 DISTANCE_SCALE = {"far": 0.78, "medium": 1.0, "near": 1.28}

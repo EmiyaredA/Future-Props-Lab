@@ -132,7 +132,7 @@ def test_gateway_image_contains_no_business_or_identity_database():
 def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
     closure = source_closure(ROOT, "rendering")
     assert "studio.assembly.independent.media_rendering.application" in closure
-    assert "app.capabilities.media_rendering.pdf_preview_worker" in closure
+    assert "studio.apps.media_rendering.local.pdf_preview_worker" in closure
     assert not any(
         name.startswith(
             (

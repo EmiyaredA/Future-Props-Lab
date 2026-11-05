@@ -1,7 +1,7 @@
 import pytest
 from PIL import Image
 
-from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
+from studio.apps.media_rendering.local.evaluator import FrameSource, TimelineFrameRenderer
 from studio.apps.video_editor.schemas import VideoEditorTimelineBatchIn, VideoEditorTimelineDocument
 from studio.apps.video_editor.timeline import apply_operations
 from studio.contracts.video_editor.timeline_document import (

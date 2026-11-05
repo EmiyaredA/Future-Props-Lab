@@ -8,7 +8,7 @@ import time
 
 import pytest
 
-from app.capabilities.media_rendering.render_engine import (
+from studio.apps.media_rendering.local.render_engine import (
     RenderCancelled,
     _decoder_request_action,
     _decoder_seek_args,

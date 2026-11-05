@@ -13,8 +13,8 @@ from anyio.to_thread import run_sync
 from fastapi import HTTPException
 from sqlalchemy import select, text
 
-from app.capabilities.media_rendering.galgame.export_output import verify_galgame_video
-from app.capabilities.media_rendering.render_engine import RenderCancelled, render_plan
+from studio.apps.media_rendering.local.galgame.export_output import verify_galgame_video
+from studio.apps.media_rendering.local.render_engine import RenderCancelled, render_plan
 from studio.apps.media_rendering.storage.file_paths import sync_directory, sync_files
 from studio.apps.media_rendering.storage.service_models import GalgameExportJob
 from studio.contracts.galgame_workshop.galgame_exports import (

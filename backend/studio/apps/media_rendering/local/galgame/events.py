@@ -2,11 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.capabilities.media_rendering.galgame.timing import estimate_block_ms
-from app.capabilities.media_rendering.galgame.values import (
-    camera_values,
-    dialogue_speaker_ids,
-)
+from studio.apps.media_rendering.local.galgame.timing import estimate_block_ms
+from studio.apps.media_rendering.local.galgame.values import camera_values, dialogue_speaker_ids
 
 CompilerEvent = tuple[int, int, str, dict[str, Any]]
 

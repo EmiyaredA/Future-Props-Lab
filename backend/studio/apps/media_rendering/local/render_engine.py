@@ -15,16 +15,16 @@ from typing import BinaryIO
 
 from PIL import Image
 
-from app.capabilities.media_rendering.audio_transitions import (
+from studio.apps.media_rendering.local.audio_transitions import (
     AUDIO_SEAM_KINDS,
     eased_progress,
     sweep_frequency,
 )
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
-from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
-from app.capabilities.media_rendering.presets import RENDER_PRESETS
-from app.capabilities.media_rendering.speed import audio_speed_filters, source_time_us
-from app.capabilities.media_rendering.video_sampling import source_frame_time
+from studio.apps.media_rendering.local.evaluator import FrameSource, TimelineFrameRenderer
+from studio.apps.media_rendering.local.inputs import RenderCaptureFrame, RenderPlan
+from studio.apps.media_rendering.local.presets import RENDER_PRESETS
+from studio.apps.media_rendering.local.speed import audio_speed_filters, source_time_us
+from studio.apps.media_rendering.local.video_sampling import source_frame_time
 from studio.contracts.video_editor.timeline_document import (
     VideoEditorClip,
     VideoEditorTimelineDocument,

@@ -6,8 +6,8 @@ from fractions import Fraction
 
 import pytest
 
-from app.capabilities.media_rendering.frame_renderer import _extract_video_frame
-from app.capabilities.media_rendering.render_engine import _VideoDecoder
+from studio.apps.media_rendering.local.frame_renderer import _extract_video_frame
+from studio.apps.media_rendering.local.render_engine import _VideoDecoder
 
 
 @pytest.fixture

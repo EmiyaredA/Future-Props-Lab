@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import delete, select
 
-from app.capabilities.media_rendering.presets import RENDER_PRESETS
+from studio.apps.media_rendering.local.presets import RENDER_PRESETS
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.media import VideoEditorMedia
 from studio.apps.video_editor.projects import VideoEditorProjects

@@ -6,8 +6,8 @@ from pathlib import Path
 
 from anyio import open_file
 
-from app.capabilities.media_rendering.voice_clips import cut_verified_voice_clip
 from studio.apps.galgame_workshop.upload_intakes import UploadSignature
+from studio.apps.media_rendering.local.voice_clips import cut_verified_voice_clip
 from studio.runtime.project_errors import ProjectResourceError
 
 BATCH_SIZE = 64

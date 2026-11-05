@@ -532,7 +532,7 @@ def test_video_editor_text_layer_keeps_large_chinese_glyph_bottom_padding() -> N
     )
     font_path = (
         Path(__file__).parents[1]
-        / "backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf"
+        / "backend/studio/apps/media_rendering/local/assets/NotoSansSC-Medium.ttf"
     )
     renderer = TimelineFrameRenderer(
         document,

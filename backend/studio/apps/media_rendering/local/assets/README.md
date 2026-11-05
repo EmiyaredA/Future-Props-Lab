@@ -4,5 +4,5 @@
 deterministic dialogue and video-editor text renderers. They are distributed under the SIL Open Font License 1.1;
 see `OFL.txt`.
 
-Both fonts are tracked with Git LFS. Run `git lfs pull --include="backend/app/capabilities/media_rendering/assets/*.ttf" --exclude=""`
+Both fonts are tracked with Git LFS. Run `git lfs pull --include="backend/studio/apps/media_rendering/local/assets/*.ttf" --exclude=""`
 when they are still pointer files, then verify them with `python3 scripts/check_lfs_assets.py --backend`.

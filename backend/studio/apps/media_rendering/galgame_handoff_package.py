@@ -5,8 +5,8 @@ from pathlib import Path
 
 from anyio.to_thread import run_sync
 
-from app.capabilities.media_rendering.galgame.compiler import FLOATING_TEXT_FONT_ASSET_ID
-from app.capabilities.media_rendering.galgame.timing import COMPILER_VERSION
+from studio.apps.media_rendering.local.galgame.compiler import FLOATING_TEXT_FONT_ASSET_ID
+from studio.apps.media_rendering.local.galgame.timing import COMPILER_VERSION
 from studio.contracts.galgame_workshop.galgame_handoff import HandoffMedia
 from studio.runtime.files.project_archives import SnapshotAssetSource, export_project_snapshot
 from studio.runtime.files.signed_payloads import ModelOutputDescription

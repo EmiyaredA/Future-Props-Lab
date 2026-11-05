@@ -9,14 +9,14 @@ from typing import Literal
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.media_rendering.chroma_key import bake_image
-from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
-from app.capabilities.media_rendering.video_bake_document import bake_video_document
-from app.capabilities.media_rendering.video_derivatives import prepare_media, probe_media
-from app.capabilities.media_rendering.video_output import verify_video_output
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.uploads import AssetLibrary
+from studio.apps.media_rendering.local.chroma_key import bake_image
+from studio.apps.media_rendering.local.render_engine import RenderCancelled, render_document
+from studio.apps.media_rendering.local.video_bake_document import bake_video_document
+from studio.apps.media_rendering.local.video_derivatives import prepare_media, probe_media
+from studio.apps.media_rendering.local.video_output import verify_video_output
 from studio.apps.video_editor.baking.bake_organization import insert_baked_asset_in_organization
 from studio.apps.video_editor.clip_merging.runner import process_clip_merge
 from studio.apps.video_editor.handoffs.segment_runner import VideoEditorSegmentTaskRunner

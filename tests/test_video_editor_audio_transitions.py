@@ -12,8 +12,8 @@ import numpy as np
 import pytest
 from sqlalchemy import select
 
-from app.capabilities.media_rendering.audio_transitions import seam_gain, sweep_frequency
-from app.capabilities.media_rendering.render_engine import _mux_audio
+from studio.apps.media_rendering.local.audio_transitions import seam_gain, sweep_frequency
+from studio.apps.media_rendering.local.render_engine import _mux_audio
 from studio.apps.video_editor.errors import VideoEditorValidationError
 from studio.apps.video_editor.schemas import VideoEditorTimelineBatchIn
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata

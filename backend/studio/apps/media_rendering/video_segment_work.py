@@ -8,9 +8,9 @@ import httpx
 from anyio import open_file
 from anyio.to_thread import run_sync
 
-from app.capabilities.media_rendering.render_engine import RenderCancelled
-from app.capabilities.media_rendering.video_derivatives import probe_media
-from app.capabilities.media_rendering.video_segment_encode import (
+from studio.apps.media_rendering.local.render_engine import RenderCancelled
+from studio.apps.media_rendering.local.video_derivatives import probe_media
+from studio.apps.media_rendering.local.video_segment_encode import (
     encode_segment,
     validate_segment_output,
 )

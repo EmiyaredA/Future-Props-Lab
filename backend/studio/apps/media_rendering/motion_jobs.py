@@ -5,7 +5,7 @@ from shutil import rmtree
 from anyio.to_thread import run_sync
 from sqlalchemy import select, update
 
-from app.capabilities.media_rendering.motion_outputs import render_outputs
+from studio.apps.media_rendering.local.motion_outputs import render_outputs
 from studio.apps.media_rendering.storage.file_paths import sync_directory, sync_files
 from studio.apps.media_rendering.storage.service_models import MotionRenderJob
 from studio.contracts.motion_compositor.document import MotionComposition

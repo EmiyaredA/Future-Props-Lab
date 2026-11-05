@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from PIL import Image
 
-from app.capabilities.media_rendering.image_grid import render_image_grid
+from studio.apps.media_rendering.local.image_grid import render_image_grid
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.visual_workshop.visual_composition import (

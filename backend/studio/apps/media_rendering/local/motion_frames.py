@@ -9,7 +9,7 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps
 
-from app.capabilities.media_rendering.text_layer import FONT_ROOT
+from studio.apps.media_rendering.local.text_layer import FONT_ROOT
 from studio.contracts.motion_compositor.document import (
     MotionComposition,
     MotionLayer,

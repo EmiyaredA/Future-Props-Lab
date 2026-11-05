@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from math import floor
 
-from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
+from studio.apps.media_rendering.local.audio_transitions import AUDIO_SEAM_KINDS
 from studio.apps.video_editor.errors import VideoEditorValidationError
 from studio.contracts.video_editor.audio_seam_results import REFERENCE_US
 

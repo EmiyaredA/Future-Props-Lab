@@ -6,8 +6,8 @@ import json
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.media_rendering.presets import RENDER_PRESETS
-from app.capabilities.media_rendering.timeline_ranges import timeline_duration_us, visual_gaps
+from studio.apps.media_rendering.local.presets import RENDER_PRESETS
+from studio.apps.media_rendering.local.timeline_ranges import timeline_duration_us, visual_gaps
 from studio.apps.video_editor.errors import VideoEditorNotFoundError
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import (

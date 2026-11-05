@@ -532,7 +532,7 @@ def test_backend_production_packages_have_no_dependency_cycles() -> None:
 def test_media_rendering_and_galgame_keep_feature_boundaries() -> None:
     shared_violations = [
         f"{_relative(path)} imports {module}"
-        for path in _python_files(BACKEND_APP / "capabilities" / "media_rendering")
+        for path in _python_files(REPO_ROOT / "backend/studio/apps/media_rendering")
         for module in _python_imports(path)
         if _matches_module(module, "app.video_editor")
         or _matches_module(module, "studio.apps.video_editor")
@@ -878,7 +878,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/capabilities/agents",
         "backend/studio/apps/asset_library",
         "backend/studio/apps/identity/credentials",
-        "backend/app/capabilities/media_rendering",
+        "backend/studio/apps/media_rendering/local",
         "backend/studio/apps/model_service/transcription",
         "backend/app/console",
         "backend/studio/apps/asset_library/archives",

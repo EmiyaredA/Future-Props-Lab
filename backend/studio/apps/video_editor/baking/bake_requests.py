@@ -2,7 +2,7 @@
 
 from sqlalchemy import select, text
 
-from app.capabilities.media_rendering.video_bake_document import bake_video_document
+from studio.apps.media_rendering.local.video_bake_document import bake_video_document
 from studio.apps.video_editor.baking.bake_inputs import bake_effects
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.media_reads import MediaReads

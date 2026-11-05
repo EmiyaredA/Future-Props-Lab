@@ -7,7 +7,7 @@ from tempfile import TemporaryDirectory
 from anyio.to_thread import run_sync
 from sqlalchemy import select, text, update
 
-from app.capabilities.media_rendering.video_derivatives import prepare_media, probe_media
+from studio.apps.media_rendering.local.video_derivatives import prepare_media, probe_media
 from studio.apps.media_rendering.storage.file_paths import sync_directory, sync_files
 from studio.apps.media_rendering.storage.service_models import VideoMediaJob
 from studio.contracts.video_editor.video_processing import MediaJobOut

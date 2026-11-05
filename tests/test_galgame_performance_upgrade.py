@@ -40,7 +40,7 @@ from scripts.demo.galgame_runaway.performance_upgrade import (
     scene_id_for_code,
 )
 
-from app.capabilities.media_rendering.galgame.values import actor_layout
+from studio.apps.media_rendering.local.galgame.values import actor_layout
 
 
 def test_runaway_expression_cues_are_explicit_and_personality_checked() -> None:

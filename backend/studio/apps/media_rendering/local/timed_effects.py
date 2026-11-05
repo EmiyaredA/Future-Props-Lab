@@ -5,9 +5,9 @@ from collections.abc import Iterable
 
 from PIL import Image, ImageFilter
 
-from app.capabilities.media_rendering.audio_transitions import eased_progress
-from app.capabilities.media_rendering.directional_transitions import light_leak, whip_pan
-from app.capabilities.media_rendering.spin_blur import spin_blur
+from studio.apps.media_rendering.local.audio_transitions import eased_progress
+from studio.apps.media_rendering.local.directional_transitions import light_leak, whip_pan
+from studio.apps.media_rendering.local.spin_blur import spin_blur
 from studio.contracts.video_editor.timeline_document import VideoEditorTimedEffect
 
 

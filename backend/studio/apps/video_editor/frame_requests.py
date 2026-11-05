@@ -3,7 +3,7 @@
 import httpx
 from fastapi import HTTPException
 
-from app.capabilities.media_rendering.timeline_ranges import frame_asset_ids, timeline_duration_us
+from studio.apps.media_rendering.local.timeline_ranges import frame_asset_ids, timeline_duration_us
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
     VideoEditorUnavailableError,

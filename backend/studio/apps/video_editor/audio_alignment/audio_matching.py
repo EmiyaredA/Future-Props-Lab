@@ -6,7 +6,7 @@ import asyncio
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.media_rendering.audio_matching import AudioMatchError, match_audio
+from studio.apps.media_rendering.local.audio_matching import AudioMatchError, match_audio
 from studio.apps.video_editor.audio_alignment.audio_seam_edit import audio_seam_pair, seam_window
 from studio.apps.video_editor.errors import VideoEditorValidationError
 from studio.apps.video_editor.media import VideoEditorMedia

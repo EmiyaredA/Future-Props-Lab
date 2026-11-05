@@ -8,9 +8,9 @@ import httpx
 import pytest
 from PIL import Image
 
-from app.capabilities.media_rendering import gif_upload as video_uploads
-from app.capabilities.media_rendering.animated_image import gif_to_mp4
 from studio.apps.asset_library.storage.file_paths import AssetStorage
+from studio.apps.media_rendering.local import gif_upload as video_uploads
+from studio.apps.media_rendering.local.animated_image import gif_to_mp4
 from studio.config.settings import get_settings
 from website_test_support import app
 

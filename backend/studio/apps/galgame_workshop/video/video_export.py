@@ -6,13 +6,6 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.media_rendering.frame_renderer import render_plan_frame
-from app.capabilities.media_rendering.galgame.compiler import (
-    COMPILER_VERSION,
-    compile_galgame_render_plan,
-)
-from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
-from app.capabilities.media_rendering.render_capacity import galgame_capacity
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.galgame_workshop.schemas import (
@@ -33,6 +26,13 @@ from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from studio.apps.galgame_workshop.task_views import export_task_out as _task_out
 from studio.apps.galgame_workshop.video.export_preview import preview_export
 from studio.apps.galgame_workshop.video.video_export_planning import EXPORT_PACKAGING_POLICY
+from studio.apps.media_rendering.local.frame_renderer import render_plan_frame
+from studio.apps.media_rendering.local.galgame.compiler import (
+    COMPILER_VERSION,
+    compile_galgame_render_plan,
+)
+from studio.apps.media_rendering.local.galgame.lip_sync import prepare_audio_envelopes
+from studio.apps.media_rendering.local.render_capacity import galgame_capacity
 from studio.config.settings import Settings, get_settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.time import utc_now

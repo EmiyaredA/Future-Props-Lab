@@ -9,16 +9,16 @@ from pathlib import Path
 
 from PIL import Image, ImageColor, ImageDraw, ImageFilter
 
-from app.capabilities.media_rendering.chroma_key import apply_chroma_key
-from app.capabilities.media_rendering.directional_transitions import light_leak, whip_pan
-from app.capabilities.media_rendering.spin_blur import spin_blur
-from app.capabilities.media_rendering.text_layer import render_text_layer
-from app.capabilities.media_rendering.timed_effects import apply_timed_effects
-from app.capabilities.media_rendering.timeline_ranges import (
+from studio.apps.media_rendering.local.chroma_key import apply_chroma_key
+from studio.apps.media_rendering.local.directional_transitions import light_leak, whip_pan
+from studio.apps.media_rendering.local.spin_blur import spin_blur
+from studio.apps.media_rendering.local.text_layer import render_text_layer
+from studio.apps.media_rendering.local.timed_effects import apply_timed_effects
+from studio.apps.media_rendering.local.timeline_ranges import (
     timeline_duration_us as timeline_duration_us,
 )
-from app.capabilities.media_rendering.timeline_ranges import track_frame_sources, visible_tracks
-from app.capabilities.media_rendering.timeline_ranges import visual_gaps as visual_gaps
+from studio.apps.media_rendering.local.timeline_ranges import track_frame_sources, visible_tracks
+from studio.apps.media_rendering.local.timeline_ranges import visual_gaps as visual_gaps
 from studio.contracts.video_editor.timeline_document import (
     VideoEditorClip,
     VideoEditorTimelineDocument,

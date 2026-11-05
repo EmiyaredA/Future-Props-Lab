@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from app.capabilities.media_rendering.animated_image import gif_to_mp4, gif_to_webm
+from studio.apps.media_rendering.local.animated_image import gif_to_mp4, gif_to_webm
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.files.content_types import looks_like

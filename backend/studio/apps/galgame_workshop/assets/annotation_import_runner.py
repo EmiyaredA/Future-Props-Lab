@@ -8,7 +8,6 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.media_rendering.voice_clips import cut_verified_voice_clip
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.uploads import AssetLibrary
@@ -29,6 +28,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
 from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
+from studio.apps.media_rendering.local.voice_clips import cut_verified_voice_clip
 from studio.config.settings import Settings
 from studio.runtime.database.ownership import bind_owner, require_owner_id
 from studio.runtime.revisions import RevisionConflictError

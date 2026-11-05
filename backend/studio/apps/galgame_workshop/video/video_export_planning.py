@@ -5,9 +5,9 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.capabilities.media_rendering.galgame.timing import estimate_block_ms
 from studio.apps.galgame_workshop.schemas import GalgameVideoExportIssue
 from studio.apps.galgame_workshop.story.story_flow import TIMED_ROUTE_BOUNDARY_TYPES
+from studio.apps.media_rendering.local.galgame.timing import estimate_block_ms
 
 CHOICE_DURATION_MS = 2000
 CHOICE_HIGHLIGHT_MS = 500

@@ -130,6 +130,7 @@ def test_migrated_packages_have_one_source_owner():
         ROOT / "backend/app/demo_runtime",
         ROOT / "backend/app/capabilities/identity",
         ROOT / "backend/app/capabilities/asset_store",
+        ROOT / "backend/app/capabilities/media_rendering",
         ROOT / "backend/app/console/file_library",
     ):
         assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"
@@ -157,6 +158,23 @@ def test_public_client_parents_cannot_eagerly_load_foreign_implementations():
     for name in PUBLIC_CLIENT_PARENTS:
         path = ROOT / "backend" / name.replace(".", "/") / "__init__.py"
         assert not list(imports(path)), f"{name} eagerly loads an implementation"
+
+
+def test_local_media_adapters_cannot_load_business_storage_or_assembly():
+    from studio.deployment.media_modules import LOCAL_MEDIA_MODULES
+
+    for name in LOCAL_MEDIA_MODULES:
+        location = ROOT / "backend" / name.replace(".", "/")
+        path = location.with_suffix(".py")
+        if not path.is_file():
+            path = location / "__init__.py"
+            assert not list(imports(path)), f"{name} eagerly loads an adapter"
+        for dependency in imports(path):
+            if dependency.startswith("studio.apps."):
+                assert dependency in LOCAL_MEDIA_MODULES, (name, dependency)
+            assert not dependency.startswith(
+                ("app.", "sqlalchemy", "fastapi", "studio.assembly", "studio.config", "studio.host")
+            ), (name, dependency)
 
 
 def test_annotation_image_keeps_entrypoint_and_excludes_legacy_adapters():

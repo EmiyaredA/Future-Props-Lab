@@ -121,9 +121,11 @@ backend/
 
 `studio/contracts/asset_library/` 的 `incoming.py`、`errors.py` 和 `files.py` 拥有上传流接口、素材错误与文件协议；流不暴露主机路径或 ORM。`studio/contracts/media_rendering/` 拥有裁切、取帧、媒体信息和角色动画数据，`studio/contracts/video_editor/` 拥有时间线及音频接缝结果，`studio/contracts/motion_compositor/document.py` 拥有特效文档。兼容网站和独立服务消费同一份数据定义；契约导入不读取配置、不加载数据库或媒体执行器。渲染计划中尚含路径的进程内结构仍留在实现侧，不作为跨服务素材接口。
 
+`studio/apps/media_rendering/local/` 拥有 FFmpeg/Pillow、Galgame 编译和 Live2D 的本地 I/O 适配。目录中的计划与路径只用于进程内执行，不作为业务端口数据。允许其他服务打包的本地适配模块由 `studio/deployment/media_modules.py` 逐项登记，闭包禁止导入业务存储、装配和全局配置；Assets 仍只允许 GIF 上传所需子集。预览并发句柄由每个 `MediaPreviews` 实例持有，PDF 子进程取消和超时均终止并回收，移除模块全局按事件循环缓存的信号量。
+
 `studio/apps/media_rendering/use_cases/read_media.py` 拥有文件预览、缩略图、裁切、格式读取与取帧的统一用例；素材借用在短查询后结束事务，派生完成后重新核验身份。`contracts/media_rendering/output.py` 定义不含路径的输出句柄，`runtime/http/media_response.py` 在响应完成、发送异常和取消后释放输出；临时文件不使用服务器路径交接，缓存关闭不删除共享派生内容。
 `pdf_preview_worker.py` 在独立进程中读取 PDF 页数并栅格化当前页面，不执行文档脚本。
-`capabilities/media_rendering/file_previews.py` 拥有有超时的媒体时长检查、视频封面和前 60 秒真实音频波形，
+`studio/apps/media_rendering/local/file_previews.py` 拥有有超时的媒体时长检查、视频封面和前 60 秒真实音频波形，
 不接触账号或数据库。文件预览接口先完成归属校验并结束读取事务，再进行解码，缓存不能授予访问权。
 `web/src/features/files/` 的 `FileThumbnail`、`FilePreviewDialog` 与 `FileMediaPlayer` 统一拥有列表缩略内容、
 安全文档阅读和自绘播放控件；首页及只读文件入口复用这些公开组件，文件命名规则留在 `fileNames.ts`。
@@ -222,13 +224,13 @@ backend/
 
 Creative 的公开作品认证由 `certification_http.py` 转发。Identity 签发绑定账号、项目类型、标识和版本的命令，Visual 与 Galgame 只修改各自项目库。项目更新和待审计回执共用事务，Identity 去重写入并签发审计确认，Creative 验证后返回。两套项目库已登记初始自有 schema。各自的 `projects_http.py` 提供公开项目目录、创建、详情和初始编辑文档读取。新项目与初始 Canvas 或 Story 在同一事务提交，文件目录由素材服务在首次写入时创建。Visual 项目元数据更新使用原有版本契约。认证标记和项目版本从同一条项目记录读回。Visual 的 `outputs/recording.py` 只登记自有输出；独立与兼容站共用 `outputs/queries.py` 读取输出列表和版本，兼容站的素材校验及输出变更仍由 `outputs/history.py` 承担。 `canvas_documents.py` 持有画布事务，`studio/apps/visual_workshop/canvas_writes.py` 用 Assets 的范围校验回执准备素材引用并提交版本。Assets 的 `canvas_retention.py` 核对项目素材、库内放置与前序引用保留。`operation_values.py` 转换操作批次，Visual 保存自身的 `project_operation_receipts` 分区，与画布版本和素材引用回执一起提交。 Galgame 的 `story_writes.py` 以 Story 版本维护素材引用投影，项目创建时准备空投影。故事保存先由 Assets 固定素材归属及元数据，再在 Galgame 库中原子提交正文、素材索引和待确认回执。已保存的 Story 快照也纳入保留范围。对白、舞台表情及批量编辑通过 `story/edit_values.py` 复用兼容站的值校验，并由同一 Story 事务推进版本和回执。操作批次通过 `story/operation_values.py` 转换，已执行批次的请求摘要和原结果保存于 Galgame 自有的 `project_operation_receipts` 分区。`story/snapshots.py` 负责已核验账号的历史列表，快照恢复按当前 Story 版本提交原始文档和引用。
 
-Galgame 广播剧导入由 `studio/apps/galgame_workshop/annotation_runner.py` 执行。Annotation 提供归属已校验的文档版本，Assets 提供绑定 SHA256 的原件和生成片段回执，Identity 在执行时复核原请求权限。裁切与内容相关性校验由 `app/capabilities/media_rendering/voice_clips.py` 维护。Galgame 在自有状态目录的 `.annotation-work/` 暂存文件，在同一事务保存 Story、旧版本快照和任务回执。独立 Galgame 镜像使用 `deploy/images/owned-http/Dockerfile.galgame` 装入固定版本的 FFmpeg。
+Galgame 广播剧导入由 `studio/apps/galgame_workshop/annotation_runner.py` 执行。Annotation 提供归属已校验的文档版本，Assets 提供绑定 SHA256 的原件和生成片段回执，Identity 在执行时复核原请求权限。裁切与内容相关性校验由 `studio/apps/media_rendering/local/voice_clips.py` 维护。Galgame 在自有状态目录的 `.annotation-work/` 暂存文件，在同一事务保存 Story、旧版本快照和任务回执。独立 Galgame 镜像使用 `deploy/images/owned-http/Dockerfile.galgame` 装入固定版本的 FFmpeg。
 
 Galgame 便携 ZIP 的导出与导入归 `studio/apps/galgame_workshop/snapshot_exports.py` 和 `snapshot_imports.py`。两套网站装配共享 `studio/apps/galgame_workshop/snapshot_values.py` 的文件元数据与 Story 校验。Assets 的 `studio/apps/asset_library/galgame_archives.py` 同事务公开原件与初始 Story 素材引用，Galgame 在收到结算回执后公开项目副本。
 
 Galgame 台词转写任务与转写版本归 `studio/apps/galgame_workshop/asr_jobs.py`、`asr_runner.py`。Assets 核验项目与文件版本后提供原音频。Models 的 `studio/apps/model_service/galgame_transcription.py` 执行已冻结的模型调用，并持久记录结果和调用日志。请求中断时，Galgame 用原任务标识读回结果。Models 重启时将未决的供应商请求记录为结果未知。
 
-Galgame 精确帧的业务预检归 `studio/apps/galgame_workshop/exact_frame.py`。Rendering 通过 `studio/apps/media_rendering/galgame_frames.py` 校验 Story 摘要和同一账号的 Assets 原件授权。确定性编译、字幕和口型位于 `app/capabilities/media_rendering/galgame/`，供兼容装配和独立 Rendering 共用。
+Galgame 精确帧的业务预检归 `studio/apps/galgame_workshop/exact_frame.py`。Rendering 通过 `studio/apps/media_rendering/galgame_frames.py` 校验 Story 摘要和同一账号的 Assets 原件授权。确定性编译、字幕和口型位于 `studio/apps/media_rendering/local/galgame/`，供兼容装配和独立 Rendering 共用。
 
 Galgame 成片任务与冻结 Story 由 `studio/apps/galgame_workshop/export_jobs.py`、`export_runner.py` 持有。Rendering 的 `galgame_export_jobs.py` 执行并封存已核验的 MP4。Assets 接收绑定摘要的成片，并负责 `storage.galgame_export_max_bytes`。Galgame 持久记录同一上传回执后开放下载，最后释放 Rendering 的暂存副本。
 
@@ -248,7 +250,7 @@ Galgame 剪辑交接由 `studio/apps/galgame_workshop/handoff_jobs.py`、`handof
 
 `studio/runtime/database/migrations.py` 在只读预检中核验已应用历史的位置、服务、版本和 checksum，使用转义 URI 保留真实路径字符。显式迁移接受有效历史前缀，启动检查要求完整注册表；打开目标连接后先重复校验，再设置 WAL 或创建表。错误归属与漂移库保持原状，不自动修复或接管未登记旧库。
 
-`runtime/image_sizes.py` 和 `runtime/raster.py` 维护无 ORM 的图片尺寸及受限解码；头像通过 Identity 自有适配使用，不为头像导入素材数据库。`media_rendering/preview_metadata.py` 和 `pdf_preview_worker.py` 拥有实际文本、PDF 与媒体预览；旧素材入口只负责账号查询适配。PDF 使用限时子进程，宫格字体按白名单封入 Rendering 镜像。Assets 上传暂存位于自己的状态卷，避免大文件占满容器内存临时盘。`scripts/website/rendering_docker_checks.py` 使用合成媒体验证真实容器链路，`assets_docker_checks.py` 覆盖超过内存临时盘大小的上传与 ZIP 导入。
+`runtime/image_sizes.py` 和 `runtime/raster.py` 维护无 ORM 的图片尺寸及受限解码；头像通过 Identity 自有适配使用，不为头像导入素材数据库。`studio/apps/media_rendering/local/preview_metadata.py` 和 `pdf_preview_worker.py` 拥有实际文本、PDF 与媒体预览；旧素材入口只负责账号查询适配。PDF 使用限时子进程，宫格字体按白名单封入 Rendering 镜像。Assets 上传暂存位于自己的状态卷，避免大文件占满容器内存临时盘。`scripts/website/rendering_docker_checks.py` 使用合成媒体验证真实容器链路，`assets_docker_checks.py` 覆盖超过内存临时盘大小的上传与 ZIP 导入。
 
 `studio/apps/asset_library/storage/folders.py` 复用同属文件能力的文件夹 CAS、名称和深度规则；`storage/context.py` 允许显式注入项目验证。新 Assets 数据库将外部项目 ID 视为不透明标识，仅保留自有表外键；旧迁移与数据库外键保持原样，迁移期单体继续使用旧适配。`studio/contracts/asset_library/references.py` 维护受限消费方、资源种类和版本化引用消息，不接受客户端指定归属。
 
@@ -357,7 +359,7 @@ Future-Props-Lab/
 ├── backend/app/
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── runtime/       # 尚未迁出的凭据适配
-│   ├── capabilities/  # 有契约的共享能力：agents、media_rendering
+│   ├── capabilities/  # 有契约的共享能力：agents、web_access
 │   ├── console/       # 尚未迁出的治理、助手和创作用例
 │   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 │   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
@@ -502,12 +504,12 @@ Future-Props-Lab/
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
   `apps/video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
-  后端精确停帧和剪辑任务；`apps/motion_compositor/` 拥有特效项目、素材、文档 CAS、工程包、导出任务与显式剪辑交接，浏览器界面归 `web/src/features/motion-compositor/`；`capabilities/media_rendering/` 统一拥有 RenderPlan 契约、特效 RGBA 帧求值、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
-  FFmpeg/Pillow 合成和取消控制。`animated_image.py` 拥有有界、可取消的 GIF 单次动画到无声 MP4 转换；`media_rendering/gif_upload.py` 处理上传动画的临时输入，转换完成后才进入既有素材／输出 CAS 事务。`video_sampling.py` 按源视频 PTS 选择包含当前时刻的画面区间，
+  后端精确停帧和剪辑任务；`apps/motion_compositor/` 拥有特效项目、素材、文档 CAS、工程包、导出任务与显式剪辑交接，浏览器界面归 `web/src/features/motion-compositor/`；`studio/apps/media_rendering/local/` 统一拥有 RenderPlan 契约、特效 RGBA 帧求值、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
+  FFmpeg/Pillow 合成和取消控制。`animated_image.py` 拥有有界、可取消的 GIF 单次动画到无声 MP4 转换；`studio/apps/media_rendering/local/gif_upload.py` 处理上传动画的临时输入，转换完成后才进入既有素材／输出 CAS 事务。`video_sampling.py` 按源视频 PTS 选择包含当前时刻的画面区间，
   精确停帧与导出共享该采样规则。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   `spin_blur.py` 拥有旋转模糊的角向采样；Web 的 `video-editor/spinBlurCanvas.ts` 使用相同的角度、采样数与覆盖缩放，`VideoEditorEffectImage.tsx` 复用图片和文字图层的已加载素材。
   `directional_transitions.py` 拥有甩镜九点方向采样与漏光滤色配方；Web 的 `video-editor/directionalTransitionCanvas.ts` 对齐像素规则，`VideoEditorLightLeak.tsx` 在节目画布上只叠加一次光带。`video-editor/transitionCatalog.ts` 维护可复用转场的分类、名称与默认时长，面板和检查器共同消费。
-  `media_rendering/timed_effects.py` 拥有复合片段内定时视觉脉冲，不改变素材采样或片段区间；`video_editor/timed_effect_edit.py` 在裁剪、分割和变速时维护局部区间及原始变化阶段。Web 的 `video-editor/timedEffects.ts` 与 `timedEffectsCanvas.ts` 对齐求值和像素处理。
+  `studio/apps/media_rendering/local/timed_effects.py` 拥有复合片段内定时视觉脉冲，不改变素材采样或片段区间；`video_editor/timed_effect_edit.py` 在裁剪、分割和变速时维护局部区间及原始变化阶段。Web 的 `video-editor/timedEffects.ts` 与 `timedEffectsCanvas.ts` 对齐求值和像素处理。
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级
@@ -874,7 +876,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 - `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
 - `backend/studio/apps/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/conversion.py` 描述正式契约。
 - `backend/studio/apps/audio_annotation/exports.py`：项目 JSON、SRT、已保存片段裁切与识别用例。
-- `backend/studio/apps/media_rendering/use_cases/read_media.py`：账号文件的逐帧提取与派生输出结算；确定性音频裁切与视频取帧实现暂在 `app/capabilities/media_rendering/audio_clip.py`、`video_frames.py`；HTTP 适配在 `studio/apps/media_rendering/transport/website/video_frames.py`。
+- `backend/studio/apps/media_rendering/use_cases/read_media.py`：账号文件的逐帧提取与派生输出结算；确定性音频裁切与视频取帧实现位于 `studio/apps/media_rendering/local/audio_clip.py`、`video_frames.py`；HTTP 适配在 `studio/apps/media_rendering/transport/website/video_frames.py`。
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
 - `sdk/python/src/future_props_lab/canvas_example.py`：独立的笔记信息图 SDK 示例，通过正式 API 创建与导出可编辑画板；不参与既有六工坊文档生成，契约回归由 `tests/test_thought_canvas.py` 覆盖。
@@ -886,7 +888,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 ### 内置角色展示
 
-首页直接加载 `web/public/brand/home/` 的红莉栖待机动画与透明回退图，不读取账号项目。Amadeus 使用 `shared/live2d/` 的纯姿态、网格与渲染能力，内置模型位于 `web/public/brand/amadeus/`；后端 `media_rendering/live2d/` 只保留离线渲染及内置模型校验，`scripts/generate_avatar_contract.py` 从纯模型生成独立的头像资产类型。角色编辑工坊和独立桌宠运行已退役，`0118_retire_character_workshops` 移除专属表，历史迁移保留。
+首页直接加载 `web/public/brand/home/` 的红莉栖待机动画与透明回退图，不读取账号项目。Amadeus 使用 `shared/live2d/` 的纯姿态、网格与渲染能力，内置模型位于 `web/public/brand/amadeus/`；后端 `studio/apps/media_rendering/local/live2d/` 只保留离线渲染及内置模型校验，`scripts/generate_avatar_contract.py` 从纯模型生成独立的头像资产类型。角色编辑工坊和独立桌宠运行已退役，`0118_retire_character_workshops` 移除专属表，历史迁移保留。
 
 ## 视觉项目看板与输出历史
 
@@ -967,7 +969,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 ### 视频透明检查与格式信息
 
-`capabilities/media_rendering/media_info.py` 拥有有界只读媒体探测，`animated_image.py` 拥有 GIF 的黑底 MP4 与透明 WebM 转换。`studio/apps/media_rendering/use_cases/read_media.py` 统一裁切与格式读取的账号、类型及处理后授权规则；`ports.py` 定义素材借用、执行器与授权接口。`asset_library/storage/media_sources.py` 在独立短查询后提供脱离 ORM 的描述，Rendering 的 `clients/media_sources.py` 提供绑定请求的 HTTP 来源；`processing.py` 使用同一处理器。两种装配分别位于 `assembly/website/media.py` 与 `assembly/independent/media_rendering/reads.py`。原素材包中的裁切和媒体信息业务实现已移除，网站协议归 `media_rendering/transport/website/`。`runtime/files/borrowed_media.py` 只在 I/O 边界复用本地文件，其他流通过有界暂存适配，取消与错误均清理。`visual_workshop/outputs/` 拥有检查素材关联、原子上传与快照。Web `visual-workshop/board/VideoOutputPreview.tsx` 拥有视频格式、纯色衬底及全屏检查，`output-preview.css` 保存共用输出画面样式；预览状态不进入画布。迁移 `0115_visual_output_inspection` 仅追加检查素材引用。
+`studio/apps/media_rendering/local/media_info.py` 拥有有界只读媒体探测，`animated_image.py` 拥有 GIF 的黑底 MP4 与透明 WebM 转换。`studio/apps/media_rendering/use_cases/read_media.py` 统一裁切与格式读取的账号、类型及处理后授权规则；`ports.py` 定义素材借用、执行器与授权接口。`asset_library/storage/media_sources.py` 在独立短查询后提供脱离 ORM 的描述，Rendering 的 `clients/media_sources.py` 提供绑定请求的 HTTP 来源；`processing.py` 使用同一处理器。两种装配分别位于 `assembly/website/media.py` 与 `assembly/independent/media_rendering/reads.py`。原素材包中的裁切和媒体信息业务实现已移除，网站协议归 `media_rendering/transport/website/`。`runtime/files/borrowed_media.py` 只在 I/O 边界复用本地文件，其他流通过有界暂存适配，取消与错误均清理。`visual_workshop/outputs/` 拥有检查素材关联、原子上传与快照。Web `visual-workshop/board/VideoOutputPreview.tsx` 拥有视频格式、纯色衬底及全屏检查，`output-preview.css` 保存共用输出画面样式；预览状态不进入画布。迁移 `0115_visual_output_inspection` 仅追加检查素材引用。
 
 ### 角色工坊退役验收
 

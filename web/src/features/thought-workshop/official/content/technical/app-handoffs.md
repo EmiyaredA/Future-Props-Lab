@@ -65,5 +65,5 @@ App 默认不相互导入。Web 的交接从目标公共入口导入，`tests/te
 ## 代码入口
 
 1. `tests/test_architecture.py`
-2. `backend/app/capabilities/media_rendering/contracts.py`
+2. `backend/studio/apps/media_rendering/local/inputs.py`
 3. `web/src/features/motion-compositor/module.ts`

@@ -6,7 +6,7 @@ from math import floor
 from pydantic import ValidationError
 from sqlalchemy import select, update
 
-from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
+from studio.apps.media_rendering.local.audio_transitions import AUDIO_SEAM_KINDS
 from studio.apps.video_editor.audio_alignment.audio_seam_edit import align_audio_seam
 from studio.apps.video_editor.audio_alignment.audio_transition_edit import set_audio_transition
 from studio.apps.video_editor.clip_merging.context import operation_contexts

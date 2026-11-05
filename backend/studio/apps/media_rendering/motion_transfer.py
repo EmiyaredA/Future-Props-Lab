@@ -7,7 +7,7 @@ import httpx
 from anyio.to_thread import run_sync
 from fastapi import APIRouter, HTTPException, Request
 
-from app.capabilities.media_rendering.motion_outputs import OUTPUT_NAMES
+from studio.apps.media_rendering.local.motion_outputs import OUTPUT_NAMES
 from studio.contracts.video_editor.video_assets import VideoAsset
 from studio.contracts.video_editor.video_handoff import MOVIE_TYPES, NONCE, TRANSFERS, UUID
 from studio.runtime.files.signed_payloads import ModelOutputDescription

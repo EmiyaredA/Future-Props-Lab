@@ -9,7 +9,7 @@ from typing import Any
 
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 
-from app.capabilities.media_rendering.text_layer import FONT_ROOT
+from studio.apps.media_rendering.local.text_layer import FONT_ROOT
 
 ASSET_ROOT = FONT_ROOT
 FONT_REGULAR = ASSET_ROOT / "NotoSansSC-Regular.ttf"

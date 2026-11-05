@@ -4,21 +4,20 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
-from app.capabilities.media_rendering.galgame.actors import compile_actor_clips
-from app.capabilities.media_rendering.galgame.dialogue import FONT_REGULAR, render_dialogue_layer
-from app.capabilities.media_rendering.galgame.events import (
+from studio.apps.media_rendering.local.galgame.actors import compile_actor_clips
+from studio.apps.media_rendering.local.galgame.dialogue import FONT_REGULAR, render_dialogue_layer
+from studio.apps.media_rendering.local.galgame.events import (
     apply_event,
     sequential_events,
     timed_events,
 )
-from app.capabilities.media_rendering.galgame.lip_sync import (
+from studio.apps.media_rendering.local.galgame.lip_sync import (
     AudioEnvelope,
     LipSyncSchedule,
     build_lip_sync_schedule,
 )
-from app.capabilities.media_rendering.galgame.timing import COMPILER_VERSION
-from app.capabilities.media_rendering.galgame.values import (
+from studio.apps.media_rendering.local.galgame.timing import COMPILER_VERSION
+from studio.apps.media_rendering.local.galgame.values import (
     actor_layout,
     apply_composed_opacity,
     apply_composed_visual_motion,
@@ -27,12 +26,13 @@ from app.capabilities.media_rendering.galgame.values import (
     dialogue_speaker_ids,
     speaker_name,
 )
-from app.capabilities.media_rendering.galgame.values import asset_maps as _asset_maps
-from app.capabilities.media_rendering.galgame.values import (
+from studio.apps.media_rendering.local.galgame.values import asset_maps as _asset_maps
+from studio.apps.media_rendering.local.galgame.values import (
     remap_render_plan_assets as remap_render_plan_assets,
 )
-from app.capabilities.media_rendering.galgame.values import timeline_clip as _clip
-from app.capabilities.media_rendering.galgame.values import timeline_track as _track
+from studio.apps.media_rendering.local.galgame.values import timeline_clip as _clip
+from studio.apps.media_rendering.local.galgame.values import timeline_track as _track
+from studio.apps.media_rendering.local.inputs import RenderCaptureFrame, RenderPlan
 from studio.contracts.video_editor.timeline_document import VideoEditorTimelineDocument
 
 FLOATING_TEXT_FONT_ASSET_ID = "galgame-floating-text-noto-sans-sc"

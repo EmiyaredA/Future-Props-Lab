@@ -9,9 +9,9 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import Response
 from pydantic import ValidationError
 
-from app.capabilities.media_rendering.frame_renderer import render_plan_frame
-from app.capabilities.media_rendering.galgame.compiler import compile_galgame_render_plan
-from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
+from studio.apps.media_rendering.local.frame_renderer import render_plan_frame
+from studio.apps.media_rendering.local.galgame.compiler import compile_galgame_render_plan
+from studio.apps.media_rendering.local.galgame.lip_sync import prepare_audio_envelopes
 from studio.contracts.galgame_workshop.galgame_frames import (
     FRAMES,
     INPUT_HEADER,

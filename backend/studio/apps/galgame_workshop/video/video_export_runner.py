@@ -8,13 +8,6 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.capabilities.media_rendering.galgame.compiler import compile_galgame_render_plan
-from app.capabilities.media_rendering.galgame.export_output import (
-    safe_filename,
-    verify_galgame_video,
-)
-from app.capabilities.media_rendering.galgame.lip_sync import prepare_audio_envelopes
-from app.capabilities.media_rendering.render_engine import RenderCancelled, render_plan
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.uploads import AssetLibrary
@@ -26,6 +19,13 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
 from studio.apps.galgame_workshop.video.video_export_planning import EXPORT_PACKAGING_POLICY
+from studio.apps.media_rendering.local.galgame.compiler import compile_galgame_render_plan
+from studio.apps.media_rendering.local.galgame.export_output import (
+    safe_filename,
+    verify_galgame_video,
+)
+from studio.apps.media_rendering.local.galgame.lip_sync import prepare_audio_envelopes
+from studio.apps.media_rendering.local.render_engine import RenderCancelled, render_plan
 from studio.config.settings import Settings
 from studio.runtime.database.ownership import bind_owner, require_owner_id
 from studio.runtime.files.digests import sha256_file

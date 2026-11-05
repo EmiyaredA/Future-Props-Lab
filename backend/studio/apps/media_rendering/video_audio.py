@@ -8,7 +8,7 @@ from anyio.to_thread import run_sync
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
 
-from app.capabilities.media_rendering.audio_matching import AudioMatchError, match_audio
+from studio.apps.media_rendering.local.audio_matching import AudioMatchError, match_audio
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.motion_compositor.motion_preview import sha256

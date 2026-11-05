@@ -5,10 +5,10 @@ from tempfile import TemporaryDirectory
 
 from sqlalchemy import select, update
 
-from app.capabilities.media_rendering.render_engine import RenderCancelled, render_document
-from app.capabilities.media_rendering.video_output import verify_clip_merge_output
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.uploads import AssetLibrary
+from studio.apps.media_rendering.local.render_engine import RenderCancelled, render_document
+from studio.apps.media_rendering.local.video_output import verify_clip_merge_output
 from studio.apps.video_editor.clip_merging.document import render_snapshot
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
 from studio.contracts.video_editor.timeline_document import parse_timeline_document

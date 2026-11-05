@@ -4,7 +4,7 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.capabilities.media_rendering.text_layer import FONT_ROOT, load_text_font
+from studio.apps.media_rendering.local.text_layer import FONT_ROOT, load_text_font
 
 GALGAME_FONTS = ("NotoSansSC-Regular.ttf", "NotoSansSC-Medium.ttf")
 RENDER_PROGRAMS = ("ffmpeg", "ffprobe")

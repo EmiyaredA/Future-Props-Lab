@@ -9,12 +9,12 @@ import numpy as np
 import pytest
 from PIL import Image, ImageChops, ImageDraw
 
-from app.capabilities.media_rendering.directional_transitions import (
+from studio.apps.media_rendering.local.directional_transitions import (
     light_leak,
     light_leak_strip,
     whip_pan,
 )
-from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
+from studio.apps.media_rendering.local.evaluator import FrameSource, TimelineFrameRenderer
 from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from website_test_support import app
 

@@ -1,8 +1,8 @@
 import pytest
 from PIL import Image, ImageChops, ImageDraw
 
-from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
-from app.capabilities.media_rendering.spin_blur import spin_blur
+from studio.apps.media_rendering.local.evaluator import FrameSource, TimelineFrameRenderer
+from studio.apps.media_rendering.local.spin_blur import spin_blur
 from studio.contracts.video_editor.timeline_document import parse_timeline_document
 
 

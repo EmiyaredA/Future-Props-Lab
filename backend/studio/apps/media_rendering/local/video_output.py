@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from .presets import RENDER_PRESETS
-from .video_derivatives import probe_media
+from studio.apps.media_rendering.local.presets import RENDER_PRESETS
+from studio.apps.media_rendering.local.video_derivatives import probe_media
 
 
 def _fraction(value: object) -> float:

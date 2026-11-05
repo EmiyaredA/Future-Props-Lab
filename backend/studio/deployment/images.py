@@ -7,6 +7,8 @@ import subprocess
 from importlib.util import resolve_name
 from pathlib import Path
 
+from .media_modules import LOCAL_MEDIA_MODULES
+
 PROJECT_OWNERS = frozenset({"visual", "galgame"})
 STUDIO_OWNERS = {
     "audio_annotation": "annotation",
@@ -144,7 +146,7 @@ def source_closure(root: Path, service):
         raise ValueError("此服务的独立构建尚未完成")
     pending = [ENTRY_POINTS[service]]
     if service == "rendering":
-        pending.append("app.capabilities.media_rendering.pdf_preview_worker")
+        pending.append("studio.apps.media_rendering.local.pdf_preview_worker")
     result = {}
     while pending:
         name = pending.pop()
@@ -155,9 +157,13 @@ def source_closure(root: Path, service):
         if name.startswith("studio.apps."):
             owner = name.split(".")[2]
             public_client = public_client_module(name)
+            public_media = name in LOCAL_MEDIA_MODULES
             parent_package = name in PUBLIC_CLIENT_PARENTS
             if owner not in STUDIO_OWNERS or (
-                STUDIO_OWNERS[owner] != service and not public_client and not parent_package
+                STUDIO_OWNERS[owner] != service
+                and not public_client
+                and not public_media
+                and not parent_package
             ):
                 raise ValueError(f"{service} 镜像包含越界依赖：{name}")
         if name.startswith("studio.assembly.independent."):
@@ -194,9 +200,9 @@ def source_closure(root: Path, service):
                 service == "assets"
                 and name
                 not in {
-                    "app.capabilities.media_rendering",
-                    "app.capabilities.media_rendering.animated_image",
-                    "app.capabilities.media_rendering.gif_upload",
+                    "studio.apps.media_rendering.local",
+                    "studio.apps.media_rendering.local.animated_image",
+                    "studio.apps.media_rendering.local.gif_upload",
                 }
                 and any(
                     name == prefix or name.startswith(prefix + ".")
@@ -213,7 +219,7 @@ def source_closure(root: Path, service):
                         "studio.apps.asset_library.storage.website_files",
                         "studio.apps.asset_library.storage.layout.account_upgrade",
                         "studio.apps.asset_library.storage.layout.website_upgrade",
-                        "app.capabilities.media_rendering",
+                        "studio.apps.media_rendering.local",
                     )
                 )
             ):
@@ -723,7 +729,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         payloads[manifest] = (root / manifest).read_bytes()
     if service == "rendering":
         for name in ("NotoSansSC-Regular.ttf", "NotoSansSC-Medium.ttf", "OFL.txt"):
-            asset = "backend/app/capabilities/media_rendering/assets/" + name
+            asset = "backend/studio/apps/media_rendering/local/assets/" + name
             body = (root / asset).read_bytes()
             if body.startswith(b"version https://git-lfs"):
                 raise ValueError("Rendering 字体缺少 LFS 内容")

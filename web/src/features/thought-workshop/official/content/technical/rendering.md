@@ -67,6 +67,6 @@ Galgame 把确定路线转换成公共渲染输入，特效把图层与关键帧
 
 ## 代码入口
 
-1. `backend/app/capabilities/media_rendering/evaluator.py`
-2. `backend/app/capabilities/media_rendering/render_engine.py`
-3. `backend/app/capabilities/media_rendering/contracts.py`
+1. `backend/studio/apps/media_rendering/local/evaluator.py`
+2. `backend/studio/apps/media_rendering/local/render_engine.py`
+3. `backend/studio/apps/media_rendering/local/inputs.py`

@@ -12,10 +12,10 @@ from uuid import uuid4
 
 from PIL import Image, ImageOps, UnidentifiedImageError
 
-from app.capabilities.media_rendering.image_grid import render_image_grid
-from app.capabilities.media_rendering.media_info import inspect_video_info
-from app.capabilities.media_rendering.preview_metadata import describe_preview, media_thumbnail
-from app.capabilities.media_rendering.video_frames import extract_frame
+from studio.apps.media_rendering.local.image_grid import render_image_grid
+from studio.apps.media_rendering.local.media_info import inspect_video_info
+from studio.apps.media_rendering.local.preview_metadata import describe_preview, media_thumbnail
+from studio.apps.media_rendering.local.video_frames import extract_frame
 from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.files.raster import RasterPreviewError, RasterPreviews
 

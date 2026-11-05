@@ -4,7 +4,7 @@ from shutil import rmtree
 
 from anyio.to_thread import run_sync
 
-from app.capabilities.media_rendering.video_derivatives import prepare_media
+from studio.apps.media_rendering.local.video_derivatives import prepare_media
 from studio.apps.media_rendering.storage.file_paths import sync_directory, sync_files
 
 from .video_media_jobs import media_folder

@@ -13,8 +13,8 @@ LFS_OID_PATTERN = re.compile(rb"^oid sha256:([0-9a-f]{64})$", re.MULTILINE)
 ASSET_SUFFIXES = {".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"}
 ASSET_MANIFEST = Path("docs/assets/MANIFEST.md")
 BACKEND_ASSETS = (
-    Path("backend/app/capabilities/media_rendering/assets/NotoSansSC-Regular.ttf"),
-    Path("backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf"),
+    Path("backend/studio/apps/media_rendering/local/assets/NotoSansSC-Regular.ttf"),
+    Path("backend/studio/apps/media_rendering/local/assets/NotoSansSC-Medium.ttf"),
 )
 WEB_ASSETS = (
     Path("web/public/brand/loading/kurisu-run.webp"),
@@ -125,10 +125,10 @@ EXPECTED_SHA256 = {
     Path(
         "web/public/brand/thought-workshop-mark.png"
     ): "4706bb94b1d94898ea52f63dfa5167cbda9ad34fe55a25857a4ed9b1e49a12c9",
-    Path("backend/app/capabilities/media_rendering/assets/NotoSansSC-Regular.ttf"): (
+    Path("backend/studio/apps/media_rendering/local/assets/NotoSansSC-Regular.ttf"): (
         "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b"
     ),
-    Path("backend/app/capabilities/media_rendering/assets/NotoSansSC-Medium.ttf"): (
+    Path("backend/studio/apps/media_rendering/local/assets/NotoSansSC-Medium.ttf"): (
         "ca094f6b0001fb048ca39ddd797a0cdb0179e1e55c6561e111c49c3e6a61d7b7"
     ),
     Path("web/public/voice-vad/silero_vad_v5.onnx"): (
@@ -303,7 +303,7 @@ def main() -> None:
     if args.backend or args.all:
         require_materialized(
             BACKEND_ASSETS,
-            "backend/app/capabilities/media_rendering/assets/*.ttf",
+            "backend/studio/apps/media_rendering/local/assets/*.ttf",
         )
     if args.web or args.all:
         require_materialized(

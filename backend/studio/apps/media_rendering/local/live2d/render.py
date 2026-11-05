@@ -7,10 +7,9 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw
 
+from studio.apps.media_rendering.local.live2d.evaluate import evaluate, parameter_values
+from studio.apps.media_rendering.local.live2d.idle import idle_pose
 from studio.contracts.media_rendering.character_document import CharacterDocument
-
-from .evaluate import evaluate, parameter_values
-from .idle import idle_pose
 
 
 def coefficients(dst: list[tuple[float, float]], src: list[tuple[float, float]]) -> tuple | None:

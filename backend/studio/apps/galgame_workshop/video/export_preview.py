@@ -3,7 +3,6 @@
 import hashlib
 import json
 
-from app.capabilities.media_rendering.galgame.timing import COMPILER_VERSION, PRESETS
 from studio.apps.galgame_workshop.schemas import (
     GalgameVideoExportChoiceOut,
     GalgameVideoExportDecisionOut,
@@ -16,6 +15,7 @@ from studio.apps.galgame_workshop.video.video_export_planning import (
     _plan_fragments,
     _plan_route,
 )
+from studio.apps.media_rendering.local.galgame.timing import COMPILER_VERSION, PRESETS
 
 
 def preview_export(story, body, *, assets_by_file, available, durations_by_file, capacity):

@@ -11,10 +11,10 @@ import pytest
 from PIL import Image, ImageDraw
 from pydantic import ValidationError
 
-from app.capabilities.media_rendering.contracts import RenderCaptureFrame
-from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
-from app.capabilities.media_rendering.render_engine import RENDER_PRESETS, render_document
-from app.capabilities.media_rendering.timed_effects import effect_progress
+from studio.apps.media_rendering.local.evaluator import FrameSource, TimelineFrameRenderer
+from studio.apps.media_rendering.local.inputs import RenderCaptureFrame
+from studio.apps.media_rendering.local.render_engine import RENDER_PRESETS, render_document
+from studio.apps.media_rendering.local.timed_effects import effect_progress
 from studio.apps.video_editor.clip_merging.document import (
     render_snapshot,
     replace_selection,

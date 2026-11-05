@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, Mock
 import httpx
 import pytest
 
-from app.capabilities.media_rendering.media_info import video_info
+from studio.apps.media_rendering.local.media_info import video_info
 from website_test_support import app
 
 
@@ -117,7 +117,7 @@ async def test_corrupt_and_non_video_media_info_fail_without_mutation():
 async def test_probe_cleans_up_on_timeout_or_cancellation(monkeypatch, tmp_path):
     import asyncio
 
-    from app.capabilities.media_rendering import media_info
+    from studio.apps.media_rendering.local import media_info
 
     for error in (TimeoutError(), asyncio.CancelledError()):
         process = AsyncMock()

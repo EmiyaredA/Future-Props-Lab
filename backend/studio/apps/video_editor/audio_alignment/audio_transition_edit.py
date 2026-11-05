@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.capabilities.media_rendering.audio_transitions import AUDIO_SEAM_KINDS
+from studio.apps.media_rendering.local.audio_transitions import AUDIO_SEAM_KINDS
 from studio.apps.video_editor.errors import VideoEditorValidationError
 
 
