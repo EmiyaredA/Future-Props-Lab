@@ -157,15 +157,16 @@ test("editor surfaces and compact panels fit without replacing the workspace", a
     }
   }
   expect(problems).toEqual([]);
-  for (const [path, card] of [
-    ["/apps/galgame-workshop", ".workshop-project-card"],
-    ["/apps/audio-annotation", ".annotation-project-card"],
-  ]) {
+  for (const path of ["/apps/galgame-workshop", "/apps/audio-annotation"]) {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(path);
-    const projectCard = page.locator(card).first();
+    const grid = page.locator(".workshop-project-grid");
+    const projectCard = grid.locator(".workshop-project-card").first();
     await expect(projectCard).toBeVisible();
-    expect((await projectCard.boundingBox())!.width).toBeGreaterThan(320);
+    expect((await projectCard.boundingBox())!.width).toBeCloseTo(
+      (await grid.boundingBox())!.width,
+      0,
+    );
     await captureResponsive(
       page,
       info,
