@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import OwnerDep, StudioAuth
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import SessionDep
 from studio.apps.thought_workshop.multitable.csv_exchange import import_csv
@@ -19,6 +18,7 @@ from studio.apps.thought_workshop.multitable.schemas import (
     Structure,
 )
 from studio.apps.thought_workshop.multitable.use_cases import Multitable
+from studio.assembly.http_dependencies import OwnerDep, StudioAuth
 
 router = APIRouter(prefix="/notes/{note_id}/multitable", tags=["thought-multitable"])
 

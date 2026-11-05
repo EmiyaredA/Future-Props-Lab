@@ -6,10 +6,10 @@ from fastapi import APIRouter, Request
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.deps import OwnerDep
 from studio.apps.thought_workshop.archives.backup import export_backup
 from studio.apps.thought_workshop.http_bindings import SessionDep
 from studio.apps.thought_workshop.transport.mutations_http import guarded
+from studio.assembly.http_dependencies import OwnerDep
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 

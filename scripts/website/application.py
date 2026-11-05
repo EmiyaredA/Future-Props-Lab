@@ -4,6 +4,7 @@ import asyncio
 import contextlib
 import logging
 import socket
+from functools import partial
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -43,13 +44,12 @@ async def local_frontend(app, enabled):
             await task
 
 
-async def authenticate_browser(scope, receive):
+async def authenticate_browser(scope, receive, *, sessions):
     from starlette.requests import Request
 
-    from app.deps import authenticate_studio_request
-    from app.runtime.db import SessionLocal
+    from studio.assembly.http_dependencies import authenticate_studio_request
 
-    async with SessionLocal() as session:
+    async with sessions() as session:
         await authenticate_studio_request(
             Request(scope, receive),
             session,
@@ -63,7 +63,7 @@ def create_app():
     from studio.config.settings import get_settings
 
     settings = get_settings()
-    # Every reload checks before app.main can import the database or run lifespan.
+    # Every reload checks before constructing storage or running the website lifespan.
     # The reloader parent keeps the exclusive data locks throughout these reloads.
     check_migrations(settings.database_path)
     from scripts.website.frontend import CURRENT
@@ -71,7 +71,9 @@ def create_app():
     from app.capabilities.web_access.profiles import AccessError
     from app.capabilities.web_access.runtime import WebAccess
     from app.console.governance.automation_access import automation_allowed
-    from app.main import app
+    from studio.assembly.website.application import create_app as create_backend_app
+
+    app = create_backend_app(settings)
     from studio.runtime.http.website import CurrentWebsite, attach_website
 
     web_root = Path(settings.fpl_website_web_root).expanduser()
@@ -79,7 +81,14 @@ def create_app():
         web_root = ROOT / web_root
     shared = web_root == ROOT / CURRENT and settings.fpl_website_port == 9001
     static = CurrentWebsite(web_root) if shared else None
-    access = WebAccess(app, settings, ROOT, web_root, authenticate_browser, shared_static=static)
+    access = WebAccess(
+        app,
+        settings,
+        ROOT,
+        web_root,
+        partial(authenticate_browser, sessions=app.state.database.sessions),
+        shared_static=static,
+    )
     app.state.web_access = access
     attach_website(
         app,

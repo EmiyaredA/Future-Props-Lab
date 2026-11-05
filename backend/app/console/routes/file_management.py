@@ -47,7 +47,12 @@ from app.console.file_library import (
     LibraryFolderArchive,
     LibraryFolderArchiveError,
 )
-from app.deps import OwnerDep, SessionDep, StudioAuth, require_recent_reauthentication
+from studio.assembly.http_dependencies import (
+    OwnerDep,
+    SessionDep,
+    StudioAuth,
+    require_recent_reauthentication,
+)
 from studio.config.settings import get_settings
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 

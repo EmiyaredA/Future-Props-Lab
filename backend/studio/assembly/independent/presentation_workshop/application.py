@@ -10,7 +10,6 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
 
-from app.deps import db_session, require_studio_auth
 from studio.apps.presentation_workshop.archive_transport import ArchiveTransport
 from studio.apps.presentation_workshop.assets import ProjectAssets, ProjectReferences
 from studio.apps.presentation_workshop.imports import ImportDelivery, Imports
@@ -24,6 +23,7 @@ from studio.apps.presentation_workshop.transport.website.exchange import router 
 from studio.apps.presentation_workshop.transport.website.exports import router as exports_router
 from studio.apps.presentation_workshop.transport.website.projects import router as projects_router
 from studio.apps.presentation_workshop.transport.website.templates import router as templates_router
+from studio.assembly.http_dependencies import db_session, require_studio_auth
 from studio.assembly.independent.asset_references import (
     install_reference_runtime,
     reference_lifespan,

@@ -11,8 +11,6 @@ from app.capabilities.asset_store.storage import AssetStorage
 from app.console.models import (
     User,
 )
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.video_editor.storage.models import (
     VideoEditorAssetMetadata,
     VideoEditorProject,
@@ -20,6 +18,7 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorTimeline,
 )
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 async def seed(*, status="completed", kind="render", workspace="test-user", reference=None):

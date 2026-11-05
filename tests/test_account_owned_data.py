@@ -11,10 +11,9 @@ from app.capabilities.asset_store.account_upgrade import _copy_root
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.governance.provisioning import create_account
 from app.console.models import User
-from app.main import app
-from app.runtime.db import SessionLocal
 from db.migrations.registry import MIGRATIONS
 from studio.config.settings import Settings
+from website_test_support import SessionLocal, app
 
 pytestmark = pytest.mark.real_auth
 PASSWORD = "Account-Owned-Test-Password-2026!"
@@ -336,8 +335,8 @@ async def test_storage_journal_verifies_other_accounts_assets_and_resumes(tmp_pa
     from app.capabilities.asset_store.account_upgrade import migrate_accounts
     from app.capabilities.asset_store.models import VisualAsset
     from app.capabilities.asset_store.upgrade_records import AccountStorageUpgradeRoot
-    from app.orm import bind_owner
     from db.migrations import apply_migrations
+    from studio.assembly.website.models import bind_owner
 
     path = tmp_path / "storage-upgrade.db"
     apply_migrations(path)

@@ -12,11 +12,11 @@ from app.demo_runtime.schemas import (
     MockCompletionIn,
     ServiceId,
 )
-from app.deps import SessionDep, StudioAuth
 from app.llm.http_errors import mapped
 from app.llm.routes.model_capacity import ModelCapacity
 from studio.apps.model_service.audit.audit import request_audits
 from studio.apps.model_service.transport.http_auth import browser
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 
 router = APIRouter(tags=["demo-services"])
 call_router = APIRouter(prefix="/demo-services", tags=["demo-calls"], dependencies=[ModelCapacity])

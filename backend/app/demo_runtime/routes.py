@@ -12,8 +12,8 @@ from app.demo_runtime.schemas import (
     MockCompletionIn,
     ServiceId,
 )
-from app.deps import SessionDep, StudioAuth, client_ip
 from app.llm.routes.model_capacity import ModelCapacity
+from studio.assembly.http_dependencies import SessionDep, StudioAuth, client_ip
 
 router = APIRouter(tags=["demo-services"])
 call_router = APIRouter(prefix="/demo-services", tags=["demo-calls"], dependencies=[ModelCapacity])

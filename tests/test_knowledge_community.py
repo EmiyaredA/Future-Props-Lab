@@ -8,7 +8,7 @@ import pytest
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 from tests.test_thought_knowledge_tools import doc
 
-from app.main import app
+from website_test_support import app
 
 ROOT = "/v1/thought-workshop"
 COMM = ROOT + "/community"

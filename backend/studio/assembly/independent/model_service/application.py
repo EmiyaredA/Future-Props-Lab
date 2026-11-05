@@ -12,7 +12,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.capabilities.asset_store.errors import AssetError
 from app.demo_runtime.engine import DemoRuntime
-from app.deps import require_studio_auth
 from app.llm.catalog.http_bindings import CatalogBindings
 from app.llm.inference.runner import InferenceRunner
 from app.llm.library_inputs import LibraryInputBindings
@@ -88,6 +87,7 @@ from studio.apps.model_service.visual.visual_generation_results import VisualGen
 from studio.apps.model_service.visual.visual_generation_runner import VisualGenerationRunner
 from studio.apps.model_service.visual.visual_review_attempts import VisualReviewAttempts
 from studio.apps.model_service.writing import router as writing_router
+from studio.assembly.http_dependencies import require_studio_auth
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.visual_workshop.visual_assistant import MODEL_RUNS as ASSISTANT_MODEL_RUNS
 from studio.contracts.visual_workshop.visual_assistant_model import (

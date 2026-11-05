@@ -5,11 +5,10 @@ import httpx
 import pytest
 
 from app.console.governance.provisioning import create_account
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.contracts.identity.permissions import role_permissions, role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.contracts.identity.route_permissions import ROUTE_PERMISSIONS
+from website_test_support import SessionLocal, app
 
 pytestmark = pytest.mark.real_auth
 

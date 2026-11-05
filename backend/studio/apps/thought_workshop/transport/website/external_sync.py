@@ -1,7 +1,6 @@
 import httpx
 from fastapi import APIRouter, HTTPException
 
-from app.deps import OwnerDep, StudioAuth
 from app.integrations.external.contracts import ExternalError
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.external_sync.schemas import (
@@ -16,6 +15,7 @@ from studio.apps.thought_workshop.external_sync.schemas import (
 )
 from studio.apps.thought_workshop.external_sync.use_cases import ArticleSync
 from studio.apps.thought_workshop.http_bindings import SessionDep
+from studio.assembly.http_dependencies import OwnerDep, StudioAuth
 
 router = APIRouter(
     prefix="/thought-workshop/notes/{note_id}/external-sync", tags=["thought-workshop"]

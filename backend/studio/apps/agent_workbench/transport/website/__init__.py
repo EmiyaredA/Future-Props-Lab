@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
-from app.deps import OwnerDep, SessionDep, StudioAuth
 from studio.apps.agent_workbench import reading, sources
 from studio.apps.agent_workbench.attachments import attachment_reference
 from studio.apps.agent_workbench.schemas import (
@@ -19,6 +18,7 @@ from studio.apps.agent_workbench.schemas import (
     WorkbenchSourcePatch,
 )
 from studio.apps.agent_workbench.transport.website.execution import router as execution_router
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 from studio.runtime.http.website import require_local_browser
 
 

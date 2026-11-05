@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Query
 
-from app.deps import PublicStudioAuth
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep
 from studio.apps.thought_workshop.multitable.schemas import (
     ConversionIn,
@@ -24,6 +23,7 @@ from studio.apps.thought_workshop.publication.schemas import (
 from studio.apps.thought_workshop.publication.tables import CommunityTables
 from studio.apps.thought_workshop.publication.use_cases import Community
 from studio.apps.thought_workshop.transport.mutations_http import guarded
+from studio.assembly.http_dependencies import PublicStudioAuth
 
 router = APIRouter(prefix="/thought-workshop/community", tags=["knowledge-community"])
 

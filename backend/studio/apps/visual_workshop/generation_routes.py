@@ -2,7 +2,6 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import SessionDep
 from studio.apps.visual_workshop.generation_common import GenerationError
 from studio.apps.visual_workshop.generation_records import GenerationRecords
 from studio.apps.visual_workshop.schemas.generation import (
@@ -11,6 +10,7 @@ from studio.apps.visual_workshop.schemas.generation import (
     GenerationCancelIn,
 )
 from studio.apps.visual_workshop.schemas.workshop import GenerationTaskListOut, GenerationTaskOut
+from studio.assembly.http_dependencies import SessionDep
 
 reads = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
 writes = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])

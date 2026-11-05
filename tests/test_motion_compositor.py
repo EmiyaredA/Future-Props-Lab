@@ -14,14 +14,13 @@ from sqlalchemy import select
 
 from app.capabilities.media_rendering.motion_document import MotionComposition
 from app.capabilities.media_rendering.motion_frames import MotionFrameRenderer
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.motion_compositor.projects import MotionNotFound, MotionProjects
 from studio.apps.motion_compositor.runner import MotionExportRunner
 from studio.apps.motion_compositor.storage.models import MotionTask
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorTask
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.asyncio

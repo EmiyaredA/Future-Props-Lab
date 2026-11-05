@@ -10,10 +10,9 @@ import pytest
 from tests.thought_helpers import create_note
 
 from app.console.models import User
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.thought_workshop.multitable.schemas import Snapshot
 from studio.apps.thought_workshop.multitable.validation import validate_snapshot
+from website_test_support import SessionLocal, app
 
 ROOT = "/v1/thought-workshop"
 

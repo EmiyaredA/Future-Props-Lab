@@ -6,10 +6,10 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from app.main import app
 from db.migrations import apply_migrations, runner
 from db.migrations.registry import MIGRATIONS
 from db.migrations.runner import connect_database
+from website_test_support import app
 
 RETIRED = {
     "live2d_projects",

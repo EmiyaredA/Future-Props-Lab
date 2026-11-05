@@ -137,4 +137,4 @@ flowchart LR
 5. `web/src/features/video-editor/gapEditPlan.ts` 与 `gapFreeze.ts`
 6. `web/src/features/video-editor/previewPlayback.ts`、`VideoEditorProxyVideo.tsx` 与 `VideoEditorPreciseFrame.tsx`
 7. `backend/app/capabilities/media_rendering/video_sampling.py`
-8. `backend/studio/apps/video_editor/runner.py` 与 `backend/app/main.py`
+8. `backend/studio/apps/video_editor/runner.py` 与 `backend/studio/assembly/website/application.py`

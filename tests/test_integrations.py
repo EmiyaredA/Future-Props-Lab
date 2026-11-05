@@ -13,7 +13,6 @@ import pytest
 from fastapi import UploadFile
 from sqlalchemy import delete
 
-from app.deps import SessionDep, require_studio_auth
 from app.integrations.common import IntegrationValidationError
 from app.integrations.mcp import McpCatalog
 from app.integrations.mcp.client import (
@@ -33,12 +32,12 @@ from app.integrations.schemas import McpCreateIn, ToolApiCreateIn
 from app.integrations.skills.archive import SkillArchiveStorage
 from app.integrations.skills.catalog import SkillCatalog
 from app.integrations.tool_apis import ToolApiCatalog
-from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
+from studio.assembly.http_dependencies import SessionDep, require_studio_auth
+from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.http.outbound_urls import require_safe_integration_http_url
+from website_test_support import SessionLocal, app
 
 
 async def _clear_integrations() -> None:

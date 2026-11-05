@@ -333,8 +333,8 @@ import sys
 import app.llm.inference.assets
 import app.llm.playground.transcription
 import studio.apps.model_service.library_inputs
-assert 'app.runtime.db' not in sys.modules
-assert 'app.orm' not in sys.modules
+assert 'studio.runtime.database.website' not in sys.modules
+assert 'studio.assembly.website.models' not in sys.modules
 assert not any(name.startswith(('app.console.models', 'app.apps.',
     'app.capabilities.asset_store.models')) for name in sys.modules)
 """,

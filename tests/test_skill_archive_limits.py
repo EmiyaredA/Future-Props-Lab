@@ -11,8 +11,8 @@ from fastapi import UploadFile
 
 from app.integrations.common import IntegrationValidationError
 from app.integrations.skills.archive import SkillArchiveStorage
-from app.main import app
 from studio.config.settings import Settings, get_settings
+from website_test_support import app
 
 
 def skill_zip(description: str, *, size: int | None = None) -> bytes:

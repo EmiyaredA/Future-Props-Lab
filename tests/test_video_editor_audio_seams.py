@@ -12,14 +12,13 @@ from app.capabilities.media_rendering.audio_matching import (
     SAMPLE_RATE,
     rank_audio_seams,
 )
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.video_editor.audio_alignment.audio_matching import VideoEditorAudioMatching
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.schemas import VideoEditorTimelineBatchIn
 from studio.apps.video_editor.schemas.audio_seam import AudioSeamCandidatesIn
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata
 from studio.apps.video_editor.timeline import apply_operations
+from website_test_support import SessionLocal, app
 
 
 def _document() -> dict:

@@ -9,7 +9,6 @@ from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.console.routes.creative_workshop import catalog_router
-from app.deps import db_session
 from studio.apps.creative_workshop.authors import HttpCreativeAuthors
 from studio.apps.creative_workshop.install_authorization import IdentityInstallAuthorization
 from studio.apps.creative_workshop.install_grants import InstallGrantAuthority
@@ -30,6 +29,7 @@ from studio.apps.creative_workshop.transport.source_http import router as source
 from studio.apps.creative_workshop.transport.stdio_http import router as stdio_router
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.clients.certification import CertificationClient
+from studio.assembly.http_dependencies import db_session
 from studio.contracts.creative_workshop.creative_install_evidence import INSTALL_PATH, MAX_BODY
 from studio.contracts.creative_workshop.creative_source_evidence import SOURCE_PATH
 from studio.contracts.creative_workshop.creative_stdio import PUBLIC_STDIO

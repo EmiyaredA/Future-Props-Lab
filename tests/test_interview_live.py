@@ -10,11 +10,10 @@ from pathlib import Path
 import httpx
 import pytest
 
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 WORD_NAMESPACE = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 

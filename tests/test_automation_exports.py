@@ -6,7 +6,7 @@ import pytest
 from tests.test_audio_annotation import upload_audio
 from tests.thought_helpers import create_note
 
-from app.main import app
+from website_test_support import app
 
 
 @pytest.fixture

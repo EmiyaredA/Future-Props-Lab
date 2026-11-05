@@ -35,7 +35,7 @@ def test_capacity_protocol_import_has_no_legacy_database_or_foreign_orm(tmp_path
             "-c",
             "import sys; import app.llm.routes.model_capacity; "
             "import app.llm.routes.models.model_test_realtime; "
-            "assert 'app.runtime.db' not in sys.modules; "
+            "assert 'studio.runtime.database.website' not in sys.modules; "
             "assert not any(n.startswith(('app.console.models', 'app.apps.', "
             "'app.capabilities.asset_store.models')) for n in sys.modules)",
         ],

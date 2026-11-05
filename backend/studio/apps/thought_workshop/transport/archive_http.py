@@ -2,11 +2,11 @@
 
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 
-from app.deps import StudioAuth
 from studio.apps.thought_workshop.archives.archive_import import import_archive
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import SessionDep
 from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut
+from studio.assembly.http_dependencies import StudioAuth
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])

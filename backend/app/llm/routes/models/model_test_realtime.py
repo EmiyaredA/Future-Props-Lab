@@ -4,11 +4,15 @@ from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, WebSocket
 
-from app.deps import SessionDep, StudioAuth, resolve_studio_websocket_principal
 from app.llm.admission import admission_for
 from app.llm.http_credentials import socket_credential
 from app.llm.realtime import list_realtime_models, run_realtime_model_test
 from app.llm.schemas.realtime_voice import RealtimeVoiceOptionsOut
+from studio.assembly.http_dependencies import (
+    SessionDep,
+    StudioAuth,
+    resolve_studio_websocket_principal,
+)
 from studio.config.settings import get_settings
 from studio.contracts.identity.errors import AccountError
 

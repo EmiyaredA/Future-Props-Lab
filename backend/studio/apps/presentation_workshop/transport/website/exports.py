@@ -6,7 +6,6 @@ from fastapi import APIRouter
 from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.presentation_workshop.exchange.contracts import ExportPreview
 from studio.apps.presentation_workshop.exchange.export_formats import (
     export_document,
@@ -16,6 +15,7 @@ from studio.apps.presentation_workshop.exports import export_project
 from studio.apps.presentation_workshop.projects import PresentationError, Presentations
 from studio.apps.presentation_workshop.schemas.document import PresentationExportIn
 from studio.apps.presentation_workshop.transport.website.projects import mapped
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 

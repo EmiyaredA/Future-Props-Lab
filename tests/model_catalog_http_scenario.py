@@ -34,7 +34,7 @@ from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.problem_details import http_exception_handler, revision_conflict_handler
 from studio.runtime.revisions import RevisionConflictError
 
-assert "app.runtime.db" not in sys.modules
+assert "studio.runtime.database.website" not in sys.modules
 assert "app.console.models.accounts" not in sys.modules
 assert not any(name.startswith("app.apps.") for name in sys.modules)
 state = Path(os.environ["CATALOG_TEST_ROOT"]).resolve()
@@ -170,7 +170,8 @@ async def scenario():
             assert not {"users", "platform_settings", "visual_assets"}.intersection(tables)
             assert db.execute("PRAGMA integrity_check").fetchone() == ("ok",)
         assert (
-            "app.runtime.db" not in sys.modules and "app.console.models.accounts" not in sys.modules
+            "studio.runtime.database.website" not in sys.modules
+            and "app.console.models.accounts" not in sys.modules
         )
     finally:
         await database.close()

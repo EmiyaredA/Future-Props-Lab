@@ -35,7 +35,7 @@ def test_video_image_excludes_compatibility_layout_and_foreign_orm():
     assert "studio.apps.video_editor.timeline_read" in closure
     assert "studio.apps.video_editor.legacy_project_layouts" not in closure
     assert "app.capabilities.asset_store.models" not in closure
-    assert "app.runtime.db" not in closure
+    assert "studio.runtime.database.website" not in closure
 
 
 async def test_video_owned_projects_and_timeline_survive_restart(scenario, tmp_path):  # noqa: F811

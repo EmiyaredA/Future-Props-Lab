@@ -17,11 +17,10 @@ from app.integrations.external.contracts import (
     document_target,
 )
 from app.integrations.external.feishu import FeishuClient
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.thought_workshop.external_sync.content import project_content
 from studio.apps.thought_workshop.external_sync.models import ArticleSyncTask
 from studio.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
+from website_test_support import SessionLocal, app
 
 
 class FakeFeishu:

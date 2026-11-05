@@ -9,9 +9,6 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.assets.annotation_import_runner import (
     GalgameAnnotationImportRunner,
 )
@@ -22,7 +19,9 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,
     GalgameWorkshopProject,
 )
+from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 def _audio_bytes(seconds: float = 1.0) -> bytes:

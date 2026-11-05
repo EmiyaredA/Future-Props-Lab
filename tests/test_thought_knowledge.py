@@ -8,7 +8,7 @@ from PIL import Image
 from tests.test_thought_workshop import note_body
 from tests.thought_helpers import delete_note
 
-from app.main import app
+from website_test_support import app
 
 ROOT = "/v1/thought-workshop"
 
@@ -234,7 +234,7 @@ async def test_cover_protection_and_v3_single_project_roundtrip():
 def test_runtime_contract_has_no_notebook_model_or_api():
     from pathlib import Path
 
-    from app.main import app
+    from website_test_support import app
 
     assert not any("notebook" in path for path in app.openapi()["paths"])
     for path in [

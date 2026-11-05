@@ -196,4 +196,12 @@ def test_director_build_closure_owns_only_its_workshop():
         for module in closure
         if module.startswith("app.apps.")
     )
-    assert not {"app.main", "app.api", "app.orm", "app.runtime.db"} & closure.keys()
+    assert (
+        not {
+            "studio.assembly.website.application",
+            "studio.assembly.website.routes",
+            "studio.assembly.website.models",
+            "studio.runtime.database.website",
+        }
+        & closure.keys()
+    )

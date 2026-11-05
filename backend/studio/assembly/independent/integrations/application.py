@@ -9,7 +9,6 @@ from sqlalchemy.exc import OperationalError
 from starlette.datastructures import MutableHeaders
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.deps import require_studio_auth
 from app.integrations.external.catalog import ExternalConnections
 from app.integrations.external.contracts import ExternalError
 from app.integrations.external.routes import router as external_router
@@ -45,6 +44,7 @@ from studio.apps.integrations.transport.demo_http import router as demo_install_
 from studio.apps.integrations.transport.external_http import router as external_sync_router
 from studio.apps.integrations.transport.validation_http import validation_capacity
 from studio.apps.integrations.validation import ValidationRecovery
+from studio.assembly.http_dependencies import require_studio_auth
 from studio.contracts.creative_workshop.creative_stdio import PRIVATE_STDIO
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.integrations.external_sync import MAX_EXTERNAL_STEP_BYTES

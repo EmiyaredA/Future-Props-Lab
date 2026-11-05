@@ -3,7 +3,6 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
-from app.deps import OwnerDep, SessionDep, StudioAuth
 from studio.apps.director_desk.agent_session import needs_write
 from studio.apps.director_desk.files import DirectorDeskFiles
 from studio.apps.director_desk.motions import DirectorDeskMotions
@@ -24,6 +23,7 @@ from studio.apps.director_desk.schemas import (
     DirectorToolCall,
     DirectorToolOut,
 )
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 
 router = APIRouter(prefix="/director-desk", tags=["director-desk"])
 

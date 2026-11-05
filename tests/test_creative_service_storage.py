@@ -208,7 +208,9 @@ async def run():
    await session.commit()
  finally: await db.close()
 asyncio.run(run())
-for name in ('app.main','app.orm','app.runtime.db','app.console.models.accounts',
+for name in ('studio.assembly.website.application',
+             'studio.assembly.website.models','studio.runtime.database.website',
+             'app.console.models.accounts',
              'app.integrations.models','app.capabilities.asset_store.models'):
  assert name not in sys.modules, name
 """,

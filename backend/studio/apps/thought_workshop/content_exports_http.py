@@ -7,11 +7,11 @@ from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
-from app.deps import OwnerDep
 from studio.apps.thought_workshop.content_exports import convert, export_note
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import SessionDep
 from studio.apps.thought_workshop.schemas.conversion import ThoughtMarkdownIn, ThoughtMarkdownOut
+from studio.assembly.http_dependencies import OwnerDep
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 

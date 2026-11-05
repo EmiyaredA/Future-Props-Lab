@@ -8,12 +8,12 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from app.deps import PublicStudioAuth
 from studio.apps.thought_workshop.community.community_access import published_asset
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep
 from studio.apps.thought_workshop.publication.access import publication
 from studio.apps.thought_workshop.publication.sessions import source_sessions
+from studio.assembly.http_dependencies import PublicStudioAuth
 from studio.contracts.thought_workshop.community_assets import (
     CommunityAssetRequest,
     verify_community_asset,

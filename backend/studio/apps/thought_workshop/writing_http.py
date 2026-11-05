@@ -3,7 +3,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
-from app.deps import OwnerDep
 from app.llm.http_credentials import CallCredentialDep
 from studio.apps.thought_workshop.assistant import models, prepare, writing_events
 from studio.apps.thought_workshop.http_bindings import SessionDep
@@ -14,6 +13,7 @@ from studio.apps.thought_workshop.schemas.workshop import (
     ThoughtModelOut,
 )
 from studio.apps.thought_workshop.writing import writing_models as get_writing_models
+from studio.assembly.http_dependencies import OwnerDep
 
 
 async def call(operation):

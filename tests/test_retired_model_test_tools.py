@@ -6,11 +6,11 @@ from unittest.mock import patch
 import httpx
 import pytest
 
-from app.main import app
 from db.migrations import apply_migrations, runner
 from db.migrations.registry import MIGRATIONS
 from db.migrations.runner import connect_database
 from studio.runtime.database.orm_base import Base
+from website_test_support import app
 
 RETIRED = {
     "model_test_tools",

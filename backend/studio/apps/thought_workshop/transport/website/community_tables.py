@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException
 
-from app.deps import PublicStudioAuth
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
 from studio.apps.thought_workshop.multitable.schemas import (
@@ -15,6 +14,7 @@ from studio.apps.thought_workshop.multitable.schemas import (
     Structure,
 )
 from studio.apps.thought_workshop.publication.tables import CommunityTables
+from studio.assembly.http_dependencies import PublicStudioAuth
 
 router = APIRouter(
     prefix="/community/publications/{publication_id}/notes/{note_id}/multitable",

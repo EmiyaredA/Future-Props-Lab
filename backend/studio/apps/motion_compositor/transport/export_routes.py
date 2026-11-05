@@ -5,12 +5,12 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.motion_compositor.exports import Exports, export_out
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionUnavailable
 from studio.apps.motion_compositor.schemas import ExportCreateIn, ExportListOut, ExportOut
 from studio.apps.motion_compositor.transport.file_routes import FORWARDED_RESPONSE
 from studio.apps.motion_compositor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 router = APIRouter()

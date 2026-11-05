@@ -12,7 +12,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
 
 from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
-from app.deps import db_session, require_studio_auth
 from studio.apps.asset_library.clients.archive_transfer import (
     ArchiveTransport,
     SnapshotArchiveAsset,
@@ -59,6 +58,7 @@ from studio.apps.video_editor.transport.website.projects import router as projec
 from studio.apps.video_editor.transport.website.render_preflight import router as preflight_router
 from studio.apps.video_editor.transport.website.tasks import router as tasks_router
 from studio.apps.video_editor.transport.website.timeline import router as timeline_router
+from studio.assembly.http_dependencies import db_session, require_studio_auth
 from studio.assembly.independent.asset_references import (
     install_reference_runtime,
     reference_lifespan,

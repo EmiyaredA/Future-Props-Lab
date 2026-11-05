@@ -70,7 +70,7 @@ BUSINESS_BACKEND_PACKAGES = (
     "llm",
     "tool_navigation",
 )
-ROUTE_FORBIDDEN_IMPORTS = ("app.runtime.db", "app.models", "db", "sqlalchemy")
+ROUTE_FORBIDDEN_IMPORTS = ("studio.runtime.database.website", "app.models", "db", "sqlalchemy")
 HTTP_METHODS = {"delete", "get", "head", "options", "patch", "post", "put", "trace", "websocket"}
 ROOT_PROBE_PATHS = {"/health", "/ready"}
 
@@ -212,7 +212,7 @@ def test_workspace_models_are_registered_for_tenant_scoping() -> None:
         RuntimeAdmission,
         SecurityAuditEvent,
     )
-    from app.orm import TENANT_MODELS
+    from studio.assembly.website.models import TENANT_MODELS
     from studio.runtime.database.orm_base import Base
 
     account_governance_models = {
@@ -366,7 +366,7 @@ def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
 
 
 def test_workspace_context_has_no_ambient_fallback() -> None:
-    source = (BACKEND_APP / "orm.py").read_text(encoding="utf-8")
+    source = (REPO_ROOT / "backend/studio/assembly/website/models.py").read_text(encoding="utf-8")
     assert "ContextVar" not in source
     assert "current_owner_user_id" not in source
 
@@ -649,8 +649,8 @@ def test_console_does_not_depend_on_apps() -> None:
 
 def test_runtime_assembly_entrypoints_exist() -> None:
     assert (REPO_ROOT / "backend/studio/runtime/database/orm_base.py").is_file()
-    assert (BACKEND_APP / "orm.py").is_file()
-    assert (BACKEND_APP / "api.py").is_file()
+    assert (REPO_ROOT / "backend/studio/assembly/website/models.py").is_file()
+    assert (REPO_ROOT / "backend/studio/assembly/website/routes.py").is_file()
     assert (REPO_ROOT / "backend/studio/contracts/identity/principal.py").is_file()
     assert (BACKEND_APP / "capabilities" / "asset_store" / "storage.py").is_file()
     assert (BACKEND_APP / "console" / "governance" / "provisioning.py").is_file()
@@ -832,7 +832,7 @@ def test_workshop_shell_does_not_depend_on_feature_implementation_or_styles() ->
 
 
 def test_business_routes_are_mounted_under_v1() -> None:
-    routes_init = BACKEND_APP / "api.py"
+    routes_init = REPO_ROOT / "backend/studio/assembly/website/routes.py"
     routes_tree = ast.parse(routes_init.read_text(encoding="utf-8"), filename=str(routes_init))
     prefixes: list[str] = []
     for node in ast.walk(routes_tree):
@@ -851,7 +851,7 @@ def test_business_routes_are_mounted_under_v1() -> None:
                 prefixes.append(keyword.value.value)
     assert prefixes == ["/v1"], "api_router 必须且只能使用 /v1 前缀"
 
-    main_path = BACKEND_APP / "main.py"
+    main_path = REPO_ROOT / "backend/studio/assembly/website/http.py"
     main_tree = ast.parse(main_path.read_text(encoding="utf-8"), filename=str(main_path))
     root_paths: set[str] = set()
     for node in ast.walk(main_tree):

@@ -17,9 +17,8 @@ from app.console.models import (
 from app.llm.models import (
     ModelProvider,
 )
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.runtime.time import utc_now
+from website_test_support import SessionLocal, app
 
 
 async def create_test_account(*, platform_admin: bool = False) -> tuple[str, str]:

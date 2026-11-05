@@ -7,12 +7,12 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
 
 from app.console.creative_workshop.schemas import CreativeInstallOut, CreativeStdioSetupIn
-from app.deps import SessionDep, StudioAuth
 from studio.apps.creative_workshop.storage.stdio_records import (
     StdioRecordError,
     installation_part,
     record_setup,
 )
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.creative_workshop.creative_integrations import CreativeStdioConfiguration
 from studio.contracts.creative_workshop.creative_source_evidence import strict_json
 from studio.contracts.creative_workshop.creative_stdio import (

@@ -14,7 +14,6 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.motion_compositor.projects import (
     MotionInvalid,
     MotionNotFound,
@@ -25,6 +24,7 @@ from studio.apps.motion_compositor.schemas import ProjectOut
 from studio.apps.motion_compositor.snapshot_format import archive_asset, archive_manifest
 from studio.apps.motion_compositor.transport.file_routes import ASSETS, read_json
 from studio.apps.motion_compositor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.motion_compositor.motion_assets import PREFIX, MotionAsset

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.galgame_workshop.schemas import (
     GalgameStoryMigrationRunIn,
     GalgameStoryMigrationRunOut,
     GalgameStoryMigrationStatusOut,
 )
 from studio.apps.galgame_workshop.story.story_migrations import GalgameStoryMigrations
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 

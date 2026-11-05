@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Query
 
-from app.deps import OwnerDep, StudioAuth
 from studio.apps.thought_workshop.http_bindings import SessionDep
 from studio.apps.thought_workshop.knowledge_tools.http import call
 from studio.apps.thought_workshop.knowledge_tools.http import router as local_router
@@ -14,6 +13,7 @@ from studio.apps.thought_workshop.knowledge_tools.schemas import (
     TemplatePut,
 )
 from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteOut
+from studio.assembly.http_dependencies import OwnerDep, StudioAuth
 
 router = APIRouter()
 

@@ -7,8 +7,7 @@ import pytest
 
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
 from app.llm.providers._senseaudio import ProviderTaskStatus
-from app.main import app
-from app.runtime.db import SessionLocal
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.asyncio

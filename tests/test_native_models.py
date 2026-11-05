@@ -467,7 +467,9 @@ def test_native_mac_modules_do_not_import_service_orm_or_database(tmp_path):
     code = """
 import sys
 import studio.host.local_models.models_worker
-for name in ('app.runtime.db', 'app.llm.models', 'studio.apps.model_service.storage.service_models',
+for name in ('studio.runtime.database.website',
+    'app.llm.models',
+    'studio.apps.model_service.storage.service_models',
     'app.console.models.accounts'):
     assert name not in sys.modules, name
 """

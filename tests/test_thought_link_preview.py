@@ -8,9 +8,9 @@ import httpx
 import pytest
 from tests.test_workspace_governance import client_account
 
-from app.main import app
 from studio.apps.thought_workshop import link_preview as preview
 from studio.contracts.identity.route_permissions import ROUTE_PERMISSIONS
+from website_test_support import app
 
 
 class Body(httpx.AsyncByteStream):

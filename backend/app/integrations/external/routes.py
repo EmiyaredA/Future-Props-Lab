@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 
-from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.integrations.http_bindings import external_catalog
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 
 from .contracts import ExternalError
 from .schemas import (

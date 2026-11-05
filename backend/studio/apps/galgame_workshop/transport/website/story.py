@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import ValidationError
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.galgame_workshop.errors import (
     GalgameStoryDocumentInvalidError,
     GalgameStoryDocumentNotFoundError,
@@ -32,6 +31,7 @@ from studio.apps.galgame_workshop.story.story import GalgameStoryDocuments
 from studio.apps.galgame_workshop.story.story_migrations import GalgameStoryMigrations
 from studio.apps.galgame_workshop.story.story_patches import GalgameStoryPatches
 from studio.apps.galgame_workshop.transport.website._shared import _invalid_story, _not_found
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.config.settings import get_settings
 from studio.runtime.database.operation_receipts import OperationError
 

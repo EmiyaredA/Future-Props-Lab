@@ -5,13 +5,13 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
 
-from app.deps import OwnerDep
 from app.tool_navigation.video_download import (
     VideoDownloadDepsOut,
     VideoDownloadError,
     VideoDownloadJobCreate,
     VideoDownloadJobOut,
 )
+from studio.assembly.http_dependencies import OwnerDep
 
 router = APIRouter(prefix="/tool-navigation/video-download", tags=["tool-navigation"])
 

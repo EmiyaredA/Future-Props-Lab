@@ -1,0 +1,140 @@
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+
+from app.capabilities.asset_store.account_upgrade import upgrade_pending
+from app.capabilities.asset_store.layout_migration import (
+    reconcile_project_trash,
+    reconcile_snapshot_imports,
+)
+from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
+from app.capabilities.asset_store.storage import AssetStorage
+from app.console.amadeus.execution import CodeAgentRuns
+from app.console.amadeus.runs import recover_interrupted_amadeus_runs
+from app.console.file_library.library_folder_archive import cleanup_library_folder_archive_staging
+from app.console.governance.external_sync_access import external_sync_actor_allowed
+from app.console.governance.generation_queue import (
+    claim_visual_capacity,
+    visual_queue_candidates,
+)
+from app.console.governance.interview_executor_access import interview_actor_allowed
+from app.console.governance.model_template_sync import ModelTemplateSyncRunner
+from app.console.governance.profile import reconcile_profile_avatars
+from app.console.governance.runtime_quotas import recover_admissions
+from app.console.governance.visual_acceptance_access import acceptance_actor_allowed
+from app.console.governance.workbench_access import workbench_actor_allowed
+from app.llm.inference.runner import InferenceRunner
+from app.llm.local_models.catalog import local_root
+from app.llm.local_models.installer import Installer
+from app.llm.local_models.management import LocalModels
+from app.llm.local_models.runtime import LocalRuntime
+from app.llm.playground.generation_runner import ModelTestGenerationRunner
+from app.llm.playground.recovery import recover_interrupted_model_test_runs
+from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
+from db.migrations import apply_migrations
+from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
+from studio.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
+from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
+from studio.apps.galgame_workshop.assets.annotation_import_runner import (
+    GalgameAnnotationImportRunner,
+)
+from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
+from studio.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
+from studio.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from studio.apps.interview_assistant.runner import InterviewPreparationRunner
+from studio.apps.motion_compositor.runner import MotionExportRunner
+from studio.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
+from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
+from studio.apps.visual_workshop.assistant.actions import recover_interrupted_visual_assistant_runs
+from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+from studio.runtime.tasks.polling import RunnerSupervisor
+
+
+@asynccontextmanager
+async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
+    settings = lifespan_app.state.settings
+    database = lifespan_app.state.database
+    sessions = database.sessions
+    apply_migrations(settings.database_path)
+    async with sessions() as session:
+        storage_pending = await upgrade_pending(session)
+    lifespan_app.state.storage_upgrade_required = storage_pending
+    if storage_pending:
+        try:
+            yield
+        finally:
+            await database.close()
+        return
+    cleanup_snapshot_staging(settings)
+    cleanup_library_folder_archive_staging(settings)
+    await reconcile_profile_avatars()
+    async with sessions() as session:
+        await reconcile_project_trash(session, AssetStorage(settings))
+        await reconcile_snapshot_imports(session, AssetStorage(settings))
+    async with sessions() as session:
+        await interrupt_workbench_runs(session)
+    lifespan_app.state.workbench_runs = WorkbenchRuns(sessions=sessions, settings=settings)
+    await recover_admissions(sessions=sessions)
+    await recover_interrupted_visual_assistant_runs(sessions=sessions)
+    await recover_interrupted_model_test_runs(sessions)
+    await recover_interrupted_amadeus_runs(sessions=sessions)
+    lifespan_app.state.code_agent_runs = CodeAgentRuns(sessions=sessions, settings=settings)
+    installer = Installer(local_root(settings))
+    local_runtime = LocalRuntime(installer)
+    local_models = LocalModels(sessions, installer, local_runtime)
+    lifespan_app.state.local_models = local_models
+    await local_models.recover()
+    supervisor = RunnerSupervisor(
+        (
+            WorkbenchSyncRunner(
+                actor_allowed=workbench_actor_allowed, sessions=sessions, settings=settings
+            ),
+            InterviewPreparationRunner(
+                interview_actor_allowed,
+                sessions=sessions,
+                executor_status=lifespan_app.state.interview_executor_status,
+            ),
+            ArticleSyncRunner(external_sync_actor_allowed, sessions=sessions),
+            ModelTemplateSyncRunner(sessions=sessions),
+            VisualGenerationRunner(
+                claim_admission=claim_visual_capacity,
+                queue_candidates=visual_queue_candidates,
+                session_factory=sessions,
+                settings=settings,
+            ),
+            AcceptanceRunner(
+                actor_allowed=acceptance_actor_allowed,
+                session_factory=sessions,
+                settings=settings,
+            ),
+            ModelTestGenerationRunner(
+                sessions, legacy_references=lifespan_app.state.model_generation_legacy_references
+            ),
+            InferenceRunner(sessions, local_runtime=local_runtime),
+            ModelTestTranscriptionRunner(sessions),
+            GalgameAsrRunner(session_factory=sessions, settings=settings),
+            GalgameAnnotationImportRunner(session_factory=sessions, settings=settings),
+            GalgameVideoExportRunner(session_factory=sessions, settings=settings),
+            GalgameVideoEditorHandoffRunner(session_factory=sessions, settings=settings),
+            VideoEditorRunner(session_factory=sessions, settings=settings),
+            VideoEditorRunner(lane="media", session_factory=sessions, settings=settings),
+            MotionExportRunner(session_factory=sessions, settings=settings),
+        )
+    )
+    lifespan_app.state.runner_supervisor = supervisor
+    try:
+        await supervisor.start()
+        yield
+    finally:
+        await lifespan_app.state.video_downloads.close()
+        await lifespan_app.state.amadeus_actions.close()
+        await lifespan_app.state.code_agent_runs.close()
+        await lifespan_app.state.workbench_runs.close()
+        await supervisor.stop()
+        await local_models.close()
+        lifespan_app.state.runner_supervisor = None
+        await database.close()

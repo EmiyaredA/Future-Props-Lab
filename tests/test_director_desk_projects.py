@@ -2,7 +2,7 @@ import httpx
 import pytest
 from tests.account_fixtures import account_record
 
-from app.main import app
+from website_test_support import app
 
 ROOT = "/v1/director-desk/projects"
 
@@ -139,8 +139,8 @@ async def test_project_files_roundtrip_and_delete_removes_directory():
 async def test_other_workspace_project_file_is_missing():
     from uuid import uuid4
 
-    from app.runtime.db import SessionLocal
     from studio.apps.director_desk.storage.models import DirectorDeskProject
+    from website_test_support import SessionLocal
 
     project_id = str(uuid4())
     other = str(uuid4())

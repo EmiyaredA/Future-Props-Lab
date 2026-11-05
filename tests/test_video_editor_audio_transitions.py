@@ -15,12 +15,11 @@ from sqlalchemy import select
 from app.capabilities.media_rendering.audio_transitions import seam_gain, sweep_frequency
 from app.capabilities.media_rendering.render_engine import _mux_audio
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.video_editor.errors import VideoEditorValidationError
 from studio.apps.video_editor.schemas import VideoEditorTimelineBatchIn
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata
 from studio.apps.video_editor.timeline import apply_operations
+from website_test_support import SessionLocal, app
 
 
 def document() -> dict:

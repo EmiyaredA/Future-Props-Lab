@@ -4,7 +4,6 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Response
 
-from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.llm.call_logs import CallLogService, ReproductionUnavailableError
 from app.llm.schemas.call_log import (
     BatchDeleteIn,
@@ -13,6 +12,7 @@ from app.llm.schemas.call_log import (
     CallLogQuery,
     CallLogStatsOut,
 )
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 
 router = APIRouter(prefix="/llm-call-logs", tags=["model-logs"])
 

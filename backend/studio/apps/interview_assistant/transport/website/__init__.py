@@ -5,9 +5,9 @@ from contextlib import contextmanager
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, Response
 
-from app.deps import SessionDep, StudioAuth
 from studio.apps.interview_assistant.bundles import markdown
 from studio.apps.interview_assistant.rooms import Rooms
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.interview_assistant.documents import (
     InterviewCreateIn,
     InterviewExecutorOut,

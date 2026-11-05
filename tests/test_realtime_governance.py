@@ -6,7 +6,7 @@ import pytest
 from starlette.websockets import WebSocketDisconnect
 
 from app.llm.realtime import session as realtime
-from app.runtime.db import SessionLocal
+from website_test_support import SessionLocal
 
 
 @pytest.mark.asyncio

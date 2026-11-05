@@ -8,8 +8,7 @@ import pytest
 
 from app.llm.inference.runner import InferenceRunner
 from app.llm.providers._senseaudio import ProviderTaskStatus
-from app.main import app
-from app.runtime.db import SessionLocal
+from website_test_support import SessionLocal, app
 
 CREATED_PROVIDERS = []
 
@@ -111,7 +110,7 @@ async def test_task_idempotency_results_and_materialization_retry(monkeypatch):
         from types import SimpleNamespace
 
         from app.llm.routes.model_capacity import model_capacity
-        from app.orm import bind_owner
+        from studio.assembly.website.models import bind_owner
 
         async def no_capacity(*_args, **_kwargs):
             raise AssertionError("A replay must not acquire a new model quota slot")

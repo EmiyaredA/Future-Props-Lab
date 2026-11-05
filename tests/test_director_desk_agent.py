@@ -6,10 +6,10 @@ import pytest
 from tests.account_fixtures import account_record
 
 from app.console.governance.automation_access import MANIFEST
-from app.deps import SessionDep, require_studio_auth
-from app.main import app
-from app.orm import bind_owner
+from studio.assembly.http_dependencies import SessionDep, require_studio_auth
+from studio.assembly.website.models import bind_owner
 from studio.contracts.identity.principal import StudioPrincipal
+from website_test_support import app
 
 ROOT = "/v1/director-desk/projects"
 TOKEN = "director-agent-test-token"
@@ -100,8 +100,8 @@ async def test_open_editor_runs_tool_once_per_request_id():
 
 @pytest.mark.asyncio
 async def test_other_workspace_tool_call_is_missing():
-    from app.runtime.db import SessionLocal
     from studio.apps.director_desk.storage.models import DirectorDeskProject
+    from website_test_support import SessionLocal
 
     project_id = str(uuid4())
     other = str(uuid4())

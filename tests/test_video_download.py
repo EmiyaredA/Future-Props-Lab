@@ -7,8 +7,8 @@ from pathlib import Path
 import httpx
 import pytest
 
-from app.main import app
 from app.tool_navigation import video_download as vd
+from website_test_support import app
 
 
 def test_validate_video_url_accepts_douyin_and_bilibili() -> None:

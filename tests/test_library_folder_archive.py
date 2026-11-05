@@ -11,9 +11,8 @@ from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
 )
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from website_test_support import SessionLocal, app
 
 PNG = b"\x89PNG\r\n\x1a\nfolder-archive"
 

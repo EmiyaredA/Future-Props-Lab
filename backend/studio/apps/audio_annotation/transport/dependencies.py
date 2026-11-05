@@ -6,10 +6,10 @@ from typing import Annotated
 
 from fastapi import Depends, Request
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.audio_annotation.ports import ProjectOperations
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationSegmentTranscriptionOut
 from studio.apps.audio_annotation.use_cases.edit_document import EditDocument
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 
 def document_editor(request: Request, session: SessionDep, owner: OwnerDep) -> EditDocument:

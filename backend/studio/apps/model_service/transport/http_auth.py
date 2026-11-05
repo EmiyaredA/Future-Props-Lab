@@ -2,7 +2,7 @@
 
 from fastapi import HTTPException
 
-from app.deps import authenticate_studio_request
+from studio.assembly.http_dependencies import authenticate_studio_request
 
 
 async def browser(request, session, *, admin=False):

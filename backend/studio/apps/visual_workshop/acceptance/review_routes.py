@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Query
 
-from app.deps import OwnerDep, SessionDep, StudioAuth
 from studio.apps.visual_workshop.acceptance.http_errors import errors
 from studio.apps.visual_workshop.acceptance.review_records import ReviewRecords, repair_out
 from studio.apps.visual_workshop.acceptance.runs import Runs
@@ -10,6 +9,7 @@ from studio.apps.visual_workshop.acceptance.schemas import (
     AcceptanceRunListOut,
     AcceptanceRunOut,
 )
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 
 router = APIRouter(prefix="/visual-workshop", tags=["visual-workshop"])
 

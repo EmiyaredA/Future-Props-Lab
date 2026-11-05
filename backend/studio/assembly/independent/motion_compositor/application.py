@@ -12,7 +12,6 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.requests import HTTPConnection
 
-from app.deps import db_session, require_studio_auth
 from studio.apps.asset_library.clients.archive_transfer import ArchiveTransport
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.motion_compositor.export_delivery import ExportDelivery
@@ -36,6 +35,7 @@ from studio.apps.motion_compositor.transport.handoff_routes import router as han
 from studio.apps.motion_compositor.transport.preview_routes import router as preview_router
 from studio.apps.motion_compositor.transport.snapshot_routes import router as snapshot_router
 from studio.apps.motion_compositor.transport.website.projects import router
+from studio.assembly.http_dependencies import db_session, require_studio_auth
 from studio.assembly.independent.asset_references import (
     install_reference_runtime,
     reference_lifespan,

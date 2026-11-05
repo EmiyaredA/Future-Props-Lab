@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.presentation_workshop.projects import PresentationError
 from studio.apps.presentation_workshop.schemas.document import PresentationProjectOut
 from studio.apps.presentation_workshop.templates.binding import apply_change, preview_change
@@ -23,6 +22,7 @@ from studio.apps.presentation_workshop.templates.contracts import (
     TemplateCreateDocument,
 )
 from studio.apps.presentation_workshop.templates.library import TemplateLibrary
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 

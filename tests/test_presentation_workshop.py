@@ -8,10 +8,10 @@ from PIL import Image
 from pptx import Presentation
 from tests.presentation_helpers import element, sample_document
 
-from app.main import app
 from studio.apps.presentation_workshop.exports import EXPORT_SLOTS, build_export
 from studio.apps.presentation_workshop.projects import PresentationError
 from studio.apps.presentation_workshop.schemas.document import PresentationProjectOut
+from website_test_support import app
 
 ROOT = "/v1/presentation-workshop/projects"
 

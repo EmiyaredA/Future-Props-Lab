@@ -7,11 +7,11 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
-from app.deps import OwnerDep, SessionDep
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorUnavailableError
 from studio.apps.video_editor.schemas import VideoEditorProjectSnapshotImportOut
 from studio.apps.video_editor.snapshot_exports import SnapshotExports
 from studio.apps.video_editor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 

@@ -10,12 +10,12 @@ from app.capabilities.asset_store.models import VisualAsset
 from app.llm.generation_runtime import ImmediateGenerationResult
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, generate_image
-from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
+from studio.assembly.website.models import bind_owner
 from studio.contracts.model_service.generation_tasks import ImageGenerationTaskCreateIn
+from website_test_support import SessionLocal
 
 
 @pytest.mark.asyncio

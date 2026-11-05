@@ -14,7 +14,6 @@ from app.console.routes.platform_governance import router as platform_governance
 from app.console.routes.registration import router as registration_router
 from app.demo_runtime.routes import call_router as demo_call_router
 from app.demo_runtime.routes import router as demo_runtime_router
-from app.deps import require_studio_auth
 from app.integrations.external.routes import router as external_connections_router
 from app.integrations.routes import router as integrations_router
 from app.llm.routes.local_models import router as local_models_router
@@ -67,6 +66,7 @@ from studio.apps.visual_workshop.transport.website.generation import (
     router as visual_generation_router,
 )
 from studio.apps.visual_workshop.transport.website.outputs import router as visual_outputs_router
+from studio.assembly.http_dependencies import require_studio_auth
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(cloud_control_router)

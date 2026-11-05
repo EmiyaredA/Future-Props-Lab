@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
-from app.deps import OwnerDep, SessionDep
 from app.llm.catalog.service import ResourceNotFoundError
 from app.llm.http_credentials import CallCredentialDep
 from app.llm.playground.attachments import AttachmentError, ModelTestAttachments
@@ -27,6 +26,7 @@ from app.llm.schemas.model_test import (
     ModelTestSendIn,
 )
 from app.llm.stream_access import stream_access
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.config.settings import get_settings
 from studio.runtime.files.image_sizes import ThumbnailSize
 

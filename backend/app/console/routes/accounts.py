@@ -58,10 +58,7 @@ from app.console.schemas.accounts import (
     RevokeApiKeyIn,
     SecurityAuditListOut,
 )
-from app.deps import (
-    SessionDep,
-    client_ip,
-)
+from studio.assembly.http_dependencies import SessionDep, client_ip
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.files.raster import RasterPreviewError
 

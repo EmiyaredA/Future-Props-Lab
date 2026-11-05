@@ -63,7 +63,9 @@ import sys
 from studio.apps.thought_workshop.storage.service_models import MODELS
 from studio.apps.thought_workshop import assistant
 assert len(MODELS) == 33
-for name in ('app.orm', 'app.runtime.db', 'app.console.models.accounts',
+for name in ('studio.assembly.website.models',
+    'studio.runtime.database.website',
+    'app.console.models.accounts',
              'app.llm.models', 'app.capabilities.asset_store.models'):
     assert name not in sys.modules, name
 """,
@@ -157,7 +159,10 @@ async def run():
             search_text="", kind="note"))
         await session.commit()
     await database.close()
-    for name in ("app.runtime.db", "app.orm", "app.console.models.accounts", "app.llm.models",
+    for name in ("studio.runtime.database.website",
+        "studio.assembly.website.models",
+        "app.console.models.accounts",
+        "app.llm.models",
                  "app.capabilities.asset_store.models"):
         assert name not in sys.modules, name
 asyncio.run(run())
@@ -222,7 +227,10 @@ async def run():
         assert (await session.scalar(select(ProjectOperationReceipt))).request_id == "one"
         assert (await session.scalar(select(ThoughtReferenceMutation))).state == "commit"
     await database.close()
-    for name in ("app.runtime.db", "app.orm", "app.console.models.accounts", "app.llm.models",
+    for name in ("studio.runtime.database.website",
+        "studio.assembly.website.models",
+        "app.console.models.accounts",
+        "app.llm.models",
                  "app.capabilities.asset_store.models"):
         assert name not in sys.modules, name
 asyncio.run(run())

@@ -105,10 +105,10 @@ ENTRY_POINTS = {
 PROJECT_PACKAGES = ("app", "studio")
 
 FORBIDDEN_IDENTITY = (
-    "app.runtime.db",
-    "app.main",
-    "app.api",
-    "app.orm",
+    "studio.runtime.database.website",
+    "studio.assembly.website.application",
+    "studio.assembly.website.routes",
+    "studio.assembly.website.models",
     "app.apps",
     "app.llm",
     "app.capabilities.asset_store",
@@ -117,12 +117,12 @@ FORBIDDEN_IDENTITY = (
 )
 
 FORBIDDEN_AGENTS = (
-    "app.main",
-    "app.api",
-    "app.orm",
+    "studio.assembly.website.application",
+    "studio.assembly.website.routes",
+    "studio.assembly.website.models",
     "app.llm",
     "app.console.models",
-    "app.deps",
+    "studio.assembly.http_dependencies",
     "studio.host",
     "app.capabilities.agents.sessions.catalog",
     "app.capabilities.agents.sessions.parsers",
@@ -170,10 +170,10 @@ def source_closure(root: Path, service):
             if service == "management" and any(
                 name == prefix or name.startswith(prefix + ".")
                 for prefix in (
-                    "app.main",
-                    "app.api",
-                    "app.orm",
-                    "app.deps",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.assembly.http_dependencies",
                     "app.apps",
                     "app.llm",
                     "app.console.models",
@@ -201,10 +201,10 @@ def source_closure(root: Path, service):
                 and any(
                     name == prefix or name.startswith(prefix + ".")
                     for prefix in (
-                        "app.main",
-                        "app.api",
-                        "app.orm",
-                        "app.deps",
+                        "studio.assembly.website.application",
+                        "studio.assembly.website.routes",
+                        "studio.assembly.website.models",
+                        "studio.assembly.http_dependencies",
                         "app.apps",
                         "app.llm",
                         "app.console.models",
@@ -221,10 +221,10 @@ def source_closure(root: Path, service):
             if service == "rendering" and any(
                 name == prefix or name.startswith(prefix + ".")
                 for prefix in (
-                    "app.main",
-                    "app.api",
-                    "app.orm",
-                    "app.deps",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.assembly.http_dependencies",
                     "app.apps",
                     "app.llm",
                     "app.console.models",
@@ -240,10 +240,10 @@ def source_closure(root: Path, service):
             if service == "gateway" and any(
                 name == prefix or name.startswith(prefix + ".")
                 for prefix in (
-                    "app.main",
-                    "app.api",
-                    "app.orm",
-                    "app.deps",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.assembly.http_dependencies",
                     "app.apps",
                     "app.llm",
                     "app.console.models",
@@ -255,10 +255,10 @@ def source_closure(root: Path, service):
             if service == "portal" and any(
                 name == prefix or name.startswith(prefix + ".")
                 for prefix in (
-                    "app.main",
-                    "app.orm",
-                    "app.api",
-                    "app.deps",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.models",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.http_dependencies",
                     "app.apps",
                     "app.llm",
                     "app.console.models",
@@ -272,10 +272,10 @@ def source_closure(root: Path, service):
             if service == "integrations" and any(
                 name == prefix or name.startswith(prefix + ".")
                 for prefix in (
-                    "app.main",
-                    "app.api",
-                    "app.orm",
-                    "app.runtime.db",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
                     "app.apps",
                     "app.llm",
                     "app.console",
@@ -294,10 +294,10 @@ def source_closure(root: Path, service):
             if service == "creative" and any(
                 name == prefix or name.startswith(prefix + ".")
                 for prefix in (
-                    "app.main",
-                    "app.api",
-                    "app.orm",
-                    "app.runtime.db",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
                     "app.apps",
                     "app.llm",
                     "app.console.models",
@@ -313,10 +313,10 @@ def source_closure(root: Path, service):
             if service == "thought" and any(
                 name == prefix or name.startswith(prefix + ".")
                 for prefix in (
-                    "app.main",
-                    "app.api",
-                    "app.orm",
-                    "app.runtime.db",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
                     "app.console.models",
                     "app.capabilities.asset_store.models",
                     "app.capabilities.asset_store.library",
@@ -334,10 +334,10 @@ def source_closure(root: Path, service):
             if service == "models" and any(
                 name == prefix or name.startswith(prefix + ".")
                 for prefix in (
-                    "app.main",
-                    "app.api",
-                    "app.orm",
-                    "app.runtime.db",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
                     "app.apps",
                     "app.console.governance",
                     "app.console.models",
@@ -354,10 +354,10 @@ def source_closure(root: Path, service):
             if service == "tools" and any(
                 name == prefix or name.startswith(prefix + ".")
                 for prefix in (
-                    "app.main",
-                    "app.api",
-                    "app.orm",
-                    "app.runtime.db",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
                     "app.apps",
                     "app.llm",
                     "app.console",
@@ -370,7 +370,13 @@ def source_closure(root: Path, service):
             ):
                 raise ValueError(f"Tools 镜像包含越界依赖：{name}")
             if service == "agent-runtime" and (
-                name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+                name
+                in {
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
+                }
                 or name.startswith(
                     (
                         "app.apps.",
@@ -385,13 +391,26 @@ def source_closure(root: Path, service):
             ):
                 raise ValueError(f"Agent Runtime 镜像包含越界依赖：{name}")
             if service == "amadeus" and (
-                name in {"app.main", "app.api", "app.orm", "app.deps", "app.runtime.db"}
+                name
+                in {
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.assembly.http_dependencies",
+                    "studio.runtime.database.website",
+                }
                 or name.startswith(("app.apps.", "app.integrations.", "app.llm."))
                 or name.startswith("app.console.governance.")
             ):
                 raise ValueError(f"Amadeus 镜像包含越界依赖：{name}")
             if service == "remote" and (
-                name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+                name
+                in {
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
+                }
                 or name.startswith(
                     ("app.apps.", "app.console.models", "app.llm", "studio.apps.identity")
                 )
@@ -399,7 +418,13 @@ def source_closure(root: Path, service):
             ):
                 raise ValueError(f"Remote 镜像包含越界依赖：{name}")
             if service == "motion" and (
-                name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+                name
+                in {
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
+                }
                 or name.startswith(
                     (
                         "app.console",
@@ -422,7 +447,13 @@ def source_closure(root: Path, service):
             ):
                 raise ValueError(f"Motion 镜像包含越界依赖：{name}")
             if service == "video" and (
-                name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+                name
+                in {
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
+                }
                 or name.startswith(
                     (
                         "app.console",
@@ -444,7 +475,13 @@ def source_closure(root: Path, service):
             ):
                 raise ValueError(f"Video Editor 镜像包含越界依赖：{name}")
             if service == "presentation" and (
-                name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+                name
+                in {
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
+                }
                 or name.startswith(
                     (
                         "app.console",
@@ -467,7 +504,13 @@ def source_closure(root: Path, service):
             ):
                 raise ValueError(f"Presentation 镜像包含越界依赖：{name}")
             if service == "annotation" and (
-                name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+                name
+                in {
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
+                }
                 or name.startswith(
                     (
                         "app.console",
@@ -488,7 +531,13 @@ def source_closure(root: Path, service):
             ):
                 raise ValueError(f"Annotation 镜像包含越界依赖：{name}")
             if service == "interview" and (
-                name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+                name
+                in {
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
+                }
                 or name.startswith(
                     (
                         "app.console",
@@ -510,7 +559,13 @@ def source_closure(root: Path, service):
             ):
                 raise ValueError(f"Interview 镜像包含越界依赖：{name}")
             if service == "director" and (
-                name in {"app.main", "app.api", "app.orm", "app.runtime.db"}
+                name
+                in {
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
+                }
                 or name.startswith(
                     (
                         "app.console",
@@ -529,10 +584,10 @@ def source_closure(root: Path, service):
             if service in PROJECT_OWNERS:
                 other = "galgame" if service == "visual" else "visual"
                 forbidden = (
-                    "app.main",
-                    "app.api",
-                    "app.orm",
-                    "app.runtime.db",
+                    "studio.assembly.website.application",
+                    "studio.assembly.website.routes",
+                    "studio.assembly.website.models",
+                    "studio.runtime.database.website",
                     f"app.apps.{other}_workshop",
                     "app.capabilities.asset_store.models",
                     "app.capabilities.asset_store.storage",
@@ -544,7 +599,7 @@ def source_closure(root: Path, service):
                     f"studio.apps.{other}_workshop",
                 )
                 if service != "visual":
-                    forbidden += ("app.deps",)
+                    forbidden += ("studio.assembly.http_dependencies",)
                 llm_contract = name in {
                     "app.llm",
                     "app.llm.schemas",

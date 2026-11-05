@@ -7,7 +7,7 @@ import httpx
 import pytest
 from tests.test_thought_multitable import ROOT, row, setup
 
-from app.main import app
+from website_test_support import app
 
 
 @pytest.mark.asyncio

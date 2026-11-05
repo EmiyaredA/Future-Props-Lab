@@ -56,6 +56,9 @@
 - 原 `fpl_*` 包与 `app/apps/` 业务切片已迁入 `backend/studio/`，不得重建旧目录或转发包。
   `apps/` 拥有业务，`contracts/` 按所有者保存纯协议，`runtime/` 拥有无业务归属机制，
   `assembly/independent/<owner>/` 拥有服务构造、CLI 和维护装配；主机入口在 `assembly/host/`。
+- `studio/assembly/website/` 显式构造兼容网站：`application` 创建实例，`bindings` 注入组件，
+  `lifecycle` 管理启停，`http` 与 `routes` 注册协议，`models` 限定网站会话规则。
+  导入不读取配置或创建数据库；测试实例由隔离配置的 `tests/website_test_support.py` 拥有。
 - `studio` 的父包初始化保持无副作用。`contracts`、配置格式、纯 `rules` 与 `use_cases`
   不导入 ORM、HTTP 框架、主机实现或应用内部模块。业务用例声明所需接口，装配注入存储与
   外部客户端；用例通过命令、快照和领域错误交互，不接收数据库 Session。
@@ -68,7 +71,7 @@
   CAS 与回执；并发失败复查原请求回执，取消回滚。HTTP 层只映射领域错误。
 - `backend/studio/` 全树纳入文件和目录行数预算；迁移路径同时更新入口、镜像闭包、打包、
   契约归属和测试。不得用空目录、软链接或永久转发表示迁移完成。
-- `backend/app/` 暂时保留网站装配、`llm/`、`capabilities/`、`console/`、`integrations/`、
+- `backend/app/` 暂时保留 `llm/`、`capabilities/`、`console/`、`integrations/`、
   `tool_navigation/` 与 `demo_runtime/` 的未归并实现。新业务进入 `studio`；后续迁移须按真实
   所有者分配这些实现，不能把它们整体搬入一个通用兼容包。`app/apps/` 已无业务源码。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和

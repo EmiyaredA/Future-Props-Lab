@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.visual_workshop.acceptance.http_errors import errors
 from studio.apps.visual_workshop.acceptance.schemas import (
     AcceptanceRunCreateIn,
@@ -12,6 +11,7 @@ from studio.apps.visual_workshop.acceptance.schemas import (
     AcceptanceTemplateWriteIn,
 )
 from studio.apps.visual_workshop.acceptance.standards import Standards
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter(prefix="/visual-workshop", tags=["visual-workshop"])
 

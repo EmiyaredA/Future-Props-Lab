@@ -21,7 +21,7 @@ from studio.apps.asset_library.files import Files
 from studio.assembly.independent.asset_library.application import create_app
 from studio.apps.asset_library.storage.service_models import MODELS
 assert not any(name.startswith("app.apps.") for name in sys.modules)
-assert "app.orm" not in sys.modules
+assert "studio.assembly.website.models" not in sys.modules
 assert "app.console.models.accounts" not in sys.modules
 from app.capabilities.asset_store.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference as owned

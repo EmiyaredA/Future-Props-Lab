@@ -7,12 +7,8 @@ from sqlalchemy import delete, select, update
 
 from app.llm.call_logs.service import CallLogService
 from app.llm.models import LlmCallLog
-from app.orm import (
-    TenantScopeError,
-    bind_owner,
-    require_owner_id,
-)
-from app.runtime.db import SessionLocal
+from studio.assembly.website.models import TenantScopeError, bind_owner, require_owner_id
+from website_test_support import SessionLocal
 
 
 def _log(log_id: str, owner_user_id: str, *, model: str) -> LlmCallLog:

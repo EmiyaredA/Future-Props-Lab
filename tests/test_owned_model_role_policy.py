@@ -329,7 +329,7 @@ def test_owned_role_policy_imports_no_recovery_database_or_foreign_orm(tmp_path)
             sys.executable,
             "-c",
             "import sys; import studio.apps.model_service.templates; "
-            "assert 'app.runtime.db' not in sys.modules; "
+            "assert 'studio.runtime.database.website' not in sys.modules; "
             "assert not any(n.startswith(('app.console.models', 'app.apps.')) "
             "for n in sys.modules)",
         ],

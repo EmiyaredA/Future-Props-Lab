@@ -12,8 +12,8 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from tests.migration_fixtures import LATEST_MIGRATION_ID, MIGRATIONS, apply_migrations
 
-import app.main as main_module
-import app.runtime.db as database_module
+import studio.assembly.website.lifecycle as main_module
+import website_test_support as database_module
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 from studio.runtime.http.problem_details import storage_operational_error_handler
 
@@ -370,23 +370,28 @@ async def test_async_database_connections_enable_sqlite_pragmas() -> None:
 async def test_lifespan_applies_migrations_and_disposes_engine(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from studio.assembly.website.application import create_app
+
     migrated: list[Path] = []
     disposed: list[bool] = []
-
+    application = create_app(database_module.settings)
+    database = application.state.database
+    dispose = database.engine.dispose
     monkeypatch.setattr(main_module, "apply_migrations", migrated.append)
 
     async def fake_dispose() -> None:
         disposed.append(True)
+        await dispose()
 
     monkeypatch.setattr(
-        database_module,
+        database,
         "engine",
-        SimpleNamespace(connect=database_module.engine.connect, dispose=fake_dispose),
+        SimpleNamespace(connect=database.engine.connect, dispose=fake_dispose),
     )
-    async with main_module.lifespan(main_module.app):
+    async with main_module.lifespan(application):
         pass
 
-    assert migrated == [main_module.settings.database_path]
+    assert migrated == [database_module.settings.database_path]
     assert disposed == [True]
 
 

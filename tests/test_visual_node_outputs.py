@@ -6,8 +6,6 @@ import httpx
 import pytest
 from sqlalchemy import func, select
 
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.outputs.history import (
     NodeOutputs,
     OutputError,
@@ -15,6 +13,7 @@ from studio.apps.visual_workshop.outputs.history import (
 )
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
+from website_test_support import SessionLocal, app
 
 PNG = b"\x89PNG\r\n\x1a\noutput-version"
 

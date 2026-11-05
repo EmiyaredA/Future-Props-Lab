@@ -3,6 +3,7 @@
 import json
 import os
 import time
+from functools import partial
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -12,14 +13,14 @@ from fastapi import FastAPI
 from scripts.website import frontend
 from scripts.website.serve import authenticate_browser
 
-from app.api import api_router
 from app.console.governance.automation_access import automation_allowed
 from app.console.governance.provisioning import create_account
-from app.main import app as main_app
-from app.runtime.db import SessionLocal
+from studio.assembly.website.routes import api_router
 from studio.runtime.http.remote_web import RemoteWeb
 from studio.runtime.http.website import CurrentWebsite, WebsiteTransport, pin_release
 from studio.runtime.http.website_releases import RETIRED_SECONDS
+from website_test_support import SessionLocal
+from website_test_support import app as main_app
 
 pytestmark = pytest.mark.real_auth
 
@@ -55,7 +56,7 @@ async def website(tmp_path):
         origin="https://studio.example.test",
         port=28081,
         static=static,
-        authenticate=authenticate_browser,
+        authenticate=partial(authenticate_browser, sessions=SessionLocal),
     )
 
     class PublicIngress:

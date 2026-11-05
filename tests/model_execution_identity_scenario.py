@@ -18,7 +18,7 @@ from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import verify_context
 from studio.runtime.database.migrations import apply
 
-assert "app.runtime.db" not in sys.modules
+assert "studio.runtime.database.website" not in sys.modules
 assert not any(name.startswith(("app.llm", "app.apps")) for name in sys.modules)
 
 from app.llm.generation_runtime.driver import GenerationTaskStore  # noqa: E402
@@ -269,8 +269,8 @@ async def scenario():
                     "after-key-revoke",
                     "after-role-change",
                 }
-            assert "app.runtime.db" not in sys.modules
-            assert "app.orm" not in sys.modules
+            assert "studio.runtime.database.website" not in sys.modules
+            assert "studio.assembly.website.models" not in sys.modules
     finally:
         for client in clients:
             await client.aclose()

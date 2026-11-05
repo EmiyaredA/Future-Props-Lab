@@ -4,7 +4,7 @@ import httpx
 import pytest
 from tests.presentation_helpers import sample_document
 
-from app.main import app
+from website_test_support import app
 
 
 @pytest.mark.asyncio

@@ -2,9 +2,8 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.main import app
-from app.runtime.db import SessionLocal
 from app.tool_navigation.models import ToolNavigationItem
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.asyncio

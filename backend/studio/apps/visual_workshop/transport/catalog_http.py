@@ -3,10 +3,10 @@
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.deps import OwnerDep, SessionDep, require_studio_auth
 from app.llm.schemas.visual_catalog import AcceptanceModelListOut, GenerationOptionsOut
 from studio.apps.visual_workshop.acceptance.http_errors import errors
 from studio.apps.visual_workshop.acceptance.project_access import project
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, require_studio_auth
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.visual_workshop.visual_catalog import (

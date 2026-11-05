@@ -24,7 +24,7 @@ from app.console.schemas.registration import (
     RegistrationInvitePatch,
     SecretOut,
 )
-from app.deps import SessionDep, client_ip, require_recent_reauthentication
+from studio.assembly.http_dependencies import SessionDep, client_ip, require_recent_reauthentication
 
 router = APIRouter(tags=["platform-governance"])
 

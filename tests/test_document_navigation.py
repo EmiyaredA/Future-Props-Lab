@@ -69,7 +69,7 @@ async def test_navigation_backup_history_and_search_use_original_note_contract()
     )
     from tests.test_thought_knowledge_tools import ROOT, note, project, put
 
-    from app.main import app
+    from website_test_support import app
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

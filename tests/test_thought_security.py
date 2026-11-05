@@ -11,11 +11,10 @@ from tests.thought_helpers import delete_note
 
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import TextDelta
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.thought_workshop.assistant import PreparedWriting
 from studio.apps.thought_workshop.legacy_writing import ProviderSelection, writing_events
 from studio.apps.thought_workshop.writing import WritingModel
+from website_test_support import SessionLocal, app
 
 ROOT = "/v1/thought-workshop"
 

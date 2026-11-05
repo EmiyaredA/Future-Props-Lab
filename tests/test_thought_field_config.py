@@ -10,12 +10,12 @@ import httpx
 import pytest
 from tests.test_thought_multitable import ROOT, setup
 
-from app.main import app
 from db.migrations.registry import MIGRATIONS
 from db.migrations.runner import connect_database
 from studio.apps.thought_workshop.archive_structure import convert_v3_folders_to_notes
 from studio.apps.thought_workshop.multitable.formatting import format_value
 from studio.apps.thought_workshop.multitable.schemas import FieldSpec
+from website_test_support import app
 
 
 @pytest.mark.parametrize(

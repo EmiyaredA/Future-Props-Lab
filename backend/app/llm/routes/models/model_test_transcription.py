@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
-from app.deps import OwnerDep, SessionDep
 from app.llm.http_credentials import CallCredentialDep
 from app.llm.library_inputs import library_inputs
 from app.llm.playground.transcription import (
@@ -20,6 +19,7 @@ from app.llm.schemas.model_test import (
     ModelTestTranscriptionTaskListOut,
     ModelTestTranscriptionTaskOut,
 )
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter(prefix="/model-test", tags=["model-test"])
 

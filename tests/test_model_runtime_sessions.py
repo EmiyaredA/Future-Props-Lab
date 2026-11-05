@@ -27,7 +27,7 @@ def test_model_execution_modules_do_not_import_the_monolith_session_factory():
                 if isinstance(node, ast.Import)
                 else []
             )
-            assert "app.runtime.db" not in imports, path
+            assert "studio.runtime.database.website" not in imports, path
 
 
 @pytest.fixture

@@ -16,12 +16,11 @@ from PIL import Image
 
 from app.console.cloud_control import access, desktop
 from app.console.governance.provisioning import create_account
-from app.main import app
-from app.runtime.db import SessionLocal
 from db.migrations import runner as migration_runner
 from studio.apps.agent_workbench.execution import events, project_files, projects, runner, storage
 from studio.apps.agent_workbench.transport.website import execution
 from studio.config.settings import CloudProject, get_settings
+from website_test_support import SessionLocal, app
 
 pytestmark = pytest.mark.real_auth
 PASSWORD = "Cloud-Control-Isolated-Test-2026!"

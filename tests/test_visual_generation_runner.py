@@ -17,7 +17,6 @@ from app.llm.models import (
 )
 from app.llm.providers.temporary_media import TemporaryMediaError
 from app.runtime.credentials import encrypt_secret
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import (
     VisualGenerationTask,
@@ -31,6 +30,7 @@ from studio.apps.visual_workshop.website.generation_runner import (
     _safe_task_error,
 )
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal
 
 
 def _task(

@@ -15,11 +15,10 @@ from app.capabilities.transcription.support import (
 from app.console.models import User
 from app.llm.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
-from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
 from studio.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
+from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 def wav_bytes(seconds: float = 1.0) -> bytes:

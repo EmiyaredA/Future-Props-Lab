@@ -5,8 +5,7 @@ import httpx
 import pytest
 
 from app.console.governance.provisioning import create_account
-from app.main import app
-from app.runtime.db import SessionLocal
+from website_test_support import SessionLocal, app
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
 

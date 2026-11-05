@@ -26,9 +26,8 @@ from app.llm.providers.transcription import (
     TranscriptWord,
 )
 from app.llm.schemas.model_test import ModelTestTranscriptionParametersIn
-from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
+from studio.assembly.website.models import bind_owner
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.parametrize(

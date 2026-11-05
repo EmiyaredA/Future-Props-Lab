@@ -5,13 +5,12 @@ import pytest
 
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.schemas import GalgameStoryProject
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,
 )
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 def playable_story() -> dict:

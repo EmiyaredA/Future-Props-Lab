@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Request
 
-from app.deps import SessionDep, StudioAuth
 from studio.apps.asset_library.clients.project_reveal_http import (
     open_verified_project_folder,
     require_local_project_request,
@@ -10,6 +9,7 @@ from studio.apps.asset_library.clients.project_reveal_http import (
 from studio.apps.video_editor.errors import VideoEditorNotFoundError
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.transport.website.errors import _error
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter()

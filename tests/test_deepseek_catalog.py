@@ -48,7 +48,7 @@ async def create_model(client, *, capabilities=None):
 
 
 async def test_catalog_crud_cas_credentials_isolation_and_availability(monkeypatch):
-    from app.main import app
+    from website_test_support import app
 
     monkeypatch.setattr(app.state, "desktop_enabled", True, raising=False)
 
@@ -188,7 +188,7 @@ async def test_diagnostic_playground_inference_and_retired_amadeus_bridge(monkey
     monkeypatch.setattr("app.llm.playground.stream.stream_text_completion", stream)
     monkeypatch.setattr("app.llm.inference.text.stream_text_completion", stream)
     monkeypatch.setattr(HttpAgentAdapter, "__init__", init)
-    from app.main import app
+    from website_test_support import app
 
     monkeypatch.setattr(app.state, "desktop_enabled", True, raising=False)
     client, _, _, _ = await client_account()

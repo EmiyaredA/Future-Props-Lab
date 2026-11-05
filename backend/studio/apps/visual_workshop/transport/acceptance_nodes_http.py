@@ -3,7 +3,6 @@
 import httpx
 from fastapi import APIRouter, HTTPException, Request
 
-from app.deps import SessionDep, StudioAuth
 from studio.apps.visual_workshop.acceptance.acceptance_context import AcceptanceContext
 from studio.apps.visual_workshop.acceptance.http_errors import errors
 from studio.apps.visual_workshop.acceptance.node_schemas import (
@@ -15,6 +14,7 @@ from studio.apps.visual_workshop.acceptance.node_schemas import (
 from studio.apps.visual_workshop.acceptance.schemas import AcceptanceRunOut
 from studio.apps.visual_workshop.review.review_model import plan_executor
 from studio.apps.visual_workshop.review.review_submission import ReviewSubmission
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 router = APIRouter(prefix="/v1/visual-workshop/projects", tags=["visual-workshop"])

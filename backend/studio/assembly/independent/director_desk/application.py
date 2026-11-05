@@ -8,12 +8,12 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.deps import require_studio_auth
 from studio.apps.director_desk.agent_session import DirectorEditorSessions
 from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.apps.director_desk.storage.migrations.registry import MIGRATIONS
 from studio.apps.director_desk.storage.models import DirectorDeskProject, DirectorDeskUserMotion
 from studio.apps.director_desk.transport.website import router
+from studio.assembly.http_dependencies import require_studio_auth
 from studio.contracts.gateway.protocol_hash import public_contract
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database

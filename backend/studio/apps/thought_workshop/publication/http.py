@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException
 
-from app.deps import PublicStudioAuth
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
 from studio.apps.thought_workshop.knowledge_tools.schemas import ResolveReferences
@@ -24,6 +23,7 @@ from studio.apps.thought_workshop.publication.schemas import (
 )
 from studio.apps.thought_workshop.publication.use_cases import Community
 from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut
+from studio.assembly.http_dependencies import PublicStudioAuth
 
 
 async def call(operation):

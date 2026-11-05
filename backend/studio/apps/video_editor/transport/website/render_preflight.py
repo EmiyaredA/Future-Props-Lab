@@ -2,11 +2,11 @@
 
 from fastapi import APIRouter
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.render_preflight import VideoRenderPreflight
 from studio.apps.video_editor.schemas import VideoEditorRenderPreviewIn, VideoEditorRenderPreviewOut
 from studio.apps.video_editor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 

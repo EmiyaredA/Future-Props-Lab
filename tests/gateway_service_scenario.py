@@ -18,7 +18,10 @@ from studio.contracts.gateway.service_status import DeploymentServicesOut
 from studio.contracts.identity.claims import Actor, issue_context, verify_context
 from studio.runtime.database.migrations import apply
 
-assert "app.main" not in sys.modules and "app.orm" not in sys.modules
+assert (
+    "studio.assembly.website.application" not in sys.modules
+    and "studio.assembly.website.models" not in sys.modules
+)
 assert "app.console.models.accounts" not in sys.modules
 assert not any(name.startswith(("app.apps.", "app.llm.")) for name in sys.modules)
 

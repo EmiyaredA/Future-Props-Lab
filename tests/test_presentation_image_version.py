@@ -10,8 +10,8 @@ import pytest
 from PIL import Image
 from tests.presentation_helpers import sample_document
 
-from app.main import app
 from db.migrations.versions.r0097_presentation_image_version import SQL
+from website_test_support import app
 
 ROOT = "/v1/presentation-workshop/projects"
 

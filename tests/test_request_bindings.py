@@ -11,7 +11,11 @@ from fastapi import FastAPI, HTTPException
 from starlette.requests import Request
 from starlette.websockets import WebSocket
 
-from app.deps import authenticate_studio_request, authenticate_studio_websocket, db_session
+from studio.assembly.http_dependencies import (
+    authenticate_studio_request,
+    authenticate_studio_websocket,
+    db_session,
+)
 from studio.contracts.identity.claims import Actor
 
 
@@ -21,10 +25,10 @@ def test_shared_dependency_import_does_not_open_legacy_configuration_or_account_
             sys.executable,
             "-c",
             (
-                "import sys; import app.deps; "
-                "assert 'app.runtime.db' not in sys.modules; "
+                "import sys; import studio.assembly.http_dependencies; "
+                "assert 'studio.runtime.database.website' not in sys.modules; "
                 "assert 'app.console.models.accounts' not in sys.modules; "
-                "assert 'app.main' not in sys.modules"
+                "assert 'studio.assembly.website.application' not in sys.modules"
             ),
         ],
         env={

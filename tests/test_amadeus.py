@@ -23,11 +23,10 @@ from app.console.amadeus.schemas import ModelTurnIn
 from app.console.amadeus.scripts import run_script
 from app.console.models.accounts import User
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
-from app.main import app
-from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
-from app.runtime.db import SessionLocal
+from studio.assembly.website.models import bind_owner
 from studio.runtime.database.operation_receipts import OperationError
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.asyncio

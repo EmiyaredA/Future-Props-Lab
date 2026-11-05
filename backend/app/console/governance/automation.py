@@ -2,7 +2,7 @@
 
 from urllib.parse import urlencode
 
-from app.orm import AUTOMATION_ROOTS
+from studio.assembly.website.models import AUTOMATION_ROOTS
 from studio.runtime.database.operation_receipts import OperationError
 
 RESOURCE_PATHS = {

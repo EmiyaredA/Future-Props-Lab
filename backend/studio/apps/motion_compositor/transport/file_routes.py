@@ -11,7 +11,6 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.motion_compositor.projects import (
     MotionInvalid,
     MotionNotFound,
@@ -25,6 +24,7 @@ from studio.apps.motion_compositor.schemas import (
     ImportSourceListOut,
 )
 from studio.apps.motion_compositor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.motion_compositor.motion_assets import (
     PREFIX,

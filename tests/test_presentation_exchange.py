@@ -9,10 +9,10 @@ from PIL import Image
 from pptx import Presentation
 from tests.presentation_helpers import element, sample_document
 
-from app.main import app
 from studio.apps.presentation_workshop.exchange.pptx_import import read_pptx
 from studio.apps.presentation_workshop.pptx_export import write_pptx
 from studio.apps.presentation_workshop.schemas.document import PresentationDocument
+from website_test_support import app
 
 ROOT = "/v1/presentation-workshop"
 

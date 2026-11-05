@@ -22,8 +22,7 @@ from app.llm.providers.realtime.constants import (
 from app.llm.providers.realtime.contracts import ResolvedRealtimeModel
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.session import TurnMetrics, _client_configuration, _write_log
-from app.main import app
-from app.runtime.db import SessionLocal
+from website_test_support import SessionLocal, app
 
 
 def _model() -> ResolvedRealtimeModel:

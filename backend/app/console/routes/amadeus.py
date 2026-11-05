@@ -46,7 +46,7 @@ from app.console.amadeus.schemas import (
 )
 from app.console.amadeus.scripts import sandbox_available
 from app.console.amadeus.skills import load_skill, read_skill_file
-from app.deps import SessionDep, StudioAuth
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.website import require_local_browser
 

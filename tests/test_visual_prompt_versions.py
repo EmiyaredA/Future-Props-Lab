@@ -6,9 +6,6 @@ import pytest
 from pydantic import ValidationError
 from tests.migration_fixtures import MIGRATIONS, apply_migrations
 
-from app.deps import SessionDep, require_studio_auth
-from app.main import app
-from app.orm import bind_owner
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 from studio.apps.visual_workshop.schemas.workshop import (
     VisualCanvasAudioGenerationDraft,
@@ -17,7 +14,10 @@ from studio.apps.visual_workshop.schemas.workshop import (
     VisualCanvasVideoGenerationDraft,
 )
 from studio.apps.visual_workshop.snapshot_values import remap_canvas
+from studio.assembly.http_dependencies import SessionDep, require_studio_auth
+from studio.assembly.website.models import bind_owner
 from studio.contracts.identity.principal import StudioPrincipal
+from website_test_support import app
 
 DRAFTS = [
     VisualCanvasImageGenerationDraft,

@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
-from app.deps import OwnerDep, StudioAuth
 from studio.apps.thought_workshop.directory import Directory
 from studio.apps.thought_workshop.duplicate_retention import duplicate_with_references
 from studio.apps.thought_workshop.errors import ThoughtError
@@ -51,6 +50,7 @@ from studio.apps.thought_workshop.template_retention import (
     create_template_with_references,
     mutate_template_with_references,
 )
+from studio.assembly.http_dependencies import OwnerDep, StudioAuth
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 

@@ -3,9 +3,9 @@ from copy import deepcopy
 import httpx
 import pytest
 
-from app.main import app
 from studio.apps.galgame_workshop.schemas import GalgameStoryProject
 from studio.apps.galgame_workshop.story.story import build_route_report
+from website_test_support import app
 
 
 def test_galgame_timeline_master_audio_schema_is_optional_and_role_checked() -> None:

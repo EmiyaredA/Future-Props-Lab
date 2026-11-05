@@ -6,7 +6,7 @@ import httpx
 import pytest
 from PIL import Image
 
-from app.main import app
+from website_test_support import app
 
 
 @pytest.mark.asyncio

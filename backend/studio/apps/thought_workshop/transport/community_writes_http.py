@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
-from app.deps import PublicStudioAuth
 from studio.apps.thought_workshop.community.community_edits import save_note
 from studio.apps.thought_workshop.community.community_upload import upload_attachment
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep
@@ -12,6 +11,7 @@ from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
 from studio.apps.thought_workshop.storage.community_tables import apply_table
 from studio.apps.thought_workshop.transport.mutations_http import guarded
 from studio.apps.thought_workshop.transport.upload_http import guarded_upload
+from studio.assembly.http_dependencies import PublicStudioAuth
 
 router = APIRouter(prefix="/thought-workshop/community", tags=["knowledge-community"])
 

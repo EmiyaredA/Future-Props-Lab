@@ -27,7 +27,10 @@ from studio.contracts.gateway.routing import RouteCatalog  # noqa: E402
 from studio.contracts.identity.claims import HEADER  # noqa: E402
 from studio.runtime.database.migrations import apply, check  # noqa: E402
 
-assert "app.main" not in sys.modules and "app.orm" not in sys.modules
+assert (
+    "studio.assembly.website.application" not in sys.modules
+    and "studio.assembly.website.models" not in sys.modules
+)
 assert not any(name.startswith("app.apps.") or name.startswith("app.llm.") for name in sys.modules)
 apply(identity_root / "service.db", "identity", IDENTITY_MIGRATIONS)
 apply(management_root / "service.db", "management", MIGRATIONS)

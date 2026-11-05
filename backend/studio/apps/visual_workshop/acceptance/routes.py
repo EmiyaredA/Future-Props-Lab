@@ -1,6 +1,5 @@
 from fastapi import APIRouter
 
-from app.deps import OwnerDep, SessionDep
 from app.llm.schemas.visual_catalog import AcceptanceModelListOut
 from app.llm.visual_catalog import acceptance_models
 from studio.apps.visual_workshop.acceptance.http_errors import errors
@@ -13,6 +12,7 @@ from studio.apps.visual_workshop.acceptance.schemas import (
     AcceptanceSampleIn,
 )
 from studio.apps.visual_workshop.acceptance.standards import Standards
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter(prefix="/visual-workshop", tags=["visual-workshop"])
 

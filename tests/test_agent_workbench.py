@@ -16,14 +16,14 @@ from app.capabilities.agents.sessions import get_adapter
 from app.capabilities.agents.sessions.access import LocalSourceAccess
 from app.console.governance.workbench_access import workbench_actor_allowed
 from app.console.models import User
-from app.deps import SessionDep, db_session, require_studio_auth
-from app.orm import bind_owner
 from db.migrations import apply_migrations
 from studio.apps.agent_workbench.events import event_page
 from studio.apps.agent_workbench.storage.models import WorkbenchCheckpoint, WorkbenchSession
 from studio.apps.agent_workbench.sync.projection import apply_batch
 from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from studio.apps.agent_workbench.transport.website import router
+from studio.assembly.http_dependencies import SessionDep, db_session, require_studio_auth
+from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
 

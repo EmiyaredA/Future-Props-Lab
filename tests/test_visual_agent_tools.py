@@ -9,11 +9,10 @@ from sqlalchemy import delete, func, select
 
 from app.capabilities.agents.harness import ToolExecutionContext
 from app.llm.models import ModelEntry, ModelProvider
-from app.main import app
 from app.runtime.credentials import encrypt_secret
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.assistant.tools import visual_agent_tools
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.asyncio

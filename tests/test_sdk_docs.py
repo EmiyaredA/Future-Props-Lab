@@ -5,7 +5,7 @@ from pathlib import Path
 
 from scripts.generate_sdk_docs import LABELS, ROOT, auth_for, build
 
-from app.main import app
+from website_test_support import app
 
 
 def test_reference_labels_cover_every_sdk_resource():

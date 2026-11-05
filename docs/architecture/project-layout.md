@@ -2,7 +2,7 @@
 
 ## Studio 组件归属迁移
 
-所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。`backend/app/` 暂时保留兼容网站装配、模型/素材等尚未归并的实现；这部分和逐用例解耦仍属于后续迁移，不能把命名空间迁移视为整个方案验收完成。
+所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。`backend/app/` 暂时保留模型/素材等尚未归并的实现；这部分和逐用例解耦仍属于后续迁移，不能把命名空间迁移视为整个方案验收完成。
 
 已落地的目录骨架如下（以仓库根目录下为第一级，展开至第四级）：
 
@@ -53,7 +53,8 @@ backend/
     │   └── session_collection/
     ├── assembly/
     │   ├── host/
-    │   └── independent/
+    │   ├── independent/
+    │   └── website/
     └── deployment/
 ```
 
@@ -67,7 +68,7 @@ backend/
 
 音频标注编辑数据流为 HTTP 请求 → 账号范围依赖装配 → `EditDocument` → 文档快照与纯规则 → `DocumentEdits.commit` → 同事务 CAS/回执 → 已提交响应。相同请求返回原回执，复用请求 ID 更改输入返回冲突，并发失败复查回执，取消回滚。素材、转录和暂存目录由入口显式注入，不经 Session 信息字典发现业务依赖。
 
-剩余通用机制也已迁出旧 `app/runtime`：账号绑定、项目 CAS、操作回执及任务恢复查询归 `studio.runtime.database`，受限路径、归档成员及栅格处理归 `files`，静态网站和远程入口校验归 `http`，授权订阅归 `messaging`，任务准入原语归 `tasks`。设置类型与显式配置读取归 `studio.config.settings`；导入设置模块不读取 TOML、不加载数据库。旧网站数据库及隐式凭据装配仍需后续消除，不属于通用机制。
+剩余通用机制也已迁出旧 `app/runtime`：账号绑定、项目 CAS、操作回执及任务恢复查询归 `studio.runtime.database`，受限路径、归档成员及栅格处理归 `files`，静态网站和远程入口校验归 `http`，授权订阅归 `messaging`，任务准入原语归 `tasks`。设置类型与显式配置读取归 `studio.config.settings`；导入设置模块不读取 TOML、不加载数据库。网站数据库已改为显式实例，隐式凭据装配仍需后续消除，不属于通用机制。
 
 兼容网站的工作台采集与执行、Amadeus CLI 执行、面试准备、文章同步、视觉生成与验收、Galgame 媒体任务、视频剪辑及特效 Runner 显式接收会话工厂；需要配置的 Runner 同时接收配置值。工作台轮次继承所属 Runner 的工厂，不通过全局数据库寻找连接。HTTP 用例和剩余助手工具的逐项端口化仍在后续批次进行。
 
@@ -200,7 +201,7 @@ backend/
 
 `llm/catalog/default_storage.py` 定义默认选择的显式存储端口，与目录 CAS 使用同一事务；恢复网站在入口装配点和 `catalog/legacy.py` 兼容用例中提供 `legacy_defaults.py`、`legacy_usage.py`，独立实现不得导入这些兼容适配器。旧 `platform_settings` 的 `account_defaults:` 分区归 Models，正式导入仍须业务接口校验与核验。`llm/models/model_templates.py` 与 `runtime_admission.py` 拥有模板同步和额度记录；旧 Console 模型公开名仅作明确兼容导出，恢复用例继续从模型能力直接导入自有记录。
 
-`llm/catalog/http_bindings.py` 提供不可变的每应用目录装配描述与账号绑定的 HTTP 用例依赖；恢复网站在 `main.py` 安装旧存储／任务占用适配器，目录、供应商和本地模型挂接路由不再直接构造旧适配器。`routes/models/diagnostics.py` 单独拥有模型诊断协议，避免目录只读装配加载供应商执行栈。`llm/http_errors.py` 统一模型操作错误映射，不导入其他路由。独立进程的目录 HTTP 切片验收不等于完整 Models 服务就绪。
+`llm/catalog/http_bindings.py` 提供不可变的每应用目录装配描述与账号绑定的 HTTP 用例依赖；恢复网站在 `assembly/website/bindings.py` 安装旧存储／任务占用适配器，目录、供应商和本地模型挂接路由不再直接构造旧适配器。`routes/models/diagnostics.py` 单独拥有模型诊断协议，避免目录只读装配加载供应商执行栈。`llm/http_errors.py` 统一模型操作错误映射，不导入其他路由。独立进程的目录 HTTP 切片验收不等于完整 Models 服务就绪。
 
 `llm/admission.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`llm/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
 
@@ -350,17 +351,12 @@ Future-Props-Lab/
 ├── backend/studio/config/ # 独立 TOML 格式、字段映射与一次性 .env 转换；不导入 app 或数据库
 ├── backend/config.example.toml # 无真实密钥的配置示例；私有 config.toml 不提交、不打包
 ├── backend/app/
-│   ├── main.py        # FastAPI 装配、生命周期与健康探针
-│   ├── deps.py        # HTTP/WebSocket 会话、Studio 鉴权与 OwnerDep
 │   ├── problem_details.py # 统一协议错误映射
-│   ├── api.py         # `/v1` router 装配入口
-│   ├── orm.py         # mapper 聚合与账号租户登记
-│   ├── runtime/       # 配置、数据库、CAS/轮询、操作批回执、ID/时间工厂与 ORM Base（无业务语义）
+│   ├── runtime/       # 尚未迁出的凭据适配
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store（VisualAsset ORM + files/媒体 schemas/routes）、agents、media_rendering、transcription
 │   ├── console/       # Studio 治理、库级文件用例；自有 models/routes/schemas
 │   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 │   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
-│   ├── apps/          # 已垂直切片的产品 App
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具目录状态与抖音/B站视频下载；自有 models/schemas/routes
 │   ├── integrations/ # 账号工具 API、MCP、Skill、外部连接；自有 models/schemas/routes
@@ -408,7 +404,7 @@ Future-Props-Lab/
   `scripts/migrate_config.py` 仅转换配置，不访问数据库；网站启动器在数据库初始化前读取 TOML，历史 .env 转换须由运维显式执行。
 
 - `console/amadeus/` 拥有 `/v1/amadeus` 的会话、消息引用快照、Agent/Plan 运行、持久提问、参数摘要审批与执行记录；
-  视频时间线执行由 `apps/video_editor/assistant_operations.py` 提供公共入口，在 `app/api.py` 装配，
+  视频时间线执行由 `apps/video_editor/assistant_operations.py` 提供公共入口，在 `studio/assembly/website/routes.py` 装配，
   避免 Console 反向依赖工坊实现。`fpl_operations.py` 只允许调用自动化白名单明确登记的业务 HTTP 操作，
   由原路由重新校验账号、权限和资源版本。
   `console/routes/amadeus.py` 只暴露协议。会话文件存于
@@ -421,7 +417,7 @@ Future-Props-Lab/
 
 - `llm/credential_snapshot.py` 保存纯调用归因快照，不导入账号 ORM 或数据库。`llm/http_credentials.py` 让模型 HTTP 入口读取与当前 Principal 匹配的已验证 Identity 上下文中的 API Key ID、显示名与前缀，不跨库读取账号或密钥；实时语音仅接受已经认证的浏览器 Principal。恢复网站在装配时显式安装 `llm/call_logs/credentials.py` 中的账号查询，使用当前应用的会话，LLM 模块不直接导入单体全局数据库工厂。归因只用于日志，不能代替授权。
 - `runtime/task_records.py` 拥有内部 Runner 的账号查找与绑定：在无绑定时只读解析本服务任务归属，随后按该账号读取；已有绑定不可覆盖。生成／转录恢复先枚举受影响账号，再分别提交状态与日志，系统读取不授予系统写入。`llm/inference/storage.py` 管理本服务推理输入与输出，启动核对只读取 Models 自有记录与目录，不扫描 Identity 表、不跟随链接、不递归清理或修改其他应用文件。
-- `app/deps.py` 从当前 ASGI 应用取得显式会话工厂，业务身份仅消费已验证签名上下文。`console/governance/database_auth.py` 拥有浏览器 Cookie、CSRF、API Key、Session 用途和原实时语音认证的账号数据校验；Identity 与恢复网站在装配时明确安装该适配器，其他应用不加载账号 ORM 或旧数据库。`capabilities/identity/http_context.py` 提供无存储依赖的协议错误、客户端地址和最近重新认证前置条件。缺少绑定不能触发单体数据库回退。
+- `studio/runtime/http/dependencies.py` 从当前 ASGI 应用取得显式会话工厂，业务身份仅消费已验证签名上下文。`console/governance/database_auth.py` 拥有浏览器 Cookie、CSRF、API Key、Session 用途和原实时语音认证的账号数据校验；Identity 与恢复网站在装配时明确安装该适配器，其他应用不加载账号 ORM 或旧数据库。`capabilities/identity/http_context.py` 提供无存储依赖的协议错误、客户端地址和最近重新认证前置条件。缺少绑定不能触发单体数据库回退。
 - `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供账号限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
   `llm/routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
@@ -434,7 +430,7 @@ Future-Props-Lab/
   角色模板草稿、保存及同步由 `features/accounts/` 拥有；共用编辑器不直接请求 API 或持有 revision。
   页面、连接布局和弹窗样式分别由 `model-catalog.css`、`catalog-connections.css`、
   `catalog-dialogs.css` 维护。只读模型服务复用同一目录，隐藏写操作。
-- 后端采用功能模块优先结构。`main.py` 负责装配；各包 `routes/` 只负责认证、请求校验、调用功能
+- 后端采用功能模块优先结构。`studio/assembly/website/` 负责装配；各包 `routes/` 只负责认证、请求校验、调用功能
   边界和响应映射，不直接导入 SQLAlchemy、ORM 模型或 migration。查询、写入和事务由
   `llm/catalog/`、`llm/playground/`、`llm/call_logs/` 等所属能力负责。
 - `console/governance/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、审计事件与账号模型目录在同一事务内提交或回滚。`console/governance/service.py`
@@ -625,7 +621,7 @@ Future-Props-Lab/
 `db/migrations/versions/account_ownership/` 保存 `0116_account_ownership` 的静态分组 SQL；
 `capabilities/asset_store/upgrade_records.py` 保存升级清单，`account_upgrade.py` 执行可恢复文件复制与校验。
 迁移未完成时后台执行器暂停，管理员通过正式布局 API 完成核验并重启。旧根目录只作恢复副本，正常路径无回退。
-`runtime/ownership.py` 拥有显式账号 ID 校验与 session 绑定原语，`orm.py` 负责行级过滤和写入归属校验。
+`studio/runtime/database/ownership.py` 拥有显式账号 ID 校验与 Session 绑定原语，`studio/assembly/website/models.py` 负责网站会话的行级过滤和写入归属校验。
 Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共用 revision/CAS，
 不属于内容版本；文件存储显式使用已鉴权账号。
 集成中心前端的 `features/integrations/queryKeys.ts` 统一管理目录、详情、版本与工具列表缓存；
@@ -994,3 +990,11 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 演示模型与示例工具共用 `app/demo_runtime/engine.py` 的实例化执行组件；兼容网站的已登记设置读取留在治理存储适配中，独立模型服务注入自有设置存储。调用计数、排空和日志均归当前实例，不再存在模块级演示运行单例。
 
 Amadeus 动作句柄与下载任务分别由装配创建的 `ActionExecution`、`VideoDownloads` 实例持有。视频时间线和素材入库适配显式接收会话工厂；关闭数据库前先完成动作结算及已接受下载。
+
+### 网站装配与隔离实例
+
+`backend/studio/assembly/website/application.py` 接收显式配置及可替换数据库，构造网站实例；`bindings.py` 注入业务组件，`lifecycle.py` 管理恢复和关闭，`http.py` 与 `routes.py` 注册协议。`models.py` 的账号规则只绑定 `WebsiteSession`，不污染独立服务的会话。
+
+`studio/runtime/database/website.py` 提供显式 SQLite 引擎和会话工厂，不读取配置或在导入时建立引擎。原 `app/main.py`、`api.py`、`orm.py`、`deps.py` 和 `runtime/db.py` 已移除。共享网站鉴权依赖在 `studio/assembly/http_dependencies.py`，独立服务的纯签名身份依赖仍在 `studio/runtime/http/dependencies.py`。
+
+OpenAPI 导出只构造 HTTP 协议层。测试通过 `tests/website_test_support.py` 持有显式隔离配置和数据库的实例；离线账号与 E2E 账号入口自行构造并关闭数据库。Playwright 使用后端工厂启动，正式网站仍由 `scripts/website/application.py` 核验迁移并装配静态与公网入口。

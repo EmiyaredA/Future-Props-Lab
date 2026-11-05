@@ -10,7 +10,6 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.deps import require_studio_auth
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.interview_assistant.host import InterviewHost
 from studio.apps.interview_assistant.rooms import ACTIVE
@@ -23,6 +22,7 @@ from studio.apps.interview_assistant.storage.models import (
 from studio.apps.interview_assistant.storage.service_models import InterviewNativeLease
 from studio.apps.interview_assistant.transport.native_http import router as native_router
 from studio.apps.interview_assistant.transport.website import router
+from studio.assembly.http_dependencies import require_studio_auth
 from studio.contracts.gateway.protocol_hash import public_contract
 from studio.runtime.database.migrations import check
 from studio.runtime.database.project_operations import ProjectOperationReceipt

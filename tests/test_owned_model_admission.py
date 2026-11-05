@@ -310,8 +310,8 @@ def test_fresh_admission_import_does_not_load_legacy_database_or_foreign_orm():
 import sys
 from studio.apps.model_service.admission.admission import ModelAdmission
 from studio.apps.model_service.admission.quotas import QuotaPolicies
-assert 'app.runtime.db' not in sys.modules
-assert 'app.orm' not in sys.modules
+assert 'studio.runtime.database.website' not in sys.modules
+assert 'studio.assembly.website.models' not in sys.modules
 assert 'app.console.models' not in sys.modules
 assert 'app.console.schemas.platform_governance' not in sys.modules
 assert not any(name.startswith('app.apps.') for name in sys.modules)

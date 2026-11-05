@@ -8,11 +8,10 @@ import pytest
 from app.console.governance.runtime_quotas import acquire, attach, recover_admissions, release
 from app.llm.models import ModelTestGenerationTask
 from app.llm.models.runtime_admission import RuntimeAdmission
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.identity.principal import StudioPrincipal
 from test_workspace_governance import client_account
+from website_test_support import SessionLocal, app
 
 pytestmark = pytest.mark.real_auth
 

@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from app.capabilities.media_rendering.media_info import video_info
-from app.main import app
+from website_test_support import app
 
 
 @pytest.mark.parametrize(
@@ -45,8 +45,8 @@ def test_container_uses_ebml_doctype_instead_of_incidental_strings():
 async def test_media_info_missing_or_cross_workspace_asset_is_not_found(monkeypatch):
     from app.capabilities.asset_store import media_info
     from app.capabilities.asset_store.models import VisualAsset
-    from app.orm import bind_owner
-    from app.runtime.db import SessionLocal
+    from studio.assembly.website.models import bind_owner
+    from website_test_support import SessionLocal
 
     async with SessionLocal() as session:
         bind_owner(session, "other-workspace")
@@ -77,9 +77,9 @@ async def test_media_info_missing_or_cross_workspace_asset_is_not_found(monkeypa
 async def test_corrupt_and_non_video_media_info_fail_without_mutation():
     from app.capabilities.asset_store.models import VisualAsset
     from app.capabilities.asset_store.storage import AssetStorage
-    from app.orm import bind_owner
-    from app.runtime.db import SessionLocal
+    from studio.assembly.website.models import bind_owner
     from studio.config.settings import get_settings
+    from website_test_support import SessionLocal
 
     async with SessionLocal() as session:
         bind_owner(session, "test-user")

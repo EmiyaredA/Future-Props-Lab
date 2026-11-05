@@ -8,16 +8,12 @@ import pytest
 from sqlalchemy import delete
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.deps import SessionDep, require_studio_auth
 from app.llm.generation_runtime.media import generated_type
 from app.llm.providers.senseaudio_audio import (
     create_music_task,
     create_sound_effect,
     get_music_task,
 )
-from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
 from studio.apps.video_editor.storage.models import (
     VideoEditorAssetMetadata,
     VideoEditorProject,
@@ -25,7 +21,10 @@ from studio.apps.video_editor.storage.models import (
 from studio.apps.visual_workshop.storage.models import (
     VisualWorkshopProject,
 )
+from studio.assembly.http_dependencies import SessionDep, require_studio_auth
+from studio.assembly.website.models import bind_owner
 from studio.contracts.identity.principal import StudioPrincipal
+from website_test_support import SessionLocal, app
 
 
 async def _reset_projects() -> None:

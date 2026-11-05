@@ -9,14 +9,13 @@ import httpx
 import pytest
 from sqlalchemy import select
 
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.video_editor.errors import VideoEditorValidationError
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.schemas import VideoEditorClip, VideoEditorTimelineBatchIn
 from studio.apps.video_editor.storage.models import VideoEditorTask
 from studio.apps.video_editor.timeline import apply_operations
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 def clip(clip_id, track="v", start=0, duration=4_000_003, group=None):

@@ -18,7 +18,7 @@ from app.capabilities.asset_store import file_previews
 from app.capabilities.asset_store.file_previews import PreviewSource, media_thumbnail
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.media_rendering import preview_metadata as preview_operations
-from app.main import app
+from website_test_support import app
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
 

@@ -2,7 +2,7 @@ from typing import Literal
 
 from app.console.governance.governance_transactions import begin_governance, cas
 from app.console.governance.service import add_audit_event
-from app.orm import CERTIFIABLE_PROJECT_ROOTS
+from studio.assembly.website.models import CERTIFIABLE_PROJECT_ROOTS
 from studio.contracts.identity.errors import AccountError
 
 

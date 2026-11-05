@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.capabilities.agents.cli.contracts import CatalogOut
-from app.deps import StudioAuth, require_recent_reauthentication
+from studio.assembly.http_dependencies import StudioAuth, require_recent_reauthentication
 from studio.contracts.agent_runtime.definitions import AgentId
 from studio.runtime.http.website import require_local_browser
 

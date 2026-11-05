@@ -7,8 +7,7 @@ import pytest
 from sqlalchemy import delete
 
 from app.llm.models import LlmCallLog
-from app.main import app
-from app.runtime.db import SessionLocal
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.asyncio

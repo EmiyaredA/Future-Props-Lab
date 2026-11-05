@@ -14,7 +14,7 @@ from app.console.schemas.automation import (
     AutomationOpenIn,
     AutomationOpenOut,
 )
-from app.deps import SessionDep, StudioAuth
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.gateway.service_status import ServicesStatusOut, monolith_status, status_time
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.website import require_local_browser

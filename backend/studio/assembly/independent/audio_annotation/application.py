@@ -9,7 +9,6 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.deps import db_session, require_studio_auth
 from studio.apps.audio_annotation.clients.asset_library import Inputs, ProjectReferences
 from studio.apps.audio_annotation.clients.model_service import SegmentTranscription
 from studio.apps.audio_annotation.projects import AudioAnnotationProjects
@@ -20,6 +19,7 @@ from studio.apps.audio_annotation.storage.service_models import MODELS, Annotati
 from studio.apps.audio_annotation.transport.galgame_source import router as galgame_source_router
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.assembly.annotation import document_editor
+from studio.assembly.http_dependencies import db_session, require_studio_auth
 from studio.assembly.independent.asset_references import (
     install_reference_runtime,
     reference_lifespan,

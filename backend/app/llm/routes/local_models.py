@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Request
 
-from app.deps import StudioAuth
 from app.llm.catalog.http_bindings import CatalogDep
 from app.llm.http_errors import mapped
 from app.llm.local_models.authorization import (
@@ -15,6 +14,7 @@ from app.llm.schemas.local_models import (
     LocalModelsOut,
 )
 from app.llm.schemas.model_service import ModelCatalogOut
+from studio.assembly.http_dependencies import StudioAuth
 
 router = APIRouter(tags=["local-models"])
 

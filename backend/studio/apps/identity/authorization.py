@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from app.capabilities.identity.session_policy import MANAGEMENT_SESSION, STUDIO_SESSION
 from app.console.cloud_control.access import desktop_authorized
 from app.console.governance.automation_access import automation_allowed
-from app.deps import authenticate_studio_request
+from studio.assembly.http_dependencies import authenticate_studio_request
 from studio.contracts.identity.claims import HEADER, Actor, issue_context
 from studio.contracts.identity.cloud_authority import (
     DESKTOP_COOKIE,

@@ -12,11 +12,10 @@ from app.capabilities.media_rendering.contracts import RenderPlan
 from app.capabilities.media_rendering.evaluator import FRAME_COMPOSITOR_VERSION
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION
 from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSION
-from app.main import app
-from app.runtime.db import engine
 from studio.apps.video_editor import frames
 from studio.apps.video_editor.schemas import VideoEditorTimelineDocument
 from studio.config.settings import get_settings
+from website_test_support import app, engine
 
 
 @pytest.mark.asyncio

@@ -8,7 +8,6 @@ from app.console.governance.model_template_sync import (
 )
 from app.console.governance.model_templates import get_template, save_template
 from app.console.routes.auth import _platform_auth
-from app.deps import SessionDep, client_ip
 from app.llm.schemas.model_templates import (
     PlatformRole,
     RoleModelTemplateIn,
@@ -17,6 +16,7 @@ from app.llm.schemas.model_templates import (
     TemplateSyncIn,
     TemplateSyncJobOut,
 )
+from studio.assembly.http_dependencies import SessionDep, client_ip
 
 router = APIRouter(prefix="/platform/model-service-templates", tags=["model-service-templates"])
 

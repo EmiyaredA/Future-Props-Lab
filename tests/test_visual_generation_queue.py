@@ -17,7 +17,6 @@ from app.console.models import User
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.models.runtime_admission import RuntimeAdmission
 from app.runtime.credentials import encrypt_secret
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.storage.models import (
     VisualCanvasDocument,
     VisualGenerationTask,
@@ -26,6 +25,7 @@ from studio.apps.visual_workshop.storage.models import (
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.config.settings import get_settings
 from test_workspace_governance import client_account
+from website_test_support import SessionLocal
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdk/python/src"))
 
@@ -375,7 +375,7 @@ async def test_account_queue_shared_across_projects_and_sdk():
     import httpx
     from future_props_lab import ApiError, AsyncClient
 
-    from app.main import app
+    from website_test_support import app
 
     async with environment(queue_limit=1) as (client, admin, user, workspace, project, model):
         for _ in range(3):

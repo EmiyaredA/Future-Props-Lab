@@ -19,7 +19,7 @@ from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply
 
 assert not any(name.startswith(("app.llm", "app.apps")) for name in sys.modules)
-assert "app.runtime.db" not in sys.modules
+assert "studio.runtime.database.website" not in sys.modules
 
 from app.llm.models import ModelProvider  # noqa: E402
 from app.llm.schemas.model_templates import RoleModelTemplateIn  # noqa: E402
@@ -279,7 +279,10 @@ async def scenario():
                 assert not forbidden.intersection(tables)
                 assert readonly.execute("PRAGMA integrity_check").fetchone() == ("ok",)
             readonly.close()
-        assert "app.main" not in sys.modules and "app.runtime.db" not in sys.modules
+        assert (
+            "studio.assembly.website.application" not in sys.modules
+            and "studio.runtime.database.website" not in sys.modules
+        )
     finally:
         await models.close()
 

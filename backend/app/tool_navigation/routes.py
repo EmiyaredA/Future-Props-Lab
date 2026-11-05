@@ -2,13 +2,13 @@ from typing import Annotated
 
 from fastapi import APIRouter, Path
 
-from app.deps import SessionDep
 from app.tool_navigation import ToolNavigationState
 from app.tool_navigation.schemas import (
     ToolFavoriteIn,
     ToolNavigationItemOut,
     ToolNavigationStateOut,
 )
+from studio.assembly.http_dependencies import SessionDep
 
 router = APIRouter(prefix="/tool-navigation", tags=["tool-navigation"])
 

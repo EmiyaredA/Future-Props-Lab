@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Request
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.video_editor.clip_merge_dispatch import dispatch_clip_merge
 from studio.apps.video_editor.clip_merging.tasks import VideoEditorClipMerges
 from studio.apps.video_editor.errors import (
@@ -12,6 +11,7 @@ from studio.apps.video_editor.errors import (
 )
 from studio.apps.video_editor.schemas import VideoEditorClipMergeCreateIn, VideoEditorTaskOut
 from studio.apps.video_editor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 PATH = "/projects/{project_id}/clip-merges"

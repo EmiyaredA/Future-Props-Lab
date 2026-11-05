@@ -13,9 +13,7 @@ from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
-from app.main import app
 from app.runtime.credentials import encrypt_secret
-from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.assets import asset_analysis as asset_analysis_module
 from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from studio.apps.galgame_workshop.assets.asset_support import normalize_import_filename
@@ -26,6 +24,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetTranscriptionTask,
 )
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 def image_bytes(width: int = 16, height: int = 32) -> bytes:

@@ -7,16 +7,15 @@ import httpx
 import pytest
 from tests.test_audio_annotation import upload_audio
 
-from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
 from studio.apps.audio_annotation.rules.editing import transform
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationDocumentOut
 from studio.apps.audio_annotation.schemas.operations import AnnotationOperationsIn
 from studio.apps.audio_annotation.storage.document_edits import SqlDocumentEdits
 from studio.apps.audio_annotation.use_cases.edit_document import EditDocument
+from studio.assembly.website.models import bind_owner
 from studio.runtime.operation_errors import OperationError
 from studio.runtime.revisions import RevisionConflictError
+from website_test_support import SessionLocal, app
 
 
 class MemoryDocumentEdits:

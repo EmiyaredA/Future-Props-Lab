@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import OwnerDep, SessionDep
 from app.llm.catalog.defaults import update_defaults
 from app.llm.catalog.http_bindings import CatalogDep, DefaultsDep
 from app.llm.catalog.service import (
@@ -19,6 +18,7 @@ from app.llm.schemas.model_service import (
     ProviderIn,
     ProviderMutationOut,
 )
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter(tags=["models"])
 

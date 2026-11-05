@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import SessionDep, StudioAuth
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 
 from .default_storage import CatalogDefaults
 from .service import ModelCatalogService

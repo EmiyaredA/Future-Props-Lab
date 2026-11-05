@@ -3,7 +3,6 @@
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
     VideoEditorUnavailableError,
@@ -11,6 +10,7 @@ from studio.apps.video_editor.errors import (
 )
 from studio.apps.video_editor.frame_requests import FrameRequests
 from studio.apps.video_editor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 

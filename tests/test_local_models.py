@@ -21,10 +21,9 @@ from app.llm.local_models.runtime import LocalRuntime
 from app.llm.models.local_models import LocalModelInstallation, LocalModelOperation
 from app.llm.schemas.local_models import LocalModelActionIn, SpeechSynthesisParameters
 from app.llm.schemas.model_service import ProviderIn
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
+from website_test_support import SessionLocal, app
 
 MODEL = "qwen3-tts-0.6b-base"
 

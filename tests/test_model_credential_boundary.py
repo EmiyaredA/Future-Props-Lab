@@ -23,8 +23,8 @@ def test_snapshot_and_log_query_imports_do_not_initialize_identity_or_monolith_s
                 "import app.llm.call_logs.query; "
                 "import app.llm.catalog.service; import app.llm.catalog.defaults; "
                 "assert 'app.console.models.accounts' not in sys.modules; "
-                "assert 'app.runtime.db' not in sys.modules; "
-                "assert 'app.deps' not in sys.modules"
+                "assert 'studio.runtime.database.website' not in sys.modules; "
+                "assert 'studio.assembly.http_dependencies' not in sys.modules"
             ),
         ],
         env={**os.environ, "PYTHONPATH": "backend"},

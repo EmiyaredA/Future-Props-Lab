@@ -4,7 +4,6 @@ import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import Response
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.motion_compositor.projects import (
     MotionInvalid,
     MotionNotFound,
@@ -12,6 +11,7 @@ from studio.apps.motion_compositor.projects import (
     MotionUnavailable,
 )
 from studio.apps.motion_compositor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.motion_compositor.motion_preview import (

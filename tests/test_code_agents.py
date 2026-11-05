@@ -15,12 +15,11 @@ from app.capabilities.agents.cli.catalog import connection, inspect_connection
 from app.capabilities.agents.cli.codex_profile import profile_path
 from app.console.amadeus.models import AmadeusConversation
 from app.console.governance.code_agents import resolve_connection
-from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
+from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.runtime.database.operation_receipts import OperationError
 from test_workspace_governance import client_account
+from website_test_support import SessionLocal, app
 
 pytestmark = pytest.mark.real_auth
 

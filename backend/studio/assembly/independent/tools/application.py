@@ -8,7 +8,6 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.deps import require_studio_auth
 from app.tool_navigation.models import ToolNavigationItem
 from app.tool_navigation.routes import router
 from studio.apps.identity.clients.authorization import LiveAuthorization
@@ -18,6 +17,7 @@ from studio.apps.tools.storage.service_models import ToolsDownloadArtifact, Tool
 from studio.apps.tools.transport.host_http import NativeIngress, native, public
 from studio.apps.tools.video_library import VideoLibrary
 from studio.apps.tools.videos import Videos
+from studio.assembly.http_dependencies import require_studio_auth
 from studio.contracts.gateway.protocol_hash import public_contract
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database

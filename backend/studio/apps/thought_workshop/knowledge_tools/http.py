@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import OwnerDep, StudioAuth
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import SessionDep
 from studio.apps.thought_workshop.knowledge_tools.checkpoints import Checkpoints
@@ -28,6 +27,7 @@ from studio.apps.thought_workshop.knowledge_tools.schemas import (
 )
 from studio.apps.thought_workshop.knowledge_tools.search import search
 from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteSummary
+from studio.assembly.http_dependencies import OwnerDep, StudioAuth
 
 router = APIRouter()
 

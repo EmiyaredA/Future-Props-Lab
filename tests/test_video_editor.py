@@ -14,8 +14,6 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete
 
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.video_editor.evaluator import (
     FrameSource,
     TimelineFrameRenderer,
@@ -27,6 +25,7 @@ from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.schemas import VideoEditorTimelineDocument
 from studio.apps.video_editor.storage.models import VideoEditorProject
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 async def _reset() -> None:

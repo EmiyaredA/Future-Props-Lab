@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Request
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.video_editor.audio_alignment.audio_seam_requests import candidates
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
@@ -14,6 +13,7 @@ from studio.apps.video_editor.schemas.audio_seam import (
     AudioSeamCandidatesOut,
 )
 from studio.apps.video_editor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 

@@ -3,10 +3,10 @@
 from fastapi import Depends, HTTPException, Request
 from pydantic import ValidationError
 
-from app.deps import SessionDep, StudioAuth
 from app.llm.admission import admission_for
 from app.llm.inference.receipts import replay_task
 from app.llm.schemas.model_inference import InferenceTaskIn
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.identity.route_permissions import route_permission
 from studio.runtime.database.operation_receipts import OperationError
 

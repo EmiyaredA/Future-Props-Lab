@@ -10,7 +10,7 @@ from app.console.cloud_control.schemas import (
     DesktopLogin,
     IdlePreference,
 )
-from app.deps import (
+from studio.assembly.http_dependencies import (
     SessionDep,
     StudioAuth,
     require_recent_reauthentication,

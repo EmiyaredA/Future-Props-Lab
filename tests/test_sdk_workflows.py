@@ -9,7 +9,7 @@ import httpx
 import pytest
 from tests.test_audio_annotation import wav_bytes
 
-from app.main import app
+from website_test_support import app
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdk/python/src"))
 

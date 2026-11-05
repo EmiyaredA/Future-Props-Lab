@@ -4,7 +4,11 @@ from fastapi import APIRouter, Request, Response
 
 from app.console.cloud_control import access
 from app.console.cloud_control.schemas import Enrollment, VerificationCode
-from app.deps import SessionDep, StudioAuth, require_recent_reauthentication
+from studio.assembly.http_dependencies import (
+    SessionDep,
+    StudioAuth,
+    require_recent_reauthentication,
+)
 from studio.runtime.http.website import require_local_browser
 
 router = APIRouter()

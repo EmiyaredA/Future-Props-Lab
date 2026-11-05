@@ -9,7 +9,6 @@ from uuid import UUID
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import StreamingResponse
 
-from app.deps import OwnerDep, SessionDep, StudioAuth
 from app.integrations.common import (
     DuplicateIntegrationError,
     IntegrationNotFoundError,
@@ -44,6 +43,7 @@ from app.integrations.schemas import (
     ValidationAttemptListOut,
     ValidationReconcileOut,
 )
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 

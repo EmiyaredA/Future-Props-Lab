@@ -58,7 +58,7 @@ export default defineConfig({
         "PYTHONPATH=.. FPL_SECRETS_KEY=Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys= " +
         `FPL_DATABASE_PATH=${databasePath} ` +
         `CORS_ORIGINS=http://127.0.0.1:${webPort} ` +
-        `../.venv/bin/uvicorn app.main:app --app-dir ../backend --host 127.0.0.1 --port ${apiPort}`,
+        `../.venv/bin/uvicorn studio.assembly.website.application:from_environment --factory --app-dir ../backend --host 127.0.0.1 --port ${apiPort}`,
       url: `http://127.0.0.1:${apiPort}/ready`,
       reuseExistingServer: false,
     },

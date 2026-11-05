@@ -6,7 +6,7 @@ from app.console.governance.settings_records import read_setting
 from app.console.models import AuthSession, ManagementApiKey, User
 from app.console.schemas.platform_governance import RuntimeQuotas
 from app.llm.models.runtime_admission import RuntimeAdmission as Admission
-from app.orm import RUNTIME_QUOTA_TASK_MODELS
+from studio.assembly.website.models import RUNTIME_QUOTA_TASK_MODELS
 from studio.contracts.identity.errors import AccountError
 from studio.runtime.time import utc_now
 

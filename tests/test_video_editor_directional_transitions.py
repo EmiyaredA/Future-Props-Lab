@@ -16,7 +16,7 @@ from app.capabilities.media_rendering.directional_transitions import (
 )
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
-from app.main import app
+from website_test_support import app
 
 
 def pattern():

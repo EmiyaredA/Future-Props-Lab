@@ -68,5 +68,5 @@ Web 的 app 装配入口，features 拥有业务，shared 提供通用 UI，plat
 ## 代码入口
 
 1. `web/src/app/routes.ts`
-2. `backend/app/api.py`
+2. `backend/studio/assembly/website/routes.py`
 3. `tests/test_architecture.py`

@@ -20,7 +20,7 @@ from app.console.schemas.accounts import (
     ResetPasswordOut,
     SecurityAuditListOut,
 )
-from app.deps import SessionDep, client_ip
+from studio.assembly.http_dependencies import SessionDep, client_ip
 from studio.runtime.http.account_errors import error_detail
 
 router = APIRouter(tags=["account-management"])

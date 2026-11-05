@@ -27,14 +27,14 @@ from app.llm.providers.autodl_workflows import (
 from app.llm.schemas.model_inference import InferenceTaskIn
 from app.llm.schemas.model_service import ProviderIn
 from app.llm.schemas.model_test import ModelTestVideoGenerationIn
-from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasVideoGenerationDraft
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import VisualGeneration
+from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
+from website_test_support import SessionLocal
 
 
 def request(model):

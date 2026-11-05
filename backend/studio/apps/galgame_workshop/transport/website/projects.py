@@ -12,7 +12,6 @@ from app.capabilities.asset_store import (
     ProjectSnapshotError,
     open_project_folder,
 )
-from app.deps import OwnerDep, SessionDep, StudioAuth
 from studio.apps.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
     GalgameWorkshopProjectNotFoundError,
@@ -27,6 +26,7 @@ from studio.apps.galgame_workshop.schemas import (
 from studio.apps.galgame_workshop.transport.website._shared import _not_found
 from studio.apps.galgame_workshop.website.projects import GalgameWorkshopProjects
 from studio.apps.galgame_workshop.website.snapshots import GalgameProjectSnapshots
+from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
 from studio.config.settings import get_settings
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 

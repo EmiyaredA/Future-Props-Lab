@@ -11,8 +11,8 @@ from tests.test_account_system import create_test_account, login_and_change_pass
 from tests.test_knowledge_community import COMM, ROOT
 from tests.test_knowledge_community import community as community
 
-from app.main import app
 from studio.apps.thought_workshop.publication.access import effective_role
+from website_test_support import app
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
 

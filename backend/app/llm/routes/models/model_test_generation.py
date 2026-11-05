@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
-from app.deps import OwnerDep, SessionDep
 from app.llm.http_credentials import CallCredentialDep
 from app.llm.playground.generation import ModelTestGeneration, ModelTestGenerationError
 from app.llm.playground.generation_assets import (
@@ -23,6 +22,7 @@ from app.llm.schemas.model_test import (
     ModelTestGenerationTaskListOut,
     ModelTestGenerationTaskOut,
 )
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.runtime.files.image_sizes import ThumbnailSize
 
 router = APIRouter(prefix="/model-test", tags=["model-test"])

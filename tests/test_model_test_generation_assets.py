@@ -11,11 +11,10 @@ from sqlalchemy import delete
 from app.capabilities.asset_store.models import VisualAsset
 from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
 from app.llm.playground.generation_assets import GenerationAssetError, ModelTestGenerationAssets
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.config.settings import get_settings
 from studio.runtime.time import utc_now
+from website_test_support import SessionLocal, app
 
 
 def _task(*, status: str = "failed", payload: dict | None = None) -> ModelTestGenerationTask:

@@ -16,7 +16,7 @@ from app.console.schemas.platform_governance import (
     RuntimeQuotasIn,
     RuntimeQuotasOut,
 )
-from app.deps import SessionDep, client_ip
+from studio.assembly.http_dependencies import SessionDep, client_ip
 
 router = APIRouter(tags=["platform-governance"])
 

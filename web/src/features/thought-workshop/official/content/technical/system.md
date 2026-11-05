@@ -72,6 +72,6 @@ Notes 确认笔记未删除、目录归属不被正文保存改变，校验引�
 
 ## 代码入口
 
-1. `backend/app/main.py`
-2. `backend/app/api.py`
+1. `backend/studio/assembly/website/application.py`
+2. `backend/studio/assembly/website/routes.py`
 3. `docs/architecture/project-layout.md`

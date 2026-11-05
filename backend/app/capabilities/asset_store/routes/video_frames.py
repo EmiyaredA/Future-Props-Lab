@@ -7,7 +7,7 @@ from starlette.background import BackgroundTask
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.schemas.video_frames import VideoFramesIn
 from app.capabilities.asset_store.video_frames import export_frames
-from app.deps import OwnerDep, SessionDep
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter(tags=["file-management"])
 

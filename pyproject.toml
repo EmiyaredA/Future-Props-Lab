@@ -44,7 +44,7 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 markers = ["real_auth: run against the real Cookie/API-key authentication boundary"]
-pythonpath = ["backend", "."]
+pythonpath = ["backend", ".", "tests"]
 testpaths = ["tests", "backend/tests"]
 
 [tool.ruff]

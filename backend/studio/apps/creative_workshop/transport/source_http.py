@@ -10,8 +10,8 @@ from fastapi import APIRouter, HTTPException, Request
 from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
 from app.console.creative_workshop.files import CreativeFileError
 from app.console.creative_workshop.schemas import CreativeImportIn, CreativeItemOut
-from app.deps import SessionDep, StudioAuth
 from app.integrations.common import IntegrationValidationError
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 from studio.contracts.creative_workshop.creative_source_evidence import (
     PURPOSE,
     SOURCE_PATH,

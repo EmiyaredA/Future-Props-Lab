@@ -4,9 +4,9 @@ from contextlib import suppress
 
 from fastapi import Request
 
-from app.deps import SessionDep, StudioAuth
 from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
 from studio.apps.integrations.validation import prepare
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 
 
 async def validation_capacity(request: Request, session: SessionDep, principal: StudioAuth):

@@ -2,11 +2,11 @@
 
 from fastapi import APIRouter, Request
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.motion_compositor.handoffs import transfer
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionUnavailable
 from studio.apps.motion_compositor.schemas import HandoffIn, HandoffOut
 from studio.apps.motion_compositor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 

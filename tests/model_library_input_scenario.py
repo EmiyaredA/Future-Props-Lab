@@ -16,7 +16,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, Request
 from sqlalchemy import select
 
-from app.deps import OwnerDep, SessionDep
 from app.llm.http_errors import mapped
 from app.llm.inference.assets import InferenceAssets
 from app.llm.library_inputs import LibraryInputBindings, library_inputs
@@ -31,6 +30,7 @@ from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENT
 from studio.apps.model_service.library_inputs import HttpLibraryInputs
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.assembly.independent.asset_library.application import create_app as create_assets
 from studio.assembly.independent.identity.application import create_app as create_identity
 from studio.contracts.asset_library.references import ReferenceUpdate
@@ -344,8 +344,8 @@ async def scenario():
                 assert path.read_bytes() == audio()
             async with models.sessions(info={"owner_user_id": owners[1]}) as session:
                 assert not list(await session.scalars(select(ModelInferenceAsset)))
-            assert "app.runtime.db" not in sys.modules
-            assert "app.orm" not in sys.modules
+            assert "studio.runtime.database.website" not in sys.modules
+            assert "studio.assembly.website.models" not in sys.modules
     finally:
         await capabilities.close()
         await models.close()

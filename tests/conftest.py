@@ -21,21 +21,20 @@ apply_migrations(TEST_DATABASE_PATH)
 async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
     """Override auth only for test modules that explicitly imported the ASGI app.
 
-    Pure unit and architecture tests must not import ``app.main`` as a side effect of
-    global test setup; this keeps configuration tests independent from application
+    Pure unit and architecture tests must not construct a website as a side effect
+    of global test setup; this keeps configuration tests independent from application
     startup settings.
     """
-    if request.node.get_closest_marker("real_auth") or "app.main" not in sys.modules:
+    if request.node.get_closest_marker("real_auth") or "website_test_support" not in sys.modules:
         yield
         return
     from app.console.models import User
-    from app.deps import SessionDep, require_studio_auth
     from app.llm.models import ModelCatalogState
     from app.llm.routes.model_capacity import model_capacity
-    from app.main import app
-    from app.orm import bind_owner
-    from app.runtime.db import SessionLocal
+    from studio.assembly.http_dependencies import SessionDep, require_studio_auth
+    from studio.assembly.website.models import bind_owner
     from studio.contracts.identity.principal import StudioPrincipal
+    from website_test_support import SessionLocal, app
 
     async with SessionLocal() as seed:
         if await seed.get(User, "test-user") is None:
@@ -90,11 +89,11 @@ def pytest_sessionfinish() -> None:
 @pytest.fixture(autouse=True)
 def explicit_thought_identity_adapter():
     """Direct legacy storage tests opt into the same explicit local Identity port."""
-    if "app.main" not in sys.modules:
+    if "website_test_support" not in sys.modules:
         yield
         return
-    from app.runtime.db import SessionLocal
     from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
+    from website_test_support import SessionLocal
 
     previous = dict(SessionLocal.kw.get("info") or {})
     from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata

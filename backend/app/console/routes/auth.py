@@ -18,7 +18,7 @@ from app.console.schemas.accounts import (
     SecurityAuditEventOut,
     SecurityAuditListOut,
 )
-from app.deps import SessionDep, authenticate_studio_request
+from studio.assembly.http_dependencies import SessionDep, authenticate_studio_request
 from studio.contracts.identity.permissions import role_permissions
 
 

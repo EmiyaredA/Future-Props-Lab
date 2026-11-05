@@ -15,7 +15,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, Request
 from sqlalchemy import select, text
 
-from app.deps import OwnerDep, SessionDep
 from app.llm.generation_runtime.driver import GenerationTaskStore
 from app.llm.models import ModelInferenceTask, ModelProvider, RuntimeAdmission
 from app.llm.routes.model_capacity import ModelCapacity, task_admission
@@ -31,6 +30,7 @@ from studio.apps.model_service.storage.service_models import (
     MODELS,
     TaskAuthorization,
 )
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
 from studio.contracts.identity.permissions import role_scopes
@@ -342,8 +342,8 @@ def test_authority_source_closure_does_not_load_accounts_assets_or_legacy_databa
 import sys
 import studio.apps.model_service.admission.execution_authority
 import studio.apps.model_service.admission.request_admission
-assert 'app.runtime.db' not in sys.modules
-assert 'app.orm' not in sys.modules
+assert 'studio.runtime.database.website' not in sys.modules
+assert 'studio.assembly.website.models' not in sys.modules
 assert not any(n.startswith(('app.console.models', 'app.apps.',
     'app.capabilities.asset_store.models')) for n in sys.modules)
 """,

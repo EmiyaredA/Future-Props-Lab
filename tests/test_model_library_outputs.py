@@ -362,7 +362,9 @@ from app.llm.playground.generation_runner import ModelTestGenerationRunner
 from app.llm.playground.attachments import ModelTestAttachments
 from app.llm.routes.model_inference import router
 from app.llm.routes.models.model_test_generation import router
-for module in ('app.runtime.db', 'app.orm', 'app.capabilities.asset_store.models',
+for module in ('studio.runtime.database.website',
+    'studio.assembly.website.models',
+    'app.capabilities.asset_store.models',
     'app.console.models.accounts', 'studio.apps.visual_workshop.storage.models'):
     assert module not in sys.modules, module
 """

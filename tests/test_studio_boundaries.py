@@ -162,7 +162,7 @@ def test_annotation_image_keeps_entrypoint_and_excludes_legacy_adapters():
     assert "studio.apps.audio_annotation.use_cases.edit_document" in closure
     assert "studio.apps.audio_annotation.storage.document_edits" in closure
     assert "studio" in closure
-    assert "app.main" not in closure
+    assert "studio.assembly.website.application" not in closure
     assert "studio.apps.audio_annotation.legacy_sources" not in closure
 
 

@@ -17,8 +17,6 @@ from app.capabilities.media_rendering.text_layer import (
     render_text_layer,
     wrap_text,
 )
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from studio.apps.video_editor.frames import VideoEditorFrames
 from studio.apps.video_editor.schemas import (
@@ -27,6 +25,7 @@ from studio.apps.video_editor.schemas import (
     VideoEditorTimelineDocument,
 )
 from studio.apps.video_editor.timeline import apply_operations
+from website_test_support import SessionLocal, app
 
 
 def text_clip(**patch) -> dict:

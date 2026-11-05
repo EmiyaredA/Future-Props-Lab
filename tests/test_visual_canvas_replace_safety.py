@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from app.main import app
+from website_test_support import app
 
 
 @pytest.mark.asyncio

@@ -5,13 +5,12 @@ import pytest
 from sqlalchemy import delete, update
 
 from app.capabilities.asset_store.models import VisualAsset
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.storage.models import (
     GalgameProjectAssetReference,
     GalgameStoryDocument,
     GalgameWorkshopProject,
 )
+from website_test_support import SessionLocal, app
 
 
 def playable_story() -> dict:

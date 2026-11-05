@@ -5,7 +5,6 @@ from fastapi.responses import FileResponse, Response
 
 from app.capabilities.asset_store import AssetError
 from app.capabilities.asset_store.policy import download_filename
-from app.deps import SessionDep
 from studio.apps.galgame_workshop.schemas import (
     GalgameVideoExportCreateIn,
     GalgameVideoExportFrameIn,
@@ -16,6 +15,7 @@ from studio.apps.galgame_workshop.schemas import (
 )
 from studio.apps.galgame_workshop.transport.website._shared import _asset_error
 from studio.apps.galgame_workshop.video.video_export import GalgameVideoExports
+from studio.assembly.http_dependencies import SessionDep
 from studio.config.settings import get_settings
 
 router = APIRouter()

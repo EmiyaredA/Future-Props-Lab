@@ -5,8 +5,8 @@ import httpx
 import pytest
 from tests.migration_fixtures import MIGRATIONS, apply_migrations
 
-from app.main import app
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
+from website_test_support import app
 
 
 @pytest.mark.asyncio

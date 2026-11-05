@@ -9,7 +9,7 @@ import pytest
 from PIL import Image
 from tests.thought_helpers import all_notes, create_note, delete_note
 
-from app.main import app
+from website_test_support import app
 
 ROOT = "/v1/thought-workshop"
 

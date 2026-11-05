@@ -3,7 +3,6 @@
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 
-from app.deps import OwnerDep
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import SessionDep
 from studio.apps.thought_workshop.multitable.csv_exchange import export_csv, preview
@@ -15,6 +14,7 @@ from studio.apps.thought_workshop.multitable.schemas import (
     QueryIn,
 )
 from studio.apps.thought_workshop.multitable.use_cases import Multitable
+from studio.assembly.http_dependencies import OwnerDep
 
 
 async def call(operation):

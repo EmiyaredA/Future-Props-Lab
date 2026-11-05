@@ -7,7 +7,6 @@ from starlette.background import BackgroundTask
 
 from app.capabilities.asset_store.library import AssetError, AssetLibrary
 from app.capabilities.asset_store.project_snapshots import ProjectSnapshotError
-from app.deps import OwnerDep, StudioAuth
 from studio.apps.thought_workshop.attachments import upload_attachment
 from studio.apps.thought_workshop.directory import Directory
 from studio.apps.thought_workshop.http_bindings import SessionDep
@@ -43,6 +42,7 @@ from studio.apps.thought_workshop.transport.website.knowledge_tools import (
 )
 from studio.apps.thought_workshop.transport.website.multitable import router as multitable_router
 from studio.apps.thought_workshop.writing_http import router as writing_router
+from studio.assembly.http_dependencies import OwnerDep, StudioAuth
 from studio.config.settings import get_settings
 from studio.runtime.database.operation_receipts import OperationError
 

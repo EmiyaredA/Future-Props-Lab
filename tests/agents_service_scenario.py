@@ -19,9 +19,12 @@ from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
 from studio.runtime.database.migrations import apply
 
-assert "app.main" not in sys.modules and "app.orm" not in sys.modules
+assert (
+    "studio.assembly.website.application" not in sys.modules
+    and "studio.assembly.website.models" not in sys.modules
+)
 assert "app.console.models.accounts" not in sys.modules
-assert "app.runtime.db" not in sys.modules
+assert "studio.runtime.database.website" not in sys.modules
 assert not any(
     name.startswith(
         ("app.llm", "app.capabilities.agents.sessions.parsers", "studio.apps.visual_workshop")

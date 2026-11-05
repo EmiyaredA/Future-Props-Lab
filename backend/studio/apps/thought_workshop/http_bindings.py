@@ -6,11 +6,11 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import PublicStudioAuth, StudioAuth
-from app.deps import SessionDep as BaseSessionDep
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
 from studio.apps.thought_workshop.website.asset_metadata import AssetMetadataBindings
+from studio.assembly.http_dependencies import PublicStudioAuth, StudioAuth
+from studio.assembly.http_dependencies import SessionDep as BaseSessionDep
 
 
 async def bind_ports(request, session, principal):

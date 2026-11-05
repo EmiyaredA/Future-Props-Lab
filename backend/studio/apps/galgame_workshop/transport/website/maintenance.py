@@ -3,7 +3,6 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from app.capabilities.asset_store import AssetError
-from app.deps import SessionDep
 from studio.apps.galgame_workshop.assets.portrait_maintenance import GalgamePortraitMaintenance
 from studio.apps.galgame_workshop.schemas import (
     GalgamePortraitUpgradeApplyIn,
@@ -13,6 +12,7 @@ from studio.apps.galgame_workshop.schemas import (
     GalgameStorySnapshotRestoreIn,
 )
 from studio.apps.galgame_workshop.transport.website._shared import _asset_error
+from studio.assembly.http_dependencies import SessionDep
 
 router = APIRouter()
 

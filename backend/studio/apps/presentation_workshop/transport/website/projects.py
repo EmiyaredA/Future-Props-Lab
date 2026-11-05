@@ -3,7 +3,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import ValidationError
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.presentation_workshop.operations import apply_operations as presentation_operations
 from studio.apps.presentation_workshop.projects import PresentationError, Presentations
 from studio.apps.presentation_workshop.schemas.document import (
@@ -13,6 +12,7 @@ from studio.apps.presentation_workshop.schemas.document import (
     PresentationProjectPut,
 )
 from studio.apps.presentation_workshop.schemas.operations import PresentationOperationsIn
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.runtime.database.operation_receipts import OperationError
 
 router = APIRouter()

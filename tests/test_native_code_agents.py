@@ -14,10 +14,10 @@ from app.capabilities.agents.cli.isolation import dsh_connection_patches, launch
 from app.capabilities.agents.cli.native import converse
 from app.capabilities.agents.cli.process import execute
 from app.capabilities.agents.cli.transport import CliError
-from app.main import app
 from studio.config.settings import get_settings
 from test_code_agents import wait_run
 from test_workspace_governance import client_account
+from website_test_support import app
 
 pytestmark = pytest.mark.real_auth
 NATIVE = ("opencode", "dsh", "pi")

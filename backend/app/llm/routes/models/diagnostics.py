@@ -2,12 +2,12 @@
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.deps import SessionDep
 from app.llm.catalog.service import ResourceNotFoundError
 from app.llm.diagnostics import DiagnosticCallError, test_model
 from app.llm.http_credentials import CallCredentialDep
 from app.llm.provider_transports import provider_options
 from app.llm.schemas.model_service import TestModelOut
+from studio.assembly.http_dependencies import SessionDep
 
 router = APIRouter(tags=["models"])
 

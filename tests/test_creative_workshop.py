@@ -26,8 +26,8 @@ from app.integrations.models import (
     SkillVersion,
     ToolApiIntegration,
 )
-from app.runtime.db import SessionLocal
 from studio.contracts.identity.principal import StudioPrincipal
+from website_test_support import SessionLocal
 
 
 @pytest.fixture(autouse=True)

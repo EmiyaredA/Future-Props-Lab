@@ -5,11 +5,11 @@ import asyncio
 import httpx
 from fastapi import APIRouter, HTTPException, Request
 
-from app.deps import StudioAuth
 from app.llm.schemas.visual_catalog import FixedAcceptanceModelOut
 from studio.apps.visual_workshop.acceptance.node_schemas import NodeAcceptanceCatalogOut
 from studio.apps.visual_workshop.acceptance.schemes import SCHEMES, catalog_out, scheme_out
 from studio.apps.visual_workshop.transport.catalog_http import lookup
+from studio.assembly.http_dependencies import StudioAuth
 from studio.contracts.agent_runtime.connections import AcceptanceAgentCatalog
 from studio.contracts.agent_runtime.definitions import DEFINITIONS
 from studio.contracts.identity.claims import HEADER

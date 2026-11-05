@@ -5,13 +5,12 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.video.video_export import EXPORT_PACKAGING_POLICY
 from studio.apps.galgame_workshop.video.video_export_runner import _recover_interrupted_task
 from studio.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from studio.config.settings import get_settings
 from test_galgame_workshop import playable_story
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.asyncio

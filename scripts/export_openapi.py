@@ -14,8 +14,8 @@ os.environ["FPL_STUDIO_TOKEN"] = ""
 
 from fastapi import FastAPI  # noqa: E402
 
-from app.main import app  # noqa: E402
 from studio.apps.management.transport.service import router as management_router  # noqa: E402
+from studio.assembly.website.http import create_http_app  # noqa: E402
 
 
 def management_schema():
@@ -25,7 +25,7 @@ def management_schema():
 
 
 def aggregate_schema():
-    schema = app.openapi()
+    schema = create_http_app().openapi()
     schema["paths"].pop("/v1/automation/access", None)
     schema["paths"].pop("/v1/automation/access/actions", None)
     management = management_schema()

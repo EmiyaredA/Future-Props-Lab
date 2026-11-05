@@ -7,11 +7,11 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.deps import SessionDep, require_studio_auth
-from app.main import app
-from app.orm import bind_owner
+from studio.assembly.http_dependencies import SessionDep, require_studio_auth
+from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
+from website_test_support import app
 
 
 def skill_zip(name: str, description: str = "Tag fixture") -> bytes:

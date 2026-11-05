@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Query
 
-from app.deps import OwnerDep, SessionDep
 from studio.apps.motion_compositor.projects import (
     MotionInvalid,
     MotionNotFound,
@@ -18,6 +17,7 @@ from studio.apps.motion_compositor.schemas import (
     ProjectPatchIn,
 )
 from studio.apps.motion_compositor.transport.website.errors import _error
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 

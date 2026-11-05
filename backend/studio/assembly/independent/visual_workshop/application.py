@@ -10,7 +10,6 @@ from sqlalchemy import text
 
 from app.capabilities.agents.harness import ApprovalBroker
 from app.capabilities.asset_store.project_snapshots import cleanup_snapshot_staging
-from app.deps import require_studio_auth
 from studio.apps.asset_library.clients.archive_transfer import (
     ArchiveTransport,
     SnapshotArchiveAsset,
@@ -62,6 +61,7 @@ from studio.apps.visual_workshop.transport.segment_target_routes import (
     router as segment_target_router,
 )
 from studio.apps.visual_workshop.transport.snapshot_http import router as snapshot_router
+from studio.assembly.http_dependencies import require_studio_auth
 from studio.assembly.independent.asset_references import install_reference_runtime
 from studio.assembly.independent.certified_project import create_certification_app
 from studio.contracts.gateway.protocol_hash import public_contract

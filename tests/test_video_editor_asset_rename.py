@@ -7,12 +7,11 @@ import httpx
 import pytest
 from fastapi import Request
 
-from app.deps import SessionDep, require_studio_auth
-from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
 from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.assembly.http_dependencies import SessionDep, require_studio_auth
+from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 @pytest.fixture(scope="module")
@@ -216,7 +215,9 @@ async def test_rename_validation_and_access_boundaries(video_bytes: bytes, monke
                 path, json={"expectedRevision": asset["revision"], "displayName": "跨空间"}
             )
             assert crossed.status_code == 404
-            monkeypatch.setattr("app.deps.authenticate_studio_request", authenticate_viewer)
+            monkeypatch.setattr(
+                "studio.assembly.http_dependencies.authenticate_studio_request", authenticate_viewer
+            )
             app.dependency_overrides[require_studio_auth] = viewer
             denied = await client.patch(
                 path, json={"expectedRevision": asset["revision"], "displayName": "只读修改"}

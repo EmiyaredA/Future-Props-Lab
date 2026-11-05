@@ -9,7 +9,6 @@ from uuid import uuid4
 from fastapi import APIRouter, File, Header, HTTPException, Request, UploadFile
 
 from app.capabilities.asset_store.policy import normalize_content_type
-from app.deps import StudioAuth
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import SessionDep
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut, ThoughtImageOut
@@ -19,6 +18,7 @@ from studio.apps.thought_workshop.uploads.upload_intents import (
     stage_upload,
 )
 from studio.apps.thought_workshop.uploads.upload_transport import fetch_upload_receipt
+from studio.assembly.http_dependencies import StudioAuth
 from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadDescription
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 

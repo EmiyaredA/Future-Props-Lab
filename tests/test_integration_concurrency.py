@@ -4,15 +4,14 @@ import httpx
 import pytest
 from tests.test_integrations import _clear_integrations, _FakeMcpClient
 
-from app.deps import SessionDep, require_studio_auth
 from app.integrations.common import IntegrationNotFoundError
 from app.integrations.mcp import McpCatalog
 from app.integrations.schemas import McpCreateIn, McpUpdateIn, ToolApiCreateIn, ToolApiUpdateIn
 from app.integrations.tool_apis import ToolApiCatalog
-from app.main import app
-from app.runtime.db import SessionLocal
+from studio.assembly.http_dependencies import SessionDep, require_studio_auth
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.revisions import RevisionConflictError
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.asyncio

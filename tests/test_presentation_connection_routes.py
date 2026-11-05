@@ -10,7 +10,6 @@ import pytest
 from pydantic import ValidationError
 from tests.presentation_helpers import element, sample_document
 
-from app.main import app
 from db.migrations.versions.r0100_presentation_connection_offsets import SQL
 from studio.apps.presentation_workshop.connection_routes import (
     anchor,
@@ -20,6 +19,7 @@ from studio.apps.presentation_workshop.connection_routes import (
 from studio.apps.presentation_workshop.pptx_export import write_pptx
 from studio.apps.presentation_workshop.schemas.document import PresentationDocument
 from studio.apps.presentation_workshop.schemas.scene import PresentationConnection
+from website_test_support import app
 
 VECTORS = json.loads(
     (Path(__file__).parent / "fixtures/presentation_connection_routes.json").read_text()

@@ -337,7 +337,11 @@ TENANT_MODELS = (
 )
 
 
-@event.listens_for(Session, "do_orm_execute")
+class WebsiteSession(Session):
+    """Website ownership rules never attach to another service session class."""
+
+
+@event.listens_for(WebsiteSession, "do_orm_execute")
 def _scope_tenant_selects(execute_state) -> None:
     owner_user_id = execute_state.session.info.get("owner_user_id")
     if not owner_user_id or execute_state.session.info.get("tenant_bypass"):
@@ -366,7 +370,7 @@ def _scope_tenant_selects(execute_state) -> None:
     execute_state.statement = statement.where(owner_column == owner_user_id)
 
 
-@event.listens_for(Session, "before_flush")
+@event.listens_for(WebsiteSession, "before_flush")
 def _assign_owner(session: Session, _flush_context, _instances) -> None:
     owner_user_id = session.info.get("owner_user_id")
     if not owner_user_id or session.info.get("tenant_bypass"):

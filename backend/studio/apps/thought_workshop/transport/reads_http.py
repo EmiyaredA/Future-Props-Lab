@@ -4,7 +4,6 @@ from typing import Literal
 
 from fastapi import APIRouter, Query
 
-from app.deps import OwnerDep, StudioAuth
 from studio.apps.thought_workshop.directory import Directory
 from studio.apps.thought_workshop.http_bindings import SessionDep
 from studio.apps.thought_workshop.knowledge import KnowledgeBases
@@ -25,6 +24,7 @@ from studio.apps.thought_workshop.schemas.knowledge import KnowledgeBaseOut, Tho
 from studio.apps.thought_workshop.schemas.link_preview import ThoughtLinkPreview
 from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteList, ThoughtNoteOut
 from studio.apps.thought_workshop.transport.mutations_http import guarded
+from studio.assembly.http_dependencies import OwnerDep, StudioAuth
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 

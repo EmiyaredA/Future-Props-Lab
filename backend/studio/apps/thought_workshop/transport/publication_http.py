@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, Request
 
-from app.deps import PublicStudioAuth
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
 from studio.apps.thought_workshop.official_projections import OfficialProjections
 from studio.apps.thought_workshop.publication.imports import SeedImportInput, import_source
@@ -10,6 +9,7 @@ from studio.apps.thought_workshop.publication.schemas import PublicationConfig, 
 from studio.apps.thought_workshop.publication_retention import publish_with_references
 from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut
 from studio.apps.thought_workshop.transport.mutations_http import context, guarded
+from studio.assembly.http_dependencies import PublicStudioAuth
 
 router = APIRouter(prefix="/thought-workshop/community", tags=["knowledge-community"])
 

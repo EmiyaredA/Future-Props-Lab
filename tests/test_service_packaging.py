@@ -18,11 +18,18 @@ def test_identity_source_closure_does_not_package_unrelated_business():
         if public_client_module(name):
             continue
         assert not name.startswith(("app.llm", "app.apps", "app.capabilities.asset_store"))
-        assert name not in {"app.orm", "app.main", "app.api", "app.runtime.db"}
+        assert name not in {
+            "studio.assembly.website.models",
+            "studio.assembly.website.application",
+            "studio.assembly.website.routes",
+            "studio.runtime.database.website",
+        }
     assert all(path.suffix == ".py" for path in closure.values())
 
 
-@pytest.mark.parametrize("module", ["app.main", "app.runtime.db"])
+@pytest.mark.parametrize(
+    "module", ["studio.assembly.website.application", "studio.runtime.database.website"]
+)
 def test_image_preparation_refuses_a_hidden_monolith_import(tmp_path, module):
     own = (tmp_path / "backend" / ENTRY_POINTS["identity"].replace(".", "/")).with_suffix(".py")
     own.parent.mkdir(parents=True)
@@ -30,7 +37,7 @@ def test_image_preparation_refuses_a_hidden_monolith_import(tmp_path, module):
     foreign = tmp_path / "backend" / (module.replace(".", "/") + ".py")
     foreign.parent.mkdir(parents=True)
     foreign.write_text("# unrelated monolith\n")
-    with pytest.raises(ValueError, match="越界依赖"):
+    with pytest.raises(ValueError, match="越界依赖|非服务运行依赖"):
         source_closure(tmp_path, "identity")
 
 
@@ -67,10 +74,10 @@ def test_agents_image_contains_no_identity_orm_or_native_readers():
             ("studio.apps.identity", "studio.host", "app.console.models", "app.llm")
         )
         assert name not in {
-            "app.main",
-            "app.orm",
-            "app.api",
-            "app.deps",
+            "studio.assembly.website.application",
+            "studio.assembly.website.models",
+            "studio.assembly.website.routes",
+            "studio.assembly.http_dependencies",
             "app.capabilities.agents.sessions.catalog",
         }
 
@@ -101,7 +108,12 @@ def test_gateway_image_contains_no_business_or_identity_database():
         for name in closure
         if not public_client_module(name)
     )
-    assert not {"app.main", "app.orm", "app.api", "app.deps"}.intersection(closure)
+    assert not {
+        "studio.assembly.website.application",
+        "studio.assembly.website.models",
+        "studio.assembly.website.routes",
+        "studio.assembly.http_dependencies",
+    }.intersection(closure)
 
 
 def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
@@ -126,7 +138,7 @@ def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
 @pytest.mark.parametrize(
     "module",
     [
-        "app.runtime.db",
+        "studio.runtime.database.website",
         "app.console.models.accounts",
         "app.capabilities.asset_store.storage",
         "studio.apps.thought_workshop.storage.models",
@@ -166,7 +178,7 @@ def test_models_overlay_owns_state_and_has_provider_egress_without_host_mounts()
 @pytest.mark.parametrize(
     "module",
     [
-        "app.runtime.db",
+        "studio.runtime.database.website",
         "app.console.models.accounts",
         "app.llm.models",
         "studio.host.session_collection.collector",
@@ -269,7 +281,7 @@ def test_thought_packages_own_release_and_only_purpose_scoped_asset_credentials(
     assert "studio.apps.thought_workshop.publication.official_source" in closure
     assert "studio.apps.thought_workshop.publication.assets" not in closure
     assert "app.capabilities.asset_store.models" not in closure
-    assert "app.runtime.db" not in closure
+    assert "studio.runtime.database.website" not in closure
 
     services = yaml.safe_load((ROOT / "deploy/thought.compose.yaml").read_text())["services"]
     thought, assets = services["thought"], services["assets"]
@@ -296,11 +308,11 @@ def test_project_owner_images_and_compose_mounts_are_isolated(service, other):
         f"studio.apps.{other}_workshop",
         f"studio.apps.{other}_workshop",
         "app.capabilities.asset_store.models",
-        "app.runtime.db",
+        "studio.runtime.database.website",
         "app.llm.models",
         "app.llm.providers",
         "app.llm.generation_runtime",
-        "app.main",
+        "studio.assembly.website.application",
         "studio.apps.creative_workshop",
         "studio.apps.identity",
     )
@@ -340,7 +352,12 @@ def test_tools_image_only_packages_owned_navigation_and_safe_mounts():
                 "studio.apps.identity",
             )
         )
-        or name in {"app.main", "app.orm", "app.runtime.db"}
+        or name
+        in {
+            "studio.assembly.website.application",
+            "studio.assembly.website.models",
+            "studio.runtime.database.website",
+        }
         for name in closure
         if not public_client_module(name)
     )

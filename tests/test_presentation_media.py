@@ -5,9 +5,9 @@ import pytest
 from tests.presentation_helpers import sample_document
 
 from app.capabilities.asset_store.svg import normalize_svg, tint_svg
-from app.main import app
 from db.migrations.versions.r0058_presentation_media import SQL
 from studio.apps.presentation_workshop.schemas.document import PresentationDocument
+from website_test_support import app
 
 SVG = (
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'

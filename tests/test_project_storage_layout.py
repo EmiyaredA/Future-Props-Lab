@@ -9,13 +9,12 @@ from sqlalchemy import delete, select
 from app.capabilities.asset_store.layout_migration import reconcile_project_trash
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.main import app
-from app.runtime.db import SessionLocal
 from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.config.settings import get_settings
+from website_test_support import SessionLocal, app
 
 
 async def _reset() -> None:

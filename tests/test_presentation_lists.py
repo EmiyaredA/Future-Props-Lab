@@ -9,13 +9,13 @@ import pytest
 from pydantic import ValidationError
 from tests.presentation_helpers import sample_document
 
-from app.main import app
 from db.migrations.versions.r0099_presentation_lists import SQL
 from studio.apps.presentation_workshop.pptx_export import write_pptx
 from studio.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
     PresentationParagraph,
 )
+from website_test_support import app
 
 
 def list_document():

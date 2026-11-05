@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
 
-from app.deps import SessionDep, StudioAuth
 from app.llm.routes.model_capacity import task_admission
 from studio.apps.visual_workshop.acceptance.catalog import catalog
 from studio.apps.visual_workshop.acceptance.http_errors import errors
@@ -13,6 +12,7 @@ from studio.apps.visual_workshop.acceptance.node_schemas import (
 )
 from studio.apps.visual_workshop.acceptance.nodes import NodeAcceptance
 from studio.apps.visual_workshop.acceptance.schemas import AcceptanceRunOut
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
 
 router = APIRouter()
 
