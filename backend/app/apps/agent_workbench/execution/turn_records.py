@@ -1,5 +1,7 @@
 """Account-scoped turn state and one-shot approval transitions."""
 
+from time import time
+
 from fastapi import HTTPException
 from sqlalchemy import func, select, text
 
@@ -15,7 +17,7 @@ async def begin(db):
     await db.execute(text("BEGIN IMMEDIATE"))
 
 
-async def store_turn(db, owner, chat_id, body):
+async def store_turn(db, owner, chat_id, body, *, stage=None):
     existing = await db.scalar(
         select(WorkbenchTurn).where(
             WorkbenchTurn.owner_user_id == owner,
@@ -53,10 +55,13 @@ async def store_turn(db, owner, chat_id, body):
         prompt=body.text,
         answer="",
         status="running",
+        started_at=int(time()),
         approvals=[],
         revision=1,
     )
     db.add(turn)
+    if stage is not None:
+        stage(turn)
     await db.commit()
     return TurnOut.model_validate(turn), True
 
@@ -96,6 +101,11 @@ async def append_answer(db, key, delta):
 async def propose_approval(db, key, approval):
     await begin(db)
     row = await get_turn(db, *key)
+    stage_approval(row, approval)
+    await db.commit()
+
+
+def stage_approval(row, approval):
     preview_bytes = len(approval["preview"].encode()) + sum(
         len(item["preview"].encode()) for item in row.approvals
     )
@@ -103,8 +113,11 @@ async def propose_approval(db, key, approval):
         raise ValueError("运行无法接受更多审批")
     row.status = "waiting_approval"
     row.revision += 1
-    row.approvals = [*row.approvals, {**approval, "status": "pending"}]
-    await db.commit()
+    sequence = len(row.activity) + len(row.instructions) + len(row.approvals)
+    row.approvals = [
+        *row.approvals,
+        {**approval, "status": "pending", "offset": len(row.answer), "sequence": sequence},
+    ]
 
 
 def approval_status(row, identity):

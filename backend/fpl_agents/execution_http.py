@@ -142,29 +142,44 @@ async def detail(chat_id: str, db: SessionDep, principal: StudioAuth):
 
 
 @router.post("/chats/{chat_id}/turns", response_model=TurnOut, status_code=202)
-async def send_turn(chat_id: str, _body: TurnCreate, db: SessionDep, principal: StudioAuth):
-    await transcripts.get_chat(db, principal.user_id, chat_id)
-    raise unavailable()
+async def send_turn(
+    request: Request, chat_id: str, body: TurnCreate, db: SessionDep, principal: StudioAuth
+):
+    return await request.app.state.execution_turns.submit(
+        db,
+        principal.user_id,
+        chat_id,
+        body,
+        request.state.service_assertion,
+        local=request.state.service_actor.local,
+    )
 
 
 @router.post("/chats/{chat_id}/turns/{turn_id}/stop", status_code=204)
-async def stop(chat_id: str, turn_id: str, db: SessionDep, principal: StudioAuth):
-    await transcripts.interrupt_turn(db, principal.user_id, chat_id, turn_id)
+async def stop(request: Request, chat_id: str, turn_id: str, db: SessionDep, principal: StudioAuth):
+    await request.app.state.execution_turns.stop(db, principal.user_id, chat_id, turn_id)
 
 
 @router.post("/chats/{chat_id}/turns/{turn_id}/approvals/{approval_id}", status_code=204)
 async def decide(
+    request: Request,
     chat_id: str,
     turn_id: str,
     approval_id: str,
-    _body: ApprovalDecision,
+    body: ApprovalDecision,
     db: SessionDep,
     principal: StudioAuth,
 ):
-    turn = await transcripts.get_turn(db, principal.user_id, chat_id, turn_id)
-    if not any(item["id"] == approval_id for item in turn.approvals):
-        raise HTTPException(404, "审批不存在")
-    raise unavailable()
+    await request.app.state.execution_turns.decide(
+        db,
+        principal.user_id,
+        chat_id,
+        turn_id,
+        approval_id,
+        body.approved,
+        request.state.service_assertion,
+        local=request.state.service_actor.local,
+    )
 
 
 async def updates(request, owner, chat_id):

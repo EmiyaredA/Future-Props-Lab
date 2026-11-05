@@ -20,7 +20,13 @@ from app.apps.agent_workbench.execution.schemas import (
     ProjectChoice,
     RecentProject,
 )
-from app.capabilities.agents.cli.catalog import DEFINITIONS, execution_signature, inspect_connection
+from app.capabilities.agents.cli.catalog import (
+    DEFINITIONS,
+    connection,
+    execution_signature,
+    inspect_connection,
+)
+from app.capabilities.agents.cli.dialogue import run_dialogue
 from app.runtime.config import Settings
 from fpl_config import read_config
 from fpl_runtime.integration_intents import digest
@@ -40,6 +46,7 @@ from fpl_runtime.workbench_execution import (
 
 from .receipts import ReceiptStore
 from .transport import LeaseEnded, NativeTransport, ProtocolConflict
+from .workbench_turn import MacTurn
 
 logger = logging.getLogger(__name__)
 
@@ -70,8 +77,23 @@ class WorkbenchConfiguration:
 
 
 class WorkbenchWorker:
-    def __init__(self, transport, configuration, state_root, *, inspect=inspect_connection):
+    def __init__(
+        self,
+        transport,
+        configuration,
+        state_root,
+        *,
+        inspect=inspect_connection,
+        locate=connection,
+        dialogue=run_dialogue,
+    ):
         self.transport, self.configuration, self.inspect = transport, configuration, inspect
+        self.locate, self.dialogue = locate, dialogue
+        self.file_writes = asyncio.Lock()
+        self.turn_receipts = ReceiptStore(
+            state_root / "turn-receipts",
+            retain_acknowledged_payload=False,
+        )
         self.receipts = ReceiptStore(
             state_root / "receipts",
             readonly_operations={CATALOG, CHECK_PROJECT, DIRECTORIES, REGISTER},
@@ -124,6 +146,9 @@ class WorkbenchWorker:
             return NativeOutcome(status="failed", error_code=code, message=message)
 
     async def check_project(self, owner, scope):
+        return (await self.resolve_project(owner, scope))[-1]
+
+    async def resolve_project(self, owner, scope, *, probe=True):
         settings = await asyncio.to_thread(self.configuration.settings)
         if scope.registered_root is not None:
             if not scope.local:
@@ -138,15 +163,23 @@ class WorkbenchWorker:
             project = projects.configured_binding(scope.project_id, owner, settings)
         project = await projects.check_root(project, settings)
         runtime = await asyncio.to_thread(self.configuration.settings, for_agents=True)
-        agent = await self.inspect(runtime, scope.agent, discover_models=False)
-        if not agent["available"] or not agent.get("executable"):
+        if probe:
+            agent = await self.inspect(runtime, scope.agent, discover_models=False)
+            enabled, executable = agent["available"], agent.get("executable")
+        else:
+            enabled, executable, message = await asyncio.to_thread(
+                self.locate, runtime, scope.agent
+            )
+            enabled = enabled and not message
+        if not enabled or not executable:
             raise HTTPException(409, {"code": "agent_unavailable", "message": "Agent 连接不可用"})
-        return ProjectReady(
+        signature = ProjectReady(
             project_id=project.identity,
             label=project.label,
-            agent_signature=execution_signature(scope.agent, agent["executable"]),
+            agent_signature=execution_signature(scope.agent, executable),
             project_signature=digest(asdict(project)),
         )
+        return project, executable, runtime.runtime_path, signature
 
     async def catalog(self, owner, body):
         settings = await asyncio.to_thread(self.configuration.settings)
@@ -211,14 +244,46 @@ class WorkbenchWorker:
             lease = NativeLease.model_validate(reply["lease"])
             await self.deliver(lease, await self.receipts.execute_async(lease, self.execute))
 
+    async def execute_turn(self, lease):
+        return await MacTurn(self, lease).run()
+
+    async def deliver_turn(self, lease, outcome):
+        result = await self.transport.post(
+            "execution/turns/receipt",
+            {"lease": lease.model_dump(mode="json"), "outcome": outcome.model_dump(mode="json")},
+        )
+        if result.get("acknowledged") is not True:
+            raise ProtocolConflict("工作台轮次回执未确认")
+        await asyncio.to_thread(self.turn_receipts.acknowledge, lease)
+
+    async def poll_turn(self):
+        for lease, stored in self.turn_receipts.pending():
+            outcome = (
+                NativeOutcome.model_validate(stored)
+                if stored is not None
+                else await self.turn_receipts.execute_async(lease, self.execute_turn)
+            )
+            await self.deliver_turn(lease, outcome)
+        reply = await self.transport.post("execution/turns/claim", {"wait_seconds": 1})
+        if reply.get("lease") is not None:
+            lease = NativeLease.model_validate(reply["lease"])
+            await self.deliver_turn(
+                lease, await self.turn_receipts.execute_async(lease, self.execute_turn)
+            )
+
+    async def poll(self, operation):
+        while True:
+            try:
+                await operation()
+            except (httpx.HTTPError, OSError, ValueError, LeaseEnded, ProtocolConflict):
+                logger.warning("工作台原生通道暂不可用，保留回执")
+                await asyncio.sleep(2)
+
     async def run(self):
         try:
-            while True:
-                try:
-                    await self.poll_once()
-                except (httpx.HTTPError, OSError, ValueError, LeaseEnded, ProtocolConflict):
-                    logger.warning("工作台原生通道暂不可用，保留回执")
-                    await asyncio.sleep(2)
+            async with asyncio.TaskGroup() as tasks:
+                tasks.create_task(self.poll(self.poll_once))
+                tasks.create_task(self.poll(self.poll_turn))
         finally:
             await self.transport.close()
 

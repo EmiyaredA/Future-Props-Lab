@@ -3,6 +3,7 @@
 import asyncio
 import difflib
 import json
+from dataclasses import asdict
 
 from jsonschema import ValidationError, validate
 
@@ -82,7 +83,11 @@ class ProjectTools:
                     return await commands.run_command(latest.root, command)
 
                 return await self.approve(
-                    "command", command.label, json.dumps(command.argv, ensure_ascii=False), execute
+                    "command",
+                    command.label,
+                    json.dumps(command.argv, ensure_ascii=False),
+                    {"preset": preset, "command": asdict(command)},
+                    execute,
                 )
             path = args["path"]
             if name == "list_files":
@@ -137,4 +142,14 @@ class ProjectTools:
                         await asyncio.gather(write, return_exceptions=True)
                         raise
 
-            return await self.approve("write", path, diff, execute)
+            return await self.approve(
+                "write",
+                path,
+                diff,
+                {
+                    "path": path,
+                    "before": project_files.digest(original),
+                    "after": project_files.digest(content),
+                },
+                execute,
+            )

@@ -1,5 +1,6 @@
 """Assemble only the Agent workbench, its storage, collector protocol and lifecycle."""
 
+import asyncio
 from contextlib import asynccontextmanager
 from functools import partial
 
@@ -39,6 +40,7 @@ from .authorization import NativeTransport
 from .execution_discovery import ExecutionDiscovery
 from .execution_http import router as execution_router
 from .execution_native_http import router as execution_native
+from .execution_turns import ExecutionTurns
 from .migrations.registry import MIGRATIONS
 from .models import (
     NativeJob,
@@ -94,6 +96,8 @@ def create_app(
     supervisor = CollectionSupervisor(database, identity)
     discovery = ExecutionDiscovery(database, identity, configured=bool(execution_workers))
 
+    turns = ExecutionTurns(database, identity, discovery)
+
     @asynccontextmanager
     async def lifespan(_app):
         check(database.path, "agents", MIGRATIONS)
@@ -101,9 +105,12 @@ def create_app(
         await discovery.recover()
         if collect and get_settings().fpl_agent_workbench_enabled:
             await supervisor.start()
+        maintenance = asyncio.create_task(turns.maintain())
         try:
             yield
         finally:
+            maintenance.cancel()
+            await asyncio.gather(maintenance, return_exceptions=True)
             await supervisor.stop()
             await identity.close()
             await database.close()
@@ -127,6 +134,7 @@ def create_app(
     )
     app.state.workbench_native = NativeSourceAccess(app.state.native_queue)
     app.state.execution_discovery = discovery
+    app.state.execution_turns = turns
 
     async def reauthorize(request):
         if not await identity.active(

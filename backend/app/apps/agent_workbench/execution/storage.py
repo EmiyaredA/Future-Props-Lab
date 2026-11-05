@@ -6,13 +6,12 @@ import time
 from fastapi import HTTPException
 from sqlalchemy import func, select, text, update
 
-from app.capabilities.agents.activity import positive_int, tool_details
 from app.capabilities.agents.cli.catalog import DEFINITIONS, inspect_connection
 from app.console.cloud_control.access import allowed, require_unlocked
 from app.runtime.config import get_cloud_settings
 from app.runtime.ids import new_id
 
-from . import project_files, projects
+from . import projects
 from .models import WorkbenchChat, WorkbenchTurn
 from .schemas import (
     AgentChoice,
@@ -24,6 +23,8 @@ from .schemas import (
     QueuedTurn,
     TurnOut,
 )
+from .transcripts import end_turn
+from .turn_activity import next_activity_sequence
 
 ACTIVE = ("running", "waiting_approval", "cancelling")
 MAX_QUEUE = 20
@@ -475,32 +476,6 @@ async def finish_turn(db, key, status, error=None, *, only_cancelling=False):
     return None
 
 
-def end_turn(turn, status, error=None):
-    turn.status, turn.error = status, error
-    turn.approvals = [
-        {
-            **approval,
-            "status": (
-                "unknown"
-                if approval["status"] == "executing"
-                else "expired"
-                if approval["status"] in {"pending", "approved"}
-                else approval["status"]
-            ),
-        }
-        for approval in turn.approvals
-    ]
-    turn.instructions = [
-        {**item, "status": "unknown"} if item["status"] == "sending" else item
-        for item in turn.instructions
-    ]
-    turn.activity = [
-        {**item, "status": "unknown"} if item["status"] == "running" else item
-        for item in turn.activity
-    ]
-    turn.revision += 1
-
-
 async def interrupt_all(db):
     rows = (await db.scalars(select(WorkbenchTurn).where(WorkbenchTurn.status.in_(ACTIVE)))).all()
     for row in rows:
@@ -558,82 +533,3 @@ async def settle_instruction(db, key, identity, status):
     else:
         await db.rollback()
     return InstructionOut.model_validate(item)
-
-
-def managed_activity_details(name, payload):
-    if name not in {"read_file", "write_file", "run_command"}:
-        return None
-    details = tool_details(name, payload)
-    target = details.get("file") if details else None
-    if target:
-        try:
-            project_files.path_parts(target["path"])
-        except ValueError:
-            return None
-    return details
-
-
-def next_activity_sequence(turn):
-    return len(turn.activity) + len(turn.instructions) + len(turn.approvals)
-
-
-async def record_activity(db, key, kind, payload):
-    await begin(db)
-    row = await get_turn(db, *key)
-    if row.status not in ("running", "waiting_approval"):
-        return
-    call_id = str(payload["tool_call_id"])[:255]
-    activities = list(row.activity)
-    index = next((i for i, item in enumerate(activities) if item["call_id"] == call_id), None)
-    if kind == "tool_call" and index is None and len(activities) < 100:
-        name = str(payload["tool_name"])[:120]
-        activities.append(
-            {
-                "call_id": call_id,
-                "name": name,
-                "details": managed_activity_details(name, payload.get("arguments")),
-                "opened_at_ms": int(time.time() * 1000),
-                "sequence": next_activity_sequence(row),
-                "status": "running",
-                "offset": len(row.answer),
-            }
-        )
-    elif kind == "tool_result" and index is not None:
-        result = payload.get("result")
-        failed = payload.get("status") != "completed" or (
-            isinstance(result, dict)
-            and ("error" in result or result.get("status") == "rejected" or result.get("exit_code"))
-        )
-        previous = activities[index]
-        details = previous.get("details") or {}
-        target = details.get("file") or {}
-        path = target.get("path")
-        source_available = (
-            not failed
-            and previous["name"] in {"read_file", "write_file"}
-            and isinstance(path, str)
-            and isinstance(result, dict)
-            and result.get("path") == path
-            and (
-                isinstance(result.get("content"), str)
-                if previous["name"] == "read_file"
-                else isinstance(result.get("sha256"), str)
-            )
-        )
-        started = previous.get("opened_at_ms")
-        elapsed = (
-            positive_int(int(time.time() * 1000) - started) if isinstance(started, int) else None
-        )
-        activities[index] = {
-            **previous,
-            "status": "failed" if failed else "completed",
-            "source_available": source_available,
-            "details": {**(details or {"kind": "duration"}), "duration_ms": elapsed}
-            if elapsed
-            else previous.get("details"),
-        }
-    else:
-        return
-    row.activity = activities
-    row.revision += 1
-    await db.commit()

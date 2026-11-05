@@ -16,7 +16,7 @@ from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
 from app.runtime.operation_receipts import OperationError
 
-from . import storage
+from . import storage, turn_activity
 from .project_tools import ProjectTools
 
 
@@ -180,9 +180,9 @@ class Turn:
             elif kind in ("tool_call", "tool_result"):
                 await self.flush()
                 async with SessionLocal() as db:
-                    await storage.record_activity(db, self.key, kind, payload)
+                    await turn_activity.record_activity(db, self.key, kind, payload)
 
-    async def approve(self, kind, title, preview, operation):
+    async def approve(self, kind, title, preview, _effect, operation):
         identity = new_id()
         async with self.transcript_lock:
             await self.flush()

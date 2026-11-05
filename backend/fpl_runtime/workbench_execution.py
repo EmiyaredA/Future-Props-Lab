@@ -2,11 +2,14 @@
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
+
+from .native_protocol import NativeLease
 
 CATALOG = "workbench.execution.catalog"
 DIRECTORIES = "workbench.execution.directories"
 REGISTER = "workbench.execution.register"
+RUN_TURN = "workbench.execution.run-turn"
 CHECK_PROJECT = "workbench.execution.check-project"
 DISCOVERY_OPERATIONS = frozenset({CATALOG, DIRECTORIES, REGISTER, CHECK_PROJECT})
 CATALOG_PATH = "/v1/agent-workbench/execution/catalog"
@@ -59,3 +62,50 @@ class ProjectReady(Input):
     label: Annotated[str, Field(min_length=1, max_length=80)]
     agent_signature: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
     project_signature: Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+
+
+Identity = Annotated[str, Field(min_length=1, max_length=80)]
+
+
+class TurnScope(ProjectCheck):
+    chat_id: Identity
+    turn_id: Identity
+
+
+def turn_path(chat):
+    return f"{CHATS_PATH}/{chat}/turns"
+
+
+def decision_path(chat, turn, approval):
+    return f"{turn_path(chat)}/{turn}/approvals/{approval}"
+
+
+Sha256 = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+
+
+class Leased(Input):
+    lease: NativeLease
+
+
+class TurnAnswer(Leased):
+    text: str = Field(max_length=100_000)
+
+
+class TurnActivity(Leased):
+    kind: Literal["tool_call", "tool_result"]
+    payload: dict[str, JsonValue]
+
+
+class TurnApproval(Leased):
+    approval_id: Identity
+    action_sha256: Sha256
+
+
+class TurnProposal(TurnApproval):
+    kind: Literal["write", "command"]
+    title: str = Field(min_length=1, max_length=500)
+    preview: str = Field(max_length=65_536)
+
+
+class TurnApprovalReceipt(TurnApproval):
+    status: Literal["completed", "failed", "unknown"]

@@ -104,6 +104,14 @@ def end_turn(turn, status, error=None):
         }
         for approval in turn.approvals
     ]
+    turn.instructions = [
+        {**item, "status": "unknown"} if item["status"] == "sending" else item
+        for item in turn.instructions
+    ]
+    turn.activity = [
+        {**item, "status": "unknown"} if item["status"] == "running" else item
+        for item in turn.activity
+    ]
     turn.revision += 1
 
 
