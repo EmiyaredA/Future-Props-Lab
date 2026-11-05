@@ -1,3 +1,4 @@
+import "./support/galgame-editor-logic";
 import { publicImageSources } from "@shared/lib/imageSources";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {

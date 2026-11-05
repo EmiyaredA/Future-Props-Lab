@@ -1,3 +1,4 @@
+import "./support/galgame-editor-logic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -352,7 +353,9 @@ test("blocks deletion of characters and scenes that are still referenced", async
   await screen.findByText("纵向切片");
 
   await openAssetSection(user, "角色");
-  await user.click(screen.getByRole("button", { name: /资源引用 1/ }));
+  await user.click(
+    screen.getByRole("button", { name: /资源引用 1/, expanded: false }),
+  );
   expect(screen.getByRole("button", { name: "删除角色" })).toBeDisabled();
   expect(screen.getByText("角色仍被对白引用，无法删除。")).toBeInTheDocument();
   await user.click(
