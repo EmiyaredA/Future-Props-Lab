@@ -10,8 +10,8 @@ from uuid import uuid4
 
 import pytest
 from sqlalchemy import delete, select
+from tests.credential_test_support import encrypt_secret
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.admission.website_queue import (
     claim_visual_capacity,
@@ -27,6 +27,8 @@ from studio.apps.visual_workshop.storage.models import (
 )
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.config.settings import get_settings
+from studio.config.settings import get_settings as isolated_settings
+from studio.runtime.secrets import SecretCipher
 from test_workspace_governance import client_account
 from website_test_support import SessionLocal
 
@@ -125,6 +127,7 @@ def runner():
         queue_candidates=visual_queue_candidates,
         session_factory=SessionLocal,
         settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
 
 

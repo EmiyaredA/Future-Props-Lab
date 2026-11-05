@@ -9,8 +9,8 @@ import httpx
 import pytest
 from PIL import Image
 from sqlalchemy import delete, func, select
+from tests.credential_test_support import encrypt_secret
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.model_service.playground.service import ModelTestService
 from studio.apps.model_service.playground.stream import generation_events
 from studio.apps.model_service.providers.streaming import TextDelta

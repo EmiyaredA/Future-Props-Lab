@@ -34,9 +34,11 @@ from studio.apps.model_service.storage.models.model_test import (
 )
 from studio.apps.model_service.transport.migration_originals_http import TEST_RELATIONSHIPS
 from studio.config.settings import Settings
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+from studio.runtime.secrets import SecretCipher
 
 
 def seed_tasks(db, root, owner):
@@ -185,10 +187,18 @@ async def verify_task_recovery(target, owner, source_root, tasks):
         "models", target, models=(ModelTestGenerationTask, ModelTestTranscriptionTask, LlmCallLog)
     )
     settings = Settings(fpl_database_path=str(database.path))
-    generation = ModelTestGenerationRunner(database.sessions, settings=settings)
+    generation = ModelTestGenerationRunner(
+        database.sessions,
+        settings=settings,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+    )
     try:
         await generation.recover()
-        await ModelTestTranscriptionRunner(database.sessions, settings=settings).recover()
+        await ModelTestTranscriptionRunner(
+            database.sessions,
+            settings=settings,
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        ).recover()
         async with database.sessions(info={"owner_user_id": str(owner)}) as session:
             generation_row = await session.get(ModelTestGenerationTask, uncertain)
             transcription_row = await session.get(ModelTestTranscriptionTask, transcription)

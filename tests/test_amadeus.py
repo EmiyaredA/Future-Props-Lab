@@ -14,9 +14,9 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from sqlalchemy import select
+from tests.credential_test_support import encrypt_secret
 
 import integration_test_support as integration_dependencies
-from app.runtime.credentials import encrypt_secret
 from studio.apps.amadeus.execution.website_runs import recover_interrupted_amadeus_runs
 from studio.apps.amadeus.storage.conversations import Conversations
 from studio.apps.amadeus.storage.files import read_file_bytes, work_root, write_file

@@ -67,6 +67,8 @@ class VisualGenerationRunner(PollingTaskRunner):
         temporary_media_transport: httpx.AsyncBaseTransport | None = None,
         claim_admission: ClaimAdmission | None = None,
         queue_candidates: Callable[..., Awaitable[list[str]]] | None = None,
+        *,
+        decrypt: Callable[[str], str],
     ) -> None:
         super().__init__()
         self.queue_candidates = queue_candidates
@@ -83,6 +85,7 @@ class VisualGenerationRunner(PollingTaskRunner):
             active_statuses=ACTIVE_TASK_STATUSES,
             task_subject="visual generation task",
             claim_admission=claim_admission,
+            decrypt=decrypt,
         )
         self.task_driver = GenerationTaskDriver(
             store=self.task_store,

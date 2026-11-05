@@ -440,29 +440,28 @@ def test_workbench_never_discovers_process_global_configuration():
     assert not violations
 
 
-def test_catalog_and_identity_do_not_load_legacy_credential_helpers():
-    paths = list((STUDIO / "apps/identity").rglob("*.py"))
-    paths += list((STUDIO / "apps/model_service/catalog").rglob("*.py"))
-    paths += [
-        STUDIO / "apps/model_service" / name
-        for name in (
-            "demo.py",
-            "demo_installations.py",
-            "diagnostics.py",
-            "demonstration/website_management.py",
-            "assistant_model_runs.py",
-            "galgame_transcription.py",
-            "visual/visual_review_attempts.py",
-            "writing.py",
-            "inference/text.py",
-            "playground/stream.py",
-            "realtime/catalog.py",
-        )
-    ]
-    for path in paths:
-        assert "app.runtime.credentials" not in set(imports(path)), path
-        assert "app.runtime.secret_hints" not in set(imports(path)), path
-    assert not (ROOT / "backend/app/runtime/secret_hints.py").exists()
+def test_production_never_loads_legacy_runtime():
+    for path in (ROOT / "backend").rglob("*.py"):
+        assert not any(
+            name == "app.runtime" or name.startswith("app.runtime.") for name in imports(path)
+        ), path
+    assert not list((ROOT / "backend/app/runtime").glob("*.py"))
+
+
+def test_model_runners_require_explicit_configuration():
+    for name in (
+        "inference/runner.py",
+        "playground/generation_runner.py",
+        "playground/transcription_runner.py",
+    ):
+        path = STUDIO / "apps/model_service" / name
+        tree = ast.parse(path.read_text())
+        assert not any(
+            isinstance(node, ast.Name) and node.id == "get_settings" for node in ast.walk(tree)
+        ), path
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module == "studio.config.settings":
+                assert all(alias.name != "get_settings" for alias in node.names), path
 
 
 def test_website_thought_writing_adapter_lives_in_assembly():

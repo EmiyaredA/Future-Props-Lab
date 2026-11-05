@@ -10,6 +10,8 @@ from studio.apps.model_service.playground.generation_runner import ModelTestGene
 from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
 from studio.apps.model_service.providers.zealman_workflows import U06, U17
 from studio.apps.model_service.storage.models.model_test import ModelTestGenerationTask
+from studio.config.settings import get_settings as isolated_settings
+from studio.runtime.secrets import SecretCipher
 from studio.runtime.time import utc_now
 from website_test_support import SessionLocal, app
 
@@ -98,7 +100,10 @@ async def test_keyless_workflow_api_completion_materialization_logs_and_catalog_
             )
 
         runner = ModelTestGenerationRunner(
-            SessionLocal, download_transport=httpx.MockTransport(download)
+            SessionLocal,
+            download_transport=httpx.MockTransport(download),
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+            settings=isolated_settings(),
         )
         await runner.process_once()
         assert submitted[-1]["api_key"] == ""
@@ -164,7 +169,11 @@ async def test_expired_workflow_task_fails_before_polling(monkeypatch):
 
     monkeypatch.setattr("studio.apps.model_service.playground.generation_runner.get_task", poll)
     # Directly exercise the owner hook with a restored context; no upstream resubmission.
-    runner = ModelTestGenerationRunner(SessionLocal)
+    runner = ModelTestGenerationRunner(
+        SessionLocal,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        settings=isolated_settings(),
+    )
     async with SessionLocal() as session:
         row = await session.get(ModelTestGenerationTask, identity)
         context = runner.task_store._context(row, owner_user_id="test-user")

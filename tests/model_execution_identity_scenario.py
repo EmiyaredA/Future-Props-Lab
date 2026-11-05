@@ -14,14 +14,17 @@ from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
 from studio.assembly.independent.identity.application import create_app
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import verify_context
 from studio.runtime.database.migrations import apply
+from studio.runtime.secrets import SecretCipher
 
 assert "studio.runtime.database.website" not in sys.modules
 assert not any(name.startswith(("studio.apps.model_service", "app.apps")) for name in sys.modules)
 
-from app.runtime.credentials import encrypt_secret  # noqa: E402
+from tests.credential_test_support import encrypt_secret  # noqa: E402
+
 from studio.apps.model_service.admission.execution_authority import ModelTaskAuthority  # noqa: E402
 from studio.apps.model_service.generation.driver import GenerationTaskStore  # noqa: E402
 from studio.apps.model_service.storage.migrations.registry import (  # noqa: E402
@@ -143,6 +146,7 @@ store = GenerationTaskStore(
     active_statuses=("queued", "submitting", "pending", "processing"),
     task_subject="model job",
     prepare_claim=prepare,
+    decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
 )
 
 

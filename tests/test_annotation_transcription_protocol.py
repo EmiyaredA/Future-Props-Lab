@@ -10,12 +10,12 @@ from fastapi import FastAPI
 from sqlalchemy import select
 from starlette.datastructures import Headers, UploadFile
 from starlette.exceptions import HTTPException
+from tests.credential_test_support import encrypt_secret
 from tests.test_annotation_asset_protocol import TOKEN, audio
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_independent_annotation import PROJECTS, ROOT
 from tests.test_independent_project_catalog import authorize
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.audio_annotation.storage.migrations.registry import (
     MIGRATIONS as ANNOTATION_MIGRATIONS,

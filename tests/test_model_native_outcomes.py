@@ -6,6 +6,8 @@ import pytest
 
 from studio.apps.model_service.generation.outcomes import NativeSubmissionUncertain
 from studio.apps.model_service.inference.runner import InferenceRunner
+from studio.config.settings import get_settings as isolated_settings
+from studio.runtime.secrets import SecretCipher
 
 
 @pytest.mark.parametrize("outcome", ["unknown_native", "lost_finish_reply", "confirmed_failure"])
@@ -30,7 +32,12 @@ async def test_native_synthesis_consumer_distinguishes_unknown_and_confirmed_out
         state.status = "failed"
         state.failures.append(message)
 
-    runner = InferenceRunner(None, local_runtime=object(), settings=settings)
+    runner = InferenceRunner(
+        None,
+        local_runtime=object(),
+        settings=settings,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+    )
     runner.store = SimpleNamespace(claim=claim, fail=fail)
 
     async def inputs(_task):

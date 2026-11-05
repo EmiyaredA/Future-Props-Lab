@@ -6,8 +6,8 @@ import httpx
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import delete, func, select
+from tests.credential_test_support import encrypt_secret
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.assistant.tools import visual_agent_tools
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask

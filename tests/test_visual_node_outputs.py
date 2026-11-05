@@ -13,6 +13,8 @@ from studio.apps.visual_workshop.outputs.history import (
 )
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
+from studio.config.settings import get_settings as isolated_settings
+from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal, app
 
 PNG = b"\x89PNG\r\n\x1a\noutput-version"
@@ -636,7 +638,11 @@ async def test_composition_registers_one_version_with_frozen_inputs(monkeypatch)
             files={"file": ("later.png", PNG, "image/png")},
         )
         assert changed.status_code == 200, changed.text
-        runner = VisualGenerationRunner(SessionLocal, get_settings())
+        runner = VisualGenerationRunner(
+            SessionLocal,
+            get_settings(),
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        )
         await runner._compose_batch(batch["id"])
         await runner._compose_batch(batch["id"])
         listing = (

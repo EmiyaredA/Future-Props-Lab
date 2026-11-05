@@ -14,8 +14,8 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, Request
 from sqlalchemy import select, text
+from tests.credential_test_support import encrypt_secret
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.model_service.admission import execution_authority as authority_module
 from studio.apps.model_service.admission.admission import ModelAdmission, settle
 from studio.apps.model_service.admission.execution_authority import ModelTaskAuthority
@@ -36,6 +36,7 @@ from studio.apps.model_service.storage.service_models import (
 )
 from studio.apps.model_service.transport.website.model_capacity import ModelCapacity, task_admission
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
 from studio.contracts.identity.permissions import role_scopes
@@ -43,6 +44,7 @@ from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.authentication import SignedIdentity
+from studio.runtime.secrets import SecretCipher
 
 SOURCE_PATH = "/v1/model-inference/tasks"
 
@@ -168,6 +170,7 @@ def store(case):
         task_subject="job",
         prepare_claim=prepare,
         terminal_settlement=settle,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
 
 

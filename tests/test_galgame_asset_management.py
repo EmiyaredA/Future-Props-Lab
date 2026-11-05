@@ -8,8 +8,8 @@ import httpx
 import pytest
 from PIL import Image
 from sqlalchemy import delete
+from tests.credential_test_support import encrypt_secret
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.galgame_workshop.assets import asset_analysis as asset_analysis_module
 from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from studio.apps.galgame_workshop.assets.asset_support import normalize_import_filename
@@ -21,6 +21,8 @@ from studio.apps.galgame_workshop.storage.models import (
 )
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.config.settings import get_settings
+from studio.config.settings import get_settings as isolated_settings
+from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal, app
 
 
@@ -523,6 +525,7 @@ async def test_asr_runner_manual_override_force_and_dialogue_match() -> None:
         transport=httpx.MockTransport(fake_asr),
         session_factory=SessionLocal,
         settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
     await runner.process_once()
 
@@ -649,6 +652,7 @@ async def test_senseaudio_asr_runner_persists_segments_and_manual_edit_clears_th
         transport=httpx.MockTransport(fake_asr),
         session_factory=SessionLocal,
         settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     ).process_once()
 
     expected_segments = [

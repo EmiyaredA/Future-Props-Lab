@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 from pathlib import Path
 from uuid import uuid4
 
@@ -8,7 +9,6 @@ import httpx
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.call_logs.record_attribution import snapshot_from_row
 from studio.apps.model_service.generation.outcomes import TaskClaimRejected
 from studio.apps.model_service.providers.transcription import transcribe_model_audio
@@ -19,7 +19,7 @@ from studio.apps.model_service.transcription.support import (
     model_supports_transcription,
     safe_transcription_error,
 )
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.contracts.model_service.schemas.model_test import ModelTestTranscriptionResultDetailOut
 from studio.runtime.database.task_records import load_runner_task, recovery_accounts
 from studio.runtime.tasks.polling import PollingTaskRunner
@@ -32,15 +32,17 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
     def __init__(
         self,
         session_factory: async_sessionmaker[AsyncSession],
-        settings: Settings | None = None,
+        settings: Settings,
         transport: httpx.AsyncBaseTransport | None = None,
         *,
+        decrypt: Callable[[str], str],
         prepare_claim=None,
         terminal_settlement=None,
     ) -> None:
         super().__init__()
         self.session_factory = session_factory
-        self.settings = settings or get_settings()
+        self.decrypt = decrypt
+        self.settings = settings
         self.transport = transport
         self.prepare_claim, self.terminal_settlement = prepare_claim, terminal_settlement
 
@@ -221,7 +223,7 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
             prepared = (
                 provider.kind,
                 provider.base_url,
-                decrypt_secret(provider.api_key_ciphertext),
+                self.decrypt(provider.api_key_ciphertext),
                 row.model_slug,
                 row.input_filename,
                 path,

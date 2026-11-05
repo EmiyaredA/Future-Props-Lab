@@ -9,8 +9,8 @@ import httpx
 import pytest
 from PIL import Image
 from sqlalchemy import delete, select
+from tests.credential_test_support import encrypt_secret
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
 from studio.apps.model_service.storage.models.call_log import LlmCallLog

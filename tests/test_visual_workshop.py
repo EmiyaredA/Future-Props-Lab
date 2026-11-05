@@ -3,9 +3,9 @@ from uuid import uuid4
 import httpx
 import pytest
 from sqlalchemy import delete
+from tests.credential_test_support import encrypt_secret
 
 import studio.apps.asset_library.storage.website_files as asset_module
-from app.runtime.credentials import encrypt_secret
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider

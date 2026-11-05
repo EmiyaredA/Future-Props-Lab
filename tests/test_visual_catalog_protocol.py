@@ -178,7 +178,9 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
     generation_key = "isolated-visual-generation-peer-" * 2
     models.state.visual_generation_peer = TimedPeer(generation_key, domain=PEER_DOMAIN)
     models.state.visual_generation_intake = VisualGenerationIntake(models.state)
-    models.state.visual_generation_runner = VisualGenerationRunner(models.state)
+    models.state.visual_generation_runner = VisualGenerationRunner(
+        models.state, decrypt=lambda _: "fixture"
+    )
     models.state.visual_generation_results = VisualGenerationResults(models.state)
     models.include_router(router)
     models.include_router(visual_model_router)
@@ -409,9 +411,6 @@ async def verify_provider_result(case, http, models, body, task_id, monkeypatch)
         options["target"].write_bytes(original)
         return len(original), "image", "image/png", ".png"
 
-    monkeypatch.setattr(
-        "studio.apps.model_service.generation.driver.decrypt_secret", lambda _value: "fixture"
-    )
     monkeypatch.setattr(
         "studio.apps.model_service.visual.visual_generation_runner.submit_visual_generation", submit
     )

@@ -68,7 +68,7 @@ backend/
 
 音频标注编辑数据流为 HTTP 请求 → 账号范围依赖装配 → `EditDocument` → 文档快照与纯规则 → `DocumentEdits.commit` → 同事务 CAS/回执 → 已提交响应。相同请求返回原回执，复用请求 ID 更改输入返回冲突，并发失败复查回执，取消回滚。素材、转录和暂存目录由入口显式注入，不经 Session 信息字典发现业务依赖。
 
-剩余通用机制也已迁出旧 `app/runtime`：账号绑定、项目 CAS、操作回执及任务恢复查询归 `studio.runtime.database`，受限路径、归档成员及栅格处理归 `files`，静态网站和远程入口校验归 `http`，授权订阅归 `messaging`，任务准入原语归 `tasks`。设置类型与显式配置读取归 `studio.config.settings`；导入设置模块不读取 TOML、不加载数据库。网站数据库已改为显式实例，隐式凭据装配仍需后续消除，不属于通用机制。
+剩余通用机制也已迁出旧 `app/runtime`：账号绑定、项目 CAS、操作回执及任务恢复查询归 `studio.runtime.database`，受限路径、归档成员及栅格处理归 `files`，静态网站和远程入口校验归 `http`，授权订阅归 `messaging`，任务准入原语归 `tasks`。设置类型与显式配置读取归 `studio.config.settings`；导入设置模块不读取 TOML、不加载数据库。网站数据库已改为显式实例；凭据适配由两种装配注入，旧 `app/runtime/` 已移除。
 
 兼容网站的工作台采集与执行、Amadeus CLI 执行、面试准备、文章同步、视觉生成与验收、Galgame 媒体任务、视频剪辑及特效 Runner 显式接收会话工厂；需要配置的 Runner 同时接收配置值。工作台轮次继承所属 Runner 的工厂，不通过全局数据库寻找连接。HTTP 用例和剩余助手工具的逐项端口化仍在后续批次进行。
 
@@ -1086,3 +1086,5 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 `studio/assembly/website/thought_writing.py` 拥有兼容网站的思绪写作模型选择、供应商流及调用日志连接，显式接收会话工厂、解密器与传输解析器；思绪业务通过 `WritingModels` 端口使用它。原 `apps/thought_workshop/legacy_writing.py` 已移除。独立 Models 的助手轮次、视觉验收与 Galgame 转录只接收自身会话、配置及解密能力，视觉验收不再接收整个应用状态容器。`apps/model_service/writing.py` 使用模型入口注入的解密器。没有消费者的旧 `clients/text.py` 同进程入口已删除，既有 HTTP 写作和推理协议保持不变。
 
 模型文本推理、模型测试 SSE 和实时语音 WS 由入口传入同一应用实例的解密器。`model_service/realtime/__init__.py` 不加载目录或会话适配；具体消费者直接导入 `catalog.py` 与 `session.py`。语音来源校验读取当前装配的 CORS 配置，避免不同实例受全局配置影响。供应商密钥只在服务端适配边界解密，不进入公开事件或响应。
+
+生成 Driver、模型推理／测试／转录 Runner、Galgame ASR 与视觉验收／助手均显式接收解密器。Models Runner 还必须接收配置，禁止默认全局回退。`runtime/secrets.py` 只提供实例加密机制，不选择密钥；账号复核、准备、执行和结算仍归业务所有者。测试密文帮助函数限定在 `tests/credential_test_support.py`，生产包不提供旧运行时兼容转发。

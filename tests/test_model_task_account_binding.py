@@ -17,9 +17,11 @@ from studio.apps.model_service.storage.models.model_inference import (
 from studio.apps.model_service.storage.models.model_service import ModelProvider
 from studio.apps.model_service.storage.models.model_test import ModelTestTranscriptionTask
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.config.settings import get_settings as isolated_settings
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database, ServiceStorageError
 from studio.runtime.database.task_records import load_runner_task
+from studio.runtime.secrets import SecretCipher
 
 
 @pytest.fixture
@@ -83,6 +85,7 @@ def store(database, **options):
         active_statuses={"queued", "submitting", "pending", "processing"},
         task_subject="owned inference task",
         **options,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
 
 
@@ -196,7 +199,11 @@ async def test_concurrent_runner_claims_submit_once_and_settle_only_the_owned_ta
 
 
 async def test_transcription_recovery_uses_scoped_writes_and_never_resubmits(database):
-    runner = ModelTestTranscriptionRunner(database.sessions)
+    runner = ModelTestTranscriptionRunner(
+        database.sessions,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        settings=isolated_settings(),
+    )
     async with database.sessions(info={"owner_user_id": "beta"}) as session:
         assert await runner._load_task(session, "transcription-alpha") is None
         assert session.info["owner_user_id"] == "beta"
@@ -216,7 +223,11 @@ async def test_transcription_recovery_uses_scoped_writes_and_never_resubmits(dat
 async def test_inference_recovery_and_settlement_need_no_identity_database(database, tmp_path):
     from studio.apps.model_service.inference.runner import InferenceRunner
 
-    runner = InferenceRunner(database.sessions, settings=SimpleNamespace(runtime_path=tmp_path))
+    runner = InferenceRunner(
+        database.sessions,
+        settings=SimpleNamespace(runtime_path=tmp_path),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+    )
     for owner in ("alpha", "beta"):
         root = runner.storage.root(owner)
         (root / "inputs").mkdir(parents=True)

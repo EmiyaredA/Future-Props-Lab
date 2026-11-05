@@ -154,6 +154,8 @@
 - 模型与供应商差异在 `backend/studio/apps/model_service/providers/` 的适配边界内归一化。公共 REST/SSE、模型
   测试和调用日志契约保持供应商无关；供应商管理页面可以展示配置，但前端运行流程不得依赖
   供应商原始事件。
+- 生成 Driver、转录 Runner 和工坊模型适配显式接收解密器；Models Runner 必须接收配置，
+  不允许默认全局配置回退。旧 `app/runtime/` 已移除，生产代码不得导入旧运行时。
 - 图片/视频后台任务的状态转换由 `studio/apps/model_service/generation/driver.GenerationTaskDriver` 唯一编排；各功能
   只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
 - 媒体本地适配通过 `studio/deployment/media_modules.py` 逐模块登记可打包范围，不开放媒体存储或用例；

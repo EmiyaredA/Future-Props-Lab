@@ -8,8 +8,8 @@ from uuid import uuid4
 import httpx
 import pytest
 from sqlalchemy import delete
+from tests.credential_test_support import encrypt_secret
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.providers.temporary_media import TemporaryMediaError
@@ -27,6 +27,8 @@ from studio.apps.visual_workshop.website.generation_runner import (
     _safe_task_error,
 )
 from studio.config.settings import get_settings
+from studio.config.settings import get_settings as isolated_settings
+from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal
 
 
@@ -157,7 +159,11 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         temporary_calls.append((asset_id, kind, filename))
         return f"https://temp.sh/{kind}-{asset_id}"
 
-    runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
+    runner = VisualGenerationRunner(
+        session_factory=SessionLocal,
+        settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+    )
     monkeypatch.setattr(
         "studio.apps.model_service.generation.visual_submission.submit_generation_task", fake_create
     )
@@ -227,7 +233,11 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
     ) -> str:
         raise TemporaryMediaError("private upstream response")
 
-    runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
+    runner = VisualGenerationRunner(
+        session_factory=SessionLocal,
+        settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+    )
     monkeypatch.setattr(
         "studio.apps.model_service.generation.visual_submission.submit_generation_task", fake_create
     )
@@ -297,6 +307,7 @@ async def test_download_rejects_declared_size_and_mime(
         settings=small_settings,
         download_transport=httpx.MockTransport(too_large),
         session_factory=SessionLocal,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
     with pytest.raises(MaterializationError, match="文件大小"):
         await runner._download("https://cdn.example/result.png", tmp_path / "large")
@@ -312,6 +323,7 @@ async def test_download_rejects_declared_size_and_mime(
         download_transport=httpx.MockTransport(wrong_mime),
         session_factory=SessionLocal,
         settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
     with pytest.raises(MaterializationError, match="受支持"):
         await runner._download("https://cdn.example/result.png", tmp_path / "mime")
@@ -334,7 +346,11 @@ async def test_runner_recovery_and_concurrency_limit() -> None:
             session.add_all(rows)
             await session.commit()
 
-        runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
+        runner = VisualGenerationRunner(
+            session_factory=SessionLocal,
+            settings=get_settings(),
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        )
         await runner.recover()
         async with SessionLocal() as session:
             interrupted = await session.get(VisualGenerationTask, rows[0].id)
@@ -386,7 +402,11 @@ async def test_concurrent_claim_submits_a_queued_task_only_once(
             "studio.apps.model_service.generation.visual_submission.submit_generation_task",
             fake_submit,
         )
-        runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
+        runner = VisualGenerationRunner(
+            session_factory=SessionLocal,
+            settings=get_settings(),
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        )
         await asyncio.gather(runner._process_task(task.id), runner._process_task(task.id))
 
         async with SessionLocal() as session:
@@ -421,7 +441,11 @@ async def test_processing_result_completes_only_after_asset_is_saved(
             target.write_bytes(payload)
             return len(payload), "image", "image/png", ".png"
 
-        runner = VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings())
+        runner = VisualGenerationRunner(
+            session_factory=SessionLocal,
+            settings=get_settings(),
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        )
         monkeypatch.setattr(runner, "_download", fake_download)
         await runner.process_once()
 

@@ -1,10 +1,10 @@
 import asyncio
+from collections.abc import Callable
 from copy import deepcopy
 from time import monotonic
 
 from sqlalchemy import select, update
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.media_rendering.local.inspection import inspect_media, verify_video
@@ -27,7 +27,7 @@ from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 
 
-async def evaluate_ai(session, settings, run, transport=None):
+async def evaluate_ai(session, settings, run, transport=None, *, decrypt: Callable[[str], str]):
     pair = next(
         (
             (model, provider)
@@ -55,7 +55,7 @@ async def evaluate_ai(session, settings, run, transport=None):
     args = dict(
         kind=provider.kind,
         base_url=provider.base_url,
-        api_key=decrypt_secret(provider.api_key_ciphertext) if provider.api_key_ciphertext else "",
+        api_key=decrypt(provider.api_key_ciphertext) if provider.api_key_ciphertext else "",
         model=model.slug,
         temperature=0,
         max_tokens=6000,
@@ -101,9 +101,12 @@ class AcceptanceRunner(PollingTaskRunner):
         transport=None,
         actor_allowed=None,
         agent_executor=None,
+        *,
+        decrypt: Callable[[str], str],
     ):
         super().__init__()
         self.actor_allowed = actor_allowed
+        self.decrypt = decrypt
         self.agent_executor = agent_executor
         self.session_factory, self.settings, self.transport = (
             session_factory,
@@ -320,7 +323,10 @@ class AcceptanceRunner(PollingTaskRunner):
                             )
                 elif any(item["method"] == "ai" for item in snapshot["criteria"]):
                     parsed, usage, latency, provider_kind, model_slug = await self.fenced(
-                        identity, evaluate_ai(session, self.settings, run, self.transport)
+                        identity,
+                        evaluate_ai(
+                            session, self.settings, run, self.transport, decrypt=self.decrypt
+                        ),
                     )
                     execution_result = {
                         "kind": "model_api",

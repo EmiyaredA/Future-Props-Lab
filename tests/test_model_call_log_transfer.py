@@ -25,9 +25,11 @@ from studio.apps.model_service.storage.models.model_inference import (
     ModelInferenceAsset,
     ModelInferenceTask,
 )
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+from studio.runtime.secrets import SecretCipher
 
 PREFIX = INFERENCE.prefix
 
@@ -102,7 +104,11 @@ async def verify_recovery(target, owner, uncertain):
         async def forbidden_submit(_task):
             raise AssertionError("未知提交不得重发")
 
-        runner = InferenceRunner(database.sessions, settings=SimpleNamespace(runtime_path=target))
+        runner = InferenceRunner(
+            database.sessions,
+            settings=SimpleNamespace(runtime_path=target),
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        )
         runner.driver.submit = forbidden_submit
         await runner.recover()
         async with database.sessions(info={"owner_user_id": str(owner)}) as session:

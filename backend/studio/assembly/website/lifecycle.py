@@ -116,18 +116,34 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
                 queue_candidates=visual_queue_candidates,
                 session_factory=sessions,
                 settings=settings,
+                decrypt=lifespan_app.state.model_decrypt,
             ),
             AcceptanceRunner(
                 actor_allowed=acceptance_actor_allowed,
                 session_factory=sessions,
                 settings=settings,
+                decrypt=lifespan_app.state.model_decrypt,
             ),
             ModelTestGenerationRunner(
-                sessions, legacy_references=lifespan_app.state.model_generation_legacy_references
+                sessions,
+                legacy_references=lifespan_app.state.model_generation_legacy_references,
+                decrypt=lifespan_app.state.model_decrypt,
+                settings=settings,
             ),
-            InferenceRunner(sessions, local_runtime=local_runtime),
-            ModelTestTranscriptionRunner(sessions),
-            GalgameAsrRunner(session_factory=sessions, settings=settings),
+            InferenceRunner(
+                sessions,
+                local_runtime=local_runtime,
+                decrypt=lifespan_app.state.model_decrypt,
+                settings=settings,
+            ),
+            ModelTestTranscriptionRunner(
+                sessions, decrypt=lifespan_app.state.model_decrypt, settings=settings
+            ),
+            GalgameAsrRunner(
+                session_factory=sessions,
+                settings=settings,
+                decrypt=lifespan_app.state.model_decrypt,
+            ),
             GalgameAnnotationImportRunner(session_factory=sessions, settings=settings),
             GalgameVideoExportRunner(session_factory=sessions, settings=settings),
             GalgameVideoEditorHandoffRunner(session_factory=sessions, settings=settings),

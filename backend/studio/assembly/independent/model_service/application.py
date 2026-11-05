@@ -215,6 +215,7 @@ def create_app(
         settings,
         prepare_claim=partial(authority.prepare, "model"),
         terminal_settlement=settle,
+        decrypt=SecretCipher(settings.fpl_secrets_key).decrypt,
     )
     inference = InferenceRunner(
         database.sessions,
@@ -223,12 +224,14 @@ def create_app(
         settings=settings,
         prepare_claim=partial(authority.prepare, "inference"),
         terminal_settlement=settle,
+        decrypt=SecretCipher(settings.fpl_secrets_key).decrypt,
     )
     transcription = ModelTestTranscriptionRunner(
         database.sessions,
         settings,
         prepare_claim=partial(authority.prepare, "transcription"),
         terminal_settlement=settle,
+        decrypt=SecretCipher(settings.fpl_secrets_key).decrypt,
     )
     audit_runner = ModelAuditDelivery(database.sessions, audit)
     demo_installations = (
@@ -322,7 +325,9 @@ def create_app(
         else None
     )
     app.state.visual_generation_intake = VisualGenerationIntake(app.state)
-    app.state.visual_generation_runner = VisualGenerationRunner(app.state)
+    app.state.visual_generation_runner = VisualGenerationRunner(
+        app.state, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt
+    )
     app.state.visual_generation_results = VisualGenerationResults(app.state)
     app.state.visual_review_attempts = VisualReviewAttempts(
         database.sessions, settings, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt

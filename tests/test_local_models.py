@@ -19,6 +19,7 @@ from studio.apps.model_service.storage.models.local_models import (
     LocalModelInstallation,
     LocalModelOperation,
 )
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.schemas.local_models import (
     LocalModelActionIn,
     SpeechSynthesisParameters,
@@ -30,6 +31,7 @@ from studio.host.local_models.installer import Installer
 from studio.host.local_models.runtime import LocalRuntime
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal, app
 
 MODEL = "qwen3-tts-0.6b-base"
@@ -368,7 +370,12 @@ async def test_public_api_attach_synthesis_and_uninstall(manager, monkeypatch):
         response = await client.post("/v1/model-inference/tasks", json=body)
         assert response.status_code == 200, response.text
         task = response.json()
-        runner = InferenceRunner(SessionLocal, local_runtime=manager.runtime)
+        runner = InferenceRunner(
+            SessionLocal,
+            local_runtime=manager.runtime,
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+            settings=isolated_settings(),
+        )
         await runner.process(task["id"])
         result = (await client.get(f"/v1/model-inference/tasks/{task['id']}")).json()
         assert result["status"] == "completed", result

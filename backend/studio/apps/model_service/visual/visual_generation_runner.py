@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -73,7 +74,7 @@ class ProviderMedia:
 class VisualGenerationRunner(PollingTaskRunner):
     runner_name = "visual-provider-generation"
 
-    def __init__(self, state):
+    def __init__(self, state, *, decrypt: Callable[[str], str]):
         super().__init__()
         self.state = state
         self.sessions = state.database.sessions
@@ -88,6 +89,7 @@ class VisualGenerationRunner(PollingTaskRunner):
             prepare_claim=self.prepare_claim,
             claim_admission=claim,
             terminal_settlement=settle,
+            decrypt=decrypt,
         )
         self.driver = GenerationTaskDriver(
             store=self.store,

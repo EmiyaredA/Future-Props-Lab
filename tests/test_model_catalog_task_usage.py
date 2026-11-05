@@ -177,15 +177,10 @@ class MemoryCipher:
     "cipher_factory", [MemoryCipher, lambda: SecretCipher(Fernet.generate_key().decode())]
 )
 async def test_catalog_credential_adapter_is_replaceable_and_survives_component_recreation(
-    catalog, cipher_factory, monkeypatch
+    catalog, cipher_factory
 ):
-    from app.runtime import credentials
     from studio.contracts.model_service.schemas.model_service import ProviderIn
 
-    def unexpected_global_cipher(*_args):
-        raise AssertionError("catalog must use the supplied credential adapter")
-
-    monkeypatch.setattr(credentials, "encrypt_secret", unexpected_global_cipher)
     cipher = cipher_factory()
     async with catalog.sessions(info={"owner_user_id": "alpha"}) as session:
         service = ModelCatalogService(

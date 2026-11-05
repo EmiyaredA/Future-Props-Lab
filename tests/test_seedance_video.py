@@ -6,9 +6,9 @@ from uuid import uuid4
 import httpx
 import pytest
 from PIL import Image
+from tests.credential_test_support import encrypt_secret
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.inference.catalog import normalize_parameters
 from studio.apps.model_service.playground.generation import ModelTestGeneration
@@ -30,11 +30,13 @@ from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
 from studio.contracts.model_service.schemas.model_inference import InferenceTaskIn
 from studio.contracts.model_service.schemas.model_service import ProviderIn
 from studio.contracts.model_service.schemas.model_test import ModelTestVideoGenerationIn
 from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal
 
 V20 = "doubao-seedance-2-0-260128"
@@ -224,10 +226,20 @@ async def test_all_video_entry_points_inline_ark_audio_and_preserve_provider_neu
     monkeypatch.setattr(test_runner, "submit_generation_task", submit)
     monkeypatch.setattr(inference_runner, "submit_generation_task", submit)
     visual = visual_runner.VisualGenerationRunner(
-        session_factory=SessionLocal, settings=get_settings()
+        session_factory=SessionLocal,
+        settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
-    playground = test_runner.ModelTestGenerationRunner(SessionLocal)
-    inference = inference_runner.InferenceRunner(SessionLocal)
+    playground = test_runner.ModelTestGenerationRunner(
+        SessionLocal,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        settings=isolated_settings(),
+    )
+    inference = inference_runner.InferenceRunner(
+        SessionLocal,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        settings=isolated_settings(),
+    )
     monkeypatch.setattr(visual, "_asset_data_uri", data_uri)
     monkeypatch.setattr(visual, "_temporary_asset_url", forbidden_upload)
     monkeypatch.setattr(playground, "_asset_data_uri", data_uri)

@@ -40,6 +40,7 @@ from studio.apps.model_service.storage.service_models import (
 )
 from studio.apps.model_service.storage.task_records import task_fingerprint
 from studio.apps.model_service.transport.native_api import attach_native
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.agent_workbench.native import NativeLease
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
@@ -50,6 +51,7 @@ from studio.host.local_models.models_worker import ModelsWorker
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.sessions import Database
+from studio.runtime.secrets import SecretCipher
 
 MODEL = "qwen3-tts-0.6b-base"
 
@@ -142,6 +144,7 @@ async def case(tmp_path):
         local_runtime=broker,
         settings=settings,
         synthesis_scope=broker.foreground_synthesis,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
     broker.connect_inference(inference)
     app = FastAPI()
@@ -381,6 +384,7 @@ async def test_models_restart_settles_original_native_job_and_never_reruns(case)
             local_runtime=restarted,
             settings=case.settings,
             synthesis_scope=restarted.foreground_synthesis,
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
         )
         restarted.connect_inference(replacement)
         case.app.state.native_models = restarted

@@ -13,8 +13,10 @@ from studio.apps.model_service.storage.models.model_service import ModelEntry, M
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.config.settings import get_settings
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.task_execution import TaskExecutionInfo
 from studio.contracts.model_service.workflow_video import WorkflowVideoParameters
+from studio.runtime.secrets import SecretCipher
 from studio.runtime.time import utc_now
 from website_test_support import SessionLocal, app
 
@@ -207,6 +209,7 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
                 ),
                 session_factory=SessionLocal,
                 settings=get_settings(),
+                decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
             )
             await runner._process_task(task["id"])
             await runner._process_task(task["id"])

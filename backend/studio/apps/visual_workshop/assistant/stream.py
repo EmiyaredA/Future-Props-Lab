@@ -3,13 +3,12 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from uuid import uuid4
 
 import httpx
 from sqlalchemy import select, update
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.providers.agent import HttpAgentAdapter
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.visual_workshop.assistant.conversations import (
@@ -159,12 +158,13 @@ async def assistant_events(
     sessions,
     admission=None,
     transport_resolver,
+    decrypt: Callable[[str], str],
     approvals,
 ) -> AsyncIterator[bytes]:
     sequence = 0
     trace_id = str(uuid4())
     started = time.monotonic()
-    key = decrypt_secret(prepared.api_key_ciphertext) if prepared.api_key_ciphertext else ""
+    key = decrypt(prepared.api_key_ciphertext) if prepared.api_key_ciphertext else ""
     definition = build_visual_agent_definition(
         owner_user_id=prepared.owner_user_id,
         project_id=prepared.project_id,

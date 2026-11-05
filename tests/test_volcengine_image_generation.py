@@ -4,9 +4,9 @@ from uuid import uuid4
 
 import httpx
 import pytest
+from tests.credential_test_support import encrypt_secret
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.model_service.generation.driver import ImmediateGenerationResult
 from studio.apps.model_service.providers.volcengine_image import SEEDREAM_MODEL, generate_image

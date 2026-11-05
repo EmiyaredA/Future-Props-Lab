@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+from collections.abc import Callable
 from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
@@ -43,7 +44,7 @@ from studio.apps.model_service.storage.models.model_test import (
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
 )
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 
@@ -62,10 +63,11 @@ class ModelTestGenerationRunner(PollingTaskRunner):
     def __init__(
         self,
         session_factory: async_sessionmaker[AsyncSession],
-        settings: Settings | None = None,
+        settings: Settings,
         download_transport: httpx.AsyncBaseTransport | None = None,
         temporary_media_transport: httpx.AsyncBaseTransport | None = None,
         *,
+        decrypt: Callable[[str], str],
         legacy_references=None,
         prepare_claim=None,
         terminal_settlement=None,
@@ -73,7 +75,7 @@ class ModelTestGenerationRunner(PollingTaskRunner):
         super().__init__()
         self.zealman_monitor = ZealmanLiveMonitor()
         self.session_factory = session_factory
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.legacy_references = legacy_references
         self.terminal_settlement = terminal_settlement
         self.download_transport = download_transport
@@ -86,6 +88,7 @@ class ModelTestGenerationRunner(PollingTaskRunner):
             terminal_hook=self._add_log,
             prepare_claim=prepare_claim,
             terminal_settlement=terminal_settlement,
+            decrypt=decrypt,
         )
         self.task_driver = GenerationTaskDriver(
             store=self.task_store,

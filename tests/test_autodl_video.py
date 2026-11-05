@@ -8,9 +8,9 @@ from uuid import uuid4
 import httpx
 import pytest
 from pydantic import ValidationError
+from tests.credential_test_support import encrypt_secret
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.model_service.inference.catalog import normalize_parameters
 from studio.apps.model_service.playground.generation import ModelTestGeneration
 from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
@@ -30,10 +30,12 @@ from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 from studio.apps.visual_workshop.website.generation import VisualGeneration
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
 from studio.contracts.model_service.schemas.model_inference import InferenceTaskIn
 from studio.contracts.model_service.schemas.model_service import ProviderIn
 from studio.contracts.model_service.schemas.model_test import ModelTestVideoGenerationIn
+from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal
 
 
@@ -427,9 +429,21 @@ async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upl
     for module in (visual_submission, inference_module, test_module):
         monkeypatch.setattr(module, "submit_generation_task", submit)
     visual, test, inference = (
-        visual_module.VisualGenerationRunner(session_factory=SessionLocal, settings=get_settings()),
-        test_module.ModelTestGenerationRunner(SessionLocal),
-        inference_module.InferenceRunner(SessionLocal),
+        visual_module.VisualGenerationRunner(
+            session_factory=SessionLocal,
+            settings=get_settings(),
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        ),
+        test_module.ModelTestGenerationRunner(
+            SessionLocal,
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+            settings=isolated_settings(),
+        ),
+        inference_module.InferenceRunner(
+            SessionLocal,
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+            settings=isolated_settings(),
+        ),
     )
     for runner in (visual, test):
         monkeypatch.setattr(runner, "_asset_data_uri", inline)

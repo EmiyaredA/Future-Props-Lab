@@ -151,6 +151,7 @@ async def stream_message(
             sessions=request.app.state.database.sessions,
             transport_resolver=request.app.state.model_provider_transports.resolve,
             approvals=request.app.state.assistant_approvals,
+            decrypt=request.app.state.model_decrypt,
         ),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},

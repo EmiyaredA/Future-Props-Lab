@@ -18,8 +18,10 @@ from studio.apps.model_service.storage.models.model_test import (
     ModelTestGenerationTask,
 )
 from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.config.settings import get_settings as isolated_settings
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
+from studio.runtime.secrets import SecretCipher
 
 
 @pytest.fixture
@@ -102,7 +104,11 @@ async def test_unmigrated_legacy_reference_requires_an_explicit_recovery_adapter
         with pytest.raises(GenerationAssetError) as missing:
             await ModelTestGenerationAssets(session, "alpha", settings).backfill_status()
         assert missing.value.status == 503
-    runner = ModelTestGenerationRunner(database.sessions, settings)
+    runner = ModelTestGenerationRunner(
+        database.sessions,
+        settings,
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+    )
     try:
         with pytest.raises(ValueError, match="尚未转移"):
             await runner._asset_path(task_id, "legacy-library-id", "video")
@@ -138,7 +144,9 @@ async def test_generation_materialization_lost_ack_keeps_completed_result(instan
         monkeypatch.setattr(session, "commit", lost_acknowledgement)
         return session
 
-    runner = ModelTestGenerationRunner(sessions, settings)
+    runner = ModelTestGenerationRunner(
+        sessions, settings, decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt
+    )
 
     async def download(_url, target):
         target.write_bytes(b"synthetic-result")

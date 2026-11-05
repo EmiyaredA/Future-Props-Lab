@@ -9,7 +9,6 @@ from typing import Any, Protocol
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.model_service.generation.outcomes import (
     SUBMISSION_INTERRUPTED_MESSAGE,
     TaskClaimRejected,
@@ -72,6 +71,7 @@ class GenerationTaskStore:
         task_type: type[Any],
         active_statuses: Collection[str],
         task_subject: str,
+        decrypt: Callable[[str], str],
         terminal_hook: TerminalHook | None = None,
         claim_admission: ClaimAdmission | None = None,
         prepare_claim: PrepareClaim | None = None,
@@ -81,6 +81,8 @@ class GenerationTaskStore:
         self.task_type = task_type
         self.active_statuses = frozenset(active_statuses)
         self.task_subject = task_subject
+        # Assembly selects the key; the store decrypts only after account-bound claim checks.
+        self.decrypt = decrypt
         self.terminal_hook = terminal_hook
         self.claim_admission = claim_admission
         self.prepare_claim = prepare_claim
@@ -181,7 +183,7 @@ class GenerationTaskStore:
                 task,
                 owner_user_id=owner_user_id,
                 base_url=provider.base_url,
-                api_key=decrypt_secret(provider.api_key_ciphertext)
+                api_key=self.decrypt(provider.api_key_ciphertext)
                 if provider.api_key_ciphertext
                 else "",
             )

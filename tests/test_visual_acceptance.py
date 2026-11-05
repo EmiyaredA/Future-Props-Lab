@@ -9,13 +9,15 @@ import httpx
 import pytest
 from PIL import Image
 from sqlalchemy import delete
+from tests.credential_test_support import encrypt_secret
 
-from app.runtime.credentials import encrypt_secret
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 from studio.config.settings import get_settings
+from studio.config.settings import get_settings as isolated_settings
+from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal, app
 
 
@@ -219,9 +221,12 @@ def api_transport(*, invalid=False):
 
 
 async def process(client, base, run, **kwargs):
-    await AcceptanceRunner(**kwargs, session_factory=SessionLocal, settings=get_settings()).process(
-        run["id"]
-    )
+    await AcceptanceRunner(
+        **kwargs,
+        session_factory=SessionLocal,
+        settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+    ).process(run["id"])
     return (await client.get(f"{base}/acceptance/runs/{run['id']}")).json()
 
 
@@ -475,13 +480,20 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
     )
     assert cancelled.status_code == 200, cancelled.text
     await AcceptanceRunner(
-        transport=api_transport(), session_factory=SessionLocal, settings=get_settings()
+        transport=api_transport(),
+        session_factory=SessionLocal,
+        settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     ).process(queued["id"])
     assert (await client.get(f"{base}/acceptance/runs/{queued['id']}")).json()[
         "status"
     ] == "cancelled"
     interrupted = await start(client, base, "interrupted")
-    await AcceptanceRunner(session_factory=SessionLocal, settings=get_settings()).recover()
+    await AcceptanceRunner(
+        session_factory=SessionLocal,
+        settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+    ).recover()
     assert (await client.get(f"{base}/acceptance/runs/{interrupted['id']}")).json()[
         "status"
     ] == "failed"

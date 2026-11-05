@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from collections.abc import Callable
 from contextlib import nullcontext
 from dataclasses import asdict
 from uuid import uuid4
@@ -26,7 +27,6 @@ from studio.apps.model_service.storage.models.model_inference import (
     ModelInferenceAsset,
     ModelInferenceTask,
 )
-from studio.config.settings import get_settings
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 
@@ -63,7 +63,8 @@ class InferenceRunner(PollingTaskRunner):
         transport=None,
         local_runtime=None,
         *,
-        settings=None,
+        decrypt: Callable[[str], str],
+        settings,
         prepare_claim=None,
         terminal_settlement=None,
         synthesis_scope=None,
@@ -73,7 +74,7 @@ class InferenceRunner(PollingTaskRunner):
         self.local_runtime = local_runtime
         self.synthesis_scope = synthesis_scope or nullcontext
         self.terminal_settlement = terminal_settlement
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = InferenceStorage(self.settings)
         self.store = GenerationTaskStore(
             session_factory=session_factory,
@@ -83,6 +84,7 @@ class InferenceRunner(PollingTaskRunner):
             terminal_hook=add_log,
             prepare_claim=prepare_claim,
             terminal_settlement=terminal_settlement,
+            decrypt=decrypt,
         )
         self.driver = GenerationTaskDriver(
             store=self.store,

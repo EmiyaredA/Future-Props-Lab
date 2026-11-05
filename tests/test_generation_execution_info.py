@@ -9,7 +9,9 @@ from db.migrations.runner import connect_database
 from studio.apps.model_service.generation.driver import GenerationTaskStore
 from studio.apps.visual_workshop.generation_common import generation_task_out
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.task_execution import TaskExecutionInfo
+from studio.runtime.secrets import SecretCipher
 from studio.runtime.time import utc_now
 
 
@@ -65,6 +67,7 @@ async def test_upgrade_preserves_tasks_and_execution_info_survives_store_reload(
         task_type=VisualGenerationTask,
         active_statuses={"pending", "processing"},
         task_subject="test",
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
     info = TaskExecutionInfo(
         phase="running", step=8, total_steps=10, node_id="7", updated_at=utc_now()

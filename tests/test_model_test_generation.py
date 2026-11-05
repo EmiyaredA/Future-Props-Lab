@@ -7,6 +7,8 @@ import pytest
 
 from studio.apps.model_service.playground.generation_runner import ModelTestGenerationRunner
 from studio.apps.model_service.providers._senseaudio import ProviderTaskStatus
+from studio.config.settings import get_settings as isolated_settings
+from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal, app
 
 
@@ -81,7 +83,11 @@ async def test_image_generation_test_is_created_and_managed_through_v1_api(
         )
         assert blocked.status_code == 409
 
-        runner = ModelTestGenerationRunner(SessionLocal)
+        runner = ModelTestGenerationRunner(
+            SessionLocal,
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+            settings=isolated_settings(),
+        )
         await runner.process_once()
         await runner.process_once()
 
@@ -212,7 +218,11 @@ async def test_video_generation_accepts_uploaded_reference_audio_and_video(
         assert task["request_payload"]["video_asset_ids"] == [video_asset["id"]]
         assert "data:" not in created.text
 
-        runner = ModelTestGenerationRunner(SessionLocal)
+        runner = ModelTestGenerationRunner(
+            SessionLocal,
+            decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+            settings=isolated_settings(),
+        )
         await runner.process_once()
         content = submitted["video_content"]
         assert content[0] == {"type": "text", "text": "保留视频运镜并跟随音乐节奏"}

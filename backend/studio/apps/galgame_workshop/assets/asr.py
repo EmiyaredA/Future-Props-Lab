@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable
 
 import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.runtime.credentials import decrypt_secret
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.galgame_workshop.assets.asr_records import AsrRecords, transcription_task_out
@@ -157,12 +157,15 @@ class GalgameAsrRunner(PollingTaskRunner):
         session_factory: async_sessionmaker[AsyncSession],
         settings: Settings,
         transport: httpx.AsyncBaseTransport | None = None,
+        *,
+        decrypt: Callable[[str], str],
     ) -> None:
         super().__init__()
         self.session_factory = session_factory
         self.settings = settings
         self.storage = AssetStorage(self.settings)
         self.transport = transport
+        self.decrypt = decrypt
 
     async def _load_task(
         self, session: AsyncSession, task_id: str
@@ -260,7 +263,7 @@ class GalgameAsrRunner(PollingTaskRunner):
                 task.revision += 1
                 metadata.transcript_status = "running"
                 base_url = provider.base_url.rstrip("/")
-                api_key = decrypt_secret(provider.api_key_ciphertext)
+                api_key = self.decrypt(provider.api_key_ciphertext)
                 model_slug = task.model_slug
                 language = task.language
                 filename = asset.original_filename
