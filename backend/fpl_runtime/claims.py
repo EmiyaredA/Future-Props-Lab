@@ -8,6 +8,7 @@ from uuid import uuid4
 
 import jwt
 
+from .approved_operations import valid_request_sha256
 from .cloud_authority import is_desktop_upgrade
 
 ISSUER = "fpl-identity"
@@ -72,7 +73,9 @@ class Actor:
                 raise ValueError("API Key 归因元数据无效")
 
 
-def issue_context(actor: Actor, *, service, method, path, private_key, key_id, now=None):
+def issue_context(
+    actor: Actor, *, service, method, path, private_key, key_id, now=None, request_sha256=None
+):
     from .catalog import service_by_id
 
     service_by_id(service)
@@ -106,10 +109,26 @@ def issue_context(actor: Actor, *, service, method, path, private_key, key_id, n
             else {}
         ),
     }
+    if request_sha256 is not None:
+        if not valid_request_sha256(request_sha256):
+            raise ValueError("请求摘要无效")
+        claims["request_sha256"] = request_sha256
     return jwt.encode(claims, private_key, algorithm="EdDSA", headers={"kid": key_id})
 
 
 def verify_context(token, *, service, method, path, public_key, allow_expired=False):
+    actor, _ = verify_request_context(
+        token,
+        service=service,
+        method=method,
+        path=path,
+        public_key=public_key,
+        allow_expired=allow_expired,
+    )
+    return actor
+
+
+def verify_request_context(token, *, service, method, path, public_key, allow_expired=False):
     claims = jwt.decode(
         token,
         public_key,
@@ -143,7 +162,10 @@ def verify_context(token, *, service, method, path, public_key, allow_expired=Fa
     desktop_ticket = claims.get("desktop_ticket_sha256")
     if (desktop_ticket is not None) != is_desktop_upgrade(service, method, path):
         raise jwt.InvalidTokenError("桌面票据不属于此请求")
-    return Actor(
+    checksum = claims.get("request_sha256")
+    if checksum is not None and not valid_request_sha256(checksum):
+        raise jwt.InvalidTokenError("请求摘要无效")
+    actor = Actor(
         user_id=claims["sub"],
         purpose=claims.get("purpose", "studio"),
         platform_role=claims["role"],
@@ -158,3 +180,4 @@ def verify_context(token, *, service, method, path, public_key, allow_expired=Fa
         local=claims["local"],
         reauthenticated_at=claims.get("reauthenticated_at"),
     )
+    return actor, checksum

@@ -76,7 +76,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
     identity = LiveAuthorization(service="amadeus", credential=credential, transport=transport)
     host = AmadeusHost(database, identity) if native_options is not None else None
     file_locks = WeakValueDictionary()
-    actions = ActionExecution(database, identity, file_locks)
+    actions = ActionExecution(database, identity, capabilities, file_locks)
 
     @asynccontextmanager
     async def lifespan(_app):

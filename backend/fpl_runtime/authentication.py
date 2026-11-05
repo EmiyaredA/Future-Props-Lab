@@ -4,7 +4,8 @@ import jwt
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import JSONResponse
 
-from .claims import HEADER, verify_context
+from .approved_request_body import verified_receive
+from .claims import HEADER, verify_request_context
 
 
 class SignedIdentity:
@@ -27,7 +28,7 @@ class SignedIdentity:
             return
         token = Headers(scope=scope).get(HEADER, "")
         try:
-            actor = verify_context(
+            actor, checksum = verify_request_context(
                 token,
                 service=self.service,
                 method=scope["method"],
@@ -41,6 +42,10 @@ class SignedIdentity:
                 headers={"Cache-Control": "no-store"},
             )(scope, receive, send)
             return
+        if checksum is not None:
+            receive = await verified_receive(scope, receive, send, checksum)
+            if receive is None:
+                return
         scope = dict(scope)
         scope["state"] = {
             **scope.get("state", {}),

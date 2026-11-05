@@ -7,6 +7,8 @@ from .amadeus_skills import skill_pin_grant
 from .annotation_assets import audio_asset_grant
 from .annotation_task_sources import task_read_grant, task_upload_grant
 from .annotation_transcription import segment_grant
+from .approved_operations import PURPOSE as APPROVED_OPERATION
+from .approved_operations import approved_source
 from .automation_manifest import automation_manifest
 from .galgame_annotation_source import source_grant as galgame_annotation_grant
 from .galgame_asr import asr_model_grant
@@ -61,6 +63,7 @@ class RequestGrant:
     target_service: str
     target_method: str
     target_path: str
+    target_sha256: str | None = None
 
 
 def _automation_lookup(grant):
@@ -199,6 +202,18 @@ def target_permission_path(grant):
 
 
 def permitted(grant, catalog):
+    if grant.target_sha256 is not None or grant.purpose == APPROVED_OPERATION:
+        if not approved_source(grant):
+            return False
+        source = catalog.match(grant.source_method, grant.source_path)
+        destination = catalog.match(grant.target_method, grant.target_path)
+        return (
+            source is not None
+            and source.service == "amadeus"
+            and destination is not None
+            and destination.service == grant.target_service
+            and f"{grant.target_method} {destination.path}" in automation_manifest()["operations"]
+        )
     if grant.caller == "agent-runtime" and agent_review_grant(grant):
         return True
     original = catalog.match(grant.source_method, grant.source_path)

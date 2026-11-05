@@ -60,8 +60,9 @@ class DelegationRequest(BaseModel):
     source_method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"]
     source_path: str = Field(max_length=4096)
     target_service: str = Field(max_length=64)
-    target_method: Literal["GET", "POST"]
+    target_method: Literal["GET", "POST", "PATCH", "PUT", "DELETE"]
     target_path: str = Field(max_length=4096)
+    target_sha256: str | None = Field(default=None, pattern=r"^[a-f0-9]{64}$")
     assertion: str = Field(min_length=1, max_length=8192)
 
 
@@ -195,6 +196,7 @@ async def authorize_delegation(app, body, credential):
         path=body.target_path,
         private_key=options["private_key"],
         key_id=options["key_id"],
+        request_sha256=grant.target_sha256,
     )
 
 
