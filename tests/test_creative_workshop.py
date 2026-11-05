@@ -9,7 +9,6 @@ from fastapi import UploadFile
 from sqlalchemy import select
 from tests.account_fixtures import account_record
 
-from app.capabilities.identity.principal import StudioPrincipal
 from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
 from app.console.creative_workshop.files import CreativeFileError, resolve_file
 from app.console.creative_workshop.install import CreativeInstaller
@@ -28,6 +27,7 @@ from app.integrations.models import (
     ToolApiIntegration,
 )
 from app.runtime.db import SessionLocal
+from studio.contracts.identity.principal import StudioPrincipal
 
 
 @pytest.fixture(autouse=True)

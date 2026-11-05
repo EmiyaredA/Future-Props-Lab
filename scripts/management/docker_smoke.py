@@ -14,8 +14,8 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from fpl_deployment.gateway import render_gateway
-from fpl_runtime.routing import RouteCatalog
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.deployment.gateway import render_gateway
 
 ROOT = Path(__file__).resolve().parents[2]
 

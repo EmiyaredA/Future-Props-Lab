@@ -12,8 +12,8 @@ from app.llm.inference.text import events
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import TextDelta
 from app.llm.schemas.model_inference import InferenceTextIn
-from app.runtime.orm_base import Base
-from fpl_runtime.database import Database
+from studio.runtime.database.orm_base import Base
+from studio.runtime.database.sessions import Database
 
 
 def test_model_execution_modules_do_not_import_the_monolith_session_factory():

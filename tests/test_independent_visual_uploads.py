@@ -9,12 +9,12 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_independent_project_catalog import ORIGIN, authorize
 
-from fpl_assets.deletions import FileCleanup
-from fpl_runtime.capability_client import CapabilityClient
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_visual.application import create_app
-from fpl_visual.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.deletions import FileCleanup
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.visual_workshop.application import create_app
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityClient
 
 PROJECTS = "/v1/visual-workshop/projects"
 
@@ -185,7 +185,7 @@ async def test_visual_uploads_recover_exact_bytes_and_rollback_competing_canvas(
         assert rejected.status_code == 401 and not authorization.revoke_on_seal, rejected.text
         await visual.state.reference_delivery.process_once()
         async with visual.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
-            from fpl_visual.projects import Projects
+            from studio.apps.visual_workshop.projects import Projects
 
             actual = await Projects(session, case.viewer).canvas(created.json()["id"])
             assert actual.model_dump(mode="json") == before

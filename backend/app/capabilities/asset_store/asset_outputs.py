@@ -7,7 +7,7 @@ from app.capabilities.asset_store.models import (
 )
 from app.capabilities.asset_store.policy import display_name_without_original_extension
 from app.capabilities.asset_store.schemas.files import VisualAssetFolderOut, VisualAssetOut
-from app.runtime.time import iso_utc
+from studio.runtime.time import iso_utc
 
 
 class AssetReferenceView(Protocol):

@@ -12,16 +12,20 @@ root = Path(os.environ["MANAGEMENT_TEST_ROOT"])
 identity_root, management_root = root / "identity", root / "management"
 os.environ["FPL_CONFIG_FILE"] = str(root / "absent.toml")
 os.environ["FPL_DATABASE_PATH"] = str(identity_root / "service.db")
-from fpl_identity.accounts import create_account  # noqa: E402
-from fpl_identity.application import create_app as identity_app  # noqa: E402
-from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS  # noqa: E402
-from fpl_management.application import create_app  # noqa: E402
-from fpl_management.migrations.registry import MIGRATIONS  # noqa: E402
-from fpl_management.models import NativeJob  # noqa: E402
-from fpl_runtime.claims import HEADER  # noqa: E402
-from fpl_runtime.identity_client import LiveAuthorization  # noqa: E402
-from fpl_runtime.migrations import apply, check  # noqa: E402
-from fpl_runtime.routing import RouteCatalog  # noqa: E402
+from studio.apps.identity.accounts import create_account  # noqa: E402
+from studio.apps.identity.clients.authorization import LiveAuthorization  # noqa: E402
+from studio.apps.identity.storage.migrations.registry import (  # noqa: E402
+    MIGRATIONS as IDENTITY_MIGRATIONS,  # noqa: E402
+)
+from studio.apps.management.storage.migrations.registry import MIGRATIONS  # noqa: E402
+from studio.apps.management.storage.service_models import NativeJob  # noqa: E402
+from studio.assembly.independent.identity.application import (  # noqa: E402
+    create_app as identity_app,  # noqa: E402
+)
+from studio.assembly.independent.management.application import create_app  # noqa: E402
+from studio.contracts.gateway.routing import RouteCatalog  # noqa: E402
+from studio.contracts.identity.claims import HEADER  # noqa: E402
+from studio.runtime.database.migrations import apply, check  # noqa: E402
 
 assert "app.main" not in sys.modules and "app.orm" not in sys.modules
 assert not any(name.startswith("app.apps.") or name.startswith("app.llm.") for name in sys.modules)

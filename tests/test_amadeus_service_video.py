@@ -6,13 +6,13 @@ import httpx
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from fpl_amadeus.application import create_app as create_amadeus
-from fpl_amadeus.migrations.registry import MIGRATIONS as AMADEUS
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_video.application import PROJECTS
-from fpl_video.application import create_app as create_video
-from fpl_video.migrations.registry import MIGRATIONS as VIDEO
+from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS as AMADEUS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS as VIDEO
+from studio.assembly.independent.amadeus.application import create_app as create_amadeus
+from studio.assembly.independent.video_editor.application import PROJECTS
+from studio.assembly.independent.video_editor.application import create_app as create_video
+from studio.runtime.database.migrations import apply
 
 
 async def test_video_batch_receipt_and_stale_revision_are_mapped_to_approved_action(

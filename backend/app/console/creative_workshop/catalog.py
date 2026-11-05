@@ -9,7 +9,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
-from app.capabilities.identity.principal import StudioPrincipal
 from app.console.creative_workshop.archives import archives
 from app.console.creative_workshop.authors import authors
 from app.console.creative_workshop.files import (
@@ -30,11 +29,12 @@ from app.console.creative_workshop.schemas import (
 from app.console.creative_workshop.sources import MemoryIncoming, sources
 from app.integrations.schemas import ToolApiCreateIn
 from app.runtime.config import get_settings
-from app.runtime.ids import new_id
 from app.runtime.image_sizes import ThumbnailSize
 from app.runtime.outbound_urls import normalize_integration_http_url
 from app.runtime.raster import derived_thumbnail
-from app.runtime.time import iso_utc, utc_now
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.ids import new_id
+from studio.runtime.time import iso_utc, utc_now
 
 KIND_VALUES = {"tool_api", "mcp", "skill", "bundle"}
 SENSITIVE_KEYS = {

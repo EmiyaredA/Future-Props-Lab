@@ -75,7 +75,7 @@ Web 按 Principal 的有效权限显示复制入口，创建个人笔记仍调�
 
 ## 代码入口
 
-1. `backend/app/capabilities/identity/principal.py`
-2. `backend/app/capabilities/identity/permissions.py`
-3. `backend/app/capabilities/identity/route_permissions.py`
-4. `backend/app/apps/thought_workshop/publication/access.py`
+1. `backend/studio/contracts/identity/principal.py`
+2. `backend/studio/contracts/identity/permissions.py`
+3. `backend/studio/contracts/identity/route_permissions.py`
+4. `backend/studio/apps/thought_workshop/publication/access.py`

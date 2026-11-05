@@ -69,6 +69,6 @@ flowchart TD
 
 ## 代码入口
 
-1. `backend/app/apps/director_desk/projects.py`
+1. `backend/studio/apps/director_desk/projects.py`
 2. `web/src/features/director-desk/editor/animation`
 3. `web/src/features/director-desk/editor/automation`

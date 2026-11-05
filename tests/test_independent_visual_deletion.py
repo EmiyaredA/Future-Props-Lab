@@ -7,14 +7,14 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_independent_project_catalog import authorize
 
-from fpl_assets.deletions import FileCleanup
-from fpl_assets.references import AssetReferences
-from fpl_runtime.asset_references import ReferenceUpdate
-from fpl_runtime.capability_client import CapabilityClient
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_visual.application import create_app
-from fpl_visual.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.deletions import FileCleanup
+from studio.apps.asset_library.references.references import AssetReferences
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.visual_workshop.application import create_app
+from studio.contracts.asset_library.references import ReferenceUpdate
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityClient
 
 PROJECTS = "/v1/visual-workshop/projects"
 FILES = "/v1/files"

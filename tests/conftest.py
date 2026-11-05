@@ -28,7 +28,6 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
     if request.node.get_closest_marker("real_auth") or "app.main" not in sys.modules:
         yield
         return
-    from app.capabilities.identity.principal import StudioPrincipal
     from app.console.models import User
     from app.deps import SessionDep, require_studio_auth
     from app.llm.models import ModelCatalogState
@@ -36,6 +35,7 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
     from app.main import app
     from app.orm import bind_owner
     from app.runtime.db import SessionLocal
+    from studio.contracts.identity.principal import StudioPrincipal
 
     async with SessionLocal() as seed:
         if await seed.get(User, "test-user") is None:
@@ -93,11 +93,11 @@ def explicit_thought_identity_adapter():
     if "app.main" not in sys.modules:
         yield
         return
-    from app.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
     from app.runtime.db import SessionLocal
+    from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
 
     previous = dict(SessionLocal.kw.get("info") or {})
-    from app.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
+    from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 
     SessionLocal.configure(
         info={

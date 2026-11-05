@@ -12,22 +12,22 @@ from tests.test_community_asset_protocol import scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 from tests.test_visual_node_review_service import review_mesh
 
-from app.capabilities.agents.harness.contracts import ModelTextDelta, ModelTurnEnd, Usage
 from app.llm.models import LlmCallLog, ModelEntry
-from fpl_models.assistant_model_http import router
-from fpl_models.assistant_model_runs import AssistantModelRuns
-from fpl_runtime.capability_client import CapabilityDenied
-from fpl_runtime.claims import HEADER
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.project_errors import ProjectResourceError
-from fpl_runtime.visual_assistant import MODEL_RUN_PURPOSE, SOURCE
-from fpl_runtime.visual_assistant_model import (
+from studio.apps.model_service.assistant_model_runs import AssistantModelRuns
+from studio.apps.model_service.transport.assistant_model_http import router
+from studio.apps.visual_workshop.assistant.assistant_model_client import AssistantModelClient
+from studio.contracts.agent_runtime.dialogue import ModelTextDelta, ModelTurnEnd, Usage
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.visual_workshop.visual_assistant import MODEL_RUN_PURPOSE, SOURCE
+from studio.contracts.visual_workshop.visual_assistant_model import (
     AssistantRound,
     AssistantRunSettle,
     AssistantRunStart,
     RunScope,
 )
-from fpl_visual.assistant_model_client import AssistantModelClient
+from studio.runtime.http.capability_client import CapabilityDenied
+from studio.runtime.project_errors import ProjectResourceError
 
 
 async def test_visual_assistant_model_round_receipts_are_owned_and_replay_exactly(
@@ -49,8 +49,10 @@ async def test_visual_assistant_model_round_receipts_are_owned_and_replay_exactl
             yield ModelTextDelta(" shot")
             yield ModelTurnEnd(usage=Usage(prompt_tokens=5, completion_tokens=8, total_tokens=13))
 
-    monkeypatch.setattr("fpl_models.assistant_model_runs.decrypt_secret", lambda _: "isolated-key")
-    monkeypatch.setattr("fpl_models.assistant_model_runs.HttpAgentAdapter", Adapter)
+    monkeypatch.setattr(
+        "studio.apps.model_service.assistant_model_runs.decrypt_secret", lambda _: "isolated-key"
+    )
+    monkeypatch.setattr("studio.apps.model_service.assistant_model_runs.HttpAgentAdapter", Adapter)
     async with review_mesh(case, tmp_path) as (visual, _send, _faults), visual() as app:
         models = case.mesh.apps["models"]
         database = models.state.database
@@ -165,7 +167,9 @@ async def test_visual_assistant_model_round_receipts_are_owned_and_replay_exactl
                 raise asyncio.CancelledError
                 yield  # pragma: no cover
 
-        monkeypatch.setattr("fpl_models.assistant_model_runs.HttpAgentAdapter", Unknown)
+        monkeypatch.setattr(
+            "studio.apps.model_service.assistant_model_runs.HttpAgentAdapter", Unknown
+        )
         interrupted = round_request.model_copy(update=another)
         actor = SimpleNamespace(user_id=case.viewer)
         prepared = await attempts.prepare_round(actor, interrupted)

@@ -9,11 +9,11 @@ from pptx import Presentation
 from tests.migration_fixtures import apply_migrations
 from tests.presentation_helpers import sample_document
 
-from app.apps.presentation_workshop.pptx_export import write_pptx
-from app.apps.presentation_workshop.schemas.document import PresentationDocument
 from app.main import app
 from db.migrations import runner
 from db.migrations.runner import connect_database
+from studio.apps.presentation_workshop.pptx_export import write_pptx
+from studio.apps.presentation_workshop.schemas.document import PresentationDocument
 
 
 def test_v3_migration_preserves_content_order_and_revisions(tmp_path, monkeypatch):
@@ -114,7 +114,7 @@ def test_hidden_group_members_and_bound_edges_are_excluded_from_export(tmp_path)
 def test_native_background_gradient_text_styles_and_links_round_trip(tmp_path):
     from pptx.oxml.ns import qn
 
-    from app.apps.presentation_workshop.exchange.pptx_import import read_pptx
+    from studio.apps.presentation_workshop.exchange.pptx_import import read_pptx
 
     doc = sample_document().model_dump()
     page = doc["slides"][0]
@@ -201,8 +201,8 @@ async def test_v3_preflight_cas_and_fragment_animation_is_not_lost():
 def test_hidden_media_does_not_require_reading_its_file(tmp_path):
     from pathlib import Path
 
-    from app.apps.presentation_workshop.exports import build_export
-    from app.apps.presentation_workshop.schemas.document import PresentationProjectOut
+    from studio.apps.presentation_workshop.exports import build_export
+    from studio.apps.presentation_workshop.schemas.document import PresentationProjectOut
 
     document = sample_document().model_dump()
     element = document["slides"][0]["elements"][0]

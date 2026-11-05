@@ -10,14 +10,14 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete
 
-from app.apps.visual_workshop.acceptance.runner import AcceptanceRunner
-from app.apps.visual_workshop.models import VisualGenerationTask
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.llm.models import ModelEntry, ModelProvider
 from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 
 
 @pytest.fixture
@@ -482,8 +482,8 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
     assert (await client.get(f"{base}/acceptance/runs/{interrupted['id']}")).json()[
         "status"
     ] == "failed"
-    from app.apps.visual_workshop.acceptance.nodes import NodeAcceptance
-    from app.apps.visual_workshop.acceptance.project_access import AcceptanceError
+    from studio.apps.visual_workshop.acceptance.nodes import NodeAcceptance
+    from studio.apps.visual_workshop.acceptance.project_access import AcceptanceError
 
     async with SessionLocal() as session:
         with pytest.raises(AcceptanceError) as failure:
@@ -498,14 +498,14 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
 async def test_agent_task_report_and_scoped_media_with_fake_executor(
     client, video, monkeypatch, kind
 ):
-    from app.apps.visual_workshop.acceptance.execution import agents
-    from app.apps.visual_workshop.acceptance.execution.task_tools import MediaTools
+    from studio.apps.visual_workshop.acceptance.execution import agents
+    from studio.apps.visual_workshop.acceptance.execution.task_tools import MediaTools
 
     async def available(*_):
         return True, "已连接"
 
     monkeypatch.setattr(agents, "probe", available)
-    monkeypatch.setattr("app.apps.visual_workshop.acceptance.catalog.probe", available)
+    monkeypatch.setattr("studio.apps.visual_workshop.acceptance.catalog.probe", available)
     prefix = "codex" if kind == "codex" else "claude"
     monkeypatch.setattr(get_settings(), f"fpl_acceptance_{prefix}_executable", "/fake/agent")
     monkeypatch.setattr(get_settings(), f"fpl_acceptance_{prefix}_user_ids", "test-user")

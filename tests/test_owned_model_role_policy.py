@@ -11,20 +11,25 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from app.capabilities.identity.errors import AccountError
 from app.llm.catalog.template_reconciliation import apply_template
 from app.llm.models import ModelCatalogState, ModelEntry, ModelInferenceTask, ModelProvider
 from app.llm.schemas.model_templates import RoleModelTemplateIn
 from app.runtime.credentials import decrypt_secret
-from fpl_models.defaults import OwnedCatalogDefaults
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS, AccountDefaults, RoleTemplate
-from fpl_models.provisioning import CatalogProvisioning
-from fpl_models.task_usage import OwnedCatalogTaskUsage
-from fpl_models.templates import RoleTemplates, initialize_account_catalog
-from fpl_runtime.catalog_events import CatalogDelivery
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
+from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
+from studio.apps.model_service.defaults import OwnedCatalogDefaults
+from studio.apps.model_service.provisioning import CatalogProvisioning
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import (
+    ACCOUNT_MODELS,
+    MODELS,
+    AccountDefaults,
+    RoleTemplate,
+)
+from studio.apps.model_service.templates import RoleTemplates, initialize_account_catalog
+from studio.contracts.identity.errors import AccountError
+from studio.contracts.model_service.catalog_events import CatalogDelivery
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 def policy(revision=0, *, name="User policy", key="synthetic-role-secret", clear=False):
@@ -323,7 +328,7 @@ def test_owned_role_policy_imports_no_recovery_database_or_foreign_orm(tmp_path)
         [
             sys.executable,
             "-c",
-            "import sys; import fpl_models.templates; "
+            "import sys; import studio.apps.model_service.templates; "
             "assert 'app.runtime.db' not in sys.modules; "
             "assert not any(n.startswith(('app.console.models', 'app.apps.')) "
             "for n in sys.modules)",

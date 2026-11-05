@@ -18,19 +18,23 @@ from tests.test_independent_project_catalog import ORIGIN, authorize
 
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.media_rendering.render_capacity import RenderCapacity
-from fpl_galgame.application import create_app as create_galgame
-from fpl_galgame.migrations.registry import MIGRATIONS as GALGAME_MIGRATIONS
-from fpl_rendering import galgame_capacity_http
-from fpl_rendering.application import create_app as create_rendering
-from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
-from fpl_rendering.settings import RenderingSettings
-from fpl_runtime.capability_client import CapabilityClient
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.thought_archives import ArchiveAuthenticator
-from fpl_runtime.video_snapshot import ARCHIVE_DOMAIN
-from fpl_video.application import create_app as create_video
-from fpl_video.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
+from studio.apps.galgame_workshop.storage.migrations.registry import (
+    MIGRATIONS as GALGAME_MIGRATIONS,
+)
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.media_rendering.settings import RenderingSettings
+from studio.apps.media_rendering.storage.migrations.registry import (
+    MIGRATIONS as RENDERING_MIGRATIONS,
+)
+from studio.apps.media_rendering.transport import galgame_capacity_http
+from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
+from studio.assembly.independent.galgame_workshop.application import create_app as create_galgame
+from studio.assembly.independent.media_rendering.application import create_app as create_rendering
+from studio.assembly.independent.video_editor.application import create_app as create_video
+from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
+from studio.contracts.video_editor.video_snapshot import ARCHIVE_DOMAIN
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityClient
 
 PROJECTS = "/v1/galgame-workshop/projects"
 VIDEO_PROJECTS = "/v1/video-editor/projects"

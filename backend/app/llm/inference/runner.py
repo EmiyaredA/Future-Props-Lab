@@ -26,8 +26,8 @@ from app.llm.providers.local_qwen import synthesize
 from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.task_outcomes import NativeSubmissionUncertain
 from app.runtime.config import get_settings
-from app.runtime.polling_runner import PollingTaskRunner
-from app.runtime.time import utc_now
+from studio.runtime.tasks.polling import PollingTaskRunner
+from studio.runtime.time import utc_now
 
 
 def add_log(session, row):

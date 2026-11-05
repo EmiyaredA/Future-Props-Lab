@@ -7,28 +7,24 @@ from pathlib import Path
 
 import httpx
 
-from fpl_assets.migration_editing_scopes import DATASET, PREFIX, ProjectScopePage
-from fpl_assets.migration_video_outputs import DATASET as OUTPUT_DATASET
-from fpl_assets.migration_video_outputs import PREFIX as OUTPUT_PREFIX
-from fpl_assets.migration_video_outputs import LegacyOutputPage
-from fpl_motion.migration_application import PREFIX as MOTION_PREFIX
-from fpl_motion.migration_records import DATASETS as MOTION_DATASETS
-from fpl_runtime.editing_artifacts import (
+from studio.apps.asset_library.migration_editing_scopes import DATASET, PREFIX, ProjectScopePage
+from studio.apps.asset_library.migration_video_outputs import DATASET as OUTPUT_DATASET
+from studio.apps.asset_library.migration_video_outputs import PREFIX as OUTPUT_PREFIX
+from studio.apps.asset_library.migration_video_outputs import LegacyOutputPage
+from studio.apps.motion_compositor.storage.migration_records import DATASETS as MOTION_DATASETS
+from studio.apps.video_editor.storage.migration_records import DATASETS as VIDEO_DATASETS
+from studio.assembly.independent.motion_compositor.maintenance import PREFIX as MOTION_PREFIX
+from studio.assembly.independent.video_editor.maintenance import PREFIX as VIDEO_PREFIX
+from studio.contracts.management.editing_artifacts import (
     MOTION_DATASET,
     VIDEO_DATASET,
     MotionRenderPage,
     VideoDerivativePage,
     file_receipt,
 )
-from fpl_runtime.editing_artifacts import (
-    MOTION_PREFIX as MOTION_ARTIFACT_PREFIX,
-)
-from fpl_runtime.editing_artifacts import (
-    VIDEO_PREFIX as VIDEO_ARTIFACT_PREFIX,
-)
-from fpl_runtime.migration_batches import BatchReceipt, MigrationPlan
-from fpl_video.migration_application import PREFIX as VIDEO_PREFIX
-from fpl_video.migration_records import DATASETS as VIDEO_DATASETS
+from studio.contracts.management.editing_artifacts import MOTION_PREFIX as MOTION_ARTIFACT_PREFIX
+from studio.contracts.management.editing_artifacts import VIDEO_PREFIX as VIDEO_ARTIFACT_PREFIX
+from studio.contracts.management.migration_batches import BatchReceipt, MigrationPlan
 
 from .migrate_assets import verify_originals as verify_originals
 from .migration_transfer import DatasetTransfer, loopback, pages, project_datasets, transfer

@@ -9,10 +9,11 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from studio.contracts.agent_runtime.definitions import DEFINITIONS as DEFINITIONS
+from studio.contracts.agent_runtime.definitions import AgentId as AgentId
+
 from .codex_profile import AUTH_ARGS, CodexLoginRequired, profile_environment, profile_path
 from .conversation import codex_models, probe_codex
-from .definitions import DEFINITIONS as DEFINITIONS
-from .definitions import AgentId as AgentId
 from .transport import CliError, _stop, environment
 
 logger = logging.getLogger(__name__)

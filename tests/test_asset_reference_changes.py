@@ -8,11 +8,16 @@ from tests.test_asset_reference_retention import assets as assets
 from tests.test_asset_reference_retention import update
 
 from app.capabilities.asset_store.library import AssetError
-from fpl_assets.models import MODELS, AssetReferencePin, PreparedAssetPin, ReferenceIntent
-from fpl_assets.reference_changes import ReferenceChanges
-from fpl_assets.references import protect_references
-from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.database import Database
+from studio.apps.asset_library.references.reference_changes import ReferenceChanges
+from studio.apps.asset_library.references.references import protect_references
+from studio.apps.asset_library.storage.service_models import (
+    MODELS,
+    AssetReferencePin,
+    PreparedAssetPin,
+    ReferenceIntent,
+)
+from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.runtime.database.sessions import Database
 
 
 def change(request, revision=5, files=("two",)):

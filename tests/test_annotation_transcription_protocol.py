@@ -19,18 +19,20 @@ from app.capabilities.asset_store.library import AssetLibrary
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.llm.providers.transcription import TranscriptionResult
 from app.llm.routes.models.model_test_transcription import router as task_router
-from app.problem_details import http_exception_handler
 from app.runtime.credentials import encrypt_secret
-from fpl_annotation.application import create_app
-from fpl_annotation.migrations.registry import MIGRATIONS as ANNOTATION_MIGRATIONS
-from fpl_models.annotation_transcription import router
-from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_runtime.annotation_transcription import PREFIX
-from fpl_runtime.authentication import SignedIdentity
-from fpl_runtime.database import Database
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
+from studio.apps.audio_annotation.storage.migrations.registry import (
+    MIGRATIONS as ANNOTATION_MIGRATIONS,
+)
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.model_service.annotation_transcription import router
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.assembly.independent.audio_annotation.application import create_app
+from studio.contracts.model_service.annotation import PREFIX
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.http.authentication import SignedIdentity
+from studio.runtime.http.problem_details import http_exception_handler
 
 MODELS_TOKEN = "annotation-models-service-test-" * 2
 

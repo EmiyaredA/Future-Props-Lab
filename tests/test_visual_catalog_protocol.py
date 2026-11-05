@@ -17,52 +17,56 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS, PROJECTS
 from tests.test_independent_project_catalog import authorize
 
-from app.apps.visual_workshop.models import (
-    VisualAssistantAction,
-    VisualAssistantMessage,
-    VisualAssistantMessageAsset,
-)
 from app.capabilities.agents.harness import ToolExecutionContext
 from app.capabilities.asset_store.library import AssetLibrary
 from app.llm.generation_runtime import ImmediateGenerationResult
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE
-from fpl_agent_runtime.application import create_app as create_agent_runtime
-from fpl_agent_runtime.migrations.registry import MIGRATIONS as AGENT_RUNTIME_MIGRATIONS
-from fpl_assets.models import AssetReferencePin, AssetReferenceSet
-from fpl_assets.references import AssetReferences
-from fpl_host.agent_connections_worker import ConnectionWorker
-from fpl_host.transport import NativeTransport
-from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_models.visual_catalog_http import router
-from fpl_models.visual_generation_http import router as visual_model_router
-from fpl_models.visual_generation_intake import VisualGenerationIntake
-from fpl_models.visual_generation_records import VisualProviderTask
-from fpl_models.visual_generation_results import VisualGenerationResults
-from fpl_models.visual_generation_runner import VisualGenerationRunner
-from fpl_rendering.application import create_app as create_rendering
-from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
-from fpl_rendering.settings import RenderingSettings
-from fpl_runtime.agent_connections import (
+from studio.apps.agent_runtime.storage.migrations.registry import (
+    MIGRATIONS as AGENT_RUNTIME_MIGRATIONS,
+)
+from studio.apps.asset_library.references.references import AssetReferences
+from studio.apps.asset_library.storage.service_models import AssetReferencePin, AssetReferenceSet
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.media_rendering.settings import RenderingSettings
+from studio.apps.media_rendering.storage.migrations.registry import (
+    MIGRATIONS as RENDERING_MIGRATIONS,
+)
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.storage.visual_generation_records import VisualProviderTask
+from studio.apps.model_service.transport.visual_catalog_http import router
+from studio.apps.model_service.transport.visual_generation_http import router as visual_model_router
+from studio.apps.model_service.visual.visual_generation_intake import VisualGenerationIntake
+from studio.apps.model_service.visual.visual_generation_results import VisualGenerationResults
+from studio.apps.model_service.visual.visual_generation_runner import VisualGenerationRunner
+from studio.apps.visual_workshop.storage.models import (
+    VisualAssistantAction,
+    VisualAssistantMessage,
+    VisualAssistantMessageAsset,
+)
+from studio.assembly.independent.agent_runtime.application import create_app as create_agent_runtime
+from studio.assembly.independent.media_rendering.application import create_app as create_rendering
+from studio.contracts.agent_runtime.connections import (
     AcceptanceAgentCatalog,
     AcceptanceAgentStatus,
     ConnectionOptions,
 )
-from fpl_runtime.asset_references import PrepareReferenceChange, ReferenceUpdate
-from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied
-from fpl_runtime.claims import HEADER
-from fpl_runtime.database import Database
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.motion_preview import FrameFile
-from fpl_runtime.thought_archives import ArchiveAuthenticator
-from fpl_runtime.timed_peer import TimedPeer
-from fpl_runtime.visual_acceptance_assets import PURPOSE as ACCEPTANCE_ASSETS_PURPOSE
-from fpl_runtime.visual_acceptance_assets import AcceptanceAssetQuery
-from fpl_runtime.visual_assistant import ASSET_PURPOSE, AttachmentQuery, approval_path
-from fpl_runtime.visual_catalog import (
+from studio.contracts.asset_library.references import PrepareReferenceChange, ReferenceUpdate
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.motion_compositor.motion_preview import FrameFile
+from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
+from studio.contracts.visual_workshop.visual_acceptance_assets import (
+    PURPOSE as ACCEPTANCE_ASSETS_PURPOSE,
+)
+from studio.contracts.visual_workshop.visual_acceptance_assets import AcceptanceAssetQuery
+from studio.contracts.visual_workshop.visual_assistant import (
+    ASSET_PURPOSE,
+    AttachmentQuery,
+    approval_path,
+)
+from studio.contracts.visual_workshop.visual_catalog import (
     ACCEPTANCE_TARGET,
     AGENT_ACCEPTANCE_PURPOSE,
     AGENT_ACCEPTANCE_TARGET,
@@ -71,9 +75,13 @@ from fpl_runtime.visual_catalog import (
     GENERATION_TARGET,
     PURPOSE,
 )
-from fpl_runtime.visual_generation import ASSET_PURPOSE as GENERATION_ASSETS_PURPOSE
-from fpl_runtime.visual_generation import MODEL_PURPOSE as GENERATION_MODEL_PURPOSE
-from fpl_runtime.visual_generation import (
+from studio.contracts.visual_workshop.visual_generation import (
+    ASSET_PURPOSE as GENERATION_ASSETS_PURPOSE,
+)
+from studio.contracts.visual_workshop.visual_generation import (
+    MODEL_PURPOSE as GENERATION_MODEL_PURPOSE,
+)
+from studio.contracts.visual_workshop.visual_generation import (
     PEER_DOMAIN,
     PLAN_PURPOSE,
     GenerationAssetQuery,
@@ -83,9 +91,19 @@ from fpl_runtime.visual_generation import (
     VisualModelChoice,
     settlement_path,
 )
-from fpl_runtime.visual_generation_plan import GenerationPlan, TaskPlan
-from fpl_runtime.visual_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, SnapshotAssetQuery
-from fpl_runtime.visual_snapshot import ASSET_PURPOSE as SNAPSHOT_ASSET_PURPOSE
+from studio.contracts.visual_workshop.visual_generation_plan import GenerationPlan, TaskPlan
+from studio.contracts.visual_workshop.visual_snapshot import (
+    ARCHIVE_DOMAIN,
+    ARCHIVE_PREFIX,
+    SnapshotAssetQuery,
+)
+from studio.contracts.visual_workshop.visual_snapshot import ASSET_PURPOSE as SNAPSHOT_ASSET_PURPOSE
+from studio.host.agent_execution.agent_connections_worker import ConnectionWorker
+from studio.host.transport import NativeTransport
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.http.capability_client import CapabilityClient, CapabilityDenied
+from studio.runtime.messaging.timed_peer import TimedPeer
 
 
 class LostVisualArchiveReceipt(httpx.AsyncBaseTransport):
@@ -363,7 +381,10 @@ async def verify_generation_plan(case, visual, http, models, choice, monkeypatch
         attempts.append("external call")
         raise asyncio.CancelledError
 
-    monkeypatch.setattr("fpl_models.visual_generation_runner.submit_visual_generation", interrupt)
+    monkeypatch.setattr(
+        "studio.apps.model_service.visual.visual_generation_runner.submit_visual_generation",
+        interrupt,
+    )
     unknown_id = str(unknown.tasks[0].task_id)
     with pytest.raises(asyncio.CancelledError):
         await runner.driver.process(unknown_id)
@@ -391,8 +412,13 @@ async def verify_provider_result(case, http, models, body, task_id, monkeypatch)
     monkeypatch.setattr(
         "app.llm.generation_runtime.driver.decrypt_secret", lambda _value: "fixture"
     )
-    monkeypatch.setattr("fpl_models.visual_generation_runner.submit_visual_generation", submit)
-    monkeypatch.setattr("fpl_models.visual_generation_runner.download_generated_media", materialize)
+    monkeypatch.setattr(
+        "studio.apps.model_service.visual.visual_generation_runner.submit_visual_generation", submit
+    )
+    monkeypatch.setattr(
+        "studio.apps.model_service.visual.visual_generation_runner.download_generated_media",
+        materialize,
+    )
     await runner.process_once()
     await runner.process_once()
     assert calls == ["retained prompt"]
@@ -435,8 +461,13 @@ async def verify_native_generation(case, visual, http, models, choice, monkeypat
         options["target"].write_bytes(original)
         return len(original), "image", "image/png", ".png"
 
-    monkeypatch.setattr("fpl_models.visual_generation_runner.submit_visual_generation", submit)
-    monkeypatch.setattr("fpl_models.visual_generation_runner.download_generated_media", materialize)
+    monkeypatch.setattr(
+        "studio.apps.model_service.visual.visual_generation_runner.submit_visual_generation", submit
+    )
+    monkeypatch.setattr(
+        "studio.apps.model_service.visual.visual_generation_runner.download_generated_media",
+        materialize,
+    )
 
     async def send(method, path, *, service="visual", **kwargs):
         return await http.request(
@@ -490,12 +521,14 @@ async def verify_native_generation(case, visual, http, models, choice, monkeypat
 
 
 async def verify_approved_generation(case, visual, models, send, root, choice, original, calls):
-    from fpl_runtime.visual_upload import VisualUpload
-    from fpl_visual.assistant_generation_action import AssistantGenerationAction
-    from fpl_visual.generation_dispatch_records import (
+    from studio.apps.visual_workshop.assistant.assistant_generation_action import (
+        AssistantGenerationAction,
+    )
+    from studio.apps.visual_workshop.storage.generation_dispatch_records import (
         VisualGenerationDecision,
         VisualGenerationDispatch,
     )
+    from studio.contracts.visual_workshop.visual_upload import VisualUpload
 
     conversation = await send("POST", root + "/conversations")
     assert conversation.status_code == 200, conversation.text

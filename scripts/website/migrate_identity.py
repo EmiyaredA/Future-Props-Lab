@@ -1,7 +1,7 @@
 """Transfer accounts, credentials, registration history, audit events and profile files."""
 
-from fpl_identity.credential_migration import DATASETS
-from fpl_identity.migration_application import PREFIX
+from studio.apps.identity.credential_migration import DATASETS
+from studio.assembly.independent.identity.maintenance import PREFIX
 
 from .migrate_identity_avatars import transfer_avatars
 from .migration_transfer import DatasetTransfer, run_cli

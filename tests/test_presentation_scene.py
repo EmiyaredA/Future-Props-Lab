@@ -9,10 +9,10 @@ import pytest
 from pydantic import ValidationError
 from tests.presentation_helpers import element, sample_document
 
-from app.apps.presentation_workshop.pptx_export import write_pptx
-from app.apps.presentation_workshop.schemas.document import PresentationDocument
 from app.main import app
 from db.migrations.versions.r0096_presentation_scene import SQL
+from studio.apps.presentation_workshop.pptx_export import write_pptx
+from studio.apps.presentation_workshop.schemas.document import PresentationDocument
 
 
 def scene_document():

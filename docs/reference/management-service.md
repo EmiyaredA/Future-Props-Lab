@@ -39,6 +39,6 @@ worker 只运行固定 Compose 服务组的启动、SIGTERM、显式 SIGKILL、�
 
 使用 `deploy/compose.yaml` 与 `deploy/management.compose.yaml` 两份清单。Identity 增加独立管理网关凭据与来源，service credentials 中显式登记 management。管理镜像只获得 Identity 公钥、自己的服务凭据、worker 验证材料、自有数据库及只读路由/程序，不获得 Identity 私钥。
 
-启动只核验自有 schema，不执行迁移。显式 `python -m fpl_management migrate` 必须在停止对应管理实例后执行；Identity 自有迁移同理。新库必须由服务迁移初始化或通过已验收的正式导入流程建立，不能复制完整旧库。正式停机导出、导入、校验和切换由多服务部署流程统一完成；本任务的隔离验收不接通正式数据。
+启动只核验自有 schema，不执行迁移。显式 `python -m studio.assembly.independent.management.cli migrate` 必须在停止对应管理实例后执行；Identity 自有迁移同理。新库必须由服务迁移初始化或通过已验收的正式导入流程建立，不能复制完整旧库。正式停机导出、导入、校验和切换由多服务部署流程统一完成；本任务的隔离验收不接通正式数据。
 
 相关阅读：[配置参考](configuration.md)、[本地与公网访问](web-access.md)、[生产部署](../operations/production-deployment.md)。

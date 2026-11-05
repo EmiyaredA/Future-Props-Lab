@@ -3,14 +3,14 @@ import json
 import pytest
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.apps.visual_workshop.generation_common import generation_task_out
-from app.apps.visual_workshop.models import VisualGenerationTask
 from app.llm.generation_runtime import GenerationTaskStore
 from app.llm.task_execution import TaskExecutionInfo
-from app.runtime.time import utc_now
 from db.migrations import apply_migrations, runner
 from db.migrations.registry import MIGRATIONS
 from db.migrations.runner import connect_database
+from studio.apps.visual_workshop.generation_common import generation_task_out
+from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+from studio.runtime.time import utc_now
 
 
 @pytest.mark.asyncio

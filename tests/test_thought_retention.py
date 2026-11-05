@@ -4,16 +4,16 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.apps.thought_workshop.errors import ThoughtError
-from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.claims import Actor
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_runtime.retention_authority import issue_retention
-from fpl_thought.migrations.registry import MIGRATIONS
-from fpl_thought.models import ACCOUNT_MODELS, MODELS
-from fpl_thought.retention import ThoughtReferenceDelivery, ThoughtReferences
-from fpl_thought.retention_records import ThoughtReferenceMutation
+from studio.apps.thought_workshop.errors import ThoughtError
+from studio.apps.thought_workshop.retention import ThoughtReferenceDelivery, ThoughtReferences
+from studio.apps.thought_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.thought_workshop.storage.retention_records import ThoughtReferenceMutation
+from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.contracts.asset_library.retention_authority import issue_retention
+from studio.contracts.identity.claims import Actor
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 class Remote:
@@ -151,10 +151,10 @@ async def test_abort_requires_closed_source_transaction(instance):
 
 
 async def test_real_note_save_commits_history_and_retention_as_one_outcome(instance):
-    from app.apps.thought_workshop.asset_metadata import LibraryAsset
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-    from app.apps.thought_workshop.schemas.workshop import ThoughtNotePut
-    from fpl_thought.note_retention import save_note_with_references
+    from studio.apps.thought_workshop.note_retention import save_note_with_references
+    from studio.apps.thought_workshop.schemas.workshop import ThoughtNotePut
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+    from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
 
     db, remote, service = instance
     old = {"type": "doc", "content": [{"type": "image", "attrs": {"assetId": "old"}}]}
@@ -218,9 +218,9 @@ async def test_real_note_save_commits_history_and_retention_as_one_outcome(insta
 
 
 async def test_lost_source_commit_reply_preserves_committed_note_and_pins(instance, monkeypatch):
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-    from app.apps.thought_workshop.schemas.workshop import ThoughtNotePut
-    from fpl_thought.note_retention import save_note_with_references
+    from studio.apps.thought_workshop.note_retention import save_note_with_references
+    from studio.apps.thought_workshop.schemas.workshop import ThoughtNotePut
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
 
     db, remote, service = instance
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -270,10 +270,10 @@ async def test_lost_source_commit_reply_preserves_committed_note_and_pins(instan
 async def test_concurrent_note_change_aborts_only_its_prepared_intent(instance):
     from sqlalchemy import update
 
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-    from app.apps.thought_workshop.schemas.workshop import ThoughtNotePut
-    from app.runtime.revisions import RevisionConflictError
-    from fpl_thought.note_retention import save_note_with_references
+    from studio.apps.thought_workshop.note_retention import save_note_with_references
+    from studio.apps.thought_workshop.schemas.workshop import ThoughtNotePut
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+    from studio.runtime.revisions import RevisionConflictError
 
     db, remote, service = instance
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -327,10 +327,10 @@ async def test_concurrent_note_change_aborts_only_its_prepared_intent(instance):
 
 
 async def test_template_creation_commits_its_initial_asset_pins(instance):
-    from app.apps.thought_workshop.asset_metadata import LibraryAsset
-    from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
-    from app.apps.thought_workshop.knowledge_tools.schemas import TemplateIn
-    from fpl_thought.template_retention import create_template_with_references
+    from studio.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
+    from studio.apps.thought_workshop.knowledge_tools.schemas import TemplateIn
+    from studio.apps.thought_workshop.template_retention import create_template_with_references
+    from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
 
     db, remote, service = instance
 
@@ -369,10 +369,10 @@ async def test_template_creation_commits_its_initial_asset_pins(instance):
 
 
 async def test_template_creation_rolls_back_if_source_write_fails(instance, monkeypatch):
-    from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
-    from app.apps.thought_workshop.knowledge_tools.reuse import ReusableContent
-    from app.apps.thought_workshop.knowledge_tools.schemas import TemplateIn
-    from fpl_thought.template_retention import create_template_with_references
+    from studio.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
+    from studio.apps.thought_workshop.knowledge_tools.reuse import ReusableContent
+    from studio.apps.thought_workshop.knowledge_tools.schemas import TemplateIn
+    from studio.apps.thought_workshop.template_retention import create_template_with_references
 
     db, remote, service = instance
 
@@ -404,10 +404,10 @@ async def test_template_creation_rolls_back_if_source_write_fails(instance, monk
 
 
 async def test_template_update_and_delete_record_exact_asset_pins(instance):
-    from app.apps.thought_workshop.asset_metadata import LibraryAsset
-    from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
-    from app.apps.thought_workshop.knowledge_tools.schemas import TemplatePut
-    from fpl_thought.template_retention import mutate_template_with_references
+    from studio.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
+    from studio.apps.thought_workshop.knowledge_tools.schemas import TemplatePut
+    from studio.apps.thought_workshop.template_retention import mutate_template_with_references
+    from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
 
     db, remote, service = instance
     empty = {"type": "doc", "content": []}
@@ -467,9 +467,9 @@ async def test_template_update_and_delete_record_exact_asset_pins(instance):
 
 
 async def test_permanent_note_purge_releases_pins_only_with_committed_deletion(instance):
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-    from app.runtime.time import utc_now
-    from fpl_thought.note_retention import purge_note_with_references
+    from studio.apps.thought_workshop.note_retention import purge_note_with_references
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+    from studio.runtime.time import utc_now
 
     db, remote, service = instance
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -511,12 +511,12 @@ async def test_permanent_note_purge_releases_pins_only_with_committed_deletion(i
 
 
 async def test_note_operations_commit_receipt_and_pins_together_and_replay(instance):
-    from app.apps.thought_workshop.asset_metadata import LibraryAsset
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-    from app.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
     from app.runtime.operation_receipts import OperationError
-    from app.runtime.project_operations import ProjectOperationReceipt
-    from fpl_thought.note_retention import apply_operations_with_references
+    from studio.apps.thought_workshop.note_retention import apply_operations_with_references
+    from studio.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+    from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
+    from studio.runtime.database.project_operations import ProjectOperationReceipt
 
     db, remote, service = instance
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -588,14 +588,14 @@ async def test_note_operations_commit_receipt_and_pins_together_and_replay(insta
 
 
 async def test_history_restore_keeps_old_and_current_files_and_records_restore(instance):
-    from app.apps.thought_workshop.asset_metadata import LibraryAsset
-    from app.apps.thought_workshop.history import History
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-    from app.apps.thought_workshop.schemas.workshop import ThoughtNotePut
-    from fpl_thought.note_retention import (
+    from studio.apps.thought_workshop.history import History
+    from studio.apps.thought_workshop.note_retention import (
         restore_history_with_references,
         save_note_with_references,
     )
+    from studio.apps.thought_workshop.schemas.workshop import ThoughtNotePut
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+    from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
 
     db, _remote, service = instance
     old = {"type": "doc", "content": [{"type": "image", "attrs": {"assetId": "old"}}]}
@@ -662,10 +662,10 @@ async def test_history_restore_keeps_old_and_current_files_and_records_restore(i
 
 
 async def test_multitable_updates_and_restore_keep_historical_attachments(instance, monkeypatch):
-    from app.apps.thought_workshop.asset_metadata import LibraryAsset
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-    from app.apps.thought_workshop.multitable.schemas import BatchIn, CsvIn
-    from fpl_thought.multitable_retention import mutate_table_with_references
+    from studio.apps.thought_workshop.multitable.schemas import BatchIn, CsvIn
+    from studio.apps.thought_workshop.multitable_retention import mutate_table_with_references
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+    from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset
 
     db, _remote, service = instance
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -784,11 +784,11 @@ async def test_multitable_updates_and_restore_keep_historical_attachments(instan
 async def test_template_apply_aborts_when_template_changes_after_prepare(instance):
     from sqlalchemy import update
 
-    from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
-    from app.apps.thought_workshop.knowledge_tools.schemas import TemplateApply
-    from app.apps.thought_workshop.models import ThoughtNote
-    from app.runtime.revisions import RevisionConflictError
-    from fpl_thought.template_retention import apply_template_with_references
+    from studio.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
+    from studio.apps.thought_workshop.knowledge_tools.schemas import TemplateApply
+    from studio.apps.thought_workshop.storage.models import ThoughtNote
+    from studio.apps.thought_workshop.template_retention import apply_template_with_references
+    from studio.runtime.revisions import RevisionConflictError
 
     db, remote, service = instance
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -839,10 +839,10 @@ async def test_template_apply_aborts_when_template_changes_after_prepare(instanc
 
 
 async def test_template_apply_preserves_committed_result_after_lost_ack(instance, monkeypatch):
-    from app.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
-    from app.apps.thought_workshop.knowledge_tools.schemas import TemplateApply
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-    from fpl_thought.template_retention import apply_template_with_references
+    from studio.apps.thought_workshop.knowledge_tools.models import ThoughtTemplate
+    from studio.apps.thought_workshop.knowledge_tools.schemas import TemplateApply
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+    from studio.apps.thought_workshop.template_retention import apply_template_with_references
 
     db, remote, service = instance
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -893,10 +893,10 @@ async def test_template_apply_preserves_committed_result_after_lost_ack(instance
 async def test_note_create_aborts_if_knowledge_base_changes_during_prepare(instance):
     from sqlalchemy import update
 
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-    from app.apps.thought_workshop.schemas.workshop import ThoughtNoteCreate
-    from app.runtime.revisions import RevisionConflictError
-    from fpl_thought.note_creation import create_note_with_references
+    from studio.apps.thought_workshop.note_creation import create_note_with_references
+    from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteCreate
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+    from studio.runtime.revisions import RevisionConflictError
 
     db, remote, service = instance
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:

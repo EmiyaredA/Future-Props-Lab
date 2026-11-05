@@ -11,14 +11,17 @@ from tests.test_galgame_annotation_import import _audio_bytes
 from tests.test_independent_project_catalog import authorize
 
 from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
-from fpl_galgame.application import create_app
-from fpl_galgame.migrations.registry import MIGRATIONS
-from fpl_models.galgame_asr_http import router as catalog_router
-from fpl_models.galgame_transcription import GalgameTranscription, recover_transcription_attempts
-from fpl_models.galgame_transcription_http import router as attempts_router
-from fpl_runtime.galgame_asr_execution import EXECUTION
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
+from studio.apps.galgame_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.model_service.galgame_transcription import (
+    GalgameTranscription,
+    recover_transcription_attempts,
+)
+from studio.apps.model_service.transport.galgame_asr_http import router as catalog_router
+from studio.apps.model_service.transport.galgame_transcription_http import router as attempts_router
+from studio.assembly.independent.galgame_workshop.application import create_app
+from studio.contracts.galgame_workshop.galgame_asr_execution import EXECUTION
+from studio.runtime.database.migrations import apply
 
 PROJECTS = "/v1/galgame-workshop/projects"
 
@@ -74,7 +77,9 @@ async def test_voice_jobs_resume_receipts_and_keep_newer_manual_edits(
         )
 
     monkeypatch.setattr(case.mesh, "handle_async_request", mesh)
-    monkeypatch.setattr("fpl_models.galgame_transcription.transcribe_model_audio", provider)
+    monkeypatch.setattr(
+        "studio.apps.model_service.galgame_transcription.transcribe_model_audio", provider
+    )
     async with (
         owned_models(case, tmp_path / "models") as (models, database, model),
         live_assets.client,

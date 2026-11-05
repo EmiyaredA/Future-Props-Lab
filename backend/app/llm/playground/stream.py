@@ -15,7 +15,7 @@ from app.llm.providers.streaming import stream_text_completion
 from app.runtime.authorized_stream import authorized_stream
 from app.runtime.credentials import decrypt_secret
 from app.runtime.ownership import bind_owner
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 def _event(event_type: str, sequence: int, payload: dict) -> bytes:

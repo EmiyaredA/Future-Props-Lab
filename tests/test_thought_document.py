@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from app.apps.thought_workshop.schemas.document import document_text, validate_document
+from studio.apps.thought_workshop.schemas.document import document_text, validate_document
 
 
 def _image_doc(**attrs):

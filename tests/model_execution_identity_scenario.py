@@ -10,13 +10,13 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app
-from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-from fpl_runtime.claims import verify_context
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from studio.assembly.independent.identity.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import verify_context
+from studio.runtime.database.migrations import apply
 
 assert "app.runtime.db" not in sys.modules
 assert not any(name.startswith(("app.llm", "app.apps")) for name in sys.modules)
@@ -24,10 +24,12 @@ assert not any(name.startswith(("app.llm", "app.apps")) for name in sys.modules)
 from app.llm.generation_runtime.driver import GenerationTaskStore  # noqa: E402
 from app.llm.models import ModelInferenceTask, ModelProvider  # noqa: E402
 from app.runtime.credentials import encrypt_secret  # noqa: E402
-from fpl_models.execution_authority import ModelTaskAuthority  # noqa: E402
-from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS  # noqa: E402
-from fpl_models.models import ACCOUNT_MODELS, MODELS  # noqa: E402
-from fpl_runtime.database import Database  # noqa: E402
+from studio.apps.model_service.admission.execution_authority import ModelTaskAuthority  # noqa: E402
+from studio.apps.model_service.storage.migrations.registry import (  # noqa: E402
+    MIGRATIONS as MODELS_MIGRATIONS,  # noqa: E402
+)
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS  # noqa: E402
+from studio.runtime.database.sessions import Database  # noqa: E402
 
 root = Path(os.environ["MODEL_EXECUTION_IDENTITY_ROOT"]).resolve()
 assert root.is_relative_to(Path(tempfile.gettempdir()).resolve())

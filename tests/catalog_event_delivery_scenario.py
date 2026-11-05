@@ -11,28 +11,37 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select, text
 
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app
-from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-from fpl_identity.models import AccountEvent
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from studio.apps.identity.storage.service_models import AccountEvent
+from studio.assembly.independent.identity.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.runtime.database.migrations import apply
 
 assert not any(name.startswith(("app.llm", "app.apps")) for name in sys.modules)
 assert "app.runtime.db" not in sys.modules
 
 from app.llm.models import ModelProvider  # noqa: E402
 from app.llm.schemas.model_templates import RoleModelTemplateIn  # noqa: E402
-from fpl_models.account_events import (  # noqa: E402
+from studio.apps.model_service.account_events import (  # noqa: E402
     CatalogEventClient,
     CatalogEventTransportError,
     CatalogProvisioningRunner,
 )
-from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS  # noqa: E402
-from fpl_models.models import ACCOUNT_MODELS, MODELS, CatalogProvisioningReceipt  # noqa: E402
-from fpl_models.provisioning import CatalogProvisioning  # noqa: E402
-from fpl_models.templates import RoleTemplates, initialize_account_catalog  # noqa: E402
-from fpl_runtime.database import Database  # noqa: E402
+from studio.apps.model_service.provisioning import CatalogProvisioning  # noqa: E402
+from studio.apps.model_service.storage.migrations.registry import (  # noqa: E402
+    MIGRATIONS as MODELS_MIGRATIONS,  # noqa: E402
+)
+from studio.apps.model_service.storage.service_models import (  # noqa: E402
+    ACCOUNT_MODELS,
+    MODELS,
+    CatalogProvisioningReceipt,
+)
+from studio.apps.model_service.templates import (  # noqa: E402
+    RoleTemplates,
+    initialize_account_catalog,
+)
+from studio.runtime.database.sessions import Database  # noqa: E402
 
 root = Path(os.environ["CATALOG_DELIVERY_TEST_ROOT"]).resolve()
 assert root.is_relative_to(Path(tempfile.gettempdir()).resolve())

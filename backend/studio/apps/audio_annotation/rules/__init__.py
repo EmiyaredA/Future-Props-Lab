@@ -1,0 +1,1 @@
+"""Pure annotation state transformations."""

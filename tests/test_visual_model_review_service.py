@@ -15,17 +15,22 @@ from tests.test_independent_project_catalog import authorize
 
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.visual_review import Suggestions
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_models.visual_review_attempts import UNKNOWN, VisualReviewAttempts
-from fpl_models.visual_review_http import router
-from fpl_runtime.capability_client import CapabilityClient
-from fpl_runtime.claims import HEADER
-from fpl_runtime.database import Database
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.visual_review import MODEL_PLAN, PLAN_PURPOSE, RUN_PURPOSE, ReviewModelRun
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.transport.visual_review_http import router
+from studio.apps.model_service.visual.visual_review_attempts import UNKNOWN, VisualReviewAttempts
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.visual_workshop.visual_review import (
+    MODEL_PLAN,
+    PLAN_PURPOSE,
+    RUN_PURPOSE,
+    ReviewModelRun,
+)
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.http.capability_client import CapabilityClient
 
 
 async def test_visual_model_reviews_replay_exact_result_and_never_resubmit_unknown(
@@ -129,9 +134,12 @@ async def test_visual_model_reviews_replay_exact_result_and_never_resubmit_unkno
             )
 
         monkeypatch.setattr(
-            "fpl_models.visual_review_attempts.decrypt_secret", lambda _: "fixture-key"
+            "studio.apps.model_service.visual.visual_review_attempts.decrypt_secret",
+            lambda _: "fixture-key",
         )
-        monkeypatch.setattr("fpl_models.visual_review_attempts.evaluate_review", evaluate)
+        monkeypatch.setattr(
+            "studio.apps.model_service.visual.visual_review_attempts.evaluate_review", evaluate
+        )
 
         async def execute(value):
             return await send("POST", value.path, RUN_PURPOSE, json=value.model_dump(mode="json"))
@@ -148,7 +156,9 @@ async def test_visual_model_reviews_replay_exact_result_and_never_resubmit_unkno
             calls.append("interrupted provider call")
             raise asyncio.CancelledError
 
-        monkeypatch.setattr("fpl_models.visual_review_attempts.evaluate_review", interrupt)
+        monkeypatch.setattr(
+            "studio.apps.model_service.visual.visual_review_attempts.evaluate_review", interrupt
+        )
         unknown = body.model_copy(update={"run_id": str(uuid4())})
         with pytest.raises(asyncio.CancelledError):
             await execute(unknown)

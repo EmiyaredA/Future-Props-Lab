@@ -6,15 +6,15 @@ from uuid import uuid4
 import pytest
 from fastapi import HTTPException
 
-from fpl_integrations.migrations.registry import MIGRATIONS
-from fpl_integrations.models import MODELS
-from fpl_integrations.native_mcp_records import NativeMcpJob
-from fpl_integrations.records import ValidationAttempt
-from fpl_integrations.validation import ValidationRecovery
-from fpl_runtime.database import Database
-from fpl_runtime.integration_client import IntegrationAuthorizationUnavailable
-from fpl_runtime.integration_intents import IntegrationScope
-from fpl_runtime.migrations import apply
+from studio.apps.integrations.clients.authority import IntegrationAuthorizationUnavailable
+from studio.apps.integrations.records import ValidationAttempt
+from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
+from studio.apps.integrations.storage.native_mcp_records import NativeMcpJob
+from studio.apps.integrations.storage.service_models import MODELS
+from studio.apps.integrations.validation import ValidationRecovery
+from studio.contracts.integrations.integration_intents import IntegrationScope
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 class Capacity:

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from app.apps.visual_workshop.node_placement import NODE_SIZE, automatic_node_position
+from studio.apps.visual_workshop.node_placement import NODE_SIZE, automatic_node_position
 
 FIXTURE = json.loads((Path(__file__).parent / "fixtures/visual_node_placement.json").read_text())
 

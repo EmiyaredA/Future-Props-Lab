@@ -11,13 +11,13 @@ from tests.test_community_asset_protocol import scenario  # noqa: F401
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_assets.models import MODELS, ThoughtUploadReceipt
-from fpl_assets.settings import StorageSettings
-from fpl_assets.thought_uploads import ThoughtUploads
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_runtime.thought_uploads import ThoughtUploadDescription
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.service_models import MODELS, ThoughtUploadReceipt
+from studio.apps.asset_library.thought.thought_uploads import ThoughtUploads
+from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadDescription
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 CONTENT = b"\x89PNG\r\n\x1a\nsynthetic image bytes"
 
@@ -88,10 +88,10 @@ async def test_private_upload_route_binds_owner_descriptor_and_request(store):
     import httpx
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-    from fpl_assets.application import create_app
-    from fpl_runtime.claims import HEADER, Actor, issue_context
-    from fpl_runtime.routing import RouteCatalog
-    from fpl_runtime.thought_uploads import upload_path
+    from studio.assembly.independent.asset_library.application import create_app
+    from studio.contracts.gateway.routing import RouteCatalog
+    from studio.contracts.identity.claims import HEADER, Actor, issue_context
+    from studio.contracts.thought_workshop.thought_uploads import upload_path
 
     class Live:
         async def status(self, **_kwargs):
@@ -155,9 +155,9 @@ async def test_private_upload_route_binds_owner_descriptor_and_request(store):
 def test_upload_delegation_matches_kind_caller_method_id_and_digest_exactly():
     from dataclasses import replace
 
-    from fpl_runtime.delegation import RequestGrant
-    from fpl_runtime.thought_assets import upload_grant
-    from fpl_runtime.thought_uploads import upload_path
+    from studio.contracts.identity.delegation import RequestGrant
+    from studio.contracts.thought_workshop.thought_assets import upload_grant
+    from studio.contracts.thought_workshop.thought_uploads import upload_path
 
     desc = description()
     grant = RequestGrant(
@@ -193,11 +193,17 @@ def test_upload_delegation_matches_kind_caller_method_id_and_digest_exactly():
 
 
 async def test_thought_staging_preserves_bytes_until_confirmed_receipt(tmp_path, monkeypatch):
-    from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
-    from fpl_thought.models import ACCOUNT_MODELS
-    from fpl_thought.models import MODELS as THOUGHT_MODELS
-    from fpl_thought.upload_intents import confirm_upload, stage_path, stage_upload
-    from fpl_thought.upload_records import ThoughtUploadIntent
+    from studio.apps.thought_workshop.storage.migrations.registry import (
+        MIGRATIONS as THOUGHT_MIGRATIONS,
+    )
+    from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS
+    from studio.apps.thought_workshop.storage.service_models import MODELS as THOUGHT_MODELS
+    from studio.apps.thought_workshop.storage.upload_records import ThoughtUploadIntent
+    from studio.apps.thought_workshop.uploads.upload_intents import (
+        confirm_upload,
+        stage_path,
+        stage_upload,
+    )
 
     apply(tmp_path / "service.db", "thought", THOUGHT_MIGRATIONS)
     db = Database("thought", tmp_path, models=THOUGHT_MODELS, account_models=ACCOUNT_MODELS)
@@ -251,11 +257,13 @@ async def test_thought_staging_preserves_bytes_until_confirmed_receipt(tmp_path,
 
 
 async def test_failed_staging_does_not_publish_intent_or_keep_partial_bytes(tmp_path):
-    from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
-    from fpl_thought.models import ACCOUNT_MODELS
-    from fpl_thought.models import MODELS as THOUGHT_MODELS
-    from fpl_thought.upload_intents import stage_path, stage_upload
-    from fpl_thought.upload_records import ThoughtUploadIntent
+    from studio.apps.thought_workshop.storage.migrations.registry import (
+        MIGRATIONS as THOUGHT_MIGRATIONS,
+    )
+    from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS
+    from studio.apps.thought_workshop.storage.service_models import MODELS as THOUGHT_MODELS
+    from studio.apps.thought_workshop.storage.upload_records import ThoughtUploadIntent
+    from studio.apps.thought_workshop.uploads.upload_intents import stage_path, stage_upload
 
     apply(tmp_path / "service.db", "thought", THOUGHT_MIGRATIONS)
     db = Database("thought", tmp_path, models=THOUGHT_MODELS, account_models=ACCOUNT_MODELS)
@@ -281,10 +289,10 @@ async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_res
 ):
     import httpx
 
-    from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
-    from fpl_runtime.routing import RouteCatalog
-    from fpl_runtime.thought_uploads import upload_path
-    from fpl_thought.upload_transport import send_staged_upload
+    from studio.apps.thought_workshop.uploads.upload_transport import send_staged_upload
+    from studio.contracts.gateway.routing import RouteCatalog
+    from studio.contracts.thought_workshop.thought_uploads import upload_path
+    from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
     desc = description()
     staged = tmp_path / "staged"
@@ -292,7 +300,10 @@ async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_res
     calls = []
     failure = False
     signature_mode = "valid"
-    monkeypatch.setattr("fpl_thought.upload_transport.secrets.token_hex", lambda _n: "b" * 32)
+    monkeypatch.setattr(
+        "studio.apps.thought_workshop.uploads.upload_transport.secrets.token_hex",
+        lambda _n: "b" * 32,
+    )
     target = upload_path("image", "one", desc.fingerprint)
 
     async def handle(request):
@@ -330,7 +341,9 @@ async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_res
                 "reference_id": None,
             },
         )
-        from fpl_runtime.thought_uploads import ThoughtUploadReceiptAuthenticator
+        from studio.contracts.thought_workshop.thought_uploads import (
+            ThoughtUploadReceiptAuthenticator,
+        )
 
         if signature_mode != "missing":
             response.headers["X-Fpl-Upload-Receipt"] = ThoughtUploadReceiptAuthenticator(
@@ -387,13 +400,19 @@ async def test_staged_transport_delegates_exact_upload_and_preserves_unknown_res
 
 
 async def test_delivery_timeout_keeps_intent_and_source_for_exact_replay(tmp_path, monkeypatch):
-    from fpl_runtime.capability_client import CapabilityUnavailable
-    from fpl_thought import upload_transport
-    from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
-    from fpl_thought.models import ACCOUNT_MODELS
-    from fpl_thought.models import MODELS as THOUGHT_MODELS
-    from fpl_thought.upload_intents import deliver_staged_upload, stage_path, stage_upload
-    from fpl_thought.upload_records import ThoughtUploadIntent
+    from studio.apps.thought_workshop.storage.migrations.registry import (
+        MIGRATIONS as THOUGHT_MIGRATIONS,
+    )
+    from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS
+    from studio.apps.thought_workshop.storage.service_models import MODELS as THOUGHT_MODELS
+    from studio.apps.thought_workshop.storage.upload_records import ThoughtUploadIntent
+    from studio.apps.thought_workshop.uploads import upload_transport
+    from studio.apps.thought_workshop.uploads.upload_intents import (
+        deliver_staged_upload,
+        stage_path,
+        stage_upload,
+    )
+    from studio.runtime.http.capability_client import CapabilityUnavailable
 
     async def timeout(**_kwargs):
         raise CapabilityUnavailable("response lost")
@@ -435,13 +454,15 @@ async def test_delivery_timeout_keeps_intent_and_source_for_exact_replay(tmp_pat
 async def test_restart_recovers_only_confirmed_and_provably_uncommitted_staging(tmp_path):
     from dataclasses import asdict
 
-    from fpl_runtime.locking import service_lock
-    from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
-    from fpl_thought.models import ACCOUNT_MODELS
-    from fpl_thought.models import MODELS as THOUGHT_MODELS
-    from fpl_thought.upload_intents import stage_path
-    from fpl_thought.upload_records import ThoughtUploadIntent
-    from fpl_thought.upload_recovery import recover_upload_staging
+    from studio.apps.thought_workshop.storage.migrations.registry import (
+        MIGRATIONS as THOUGHT_MIGRATIONS,
+    )
+    from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS
+    from studio.apps.thought_workshop.storage.service_models import MODELS as THOUGHT_MODELS
+    from studio.apps.thought_workshop.storage.upload_records import ThoughtUploadIntent
+    from studio.apps.thought_workshop.uploads.upload_intents import stage_path
+    from studio.apps.thought_workshop.uploads.upload_recovery import recover_upload_staging
+    from studio.runtime.lifecycle.locking import service_lock
 
     apply(tmp_path / "service.db", "thought", THOUGHT_MIGRATIONS)
     db = Database("thought", tmp_path, models=THOUGHT_MODELS, account_models=ACCOUNT_MODELS)
@@ -488,7 +509,7 @@ async def test_restart_recovers_only_confirmed_and_provably_uncommitted_staging(
 
 
 def test_upload_receipt_signature_binds_response_and_exact_request():
-    from fpl_runtime.thought_uploads import ThoughtUploadReceiptAuthenticator
+    from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadReceiptAuthenticator
 
     signer = ThoughtUploadReceiptAuthenticator("u" * 48)
     binding = dict(
@@ -514,12 +535,14 @@ def test_upload_receipt_signature_binds_response_and_exact_request():
 
 
 async def test_confirmed_upload_metadata_is_replayable_and_legacy_receipts_enrich_safely(tmp_path):
-    from app.apps.thought_workshop.errors import ThoughtError
-    from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
-    from fpl_thought.models import ACCOUNT_MODELS
-    from fpl_thought.models import MODELS as THOUGHT_MODELS
-    from fpl_thought.upload_intents import confirm_upload, stage_upload
-    from fpl_thought.upload_records import ThoughtUploadIntent
+    from studio.apps.thought_workshop.errors import ThoughtError
+    from studio.apps.thought_workshop.storage.migrations.registry import (
+        MIGRATIONS as THOUGHT_MIGRATIONS,
+    )
+    from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS
+    from studio.apps.thought_workshop.storage.service_models import MODELS as THOUGHT_MODELS
+    from studio.apps.thought_workshop.storage.upload_records import ThoughtUploadIntent
+    from studio.apps.thought_workshop.uploads.upload_intents import confirm_upload, stage_upload
 
     apply(tmp_path / "service.db", "thought", THOUGHT_MIGRATIONS)
     db = Database("thought", tmp_path, models=THOUGHT_MODELS, account_models=ACCOUNT_MODELS)
@@ -590,10 +613,12 @@ async def test_public_upload_retries_are_owner_scoped_and_use_authenticated_asse
         THOUGHT_SECRET,
     )
 
-    from fpl_runtime.claims import HEADER
-    from fpl_runtime.identity_client import LiveAuthorization
-    from fpl_runtime.retention_client import RetentionClient
-    from fpl_thought.application import create_app as create_thought
+    from studio.apps.asset_library.clients.retention import RetentionClient
+    from studio.apps.identity.clients.authorization import LiveAuthorization
+    from studio.assembly.independent.thought_workshop.application import (
+        create_app as create_thought,
+    )
+    from studio.contracts.identity.claims import HEADER
 
     case = scenario
     assets_live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
@@ -737,7 +762,7 @@ def test_independent_upload_operations_match_public_contract():
 
     from fastapi import FastAPI
 
-    from fpl_thought.upload_http import router
+    from studio.apps.thought_workshop.transport.upload_http import router
 
     app = FastAPI()
     app.include_router(router, prefix="/v1")

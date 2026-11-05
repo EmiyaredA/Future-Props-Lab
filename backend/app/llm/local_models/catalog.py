@@ -2,13 +2,12 @@
 
 from app.llm.models.local_models import LocalModelInstallation
 from app.runtime.operation_receipts import OperationError
-
-from .manifest import HERE as HERE
-from .manifest import LANGUAGES as LANGUAGES
-from .manifest import compatible as compatible
-from .manifest import definition as definition
-from .manifest import local_root as local_root
-from .manifest import manifest as manifest
+from studio.config.local_models import HERE as HERE
+from studio.config.local_models import LANGUAGES as LANGUAGES
+from studio.config.local_models import compatible as compatible
+from studio.config.local_models import definition as definition
+from studio.config.local_models import local_root as local_root
+from studio.config.local_models import manifest as manifest
 
 
 async def host_compatible(session):

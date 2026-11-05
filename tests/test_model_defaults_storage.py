@@ -13,13 +13,13 @@ from app.llm.models import (
     ModelSupplier,
 )
 from app.llm.schemas.model_service import ModelDefaultsIn
-from app.runtime.orm_base import Base
-from app.runtime.revisions import RevisionConflictError
-from fpl_models.defaults import OwnedCatalogDefaults
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import AccountDefaults
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply, check
+from studio.apps.model_service.defaults import OwnedCatalogDefaults
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import AccountDefaults
+from studio.runtime.database.migrations import apply, check
+from studio.runtime.database.orm_base import Base
+from studio.runtime.database.sessions import Database
+from studio.runtime.revisions import RevisionConflictError
 
 
 def test_defaults_migration_is_owned_idempotent_and_refuses_another_service(tmp_path):

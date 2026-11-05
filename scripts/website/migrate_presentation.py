@@ -6,12 +6,15 @@ from pathlib import Path
 
 import httpx
 
-from fpl_presentation.migration_application import PREFIX
-from fpl_presentation.migration_operations import DATASET as OPERATIONS
-from fpl_presentation.migration_operations import OperationPage
-from fpl_presentation.migration_records import DATASETS
-from fpl_runtime.migration_batches import MigrationPlan
-from fpl_runtime.presentation_migration import REFERENCE_DATASETS, ProjectionPage
+from studio.apps.presentation_workshop.migration_operations import DATASET as OPERATIONS
+from studio.apps.presentation_workshop.migration_operations import OperationPage
+from studio.apps.presentation_workshop.storage.migration_records import DATASETS
+from studio.assembly.independent.presentation_workshop.maintenance import PREFIX
+from studio.contracts.management.migration_batches import MigrationPlan
+from studio.contracts.presentation_workshop.presentation_migration import (
+    REFERENCE_DATASETS,
+    ProjectionPage,
+)
 
 from .migration_transfer import DatasetTransfer, loopback, transfer
 

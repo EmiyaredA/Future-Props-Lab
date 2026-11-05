@@ -6,9 +6,9 @@ import httpx
 from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from fpl_interview.application import create_app
-from fpl_interview.migrations.registry import MIGRATIONS
-from fpl_runtime.migrations import apply
+from studio.apps.interview_assistant.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.interview_assistant.application import create_app
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = "/v1/interview-assistant"
@@ -91,11 +91,11 @@ async def test_native_interview_worker_delivers_once_after_lost_receipt(scenario
     from tests.test_interview_preparation import FakeExecutor
 
     from app.console.models.accounts import User
-    from fpl_host.interview_worker import InterviewWorker
-    from fpl_host.transport import NativeTransport
-    from fpl_runtime.interview_execution import WorkerStatus
-    from fpl_runtime.native_ingress import NativeWorkerOptions
-    from fpl_runtime.native_protocol import NativeLease
+    from studio.contracts.agent_workbench.native import NativeLease
+    from studio.contracts.interview_assistant.execution import WorkerStatus
+    from studio.host.agent_execution.interview_worker import InterviewWorker
+    from studio.host.transport import NativeTransport
+    from studio.runtime.http.native_ingress import NativeWorkerOptions
 
     class LoseReceipt(httpx.AsyncBaseTransport):
         def __init__(self, app):

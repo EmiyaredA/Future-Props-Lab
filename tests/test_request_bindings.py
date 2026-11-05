@@ -12,7 +12,7 @@ from starlette.requests import Request
 from starlette.websockets import WebSocket
 
 from app.deps import authenticate_studio_request, authenticate_studio_websocket, db_session
-from fpl_runtime.claims import Actor
+from studio.contracts.identity.claims import Actor
 
 
 def test_shared_dependency_import_does_not_open_legacy_configuration_or_account_storage():

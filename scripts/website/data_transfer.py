@@ -101,7 +101,7 @@ def locked(path):
 def transfer(source, project, report_dir):
     from cryptography.fernet import Fernet
 
-    from fpl_config.migration import encode
+    from studio.config.migration import encode
 
     source, project, report_dir = source.resolve(), project.resolve(), report_dir.resolve()
     if source == project or source in project.parents or project in source.parents:
@@ -179,7 +179,7 @@ def transfer(source, project, report_dir):
             config_stage.write_text(encode(document))
             config_stage.chmod(0o600)
             from app.runtime.config import Settings
-            from fpl_config import read_config
+            from studio.config import read_config
 
             Settings.validate_file_values(read_config(config_stage))
             # The encryption key must remain byte-for-byte identical after re-encoding.

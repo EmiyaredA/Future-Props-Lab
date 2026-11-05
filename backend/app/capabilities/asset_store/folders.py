@@ -15,8 +15,8 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetFolderOut,
     VisualAssetFolderPatchIn,
 )
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import utc_now
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import utc_now
 
 MAX_FOLDER_DEPTH = 5
 

@@ -22,25 +22,25 @@ from app.llm.inference.assets import InferenceAssets
 from app.llm.library_inputs import LibraryInputBindings, library_inputs
 from app.llm.models import ModelInferenceAsset
 from app.llm.schemas.model_inference import InferenceAssetImportIn, InferenceAssetOut
-from fpl_assets.application import create_app as create_assets
-from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
-from fpl_assets.references import AssetReferences
-from fpl_assets.settings import StorageSettings
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app as create_identity
-from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-from fpl_models.library_inputs import HttpLibraryInputs
-from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_runtime.asset_references import ReferenceUpdate
-from fpl_runtime.authentication import SignedIdentity
-from fpl_runtime.capability_client import CapabilityClient
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.database import Database
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.asset_library.references.references import AssetReferences
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from studio.apps.model_service.library_inputs import HttpLibraryInputs
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.assembly.independent.asset_library.application import create_app as create_assets
+from studio.assembly.independent.identity.application import create_app as create_identity
+from studio.contracts.asset_library.references import ReferenceUpdate
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.delegation import RequestGrant
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.http.authentication import SignedIdentity
+from studio.runtime.http.capability_client import CapabilityClient
 
 root = Path(os.environ["MODEL_LIBRARY_INPUT_ROOT"]).resolve()
 assert root.is_relative_to(Path(tempfile.gettempdir()).resolve())

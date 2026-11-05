@@ -16,10 +16,10 @@ from app.llm.models import (
 )
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from app.runtime.task_records import load_runner_task
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_runtime.database import Database, ServiceStorageError
-from fpl_runtime.migrations import apply
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database, ServiceStorageError
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
 """Relay a frozen Tools navigation dataset over authenticated loopback HTTP."""
 
-from fpl_tools.migration_application import PREFIX
-from fpl_tools.navigation_migration import DATASET, NavigationPage
+from studio.apps.tools.navigation_migration import DATASET, NavigationPage
+from studio.assembly.independent.tools.maintenance import PREFIX
 
 from .migration_transfer import DatasetTransfer, run_cli
 

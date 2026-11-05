@@ -12,22 +12,22 @@ from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
 from tests.test_visual_acceptance import submission
 from tests.test_visual_node_review_service import create_run, review_mesh, video_file
 
-from app.apps.visual_workshop.acceptance.execution.task_tools import MediaTools
-from app.capabilities.agents.cli.definitions import DEFINITIONS
-from app.runtime.time import utc_now
-from fpl_agent_runtime.application import create_app
-from fpl_agent_runtime.migrations.registry import MIGRATIONS
-from fpl_agent_runtime.review_artifact_sweep import ReviewArtifactSweep
-from fpl_host.agent_connections_worker import ConnectionWorker
-from fpl_host.transport import NativeTransport
-from fpl_host.visual_review_worker import VisualReviewWorker
-from fpl_runtime.agent_connections import (
+from studio.apps.agent_runtime.review_artifact_sweep import ReviewArtifactSweep
+from studio.apps.agent_runtime.storage.migrations.registry import MIGRATIONS
+from studio.apps.visual_workshop.acceptance.execution.task_tools import MediaTools
+from studio.assembly.independent.agent_runtime.application import create_app
+from studio.contracts.agent_runtime.connections import (
     AcceptanceAgentCatalog,
     AcceptanceAgentStatus,
     ConnectionOptions,
 )
-from fpl_runtime.capability_client import CapabilityUnavailable
-from fpl_runtime.migrations import apply
+from studio.contracts.agent_runtime.definitions import DEFINITIONS
+from studio.host.agent_execution.agent_connections_worker import ConnectionWorker
+from studio.host.transport import NativeTransport
+from studio.host.visual_review_worker import VisualReviewWorker
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityUnavailable
+from studio.runtime.time import utc_now
 
 SIGNATURE = "a" * 64
 

@@ -10,14 +10,18 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import select
 
-from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote, ThoughtNoteAsset
-from app.apps.thought_workshop.publication.models import Publication
-from app.apps.thought_workshop.publication.use_cases import Community
 from app.llm.models import ModelEntry
-from fpl_runtime.database import Database, ServiceSession, ServiceStorageError
-from fpl_runtime.migrations import apply, check
-from fpl_thought.migrations.registry import MIGRATIONS
-from fpl_thought.models import ACCOUNT_MODELS, MODELS
+from studio.apps.thought_workshop.publication.models import Publication
+from studio.apps.thought_workshop.publication.use_cases import Community
+from studio.apps.thought_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.thought_workshop.storage.models import (
+    ThoughtKnowledgeBase,
+    ThoughtNote,
+    ThoughtNoteAsset,
+)
+from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.runtime.database.migrations import apply, check
+from studio.runtime.database.sessions import Database, ServiceSession, ServiceStorageError
 
 
 def test_thought_schema_owns_every_registered_table_without_external_fks(tmp_path):
@@ -56,8 +60,8 @@ def test_thought_models_and_writing_import_without_foreign_orm_or_global_db():
             "-c",
             """
 import sys
-from fpl_thought.models import MODELS
-from app.apps.thought_workshop import assistant
+from studio.apps.thought_workshop.storage.service_models import MODELS
+from studio.apps.thought_workshop import assistant
 assert len(MODELS) == 33
 for name in ('app.orm', 'app.runtime.db', 'app.console.models.accounts',
              'app.llm.models', 'app.capabilities.asset_store.models'):
@@ -134,11 +138,11 @@ def test_fresh_process_creates_owned_documents_without_loading_foreign_models(tm
 import asyncio
 import sys
 from pathlib import Path
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_thought.migrations.registry import MIGRATIONS
-from fpl_thought.models import MODELS, ACCOUNT_MODELS
-from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
+from studio.runtime.database.sessions import Database
+from studio.runtime.database.migrations import apply
+from studio.apps.thought_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.thought_workshop.storage.service_models import MODELS, ACCOUNT_MODELS
+from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
 
 async def run():
     root = Path(sys.argv[1])
@@ -177,18 +181,18 @@ import sys
 from pathlib import Path
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
-from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-from app.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
-from app.runtime.project_operations import ProjectOperationReceipt
-from fpl_runtime.claims import Actor
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_runtime.retention_authority import issue_retention
-from fpl_thought.migrations.registry import MIGRATIONS
-from fpl_thought.models import ACCOUNT_MODELS, MODELS
-from fpl_thought.note_retention import apply_operations_with_references
-from fpl_thought.retention import ThoughtReferences
-from fpl_thought.retention_records import ThoughtReferenceMutation
+from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+from studio.apps.thought_workshop.schemas.operations import ThoughtOperationsIn
+from studio.runtime.database.project_operations import ProjectOperationReceipt
+from studio.contracts.identity.claims import Actor
+from studio.runtime.database.sessions import Database
+from studio.runtime.database.migrations import apply
+from studio.contracts.asset_library.retention_authority import issue_retention
+from studio.apps.thought_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.thought_workshop.note_retention import apply_operations_with_references
+from studio.apps.thought_workshop.retention import ThoughtReferences
+from studio.apps.thought_workshop.storage.retention_records import ThoughtReferenceMutation
 
 class Remote:
     def __init__(self, key): self.key = key
@@ -238,10 +242,10 @@ async def test_incomplete_thought_assembly_locks_storage_and_cannot_report_ready
     import httpx
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-    from fpl_runtime.locking import service_lock
-    from fpl_runtime.routing import RouteCatalog
-    from fpl_thought.application import create_app
-    from fpl_thought.migrations.registry import MIGRATIONS
+    from studio.apps.thought_workshop.storage.migrations.registry import MIGRATIONS
+    from studio.assembly.independent.thought_workshop.application import create_app
+    from studio.contracts.gateway.routing import RouteCatalog
+    from studio.runtime.lifecycle.locking import service_lock
 
     class Client:
         async def close(self):
@@ -276,8 +280,8 @@ async def test_incomplete_thought_assembly_locks_storage_and_cannot_report_ready
 def test_thought_assembly_preserves_published_operation_ids(tmp_path):
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-    from fpl_runtime.routing import RouteCatalog
-    from fpl_thought.application import create_app
+    from studio.assembly.independent.thought_workshop.application import create_app
+    from studio.contracts.gateway.routing import RouteCatalog
 
     root = Path(__file__).resolve().parents[1]
     catalog = RouteCatalog.read(root / "deploy" / "contracts" / "ownership.json")

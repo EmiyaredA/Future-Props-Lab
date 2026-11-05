@@ -13,7 +13,6 @@ import pytest
 from fastapi import UploadFile
 from sqlalchemy import delete
 
-from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.integrations.common import IntegrationValidationError
 from app.integrations.mcp import McpCatalog
@@ -39,6 +38,7 @@ from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.outbound_urls import require_safe_integration_http_url
+from studio.contracts.identity.principal import StudioPrincipal
 
 
 async def _clear_integrations() -> None:

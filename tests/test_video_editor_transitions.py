@@ -1,13 +1,13 @@
 import pytest
 from PIL import Image
 
-from app.apps.video_editor.schemas import VideoEditorTimelineBatchIn, VideoEditorTimelineDocument
-from app.apps.video_editor.timeline import apply_operations
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.timeline_document import (
     normalize_legacy_edge_transitions,
     parse_timeline_document,
 )
+from studio.apps.video_editor.schemas import VideoEditorTimelineBatchIn, VideoEditorTimelineDocument
+from studio.apps.video_editor.timeline import apply_operations
 
 
 def _document() -> dict:

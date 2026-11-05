@@ -19,19 +19,23 @@ from tests.test_galgame_annotation_import import _audio_bytes, _import_body
 from tests.test_galgame_uploads_service import DropAcknowledgement
 from tests.test_independent_project_catalog import ORIGIN, authorize
 
-from fpl_annotation.application import create_app as create_annotation
-from fpl_annotation.migrations.registry import MIGRATIONS as ANNOTATION_MIGRATIONS
-from fpl_galgame.annotation_original import fetch_original
-from fpl_galgame.application import create_app as create_galgame
-from fpl_galgame.migrations.registry import MIGRATIONS as GALGAME_MIGRATIONS
-from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.capability_client import CapabilityDenied
-from fpl_runtime.claims import issue_context, verify_context
-from fpl_runtime.galgame_snapshot import ARCHIVE_DOMAIN
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.project_errors import ProjectResourceError
-from fpl_runtime.thought_archives import ArchiveAuthenticator
+from studio.apps.audio_annotation.storage.migrations.registry import (
+    MIGRATIONS as ANNOTATION_MIGRATIONS,
+)
+from studio.apps.galgame_workshop.annotation.annotation_original import fetch_original
+from studio.apps.galgame_workshop.storage.migrations.registry import (
+    MIGRATIONS as GALGAME_MIGRATIONS,
+)
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.assembly.independent.audio_annotation.application import create_app as create_annotation
+from studio.assembly.independent.galgame_workshop.application import create_app as create_galgame
+from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.contracts.galgame_workshop.galgame_snapshot import ARCHIVE_DOMAIN
+from studio.contracts.identity.claims import issue_context, verify_context
+from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityDenied
+from studio.runtime.project_errors import ProjectResourceError
 
 PROJECTS = "/v1/galgame-workshop/projects"
 ANNOTATION = "/v1/audio-annotation"

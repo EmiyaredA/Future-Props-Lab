@@ -16,17 +16,17 @@ from tests.test_community_asset_protocol import (  # noqa: F401
 )
 from tests.test_independent_project_catalog import authorize
 
-from app.apps.presentation_workshop.projects import Presentations
-from app.apps.presentation_workshop.templates.schema import TemplateDefinition
 from app.capabilities.asset_store.library import AssetLibrary
-from fpl_presentation.application import create_app
-from fpl_presentation.migrations.registry import MIGRATIONS
-from fpl_runtime.capability_client import CapabilityUnavailable
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.presentation_archives import DOMAIN, IMPORT
-from fpl_runtime.presentation_assets import BUNDLE, LIBRARY, PROJECTS
-from fpl_runtime.thought_archives import ArchiveAuthenticator
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.presentation_workshop.projects import Presentations
+from studio.apps.presentation_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.presentation_workshop.templates.schema import TemplateDefinition
+from studio.assembly.independent.presentation_workshop.application import create_app
+from studio.contracts.presentation_workshop.presentation_archives import DOMAIN, IMPORT
+from studio.contracts.presentation_workshop.presentation_assets import BUNDLE, LIBRARY, PROJECTS
+from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityUnavailable
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = "presentation-identity-fixture-secret-unique"

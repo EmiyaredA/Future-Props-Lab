@@ -9,18 +9,18 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from starlette.datastructures import UploadFile
 
-from app.apps.thought_workshop.asset_metadata import LibraryAsset, metadata
-from app.apps.thought_workshop.errors import ThoughtError
 from app.capabilities.asset_store.library import AssetLibrary
-from fpl_assets.application import create_app
-from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_assets.settings import StorageSettings
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
-from fpl_runtime.thought_assets import PREFIX, AssetQuery
-from fpl_thought.asset_metadata import HttpAssetMetadata
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.thought_workshop.asset_metadata import HttpAssetMetadata
+from studio.apps.thought_workshop.errors import ThoughtError
+from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset, metadata
+from studio.assembly.independent.asset_library.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.delegation import RequestGrant, permitted, target_permission_path
+from studio.contracts.thought_workshop.thought_assets import PREFIX, AssetQuery
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
@@ -267,13 +267,15 @@ async def test_interrupted_download_removes_only_its_partial_file(tmp_path):
 async def test_creation_prefetches_before_writer_reservation(instance, tmp_path):
     from sqlalchemy import event
 
-    from app.apps.thought_workshop.directory import Directory
-    from app.apps.thought_workshop.knowledge import KnowledgeBases
-    from app.apps.thought_workshop.schemas.knowledge import KnowledgeBaseIn
-    from app.apps.thought_workshop.schemas.workshop import ThoughtNoteCreate
-    from fpl_runtime.database import Database
-    from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
-    from fpl_thought.models import ACCOUNT_MODELS, MODELS
+    from studio.apps.thought_workshop.directory import Directory
+    from studio.apps.thought_workshop.knowledge import KnowledgeBases
+    from studio.apps.thought_workshop.schemas.knowledge import KnowledgeBaseIn
+    from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteCreate
+    from studio.apps.thought_workshop.storage.migrations.registry import (
+        MIGRATIONS as THOUGHT_MIGRATIONS,
+    )
+    from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
+    from studio.runtime.database.sessions import Database
 
     app, _client, key, asset_id = instance
     root = tmp_path / "thought"

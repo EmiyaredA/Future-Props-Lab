@@ -9,18 +9,6 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.apps.visual_workshop.generation_runner import (
-    MaterializationError,
-    VisualGenerationRunner,
-    _assert_public_https,
-    _generated_type,
-    _safe_task_error,
-)
-from app.apps.visual_workshop.models import (
-    VisualGenerationTask,
-    VisualWorkshopProject,
-)
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.models import (
@@ -31,6 +19,18 @@ from app.llm.providers.temporary_media import TemporaryMediaError
 from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.storage.models import (
+    VisualGenerationTask,
+    VisualWorkshopProject,
+)
+from studio.apps.visual_workshop.website.generation_runner import (
+    MaterializationError,
+    VisualGenerationRunner,
+    _assert_public_https,
+    _generated_type,
+    _safe_task_error,
+)
 
 
 def _task(

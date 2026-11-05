@@ -10,17 +10,22 @@ from sqlalchemy import select
 
 from app.llm.catalog.seed import ensure_account_model_catalog
 from app.llm.models import ModelCatalogState, ModelProvider
-from fpl_models.account_events import CatalogEventClient, CatalogEventTransportError
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS, AccountDefaults, CatalogProvisioningReceipt
-from fpl_models.provisioning import (
+from studio.apps.model_service.account_events import CatalogEventClient, CatalogEventTransportError
+from studio.apps.model_service.provisioning import (
     CatalogProvisioning,
     CatalogProvisioningConflict,
     CatalogProvisioningExpired,
 )
-from fpl_runtime.catalog_events import CatalogDelivery, CatalogEvent
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import (
+    ACCOUNT_MODELS,
+    MODELS,
+    AccountDefaults,
+    CatalogProvisioningReceipt,
+)
+from studio.contracts.model_service.catalog_events import CatalogDelivery, CatalogEvent
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 def event(owner="alpha", *, identity="event-alpha", role="user", revision=0):

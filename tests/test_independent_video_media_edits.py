@@ -15,10 +15,10 @@ from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_video.application import PROJECTS, create_app
-from fpl_video.migrations.registry import MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.video_editor.application import PROJECTS, create_app
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -143,7 +143,7 @@ async def test_asset_removal_settles_and_rechecks_inflight_timeline(
 ):
     import asyncio
 
-    from fpl_video.timeline_media import TimelineMedia
+    from studio.apps.video_editor.timeline_media import TimelineMedia
 
     case = scenario
     credential = "isolated-video-removal-credential"

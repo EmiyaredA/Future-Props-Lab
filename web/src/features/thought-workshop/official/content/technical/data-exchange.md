@@ -71,6 +71,6 @@ import_backup 先限制上传大小、检查归档路径和内容，再准备新
 
 ## 代码入口
 
-1. `backend/app/apps/thought_workshop/portability.py`
-2. `backend/app/apps/thought_workshop/knowledge_tools/export_snapshot.py`
-3. `backend/app/apps/video_editor/rendering.py`
+1. `backend/studio/apps/thought_workshop/portability.py`
+2. `backend/studio/apps/thought_workshop/knowledge_tools/export_snapshot.py`
+3. `backend/studio/apps/video_editor/rendering.py`

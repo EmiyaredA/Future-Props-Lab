@@ -14,21 +14,21 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.capabilities.identity.permissions import role_scopes
 from app.runtime.config import Settings
 from app.runtime.operation_receipts import OperationError
-from fpl_host.mcp_control import McpControl
-from fpl_host.mcp_worker import McpWorker
-from fpl_host.transport import NativeTransport
-from fpl_integrations.application import create_app
-from fpl_integrations.migrations.registry import MIGRATIONS
-from fpl_integrations.native_mcp_records import NativeMcpJob
-from fpl_integrations.records import ValidationAttempt
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.integration_intents import IntegrationScope, digest
-from fpl_runtime.migrations import apply
-from fpl_runtime.native_protocol import NativeLease, NativeOutcome
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.integrations.records import ValidationAttempt
+from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
+from studio.apps.integrations.storage.native_mcp_records import NativeMcpJob
+from studio.assembly.independent.integrations.application import create_app
+from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.integrations.integration_intents import IntegrationScope, digest
+from studio.host.integrations.mcp_control import McpControl
+from studio.host.integrations.mcp_worker import McpWorker
+from studio.host.transport import NativeTransport
+from studio.runtime.database.migrations import apply
 from test_integrations_application import Ports
 
 

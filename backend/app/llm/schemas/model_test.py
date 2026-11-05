@@ -13,8 +13,11 @@ from app.capabilities.transcription.schemas import (
     ModelTestTranscriptionParametersOut,
 )
 from app.llm.schemas.video_capabilities import VideoCapabilitiesOut
-from app.llm.schemas.workflow_video import WorkflowVideoCapabilitiesOut, WorkflowVideoParameters
 from app.llm.task_execution import TaskExecutionInfo
+from studio.contracts.model_service.workflow_video import (
+    WorkflowVideoCapabilitiesOut,
+    WorkflowVideoParameters,
+)
 
 MessageStatus = Literal["pending", "completed", "error", "cancelled", "superseded"]
 

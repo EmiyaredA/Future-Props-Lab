@@ -2,7 +2,7 @@
 
 import json
 
-from fpl_runtime.catalog_events import CatalogEvents
+from studio.contracts.model_service.catalog_events import CatalogEvents
 
 CLIENT = """
 import json

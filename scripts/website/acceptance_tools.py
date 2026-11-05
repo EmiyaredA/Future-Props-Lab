@@ -6,7 +6,7 @@ from pathlib import Path
 if not getattr(sys, "frozen", False):
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
 
-from app.apps.visual_workshop.acceptance.execution.task_tools import main  # noqa: E402
+from studio.apps.visual_workshop.acceptance.execution.task_tools import main  # noqa: E402
 
 if __name__ == "__main__":
     if sys.argv[1:2] == ["--run-agent"]:

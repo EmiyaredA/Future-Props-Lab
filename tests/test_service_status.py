@@ -5,10 +5,10 @@ from datetime import timedelta
 import httpx
 import pytest
 
-from fpl_gateway.service_status import ServiceMonitor
-from fpl_host.service_observation import ServiceObserver, container_state
-from fpl_runtime.capability_client import CapabilityDenied, CapabilityUnavailable
-from fpl_runtime.service_status import DeploymentServicesOut, status_time
+from studio.apps.gateway.service_status import ServiceMonitor
+from studio.contracts.gateway.service_status import DeploymentServicesOut, status_time
+from studio.host.deployment.service_observation import ServiceObserver, container_state
+from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 
 class Host:

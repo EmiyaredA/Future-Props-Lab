@@ -8,13 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from app.apps.visual_workshop.acceptance.execution.task_tools import (
+from app.capabilities.agents.cli.process import CliError, command, environment, execute, probe
+from studio.apps.visual_workshop.acceptance.execution.task_tools import (
     MediaTools,
     file_digest,
     safe_file,
 )
-from app.capabilities.agents.cli.process import CliError, command, environment, execute, probe
-from fpl_runtime.visual_agent_report import validate_report
+from studio.contracts.visual_workshop.visual_agent_report import validate_report
 
 
 def fake_cli(root, body):

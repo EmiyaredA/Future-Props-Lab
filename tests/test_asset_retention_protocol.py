@@ -32,9 +32,9 @@ def test_retention_protocol_uses_owned_intents_and_live_identity(tmp_path):
 def test_retention_authority_is_bound_to_caller_request_and_complete_change():
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-    from fpl_runtime.asset_references import PrepareReferenceChange
-    from fpl_runtime.claims import Actor
-    from fpl_runtime.retention_authority import issue_retention, verify_retention
+    from studio.contracts.asset_library.references import PrepareReferenceChange
+    from studio.contracts.asset_library.retention_authority import issue_retention, verify_retention
+    from studio.contracts.identity.claims import Actor
 
     private = Ed25519PrivateKey.generate()
     actor = Actor(
@@ -68,9 +68,9 @@ def test_other_token_purposes_keys_and_malformed_retention_claims_are_rejected()
     import pytest
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-    from fpl_runtime.asset_references import PrepareReferenceChange
-    from fpl_runtime.claims import Actor, issue_context
-    from fpl_runtime.retention_authority import issue_retention, verify_retention
+    from studio.contracts.asset_library.references import PrepareReferenceChange
+    from studio.contracts.asset_library.retention_authority import issue_retention, verify_retention
+    from studio.contracts.identity.claims import Actor, issue_context
 
     private = Ed25519PrivateKey.generate()
     actor = Actor("owner", "user", "session", ("studio:write",), session_id="session")
@@ -121,9 +121,9 @@ async def test_retention_client_never_follows_redirects_or_aborts_unknown_outcom
     import httpx
     import pytest
 
-    from fpl_runtime.asset_references import PrepareReferenceChange
-    from fpl_runtime.capability_client import CapabilityUnavailable
-    from fpl_runtime.retention_client import RetentionClient
+    from studio.apps.asset_library.clients.retention import RetentionClient
+    from studio.contracts.asset_library.references import PrepareReferenceChange
+    from studio.runtime.http.capability_client import CapabilityUnavailable
 
     requests = []
 
@@ -162,9 +162,9 @@ async def test_expired_preparation_cannot_create_an_intent_even_if_admission_was
     from sqlalchemy import select
 
     from app.capabilities.asset_store.library import AssetError
-    from fpl_assets.models import ReferenceIntent
-    from fpl_assets.reference_changes import ReferenceChanges
-    from fpl_runtime.asset_references import PrepareReferenceChange
+    from studio.apps.asset_library.references.reference_changes import ReferenceChanges
+    from studio.apps.asset_library.storage.service_models import ReferenceIntent
+    from studio.contracts.asset_library.references import PrepareReferenceChange
 
     database, _references = assets
     with pytest.raises(AssetError) as rejected:

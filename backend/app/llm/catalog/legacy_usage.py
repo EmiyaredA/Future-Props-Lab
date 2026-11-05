@@ -3,7 +3,7 @@
 from sqlalchemy import func, select
 
 from app.llm.models import ModelInferenceTask, ModelTestGenerationTask
-from app.runtime.orm_base import Base
+from studio.runtime.database.orm_base import Base
 
 GENERATION_ACTIVE = ("queued", "submitting", "pending", "processing")
 

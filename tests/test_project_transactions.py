@@ -11,7 +11,7 @@ from app.capabilities.asset_store.project_transactions import (
 )
 from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import Settings
-from app.runtime.revisions import RevisionConflictError, require_revision_write
+from studio.runtime.revisions import RevisionConflictError, require_revision_write
 
 
 class FakeSession:

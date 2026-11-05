@@ -12,12 +12,12 @@ from tests.test_native_models import recording, stop, task
 
 from app.llm.inference.tasks import InferenceTasks
 from app.llm.models import ModelInferenceTask
-from fpl_host.receipts import ReceiptStore
-from fpl_models.models import TaskAuthorization
-from fpl_models.native_files import accept_result
-from fpl_models.native_records import NativeModelJob, NativeModelProof
-from fpl_runtime.model_outputs import ModelOutputDescription
-from fpl_runtime.native_protocol import NativeLease, NativeOutcome
+from studio.apps.model_service.local_models.native_files import accept_result
+from studio.apps.model_service.storage.native_records import NativeModelJob, NativeModelProof
+from studio.apps.model_service.storage.service_models import TaskAuthorization
+from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
+from studio.host.receipts import ReceiptStore
+from studio.runtime.files.signed_payloads import ModelOutputDescription
 
 native_case = test_native_models.case
 

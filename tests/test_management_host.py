@@ -7,12 +7,12 @@ from uuid import uuid4
 
 import pytest
 
-from fpl_deployment.gateway import render_gateway
-from fpl_deployment.images import source_closure
-from fpl_host.management_control import DeploymentControl, redact
-from fpl_host.receipts import ReceiptStore
-from fpl_runtime.native_protocol import NativeLease
-from fpl_runtime.routing import RouteCatalog
+from studio.contracts.agent_workbench.native import NativeLease
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.deployment.gateway import render_gateway
+from studio.deployment.images import public_client_module, source_closure
+from studio.host.deployment.management_control import DeploymentControl, redact
+from studio.host.receipts import ReceiptStore
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -115,10 +115,13 @@ def test_receipt_intent_with_unknown_outcome_never_repeats_command(tmp_path):
 
 def test_management_image_excludes_business_and_host_implementations():
     closure = source_closure(ROOT, "management")
-    assert "fpl_management.application" in closure
+    assert "studio.assembly.independent.management.application" in closure
     assert not any(
-        name.startswith(("fpl_identity", "fpl_host", "app.console.models", "app.apps", "app.llm"))
+        name.startswith(
+            ("studio.apps.identity", "studio.host", "app.console.models", "app.apps", "app.llm")
+        )
         for name in closure
+        if not public_client_module(name)
     )
 
 
@@ -188,7 +191,7 @@ async def test_two_tunnels_can_stop_independently(tmp_path):
     import asyncio
 
     from app.capabilities.web_access.contracts import GatewayProfile
-    from fpl_host.management_tunnels import GatewayTunnel
+    from studio.host.deployment.management_tunnels import GatewayTunnel
 
     class SimulatedTunnel(GatewayTunnel):
         async def check(self, **_kwargs):
@@ -213,7 +216,7 @@ async def test_tunnel_rejects_mismatched_gateway_builds(tmp_path, monkeypatch):
     import httpx
 
     from app.capabilities.web_access.contracts import GatewayProfile
-    from fpl_host.management_tunnels import GatewayTunnel
+    from studio.host.deployment.management_tunnels import GatewayTunnel
 
     token = "a" * 32
     for kind in ("identity", "known_hosts"):
@@ -269,7 +272,7 @@ def test_management_overlay_has_only_its_own_state_and_no_host_secrets():
 async def test_native_tunnel_uses_the_single_management_public_origin(tmp_path):
     import json
 
-    from fpl_host.management import configuration
+    from studio.assembly.host.management import configuration
 
     backend = tmp_path / "backend"
     backend.mkdir()

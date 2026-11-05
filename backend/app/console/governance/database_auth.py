@@ -8,8 +8,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.identity.http_context import forbidden, unauthorized
-from app.capabilities.identity.permissions import role_scopes
-from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.security import (
     SESSION_ACTIVITY_WRITE_SECONDS,
     SESSION_COOKIE,
@@ -20,7 +18,9 @@ from app.capabilities.identity.session_policy import session_policy
 from app.console.models import AuthSession, ManagementApiKey, User
 from app.runtime.config import get_settings
 from app.runtime.ownership import bind_owner
-from app.runtime.time import utc_now
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.time import utc_now
 
 UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 

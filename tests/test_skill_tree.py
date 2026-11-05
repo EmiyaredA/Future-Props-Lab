@@ -5,7 +5,7 @@ import zipfile
 
 import pytest
 
-from fpl_runtime.skill_tree import skill_tree_sha256
+from studio.runtime.files.skill_tree import skill_tree_sha256
 
 
 def extract(root, *, reverse=False, change=False):
@@ -51,7 +51,7 @@ def test_tree_digest_rejects_symlinks_and_limits(tmp_path):
 
 
 async def test_published_source_rejects_other_release_paths_and_symlinked_account(tmp_path):
-    from fpl_creative.skill_integrity import published_skill_tree
+    from studio.apps.creative_workshop.skill_integrity import published_skill_tree
 
     target = tmp_path / "outside"
     target.mkdir()

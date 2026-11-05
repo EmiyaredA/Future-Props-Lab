@@ -1,6 +1,6 @@
 """Creative source targets are fixed and parse to path-free immutable values."""
 
-from fpl_runtime.creative_integrations import creative_source_target
+from studio.contracts.creative_workshop.creative_integrations import creative_source_target
 
 
 def test_source_targets_identify_exact_scope_and_reject_extra_paths():

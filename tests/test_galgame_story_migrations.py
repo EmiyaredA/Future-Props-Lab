@@ -8,15 +8,15 @@ import pytest
 from sqlalchemy import select, update
 from tests.account_fixtures import account_record
 
-from app.apps.galgame_workshop.models import GalgameStoryDocument, GalgameWorkshopProject
-from app.apps.galgame_workshop.story.story import default_story_document
-from app.apps.galgame_workshop.story.story_migrations import (
-    GalgameStoryMigrations,
-    inspect_story_migration,
-)
 from app.main import app
 from app.orm import bind_owner
 from app.runtime.db import SessionLocal
+from studio.apps.galgame_workshop.storage.models import GalgameStoryDocument, GalgameWorkshopProject
+from studio.apps.galgame_workshop.story.story import default_story_document
+from studio.apps.galgame_workshop.story.story_migrations import (
+    GalgameStoryMigrations,
+    inspect_story_migration,
+)
 
 
 def story_document(version: str = "1.4") -> dict:

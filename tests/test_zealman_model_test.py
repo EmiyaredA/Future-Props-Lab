@@ -12,7 +12,7 @@ from app.llm.providers._senseaudio import ProviderTaskStatus
 from app.llm.providers.zealman_workflows import U06, U17
 from app.main import app
 from app.runtime.db import SessionLocal
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 @pytest.mark.asyncio

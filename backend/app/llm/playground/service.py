@@ -31,8 +31,8 @@ from app.llm.schemas.model_test import (
     ModelTestMessageOut,
 )
 from app.runtime.config import Settings, get_settings
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import iso_utc, utc_now
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import iso_utc, utc_now
 
 
 class ModelUnavailableError(Exception):

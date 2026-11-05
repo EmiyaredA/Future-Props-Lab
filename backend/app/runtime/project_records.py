@@ -6,7 +6,7 @@ from typing import Any, TypeVar
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.revisions import RevisionSnapshot, require_revision_write
+from studio.runtime.revisions import RevisionSnapshot, require_revision_write
 
 ProjectRow = TypeVar("ProjectRow")
 

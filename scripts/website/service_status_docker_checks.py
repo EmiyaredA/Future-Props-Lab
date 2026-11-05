@@ -6,9 +6,9 @@ from threading import Event, Thread
 
 import httpx
 
-from fpl_deployment.gateway import render_gateway
-from fpl_host.service_observation import ServiceObserver
-from fpl_runtime.routing import RouteCatalog
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.deployment.gateway import render_gateway
+from studio.host.deployment.service_observation import ServiceObserver
 
 
 class StatusFixture:

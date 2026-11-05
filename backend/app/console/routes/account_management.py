@@ -2,7 +2,6 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
-from app.capabilities.identity.error_views import error_detail
 from app.console.governance.account_creation import create_managed_account
 from app.console.governance.management import (
     account_page,
@@ -22,6 +21,7 @@ from app.console.schemas.accounts import (
     SecurityAuditListOut,
 )
 from app.deps import SessionDep, client_ip
+from studio.runtime.http.account_errors import error_detail
 
 router = APIRouter(tags=["account-management"])
 

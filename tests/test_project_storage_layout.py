@@ -6,16 +6,16 @@ import httpx
 import pytest
 from sqlalchemy import delete, select
 
-from app.apps.galgame_workshop.models import GalgameWorkshopProject
-from app.apps.thought_workshop.models import ThoughtKnowledgeBase
-from app.apps.visual_workshop.models import VisualWorkshopProject
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.layout_migration import reconcile_project_trash
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
+from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
+from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
 
 
 async def _reset() -> None:

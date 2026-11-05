@@ -5,8 +5,8 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.runtime.orm_base import Base
-from app.runtime.time import utc_now
+from studio.runtime.database.orm_base import Base
+from studio.runtime.time import utc_now
 
 
 class ToolNavigationItem(Base):

@@ -1,8 +1,8 @@
 """Archive preflight retains files present only in a historical snapshot."""
 
-from app.apps.thought_workshop.archive_import import allocate_ids, archive_references
-from app.apps.thought_workshop.schemas.document import empty_document
-from app.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
+from studio.apps.thought_workshop.schemas.document import empty_document
+from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
+from studio.apps.thought_workshop.website.archive_import import allocate_ids, archive_references
 
 
 def image_document(asset_id):

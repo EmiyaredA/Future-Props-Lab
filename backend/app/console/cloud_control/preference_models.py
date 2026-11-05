@@ -1,7 +1,7 @@
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.runtime.orm_base import Base, external_id
+from studio.runtime.database.orm_base import Base, external_id
 
 
 class DesktopPreference(Base):

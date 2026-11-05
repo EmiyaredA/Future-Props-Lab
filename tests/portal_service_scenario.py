@@ -9,12 +9,12 @@ from pathlib import Path
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from fpl_portal.application import create_app
-from fpl_portal.migrations.registry import MIGRATIONS
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.migrations import apply
-from fpl_runtime.protocol_hash import public_contract
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.portal.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.portal.application import create_app
+from studio.contracts.gateway.protocol_hash import public_contract
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.runtime.database.migrations import apply
 
 assert "app.orm" not in sys.modules and "app.main" not in sys.modules
 assert not any(

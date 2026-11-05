@@ -2,7 +2,7 @@
 
 from pydantic import BaseModel, Field
 
-from .definitions import AgentId
+from studio.contracts.agent_runtime.definitions import AgentId
 
 
 class ModelOption(BaseModel):

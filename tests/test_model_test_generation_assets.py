@@ -8,14 +8,14 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import VisualAsset
 from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
 from app.llm.playground.generation_assets import GenerationAssetError, ModelTestGenerationAssets
 from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
-from app.runtime.time import utc_now
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.runtime.time import utc_now
 
 
 def _task(*, status: str = "failed", payload: dict | None = None) -> ModelTestGenerationTask:

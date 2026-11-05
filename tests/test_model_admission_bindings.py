@@ -13,8 +13,6 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, HTTPException
 
-from app.capabilities.identity.permissions import role_scopes
-from app.capabilities.identity.principal import StudioPrincipal
 from app.llm.admission import AdmissionBindings
 from app.llm.routes.model_capacity import (
     ModelCapacity,
@@ -22,9 +20,11 @@ from app.llm.routes.model_capacity import (
     spawned_task_admission,
     task_admission,
 )
-from fpl_runtime.authentication import SignedIdentity
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.routing import RouteCatalog
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.http.authentication import SignedIdentity
 
 
 def test_capacity_protocol_import_has_no_legacy_database_or_foreign_orm(tmp_path):

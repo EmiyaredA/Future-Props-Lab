@@ -121,9 +121,9 @@ flowchart TD
 
 ## 代码入口
 
-1. `backend/app/apps/visual_workshop/operations.py`
-2. `backend/app/apps/visual_workshop/generation.py`
-3. `backend/app/apps/visual_workshop/generation_runner.py`
+1. `backend/studio/apps/visual_workshop/operations.py`
+2. `backend/studio/apps/visual_workshop/website/generation.py`
+3. `backend/studio/apps/visual_workshop/website/generation_runner.py`
 
 ## 节点验收与创作结果分开保存
 

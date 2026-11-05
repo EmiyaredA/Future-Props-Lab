@@ -15,18 +15,23 @@ from PIL import Image
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from fpl_rendering.application import create_app as render_app
-from fpl_rendering.migrations.registry import MIGRATIONS as RENDER_MIGRATIONS
-from fpl_rendering.settings import RenderingSettings
-from fpl_runtime.capability_client import CapabilityClient, CapabilityUnavailable
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.thought_archives import ArchiveAuthenticator
-from fpl_runtime.video_exports import OUTPUTS, output_peer
-from fpl_runtime.video_processing import JOBS, ORIGINALS, originals_peer, video_peer
-from fpl_runtime.video_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, IMPORT
-from fpl_video.application import PROJECTS, create_app
-from fpl_video.migrations.registry import MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.media_rendering.settings import RenderingSettings
+from studio.apps.media_rendering.storage.migrations.registry import MIGRATIONS as RENDER_MIGRATIONS
+from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.media_rendering.application import create_app as render_app
+from studio.assembly.independent.video_editor.application import PROJECTS, create_app
+from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
+from studio.contracts.video_editor.video_exports import OUTPUTS, output_peer
+from studio.contracts.video_editor.video_processing import (
+    JOBS,
+    ORIGINALS,
+    originals_peer,
+    video_peer,
+)
+from studio.contracts.video_editor.video_snapshot import ARCHIVE_DOMAIN, ARCHIVE_PREFIX, IMPORT
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityClient, CapabilityUnavailable
 
 ROOT = Path(__file__).resolve().parents[1]
 VIDEO_TOKEN = "isolated-video-derivatives-client-credential"

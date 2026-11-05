@@ -2,8 +2,8 @@
 
 import sqlite3
 
-from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_runtime.migrations import apply, check
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.runtime.database.migrations import apply, check
 
 
 def test_prepared_intent_upgrade_preserves_existing_files_pins_and_receipts(tmp_path):

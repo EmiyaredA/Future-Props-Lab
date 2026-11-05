@@ -8,8 +8,8 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 from tests.presentation_helpers import element, sample_document
 
-from app.apps.presentation_workshop.pptx_export import write_pptx
-from app.apps.presentation_workshop.schemas.document import PresentationDocument
+from studio.apps.presentation_workshop.pptx_export import write_pptx
+from studio.apps.presentation_workshop.schemas.document import PresentationDocument
 
 NS = {
     "p": "http://schemas.openxmlformats.org/presentationml/2006/main",

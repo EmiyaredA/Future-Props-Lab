@@ -6,8 +6,12 @@ from pathlib import Path
 import httpx
 import pytest
 
-from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied, CapabilityUnavailable
-from fpl_runtime.routing import RouteCatalog
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.runtime.http.capability_client import (
+    CapabilityClient,
+    CapabilityDenied,
+    CapabilityUnavailable,
+)
 
 CATALOG = RouteCatalog.read(Path(__file__).resolve().parents[1] / "deploy/contracts/ownership.json")
 

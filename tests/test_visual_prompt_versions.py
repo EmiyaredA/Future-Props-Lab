@@ -6,18 +6,18 @@ import pytest
 from pydantic import ValidationError
 from tests.migration_fixtures import MIGRATIONS, apply_migrations
 
-from app.apps.visual_workshop.schemas.workshop import (
+from app.deps import SessionDep, require_studio_auth
+from app.main import app
+from app.orm import bind_owner
+from db.migrations.runner import connect_database, ensure_registry, migration_checksum
+from studio.apps.visual_workshop.schemas.workshop import (
     VisualCanvasAudioGenerationDraft,
     VisualCanvasDocumentPutIn,
     VisualCanvasImageGenerationDraft,
     VisualCanvasVideoGenerationDraft,
 )
-from app.apps.visual_workshop.snapshot_values import remap_canvas
-from app.capabilities.identity.principal import StudioPrincipal
-from app.deps import SessionDep, require_studio_auth
-from app.main import app
-from app.orm import bind_owner
-from db.migrations.runner import connect_database, ensure_registry, migration_checksum
+from studio.apps.visual_workshop.snapshot_values import remap_canvas
+from studio.contracts.identity.principal import StudioPrincipal
 
 DRAFTS = [
     VisualCanvasImageGenerationDraft,

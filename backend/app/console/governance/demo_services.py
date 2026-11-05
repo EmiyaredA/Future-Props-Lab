@@ -1,6 +1,5 @@
 from sqlalchemy import select
 
-from app.capabilities.identity.errors import AccountError
 from app.console.governance.governance_transactions import begin_governance
 from app.console.governance.platform_settings import write_setting
 from app.console.governance.service import add_audit_event
@@ -18,6 +17,7 @@ from app.integrations.models import ToolApiIntegration
 from app.llm.catalog.legacy import legacy_catalog
 from app.llm.models import ModelEntry, ModelProvider
 from app.runtime.credentials import encrypt_secret
+from studio.contracts.identity.errors import AccountError
 
 
 async def services(session):

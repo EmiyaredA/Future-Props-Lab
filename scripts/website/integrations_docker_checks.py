@@ -13,7 +13,7 @@ from uuid import uuid4
 
 import httpx
 
-from fpl_runtime.integration_intents import digest
+from studio.contracts.integrations.integration_intents import digest
 
 
 class IntegrationsFixture:
@@ -82,7 +82,7 @@ server.run(transport='stdio')
             [
                 sys.executable,
                 "-m",
-                "fpl_host.mcp_worker",
+                "studio.host.integrations.mcp_worker",
                 "--connection",
                 str(self.root / "integrations-connection.json"),
                 "--profiles",

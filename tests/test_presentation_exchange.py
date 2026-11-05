@@ -9,10 +9,10 @@ from PIL import Image
 from pptx import Presentation
 from tests.presentation_helpers import element, sample_document
 
-from app.apps.presentation_workshop.exchange.pptx_import import read_pptx
-from app.apps.presentation_workshop.pptx_export import write_pptx
-from app.apps.presentation_workshop.schemas.document import PresentationDocument
 from app.main import app
+from studio.apps.presentation_workshop.exchange.pptx_import import read_pptx
+from studio.apps.presentation_workshop.pptx_export import write_pptx
+from studio.apps.presentation_workshop.schemas.document import PresentationDocument
 
 ROOT = "/v1/presentation-workshop"
 
@@ -266,8 +266,8 @@ async def test_package_cross_workspace_remaps_background_assets():
 
 @pytest.mark.asyncio
 async def test_import_transaction_failure_removes_prepared_files(monkeypatch):
-    from app.apps.presentation_workshop.projects import PresentationError, Presentations
     from app.capabilities.asset_store.library import AssetLibrary
+    from studio.apps.presentation_workshop.projects import PresentationError, Presentations
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

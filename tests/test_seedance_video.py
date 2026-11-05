@@ -8,8 +8,6 @@ import pytest
 from PIL import Image
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
-from app.apps.visual_workshop.generation import GenerationError, VisualGeneration
-from app.apps.visual_workshop.models import VisualWorkshopProject
 from app.capabilities.asset_store.models import VisualAsset
 from app.llm.inference.catalog import normalize_parameters
 from app.llm.models import (
@@ -22,7 +20,6 @@ from app.llm.playground.generation import ModelTestGeneration
 from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.seedance_references import SeedanceReference, validate_seedance_references
 from app.llm.providers.volcengine_video import create_task, get_task
-from app.llm.schemas.generation_tasks import VideoGenerationTaskCreateIn
 from app.llm.schemas.model_inference import InferenceTaskIn
 from app.llm.schemas.model_service import ProviderIn
 from app.llm.schemas.model_test import ModelTestVideoGenerationIn
@@ -31,6 +28,9 @@ from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
+from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
+from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
+from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
 
 V20 = "doubao-seedance-2-0-260128"
 V25 = "doubao-seedance-2-5-260628"
@@ -198,10 +198,10 @@ def test_independent_inference_uses_identical_video_version_rules():
 async def test_all_video_entry_points_inline_ark_audio_and_preserve_provider_neutral_content(
     monkeypatch,
 ):
-    from app.apps.visual_workshop import generation_runner as visual_runner
     from app.llm import visual_generation_submission as visual_submission
     from app.llm.inference import runner as inference_runner
     from app.llm.playground import generation_runner as test_runner
+    from studio.apps.visual_workshop.website import generation_runner as visual_runner
 
     captured = []
 

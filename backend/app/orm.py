@@ -5,113 +5,6 @@ from __future__ import annotations
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
-from app.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchProject, WorkbenchTurn
-from app.apps.agent_workbench.models import (
-    WorkbenchChange,
-    WorkbenchOperation,
-    WorkbenchSession,
-    WorkbenchSource,
-)
-from app.apps.audio_annotation.models import (
-    AudioAnnotationDocument,
-    AudioAnnotationProject,
-    AudioAnnotationWaveform,
-)
-from app.apps.director_desk.models import DirectorDeskProject, DirectorDeskUserMotion
-from app.apps.galgame_workshop.models import (
-    GalgameAnnotationImportTask,
-    GalgameAssetMetadata,
-    GalgameAssetSettings,
-    GalgameAssetTranscriptionTask,
-    GalgameProjectAssetReference,
-    GalgameStoryDocument,
-    GalgameStorySnapshot,
-    GalgameVideoEditorHandoffTask,
-    GalgameVideoExportTask,
-    GalgameWorkshopProject,
-)
-from app.apps.interview_assistant.models import InterviewPreparation, InterviewRoom
-from app.apps.motion_compositor.models import (
-    MotionDocument,
-    MotionOperationBatch,
-    MotionProject,
-    MotionTask,
-)
-from app.apps.presentation_workshop.models import (
-    PresentationAssetReference,
-    PresentationProject,
-)
-from app.apps.presentation_workshop.templates.models import (
-    PresentationExample,
-    PresentationExampleAsset,
-    PresentationTemplate,
-    PresentationTemplateAsset,
-)
-from app.apps.thought_workshop.external_sync.models import (
-    ArticleSyncAsset,  # noqa: F401 — register child metadata
-    ArticleSyncBinding,
-    ArticleSyncStep,  # noqa: F401 — register child metadata
-    ArticleSyncTask,
-)
-from app.apps.thought_workshop.knowledge_tools.models import (
-    ThoughtCheckpoint,
-    ThoughtDocumentReference,
-    ThoughtReadingState,
-    ThoughtSavedFilter,
-    ThoughtTemplate,
-    ThoughtTemplateAsset,
-)
-from app.apps.thought_workshop.models import (
-    ThoughtHistoryAsset,
-    ThoughtKnowledgeBase,
-    ThoughtNote,
-    ThoughtNoteAsset,
-    ThoughtNoteHistory,
-)
-from app.apps.thought_workshop.multitable.models import (
-    DataAsset,
-    DataChange,
-    DataField,
-    DataRecord,
-    DataTable,
-    DataView,
-)
-from app.apps.thought_workshop.publication.models import (
-    ArticleMember,
-    CommunityFavorite,
-    CommunityUpload,
-    OfficialImportReceipt,
-    OfficialSource,
-    Publication,
-    PublishedArticle,
-)
-from app.apps.video_editor.models import (
-    VideoEditorAssetMetadata,
-    VideoEditorOperationBatch,
-    VideoEditorProject,
-    VideoEditorTask,
-    VideoEditorTimeline,
-)
-from app.apps.visual_workshop.acceptance.models import (
-    AcceptanceAssetReference,
-    AcceptanceRepairDraft,
-    AcceptanceRun,
-    AcceptanceStandard,
-    AcceptanceStandardVersion,
-    AcceptanceTemplate,
-    NodeAcceptanceBinding,
-)
-from app.apps.visual_workshop.models import (
-    VisualAssistantAction,
-    VisualAssistantConversation,
-    VisualAssistantMessage,
-    VisualAssistantMessageAsset,
-    VisualCanvasDocument,
-    VisualGenerationBatch,
-    VisualGenerationTask,
-    VisualWorkshopProject,
-)
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
@@ -164,12 +57,120 @@ from app.llm.models import (
     ModelTestTranscriptionTask,
 )
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
-from app.runtime.orm_base import Base
 from app.runtime.ownership import TenantScopeError, bind_owner, require_owner_id
-from app.runtime.project_operations import ProjectOperationReceipt
 from app.tool_navigation.models import (
     ToolNavigationItem,
 )
+from studio.apps.agent_workbench.execution.models import (
+    WorkbenchChat,
+    WorkbenchProject,
+    WorkbenchTurn,
+)
+from studio.apps.agent_workbench.storage.models import (
+    WorkbenchChange,
+    WorkbenchOperation,
+    WorkbenchSession,
+    WorkbenchSource,
+)
+from studio.apps.audio_annotation.models import (
+    AudioAnnotationDocument,
+    AudioAnnotationProject,
+    AudioAnnotationWaveform,
+)
+from studio.apps.director_desk.storage.models import DirectorDeskProject, DirectorDeskUserMotion
+from studio.apps.galgame_workshop.storage.models import (
+    GalgameAnnotationImportTask,
+    GalgameAssetMetadata,
+    GalgameAssetSettings,
+    GalgameAssetTranscriptionTask,
+    GalgameProjectAssetReference,
+    GalgameStoryDocument,
+    GalgameStorySnapshot,
+    GalgameVideoEditorHandoffTask,
+    GalgameVideoExportTask,
+    GalgameWorkshopProject,
+)
+from studio.apps.interview_assistant.storage.models import InterviewPreparation, InterviewRoom
+from studio.apps.motion_compositor.storage.models import (
+    MotionDocument,
+    MotionOperationBatch,
+    MotionProject,
+    MotionTask,
+)
+from studio.apps.presentation_workshop.storage.models import (
+    PresentationAssetReference,
+    PresentationProject,
+)
+from studio.apps.presentation_workshop.templates.models import (
+    PresentationExample,
+    PresentationExampleAsset,
+    PresentationTemplate,
+    PresentationTemplateAsset,
+)
+from studio.apps.thought_workshop.external_sync.models import ArticleSyncAsset as ArticleSyncAsset
+from studio.apps.thought_workshop.external_sync.models import ArticleSyncBinding, ArticleSyncTask
+from studio.apps.thought_workshop.external_sync.models import ArticleSyncStep as ArticleSyncStep
+from studio.apps.thought_workshop.knowledge_tools.models import (
+    ThoughtCheckpoint,
+    ThoughtDocumentReference,
+    ThoughtReadingState,
+    ThoughtSavedFilter,
+    ThoughtTemplate,
+    ThoughtTemplateAsset,
+)
+from studio.apps.thought_workshop.multitable.models import (
+    DataAsset,
+    DataChange,
+    DataField,
+    DataRecord,
+    DataTable,
+    DataView,
+)
+from studio.apps.thought_workshop.publication.models import (
+    ArticleMember,
+    CommunityFavorite,
+    CommunityUpload,
+    OfficialImportReceipt,
+    OfficialSource,
+    Publication,
+    PublishedArticle,
+)
+from studio.apps.thought_workshop.storage.models import (
+    ThoughtHistoryAsset,
+    ThoughtKnowledgeBase,
+    ThoughtNote,
+    ThoughtNoteAsset,
+    ThoughtNoteHistory,
+)
+from studio.apps.video_editor.storage.models import (
+    VideoEditorAssetMetadata,
+    VideoEditorOperationBatch,
+    VideoEditorProject,
+    VideoEditorTask,
+    VideoEditorTimeline,
+)
+from studio.apps.visual_workshop.acceptance.models import (
+    AcceptanceAssetReference,
+    AcceptanceRepairDraft,
+    AcceptanceRun,
+    AcceptanceStandard,
+    AcceptanceStandardVersion,
+    AcceptanceTemplate,
+    NodeAcceptanceBinding,
+)
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.storage.models import (
+    VisualAssistantAction,
+    VisualAssistantConversation,
+    VisualAssistantMessage,
+    VisualAssistantMessageAsset,
+    VisualCanvasDocument,
+    VisualGenerationBatch,
+    VisualGenerationTask,
+    VisualWorkshopProject,
+)
+from studio.runtime.database.orm_base import Base
+from studio.runtime.database.project_operations import ProjectOperationReceipt
 
 # Catalog types for capabilities that must not import app.llm.
 CATALOG_MODELS: dict[str, type] = {

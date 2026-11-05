@@ -8,13 +8,16 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
-from fpl_creative.install_authorization import (
+from studio.apps.creative_workshop.install_authorization import (
     IdentityInstallAuthorization,
     InstallAuthorizationDenied,
     InstallSource,
 )
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
+from studio.contracts.creative_workshop.creative_install_evidence import (
+    INSTALL_PATH,
+    issue_install_evidence,
+)
+from studio.contracts.identity.claims import Actor, issue_context
 
 
 class Live:

@@ -15,7 +15,7 @@ from app.integrations.models import (
     ToolApiIntegration,
 )
 from app.runtime.config import get_settings
-from fpl_runtime.creative_source_snapshot import CreativeSource
+from studio.contracts.creative_workshop.creative_source_snapshot import CreativeSource
 
 
 def skill_archive(root: Path, maximum: int, expanded_limit: int, file_limit: int) -> bytes:

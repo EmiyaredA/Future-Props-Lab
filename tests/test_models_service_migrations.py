@@ -7,11 +7,11 @@ from sqlalchemy import select
 
 from app.llm.models import ModelInferenceTask, ModelTestTranscriptionTask, RuntimeAdmission
 from db.migrations import apply_migrations
-from fpl_models.catalog_migration import ModelsImportReceipt
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply, check
+from studio.apps.model_service.catalog_migration import ModelsImportReceipt
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.runtime.database.migrations import apply, check
+from studio.runtime.database.sessions import Database
 
 
 def test_models_migration_appends_owned_tables_without_external_schemas(tmp_path):

@@ -9,13 +9,13 @@ from sqlalchemy import select
 from tests.test_account_system import create_test_account, login_and_change_password, unsafe_headers
 from tests.thought_helpers import delete_note
 
-from app.apps.thought_workshop.assistant import PreparedWriting
-from app.apps.thought_workshop.legacy_writing import ProviderSelection, writing_events
-from app.apps.thought_workshop.writing import WritingModel
 from app.llm.models import LlmCallLog
 from app.llm.providers.streaming import TextDelta
 from app.main import app
 from app.runtime.db import SessionLocal
+from studio.apps.thought_workshop.assistant import PreparedWriting
+from studio.apps.thought_workshop.legacy_writing import ProviderSelection, writing_events
+from studio.apps.thought_workshop.writing import WritingModel
 
 ROOT = "/v1/thought-workshop"
 
@@ -95,7 +95,7 @@ async def test_assistant_stream_and_logs_use_normalized_events(monkeypatch):
         yield TextDelta(text="摘要")
         yield TextDelta(text="内容", prompt_tokens=8, completion_tokens=2, total_tokens=10)
 
-    monkeypatch.setattr("app.apps.thought_workshop.legacy_writing.stream_text_completion", fake)
+    monkeypatch.setattr("studio.apps.thought_workshop.legacy_writing.stream_text_completion", fake)
     request = prepared()
     result = b"".join(
         [chunk async for chunk in writing_events(request, sessions=SessionLocal)]
@@ -118,7 +118,9 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
         raise RuntimeError("secret-provider-token")
         yield TextDelta()
 
-    monkeypatch.setattr("app.apps.thought_workshop.legacy_writing.stream_text_completion", broken)
+    monkeypatch.setattr(
+        "studio.apps.thought_workshop.legacy_writing.stream_text_completion", broken
+    )
     output = b"".join(
         [chunk async for chunk in writing_events(prepared(), sessions=SessionLocal)]
     ).decode()
@@ -130,7 +132,9 @@ async def test_assistant_error_is_redacted_and_cancellation_settles(monkeypatch)
         await asyncio.Event().wait()
         yield TextDelta()
 
-    monkeypatch.setattr("app.apps.thought_workshop.legacy_writing.stream_text_completion", pending)
+    monkeypatch.setattr(
+        "studio.apps.thought_workshop.legacy_writing.stream_text_completion", pending
+    )
     request = prepared()
 
     async def consume():

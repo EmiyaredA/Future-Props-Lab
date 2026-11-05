@@ -2,7 +2,6 @@
 
 from sqlalchemy import and_, func, or_, select, text
 
-from app.capabilities.identity.errors import AccountError
 from app.console.governance.runtime_quotas import (
     TASK_MODELS,
     admit_spawned_tasks,
@@ -15,7 +14,8 @@ from app.console.models import User
 from app.console.schemas.platform_governance import RuntimeQuotas
 from app.llm.models import ModelEntry
 from app.llm.models.runtime_admission import RuntimeAdmission as Admission
-from app.runtime.time import utc_now
+from studio.contracts.identity.errors import AccountError
+from studio.runtime.time import utc_now
 
 
 async def admit_generation_tasks(session, principal, kind, task_ids):

@@ -148,6 +148,6 @@ projects 拥有项目归属和文稿保存，operations 拥有细粒度编辑，
 
 ## 代码入口
 
-1. `backend/app/apps/presentation_workshop/projects.py`
-2. `backend/app/apps/presentation_workshop/schemas/document.py`
+1. `backend/studio/apps/presentation_workshop/projects.py`
+2. `backend/studio/apps/presentation_workshop/schemas/document.py`
 3. `web/src/features/presentation-workshop`

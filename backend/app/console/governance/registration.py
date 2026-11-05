@@ -6,7 +6,6 @@ from datetime import timedelta
 from sqlalchemy import case, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.identity.errors import AccountError
 from app.capabilities.identity.passwords import validate_password
 from app.capabilities.identity.security import hash_secret
 from app.console.governance.governance_transactions import (
@@ -19,7 +18,8 @@ from app.console.models import User
 from app.console.models.platform_governance import RegistrationInviteCode as Invite
 from app.console.models.platform_governance import RegistrationRedemption
 from app.runtime.credentials import decrypt_secret, encrypt_secret
-from app.runtime.time import utc_now
+from studio.contracts.identity.errors import AccountError
+from studio.runtime.time import utc_now
 
 
 def invite_status(row) -> str:

@@ -11,12 +11,12 @@ from pptx import Presentation
 from tests.migration_fixtures import apply_migrations
 from tests.presentation_helpers import element
 
-from app.apps.presentation_workshop.schemas.document import PresentationDocument
-from app.apps.presentation_workshop.templates.native_scene import default_page
-from app.apps.presentation_workshop.templates.resolver import materialize, resolve_document
-from app.apps.presentation_workshop.templates.schema import TemplateDefinition
 from app.main import app
 from db.migrations.runner import connect_database
+from studio.apps.presentation_workshop.schemas.document import PresentationDocument
+from studio.apps.presentation_workshop.templates.native_scene import default_page
+from studio.apps.presentation_workshop.templates.resolver import materialize, resolve_document
+from studio.apps.presentation_workshop.templates.schema import TemplateDefinition
 
 ROOT = "/v1/presentation-workshop"
 
@@ -264,8 +264,8 @@ def test_native_override_keeps_required_null_fields_and_matches_web_fixture():
 
 
 def test_legacy_overrides_survive_native_template_upgrade():
-    from app.apps.presentation_workshop.templates.legacy import preserve_legacy_overrides
-    from app.apps.presentation_workshop.templates.schema import TemplateBinding
+    from studio.apps.presentation_workshop.templates.legacy import preserve_legacy_overrides
+    from studio.apps.presentation_workshop.templates.schema import TemplateBinding
 
     source = document(native_definition())
     source.version = 4

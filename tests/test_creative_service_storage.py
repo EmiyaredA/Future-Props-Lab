@@ -13,19 +13,19 @@ from PIL import Image
 from sqlalchemy import insert, select, update
 
 from app.console.creative_workshop.models import CreativeInstallation, CreativeItem, CreativeRelease
-from fpl_creative.migrations.registry import MIGRATIONS
-from fpl_creative.models import MODELS
-from fpl_creative.storage import creative_database
-from fpl_runtime.database import ServiceStorageError
-from fpl_runtime.migrations import apply, check
+from studio.apps.creative_workshop.storage.file_paths import creative_database
+from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.creative_workshop.storage.service_models import MODELS
+from studio.runtime.database.migrations import apply, check
+from studio.runtime.database.sessions import ServiceStorageError
 
 
 async def test_creative_catalog_uses_owned_cover_and_skill_directories(tmp_path, monkeypatch):
-    from app.capabilities.identity.principal import StudioPrincipal
     from app.console.creative_workshop import files
     from app.console.creative_workshop.catalog import CreativeCatalog
     from app.console.creative_workshop.schemas import CreativeDraftIn
     from app.console.creative_workshop.sources import MemoryIncoming
+    from studio.contracts.identity.principal import StudioPrincipal
 
     def reject_legacy_settings():
         pytest.fail("Independent Creative attempted to load legacy storage settings")
@@ -192,10 +192,10 @@ def test_fresh_creative_storage_does_not_import_foreign_orm(tmp_path):
             """
 import asyncio, sys
 from pathlib import Path
-from fpl_creative.models import MODELS
-from fpl_creative.storage import creative_database
-from fpl_creative.migrations.registry import MIGRATIONS
-from fpl_runtime.migrations import apply
+from studio.apps.creative_workshop.storage.service_models import MODELS
+from studio.apps.creative_workshop.storage.file_paths import creative_database
+from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
+from studio.runtime.database.migrations import apply
 from app.console.creative_workshop.catalog import CreativeCatalog
 from app.console.creative_workshop.models import CreativeItem
 root=Path(sys.argv[1]);apply(root/'service.db','creative',MIGRATIONS)

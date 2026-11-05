@@ -7,9 +7,12 @@ import httpx
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from fpl_gateway.creative_bridge import BRIDGE_PATH, EVIDENCE_PATH, create_creative_bridge
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.creative_source_evidence import SOURCE_PATH, issue_source_evidence
+from studio.apps.gateway.creative_bridge import BRIDGE_PATH, EVIDENCE_PATH, create_creative_bridge
+from studio.contracts.creative_workshop.creative_source_evidence import (
+    SOURCE_PATH,
+    issue_source_evidence,
+)
+from studio.contracts.identity.claims import Actor, issue_context
 
 
 async def test_original_body_is_attested_and_forwarded_without_browser_credentials():
@@ -333,7 +336,7 @@ def test_bridge_serves_uds_and_cleans_up_its_socket():
     import tempfile
     from pathlib import Path
 
-    from fpl_gateway.bridge_listener import serve_creative_bridge
+    from studio.apps.gateway.bridge_listener import serve_creative_bridge
 
     with tempfile.TemporaryDirectory(prefix="fpl-bridge-", dir="/tmp") as temporary:
         root = Path(temporary)
@@ -359,7 +362,7 @@ def test_private_socket_is_owner_only_and_rejects_existing_paths():
     import tempfile
     from pathlib import Path
 
-    from fpl_gateway.creative_bridge import private_socket
+    from studio.apps.gateway.creative_bridge import private_socket
 
     # macOS limits AF_UNIX paths to 103 bytes; pytest's nested tmp_path can exceed it.
     with tempfile.TemporaryDirectory(prefix="fpl-uds-", dir="/tmp") as temporary:
@@ -390,7 +393,7 @@ def test_private_socket_is_owner_only_and_rejects_existing_paths():
 def test_private_credentials_require_owner_only_regular_files(tmp_path):
     import os
 
-    from fpl_gateway.creative_bridge import private_text
+    from studio.apps.gateway.creative_bridge import private_text
 
     credential = tmp_path / "credential"
     credential.write_text("test-token\n")
@@ -410,8 +413,11 @@ async def test_install_bridge_attests_original_body_and_reports_ambiguous_commit
 
     import jwt
 
-    from fpl_gateway.creative_bridge import INSTALL_BRIDGE_PATH, INSTALL_EVIDENCE_PATH
-    from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
+    from studio.apps.gateway.creative_bridge import INSTALL_BRIDGE_PATH, INSTALL_EVIDENCE_PATH
+    from studio.contracts.creative_workshop.creative_install_evidence import (
+        INSTALL_PATH,
+        issue_install_evidence,
+    )
 
     key = Ed25519PrivateKey.generate()
     actor = Actor("alpha", "user", "session", ("studio:write",), session_id="session")

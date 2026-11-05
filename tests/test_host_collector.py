@@ -7,9 +7,9 @@ from uuid import uuid4
 
 import pytest
 
-from fpl_host.agent_sources import OPERATIONS, execute
-from fpl_host.receipts import ReceiptStore
-from fpl_runtime.native_protocol import NativeLease
+from studio.contracts.agent_workbench.native import NativeLease
+from studio.host.receipts import ReceiptStore
+from studio.host.session_collection.agent_sources import OPERATIONS, execute
 
 
 def lease(operation="agent_sources.validate", payload=None):
@@ -134,7 +134,7 @@ def test_unclassified_execution_error_is_unknown_not_retryable_failure(tmp_path)
 
 
 def test_ended_follow_keeps_unacknowledged_content_without_resuming_it(tmp_path):
-    from fpl_host.follow_journal import FollowJournal
+    from studio.host.session_collection.follow_journal import FollowJournal
 
     store = FollowJournal(tmp_path / "follow")
     command = lease("agent_sources.follow", {"source_id": "source", "source_revision": 0})

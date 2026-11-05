@@ -4,10 +4,10 @@ import hashlib
 
 from pydantic import TypeAdapter
 
-from fpl_director.migration_application import PREFIX
-from fpl_director.migration_files import DATASET, FILES, DirectorFile, receipt_for
-from fpl_director.migration_records import DATASETS, PAGE_SIZE
-from fpl_runtime.migration_batches import BatchReceipt
+from studio.apps.director_desk.migration_files import DATASET, FILES, DirectorFile, receipt_for
+from studio.apps.director_desk.storage.migration_records import DATASETS, PAGE_SIZE
+from studio.assembly.independent.director_desk.maintenance import PREFIX
+from studio.contracts.management.migration_batches import BatchReceipt
 
 from .migration_transfer import DatasetTransfer, loopback, run_cli
 

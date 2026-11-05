@@ -15,9 +15,9 @@ from app.llm.models import (
     ModelProvider,
     ModelSupplier,
 )
-from app.runtime.orm_base import Base
-from app.runtime.revisions import RevisionConflictError
-from fpl_runtime.database import Database
+from studio.runtime.database.orm_base import Base
+from studio.runtime.database.sessions import Database
+from studio.runtime.revisions import RevisionConflictError
 
 
 class Occupancy:

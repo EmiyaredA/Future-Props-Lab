@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS, Migration
-from fpl_config import CONFIG_FILE, read_config
+from studio.config import CONFIG_FILE, read_config
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DATABASE_PATH = REPO_ROOT / ".runtime" / "future-props.db"

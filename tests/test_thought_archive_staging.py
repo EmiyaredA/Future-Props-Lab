@@ -12,15 +12,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from fpl_assets.deletions import FileCleanup
-from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_assets.models import MODELS, AssetReferencePin, AssetReferenceSet
-from fpl_assets.settings import StorageSettings
-from fpl_assets.thought_archives import ThoughtArchives
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_runtime.thought_archives import ArchiveBatchKey, ArchiveManifest
-from fpl_runtime.thought_uploads import ThoughtUploadDescription
+from studio.apps.asset_library.deletions import FileCleanup
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.service_models import (
+    MODELS,
+    AssetReferencePin,
+    AssetReferenceSet,
+)
+from studio.apps.asset_library.thought.thought_archives import ThoughtArchives
+from studio.contracts.thought_workshop.thought_archives import ArchiveBatchKey, ArchiveManifest
+from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadDescription
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 class Upload:

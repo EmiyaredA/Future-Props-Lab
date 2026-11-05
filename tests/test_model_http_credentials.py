@@ -13,14 +13,14 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, HTTPException, WebSocket
 
-from app.capabilities.identity.permissions import role_scopes
-from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import require_studio_auth
 from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.http_credentials import CallCredentialDep, socket_credential
-from fpl_runtime.authentication import SignedIdentity
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.routing import RouteCatalog
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.http.authentication import SignedIdentity
 
 
 def test_attribution_import_does_not_initialize_accounts_or_the_legacy_database(tmp_path):

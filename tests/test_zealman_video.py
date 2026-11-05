@@ -15,7 +15,7 @@ from app.llm.providers.zealman_workflows import (
     normalize_request,
     prepare_input_values,
 )
-from app.llm.schemas.workflow_video import WorkflowVideoParameters
+from studio.contracts.model_service.workflow_video import WorkflowVideoParameters
 
 
 @pytest.mark.parametrize(

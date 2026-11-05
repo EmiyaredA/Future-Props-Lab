@@ -7,17 +7,18 @@ import httpx
 import pytest
 from pypdf import PdfWriter
 
-from app.apps.interview_assistant import codex, routes, runner
-from app.apps.interview_assistant.bundles import acceptance
-from app.apps.interview_assistant.codex import task_context
-from app.apps.interview_assistant.executor_status import executor_status
-from app.apps.interview_assistant.models import InterviewPreparation
-from app.apps.interview_assistant.schemas import InterviewExecutorOut, PreparationBundle
-from app.apps.interview_assistant.task_tools import TaskFiles, extract_document
 from app.deps import require_studio_auth
 from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
+from studio.apps.interview_assistant import codex, runner
+from studio.apps.interview_assistant.bundles import acceptance
+from studio.apps.interview_assistant.codex import task_context
+from studio.apps.interview_assistant.executor_status import executor_status
+from studio.apps.interview_assistant.storage.models import InterviewPreparation
+from studio.apps.interview_assistant.task_tools import TaskFiles, extract_document
+from studio.apps.interview_assistant.transport import website as routes
+from studio.contracts.interview_assistant.documents import InterviewExecutorOut, PreparationBundle
 
 
 def bundle_for(task):
@@ -272,7 +273,7 @@ async def test_material_upload_cas_private_access_and_delete(client):
 
     async def other_user():
         # Obtain the same tenant and permission set but a distinct account.
-        from app.capabilities.identity.principal import StudioPrincipal
+        from studio.contracts.identity.principal import StudioPrincipal
 
         return StudioPrincipal(
             platform_role="admin",
@@ -386,7 +387,7 @@ def test_cli_configuration_does_not_inherit_backend_credentials(tmp_path, monkey
     assert "features.shell_tool=false" in combined
     assert "--ignore-user-config" in command
     assert "--output-schema" in command
-    assert "permissions.fpl_interview.filesystem" in combined
+    assert "permissions.studio.apps.interview_assistant.filesystem" in combined
     assert "danger-full-access" not in combined
 
 
@@ -410,7 +411,7 @@ async def test_codex_subprocess_consumes_jsonl_and_structured_delivery(
         import json
         import sys
         from pathlib import Path
-        from app.apps.interview_assistant.task_tools import TaskFiles
+        from studio.apps.interview_assistant.task_tools import TaskFiles
         root = Path(sys.argv[sys.argv.index('-C') + 1]).parent
         files = TaskFiles(root)
         for identifier in files.manifest['files']:

@@ -70,5 +70,5 @@ useApiBlobUrl 统一管理鉴权读取、请求取消、异步竞态与 Object U
 ## 代码入口
 
 1. `backend/app/capabilities/asset_store/storage.py`
-2. `backend/app/apps/thought_workshop/notes.py`
+2. `backend/studio/apps/thought_workshop/notes.py`
 3. `web/src/platform/api/useApiBlobUrl.ts`

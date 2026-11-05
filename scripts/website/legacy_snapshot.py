@@ -156,7 +156,7 @@ def revision_id(revision):
 
 def create(runtime, config, output, revision):
     from app.runtime.config import Settings
-    from fpl_config import read_config
+    from studio.config import read_config
 
     revision_id(revision)
     runtime, config = directory(runtime), private_config(config)

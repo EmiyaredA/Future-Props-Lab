@@ -1,4 +1,3 @@
-from app.capabilities.identity.errors import AccountError
 from app.console.governance.governance_transactions import (
     begin_governance,
     cas,
@@ -6,6 +5,7 @@ from app.console.governance.governance_transactions import (
 )
 from app.console.governance.service import add_audit_event
 from app.console.models.platform_governance import PlatformSetting
+from studio.contracts.identity.errors import AccountError
 
 
 async def write_setting(

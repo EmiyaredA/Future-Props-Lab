@@ -9,8 +9,8 @@ import pytest
 from cryptography.fernet import Fernet
 
 from app.runtime.config import Settings
-from fpl_config import ConfigurationError, read_config
-from fpl_config.migration import convert_legacy, encode, publish
+from studio.config import ConfigurationError, read_config
+from studio.config.migration import convert_legacy, encode, publish
 
 KEY = Fernet.generate_key().decode()
 
@@ -137,14 +137,14 @@ def test_invalid_config_never_regenerates_key(tmp_path):
 
 
 def test_all_supported_settings_have_a_toml_mapping():
-    from fpl_config import FIELDS
+    from studio.config import FIELDS
 
     mapped = {field for section in FIELDS.values() for field, _kind in section.values()}
     assert mapped == set(Settings.model_fields) - {"legacy_fpl_studio_token"}
 
 
 def test_publication_failure_keeps_legacy_and_backup(tmp_path, monkeypatch):
-    import fpl_config.migration as migration
+    import studio.config.migration as migration
 
     path = legacy(tmp_path)
     original_publish = migration.publish

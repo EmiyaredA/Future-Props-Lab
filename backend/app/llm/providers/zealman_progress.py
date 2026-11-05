@@ -4,7 +4,7 @@ import math
 from typing import Any
 
 from app.llm.task_execution import TaskExecutionInfo
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 def queue_entry(queue: dict, bucket: str, task_id: str) -> tuple[int, dict] | None:

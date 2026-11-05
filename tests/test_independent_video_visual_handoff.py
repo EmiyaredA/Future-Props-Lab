@@ -10,20 +10,24 @@ from sqlalchemy import select
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.apps.video_editor.models import VideoEditorAssetMetadata
 from app.capabilities.asset_store.models import VisualAsset
-from fpl_runtime.capability_client import CapabilityUnavailable
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.model_outputs import ModelOutputDescription
-from fpl_runtime.video_exports import EXPORTS, VideoExportReceipt, output_peer
-from fpl_runtime.video_segment_handoff import SegmentHandoff, SegmentTarget, asset_peer
-from fpl_runtime.video_segments import OUTPUTS, SegmentBatchManifest
-from fpl_video.application import PROJECTS
-from fpl_video.application import create_app as create_video
-from fpl_video.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
-from fpl_visual.application import create_app as create_visual
-from fpl_visual.migrations.registry import MIGRATIONS as VISUAL_MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
+from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata
+from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS as VISUAL_MIGRATIONS
+from studio.assembly.independent.video_editor.application import PROJECTS
+from studio.assembly.independent.video_editor.application import create_app as create_video
+from studio.assembly.independent.visual_workshop.application import create_app as create_visual
+from studio.contracts.video_editor.video_exports import EXPORTS, VideoExportReceipt, output_peer
+from studio.contracts.video_editor.video_segment_handoff import (
+    SegmentHandoff,
+    SegmentTarget,
+    asset_peer,
+)
+from studio.contracts.video_editor.video_segments import OUTPUTS, SegmentBatchManifest
+from studio.runtime.database.migrations import apply
+from studio.runtime.files.signed_payloads import ModelOutputDescription
+from studio.runtime.http.capability_client import CapabilityUnavailable
 
 ROOT = Path(__file__).resolve().parents[1]
 VISUAL_PROJECTS = "/v1/visual-workshop/projects"

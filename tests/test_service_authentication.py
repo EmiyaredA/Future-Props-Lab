@@ -5,10 +5,10 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, Request
 
-from fpl_runtime.authentication import SignedIdentity
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.locking import service_lock
-from fpl_runtime.routing import Operation, RouteCatalog
+from studio.contracts.gateway.routing import Operation, RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.runtime.http.authentication import SignedIdentity
+from studio.runtime.lifecycle.locking import service_lock
 
 
 @pytest.mark.asyncio

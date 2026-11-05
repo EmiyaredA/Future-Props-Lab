@@ -3,7 +3,6 @@ import base64
 from time import monotonic
 from uuid import uuid4
 
-from app.capabilities.agents.harness.contracts import ImageInput
 from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, root
 from app.llm.inference.catalog import get_model
@@ -14,6 +13,7 @@ from app.runtime.authorized_stream import authorized_stream
 from app.runtime.credentials import decrypt_secret
 from app.runtime.operation_receipts import OperationError
 from app.runtime.ownership import bind_owner
+from studio.contracts.agent_runtime.dialogue import ImageInput
 
 
 async def prepare(session, owner_user_id, body):

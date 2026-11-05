@@ -4,7 +4,7 @@ from sqlalchemy import select, update
 
 from app.console.amadeus.models import AmadeusAction, AmadeusMessage, AmadeusRun
 from app.console.amadeus.run_records import ACTIVE
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 async def recover_runs(session):

@@ -11,17 +11,21 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import PROJECTS as PROJECT_OWNERS
 from tests.test_independent_project_catalog import authorize
 
-from fpl_host.tools_worker import ToolsWorker, reveal_video_project, reveal_workshop_project
-from fpl_host.transport import NativeTransport
-from fpl_runtime.claims import HEADER, issue_context, verify_context
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.project_reveal import TOOLS_PREFIX
-from fpl_runtime.tools_native import ToolsNativeOptions
-from fpl_tools.application import create_app as create_tools
-from fpl_tools.migrations.registry import MIGRATIONS as TOOLS_MIGRATIONS
-from fpl_video.application import create_app as create_video
-from fpl_video.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.tools.storage.migrations.registry import MIGRATIONS as TOOLS_MIGRATIONS
+from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
+from studio.assembly.independent.tools.application import create_app as create_tools
+from studio.assembly.independent.video_editor.application import create_app as create_video
+from studio.contracts.asset_library.reveal import TOOLS_PREFIX
+from studio.contracts.identity.claims import HEADER, issue_context, verify_context
+from studio.contracts.tools.tools_native import ToolsNativeOptions
+from studio.host.project_files.tools_worker import (
+    ToolsWorker,
+    reveal_video_project,
+    reveal_workshop_project,
+)
+from studio.host.transport import NativeTransport
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 

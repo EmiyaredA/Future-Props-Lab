@@ -3713,528 +3713,6 @@
   ],
   "tables": [
     {
-      "table": "workbench_projects",
-      "service": "agents",
-      "module": "app.apps.agent_workbench.execution.models",
-      "model": "WorkbenchProject"
-    },
-    {
-      "table": "workbench_chats",
-      "service": "agents",
-      "module": "app.apps.agent_workbench.execution.models",
-      "model": "WorkbenchChat"
-    },
-    {
-      "table": "workbench_turns",
-      "service": "agents",
-      "module": "app.apps.agent_workbench.execution.models",
-      "model": "WorkbenchTurn"
-    },
-    {
-      "table": "agent_workbench_sources",
-      "service": "agents",
-      "module": "app.apps.agent_workbench.models",
-      "model": "WorkbenchSource"
-    },
-    {
-      "table": "agent_workbench_sessions",
-      "service": "agents",
-      "module": "app.apps.agent_workbench.models",
-      "model": "WorkbenchSession"
-    },
-    {
-      "table": "agent_workbench_entries",
-      "service": "agents",
-      "module": "app.apps.agent_workbench.models",
-      "model": "WorkbenchEntry"
-    },
-    {
-      "table": "agent_workbench_checkpoints",
-      "service": "agents",
-      "module": "app.apps.agent_workbench.models",
-      "model": "WorkbenchCheckpoint"
-    },
-    {
-      "table": "agent_workbench_operations",
-      "service": "agents",
-      "module": "app.apps.agent_workbench.models",
-      "model": "WorkbenchOperation"
-    },
-    {
-      "table": "agent_workbench_changes",
-      "service": "agents",
-      "module": "app.apps.agent_workbench.models",
-      "model": "WorkbenchChange"
-    },
-    {
-      "table": "audio_annotation_projects",
-      "service": "annotation",
-      "module": "app.apps.audio_annotation.models",
-      "model": "AudioAnnotationProject"
-    },
-    {
-      "table": "audio_annotation_documents",
-      "service": "annotation",
-      "module": "app.apps.audio_annotation.models",
-      "model": "AudioAnnotationDocument"
-    },
-    {
-      "table": "audio_annotation_waveforms",
-      "service": "annotation",
-      "module": "app.apps.audio_annotation.models",
-      "model": "AudioAnnotationWaveform"
-    },
-    {
-      "table": "director_desk_user_motions",
-      "service": "director",
-      "module": "app.apps.director_desk.models",
-      "model": "DirectorDeskUserMotion"
-    },
-    {
-      "table": "director_desk_projects",
-      "service": "director",
-      "module": "app.apps.director_desk.models",
-      "model": "DirectorDeskProject"
-    },
-    {
-      "table": "galgame_workshop_projects",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameWorkshopProject"
-    },
-    {
-      "table": "galgame_story_documents",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameStoryDocument"
-    },
-    {
-      "table": "galgame_project_asset_references",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameProjectAssetReference"
-    },
-    {
-      "table": "galgame_asset_metadata",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameAssetMetadata"
-    },
-    {
-      "table": "galgame_asset_settings",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameAssetSettings"
-    },
-    {
-      "table": "galgame_asset_transcription_tasks",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameAssetTranscriptionTask"
-    },
-    {
-      "table": "galgame_story_snapshots",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameStorySnapshot"
-    },
-    {
-      "table": "galgame_annotation_import_tasks",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameAnnotationImportTask"
-    },
-    {
-      "table": "galgame_video_export_tasks",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameVideoExportTask"
-    },
-    {
-      "table": "galgame_video_editor_handoffs",
-      "service": "galgame",
-      "module": "app.apps.galgame_workshop.models",
-      "model": "GalgameVideoEditorHandoffTask"
-    },
-    {
-      "table": "interview_rooms",
-      "service": "interview",
-      "module": "app.apps.interview_assistant.models",
-      "model": "InterviewRoom"
-    },
-    {
-      "table": "interview_materials",
-      "service": "interview",
-      "module": "app.apps.interview_assistant.models",
-      "model": "InterviewMaterial"
-    },
-    {
-      "table": "interview_preparations",
-      "service": "interview",
-      "module": "app.apps.interview_assistant.models",
-      "model": "InterviewPreparation"
-    },
-    {
-      "table": "motion_compositor_projects",
-      "service": "motion",
-      "module": "app.apps.motion_compositor.models",
-      "model": "MotionProject"
-    },
-    {
-      "table": "motion_compositor_documents",
-      "service": "motion",
-      "module": "app.apps.motion_compositor.models",
-      "model": "MotionDocument"
-    },
-    {
-      "table": "motion_compositor_operation_batches",
-      "service": "motion",
-      "module": "app.apps.motion_compositor.models",
-      "model": "MotionOperationBatch"
-    },
-    {
-      "table": "motion_compositor_tasks",
-      "service": "motion",
-      "module": "app.apps.motion_compositor.models",
-      "model": "MotionTask"
-    },
-    {
-      "table": "presentation_projects",
-      "service": "presentation",
-      "module": "app.apps.presentation_workshop.models",
-      "model": "PresentationProject"
-    },
-    {
-      "table": "presentation_asset_references",
-      "service": "presentation",
-      "module": "app.apps.presentation_workshop.models",
-      "model": "PresentationAssetReference"
-    },
-    {
-      "table": "presentation_templates",
-      "service": "presentation",
-      "module": "app.apps.presentation_workshop.templates.models",
-      "model": "PresentationTemplate"
-    },
-    {
-      "table": "presentation_examples",
-      "service": "presentation",
-      "module": "app.apps.presentation_workshop.templates.models",
-      "model": "PresentationExample"
-    },
-    {
-      "table": "presentation_template_assets",
-      "service": "presentation",
-      "module": "app.apps.presentation_workshop.templates.models",
-      "model": "PresentationTemplateAsset"
-    },
-    {
-      "table": "presentation_example_assets",
-      "service": "presentation",
-      "module": "app.apps.presentation_workshop.templates.models",
-      "model": "PresentationExampleAsset"
-    },
-    {
-      "table": "thought_sync_bindings",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.external_sync.models",
-      "model": "ArticleSyncBinding"
-    },
-    {
-      "table": "thought_sync_tasks",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.external_sync.models",
-      "model": "ArticleSyncTask"
-    },
-    {
-      "table": "thought_sync_steps",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.external_sync.models",
-      "model": "ArticleSyncStep"
-    },
-    {
-      "table": "thought_sync_assets",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.external_sync.models",
-      "model": "ArticleSyncAsset"
-    },
-    {
-      "table": "thought_document_references",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.knowledge_tools.models",
-      "model": "ThoughtDocumentReference"
-    },
-    {
-      "table": "thought_templates",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.knowledge_tools.models",
-      "model": "ThoughtTemplate"
-    },
-    {
-      "table": "thought_template_assets",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.knowledge_tools.models",
-      "model": "ThoughtTemplateAsset"
-    },
-    {
-      "table": "thought_checkpoints",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.knowledge_tools.models",
-      "model": "ThoughtCheckpoint"
-    },
-    {
-      "table": "thought_saved_filters",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.knowledge_tools.models",
-      "model": "ThoughtSavedFilter"
-    },
-    {
-      "table": "thought_reading_states",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.knowledge_tools.models",
-      "model": "ThoughtReadingState"
-    },
-    {
-      "table": "thought_knowledge_bases",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.models",
-      "model": "ThoughtKnowledgeBase"
-    },
-    {
-      "table": "thought_notes",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.models",
-      "model": "ThoughtNote"
-    },
-    {
-      "table": "thought_note_assets",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.models",
-      "model": "ThoughtNoteAsset"
-    },
-    {
-      "table": "thought_note_history",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.models",
-      "model": "ThoughtNoteHistory"
-    },
-    {
-      "table": "thought_history_assets",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.models",
-      "model": "ThoughtHistoryAsset"
-    },
-    {
-      "table": "thought_data_tables",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.multitable.models",
-      "model": "DataTable"
-    },
-    {
-      "table": "thought_data_fields",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.multitable.models",
-      "model": "DataField"
-    },
-    {
-      "table": "thought_data_views",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.multitable.models",
-      "model": "DataView"
-    },
-    {
-      "table": "thought_data_records",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.multitable.models",
-      "model": "DataRecord"
-    },
-    {
-      "table": "thought_data_changes",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.multitable.models",
-      "model": "DataChange"
-    },
-    {
-      "table": "thought_data_assets",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.multitable.models",
-      "model": "DataAsset"
-    },
-    {
-      "table": "thought_publications",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.publication.models",
-      "model": "Publication"
-    },
-    {
-      "table": "thought_published_articles",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.publication.models",
-      "model": "PublishedArticle"
-    },
-    {
-      "table": "thought_article_members",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.publication.models",
-      "model": "ArticleMember"
-    },
-    {
-      "table": "thought_community_favorites",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.publication.models",
-      "model": "CommunityFavorite"
-    },
-    {
-      "table": "thought_community_uploads",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.publication.models",
-      "model": "CommunityUpload"
-    },
-    {
-      "table": "thought_official_sources",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.publication.models",
-      "model": "OfficialSource"
-    },
-    {
-      "table": "thought_official_import_receipts",
-      "service": "thought",
-      "module": "app.apps.thought_workshop.publication.models",
-      "model": "OfficialImportReceipt"
-    },
-    {
-      "table": "video_editor_projects",
-      "service": "video",
-      "module": "app.apps.video_editor.models",
-      "model": "VideoEditorProject"
-    },
-    {
-      "table": "video_editor_timelines",
-      "service": "video",
-      "module": "app.apps.video_editor.models",
-      "model": "VideoEditorTimeline"
-    },
-    {
-      "table": "video_editor_operation_batches",
-      "service": "video",
-      "module": "app.apps.video_editor.models",
-      "model": "VideoEditorOperationBatch"
-    },
-    {
-      "table": "video_editor_asset_metadata",
-      "service": "video",
-      "module": "app.apps.video_editor.models",
-      "model": "VideoEditorAssetMetadata"
-    },
-    {
-      "table": "video_editor_tasks",
-      "service": "video",
-      "module": "app.apps.video_editor.models",
-      "model": "VideoEditorTask"
-    },
-    {
-      "table": "visual_acceptance_templates",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.acceptance.models",
-      "model": "AcceptanceTemplate"
-    },
-    {
-      "table": "visual_acceptance_standards",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.acceptance.models",
-      "model": "AcceptanceStandard"
-    },
-    {
-      "table": "visual_acceptance_standard_versions",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.acceptance.models",
-      "model": "AcceptanceStandardVersion"
-    },
-    {
-      "table": "visual_acceptance_runs",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.acceptance.models",
-      "model": "AcceptanceRun"
-    },
-    {
-      "table": "visual_acceptance_asset_references",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.acceptance.models",
-      "model": "AcceptanceAssetReference"
-    },
-    {
-      "table": "visual_node_acceptance_bindings",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.acceptance.models",
-      "model": "NodeAcceptanceBinding"
-    },
-    {
-      "table": "visual_acceptance_repair_drafts",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.acceptance.models",
-      "model": "AcceptanceRepairDraft"
-    },
-    {
-      "table": "visual_project_asset_references",
-      "service": "assets",
-      "module": "app.apps.visual_workshop.asset_references.models",
-      "model": "VisualProjectAssetReference"
-    },
-    {
-      "table": "visual_workshop_projects",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.models",
-      "model": "VisualWorkshopProject"
-    },
-    {
-      "table": "visual_canvas_documents",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.models",
-      "model": "VisualCanvasDocument"
-    },
-    {
-      "table": "visual_generation_tasks",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.models",
-      "model": "VisualGenerationTask"
-    },
-    {
-      "table": "visual_generation_batches",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.models",
-      "model": "VisualGenerationBatch"
-    },
-    {
-      "table": "visual_assistant_conversations",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.models",
-      "model": "VisualAssistantConversation"
-    },
-    {
-      "table": "visual_assistant_messages",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.models",
-      "model": "VisualAssistantMessage"
-    },
-    {
-      "table": "visual_assistant_message_assets",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.models",
-      "model": "VisualAssistantMessageAsset"
-    },
-    {
-      "table": "visual_assistant_actions",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.models",
-      "model": "VisualAssistantAction"
-    },
-    {
-      "table": "visual_node_outputs",
-      "service": "visual",
-      "module": "app.apps.visual_workshop.outputs.models",
-      "model": "VisualNodeOutput"
-    },
-    {
       "table": "visual_asset_folders",
       "service": "assets",
       "module": "app.capabilities.asset_store.models",
@@ -4517,12 +3995,6 @@
       "model": "RuntimeAdmission"
     },
     {
-      "table": "project_operation_receipts",
-      "service": "local-receipts",
-      "module": "app.runtime.project_operations",
-      "model": "ProjectOperationReceipt"
-    },
-    {
       "table": "tool_navigation_items",
       "service": "tools",
       "module": "app.tool_navigation.models",
@@ -4531,818 +4003,1346 @@
     {
       "table": "agent_runtime_connection_jobs",
       "service": "agent-runtime",
-      "module": "fpl_agent_runtime.models",
+      "module": "studio.apps.agent_runtime.storage.service_models",
       "model": "ConnectionJob"
     },
     {
       "table": "agent_runtime_visual_review_jobs",
       "service": "agent-runtime",
-      "module": "fpl_agent_runtime.models",
+      "module": "studio.apps.agent_runtime.storage.service_models",
       "model": "VisualReviewJob"
+    },
+    {
+      "table": "workbench_projects",
+      "service": "agents",
+      "module": "studio.apps.agent_workbench.execution.models",
+      "model": "WorkbenchProject"
+    },
+    {
+      "table": "workbench_chats",
+      "service": "agents",
+      "module": "studio.apps.agent_workbench.execution.models",
+      "model": "WorkbenchChat"
+    },
+    {
+      "table": "workbench_turns",
+      "service": "agents",
+      "module": "studio.apps.agent_workbench.execution.models",
+      "model": "WorkbenchTurn"
     },
     {
       "table": "agents_import_receipts",
       "service": "agents",
-      "module": "fpl_agents.migration_application",
+      "module": "studio.apps.agent_workbench.storage.migration_receipts",
       "model": "AgentsImportReceipt"
+    },
+    {
+      "table": "agent_workbench_sources",
+      "service": "agents",
+      "module": "studio.apps.agent_workbench.storage.models",
+      "model": "WorkbenchSource"
+    },
+    {
+      "table": "agent_workbench_sessions",
+      "service": "agents",
+      "module": "studio.apps.agent_workbench.storage.models",
+      "model": "WorkbenchSession"
+    },
+    {
+      "table": "agent_workbench_entries",
+      "service": "agents",
+      "module": "studio.apps.agent_workbench.storage.models",
+      "model": "WorkbenchEntry"
+    },
+    {
+      "table": "agent_workbench_checkpoints",
+      "service": "agents",
+      "module": "studio.apps.agent_workbench.storage.models",
+      "model": "WorkbenchCheckpoint"
+    },
+    {
+      "table": "agent_workbench_operations",
+      "service": "agents",
+      "module": "studio.apps.agent_workbench.storage.models",
+      "model": "WorkbenchOperation"
+    },
+    {
+      "table": "agent_workbench_changes",
+      "service": "agents",
+      "module": "studio.apps.agent_workbench.storage.models",
+      "model": "WorkbenchChange"
     },
     {
       "table": "agent_native_jobs",
       "service": "agents",
-      "module": "fpl_agents.models",
+      "module": "studio.apps.agent_workbench.storage.service_models",
       "model": "NativeJob"
     },
     {
       "table": "agent_native_subscriptions",
       "service": "agents",
-      "module": "fpl_agents.models",
+      "module": "studio.apps.agent_workbench.storage.service_models",
       "model": "NativeSubscription"
     },
     {
       "table": "agent_native_projection_receipts",
       "service": "agents",
-      "module": "fpl_agents.models",
+      "module": "studio.apps.agent_workbench.storage.service_models",
       "model": "NativeProjectionReceipt"
     },
     {
       "table": "agent_native_worker_seen",
       "service": "agents",
-      "module": "fpl_agents.models",
+      "module": "studio.apps.agent_workbench.storage.service_models",
       "model": "NativeWorkerSeen"
     },
     {
       "table": "agent_workbench_execution_jobs",
       "service": "agents",
-      "module": "fpl_agents.models",
+      "module": "studio.apps.agent_workbench.storage.service_models",
       "model": "WorkbenchExecutionJob"
     },
     {
       "table": "amadeus_native_jobs",
       "service": "amadeus",
-      "module": "fpl_amadeus.models",
+      "module": "studio.apps.amadeus.storage.service_models",
       "model": "AmadeusNativeJob"
-    },
-    {
-      "table": "annotation_reference_mutations",
-      "service": "annotation",
-      "module": "fpl_annotation.models",
-      "model": "AnnotationReferenceMutation"
     },
     {
       "table": "asset_import_receipts",
       "service": "assets",
-      "module": "fpl_assets.migration_models",
+      "module": "studio.apps.asset_library.migration_models",
       "model": "AssetImportReceipt"
     },
     {
       "table": "asset_video_output_history",
       "service": "assets",
-      "module": "fpl_assets.migration_models",
+      "module": "studio.apps.asset_library.migration_models",
       "model": "AssetVideoOutputHistory"
     },
     {
       "table": "asset_reference_sets",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "AssetReferenceSet"
     },
     {
       "table": "asset_reference_pins",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "AssetReferencePin"
     },
     {
       "table": "asset_reference_receipts",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "AssetReferenceReceipt"
     },
     {
       "table": "asset_file_deletions",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "AssetDeletion"
     },
     {
       "table": "asset_reference_intents",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "ReferenceIntent"
     },
     {
       "table": "asset_prepared_pins",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "PreparedAssetPin"
     },
     {
       "table": "asset_visual_project_links",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "VisualProjectFileLink"
     },
     {
       "table": "asset_model_output_receipts",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "ModelLibraryOutputReceipt"
     },
     {
       "table": "asset_thought_upload_receipts",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "ThoughtUploadReceipt"
     },
     {
       "table": "asset_thought_archive_batches",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "ThoughtArchiveBatch"
     },
     {
       "table": "asset_thought_archive_files",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "ThoughtArchiveFile"
     },
     {
       "table": "asset_presentation_archive_batches",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "PresentationArchiveBatch"
     },
     {
       "table": "asset_presentation_archive_files",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "PresentationArchiveFile"
     },
     {
       "table": "asset_motion_file_write_receipts",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "MotionFileWriteReceipt"
     },
     {
       "table": "asset_video_file_write_receipts",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "VideoFileWriteReceipt"
     },
     {
       "table": "asset_galgame_upload_receipts",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "GalgameUploadReceipt"
     },
     {
       "table": "asset_galgame_upload_stages",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "GalgameUploadStage"
     },
     {
       "table": "asset_motion_archive_batches",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "MotionArchiveBatch"
     },
     {
       "table": "asset_motion_archive_files",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "MotionArchiveFile"
     },
     {
       "table": "asset_video_archive_batches",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "VideoArchiveBatch"
     },
     {
       "table": "asset_video_archive_files",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "VideoArchiveFile"
     },
     {
       "table": "asset_galgame_archive_batches",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "GalgameArchiveBatch"
     },
     {
       "table": "asset_galgame_archive_files",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "GalgameArchiveFile"
     },
     {
       "table": "asset_visual_archive_batches",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "VisualArchiveBatch"
     },
     {
       "table": "asset_visual_archive_files",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "VisualArchiveFile"
     },
     {
       "table": "asset_video_segment_handoff_batches",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "VideoSegmentHandoffBatch"
     },
     {
       "table": "asset_video_segment_handoff_files",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "VideoSegmentHandoffFile"
     },
     {
       "table": "asset_visual_upload_stages",
       "service": "assets",
-      "module": "fpl_assets.models",
+      "module": "studio.apps.asset_library.storage.service_models",
       "model": "VisualUploadStage"
+    },
+    {
+      "table": "audio_annotation_projects",
+      "service": "annotation",
+      "module": "studio.apps.audio_annotation.models",
+      "model": "AudioAnnotationProject"
+    },
+    {
+      "table": "audio_annotation_documents",
+      "service": "annotation",
+      "module": "studio.apps.audio_annotation.models",
+      "model": "AudioAnnotationDocument"
+    },
+    {
+      "table": "audio_annotation_waveforms",
+      "service": "annotation",
+      "module": "studio.apps.audio_annotation.models",
+      "model": "AudioAnnotationWaveform"
+    },
+    {
+      "table": "annotation_reference_mutations",
+      "service": "annotation",
+      "module": "studio.apps.audio_annotation.storage.service_models",
+      "model": "AnnotationReferenceMutation"
     },
     {
       "table": "creative_install_fences",
       "service": "creative",
-      "module": "fpl_creative.fence_records",
+      "module": "studio.apps.creative_workshop.storage.fence_records",
       "model": "CreativeInstallFence"
     },
     {
       "table": "creative_install_cancellations",
       "service": "creative",
-      "module": "fpl_creative.fence_records",
+      "module": "studio.apps.creative_workshop.storage.fence_records",
       "model": "CreativeInstallCancellation"
     },
     {
       "table": "creative_install_operations",
       "service": "creative",
-      "module": "fpl_creative.installation_records",
+      "module": "studio.apps.creative_workshop.storage.installation_records",
       "model": "CreativeInstallOperation"
     },
     {
       "table": "director_import_receipts",
       "service": "director",
-      "module": "fpl_director.migration_receipts",
+      "module": "studio.apps.director_desk.migration_receipts",
       "model": "DirectorImportReceipt"
+    },
+    {
+      "table": "director_desk_user_motions",
+      "service": "director",
+      "module": "studio.apps.director_desk.storage.models",
+      "model": "DirectorDeskUserMotion"
+    },
+    {
+      "table": "director_desk_projects",
+      "service": "director",
+      "module": "studio.apps.director_desk.storage.models",
+      "model": "DirectorDeskProject"
+    },
+    {
+      "table": "galgame_workshop_projects",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameWorkshopProject"
+    },
+    {
+      "table": "galgame_story_documents",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameStoryDocument"
+    },
+    {
+      "table": "galgame_project_asset_references",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameProjectAssetReference"
+    },
+    {
+      "table": "galgame_asset_metadata",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameAssetMetadata"
+    },
+    {
+      "table": "galgame_asset_settings",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameAssetSettings"
+    },
+    {
+      "table": "galgame_asset_transcription_tasks",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameAssetTranscriptionTask"
+    },
+    {
+      "table": "galgame_story_snapshots",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameStorySnapshot"
+    },
+    {
+      "table": "galgame_annotation_import_tasks",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameAnnotationImportTask"
+    },
+    {
+      "table": "galgame_video_export_tasks",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameVideoExportTask"
+    },
+    {
+      "table": "galgame_video_editor_handoffs",
+      "service": "galgame",
+      "module": "studio.apps.galgame_workshop.storage.models",
+      "model": "GalgameVideoEditorHandoffTask"
     },
     {
       "table": "galgame_certification_receipts",
       "service": "galgame",
-      "module": "fpl_galgame.models",
+      "module": "studio.apps.galgame_workshop.storage.service_models",
       "model": "GalgameCertificationReceipt"
     },
     {
       "table": "galgame_story_reference_mutations",
       "service": "galgame",
-      "module": "fpl_galgame.models",
+      "module": "studio.apps.galgame_workshop.storage.service_models",
       "model": "GalgameStoryReferenceMutation"
     },
     {
       "table": "galgame_migration_receipts",
       "service": "galgame",
-      "module": "fpl_galgame.models",
+      "module": "studio.apps.galgame_workshop.storage.service_models",
       "model": "GalgameMigrationReceipt"
     },
     {
       "table": "galgame_upload_intakes",
       "service": "galgame",
-      "module": "fpl_galgame.models",
+      "module": "studio.apps.galgame_workshop.storage.service_models",
       "model": "GalgameUploadIntake"
     },
     {
       "table": "galgame_annotation_authorizations",
       "service": "galgame",
-      "module": "fpl_galgame.models",
+      "module": "studio.apps.galgame_workshop.storage.service_models",
       "model": "GalgameAnnotationAuthorization"
     },
     {
       "table": "galgame_snapshot_import_batches",
       "service": "galgame",
-      "module": "fpl_galgame.models",
+      "module": "studio.apps.galgame_workshop.storage.service_models",
       "model": "GalgameSnapshotImportBatch"
     },
     {
       "table": "galgame_asr_dispatches",
       "service": "galgame",
-      "module": "fpl_galgame.models",
+      "module": "studio.apps.galgame_workshop.storage.service_models",
       "model": "GalgameAsrDispatch"
     },
     {
       "table": "galgame_video_dispatches",
       "service": "galgame",
-      "module": "fpl_galgame.models",
+      "module": "studio.apps.galgame_workshop.storage.service_models",
       "model": "GalgameVideoDispatch"
     },
     {
       "table": "galgame_handoff_dispatches",
       "service": "galgame",
-      "module": "fpl_galgame.models",
+      "module": "studio.apps.galgame_workshop.storage.service_models",
       "model": "GalgameHandoffDispatch"
     },
     {
       "table": "gateway_change_cursors",
       "service": "gateway",
-      "module": "fpl_gateway.models",
+      "module": "studio.apps.gateway.storage.service_models",
       "model": "ChangeCursor"
     },
     {
       "table": "gateway_change_receipts",
       "service": "gateway",
-      "module": "fpl_gateway.models",
+      "module": "studio.apps.gateway.storage.service_models",
       "model": "ChangeReceipt"
     },
     {
       "table": "identity_account_events",
       "service": "identity",
-      "module": "fpl_identity.models",
+      "module": "studio.apps.identity.storage.service_models",
       "model": "AccountEvent"
     },
     {
       "table": "identity_model_audit_receipts",
       "service": "identity",
-      "module": "fpl_identity.models",
+      "module": "studio.apps.identity.storage.service_models",
       "model": "ModelAuditDelivery"
     },
     {
       "table": "identity_model_audit_intents",
       "service": "identity",
-      "module": "fpl_identity.models",
+      "module": "studio.apps.identity.storage.service_models",
       "model": "ModelAuditIntent"
     },
     {
       "table": "identity_integration_intents",
       "service": "identity",
-      "module": "fpl_identity.models",
+      "module": "studio.apps.identity.storage.service_models",
       "model": "IntegrationIntent"
     },
     {
       "table": "identity_certification_audit_receipts",
       "service": "identity",
-      "module": "fpl_identity.models",
+      "module": "studio.apps.identity.storage.service_models",
       "model": "CertificationAuditDelivery"
     },
     {
       "table": "identity_import_receipts",
       "service": "identity",
-      "module": "fpl_identity.models",
+      "module": "studio.apps.identity.storage.service_models",
       "model": "IdentityImportReceipt"
     },
     {
       "table": "identity_visual_generation_approvals",
       "service": "identity",
-      "module": "fpl_identity.models",
+      "module": "studio.apps.identity.storage.service_models",
       "model": "VisualGenerationApproval"
-    },
-    {
-      "table": "integration_creative_install_receipts",
-      "service": "integrations",
-      "module": "fpl_integrations.creative_records",
-      "model": "CreativeInstallReceipt"
-    },
-    {
-      "table": "integration_creative_installed_parts",
-      "service": "integrations",
-      "module": "fpl_integrations.creative_records",
-      "model": "CreativeInstalledPart"
-    },
-    {
-      "table": "integration_creative_install_cancellations",
-      "service": "integrations",
-      "module": "fpl_integrations.creative_records",
-      "model": "CreativeInstallCancellation"
-    },
-    {
-      "table": "integration_demo_tool_installations",
-      "service": "integrations",
-      "module": "fpl_integrations.demo_records",
-      "model": "DemoToolInstallation"
-    },
-    {
-      "table": "integration_native_mcp_jobs",
-      "service": "integrations",
-      "module": "fpl_integrations.native_mcp_records",
-      "model": "NativeMcpJob"
-    },
-    {
-      "table": "integration_native_mcp_observations",
-      "service": "integrations",
-      "module": "fpl_integrations.native_mcp_records",
-      "model": "NativeMcpObservation"
     },
     {
       "table": "integration_validation_attempts",
       "service": "integrations",
-      "module": "fpl_integrations.records",
+      "module": "studio.apps.integrations.records",
       "model": "ValidationAttempt"
     },
     {
       "table": "integration_external_executions",
       "service": "integrations",
-      "module": "fpl_integrations.records",
+      "module": "studio.apps.integrations.records",
       "model": "ExternalExecution"
     },
     {
       "table": "integration_external_step_receipts",
       "service": "integrations",
-      "module": "fpl_integrations.records",
+      "module": "studio.apps.integrations.records",
       "model": "ExternalStepReceipt"
     },
     {
       "table": "integration_external_closures",
       "service": "integrations",
-      "module": "fpl_integrations.records",
+      "module": "studio.apps.integrations.records",
       "model": "ExternalClosure"
     },
     {
       "table": "integration_amadeus_tool_calls",
       "service": "integrations",
-      "module": "fpl_integrations.records",
+      "module": "studio.apps.integrations.records",
       "model": "AmadeusToolCall"
+    },
+    {
+      "table": "integration_creative_install_receipts",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.creative_records",
+      "model": "CreativeInstallReceipt"
+    },
+    {
+      "table": "integration_creative_installed_parts",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.creative_records",
+      "model": "CreativeInstalledPart"
+    },
+    {
+      "table": "integration_creative_install_cancellations",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.creative_records",
+      "model": "CreativeInstallCancellation"
+    },
+    {
+      "table": "integration_demo_tool_installations",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.demo_records",
+      "model": "DemoToolInstallation"
+    },
+    {
+      "table": "integration_native_mcp_jobs",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.native_mcp_records",
+      "model": "NativeMcpJob"
+    },
+    {
+      "table": "integration_native_mcp_observations",
+      "service": "integrations",
+      "module": "studio.apps.integrations.storage.native_mcp_records",
+      "model": "NativeMcpObservation"
+    },
+    {
+      "table": "interview_rooms",
+      "service": "interview",
+      "module": "studio.apps.interview_assistant.storage.models",
+      "model": "InterviewRoom"
+    },
+    {
+      "table": "interview_materials",
+      "service": "interview",
+      "module": "studio.apps.interview_assistant.storage.models",
+      "model": "InterviewMaterial"
+    },
+    {
+      "table": "interview_preparations",
+      "service": "interview",
+      "module": "studio.apps.interview_assistant.storage.models",
+      "model": "InterviewPreparation"
     },
     {
       "table": "interview_native_leases",
       "service": "interview",
-      "module": "fpl_interview.models",
+      "module": "studio.apps.interview_assistant.storage.service_models",
       "model": "InterviewNativeLease"
     },
     {
       "table": "management_native_jobs",
       "service": "management",
-      "module": "fpl_management.models",
+      "module": "studio.apps.management.storage.service_models",
       "model": "NativeJob"
     },
     {
       "table": "management_host_snapshot",
       "service": "management",
-      "module": "fpl_management.models",
+      "module": "studio.apps.management.storage.service_models",
       "model": "HostSnapshot"
-    },
-    {
-      "table": "visual_assistant_model_runs",
-      "service": "models",
-      "module": "fpl_models.assistant_model_records",
-      "model": "VisualAssistantModelRun"
-    },
-    {
-      "table": "models_import_receipts",
-      "service": "models",
-      "module": "fpl_models.catalog_migration",
-      "model": "ModelsImportReceipt"
-    },
-    {
-      "table": "model_demo_installations",
-      "service": "models",
-      "module": "fpl_models.demo_install_records",
-      "model": "DemoInstallation"
-    },
-    {
-      "table": "model_integration_capacity",
-      "service": "models",
-      "module": "fpl_models.integration_records",
-      "model": "IntegrationCapacity"
-    },
-    {
-      "table": "model_account_defaults",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "AccountDefaults"
-    },
-    {
-      "table": "model_catalog_provisioning",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "CatalogProvisioningReceipt"
-    },
-    {
-      "table": "model_role_templates",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "RoleTemplate"
-    },
-    {
-      "table": "model_quota_policy",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "QuotaPolicy"
-    },
-    {
-      "table": "model_task_authorizations",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "TaskAuthorization"
-    },
-    {
-      "table": "model_demo_settings",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "DemoSetting"
-    },
-    {
-      "table": "model_governance_audit",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "GovernanceAudit"
-    },
-    {
-      "table": "model_template_sync_authority",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "TemplateSyncAuthority"
-    },
-    {
-      "table": "model_annotation_transcription_attempts",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "AnnotationTranscriptionAttempt"
-    },
-    {
-      "table": "model_galgame_transcription_attempts",
-      "service": "models",
-      "module": "fpl_models.models",
-      "model": "GalgameTranscriptionAttempt"
-    },
-    {
-      "table": "model_native_jobs",
-      "service": "models",
-      "module": "fpl_models.native_records",
-      "model": "NativeModelJob"
-    },
-    {
-      "table": "model_native_proofs",
-      "service": "models",
-      "module": "fpl_models.native_records",
-      "model": "NativeModelProof"
-    },
-    {
-      "table": "model_native_observations",
-      "service": "models",
-      "module": "fpl_models.native_records",
-      "model": "NativeModelObservation"
-    },
-    {
-      "table": "model_visual_provider_batches",
-      "service": "models",
-      "module": "fpl_models.visual_generation_records",
-      "model": "VisualProviderBatch"
-    },
-    {
-      "table": "model_visual_provider_tasks",
-      "service": "models",
-      "module": "fpl_models.visual_generation_records",
-      "model": "VisualProviderTask"
-    },
-    {
-      "table": "model_visual_review_attempts",
-      "service": "models",
-      "module": "fpl_models.visual_review_records",
-      "model": "VisualReviewAttempt"
-    },
-    {
-      "table": "motion_reference_mutations",
-      "service": "motion",
-      "module": "fpl_motion.models",
-      "model": "MotionReferenceMutation"
-    },
-    {
-      "table": "motion_import_batches",
-      "service": "motion",
-      "module": "fpl_motion.models",
-      "model": "MotionImportBatch"
-    },
-    {
-      "table": "motion_export_bindings",
-      "service": "motion",
-      "module": "fpl_motion.models",
-      "model": "MotionExportBinding"
-    },
-    {
-      "table": "motion_migration_receipts",
-      "service": "motion",
-      "module": "fpl_motion.models",
-      "model": "MotionMigrationReceipt"
-    },
-    {
-      "table": "presentation_reference_mutations",
-      "service": "presentation",
-      "module": "fpl_presentation.models",
-      "model": "PresentationReferenceMutation"
-    },
-    {
-      "table": "presentation_import_batches",
-      "service": "presentation",
-      "module": "fpl_presentation.models",
-      "model": "PresentationImportBatch"
-    },
-    {
-      "table": "presentation_migration_receipts",
-      "service": "presentation",
-      "module": "fpl_presentation.models",
-      "model": "PresentationMigrationReceipt"
-    },
-    {
-      "table": "remote_setup_jobs",
-      "service": "remote",
-      "module": "fpl_remote.models",
-      "model": "RemoteSetupJob"
-    },
-    {
-      "table": "remote_desktop_import_receipts",
-      "service": "remote",
-      "module": "fpl_remote.models",
-      "model": "DesktopPreferenceImportReceipt"
     },
     {
       "table": "motion_render_jobs",
       "service": "rendering",
-      "module": "fpl_rendering.models",
+      "module": "studio.apps.media_rendering.storage.service_models",
       "model": "MotionRenderJob"
     },
     {
       "table": "video_media_jobs",
       "service": "rendering",
-      "module": "fpl_rendering.models",
+      "module": "studio.apps.media_rendering.storage.service_models",
       "model": "VideoMediaJob"
     },
     {
       "table": "video_export_jobs",
       "service": "rendering",
-      "module": "fpl_rendering.models",
+      "module": "studio.apps.media_rendering.storage.service_models",
       "model": "VideoExportJob"
     },
     {
       "table": "galgame_export_jobs",
       "service": "rendering",
-      "module": "fpl_rendering.models",
+      "module": "studio.apps.media_rendering.storage.service_models",
       "model": "GalgameExportJob"
     },
     {
       "table": "rendering_history_manifests",
       "service": "rendering",
-      "module": "fpl_rendering.models",
+      "module": "studio.apps.media_rendering.storage.service_models",
       "model": "RenderingHistoryManifest"
     },
     {
       "table": "rendering_migration_receipts",
       "service": "rendering",
-      "module": "fpl_rendering.models",
+      "module": "studio.apps.media_rendering.storage.service_models",
       "model": "RenderingMigrationReceipt"
+    },
+    {
+      "table": "models_import_receipts",
+      "service": "models",
+      "module": "studio.apps.model_service.catalog_migration",
+      "model": "ModelsImportReceipt"
+    },
+    {
+      "table": "visual_assistant_model_runs",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.assistant_model_records",
+      "model": "VisualAssistantModelRun"
+    },
+    {
+      "table": "model_demo_installations",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.demo_install_records",
+      "model": "DemoInstallation"
+    },
+    {
+      "table": "model_integration_capacity",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.integration_records",
+      "model": "IntegrationCapacity"
+    },
+    {
+      "table": "model_native_jobs",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.native_records",
+      "model": "NativeModelJob"
+    },
+    {
+      "table": "model_native_proofs",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.native_records",
+      "model": "NativeModelProof"
+    },
+    {
+      "table": "model_native_observations",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.native_records",
+      "model": "NativeModelObservation"
+    },
+    {
+      "table": "model_account_defaults",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "AccountDefaults"
+    },
+    {
+      "table": "model_catalog_provisioning",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "CatalogProvisioningReceipt"
+    },
+    {
+      "table": "model_role_templates",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "RoleTemplate"
+    },
+    {
+      "table": "model_quota_policy",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "QuotaPolicy"
+    },
+    {
+      "table": "model_task_authorizations",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "TaskAuthorization"
+    },
+    {
+      "table": "model_demo_settings",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "DemoSetting"
+    },
+    {
+      "table": "model_governance_audit",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "GovernanceAudit"
+    },
+    {
+      "table": "model_template_sync_authority",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "TemplateSyncAuthority"
+    },
+    {
+      "table": "model_annotation_transcription_attempts",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "AnnotationTranscriptionAttempt"
+    },
+    {
+      "table": "model_galgame_transcription_attempts",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.service_models",
+      "model": "GalgameTranscriptionAttempt"
+    },
+    {
+      "table": "model_visual_provider_batches",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.visual_generation_records",
+      "model": "VisualProviderBatch"
+    },
+    {
+      "table": "model_visual_provider_tasks",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.visual_generation_records",
+      "model": "VisualProviderTask"
+    },
+    {
+      "table": "model_visual_review_attempts",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.visual_review_records",
+      "model": "VisualReviewAttempt"
+    },
+    {
+      "table": "motion_compositor_projects",
+      "service": "motion",
+      "module": "studio.apps.motion_compositor.storage.models",
+      "model": "MotionProject"
+    },
+    {
+      "table": "motion_compositor_documents",
+      "service": "motion",
+      "module": "studio.apps.motion_compositor.storage.models",
+      "model": "MotionDocument"
+    },
+    {
+      "table": "motion_compositor_operation_batches",
+      "service": "motion",
+      "module": "studio.apps.motion_compositor.storage.models",
+      "model": "MotionOperationBatch"
+    },
+    {
+      "table": "motion_compositor_tasks",
+      "service": "motion",
+      "module": "studio.apps.motion_compositor.storage.models",
+      "model": "MotionTask"
+    },
+    {
+      "table": "motion_reference_mutations",
+      "service": "motion",
+      "module": "studio.apps.motion_compositor.storage.service_models",
+      "model": "MotionReferenceMutation"
+    },
+    {
+      "table": "motion_import_batches",
+      "service": "motion",
+      "module": "studio.apps.motion_compositor.storage.service_models",
+      "model": "MotionImportBatch"
+    },
+    {
+      "table": "motion_export_bindings",
+      "service": "motion",
+      "module": "studio.apps.motion_compositor.storage.service_models",
+      "model": "MotionExportBinding"
+    },
+    {
+      "table": "motion_migration_receipts",
+      "service": "motion",
+      "module": "studio.apps.motion_compositor.storage.service_models",
+      "model": "MotionMigrationReceipt"
+    },
+    {
+      "table": "presentation_projects",
+      "service": "presentation",
+      "module": "studio.apps.presentation_workshop.storage.models",
+      "model": "PresentationProject"
+    },
+    {
+      "table": "presentation_asset_references",
+      "service": "presentation",
+      "module": "studio.apps.presentation_workshop.storage.models",
+      "model": "PresentationAssetReference"
+    },
+    {
+      "table": "presentation_reference_mutations",
+      "service": "presentation",
+      "module": "studio.apps.presentation_workshop.storage.service_models",
+      "model": "PresentationReferenceMutation"
+    },
+    {
+      "table": "presentation_import_batches",
+      "service": "presentation",
+      "module": "studio.apps.presentation_workshop.storage.service_models",
+      "model": "PresentationImportBatch"
+    },
+    {
+      "table": "presentation_migration_receipts",
+      "service": "presentation",
+      "module": "studio.apps.presentation_workshop.storage.service_models",
+      "model": "PresentationMigrationReceipt"
+    },
+    {
+      "table": "presentation_templates",
+      "service": "presentation",
+      "module": "studio.apps.presentation_workshop.templates.models",
+      "model": "PresentationTemplate"
+    },
+    {
+      "table": "presentation_examples",
+      "service": "presentation",
+      "module": "studio.apps.presentation_workshop.templates.models",
+      "model": "PresentationExample"
+    },
+    {
+      "table": "presentation_template_assets",
+      "service": "presentation",
+      "module": "studio.apps.presentation_workshop.templates.models",
+      "model": "PresentationTemplateAsset"
+    },
+    {
+      "table": "presentation_example_assets",
+      "service": "presentation",
+      "module": "studio.apps.presentation_workshop.templates.models",
+      "model": "PresentationExampleAsset"
+    },
+    {
+      "table": "remote_setup_jobs",
+      "service": "remote",
+      "module": "studio.apps.remote_desktop.storage.service_models",
+      "model": "RemoteSetupJob"
+    },
+    {
+      "table": "remote_desktop_import_receipts",
+      "service": "remote",
+      "module": "studio.apps.remote_desktop.storage.service_models",
+      "model": "DesktopPreferenceImportReceipt"
+    },
+    {
+      "table": "thought_sync_bindings",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.external_sync.models",
+      "model": "ArticleSyncBinding"
+    },
+    {
+      "table": "thought_sync_tasks",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.external_sync.models",
+      "model": "ArticleSyncTask"
+    },
+    {
+      "table": "thought_sync_steps",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.external_sync.models",
+      "model": "ArticleSyncStep"
+    },
+    {
+      "table": "thought_sync_assets",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.external_sync.models",
+      "model": "ArticleSyncAsset"
+    },
+    {
+      "table": "thought_document_references",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtDocumentReference"
+    },
+    {
+      "table": "thought_templates",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtTemplate"
+    },
+    {
+      "table": "thought_template_assets",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtTemplateAsset"
+    },
+    {
+      "table": "thought_checkpoints",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtCheckpoint"
+    },
+    {
+      "table": "thought_saved_filters",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtSavedFilter"
+    },
+    {
+      "table": "thought_reading_states",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.knowledge_tools.models",
+      "model": "ThoughtReadingState"
+    },
+    {
+      "table": "thought_data_tables",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.multitable.models",
+      "model": "DataTable"
+    },
+    {
+      "table": "thought_data_fields",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.multitable.models",
+      "model": "DataField"
+    },
+    {
+      "table": "thought_data_views",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.multitable.models",
+      "model": "DataView"
+    },
+    {
+      "table": "thought_data_records",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.multitable.models",
+      "model": "DataRecord"
+    },
+    {
+      "table": "thought_data_changes",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.multitable.models",
+      "model": "DataChange"
+    },
+    {
+      "table": "thought_data_assets",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.multitable.models",
+      "model": "DataAsset"
+    },
+    {
+      "table": "thought_publications",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.publication.models",
+      "model": "Publication"
+    },
+    {
+      "table": "thought_published_articles",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.publication.models",
+      "model": "PublishedArticle"
+    },
+    {
+      "table": "thought_article_members",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.publication.models",
+      "model": "ArticleMember"
+    },
+    {
+      "table": "thought_community_favorites",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.publication.models",
+      "model": "CommunityFavorite"
+    },
+    {
+      "table": "thought_community_uploads",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.publication.models",
+      "model": "CommunityUpload"
+    },
+    {
+      "table": "thought_official_sources",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.publication.models",
+      "model": "OfficialSource"
+    },
+    {
+      "table": "thought_official_import_receipts",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.publication.models",
+      "model": "OfficialImportReceipt"
     },
     {
       "table": "thought_archive_imports",
       "service": "thought",
-      "module": "fpl_thought.archive_records",
+      "module": "studio.apps.thought_workshop.storage.archive_records",
       "model": "ThoughtArchiveImport"
     },
     {
       "table": "thought_community_upload_intents",
       "service": "thought",
-      "module": "fpl_thought.community_upload_records",
+      "module": "studio.apps.thought_workshop.storage.community_upload_records",
       "model": "ThoughtCommunityUpload"
+    },
+    {
+      "table": "thought_knowledge_bases",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.storage.models",
+      "model": "ThoughtKnowledgeBase"
+    },
+    {
+      "table": "thought_notes",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.storage.models",
+      "model": "ThoughtNote"
+    },
+    {
+      "table": "thought_note_assets",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.storage.models",
+      "model": "ThoughtNoteAsset"
+    },
+    {
+      "table": "thought_note_history",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.storage.models",
+      "model": "ThoughtNoteHistory"
+    },
+    {
+      "table": "thought_history_assets",
+      "service": "thought",
+      "module": "studio.apps.thought_workshop.storage.models",
+      "model": "ThoughtHistoryAsset"
     },
     {
       "table": "thought_reference_mutations",
       "service": "thought",
-      "module": "fpl_thought.retention_records",
+      "module": "studio.apps.thought_workshop.storage.retention_records",
       "model": "ThoughtReferenceMutation"
     },
     {
       "table": "thought_upload_intents",
       "service": "thought",
-      "module": "fpl_thought.upload_records",
+      "module": "studio.apps.thought_workshop.storage.upload_records",
       "model": "ThoughtUploadIntent"
     },
     {
       "table": "tools_native_jobs",
       "service": "tools",
-      "module": "fpl_tools.models",
+      "module": "studio.apps.tools.storage.service_models",
       "model": "ToolsNativeJob"
     },
     {
       "table": "tools_download_artifacts",
       "service": "tools",
-      "module": "fpl_tools.models",
+      "module": "studio.apps.tools.storage.service_models",
       "model": "ToolsDownloadArtifact"
     },
     {
       "table": "tools_navigation_import_receipts",
       "service": "tools",
-      "module": "fpl_tools.models",
+      "module": "studio.apps.tools.storage.service_models",
       "model": "ToolsNavigationImportReceipt"
+    },
+    {
+      "table": "video_editor_projects",
+      "service": "video",
+      "module": "studio.apps.video_editor.storage.models",
+      "model": "VideoEditorProject"
+    },
+    {
+      "table": "video_editor_timelines",
+      "service": "video",
+      "module": "studio.apps.video_editor.storage.models",
+      "model": "VideoEditorTimeline"
+    },
+    {
+      "table": "video_editor_operation_batches",
+      "service": "video",
+      "module": "studio.apps.video_editor.storage.models",
+      "model": "VideoEditorOperationBatch"
+    },
+    {
+      "table": "video_editor_asset_metadata",
+      "service": "video",
+      "module": "studio.apps.video_editor.storage.models",
+      "model": "VideoEditorAssetMetadata"
+    },
+    {
+      "table": "video_editor_tasks",
+      "service": "video",
+      "module": "studio.apps.video_editor.storage.models",
+      "model": "VideoEditorTask"
     },
     {
       "table": "video_reference_mutations",
       "service": "video",
-      "module": "fpl_video.models",
+      "module": "studio.apps.video_editor.storage.service_models",
       "model": "VideoReferenceMutation"
     },
     {
       "table": "video_asset_intakes",
       "service": "video",
-      "module": "fpl_video.models",
+      "module": "studio.apps.video_editor.storage.service_models",
       "model": "VideoAssetIntake"
     },
     {
       "table": "video_media_dispatches",
       "service": "video",
-      "module": "fpl_video.models",
+      "module": "studio.apps.video_editor.storage.service_models",
       "model": "VideoMediaDispatch"
     },
     {
       "table": "video_render_dispatches",
       "service": "video",
-      "module": "fpl_video.models",
+      "module": "studio.apps.video_editor.storage.service_models",
       "model": "VideoRenderDispatch"
     },
     {
       "table": "video_motion_handoffs",
       "service": "video",
-      "module": "fpl_video.models",
+      "module": "studio.apps.video_editor.storage.service_models",
       "model": "VideoMotionHandoff"
     },
     {
       "table": "video_import_batches",
       "service": "video",
-      "module": "fpl_video.models",
+      "module": "studio.apps.video_editor.storage.service_models",
       "model": "VideoImportBatch"
     },
     {
       "table": "video_segment_deliveries",
       "service": "video",
-      "module": "fpl_video.models",
+      "module": "studio.apps.video_editor.storage.service_models",
       "model": "VideoSegmentDelivery"
     },
     {
       "table": "video_migration_receipts",
       "service": "video",
-      "module": "fpl_video.models",
+      "module": "studio.apps.video_editor.storage.service_models",
       "model": "VideoMigrationReceipt"
+    },
+    {
+      "table": "visual_acceptance_templates",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceTemplate"
+    },
+    {
+      "table": "visual_acceptance_standards",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceStandard"
+    },
+    {
+      "table": "visual_acceptance_standard_versions",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceStandardVersion"
+    },
+    {
+      "table": "visual_acceptance_runs",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceRun"
+    },
+    {
+      "table": "visual_acceptance_asset_references",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceAssetReference"
+    },
+    {
+      "table": "visual_node_acceptance_bindings",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.acceptance.models",
+      "model": "NodeAcceptanceBinding"
+    },
+    {
+      "table": "visual_acceptance_repair_drafts",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.acceptance.models",
+      "model": "AcceptanceRepairDraft"
+    },
+    {
+      "table": "visual_project_asset_references",
+      "service": "assets",
+      "module": "studio.apps.visual_workshop.asset_references.models",
+      "model": "VisualProjectAssetReference"
+    },
+    {
+      "table": "visual_node_outputs",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.outputs.models",
+      "model": "VisualNodeOutput"
     },
     {
       "table": "visual_assistant_dispatches",
       "service": "visual",
-      "module": "fpl_visual.assistant_dispatch_records",
+      "module": "studio.apps.visual_workshop.storage.assistant_dispatch_records",
       "model": "VisualAssistantDispatch"
     },
     {
       "table": "visual_generation_decisions",
       "service": "visual",
-      "module": "fpl_visual.generation_dispatch_records",
+      "module": "studio.apps.visual_workshop.storage.generation_dispatch_records",
       "model": "VisualGenerationDecision"
     },
     {
       "table": "visual_generation_dispatches",
       "service": "visual",
-      "module": "fpl_visual.generation_dispatch_records",
+      "module": "studio.apps.visual_workshop.storage.generation_dispatch_records",
       "model": "VisualGenerationDispatch"
+    },
+    {
+      "table": "visual_workshop_projects",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualWorkshopProject"
+    },
+    {
+      "table": "visual_canvas_documents",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualCanvasDocument"
+    },
+    {
+      "table": "visual_generation_tasks",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualGenerationTask"
+    },
+    {
+      "table": "visual_generation_batches",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualGenerationBatch"
+    },
+    {
+      "table": "visual_assistant_conversations",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualAssistantConversation"
+    },
+    {
+      "table": "visual_assistant_messages",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualAssistantMessage"
+    },
+    {
+      "table": "visual_assistant_message_assets",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualAssistantMessageAsset"
+    },
+    {
+      "table": "visual_assistant_actions",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualAssistantAction"
+    },
+    {
+      "table": "visual_review_dispatches",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.review_dispatch_records",
+      "model": "VisualReviewDispatch"
     },
     {
       "table": "visual_certification_receipts",
       "service": "visual",
-      "module": "fpl_visual.models",
+      "module": "studio.apps.visual_workshop.storage.service_models",
       "model": "VisualCertificationReceipt"
     },
     {
       "table": "visual_canvas_reference_mutations",
       "service": "visual",
-      "module": "fpl_visual.models",
+      "module": "studio.apps.visual_workshop.storage.service_models",
       "model": "VisualCanvasReferenceMutation"
     },
     {
       "table": "visual_segment_handoffs",
       "service": "visual",
-      "module": "fpl_visual.models",
+      "module": "studio.apps.visual_workshop.storage.service_models",
       "model": "VisualSegmentHandoff"
     },
     {
       "table": "visual_migration_receipts",
       "service": "visual",
-      "module": "fpl_visual.models",
+      "module": "studio.apps.visual_workshop.storage.service_models",
       "model": "VisualMigrationReceipt"
     },
     {
       "table": "visual_snapshot_import_batches",
       "service": "visual",
-      "module": "fpl_visual.models",
+      "module": "studio.apps.visual_workshop.storage.service_models",
       "model": "VisualSnapshotImportBatch"
     },
     {
       "table": "visual_composition_dispatches",
       "service": "visual",
-      "module": "fpl_visual.models",
+      "module": "studio.apps.visual_workshop.storage.service_models",
       "model": "VisualCompositionDispatch"
     },
     {
-      "table": "visual_review_dispatches",
-      "service": "visual",
-      "module": "fpl_visual.review_dispatch_records",
-      "model": "VisualReviewDispatch"
+      "table": "project_operation_receipts",
+      "service": "local-receipts",
+      "module": "studio.runtime.database.project_operations",
+      "model": "ProjectOperationReceipt"
     }
   ],
   "pages": [

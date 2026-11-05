@@ -5,10 +5,10 @@ from typing import Protocol
 
 from sqlalchemy import select, update
 
-from app.capabilities.identity.errors import AccountError
 from app.llm.catalog.default_storage import CatalogDefaults
 from app.llm.models import ModelCatalogState, ModelEntry, ModelProvider, ModelSupplier
-from app.runtime.time import utc_now
+from studio.contracts.identity.errors import AccountError
+from studio.runtime.time import utc_now
 
 
 class AccountTaskUsage(Protocol):

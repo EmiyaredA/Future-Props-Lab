@@ -14,8 +14,8 @@ from tests.migration_fixtures import LATEST_MIGRATION_ID, MIGRATIONS, apply_migr
 
 import app.main as main_module
 import app.runtime.db as database_module
-from app.problem_details import storage_operational_error_handler
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
+from studio.runtime.http.problem_details import storage_operational_error_handler
 
 DEFAULT_OPENAI_PROVIDER_ID = "f0000000-0000-4000-8000-000000000001"
 

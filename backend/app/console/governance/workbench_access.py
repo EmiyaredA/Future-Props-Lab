@@ -1,7 +1,7 @@
 """Legacy collector authorization; independent Agents obtains this decision from Identity."""
 
-from app.capabilities.identity.permissions import CLOUD_CONTROL_PERMISSION, role_permissions
 from app.console.models.accounts import User
+from studio.contracts.identity.permissions import CLOUD_CONTROL_PERMISSION, role_permissions
 
 
 async def workbench_actor_allowed(session, owner_user_id: str) -> bool:

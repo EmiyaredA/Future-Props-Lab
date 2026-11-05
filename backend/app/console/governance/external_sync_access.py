@@ -3,7 +3,7 @@
 from sqlalchemy import select
 
 from app.console.models import ManagementApiKey, User
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 async def external_sync_actor_allowed(session, owner_user_id: str, actor: dict) -> bool:

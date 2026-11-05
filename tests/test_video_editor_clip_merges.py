@@ -7,18 +7,18 @@ import pytest
 from PIL import Image
 from sqlalchemy import select
 
-from app.apps.video_editor.clip_merging.document import (
-    render_snapshot,
-    replace_selection,
-    selection,
-)
-from app.apps.video_editor.errors import VideoEditorValidationError
-from app.apps.video_editor.models import VideoEditorTask
-from app.apps.video_editor.runner import VideoEditorRunner
 from app.capabilities.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.capabilities.media_rendering.timeline_document import parse_timeline_document
 from app.main import app
 from app.runtime.db import SessionLocal
+from studio.apps.video_editor.clip_merging.document import (
+    render_snapshot,
+    replace_selection,
+    selection,
+)
+from studio.apps.video_editor.errors import VideoEditorValidationError
+from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.apps.video_editor.storage.models import VideoEditorTask
 
 
 def document() -> dict:
@@ -257,7 +257,7 @@ async def test_merge_api_real_render_apply_undo_redo_and_conflicts(
                         f"{root}/clip-merges", json={**body, "requestId": "failed-render-test"}
                     )
                 ).json()
-                from app.apps.video_editor.clip_merging import runner as merge_runner
+                from studio.apps.video_editor.clip_merging import runner as merge_runner
 
                 def fail_render(*_args, **_kwargs):
                     raise RuntimeError("encoding failed")

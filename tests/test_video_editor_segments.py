@@ -11,21 +11,21 @@ import httpx
 import pytest
 from sqlalchemy import delete, select, update
 
-from app.apps.video_editor import segment_files, segment_runner
-from app.apps.video_editor.models import VideoEditorTask
-from app.apps.video_editor.runner import VideoEditorRunner
-from app.apps.video_editor.segment_files import download_segments, segment_filename
-from app.apps.visual_workshop.models import VisualCanvasDocument
-from app.apps.visual_workshop.outputs import register_imported_output
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
-from app.apps.visual_workshop.outputs.references import resolve_references
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.deps import owner_from_principal
-from app.llm.schemas.generation_tasks import VideoGenerationTaskCreateIn
 from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
+from studio.apps.video_editor.handoffs import segment_files, segment_runner
+from studio.apps.video_editor.handoffs.segment_files import download_segments, segment_filename
+from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.apps.video_editor.storage.models import VideoEditorTask
+from studio.apps.visual_workshop.outputs import register_imported_output
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.outputs.references import resolve_references
+from studio.apps.visual_workshop.storage.models import VisualCanvasDocument
+from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
 
 
 @pytest.fixture

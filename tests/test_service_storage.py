@@ -6,8 +6,8 @@ import pytest
 from sqlalchemy import String, select, update
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
-from fpl_runtime.database import Database, ServiceStorageError
-from fpl_runtime.migrations import Migration, apply, check
+from studio.runtime.database.migrations import Migration, apply, check
+from studio.runtime.database.sessions import Database, ServiceStorageError
 
 
 class Base(DeclarativeBase):

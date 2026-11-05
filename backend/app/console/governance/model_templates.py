@@ -2,7 +2,6 @@
 
 from sqlalchemy import select
 
-from app.capabilities.identity.errors import AccountError
 from app.console.governance.governance_transactions import (
     begin_governance,
     cas,
@@ -20,6 +19,7 @@ from app.llm.catalog.template_values import prepare_template
 from app.llm.catalog.template_values import template_view as template_view
 from app.llm.models import ModelCatalogState
 from app.runtime.ownership import bind_owner
+from studio.contracts.identity.errors import AccountError
 
 
 async def get_template(session, role):

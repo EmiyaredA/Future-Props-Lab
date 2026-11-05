@@ -5,12 +5,6 @@ import pytest
 from sqlalchemy import delete
 
 import app.capabilities.asset_store.assets as asset_module
-from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-from app.apps.visual_workshop.models import (
-    VisualGenerationTask,
-    VisualWorkshopProject,
-)
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
@@ -25,6 +19,12 @@ from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
+from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.storage.models import (
+    VisualGenerationTask,
+    VisualWorkshopProject,
+)
 
 
 @pytest.mark.asyncio

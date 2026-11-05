@@ -6,9 +6,9 @@ COPY backend/ /app/backend/
 COPY web/ /app/web/
 COPY deploy/contracts/ /app/deploy/contracts/
 ENV PYTHONPATH=/app/backend PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
-RUN python -m fpl_presentation --help
+RUN python -m studio.assembly.independent.presentation_workshop.cli --help
 ARG FPL_SERVICE_VERSION
 ENV FPL_SERVICE_VERSION=$FPL_SERVICE_VERSION
 EXPOSE 8080
-ENTRYPOINT ["python", "-m", "fpl_presentation"]
+ENTRYPOINT ["python", "-m", "studio.assembly.independent.presentation_workshop.cli"]
 CMD ["serve"]

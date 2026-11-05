@@ -2,7 +2,6 @@
 
 from sqlalchemy import select, text
 
-from app.capabilities.identity.errors import AccountError
 from app.console.governance.governance_transactions import (
     begin_governance,
     cas,
@@ -20,8 +19,9 @@ from app.llm.models import ModelSupplier
 from app.llm.models.model_templates import ModelTemplateSyncItem as Item
 from app.llm.models.model_templates import ModelTemplateSyncJob as Job
 from app.runtime.db import SessionLocal
-from app.runtime.polling_runner import PollingTaskRunner
-from app.runtime.time import utc_now
+from studio.contracts.identity.errors import AccountError
+from studio.runtime.tasks.polling import PollingTaskRunner
+from studio.runtime.time import utc_now
 
 
 async def job_view(session, job_id):

@@ -32,9 +32,9 @@ from app.runtime.config import get_settings
 from app.runtime.credentials import SecretCipher
 from app.runtime.outbound_urls import require_safe_integration_http_url
 from app.runtime.ownership import require_owner_id
-from app.runtime.revisions import RevisionConflictError
 from app.runtime.secret_hints import encrypted_secret_hint
-from app.runtime.time import iso_utc, utc_now
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import iso_utc, utc_now
 
 PLACEHOLDER = re.compile(r"{{\s*([A-Za-z_][A-Za-z0-9_]*)\s*}}")
 RESPONSE_LIMIT = 1024 * 1024

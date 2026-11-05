@@ -24,13 +24,19 @@ from tests.test_creative_project_certification import PROJECTS as OWNERS
 from tests.test_tools_navigation_migration import available_ports, listener
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
-from app.apps.galgame_workshop.models import GalgameVideoEditorHandoffTask, GalgameVideoExportTask
-from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
-from fpl_galgame.migrations.registry import MIGRATIONS as GALGAME_MIGRATIONS
-from fpl_runtime.claims import HEADER, Actor, issue_context
-from fpl_runtime.migration_batches import MigrationPlan
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.galgame_workshop.storage.migrations.registry import (
+    MIGRATIONS as GALGAME_MIGRATIONS,
+)
+from studio.apps.galgame_workshop.storage.models import (
+    GalgameVideoEditorHandoffTask,
+    GalgameVideoExportTask,
+)
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER, Actor, issue_context
+from studio.contracts.management.migration_batches import MigrationPlan
+from studio.deployment.images import ENTRY_POINTS
+from studio.runtime.database.migrations import apply
 
 PROJECTS = "/v1/galgame-workshop/projects"
 
@@ -181,7 +187,7 @@ def open_peers(stack, client, root, snapshot, plan_path, *, service, migrations,
                         f"migration-{mode}",
                         plan_path,
                         *args,
-                        module=f"fpl_{name}",
+                        module=ENTRY_POINTS[name],
                         prefix=dataset.prefix,
                     )
                 )

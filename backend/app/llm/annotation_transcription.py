@@ -21,7 +21,7 @@ from app.llm.credential_snapshot import CredentialSnapshot
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
 from app.runtime.credentials import decrypt_secret
-from fpl_runtime.annotation_transcription import WAV_TYPES, SegmentResult
+from studio.contracts.model_service.annotation import WAV_TYPES, SegmentResult
 
 
 class AnnotationTranscriptionError(Exception):

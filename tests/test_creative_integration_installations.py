@@ -23,20 +23,23 @@ from app.integrations.models import (
     ToolApiIntegration,
 )
 from app.runtime.config import Settings
-from fpl_integrations.creative_installations import CreativeInstallations
-from fpl_integrations.creative_records import CreativeInstalledPart, CreativeInstallReceipt
-from fpl_integrations.migrations.registry import MIGRATIONS
-from fpl_integrations.models import MODELS
-from fpl_runtime.creative_integrations import (
+from studio.apps.integrations.creative_installations import CreativeInstallations
+from studio.apps.integrations.storage.creative_records import (
+    CreativeInstalledPart,
+    CreativeInstallReceipt,
+)
+from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
+from studio.apps.integrations.storage.service_models import MODELS
+from studio.contracts.creative_workshop.creative_integrations import (
     CreativeInstallBatch,
     CreativeInstallPart,
     CreativeOperationGrant,
     CreativeSkillBlob,
     CreativeStdioConfiguration,
 )
-from fpl_runtime.database import Database
-from fpl_runtime.integration_intents import digest
-from fpl_runtime.migrations import apply
+from studio.contracts.integrations.integration_intents import digest
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 class Incoming:
@@ -461,7 +464,7 @@ async def test_stdio_concurrent_replays_and_deleted_resource_cannot_recreate(ins
 async def test_unknown_rollback_then_same_account_name_conflict_cleans_only_on_recovery(
     installation, monkeypatch
 ):
-    from fpl_integrations.skill_files import reconcile_skill_files
+    from studio.apps.integrations.skill_files import reconcile_skill_files
 
     data = zip_bytes()
     value = batch([skill_part(data), tool()])
@@ -510,7 +513,7 @@ async def test_private_http_fails_closed_and_binds_verified_batch(installation):
     import httpx
     from fastapi import FastAPI
 
-    from fpl_integrations.creative_http import CreativeRequestLimit, router
+    from studio.apps.integrations.transport.creative_http import CreativeRequestLimit, router
 
     app = FastAPI()
     app.include_router(router)
@@ -587,7 +590,7 @@ async def test_private_stdio_validation_never_echoes_environment(installation):
     import httpx
     from fastapi import FastAPI
 
-    from fpl_integrations.creative_http import router
+    from studio.apps.integrations.transport.creative_http import router
 
     app = FastAPI()
     app.include_router(router)
@@ -644,17 +647,22 @@ async def test_creative_source_grant_controls_real_target_and_receipt_recovery(
 
     from app.console.creative_workshop.models import CreativeItem, CreativeRelease
     from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
-    from fpl_creative.install_authorization import (
+    from studio.apps.creative_workshop.install_authorization import (
         IdentityInstallAuthorization,
         InstallAuthorizationDenied,
         InstallSource,
     )
-    from fpl_creative.install_grants import InstallGrantAuthority
-    from fpl_creative.installation_outbox import InstallationOutbox
-    from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
-    from fpl_creative.storage import creative_database
-    from fpl_runtime.claims import Actor, issue_context
-    from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
+    from studio.apps.creative_workshop.install_grants import InstallGrantAuthority
+    from studio.apps.creative_workshop.installation_outbox import InstallationOutbox
+    from studio.apps.creative_workshop.storage.file_paths import creative_database
+    from studio.apps.creative_workshop.storage.migrations.registry import (
+        MIGRATIONS as CREATIVE_MIGRATIONS,
+    )
+    from studio.contracts.creative_workshop.creative_install_evidence import (
+        INSTALL_PATH,
+        issue_install_evidence,
+    )
+    from studio.contracts.identity.claims import Actor, issue_context
 
     class Live:
         async def status(self, **_kwargs):
@@ -723,7 +731,7 @@ async def test_creative_source_grant_controls_real_target_and_receipt_recovery(
         installed = await installation.use.install(
             value, {}, lambda: authority.authorize("install", source, value)
         )
-        from fpl_runtime.database import ServiceStorageError
+        from studio.runtime.database.sessions import ServiceStorageError
 
         async with db.sessions(info={"owner_user_id": "author"}) as session:
             (await session.get(CreativeItem, "item")).status = "withdrawn"
@@ -760,16 +768,21 @@ async def test_independent_install_http_recovers_a_lost_target_reply(installatio
     from fastapi import FastAPI
 
     from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-    from fpl_creative.application import create_app
-    from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
-    from fpl_integrations.creative_authority import CreativeHttpAuthority
-    from fpl_integrations.creative_http import router
-    from fpl_integrations.creative_stdio_http import router as setup_router
-    from fpl_runtime.claims import HEADER, Actor, issue_context
-    from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
-    from fpl_runtime.creative_stdio import PRIVATE_STDIO, PUBLIC_STDIO
-    from fpl_runtime.delegation import RequestGrant, permitted
-    from fpl_runtime.routing import RouteCatalog
+    from studio.apps.creative_workshop.storage.migrations.registry import (
+        MIGRATIONS as CREATIVE_MIGRATIONS,
+    )
+    from studio.apps.integrations.creative_authority import CreativeHttpAuthority
+    from studio.apps.integrations.transport.creative_http import router
+    from studio.apps.integrations.transport.creative_stdio_http import router as setup_router
+    from studio.assembly.independent.creative_workshop.application import create_app
+    from studio.contracts.creative_workshop.creative_install_evidence import (
+        INSTALL_PATH,
+        issue_install_evidence,
+    )
+    from studio.contracts.creative_workshop.creative_stdio import PRIVATE_STDIO, PUBLIC_STDIO
+    from studio.contracts.gateway.routing import RouteCatalog
+    from studio.contracts.identity.claims import HEADER, Actor, issue_context
+    from studio.contracts.identity.delegation import RequestGrant, permitted
 
     key = Ed25519PrivateKey.generate()
     peer, target, result = ("source-" * 8, "target-" * 8, "result-" * 8)
@@ -961,10 +974,10 @@ async def test_bound_preview_checks_exact_batch_and_live_account_without_writes(
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from fastapi import FastAPI
 
-    from app.capabilities.identity.permissions import role_scopes
-    from fpl_integrations.creative_preview_http import router
-    from fpl_runtime.claims import HEADER, Actor, issue_context
-    from fpl_runtime.creative_preview import preview_path
+    from studio.apps.integrations.transport.creative_preview_http import router
+    from studio.contracts.creative_workshop.creative_preview import preview_path
+    from studio.contracts.identity.claims import HEADER, Actor, issue_context
+    from studio.contracts.identity.permissions import role_scopes
 
     class Authorization:
         active = True
@@ -1057,10 +1070,15 @@ async def test_verified_target_cancellation_releases_source_fence_and_blocks_lat
 
     from app.console.creative_workshop.models import CreativeItem, CreativeRelease
     from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
-    from fpl_creative.fence_records import CreativeInstallFence
-    from fpl_creative.installation_outbox import InstallationOutbox, InstallIntentConflict
-    from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
-    from fpl_creative.storage import creative_database
+    from studio.apps.creative_workshop.installation_outbox import (
+        InstallationOutbox,
+        InstallIntentConflict,
+    )
+    from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
+    from studio.apps.creative_workshop.storage.file_paths import creative_database
+    from studio.apps.creative_workshop.storage.migrations.registry import (
+        MIGRATIONS as CREATIVE_MIGRATIONS,
+    )
 
     root = tmp_path / "creative-cancel"
     root.mkdir()

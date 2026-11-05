@@ -3,13 +3,13 @@ from pathlib import Path
 
 from PIL import Image
 
-from app.apps.video_editor.frames import render_plan_frame
 from app.capabilities.media_rendering.galgame.compiler import (
     FLOATING_TEXT_FONT_ASSET_ID,
     compile_galgame_render_plan,
 )
 from app.capabilities.media_rendering.galgame.dialogue import FONT_REGULAR
 from app.capabilities.media_rendering.galgame.lip_sync import AudioEnvelope
+from studio.apps.video_editor.frames import render_plan_frame
 
 
 def test_story_compiler_builds_layered_timeline_and_capture_frame() -> None:

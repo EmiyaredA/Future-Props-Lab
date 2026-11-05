@@ -6,11 +6,6 @@ from dataclasses import replace
 from uuid import uuid4
 
 from app.capabilities.agents.harness.approval import ApprovalBroker, approval_broker
-from app.capabilities.agents.harness.contracts import (
-    AgentMessage,
-    ModelAdapter,
-    Usage,
-)
 from app.capabilities.agents.harness.phases import (
     approval_phase,
     emit_event,
@@ -28,6 +23,7 @@ from app.capabilities.agents.harness.types import (
     RunStatus,
     ToolBinding,
 )
+from studio.contracts.agent_runtime.dialogue import AgentMessage, ModelAdapter, Usage
 
 
 async def _maybe_emit(listener: EventListener | None, event: AgentEvent) -> None:

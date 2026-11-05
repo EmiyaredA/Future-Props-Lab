@@ -17,8 +17,8 @@ from scripts.website.data_transfer import digest, locked  # noqa: E402
 
 def publish(snapshot, *, public_enabled=None):
     from app.runtime.config import Settings
-    from fpl_config import read_config
-    from fpl_config.migration import encode
+    from studio.config import read_config
+    from studio.config.migration import encode
 
     runtime = ROOT / ".runtime"
     path = ROOT / "backend/config.toml"

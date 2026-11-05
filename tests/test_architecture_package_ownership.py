@@ -9,8 +9,10 @@ BACKEND_APP = REPO_ROOT / "backend" / "app"
 
 
 def test_presentation_workshop_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "presentation_workshop" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "presentation_workshop" / "routes" / "__init__.py").is_file()
+    assert (REPO_ROOT / "backend/studio/apps/presentation_workshop/storage/models.py").is_file()
+    assert (
+        REPO_ROOT / "backend/studio/apps/presentation_workshop/transport/website/__init__.py"
+    ).is_file()
     assert not (BACKEND_APP / "presentation_workshop").exists()
     assert not (BACKEND_APP / "models" / "presentation_workshop.py").exists()
     assert not (BACKEND_APP / "routes" / "presentation_workshop.py").exists()
@@ -19,8 +21,10 @@ def test_presentation_workshop_lives_under_apps() -> None:
 
 
 def test_audio_annotation_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "audio_annotation" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "audio_annotation" / "routes" / "__init__.py").is_file()
+    owner = REPO_ROOT / "backend/studio/apps/audio_annotation"
+    assert (owner / "models.py").is_file()
+    assert (owner / "routes" / "__init__.py").is_file()
+    assert not (BACKEND_APP / "apps/audio_annotation/models.py").exists()
     assert not (BACKEND_APP / "audio_annotation").exists()
     assert not (BACKEND_APP / "models" / "audio_annotation.py").exists()
     assert not (BACKEND_APP / "routes" / "audio_annotation.py").exists()
@@ -30,9 +34,11 @@ def test_audio_annotation_lives_under_apps() -> None:
 
 
 def test_thought_workshop_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "thought_workshop" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "thought_workshop" / "routes" / "__init__.py").is_file()
-    assert (BACKEND_APP / "apps" / "thought_workshop" / "content_exports_http.py").is_file()
+    assert (REPO_ROOT / "backend/studio/apps/thought_workshop/storage/models.py").is_file()
+    assert (
+        REPO_ROOT / "backend/studio/apps/thought_workshop/transport/website/__init__.py"
+    ).is_file()
+    assert (REPO_ROOT / "backend/studio/apps/thought_workshop/content_exports_http.py").is_file()
     assert not (BACKEND_APP / "thought_workshop").exists()
     assert not (BACKEND_APP / "models" / "thought_workshop.py").exists()
     assert not (BACKEND_APP / "routes" / "thought_workshop.py").exists()
@@ -50,8 +56,8 @@ def test_thought_workshop_lives_under_apps() -> None:
 
 
 def test_video_editor_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "video_editor" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "video_editor" / "routes" / "__init__.py").is_file()
+    assert (REPO_ROOT / "backend/studio/apps/video_editor/storage/models.py").is_file()
+    assert (REPO_ROOT / "backend/studio/apps/video_editor/transport/website/__init__.py").is_file()
     assert not (BACKEND_APP / "video_editor").exists()
     assert not (BACKEND_APP / "models" / "video_editor.py").exists()
     assert not (BACKEND_APP / "routes" / "video_editor.py").exists()
@@ -59,10 +65,16 @@ def test_video_editor_lives_under_apps() -> None:
 
 
 def test_visual_workshop_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "visual_workshop" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "visual_workshop" / "routes" / "__init__.py").is_file()
-    assert (BACKEND_APP / "apps" / "visual_workshop" / "routes" / "assistant.py").is_file()
-    assert (BACKEND_APP / "apps" / "visual_workshop" / "routes" / "generation.py").is_file()
+    assert (REPO_ROOT / "backend/studio/apps/visual_workshop/storage/models.py").is_file()
+    assert (
+        REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/__init__.py"
+    ).is_file()
+    assert (
+        REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/assistant.py"
+    ).is_file()
+    assert (
+        REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/generation.py"
+    ).is_file()
     assert not (BACKEND_APP / "visual_workshop").exists()
     assert not (BACKEND_APP / "models" / "visual_workshop.py").exists()
     assert not (BACKEND_APP / "routes" / "visual_workshop.py").exists()
@@ -78,11 +90,13 @@ def test_visual_workshop_lives_under_apps() -> None:
 
 
 def test_galgame_workshop_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "routes" / "__init__.py").is_file()
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "story").is_dir()
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "assets").is_dir()
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "video").is_dir()
+    assert (REPO_ROOT / "backend/studio/apps/galgame_workshop/storage/models.py").is_file()
+    assert (
+        REPO_ROOT / "backend/studio/apps/galgame_workshop/transport/website/__init__.py"
+    ).is_file()
+    assert (REPO_ROOT / "backend/studio/apps/galgame_workshop/story").is_dir()
+    assert (REPO_ROOT / "backend/studio/apps/galgame_workshop/assets").is_dir()
+    assert (REPO_ROOT / "backend/studio/apps/galgame_workshop/video").is_dir()
     assert not (BACKEND_APP / "galgame_workshop").exists()
     assert not (BACKEND_APP / "models" / "galgame_workshop.py").exists()
     assert not (BACKEND_APP / "routes" / "galgame_workshop").exists()
@@ -94,7 +108,7 @@ def test_galgame_workshop_lives_under_apps() -> None:
 def test_llm_owns_models_schemas_and_routes() -> None:
     assert (BACKEND_APP / "llm" / "models" / "model_service.py").is_file()
     assert (BACKEND_APP / "llm" / "schemas" / "model_service.py").is_file()
-    assert (BACKEND_APP / "llm" / "schemas" / "generation_tasks.py").is_file()
+    assert (REPO_ROOT / "backend/studio/contracts/model_service/generation_tasks.py").is_file()
     assert (BACKEND_APP / "llm" / "schemas" / "realtime_voice.py").is_file()
     assert (BACKEND_APP / "llm" / "routes" / "models" / "catalog.py").is_file()
     assert (BACKEND_APP / "llm" / "routes" / "model_inference.py").is_file()
@@ -200,9 +214,7 @@ def test_console_owns_account_models_and_llm_owns_model_governance_records() -> 
 def test_asset_store_owns_files_models_and_schemas() -> None:
     assert (BACKEND_APP / "capabilities" / "asset_store" / "models.py").is_file()
     assert (BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "files.py").is_file()
-    assert (
-        BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "project_snapshots.py"
-    ).is_file()
+    assert (REPO_ROOT / "backend/studio/contracts/asset_library/project_snapshots.py").is_file()
 
 
 def test_transcription_owns_schemas() -> None:
@@ -210,9 +222,9 @@ def test_transcription_owns_schemas() -> None:
 
 
 def test_runtime_owns_project_operations_and_defaults() -> None:
-    assert (BACKEND_APP / "runtime" / "project_operations.py").is_file()
-    assert (BACKEND_APP / "runtime" / "operation_batches.py").is_file()
-    assert (BACKEND_APP / "runtime" / "ids.py").is_file()
-    assert (BACKEND_APP / "runtime" / "time.py").is_file()
+    assert (REPO_ROOT / "backend/studio/runtime/database/project_operations.py").is_file()
+    assert (REPO_ROOT / "backend/studio/runtime/operation_batches.py").is_file()
+    assert (REPO_ROOT / "backend/studio/runtime/ids.py").is_file()
+    assert (REPO_ROOT / "backend/studio/runtime/time.py").is_file()
     assert not (BACKEND_APP / "models").exists()
     assert not (BACKEND_APP / "schemas").exists()

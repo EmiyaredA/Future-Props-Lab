@@ -14,13 +14,13 @@ from tests.test_community_asset_protocol import (
     scenario,  # noqa: F401
 )
 
-from fpl_assets.models import AssetReferenceSet
-from fpl_identity.accounts import create_account
-from fpl_runtime.claims import HEADER
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.retention_client import RetentionClient
-from fpl_thought.application import create_app
-from fpl_thought.retention import ThoughtReferenceDelivery
+from studio.apps.asset_library.clients.retention import RetentionClient
+from studio.apps.asset_library.storage.service_models import AssetReferenceSet
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.thought_workshop.retention import ThoughtReferenceDelivery
+from studio.assembly.independent.thought_workshop.application import create_app
+from studio.contracts.identity.claims import HEADER
 
 
 async def test_official_import_replays_and_delivers_empty_projections(scenario):  # noqa: F811

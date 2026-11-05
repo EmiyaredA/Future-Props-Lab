@@ -9,15 +9,6 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete
 
-from app.apps.galgame_workshop.assets import asset_analysis as asset_analysis_module
-from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
-from app.apps.galgame_workshop.assets.asset_support import normalize_import_filename
-from app.apps.galgame_workshop.models import (
-    GalgameAssetMetadata,
-    GalgameAssetSettings,
-    GalgameAssetTranscriptionTask,
-)
-from app.apps.galgame_workshop.schemas import GalgameStoryProject
 from app.llm.models import (
     ModelEntry,
     ModelProvider,
@@ -25,6 +16,15 @@ from app.llm.models import (
 from app.main import app
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
+from studio.apps.galgame_workshop.assets import asset_analysis as asset_analysis_module
+from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
+from studio.apps.galgame_workshop.assets.asset_support import normalize_import_filename
+from studio.apps.galgame_workshop.schemas import GalgameStoryProject
+from studio.apps.galgame_workshop.storage.models import (
+    GalgameAssetMetadata,
+    GalgameAssetSettings,
+    GalgameAssetTranscriptionTask,
+)
 
 
 def image_bytes(width: int = 16, height: int = 32) -> bytes:

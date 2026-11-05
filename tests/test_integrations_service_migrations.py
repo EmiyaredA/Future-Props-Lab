@@ -5,11 +5,11 @@ import sqlite3
 import pytest
 from sqlalchemy import select
 
-from fpl_integrations.migrations.registry import MIGRATIONS
-from fpl_integrations.models import MODELS
-from fpl_integrations.records import ExternalExecution
-from fpl_runtime.database import Database, ServiceStorageError
-from fpl_runtime.migrations import apply, check
+from studio.apps.integrations.records import ExternalExecution
+from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
+from studio.apps.integrations.storage.service_models import MODELS
+from studio.runtime.database.migrations import apply, check
+from studio.runtime.database.sessions import Database, ServiceStorageError
 
 
 def test_integrations_append_only_owned_schema_has_no_foreign_service_tables(tmp_path):

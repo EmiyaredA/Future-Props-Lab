@@ -1,16 +1,5 @@
 from app.capabilities.agents.harness.approval import ApprovalBroker, approval_broker
 from app.capabilities.agents.harness.context import ContextCompiler
-from app.capabilities.agents.harness.contracts import (
-    AgentMessage,
-    ImageInput,
-    ModelAdapter,
-    ModelTextDelta,
-    ModelTurnEnd,
-    ModelUsageUpdate,
-    ToolCall,
-    ToolSpec,
-    Usage,
-)
 from app.capabilities.agents.harness.runtime import AgentHarness, ReactiveToolLoop
 from app.capabilities.agents.harness.types import (
     AgentDefinition,
@@ -27,6 +16,17 @@ from app.capabilities.agents.harness.types import (
     SkillProvider,
     ToolBinding,
     ToolExecutionContext,
+)
+from studio.contracts.agent_runtime.dialogue import (
+    AgentMessage,
+    ImageInput,
+    ModelAdapter,
+    ModelTextDelta,
+    ModelTurnEnd,
+    ModelUsageUpdate,
+    ToolCall,
+    ToolSpec,
+    Usage,
 )
 
 __all__ = [

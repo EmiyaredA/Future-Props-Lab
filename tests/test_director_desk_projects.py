@@ -139,8 +139,8 @@ async def test_project_files_roundtrip_and_delete_removes_directory():
 async def test_other_workspace_project_file_is_missing():
     from uuid import uuid4
 
-    from app.apps.director_desk.models import DirectorDeskProject
     from app.runtime.db import SessionLocal
+    from studio.apps.director_desk.storage.models import DirectorDeskProject
 
     project_id = str(uuid4())
     other = str(uuid4())

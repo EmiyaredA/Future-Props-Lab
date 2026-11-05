@@ -8,10 +8,10 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import select, update
 
-from fpl_agents.models import NativeJob
-from fpl_runtime.database import Database, ServiceStorageError
-from fpl_runtime.native_protocol import NativeOutcome
-from fpl_runtime.native_queue import NativeQueue, NativeQueueError
+from studio.apps.agent_workbench.storage.service_models import NativeJob
+from studio.contracts.agent_workbench.native import NativeOutcome
+from studio.runtime.database.sessions import Database, ServiceStorageError
+from studio.runtime.tasks.native_queue import NativeQueue, NativeQueueError
 
 
 @pytest.fixture

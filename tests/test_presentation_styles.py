@@ -7,12 +7,12 @@ import pytest
 from pydantic import ValidationError
 from tests.presentation_helpers import element, sample_document
 
-from app.apps.presentation_workshop.pptx_export import write_pptx
-from app.apps.presentation_workshop.schemas.document import (
+from db.migrations.versions.r0057_presentation_styles import SQL
+from studio.apps.presentation_workshop.pptx_export import write_pptx
+from studio.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
     PresentationElement,
 )
-from db.migrations.versions.r0057_presentation_styles import SQL
 
 
 def test_style_migration_preserves_order_content_and_explicit_values(tmp_path):

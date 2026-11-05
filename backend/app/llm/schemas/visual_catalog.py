@@ -4,9 +4,10 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from studio.contracts.model_service.workflow_video import WorkflowVideoCapabilitiesOut
+
 from .provider_types import ProviderKind
 from .video_capabilities import VideoCapabilitiesOut
-from .workflow_video import WorkflowVideoCapabilitiesOut
 
 
 class GenerationModelOptionOut(BaseModel):

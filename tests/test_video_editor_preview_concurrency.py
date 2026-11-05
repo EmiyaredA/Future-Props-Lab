@@ -7,8 +7,6 @@ from concurrent.futures import ThreadPoolExecutor
 import httpx
 import pytest
 
-from app.apps.video_editor import frames
-from app.apps.video_editor.schemas import VideoEditorTimelineDocument
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.contracts import RenderPlan
 from app.capabilities.media_rendering.evaluator import FRAME_COMPOSITOR_VERSION
@@ -17,6 +15,8 @@ from app.capabilities.media_rendering.video_sampling import VIDEO_SAMPLING_VERSI
 from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.db import engine
+from studio.apps.video_editor import frames
+from studio.apps.video_editor.schemas import VideoEditorTimelineDocument
 
 
 @pytest.mark.asyncio

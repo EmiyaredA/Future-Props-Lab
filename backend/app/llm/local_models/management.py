@@ -11,8 +11,8 @@ from app.llm.local_models.catalog import compatible, definition, manifest
 from app.llm.models.local_models import LocalModelInstallation, LocalModelOperation
 from app.llm.schemas.local_models import LocalModelOut, LocalModelsOut
 from app.runtime.operation_receipts import OperationError
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import utc_now
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import utc_now
 
 
 class LocalModels:

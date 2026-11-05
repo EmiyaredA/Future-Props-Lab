@@ -6,15 +6,15 @@ import httpx
 import pytest
 from sqlalchemy import func, select
 
-from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
-from app.apps.visual_workshop.outputs.history import (
+from app.main import app
+from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.outputs.history import (
     NodeOutputs,
     OutputError,
     publish_generated_output,
 )
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
-from app.main import app
-from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
 
 PNG = b"\x89PNG\r\n\x1a\noutput-version"
 
@@ -22,8 +22,8 @@ PNG = b"\x89PNG\r\n\x1a\noutput-version"
 @pytest.mark.asyncio
 @pytest.mark.parametrize("kind", ["image", "video", "audio"])
 async def test_generation_rejects_own_media_reference(kind):
-    from app.apps.visual_workshop.outputs.references import resolve_references
-    from app.llm.schemas.generation_tasks import (
+    from studio.apps.visual_workshop.outputs.references import resolve_references
+    from studio.contracts.model_service.generation_tasks import (
         AudioGenerationTaskCreateIn,
         ImageGenerationTaskCreateIn,
         VideoGenerationTaskCreateIn,
@@ -215,8 +215,8 @@ async def test_text_context_fixed_references_cycles_and_delete_guards():
             },
         )
         assert cycle.status_code == 422
-        from app.apps.visual_workshop.outputs.references import resolve_references
-        from app.llm.schemas.generation_tasks import ImageGenerationTaskCreateIn
+        from studio.apps.visual_workshop.outputs.references import resolve_references
+        from studio.contracts.model_service.generation_tasks import ImageGenerationTaskCreateIn
 
         async with SessionLocal() as session:
             body = ImageGenerationTaskCreateIn(
@@ -301,7 +301,7 @@ async def test_generation_publish_is_idempotent_and_preserves_latest_user_edits(
 
 @pytest.mark.asyncio
 async def test_background_nodes_avoid_latest_canvas_and_duplicate_completion_does_not_move_them():
-    from app.apps.visual_workshop.node_placement import NODE_SIZE
+    from studio.apps.visual_workshop.node_placement import NODE_SIZE
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -344,10 +344,10 @@ async def test_background_nodes_avoid_latest_canvas_and_duplicate_completion_doe
 async def test_generated_grid_placeholders_avoid_existing_cards_and_preserve_task_binding(
     grid_size,
 ):
-    from app.apps.visual_workshop.batch_nodes import attach_grid_nodes
-    from app.apps.visual_workshop.generation import VisualGeneration
-    from app.apps.visual_workshop.models import VisualGenerationTask
-    from app.apps.visual_workshop.node_placement import automatic_node_position
+    from studio.apps.visual_workshop.batch_nodes import attach_grid_nodes
+    from studio.apps.visual_workshop.node_placement import automatic_node_position
+    from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+    from studio.apps.visual_workshop.website.generation import VisualGeneration
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -591,8 +591,8 @@ async def test_atomic_media_upload_and_snapshot_preserve_full_history_and_fixed_
 
 @pytest.mark.asyncio
 async def test_composition_registers_one_version_with_frozen_inputs(monkeypatch):
-    from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
     from app.runtime.config import get_settings
+    from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 
     calls = []
 
@@ -600,7 +600,9 @@ async def test_composition_registers_one_version_with_frozen_inputs(monkeypatch)
         calls.append((paths, captions, grid_size))
         output.write_bytes(PNG)
 
-    monkeypatch.setattr("app.apps.visual_workshop.generation_runner.render_image_grid", render)
+    monkeypatch.setattr(
+        "studio.apps.visual_workshop.website.generation_runner.render_image_grid", render
+    )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -692,8 +694,8 @@ async def test_delete_uploaded_final_falls_back_then_clears_without_reusing_vers
         assert canvas["nodes"][0]["final_output_id"] == outputs[0]["id"]
         assert canvas["nodes"][0]["final_version"] == 1
         assert canvas["nodes"][0]["asset_id"] == outputs[0]["asset_id"]
-        from app.apps.visual_workshop.outputs.references import resolve_references
-        from app.llm.schemas.generation_tasks import VideoGenerationTaskCreateIn
+        from studio.apps.visual_workshop.outputs.references import resolve_references
+        from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
 
         def request(revision):
             return VideoGenerationTaskCreateIn(

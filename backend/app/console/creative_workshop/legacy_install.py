@@ -7,7 +7,6 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.identity.principal import StudioPrincipal
 from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
 from app.console.creative_workshop.files import resolve_file
 from app.console.creative_workshop.models import CreativeInstallation, CreativeRelease
@@ -28,7 +27,8 @@ from app.integrations.schemas import McpCreateIn
 from app.integrations.skills.archive import SkillArchiveStorage
 from app.runtime.config import get_settings
 from app.runtime.credentials import encrypt_secret
-from app.runtime.ids import new_id
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.ids import new_id
 
 
 class LegacyCreativeInstaller:

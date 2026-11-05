@@ -14,7 +14,7 @@ from websockets.asyncio.client import connect
 
 from app.llm.task_execution import TaskExecutionInfo
 from app.runtime.outbound_urls import require_safe_provider_websocket_url
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 def apply_event(info: TaskExecutionInfo, message: dict, task_id: str) -> TaskExecutionInfo:

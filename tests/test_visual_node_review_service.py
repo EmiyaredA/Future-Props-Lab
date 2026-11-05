@@ -17,21 +17,23 @@ from tests.test_visual_compositions_service import Faults, png
 
 from app.llm.models import ModelEntry
 from app.llm.visual_review import Suggestions
-from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_models.visual_catalog_http import router as models_catalog
-from fpl_models.visual_review_attempts import VisualReviewAttempts
-from fpl_models.visual_review_http import router as model_reviews
-from fpl_rendering.application import create_app as create_rendering
-from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
-from fpl_rendering.settings import RenderingSettings
-from fpl_runtime.capability_client import CapabilityClient, CapabilityUnavailable
-from fpl_runtime.database import Database
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.visual_review import MODEL_RUN
-from fpl_visual.application import create_app as create_visual
-from fpl_visual.migrations.registry import MIGRATIONS as VISUAL_MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.media_rendering.settings import RenderingSettings
+from studio.apps.media_rendering.storage.migrations.registry import (
+    MIGRATIONS as RENDERING_MIGRATIONS,
+)
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.transport.visual_catalog_http import router as models_catalog
+from studio.apps.model_service.transport.visual_review_http import router as model_reviews
+from studio.apps.model_service.visual.visual_review_attempts import VisualReviewAttempts
+from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS as VISUAL_MIGRATIONS
+from studio.assembly.independent.media_rendering.application import create_app as create_rendering
+from studio.assembly.independent.visual_workshop.application import create_app as create_visual
+from studio.contracts.visual_workshop.visual_review import MODEL_RUN
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.http.capability_client import CapabilityClient, CapabilityUnavailable
 
 
 class ReviewFaults(Faults):
@@ -264,8 +266,13 @@ async def test_node_review_restarts_after_lost_evidence_and_model_receipts(
             }
         )
 
-    monkeypatch.setattr("fpl_models.visual_review_attempts.decrypt_secret", lambda _: "test-key")
-    monkeypatch.setattr("fpl_models.visual_review_attempts.evaluate_review", evaluate)
+    monkeypatch.setattr(
+        "studio.apps.model_service.visual.visual_review_attempts.decrypt_secret",
+        lambda _: "test-key",
+    )
+    monkeypatch.setattr(
+        "studio.apps.model_service.visual.visual_review_attempts.evaluate_review", evaluate
+    )
     async with review_mesh(scenario, tmp_path) as (visual, send, faults):
         async with visual() as app:
             path, identity, sources = await create_run(send, app, video_file(tmp_path))

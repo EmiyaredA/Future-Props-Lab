@@ -8,10 +8,10 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from fpl_deployment.contracts import document, generate, operation_owner
-from fpl_runtime.catalog import SERVICES
-from fpl_runtime.claims import Actor, issue_context, verify_context
-from fpl_runtime.routing import Operation, RouteCatalog
+from studio.contracts.gateway.catalog import SERVICES
+from studio.contracts.gateway.routing import Operation, RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context, verify_context
+from studio.deployment.contracts import document, generate, operation_owner
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -41,7 +41,7 @@ def test_all_public_operations_and_tables_have_reviewable_owners():
 
 
 def test_cloud_control_capabilities_keep_their_registered_owners():
-    from fpl_config import FIELDS
+    from studio.config import FIELDS
 
     data = document(ROOT)
     paths = {item["path"]: item["service"] for item in data["operations"]}
@@ -125,7 +125,7 @@ def test_account_and_host_capability_prefixes_preserve_business_ownership(path, 
 
 
 def test_websocket_ownership_is_explicit_and_never_a_fake_http_operation():
-    from fpl_runtime.routing import SOCKET_OPERATIONS, SocketOperation
+    from studio.contracts.gateway.routing import SOCKET_OPERATIONS, SocketOperation
 
     catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
     socket = catalog.match_socket("/v1/model-test/realtime")
@@ -145,7 +145,7 @@ def test_websocket_ownership_is_explicit_and_never_a_fake_http_operation():
 
 
 def test_gateway_sends_creative_posts_through_the_private_socket_after_authorization():
-    from fpl_deployment.gateway import render_gateway
+    from studio.deployment.gateway import render_gateway
 
     catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
     rendered = render_gateway(
@@ -168,7 +168,7 @@ def test_gateway_sends_creative_posts_through_the_private_socket_after_authoriza
 
 
 def test_gateway_matches_real_socket_upgrade_and_strips_forged_protocol_headers():
-    from fpl_deployment.gateway import render_gateway
+    from studio.deployment.gateway import render_gateway
 
     catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
     options = dict(
@@ -199,8 +199,8 @@ def test_gateway_matches_real_socket_upgrade_and_strips_forged_protocol_headers(
 
 
 def test_socket_contract_change_invalidates_only_its_own_program():
-    from fpl_runtime.protocol_hash import public_contract
-    from fpl_runtime.routing import SocketOperation
+    from studio.contracts.gateway.protocol_hash import public_contract
+    from studio.contracts.gateway.routing import SocketOperation
 
     schema = {"paths": {}, "components": {"schemas": {}}}
     plain = RouteCatalog([])
@@ -212,7 +212,7 @@ def test_socket_contract_change_invalidates_only_its_own_program():
 
 
 def test_every_cross_service_http_operation_has_an_identity_permission_policy():
-    from app.capabilities.identity.route_permissions import route_permission
+    from studio.contracts.identity.route_permissions import route_permission
 
     catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
     missing = [
@@ -233,7 +233,7 @@ def test_every_cross_service_http_operation_has_an_identity_permission_policy():
 
 
 def test_integrations_native_lane_is_loopback_only_and_strips_identity_headers():
-    from fpl_deployment.gateway import render_gateway
+    from studio.deployment.gateway import render_gateway
 
     rendered = render_gateway(
         RouteCatalog.read(ROOT / "deploy/contracts/ownership.json"),

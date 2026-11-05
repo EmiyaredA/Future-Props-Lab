@@ -17,7 +17,7 @@ from app.console.governance.service import AccountError, add_audit_event
 from app.console.models import User
 from app.runtime.config import get_settings
 from app.runtime.image_sizes import ThumbnailSize
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 AVATAR_MAX_BYTES = 2 * 1024 * 1024
 AVATAR_CHUNK_BYTES = 128 * 1024

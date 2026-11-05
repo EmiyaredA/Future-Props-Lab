@@ -5,9 +5,9 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
-from app.runtime.time import utc_now
+from studio.runtime.database.orm_base import Base
+from studio.runtime.ids import new_id
+from studio.runtime.time import utc_now
 
 
 class VisualAssetFolder(Base):
@@ -78,5 +78,5 @@ def __getattr__(name):
     from importlib import import_module
 
     return import_module(
-        "app.apps.visual_workshop.asset_references.models"
+        "studio.apps.visual_workshop.asset_references.models"
     ).VisualProjectAssetReference

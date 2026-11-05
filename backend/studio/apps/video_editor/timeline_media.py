@@ -1,0 +1,96 @@
+"""Join Video processing metadata to narrowly delegated Assets descriptions."""
+
+import httpx
+from sqlalchemy import select, text
+
+from studio.apps.video_editor.errors import VideoEditorUnavailableError, VideoEditorValidationError
+from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata
+from studio.apps.video_editor.timeline_assets import TimelineAsset
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.video_editor.video_assets import MAX_IDS, PURPOSE, VideoAsset, VideoAssetQuery
+from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
+
+
+class TimelineMedia:
+    def __init__(self, connection, session, owner, capabilities):
+        self.connection, self.session, self.owner = connection, session, owner
+        self.capabilities = capabilities
+        self.cache = {}
+
+    async def originals(self, project_id, ids):
+        if not ids:
+            return {}
+        await self.session.rollback()
+        ids = sorted(ids)
+        originals = {}
+        for offset in range(0, len(ids), MAX_IDS):
+            try:
+                query = VideoAssetQuery(asset_ids=ids[offset : offset + MAX_IDS])
+                path = query.path(project_id)
+            except ValueError:
+                return {}
+            grant = RequestGrant(
+                "video",
+                PURPOSE,
+                self.connection.method,
+                self.connection.url.path,
+                "assets",
+                "GET",
+                path,
+            )
+            try:
+                token = await self.capabilities.authorize_request(
+                    self.connection.state.service_assertion, grant
+                )
+                response = await self.capabilities.client.get(
+                    "http://assets:8080" + path,
+                    params={"id": query.asset_ids},
+                    headers={HEADER: token},
+                )
+                if response.status_code == 404:
+                    return {}
+                response.raise_for_status()
+                rows = [VideoAsset.model_validate(item) for item in response.json()["items"]]
+                if [item.id for item in rows] != query.asset_ids:
+                    raise ValueError("unexpected video asset receipt")
+            except (CapabilityDenied, CapabilityUnavailable, httpx.HTTPError, KeyError, ValueError):
+                raise VideoEditorUnavailableError("剪辑素材验证暂不可用") from None
+            originals.update({row.id: row for row in rows})
+        return originals
+
+    async def describe(self, project_id, ids):
+        if self.cache and self.cache.keys() >= ids:
+            return {identity: self.cache[identity] for identity in ids}
+        originals = await self.originals(project_id, ids)
+        if not originals:
+            return {}
+        metadata = await self.session.scalars(
+            select(VideoEditorAssetMetadata).where(
+                VideoEditorAssetMetadata.project_id == project_id,
+                VideoEditorAssetMetadata.asset_id.in_(ids),
+            )
+        )
+        result = {
+            row.asset_id: TimelineAsset.from_metadata(originals[row.asset_id].media_kind, row)
+            for row in metadata
+        }
+        self.cache.update(result)
+        return result
+
+    async def guard_write(self, project_id):
+        # Remote validation runs before the lock. An owned file can have been
+        # deleted while those requests were in flight, even with no timeline change.
+        await self.session.rollback()
+        await self.session.execute(text("BEGIN IMMEDIATE"))
+        if self.cache:
+            current = set(
+                await self.session.scalars(
+                    select(VideoEditorAssetMetadata.asset_id).where(
+                        VideoEditorAssetMetadata.project_id == project_id,
+                        VideoEditorAssetMetadata.asset_id.in_(self.cache),
+                    )
+                )
+            )
+            if current != self.cache.keys():
+                raise VideoEditorValidationError("素材已从当前项目删除", code="invalid_asset")

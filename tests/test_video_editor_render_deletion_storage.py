@@ -6,12 +6,6 @@ import httpx
 import pytest
 from tests.account_fixtures import account_record
 
-from app.apps.video_editor.models import (
-    VideoEditorAssetMetadata,
-    VideoEditorProject,
-    VideoEditorTask,
-    VideoEditorTimeline,
-)
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.console.models import (
@@ -20,6 +14,12 @@ from app.console.models import (
 from app.main import app
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
+from studio.apps.video_editor.storage.models import (
+    VideoEditorAssetMetadata,
+    VideoEditorProject,
+    VideoEditorTask,
+    VideoEditorTimeline,
+)
 
 
 async def seed(*, status="completed", kind="render", workspace="test-user", reference=None):

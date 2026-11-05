@@ -8,7 +8,7 @@ from app.capabilities.asset_store.models import (
 )
 from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import Settings
-from app.runtime.orm_base import Base
+from studio.runtime.database.orm_base import Base
 
 
 class VisualAssetContext:

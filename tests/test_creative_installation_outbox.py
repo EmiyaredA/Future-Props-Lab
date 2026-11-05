@@ -6,12 +6,18 @@ from uuid import uuid4
 import pytest
 
 from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
-from fpl_creative.installation_outbox import InstallationOutbox, InstallIntentConflict
-from fpl_creative.migrations.registry import MIGRATIONS
-from fpl_creative.storage import creative_database
-from fpl_runtime.creative_integrations import CreativeInstallBatch, CreativeInstallPart
-from fpl_runtime.integration_intents import digest
-from fpl_runtime.migrations import apply
+from studio.apps.creative_workshop.installation_outbox import (
+    InstallationOutbox,
+    InstallIntentConflict,
+)
+from studio.apps.creative_workshop.storage.file_paths import creative_database
+from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
+from studio.contracts.creative_workshop.creative_integrations import (
+    CreativeInstallBatch,
+    CreativeInstallPart,
+)
+from studio.contracts.integrations.integration_intents import digest
+from studio.runtime.database.migrations import apply
 
 
 def batch(name="Tool"):
@@ -151,7 +157,7 @@ async def test_receipt_settlement_is_atomic_and_replayable(tmp_path):
 async def test_lost_source_commit_ack_does_not_create_another_operation(tmp_path):
     from sqlalchemy import event
 
-    from fpl_creative.storage import CreativeSession
+    from studio.apps.creative_workshop.storage.file_paths import CreativeSession
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     database = creative_database(tmp_path)
@@ -266,7 +272,7 @@ async def test_bundle_settlement_recovers_component_records_together(tmp_path):
 
 
 async def test_coordinator_recovers_lost_target_response_without_resubmission(tmp_path):
-    from fpl_creative.installation_coordinator import InstallationCoordinator
+    from studio.apps.creative_workshop.installation_coordinator import InstallationCoordinator
 
     class Authorization:
         async def require(self, _source_authorization, request):
@@ -330,7 +336,7 @@ async def test_coordinator_recovers_lost_target_response_without_resubmission(tm
 
 
 async def test_coordinator_fails_closed_on_authorization_and_receipt_faults(tmp_path):
-    from fpl_creative.installation_coordinator import InstallationCoordinator
+    from studio.apps.creative_workshop.installation_coordinator import InstallationCoordinator
 
     class Authorization:
         valid = True
@@ -372,7 +378,7 @@ async def test_coordinator_fails_closed_on_authorization_and_receipt_faults(tmp_
 
 
 async def test_coordinator_never_settles_unverified_receipt_or_revoked_actor(tmp_path):
-    from fpl_creative.installation_coordinator import InstallationCoordinator
+    from studio.apps.creative_workshop.installation_coordinator import InstallationCoordinator
 
     class Authorization:
         calls = 0
@@ -434,7 +440,7 @@ async def test_withdrawal_prevents_first_target_install_after_acceptance(tmp_pat
     from sqlalchemy import update
 
     from app.console.creative_workshop.models import CreativeItem
-    from fpl_creative.installation_coordinator import InstallationCoordinator
+    from studio.apps.creative_workshop.installation_coordinator import InstallationCoordinator
 
     class Authorization:
         async def require(self, _source, _request):
@@ -473,8 +479,8 @@ async def test_withdrawal_prevents_first_target_install_after_acceptance(tmp_pat
 
 async def test_skill_batch_is_bound_to_the_published_release_tree(tmp_path):
     from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-    from fpl_runtime.creative_integrations import CreativeSkillBlob
-    from fpl_runtime.skill_tree import skill_tree_sha256
+    from studio.contracts.creative_workshop.creative_integrations import CreativeSkillBlob
+    from studio.runtime.files.skill_tree import skill_tree_sha256
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     database = creative_database(tmp_path)
@@ -548,14 +554,17 @@ async def test_install_grant_binds_persisted_batch_and_rechecks_current_publicat
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
     from app.console.creative_workshop.models import CreativeItem
-    from fpl_creative.install_authorization import (
+    from studio.apps.creative_workshop.install_authorization import (
         IdentityInstallAuthorization,
         InstallAuthorizationDenied,
         InstallSource,
     )
-    from fpl_creative.install_grants import InstallGrantAuthority
-    from fpl_runtime.claims import Actor, issue_context
-    from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
+    from studio.apps.creative_workshop.install_grants import InstallGrantAuthority
+    from studio.contracts.creative_workshop.creative_install_evidence import (
+        INSTALL_PATH,
+        issue_install_evidence,
+    )
+    from studio.contracts.identity.claims import Actor, issue_context
 
     class Live:
         active = True
@@ -611,7 +620,7 @@ async def test_install_grant_binds_persisted_batch_and_rechecks_current_publicat
         modified.parts[0].target_name = "forged"
         with pytest.raises(InstallAuthorizationDenied):
             await authority.authorize("install", source, modified)
-        from fpl_runtime.database import ServiceStorageError
+        from studio.runtime.database.sessions import ServiceStorageError
 
         async with database.sessions(info={"owner_user_id": "author"}) as session:
             item = await session.get(CreativeItem, "item")
@@ -653,7 +662,7 @@ async def test_fences_survive_restart_and_release_only_with_valid_receipt(tmp_pa
     from sqlalchemy import select, update
 
     from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-    from fpl_creative.fence_records import CreativeInstallFence
+    from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     database = creative_database(tmp_path)
@@ -759,7 +768,7 @@ async def test_bundle_fences_root_and_every_component_until_settlement(tmp_path)
     from sqlalchemy import select, update
 
     from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-    from fpl_creative.fence_records import CreativeInstallFence
+    from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     db = creative_database(tmp_path)
@@ -853,8 +862,8 @@ async def test_bundle_fences_root_and_every_component_until_settlement(tmp_path)
 
 
 async def test_catalog_withdraw_is_blocked_by_fence_until_receipt(tmp_path):
-    from app.capabilities.identity.principal import StudioPrincipal
     from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
+    from studio.contracts.identity.principal import StudioPrincipal
 
     class Authors:
         async def name(self, **_kwargs):
@@ -907,8 +916,8 @@ async def test_catalog_withdraw_is_blocked_by_fence_until_receipt(tmp_path):
 async def test_cancel_coordinator_keeps_fence_until_authenticated_target_result(tmp_path):
     from sqlalchemy import select
 
-    from fpl_creative.fence_records import CreativeInstallFence
-    from fpl_creative.installation_coordinator import InstallationCoordinator
+    from studio.apps.creative_workshop.installation_coordinator import InstallationCoordinator
+    from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
 
     class Authorization:
         async def require(self, _source, _request):
@@ -956,7 +965,7 @@ async def test_cancel_coordinator_keeps_fence_until_authenticated_target_result(
 
 
 async def test_cancel_coordinator_settles_when_target_already_committed(tmp_path):
-    from fpl_creative.installation_coordinator import InstallationCoordinator
+    from studio.apps.creative_workshop.installation_coordinator import InstallationCoordinator
 
     class Authorization:
         async def require(self, _source, _request):
@@ -1009,7 +1018,7 @@ async def test_lost_source_cancellation_commit_replays_without_releasing_wrong_f
 ):
     from sqlalchemy import select
 
-    from fpl_creative.fence_records import CreativeInstallFence
+    from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     db = creative_database(tmp_path)

@@ -16,18 +16,18 @@ from tests.test_community_asset_protocol import (
     scenario,  # noqa: F401
 )
 
-from fpl_assets.models import AssetReferencePin, AssetReferenceSet
-from fpl_runtime.claims import HEADER
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.retention_client import RetentionClient
-from fpl_thought.application import create_app
-from fpl_thought.retention import ThoughtReferenceDelivery
+from studio.apps.asset_library.clients.retention import RetentionClient
+from studio.apps.asset_library.storage.service_models import AssetReferencePin, AssetReferenceSet
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.thought_workshop.retention import ThoughtReferenceDelivery
+from studio.assembly.independent.thought_workshop.application import create_app
+from studio.contracts.identity.claims import HEADER
 
 
 async def test_create_template_pins_same_account_assets_over_http(scenario):  # noqa: F811
     case = scenario
-    from app.apps.thought_workshop.models import ThoughtKnowledgeBase
-    from app.apps.thought_workshop.publication.models import PublishedArticle
+    from studio.apps.thought_workshop.publication.models import PublishedArticle
+    from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase
 
     async with case.db.sessions(info={"owner_user_id": case.owner}) as session:
         book = await session.get(ThoughtKnowledgeBase, "book")
@@ -530,7 +530,7 @@ def test_template_creation_operation_matches_public_contract():
 
     from fastapi import FastAPI
 
-    from fpl_thought.mutations_http import router
+    from studio.apps.thought_workshop.transport.mutations_http import router
 
     app = FastAPI()
     app.include_router(router, prefix="/v1")
@@ -548,7 +548,7 @@ def test_template_apply_operation_matches_public_contract():
 
     from fastapi import FastAPI
 
-    from fpl_thought.mutations_http import router
+    from studio.apps.thought_workshop.transport.mutations_http import router
 
     app = FastAPI()
     app.include_router(router, prefix="/v1")
@@ -565,7 +565,7 @@ def test_note_creation_operations_match_public_contract():
 
     from fastapi import FastAPI
 
-    from fpl_thought.mutations_http import router
+    from studio.apps.thought_workshop.transport.mutations_http import router
 
     app = FastAPI()
     app.include_router(router, prefix="/v1")
@@ -585,7 +585,7 @@ def test_knowledge_base_mutations_match_public_contract():
 
     from fastapi import FastAPI
 
-    from fpl_thought.mutations_http import router
+    from studio.apps.thought_workshop.transport.mutations_http import router
 
     app = FastAPI()
     app.include_router(router, prefix="/v1")
@@ -604,8 +604,8 @@ def test_account_owned_knowledge_tools_match_public_contract():
 
     from fastapi import FastAPI
 
-    from app.apps.thought_workshop.content_exports_http import router as conversion_router
-    from app.apps.thought_workshop.knowledge_tools.http import router
+    from studio.apps.thought_workshop.content_exports_http import router as conversion_router
+    from studio.apps.thought_workshop.knowledge_tools.http import router
 
     app = FastAPI()
     app.include_router(router, prefix="/v1/thought-workshop", tags=["thought-workshop"])

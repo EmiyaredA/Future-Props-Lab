@@ -11,15 +11,15 @@ from PIL import Image
 from sqlalchemy import select
 
 from app.integrations.external.blocks import feishu_tree
-from fpl_integrations.records import ExternalExecution, ExternalStepReceipt
-from fpl_runtime.external_sync import (
+from studio.apps.integrations.records import ExternalExecution, ExternalStepReceipt
+from studio.contracts.integrations.external_sync import (
     ExternalAsset,
     ExternalClose,
     ExternalRead,
     ExternalStep,
     ExternalTaskPayload,
 )
-from fpl_runtime.integration_intents import IntegrationScope
+from studio.contracts.integrations.integration_intents import IntegrationScope
 from test_external_article_sync import FakeFeishu
 from test_integrations_application import case as case
 

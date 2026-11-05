@@ -15,15 +15,15 @@ from tests.test_community_asset_protocol import (
     scenario,  # noqa: F401
 )
 
-from app.apps.thought_workshop.models import ThoughtNote
-from app.apps.thought_workshop.schemas.document import empty_document
 from app.capabilities.asset_store.models import VisualAsset
-from fpl_assets.models import AssetReferencePin
-from fpl_runtime.claims import HEADER
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.retention_client import RetentionClient
-from fpl_runtime.thought_archives import IMPORT_PATH, PREFIX, SETTLE_PATH
-from fpl_thought.application import create_app
+from studio.apps.asset_library.clients.retention import RetentionClient
+from studio.apps.asset_library.storage.service_models import AssetReferencePin
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.thought_workshop.schemas.document import empty_document
+from studio.apps.thought_workshop.storage.models import ThoughtNote
+from studio.assembly.independent.thought_workshop.application import create_app
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.thought_workshop.thought_archives import IMPORT_PATH, PREFIX, SETTLE_PATH
 
 ORIGIN = "http://127.0.0.1:19000"
 IMAGE = b"\x89PNG\r\n\x1a\narchived image"

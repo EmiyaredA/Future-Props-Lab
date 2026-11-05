@@ -21,6 +21,7 @@ MECHANICAL_SHARD_PATTERN = re.compile(
 # barrel gates govern this structure; the roots being emptied keep the older
 # rules until their phase moves them.
 RESTRUCTURED_ROOTS = (
+    REPO_ROOT / "backend/studio",
     WEB_SRC / "apps",
     WEB_SRC / "console",
     BACKEND_APP / "apps",
@@ -76,10 +77,12 @@ ROOT_PROBE_PATHS = {"/health", "/ready"}
 
 def _backend_route_files() -> list[Path]:
     roots = [
+        REPO_ROOT / "backend/studio/apps/audio_annotation/routes",
+        REPO_ROOT / "backend/studio/apps/audio_annotation/transport",
         BACKEND_APP / "console" / "routes",
         BACKEND_APP / "llm" / "routes",
         BACKEND_APP / "capabilities" / "asset_store" / "routes",
-        *(BACKEND_APP / "apps").glob("*/routes"),
+        *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
     ]
     files = [path for root in roots if root.is_dir() for path in _python_files(root)]
     for package in ("integrations", "tool_navigation", "demo_runtime"):
@@ -210,7 +213,7 @@ def test_workspace_models_are_registered_for_tenant_scoping() -> None:
         SecurityAuditEvent,
     )
     from app.orm import TENANT_MODELS
-    from app.runtime.orm_base import Base
+    from studio.runtime.database.orm_base import Base
 
     account_governance_models = {
         ModelTemplateSyncItem,
@@ -231,10 +234,14 @@ def test_workspace_models_are_registered_for_tenant_scoping() -> None:
 
 
 def test_independent_outbox_models_use_their_service_account_scope() -> None:
-    from fpl_creative.installation_records import CreativeInstallOperation
-    from fpl_creative.models import ACCOUNT_MODELS as CREATIVE_ACCOUNT_MODELS
-    from fpl_thought.models import ACCOUNT_MODELS as THOUGHT_ACCOUNT_MODELS
-    from fpl_thought.upload_records import ThoughtUploadIntent
+    from studio.apps.creative_workshop.storage.installation_records import CreativeInstallOperation
+    from studio.apps.creative_workshop.storage.service_models import (
+        ACCOUNT_MODELS as CREATIVE_ACCOUNT_MODELS,
+    )
+    from studio.apps.thought_workshop.storage.service_models import (
+        ACCOUNT_MODELS as THOUGHT_ACCOUNT_MODELS,
+    )
+    from studio.apps.thought_workshop.storage.upload_records import ThoughtUploadIntent
 
     assert CreativeInstallOperation in CREATIVE_ACCOUNT_MODELS
     assert ThoughtUploadIntent in THOUGHT_ACCOUNT_MODELS
@@ -339,7 +346,7 @@ def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
         BACKEND_APP / "console" / "routes",
         BACKEND_APP / "llm" / "routes",
         BACKEND_APP / "capabilities" / "asset_store" / "routes",
-        *(BACKEND_APP / "apps").glob("*/routes"),
+        *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
     ]
     for path in _python_files(BACKEND_APP):
         if any(_is_within(path, root) for root in route_roots if root.is_dir()):
@@ -395,7 +402,7 @@ def test_background_runner_lifecycle_is_not_owned_by_llm() -> None:
 def test_generation_features_use_the_shared_task_driver() -> None:
     runners = (
         BACKEND_APP / "llm" / "playground" / "generation_runner.py",
-        BACKEND_APP / "apps" / "visual_workshop" / "generation_runner.py",
+        REPO_ROOT / "backend/studio/apps/visual_workshop/website/generation_runner.py",
     )
     violations = [
         _relative(path)
@@ -439,12 +446,12 @@ def test_backend_avoids_generic_abstract_layer_directories() -> None:
 
 def test_orm_models_only_depend_on_allowed_runtime_primitives() -> None:
     allowed = {
-        "app.runtime.orm_base",
-        "app.runtime.ids",
-        "app.runtime.time",
+        "studio.runtime.database.orm_base",
+        "studio.runtime.ids",
+        "studio.runtime.time",
     }
     roots = [
-        BACKEND_APP / "runtime" / "project_operations.py",
+        REPO_ROOT / "backend/studio/runtime/database/project_operations.py",
         BACKEND_APP / "capabilities" / "asset_store" / "models.py",
         BACKEND_APP / "integrations" / "models.py",
         BACKEND_APP / "tool_navigation" / "models.py",
@@ -530,16 +537,16 @@ def test_media_rendering_and_galgame_keep_feature_boundaries() -> None:
         for path in _python_files(BACKEND_APP / "capabilities" / "media_rendering")
         for module in _python_imports(path)
         if _matches_module(module, "app.video_editor")
-        or _matches_module(module, "app.apps.video_editor")
-        or _matches_module(module, "app.apps.galgame_workshop")
+        or _matches_module(module, "studio.apps.video_editor")
+        or _matches_module(module, "studio.apps.galgame_workshop")
     ]
     galgame_violations = [
         f"{_relative(path)} imports {module}"
-        for path in _python_files(BACKEND_APP / "apps" / "galgame_workshop")
+        for path in _python_files(REPO_ROOT / "backend/studio/apps/galgame_workshop")
         if path.name not in {"video_handoff.py", "video_handoff_runner.py"}
         for module in _python_imports(path)
         if _matches_module(module, "app.video_editor")
-        or _matches_module(module, "app.apps.video_editor")
+        or _matches_module(module, "studio.apps.video_editor")
     ]
     violations = shared_violations + galgame_violations
     assert not violations, "共享渲染和 Galgame 直接导出不得依赖视频编辑器实现：\n" + "\n".join(
@@ -561,8 +568,8 @@ def test_transcription_consumers_do_not_depend_on_playground() -> None:
     violations = [
         f"{_relative(path)} imports {module}"
         for root in (
-            BACKEND_APP / "apps" / "audio_annotation",
-            BACKEND_APP / "apps" / "galgame_workshop",
+            REPO_ROOT / "backend/studio/apps/audio_annotation",
+            REPO_ROOT / "backend/studio/apps/galgame_workshop",
         )
         for path in _python_files(root)
         for module in _python_imports(path)
@@ -593,12 +600,12 @@ def test_public_files_have_independent_ownership() -> None:
             continue
         imports = _python_imports(route)
         assert "app.visual_workshop.assets" not in imports
-        assert "app.apps.visual_workshop.assets" not in imports
-    visual_routes = BACKEND_APP / "apps" / "visual_workshop" / "routes" / "__init__.py"
+        assert "studio.apps.visual_workshop.assets" not in imports
+    visual_routes = REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/__init__.py"
     assert visual_routes.is_file()
     imports = _python_imports(visual_routes)
     assert "app.visual_workshop.assets" not in imports
-    assert "app.apps.visual_workshop.assets" not in imports
+    assert "studio.apps.visual_workshop.assets" not in imports
 
 
 def test_removed_backend_packages_are_gone() -> None:
@@ -641,10 +648,10 @@ def test_console_does_not_depend_on_apps() -> None:
 
 
 def test_runtime_assembly_entrypoints_exist() -> None:
-    assert (BACKEND_APP / "runtime" / "orm_base.py").is_file()
+    assert (REPO_ROOT / "backend/studio/runtime/database/orm_base.py").is_file()
     assert (BACKEND_APP / "orm.py").is_file()
     assert (BACKEND_APP / "api.py").is_file()
-    assert (BACKEND_APP / "capabilities" / "identity" / "principal.py").is_file()
+    assert (REPO_ROOT / "backend/studio/contracts/identity/principal.py").is_file()
     assert (BACKEND_APP / "capabilities" / "asset_store" / "storage.py").is_file()
     assert (BACKEND_APP / "console" / "governance" / "provisioning.py").is_file()
     assert (BACKEND_APP / "console" / "file_library" / "library_folder_archive.py").is_file()
@@ -652,7 +659,7 @@ def test_runtime_assembly_entrypoints_exist() -> None:
 
 def test_visual_assistant_has_no_function_local_app_imports() -> None:
     violations: list[str] = []
-    for path in _python_files(BACKEND_APP / "apps" / "visual_workshop" / "assistant"):
+    for path in _python_files(REPO_ROOT / "backend/studio/apps/visual_workshop/assistant"):
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
         for function in (
             node
@@ -882,13 +889,13 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/console/routes",
         "backend/app/console/schemas",
         "backend/app/apps",
-        "backend/app/apps/presentation_workshop",
-        "backend/app/apps/audio_annotation",
-        "backend/app/apps/thought_workshop",
-        "backend/app/apps/video_editor",
-        "backend/app/apps/visual_workshop",
-        "backend/app/apps/galgame_workshop",
-        "backend/app/apps/director_desk",
+        "backend/studio/apps/presentation_workshop",
+        "backend/studio/apps/audio_annotation",
+        "backend/studio/apps/thought_workshop",
+        "backend/studio/apps/video_editor",
+        "backend/studio/apps/visual_workshop",
+        "backend/studio/apps/galgame_workshop",
+        "backend/studio/apps/director_desk",
         "backend/app/llm",
         "backend/app/integrations",
         "backend/app/demo_runtime",
@@ -943,7 +950,7 @@ def test_documentation_markdown_and_compatibility_sources_are_present() -> None:
 
 
 def test_galgame_protocol_and_schema_modules_stay_split() -> None:
-    route_root = BACKEND_APP / "apps" / "galgame_workshop" / "routes"
+    route_root = REPO_ROOT / "backend/studio/apps/galgame_workshop/transport/website"
     assert {"projects.py", "story.py", "assets.py", "asr.py", "maintenance.py"}.issubset(
         {path.name for path in route_root.glob("*.py")}
     )
@@ -993,6 +1000,7 @@ def test_source_files_stay_under_the_review_soft_limit() -> None:
     oversized: list[str] = []
     for root in (
         BACKEND_APP,
+        REPO_ROOT / "backend/studio",
         WEB_SRC,
         REPO_ROOT / "scripts/website",
     ):

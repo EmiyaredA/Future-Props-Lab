@@ -1,0 +1,180 @@
+from __future__ import annotations
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
+from studio.apps.video_editor.handoffs.segment_selection import segment_selection
+from studio.apps.video_editor.projects import VideoEditorProjects
+from studio.apps.video_editor.schemas import (
+    VideoEditorSegmentExportCreateIn,
+    VideoEditorTaskListOut,
+    VideoEditorTaskOut,
+)
+from studio.apps.video_editor.storage.models import (
+    VideoEditorAssetMetadata,
+    VideoEditorTask,
+    VideoEditorTimeline,
+)
+from studio.apps.video_editor.task_reads import task_out
+from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import utc_now
+
+
+class VideoEditorSegmentExports:
+    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+        self.session = session
+        self.owner_user_id = owner_user_id
+
+    async def _timeline(self, project_id: str) -> VideoEditorTimeline:
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
+        row = await self.session.get(VideoEditorTimeline, project_id)
+        if row is None:
+            raise VideoEditorNotFoundError("时间轴不存在")
+        return row
+
+    async def create(
+        self, project_id: str, body: VideoEditorSegmentExportCreateIn
+    ) -> VideoEditorTaskOut:
+        payload = body.model_dump(mode="json", by_alias=True)
+        existing = (
+            await self.session.execute(
+                select(VideoEditorTask).where(
+                    VideoEditorTask.project_id == project_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
+                    VideoEditorTask.request_id == body.request_id,
+                )
+            )
+        ).scalar_one_or_none()
+        if existing is not None:
+            if existing.kind != "segment_export" or existing.request_payload != payload:
+                raise VideoEditorValidationError(
+                    "requestId 已用于不同任务", code="request_id_reused"
+                )
+            return task_out(existing)
+
+        timeline = await self._timeline(project_id)
+        if timeline.revision != body.expected_revision:
+            raise RevisionConflictError(
+                body.expected_revision,
+                timeline.revision,
+                {"revision": timeline.revision, "document": timeline.document},
+            )
+        if body.target and body.target.project_id:
+            target = (
+                await self.session.execute(
+                    select(VisualWorkshopProject).where(
+                        VisualWorkshopProject.id == body.target.project_id,
+                        VisualWorkshopProject.owner_user_id == self.owner_user_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if target is None:
+                raise VideoEditorValidationError("目标工作坊项目不存在", code="target_not_found")
+            target_canvas = await self.session.get(VisualCanvasDocument, body.target.project_id)
+            if target_canvas is None:
+                raise VideoEditorValidationError("目标工作坊画布不存在", code="target_not_found")
+
+        detail_segments = segment_selection(timeline.document, body.segments)
+        asset_ids = {item["assetId"] for item in detail_segments}
+        rows = list(
+            (
+                await self.session.execute(
+                    select(VisualAsset, VideoEditorAssetMetadata)
+                    .join(
+                        VideoEditorAssetMetadata,
+                        VideoEditorAssetMetadata.asset_id == VisualAsset.id,
+                    )
+                    .where(
+                        VisualAsset.id.in_(asset_ids),
+                        VisualAsset.video_editor_project_id == project_id,
+                    )
+                )
+            ).all()
+        )
+        assets = {asset.id: metadata for asset, metadata in rows}
+        if set(assets) != asset_ids or any(
+            assets[asset_id].processing_status != "ready" for asset_id in asset_ids
+        ):
+            raise VideoEditorValidationError("部分视频素材尚未处理完成", code="asset_not_ready")
+
+        task = VideoEditorTask(
+            owner_user_id=self.owner_user_id,
+            project_id=project_id,
+            request_id=body.request_id,
+            kind="segment_export",
+            request_payload=payload,
+            snapshot_document=timeline.document,
+            result_detail={
+                "timelineRevision": timeline.revision,
+                "importRequested": body.target is not None,
+                "targetCanvasRevision": (
+                    target_canvas.revision if body.target and body.target.project_id else None
+                ),
+                "segments": detail_segments,
+            },
+        )
+        self.session.add(task)
+        await self.session.commit()
+        await self.session.refresh(task)
+        return task_out(task)
+
+    async def list(self, project_id: str) -> VideoEditorTaskListOut:
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
+        rows = list(
+            (
+                await self.session.execute(
+                    select(VideoEditorTask)
+                    .where(
+                        VideoEditorTask.project_id == project_id,
+                        VideoEditorTask.owner_user_id == self.owner_user_id,
+                        VideoEditorTask.kind == "segment_export",
+                    )
+                    .order_by(VideoEditorTask.created_at.desc())
+                )
+            ).scalars()
+        )
+        return VideoEditorTaskListOut(items=[task_out(row) for row in rows])
+
+    async def get(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
+        row = (
+            await self.session.execute(
+                select(VideoEditorTask).where(
+                    VideoEditorTask.id == task_id,
+                    VideoEditorTask.project_id == project_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
+                    VideoEditorTask.kind == "segment_export",
+                )
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            raise VideoEditorNotFoundError("分段导出任务不存在")
+        return task_out(row)
+
+    async def cancel(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
+        await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
+        row = (
+            await self.session.execute(
+                select(VideoEditorTask).where(
+                    VideoEditorTask.id == task_id,
+                    VideoEditorTask.project_id == project_id,
+                    VideoEditorTask.owner_user_id == self.owner_user_id,
+                    VideoEditorTask.kind == "segment_export",
+                )
+            )
+        ).scalar_one_or_none()
+        if row is None:
+            raise VideoEditorNotFoundError("分段导出任务不存在")
+        if row.status in {"queued", "running"}:
+            row.cancel_requested = True
+            if row.status == "queued":
+                row.status = "cancelled"
+                row.progress = 0
+                row.finished_at = utc_now()
+            row.revision += 1
+            row.updated_at = utc_now()
+            await self.session.commit()
+        return task_out(row)

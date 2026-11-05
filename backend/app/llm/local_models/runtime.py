@@ -4,7 +4,7 @@ import asyncio
 import json
 
 from app.llm.local_models.installer import worker_environment
-from app.llm.local_models.manifest import HERE
+from studio.config.local_models import HERE
 
 
 class LocalRuntime:

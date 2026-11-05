@@ -9,8 +9,8 @@ from uuid import NAMESPACE_URL, uuid5
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "backend"))
-from app.apps.thought_workshop.markdown_conversion import parse_markdown  # noqa: E402
-from app.apps.thought_workshop.schemas.document import validate_document  # noqa: E402
+from studio.apps.thought_workshop.markdown_conversion import parse_markdown  # noqa: E402
+from studio.apps.thought_workshop.schemas.document import validate_document  # noqa: E402
 
 raw = json.loads(
     subprocess.check_output(
@@ -111,7 +111,7 @@ payload = dict(
     multitables={},
 )
 data = json.dumps(dict(archive=payload, origins=origins), ensure_ascii=False, separators=(",", ":"))
-target = ROOT / "backend/app/apps/thought_workshop/publication/seed.json"
+target = ROOT / "backend/studio/apps/thought_workshop/publication/seed.json"
 if "--check" in sys.argv:
     if target.read_text() != data + "\n":
         raise SystemExit("Official import package is stale: run npm run knowledge:seed:generate")

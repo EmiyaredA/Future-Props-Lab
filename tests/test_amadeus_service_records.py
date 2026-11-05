@@ -18,10 +18,10 @@ from app.console.amadeus.models import (
     AmadeusMessage,
     AmadeusRun,
 )
-from fpl_amadeus.application import create_app
-from fpl_amadeus.migrations.registry import MIGRATIONS
-from fpl_runtime.claims import HEADER, issue_context, verify_context
-from fpl_runtime.migrations import apply
+from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.amadeus.application import create_app
+from studio.contracts.identity.claims import HEADER, issue_context, verify_context
+from studio.runtime.database.migrations import apply
 
 SOURCE = "/v1/amadeus/conversations"
 
@@ -200,7 +200,7 @@ async def test_amadeus_import_stream_and_file_cas(
         files = await send("GET", root + "/files")
         assert len(files.json()["items"]) == 2
 
-        monkeypatch.setattr("fpl_amadeus.request_limits.MAX_MULTIPART_BYTES", 1024)
+        monkeypatch.setattr("studio.apps.amadeus.request_limits.MAX_MULTIPART_BYTES", 1024)
         over = await send(
             "POST",
             root + "/imports",
@@ -215,7 +215,7 @@ async def test_amadeus_delegates_only_registered_reads_to_live_owned_routes(
     scenario,  # noqa: F811
     tmp_path,
 ):
-    from fpl_runtime.delegation import RequestGrant, permitted
+    from studio.contracts.identity.delegation import RequestGrant, permitted
 
     case = scenario
     state = tmp_path / "amadeus"

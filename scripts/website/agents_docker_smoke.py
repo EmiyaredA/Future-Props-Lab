@@ -17,8 +17,8 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from fpl_deployment.gateway import render_gateway  # noqa: E402
-from fpl_runtime.routing import RouteCatalog  # noqa: E402
+from studio.contracts.gateway.routing import RouteCatalog  # noqa: E402
+from studio.deployment.gateway import render_gateway  # noqa: E402
 
 
 def exercise(
@@ -341,7 +341,7 @@ def exercise(
             [
                 sys.executable,
                 "-m",
-                "fpl_host",
+                "studio.assembly.host.cli",
                 "collect",
                 "--connection",
                 str(root / "connection.json"),

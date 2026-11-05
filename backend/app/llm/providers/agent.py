@@ -6,7 +6,14 @@ from typing import Any
 
 import httpx
 
-from app.capabilities.agents.harness.contracts import (
+from app.llm.providers.chat_completions import (
+    OPENAI_CHAT_KINDS,
+    chat_base_url,
+    chat_request_options,
+)
+from app.llm.providers.streaming import ProviderStreamError, _data_lines, _integer
+from app.runtime.outbound_urls import require_safe_provider_base_url
+from studio.contracts.agent_runtime.dialogue import (
     AgentMessage,
     ModelAdapter,
     ModelEvent,
@@ -17,13 +24,6 @@ from app.capabilities.agents.harness.contracts import (
     ToolSpec,
     Usage,
 )
-from app.llm.providers.chat_completions import (
-    OPENAI_CHAT_KINDS,
-    chat_base_url,
-    chat_request_options,
-)
-from app.llm.providers.streaming import ProviderStreamError, _data_lines, _integer
-from app.runtime.outbound_urls import require_safe_provider_base_url
 
 __all__ = [
     "AgentMessage",

@@ -1,7 +1,7 @@
 """Transfer Remote desktop preference revisions through loopback HTTP."""
 
-from fpl_remote.migration_application import PREFIX
-from fpl_remote.preference_migration import DATASET, PreferencePage
+from studio.apps.remote_desktop.preference_migration import DATASET, PreferencePage
+from studio.assembly.independent.remote_desktop.maintenance import PREFIX
 
 from .migration_transfer import DatasetTransfer, run_cli
 

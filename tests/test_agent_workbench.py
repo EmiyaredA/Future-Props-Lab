@@ -12,19 +12,19 @@ from fastapi import FastAPI, Request
 from sqlalchemy import event, insert, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.apps.agent_workbench.events import event_page
-from app.apps.agent_workbench.models import WorkbenchCheckpoint, WorkbenchSession
-from app.apps.agent_workbench.routes import router
-from app.apps.agent_workbench.sync.projection import apply_batch
-from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
 from app.capabilities.agents.sessions import get_adapter
 from app.capabilities.agents.sessions.access import LocalSourceAccess
-from app.capabilities.identity.principal import StudioPrincipal
 from app.console.governance.workbench_access import workbench_actor_allowed
 from app.console.models import User
 from app.deps import SessionDep, db_session, require_studio_auth
 from app.orm import bind_owner
 from db.migrations import apply_migrations
+from studio.apps.agent_workbench.events import event_page
+from studio.apps.agent_workbench.storage.models import WorkbenchCheckpoint, WorkbenchSession
+from studio.apps.agent_workbench.sync.projection import apply_batch
+from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
+from studio.apps.agent_workbench.transport.website import router
+from studio.contracts.identity.principal import StudioPrincipal
 
 
 def encode(*records):
@@ -668,9 +668,9 @@ async def test_archive_duplicates_and_same_inode_rewrite(store, tmp_path):
 async def test_stream_reauthorizes_after_session_revocation(store):
     from datetime import timedelta
 
-    from app.apps.agent_workbench.events import stream_events
     from app.console.models import AuthSession
-    from app.runtime.time import utc_now
+    from studio.apps.agent_workbench.events import stream_events
+    from studio.runtime.time import utc_now
 
     sessions, _ = store
     async with sessions() as db:
@@ -871,7 +871,7 @@ async def test_history_pagination_keeps_entries_with_the_same_native_ordinal(sto
 
     sessions, client = store
     source = await bind(client, tmp_path)
-    from app.apps.agent_workbench.sync.projection import apply_batch
+    from studio.apps.agent_workbench.sync.projection import apply_batch
 
     assert await apply_batch(
         sessions,

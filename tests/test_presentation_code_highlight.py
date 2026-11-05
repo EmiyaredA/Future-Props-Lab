@@ -5,7 +5,7 @@ from zipfile import ZipFile
 
 from tests.presentation_helpers import sample_document
 
-from app.apps.presentation_workshop.pptx_export import write_pptx
+from studio.apps.presentation_workshop.pptx_export import write_pptx
 
 
 def test_highlighted_native_runs_preserve_source_colors_and_empty_lines(tmp_path):

@@ -9,5 +9,5 @@ ENV PYTHONPATH=/app/backend PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 ARG FPL_SERVICE_VERSION
 ENV FPL_SERVICE_VERSION=$FPL_SERVICE_VERSION
 EXPOSE 8080
-ENTRYPOINT ["python", "-m", "fpl_rendering"]
+ENTRYPOINT ["python", "-m", "studio.assembly.independent.media_rendering.cli"]
 CMD ["serve"]

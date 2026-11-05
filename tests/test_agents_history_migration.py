@@ -12,10 +12,10 @@ from scripts.website.migration_transfer import pages, project_datasets, transfer
 from tests.test_tools_navigation_migration import available_ports, listener
 
 from db.migrations import apply_migrations
-from fpl_agents.migration_application import DATASETS, PREFIX
-from fpl_agents.migrations.registry import MIGRATIONS
-from fpl_runtime.migration_batches import MigrationPlan
-from fpl_runtime.migrations import apply
+from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.agent_workbench.maintenance import DATASETS, PREFIX
+from studio.contracts.management.migration_batches import MigrationPlan
+from studio.runtime.database.migrations import apply
 
 
 def seed(path, owner, other):
@@ -191,7 +191,7 @@ def test_agents_history_preserves_owner_and_rebuilds_search_across_restarts(tmp_
             plan_file,
             "--legacy-db",
             source_db,
-            module="fpl_agents",
+            module="studio.assembly.independent.agent_workbench.cli",
             prefix=projects.prefix,
         )
 
@@ -203,7 +203,7 @@ def test_agents_history_preserves_owner_and_rebuilds_search_across_restarts(tmp_
             plan_file,
             "--state-root",
             target,
-            module="fpl_agents",
+            module="studio.assembly.independent.agent_workbench.cli",
             prefix=projects.prefix,
         )
 

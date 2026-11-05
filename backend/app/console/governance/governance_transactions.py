@@ -5,11 +5,11 @@ from dataclasses import replace
 from sqlalchemy import text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.identity.errors import AccountError
-from app.capabilities.identity.permissions import role_scopes
-from app.capabilities.identity.principal import StudioPrincipal
 from app.console.models import AuthSession, ManagementApiKey, User
-from app.runtime.time import utc_now
+from studio.contracts.identity.errors import AccountError
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.time import utc_now
 
 
 async def begin_governance(session: AsyncSession, principal: StudioPrincipal) -> StudioPrincipal:

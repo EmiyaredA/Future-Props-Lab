@@ -8,9 +8,9 @@ import httpx
 import pytest
 from tests.test_workspace_governance import client_account
 
-from app.apps.thought_workshop import link_preview as preview
-from app.capabilities.identity.route_permissions import ROUTE_PERMISSIONS
 from app.main import app
+from studio.apps.thought_workshop import link_preview as preview
+from studio.contracts.identity.route_permissions import ROUTE_PERMISSIONS
 
 
 class Body(httpx.AsyncByteStream):
@@ -199,7 +199,7 @@ async def test_api_contract(monkeypatch):
             available=True,
         )
     )
-    monkeypatch.setattr("app.apps.thought_workshop.routes.preview_link", mock)
+    monkeypatch.setattr("studio.apps.thought_workshop.transport.website.preview_link", mock)
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -233,7 +233,7 @@ async def test_read_only_workspace_member_can_preview(monkeypatch):
             url="https://example.com", final_url="https://example.com", domain="example.com"
         )
     )
-    monkeypatch.setattr("app.apps.thought_workshop.routes.preview_link", mock)
+    monkeypatch.setattr("studio.apps.thought_workshop.transport.website.preview_link", mock)
     async with aclosing(owner), aclosing(viewer):
         result = await viewer.get(
             "/v1/thought-workshop/link-preview", params={"url": "https://example.com"}

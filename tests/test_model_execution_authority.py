@@ -15,25 +15,29 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, Request
 from sqlalchemy import select, text
 
-from app.capabilities.identity.permissions import role_scopes
-from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import OwnerDep, SessionDep
 from app.llm.generation_runtime.driver import GenerationTaskStore
 from app.llm.models import ModelInferenceTask, ModelProvider, RuntimeAdmission
 from app.llm.routes.model_capacity import ModelCapacity, task_admission
 from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE, TaskClaimRejected
 from app.runtime.credentials import encrypt_secret
-from fpl_models import execution_authority as authority_module
-from fpl_models.admission import ModelAdmission, settle
-from fpl_models.execution_authority import ModelTaskAuthority
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS, TaskAuthorization
-from fpl_models.request_admission import request_admission
-from fpl_runtime.authentication import SignedIdentity
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.model_service.admission import execution_authority as authority_module
+from studio.apps.model_service.admission.admission import ModelAdmission, settle
+from studio.apps.model_service.admission.execution_authority import ModelTaskAuthority
+from studio.apps.model_service.admission.request_admission import request_admission
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import (
+    ACCOUNT_MODELS,
+    MODELS,
+    TaskAuthorization,
+)
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.http.authentication import SignedIdentity
 
 SOURCE_PATH = "/v1/model-inference/tasks"
 
@@ -336,8 +340,8 @@ def test_authority_source_closure_does_not_load_accounts_assets_or_legacy_databa
             "-c",
             """
 import sys
-import fpl_models.execution_authority
-import fpl_models.request_admission
+import studio.apps.model_service.admission.execution_authority
+import studio.apps.model_service.admission.request_admission
 assert 'app.runtime.db' not in sys.modules
 assert 'app.orm' not in sys.modules
 assert not any(n.startswith(('app.console.models', 'app.apps.',

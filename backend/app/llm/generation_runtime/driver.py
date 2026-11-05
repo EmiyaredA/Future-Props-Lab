@@ -17,7 +17,7 @@ from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE, TaskClaimRejec
 from app.runtime.credentials import decrypt_secret
 from app.runtime.ownership import require_owner_id
 from app.runtime.task_records import load_runner_task, recovery_accounts
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 @dataclass(frozen=True, slots=True)

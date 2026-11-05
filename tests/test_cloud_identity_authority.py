@@ -8,16 +8,16 @@ from tests.test_community_asset_protocol import PASSWORD, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
 from app.runtime.config import get_settings
-from fpl_deployment.gateway import render_gateway
-from fpl_identity.accounts import create_account
-from fpl_runtime.claims import HEADER, issue_context, verify_context
-from fpl_runtime.cloud_authority import (
+from studio.apps.identity.accounts import create_account
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER, issue_context, verify_context
+from studio.contracts.identity.cloud_authority import (
     AUTHORITY_PATH,
     DESKTOP_COOKIE,
     DESKTOP_SOCKET,
     desktop_ticket_digest,
 )
-from fpl_runtime.routing import RouteCatalog
+from studio.deployment.gateway import render_gateway
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = "http://127.0.0.1:19000"

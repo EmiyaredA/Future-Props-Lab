@@ -10,18 +10,18 @@ from pathlib import Path
 import pytest
 from sqlalchemy import select
 
-from app.capabilities.identity.errors import AccountError
-from app.capabilities.identity.principal import StudioPrincipal
 from app.llm.models import ModelInferenceTask
 from app.llm.models.runtime_admission import RuntimeAdmission as Admission
 from app.llm.schemas.runtime_quotas import RuntimeQuotasIn
 from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE
-from fpl_models.admission import ModelAdmission, settle, usage
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_models.quotas import QuotaPolicies
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
+from studio.apps.model_service.admission.admission import ModelAdmission, settle, usage
+from studio.apps.model_service.admission.quotas import QuotaPolicies
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.contracts.identity.errors import AccountError
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 def actor(owner="alpha", role="user", *, scopes=("studio:write",), must_change=False):
@@ -308,8 +308,8 @@ def test_fresh_admission_import_does_not_load_legacy_database_or_foreign_orm():
             "-c",
             """
 import sys
-from fpl_models.admission import ModelAdmission
-from fpl_models.quotas import QuotaPolicies
+from studio.apps.model_service.admission.admission import ModelAdmission
+from studio.apps.model_service.admission.quotas import QuotaPolicies
 assert 'app.runtime.db' not in sys.modules
 assert 'app.orm' not in sys.modules
 assert 'app.console.models' not in sys.modules

@@ -11,29 +11,29 @@ from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.apps.video_editor.models import VideoEditorAssetMetadata, VideoEditorTask
 from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from fpl_assets.scoped_project_files import check_writable
-from fpl_deployment.images import source_closure
-from fpl_runtime.capability_client import CapabilityUnavailable
-from fpl_runtime.claims import HEADER, Actor, issue_context
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
-from fpl_video.application import PROJECTS, create_app
-from fpl_video.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.scoped_project_files import check_writable
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS
+from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
+from studio.assembly.independent.video_editor.application import PROJECTS, create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER, Actor, issue_context
+from studio.deployment.images import source_closure
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityUnavailable
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_video_image_excludes_compatibility_layout_and_foreign_orm():
     closure = source_closure(ROOT, "video")
-    assert "fpl_video.application" in closure
-    assert "app.apps.video_editor.timeline_read" in closure
-    assert "app.apps.video_editor.legacy_project_layouts" not in closure
+    assert "studio.assembly.independent.video_editor.application" in closure
+    assert "studio.apps.video_editor.timeline_read" in closure
+    assert "studio.apps.video_editor.legacy_project_layouts" not in closure
     assert "app.capabilities.asset_store.models" not in closure
     assert "app.runtime.db" not in closure
 

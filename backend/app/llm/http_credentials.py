@@ -4,10 +4,10 @@ from typing import Annotated
 
 from fastapi import Depends, HTTPException, Request, WebSocket
 
-from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, StudioAuth
 from app.llm.credential_snapshot import SESSION_AUTH, CredentialSnapshot, snapshot_from_actor
-from fpl_runtime.claims import Actor
+from studio.contracts.identity.claims import Actor
+from studio.contracts.identity.principal import StudioPrincipal
 
 
 async def caller_credential(request: Request, session: SessionDep, principal: StudioAuth):

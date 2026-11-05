@@ -10,17 +10,27 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_independent_project_catalog import authorize
 
-from fpl_rendering.application import create_app as create_rendering
-from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
-from fpl_rendering.settings import RenderingSettings
-from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied, CapabilityUnavailable
-from fpl_runtime.claims import HEADER
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.visual_composition import ASSET_PURPOSE, RENDER, GridAssetQuery
-from fpl_visual.application import create_app as create_visual
-from fpl_visual.migrations.registry import MIGRATIONS as VISUAL_MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.media_rendering.settings import RenderingSettings
+from studio.apps.media_rendering.storage.migrations.registry import (
+    MIGRATIONS as RENDERING_MIGRATIONS,
+)
+from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS as VISUAL_MIGRATIONS
+from studio.assembly.independent.media_rendering.application import create_app as create_rendering
+from studio.assembly.independent.visual_workshop.application import create_app as create_visual
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.visual_workshop.visual_composition import (
+    ASSET_PURPOSE,
+    RENDER,
+    GridAssetQuery,
+)
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import (
+    CapabilityClient,
+    CapabilityDenied,
+    CapabilityUnavailable,
+)
 
 PROJECTS = "/v1/visual-workshop/projects"
 BATCHES = "/v1/visual-workshop/generation-batches"

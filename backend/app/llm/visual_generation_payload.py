@@ -7,12 +7,12 @@ from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_SIZES
 from app.llm.providers.zealman_workflows import REFERENCE_MIME_TYPES as WORKFLOW_MIME_TYPES
 from app.llm.providers.zealman_workflows import normalize_request
-from app.llm.schemas.generation_tasks import (
+from app.llm.visual_generation_model import VisualGenerationValidationError
+from studio.contracts.model_service.generation_tasks import (
     AudioGenerationTaskCreateIn,
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
-from app.llm.visual_generation_model import VisualGenerationValidationError
 
 
 async def prepare_visual_payload(

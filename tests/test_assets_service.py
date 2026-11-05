@@ -9,15 +9,15 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from PIL import Image
 
-from fpl_assets.application import create_app
-from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_assets.references import AssetReferences
-from fpl_assets.settings import StorageSettings
-from fpl_runtime.asset_references import ReferenceUpdate
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.migrations import apply
-from fpl_runtime.protocol_hash import public_contract
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.asset_library.references.references import AssetReferences
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.asset_library.application import create_app
+from studio.contracts.asset_library.references import ReferenceUpdate
+from studio.contracts.gateway.protocol_hash import public_contract
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
@@ -157,7 +157,7 @@ async def test_owned_program_cache_is_immutable_while_api_and_unknown_resources_
 ):
     import hashlib
 
-    from fpl_runtime.web import attach_web, load_release
+    from studio.runtime.http.web import attach_web, load_release
 
     app, client, private, _projects = instance
     directory = tmp_path / "program"

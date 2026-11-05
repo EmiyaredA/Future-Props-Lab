@@ -21,8 +21,8 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from fpl_deployment.gateway import render_gateway  # noqa: E402
-from fpl_runtime.routing import RouteCatalog  # noqa: E402
+from studio.contracts.gateway.routing import RouteCatalog  # noqa: E402
+from studio.deployment.gateway import render_gateway  # noqa: E402
 
 
 def exercise(

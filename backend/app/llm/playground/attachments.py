@@ -16,7 +16,7 @@ from app.llm.schemas.model_test import ModelTestAttachmentListOut, ModelTestAtta
 from app.runtime.config import Settings
 from app.runtime.image_sizes import ThumbnailSize
 from app.runtime.raster import RasterPreviewError, derived_thumbnail
-from app.runtime.time import iso_utc
+from studio.runtime.time import iso_utc
 
 MAX_ATTACHMENTS_PER_MESSAGE = 5
 MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024

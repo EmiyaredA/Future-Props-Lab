@@ -5,8 +5,8 @@ import json
 
 import httpx
 
-from fpl_host.collector import Collector
-from fpl_runtime.native_protocol import NativeLease
+from studio.contracts.agent_workbench.native import NativeLease
+from studio.host.session_collection.collector import Collector
 
 
 async def verify_follow(
@@ -48,7 +48,7 @@ async def verify_follow(
             self.requests = set()
 
         async def post(self, operation, body):
-            from fpl_host.transport import LeaseEnded, ProtocolConflict
+            from studio.host.transport import LeaseEnded, ProtocolConflict
 
             if operation == "claim":
                 body = {**body, "wait_seconds": 0}

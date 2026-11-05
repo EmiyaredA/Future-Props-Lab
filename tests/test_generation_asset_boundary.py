@@ -10,10 +10,10 @@ from sqlalchemy import select
 from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
 from app.llm.playground.generation_assets import GenerationAssetError, ModelTestGenerationAssets
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 @pytest.fixture

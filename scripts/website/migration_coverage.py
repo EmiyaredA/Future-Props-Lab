@@ -6,24 +6,24 @@ import sqlite3
 from contextlib import closing
 from pathlib import Path
 
-from fpl_agents.migration_shapes import DATASETS as AGENTS
-from fpl_assets.migration_records import DATASETS as ASSETS
-from fpl_director.migration_records import DATASETS as DIRECTOR
-from fpl_galgame.migration_records import DATASETS as GALGAME
-from fpl_galgame.migration_records import OPERATIONS as GALGAME_RECEIPTS
-from fpl_identity.credential_migration import DATASETS as IDENTITY
-from fpl_models.catalog_migration import DATASETS as MODELS
-from fpl_models.settings_migration import DEFAULT_PREFIX, POLICIES
-from fpl_motion.migration_records import DATASETS as MOTION
-from fpl_presentation.migration_operations import DATASET as PRESENTATION_RECEIPTS
-from fpl_presentation.migration_records import DATASETS as PRESENTATION
-from fpl_remote.preference_migration import DATASET as REMOTE
-from fpl_runtime.migration_apps import SourceSnapshot
-from fpl_runtime.migration_batches import MigrationPlan
-from fpl_tools.navigation_migration import DATASET as TOOLS
-from fpl_video.migration_records import DATASETS as VIDEO
-from fpl_visual.migration_records import DATASETS as VISUAL
-from fpl_visual.migration_records import OPERATIONS as VISUAL_RECEIPTS
+from studio.apps.agent_workbench.migration_shapes import DATASETS as AGENTS
+from studio.apps.asset_library.storage.migration_records import DATASETS as ASSETS
+from studio.apps.director_desk.storage.migration_records import DATASETS as DIRECTOR
+from studio.apps.galgame_workshop.storage.migration_records import DATASETS as GALGAME
+from studio.apps.galgame_workshop.storage.migration_records import OPERATIONS as GALGAME_RECEIPTS
+from studio.apps.identity.credential_migration import DATASETS as IDENTITY
+from studio.apps.model_service.catalog_migration import DATASETS as MODELS
+from studio.apps.model_service.settings_migration import DEFAULT_PREFIX, POLICIES
+from studio.apps.motion_compositor.storage.migration_records import DATASETS as MOTION
+from studio.apps.presentation_workshop.migration_operations import DATASET as PRESENTATION_RECEIPTS
+from studio.apps.presentation_workshop.storage.migration_records import DATASETS as PRESENTATION
+from studio.apps.remote_desktop.preference_migration import DATASET as REMOTE
+from studio.apps.tools.navigation_migration import DATASET as TOOLS
+from studio.apps.video_editor.storage.migration_records import DATASETS as VIDEO
+from studio.apps.visual_workshop.storage.migration_records import DATASETS as VISUAL
+from studio.apps.visual_workshop.storage.migration_records import OPERATIONS as VISUAL_RECEIPTS
+from studio.contracts.management.migration_batches import MigrationPlan
+from studio.runtime.database.migration_apps import SourceSnapshot
 
 from .legacy_snapshot import CONFIG, DATABASE, MANIFEST, RUNTIME, digest, directory, private_config
 

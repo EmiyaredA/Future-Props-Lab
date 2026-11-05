@@ -5,18 +5,18 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import delete, update
 
-from app.apps.thought_workshop.errors import ThoughtError
-from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-from app.apps.thought_workshop.publication.models import (
+from studio.apps.thought_workshop.community.community_access import published_asset
+from studio.apps.thought_workshop.errors import ThoughtError
+from studio.apps.thought_workshop.publication.models import (
     ArticleMember,
     Publication,
     PublishedArticle,
 )
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_thought.community_access import published_asset
-from fpl_thought.migrations.registry import MIGRATIONS
-from fpl_thought.models import ACCOUNT_MODELS, MODELS
+from studio.apps.thought_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 class Directory:
@@ -137,7 +137,7 @@ async def test_only_browser_sessions_can_receive_published_asset_evidence(commun
 
 
 async def test_multitable_exposes_current_attachments_but_not_historical_pins(community):
-    from app.apps.thought_workshop.multitable.models import (
+    from studio.apps.thought_workshop.multitable.models import (
         DataAsset,
         DataField,
         DataRecord,
@@ -173,7 +173,7 @@ async def test_multitable_exposes_current_attachments_but_not_historical_pins(co
 
 
 async def test_unpublished_upload_is_not_a_published_body_read(community):
-    from app.apps.thought_workshop.publication.models import CommunityUpload
+    from studio.apps.thought_workshop.publication.models import CommunityUpload
 
     async with community.sessions(info={"owner_user_id": "source"}) as session:
         await session.execute(

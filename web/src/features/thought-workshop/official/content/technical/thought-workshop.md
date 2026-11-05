@@ -145,6 +145,6 @@ flowchart TD
 
 ## 代码入口
 
-1. `backend/app/apps/thought_workshop/schemas/document.py`
+1. `backend/studio/apps/thought_workshop/schemas/document.py`
 2. `web/src/features/thought-workshop/diagrams/model.ts`
 3. `web/src/features/thought-workshop/diagrams/CanvasEditor.tsx`

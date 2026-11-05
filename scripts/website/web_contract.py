@@ -7,8 +7,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from fpl_runtime.protocol_hash import public_contract  # noqa: E402
-from fpl_runtime.routing import RouteCatalog  # noqa: E402
+from studio.contracts.gateway.protocol_hash import public_contract  # noqa: E402
+from studio.contracts.gateway.routing import RouteCatalog  # noqa: E402
 
 if __name__ == "__main__":
     print(

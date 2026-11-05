@@ -5,7 +5,6 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.identity.errors import AccountError
 from app.capabilities.identity.passwords import (
     generate_temporary_password,
     hash_password,
@@ -13,7 +12,6 @@ from app.capabilities.identity.passwords import (
     validate_password,
     verify_password,
 )
-from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.security import (
     SESSION_ABSOLUTE_DAYS,
     SESSION_IDLE_HOURS,
@@ -32,7 +30,9 @@ from app.console.models import (
     SecurityAuditEvent,
     User,
 )
-from app.runtime.time import utc_now
+from studio.contracts.identity.errors import AccountError
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.time import utc_now
 
 
 def add_audit_event(

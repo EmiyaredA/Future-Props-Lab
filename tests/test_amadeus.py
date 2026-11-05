@@ -117,8 +117,8 @@ async def test_amadeus_model_bridge_settles_after_request_session_rollback(
     """Regression: rollback expires ORM rows; settle must not touch them again."""
     from sqlalchemy import delete
 
-    from app.capabilities.agents.harness.contracts import ModelTextDelta, ModelTurnEnd, Usage
     from app.llm.providers import agent as agent_mod
+    from studio.contracts.agent_runtime.dialogue import ModelTextDelta, ModelTurnEnd, Usage
 
     async with SessionLocal() as session:
         provider = ModelProvider(
@@ -709,7 +709,7 @@ async def test_amadeus_browser_cannot_author_run_events_or_finalize() -> None:
 @pytest.mark.asyncio
 async def test_amadeus_startup_recovery_interrupts_run_without_replay() -> None:
     from app.console.amadeus.models import AmadeusAction, AmadeusRun
-    from app.runtime.ids import new_id
+    from studio.runtime.ids import new_id
 
     await _test_user()
     async with httpx.AsyncClient(

@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from fpl_deployment.images import source_closure
+from studio.deployment.images import source_closure
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -31,7 +31,7 @@ def test_portal_isolated_business_contract(tmp_path):
 
 def test_portal_source_closure_does_not_package_account_or_workshop_implementations():
     closure = source_closure(ROOT, "portal")
-    assert "fpl_portal.application" in closure
+    assert "studio.assembly.independent.portal.application" in closure
     assert "app.console.governance.developer_docs" in closure
     assert not any(
         name.startswith(
@@ -39,9 +39,9 @@ def test_portal_source_closure_does_not_package_account_or_workshop_implementati
                 "app.apps.",
                 "app.console.models",
                 "app.llm.",
-                "fpl_identity",
-                "fpl_agents",
-                "fpl_host",
+                "studio.apps.identity",
+                "studio.apps.agent_workbench",
+                "studio.host",
             )
         )
         for name in closure
@@ -61,7 +61,7 @@ def test_portal_maintenance_needs_no_encryption_secret_and_rejects_foreign_confi
     command = [
         sys.executable,
         "-m",
-        "fpl_portal",
+        "studio.assembly.independent.portal.cli",
         "migrate",
         "--config",
         str(config),

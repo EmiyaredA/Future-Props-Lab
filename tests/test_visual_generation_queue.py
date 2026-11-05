@@ -11,12 +11,6 @@ from uuid import uuid4
 import pytest
 from sqlalchemy import delete, select
 
-from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
-from app.apps.visual_workshop.models import (
-    VisualCanvasDocument,
-    VisualGenerationTask,
-    VisualWorkshopProject,
-)
 from app.console.governance.generation_queue import claim_visual_capacity, visual_queue_candidates
 from app.console.governance.runtime_quotas import recover_admissions
 from app.console.models import User
@@ -24,6 +18,12 @@ from app.llm.models import ModelEntry, ModelProvider
 from app.llm.models.runtime_admission import RuntimeAdmission
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.storage.models import (
+    VisualCanvasDocument,
+    VisualGenerationTask,
+    VisualWorkshopProject,
+)
+from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
 from test_workspace_governance import client_account
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdk/python/src"))
@@ -156,7 +156,7 @@ async def test_dispatch_fifo_concurrent_claim_restart_and_cancel_race(monkeypatc
     submit = AsyncMock(return_value="provider-task")
     monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", submit)
     monkeypatch.setattr(
-        "app.apps.visual_workshop.generation_runner.poll_generation_task",
+        "studio.apps.visual_workshop.website.generation_runner.poll_generation_task",
         AsyncMock(return_value=SimpleNamespace(status="pending", progress=0, execution_info=None)),
     )
     async with environment() as (client, _, user, _, project, model):
@@ -264,7 +264,7 @@ async def test_waiting_task_rechecks_execution_authorization(invalid, monkeypatc
     submit = AsyncMock(return_value="should-not-submit")
     monkeypatch.setattr("app.llm.visual_generation_submission.submit_generation_task", submit)
     monkeypatch.setattr(
-        "app.apps.visual_workshop.generation_runner.poll_generation_task",
+        "studio.apps.visual_workshop.website.generation_runner.poll_generation_task",
         AsyncMock(return_value=SimpleNamespace(status="pending", progress=0, execution_info=None)),
     )
     async with environment() as (client, _, user, workspace, project, model):
@@ -301,7 +301,7 @@ async def test_long_blocked_queue_does_not_starve_other_owners_or_polling(monkey
         AsyncMock(return_value="provider-task"),
     )
     monkeypatch.setattr(
-        "app.apps.visual_workshop.generation_runner.poll_generation_task",
+        "studio.apps.visual_workshop.website.generation_runner.poll_generation_task",
         AsyncMock(return_value=SimpleNamespace(status="pending", progress=1, execution_info=None)),
     )
     async with environment(queue_limit=50) as (client, _, _, _, project, model):
@@ -463,10 +463,10 @@ async def test_provider_timeout_excludes_local_waiting_time(monkeypatch):
     from dataclasses import replace
     from datetime import timedelta
 
-    from app.runtime.time import utc_now
+    from studio.runtime.time import utc_now
 
     poll = AsyncMock(return_value=SimpleNamespace(status="pending", progress=0))
-    monkeypatch.setattr("app.apps.visual_workshop.generation_runner.get_task", poll)
+    monkeypatch.setattr("studio.apps.visual_workshop.website.generation_runner.get_task", poll)
     async with environment() as (client, _, _, _, project, model):
         task = (await create(client, project, model)).json()
         async with SessionLocal() as session:

@@ -4,7 +4,7 @@ from sqlalchemy import select, update
 
 from app.llm.models import ModelTestConversation, ModelTestMessage
 from app.runtime.ownership import require_owner_id
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 async def recover_interrupted_model_test_runs(session_factory) -> None:

@@ -14,18 +14,18 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete
 
-from app.apps.video_editor.evaluator import (
+from app.main import app
+from app.runtime.db import SessionLocal
+from studio.apps.video_editor.evaluator import (
     FrameSource,
     TimelineFrameRenderer,
     property_at,
     visual_gaps,
 )
-from app.apps.video_editor.models import VideoEditorProject
-from app.apps.video_editor.render_engine import render_document
-from app.apps.video_editor.runner import VideoEditorRunner
-from app.apps.video_editor.schemas import VideoEditorTimelineDocument
-from app.main import app
-from app.runtime.db import SessionLocal
+from studio.apps.video_editor.render_engine import render_document
+from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.apps.video_editor.schemas import VideoEditorTimelineDocument
+from studio.apps.video_editor.storage.models import VideoEditorProject
 
 
 async def _reset() -> None:

@@ -12,14 +12,14 @@ from pptx import Presentation
 from pydantic import ValidationError
 from tests.presentation_helpers import element, sample_document
 
-from app.apps.presentation_workshop.connection_routes import follow_connection
-from app.apps.presentation_workshop.pptx_export import write_pptx
-from app.apps.presentation_workshop.scene_edits import remap
-from app.apps.presentation_workshop.schemas.document import PresentationDocument
-from app.apps.presentation_workshop.schemas.scene import PresentationConnection
-from app.apps.presentation_workshop.visible_scene import visible_scene
 from app.main import app
 from db.migrations.versions.r0104_presentation_free_connections import SQL
+from studio.apps.presentation_workshop.connection_routes import follow_connection
+from studio.apps.presentation_workshop.pptx_export import write_pptx
+from studio.apps.presentation_workshop.scene_edits import remap
+from studio.apps.presentation_workshop.schemas.document import PresentationDocument
+from studio.apps.presentation_workshop.schemas.scene import PresentationConnection
+from studio.apps.presentation_workshop.visible_scene import visible_scene
 
 
 def document(style="step"):

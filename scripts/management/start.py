@@ -7,8 +7,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
-from fpl_config import read_config  # noqa: E402
-from fpl_runtime.locking import service_lock  # noqa: E402
+from studio.config import read_config  # noqa: E402
+from studio.runtime.lifecycle.locking import service_lock  # noqa: E402
 
 
 def main():
@@ -23,8 +23,8 @@ def main():
         raise SystemExit("独立服务尚未配置，请先完成隔离构建与部署配置；不会迁移或接管旧数据库")
     import asyncio
 
-    from fpl_host.deployment_preflight import check_selected_databases
-    from fpl_host.management import configuration, run_worker
+    from studio.assembly.host.management import configuration, run_worker
+    from studio.host.deployment.deployment_preflight import check_selected_databases
 
     configured, control, transport, state = configuration(options.config)
     env = control.env

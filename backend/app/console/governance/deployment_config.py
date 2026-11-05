@@ -11,7 +11,7 @@ import tomlkit
 from fastapi import HTTPException
 
 from app.runtime.config import Settings
-from fpl_config import ConfigurationError, flatten
+from studio.config import ConfigurationError, flatten
 
 
 def config_bytes(path):

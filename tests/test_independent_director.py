@@ -8,9 +8,9 @@ import httpx
 from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from fpl_director.application import create_app
-from fpl_director.migrations.registry import MIGRATIONS
-from fpl_runtime.migrations import apply
+from studio.apps.director_desk.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.director_desk.application import create_app
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 BASE = "/v1/director-desk"
@@ -123,12 +123,12 @@ async def test_director_isolated_api_files_and_editor_recovery(scenario, tmp_pat
 
 
 async def test_upload_cannot_recreate_a_concurrently_deleted_project(tmp_path):
-    from app.apps.director_desk.files import DirectorDeskFiles
-    from app.apps.director_desk.models import DirectorDeskProject
-    from app.apps.director_desk.projects import DirectorDeskError, DirectorDeskProjects
-    from app.apps.director_desk.schemas import DirectorProjectCreate
-    from fpl_director.storage import DirectorStorage
-    from fpl_runtime.database import Database
+    from studio.apps.director_desk.files import DirectorDeskFiles
+    from studio.apps.director_desk.projects import DirectorDeskError, DirectorDeskProjects
+    from studio.apps.director_desk.schemas import DirectorProjectCreate
+    from studio.apps.director_desk.storage.file_paths import DirectorStorage
+    from studio.apps.director_desk.storage.models import DirectorDeskProject
+    from studio.runtime.database.sessions import Database
 
     owner = "eefc5357-745c-4d4c-a84b-dfc6b505268c"
     root = tmp_path / "director"
@@ -187,12 +187,12 @@ async def test_upload_cannot_recreate_a_concurrently_deleted_project(tmp_path):
 
 
 def test_director_build_closure_owns_only_its_workshop():
-    from fpl_deployment.images import source_closure
+    from studio.deployment.images import source_closure
 
     closure = source_closure(ROOT, "director")
-    assert "app.apps.director_desk.routes" in closure
+    assert "studio.apps.director_desk.transport.website" in closure
     assert all(
-        module.startswith("app.apps.director_desk")
+        module.startswith("studio.apps.director_desk")
         for module in closure
         if module.startswith("app.apps.")
     )

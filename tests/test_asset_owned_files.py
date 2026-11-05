@@ -9,19 +9,19 @@ from sqlalchemy import select
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset, VisualAssetFolder
 from app.capabilities.asset_store.schemas.files import VisualAssetFolderCreateIn, VisualAssetPatchIn
-from app.runtime.revisions import RevisionConflictError
-from fpl_assets.deletions import FileCleanup
-from fpl_assets.files import Files
-from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_assets.models import (
+from studio.apps.asset_library.deletions import FileCleanup
+from studio.apps.asset_library.files import Files
+from studio.apps.asset_library.references.references import AssetReferences
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.service_models import (
     MODELS,
     AssetDeletion,
 )
-from fpl_assets.references import AssetReferences
-from fpl_assets.settings import StorageSettings
-from fpl_runtime.asset_references import ReferenceUpdate
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
+from studio.contracts.asset_library.references import ReferenceUpdate
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.revisions import RevisionConflictError
 
 
 class Upload:

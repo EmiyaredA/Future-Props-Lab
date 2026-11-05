@@ -4,9 +4,9 @@ import hashlib
 
 import pytest
 
-from fpl_config import ConfigurationError
-from fpl_config.cloud_projection import COMMIT, CloudProjection
-from fpl_host.cloud_projection import CloudPublisher
+from studio.config import ConfigurationError
+from studio.config.cloud_projection import COMMIT, CloudProjection
+from studio.host.cloud_projection import CloudPublisher
 
 
 def test_cloud_projection_commit_changes_both_owner_views_together(tmp_path):

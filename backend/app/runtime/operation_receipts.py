@@ -3,13 +3,8 @@
 import hashlib
 import json
 
-from app.runtime.project_operations import ProjectOperationReceipt
-
-
-class OperationError(Exception):
-    def __init__(self, message: str, code="invalid_operation", status=422):
-        super().__init__(message)
-        self.code, self.status = code, status
+from studio.runtime.database.project_operations import ProjectOperationReceipt
+from studio.runtime.operation_errors import OperationError as OperationError
 
 
 def fingerprint(body):

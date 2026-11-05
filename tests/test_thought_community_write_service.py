@@ -11,20 +11,20 @@ from tests.test_community_asset_protocol import (
 )
 from tests.test_thought_archive_import_service import ORIGIN, thought_app
 
-from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-from app.apps.thought_workshop.multitable.storage import initialize, snapshot
-from app.apps.thought_workshop.publication.models import (
+from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.storage.service_models import AssetReferencePin, ReferenceIntent
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.thought_workshop.multitable.storage import initialize, snapshot
+from studio.apps.thought_workshop.publication.models import (
     ArticleMember,
     CommunityUpload,
     Publication,
     PublishedArticle,
 )
-from app.capabilities.asset_store.models import VisualAsset
-from fpl_assets.models import AssetReferencePin, ReferenceIntent
-from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.claims import HEADER
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_thought.retention_records import ThoughtReferenceMutation
+from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+from studio.apps.thought_workshop.storage.retention_records import ThoughtReferenceMutation
+from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.contracts.identity.claims import HEADER
 
 PATH = "/v1/thought-workshop/community/publications/pub/notes/note"
 
@@ -127,7 +127,7 @@ async def test_edit_rechecks_role_and_records_owner_scoped_retention(scenario, r
             request_id = mutation.request_id
         async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
             assert await session.get(ThoughtNote, "note") is None
-        from fpl_thought.retention import ThoughtReferenceDelivery
+        from studio.apps.thought_workshop.retention import ThoughtReferenceDelivery
 
         delivery = ThoughtReferenceDelivery(
             app.state.database.sessions, app.state.thought_references.client
@@ -261,7 +261,7 @@ async def test_community_table_uses_article_owner_and_keeps_attachment_history(
             assert note.revision == (0 if revoke else 2)
             mutations = list(await session.scalars(select(ThoughtReferenceMutation)))
             assert {mutation.state for mutation in mutations} == {"abort" if revoke else "commit"}
-        from fpl_thought.retention import ThoughtReferenceDelivery
+        from studio.apps.thought_workshop.retention import ThoughtReferenceDelivery
 
         delivery = ThoughtReferenceDelivery(
             app.state.database.sessions, app.state.thought_references.client

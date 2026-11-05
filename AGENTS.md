@@ -16,7 +16,7 @@
   模型或图片内容处理。
 - 后端持久配置只放在 `backend/config.toml`，按分组使用 TOML 原生类型；进程环境变量可供测试与部署覆盖。
   `.env` 仅用于一次性转换，成功后归档为 0600 备份，不再读取。不得提交真实配置或备份，不得输出密钥。
-  `backend/fpl_config/` 是不依赖运行时 `app` 或数据库的共享配置格式和转换模块。
+  `backend/studio/config/` 是不依赖业务应用或数据库的共享配置格式和转换模块。
 - 非机械性的行为、架构、跨文件契约、流程工具链、测试策略或落盘/网络/配置格式改动，按
   `docs/operations/agent-notes.md` 在 `.agents/notes/` 创建或更新 Agent Note；纯格式化、样式、无歧义重命名和局部机械修复免写。
 - `web/src/docs/`、`web/public/docs/`、文档中心覆盖清单和 `scripts/generate_sdk_docs.py` 是产品文档中心的受保护内容。工程决策整理不得迁移、删除、重写或重新生成这些路径。
@@ -53,15 +53,24 @@
 
 ## 应用与目录边界
 
-- `backend/app/` 按垂直切片装配：`main.py`、`deps.py`、`problem_details.py`、`api.py` 与
-  `orm.py` 负责应用装配；无业务语义的基础设施归属
-  `runtime/`；有契约的共享能力归属 `capabilities/`（含 asset_store 自有 VisualAsset ORM、files 契约与媒体
-  routes/schemas）；Studio
-  治理与库级文件用例归属 `console/`（含自有 models/routes/schemas）；已垂直切片的产品 App 归属 `apps/`（目前
-  `presentation_workshop`、`audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop`、
-  `galgame_workshop`、`director_desk`、`motion_compositor` 已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
-  `integrations/`、`tool_navigation/`、`demo_runtime/` 各自拥有 models/schemas/routes（demo 无独立 ORM）。
-  顶层不再保留 `models/`、`schemas/`、`routes/` 横向包。
+- 原 `fpl_*` 包与 `app/apps/` 业务切片已迁入 `backend/studio/`，不得重建旧目录或转发包。
+  `apps/` 拥有业务，`contracts/` 按所有者保存纯协议，`runtime/` 拥有无业务归属机制，
+  `assembly/independent/<owner>/` 拥有服务构造、CLI 和维护装配；主机入口在 `assembly/host/`。
+- `studio` 的父包初始化保持无副作用。`contracts`、配置格式、纯 `rules` 与 `use_cases`
+  不导入 ORM、HTTP 框架、主机实现或应用内部模块。业务用例声明所需接口，装配注入存储与
+  外部客户端；用例通过命令、快照和领域错误交互，不接收数据库 Session。
+- 公共跨进程客户端归所属应用 `clients/`，允许进入其他服务镜像的具体模块由
+  `studio/deployment/images.py` 登记。不能放宽成整个业务包；其递归依赖仍须通过存储隔离检查。
+- `studio/runtime/database/` 拥有数据库、ORM 和迁移原语，`http/` 拥有传输适配，
+  `tasks/` 拥有任务机制，`files/` 与 `messaging/` 拥有通用文件和签名载荷机制。
+  业务状态转换、账号归属与原子提交规则仍属于业务所有者。
+- 音频标注文档编辑由 `EditDocument` 执行版本判断与纯转换，`DocumentEdits` 在一个事务内提交
+  CAS 与回执；并发失败复查原请求回执，取消回滚。HTTP 层只映射领域错误。
+- `backend/studio/` 全树纳入文件和目录行数预算；迁移路径同时更新入口、镜像闭包、打包、
+  契约归属和测试。不得用空目录、软链接或永久转发表示迁移完成。
+- `backend/app/` 暂时保留网站装配、`llm/`、`capabilities/`、`console/`、`integrations/`、
+  `tool_navigation/` 与 `demo_runtime/` 的未归并实现。新业务进入 `studio`；后续迁移须按真实
+  所有者分配这些实现，不能把它们整体搬入一个通用兼容包。`app/apps/` 已无业务源码。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、
   `llm/routes/`、`console/routes/`、`capabilities/*/routes/` 与各业务包 `routes.py` 遵守同一边界。
@@ -95,10 +104,10 @@
   只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
 - 确定性时间线画面与视频渲染由 `backend/app/capabilities/media_rendering/` 统一拥有；Galgame 直接导出不得
   依赖 `video_editor/` 实现，只有显式的视频编辑器交接用例可以跨功能调用。
-- ORM 的 ID/时间默认工厂由 `runtime/ids.py` 与 `runtime/time.py` 维护；各包 ORM 模型只依赖
-  `runtime.orm_base` 与上述工厂。生产 Python 包不得形成强依赖环。账号项目记录的加载、CAS
+- ORM 的 ID/时间默认工厂由 `studio/runtime/ids.py` 与 `studio/runtime/time.py` 维护；各包 ORM 模型只依赖
+  `studio.runtime.database.orm_base` 与上述工厂。生产 Python 包不得形成强依赖环。账号项目记录的加载、CAS
   更新和删除原语可复用 `runtime/project_records.py`，但事务、默认文档、快照和领域规则必须留在所属功能包。
-  编辑批处理回执与传输形状归属 `runtime/project_operations.py`、`runtime/operation_batches.py`。
+  编辑批处理回执与传输形状归属 `studio/runtime/database/project_operations.py`、`studio/runtime/operation_batches.py`。
 - Story 总校验保持纯函数分层：身份/角色、素材、国际化、时间轴、流程与表现层规则归属
   `apps/galgame_workshop/schemas/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
 - 鉴权原语归属 `capabilities/identity/`；账号、Session、审计、Management API Key 与平台资源分配归属
@@ -109,8 +118,8 @@
   `AssetStorage` 的项目路径与写入方法必须显式传入账号；跨账号 ID 按不存在处理。
   HTTP `UploadFile` 只在路由中出现，业务用例依赖 `capabilities.asset_store.IncomingFile`。
 - 思绪工坊 `publication/` 拥有发布与逐篇授权，社区接口仅使用浏览器 Session；先验证发布记录、当前文章与有效角色，再在独立会话中显式绑定源账号。素材仅开放可读正文实际引用的文件与发布封面；不开放历史、私人目录或普通文件库查询。正文仍由 Notes 用例执行校验、CAS 和历史，回收站事务同步撤回发布，恢复不自动重新发布。
-- 固定账号权限由 `capabilities/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
-  `capabilities/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
+- 固定账号权限由 `studio/contracts/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
+  `studio/contracts/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
   只读浏览页面由各功能模块拥有，账号查询键由 `features/accounts/queryKeys.ts` 唯一维护。
 - 平台模板同步项与运行额度记录属于 `console/governance/`，平台资源分配由治理用例显式校验；固定演示运行时
   `demo_runtime/` 不得依赖账号治理或模型目录，治理入口仍在 `console/governance/`。
@@ -171,7 +180,7 @@
   用真实供应商调用代替确定性测试。
 - 单文件软上限：生产 Python 900 行、TS/TSX 1000 行、CSS 800 行，测试文件 1200 行；OpenAPI 等
   生成文件排除。没有任何尺寸豁免机制，超限只能按语义拆分，不得为了过门禁做机械切片。
-- 真正约束体量的是目录预算：`web/src/apps|console` 与 `backend/app/apps|console|capabilities`
+- 真正约束体量的是目录预算：`web/src/apps|console` 、`backend/studio/` 与 `backend/app/console|capabilities`
   下每一层目录直接持有的源码不超过 6000 行，超出必须再分出命名子域。这些目录内的文件名不得带
   `-foundation`、`-components`、`-interactions`、`-part\d*`、`-base`、`-extra`、`-misc` 后缀，
   也不得出现只做转发的空壳 `@import` 样式。不得新增编号式 CSS 分片；构建预算脚本只读产物，

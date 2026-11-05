@@ -1,0 +1,78 @@
+from __future__ import annotations
+
+import asyncio
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+from zipfile import ZIP_STORED, ZipFile
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.capabilities.asset_store.library import AssetError
+from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.storage import AssetStorage
+from app.runtime.config import Settings
+from studio.apps.video_editor.errors import VideoEditorNotFoundError
+from studio.apps.video_editor.handoffs.segment_exports import VideoEditorSegmentExports
+from studio.apps.video_editor.handoffs.segment_names import segment_filename
+
+
+def _archive(entries: list[tuple[Path, str]]) -> Path:
+    with NamedTemporaryFile(prefix="video-segments-", suffix=".zip", delete=False) as file:
+        path = Path(file.name)
+    try:
+        with ZipFile(path, "w", compression=ZIP_STORED) as archive:
+            for source, name in entries:
+                archive.write(source, name)
+        return path
+    except BaseException:
+        path.unlink(missing_ok=True)
+        raise
+
+
+async def download_segments(
+    session: AsyncSession,
+    settings: Settings,
+    owner_user_id: str,
+    project_id: str,
+    task_id: str,
+) -> Path:
+    task = await VideoEditorSegmentExports(session, owner_user_id).get(project_id, task_id)
+    if task.status != "completed":
+        raise AssetError("分段导出尚未完成", code="export_not_ready", status=409)
+    segments = task.result_detail.get("segments", [])
+    if not segments or any(item.get("status") != "completed" for item in segments):
+        raise VideoEditorNotFoundError("分段导出文件不存在")
+    ids = {item.get("assetId") for item in segments}
+    assets = list(
+        (
+            await session.scalars(
+                select(VisualAsset).where(
+                    VisualAsset.id.in_(ids), VisualAsset.owner_user_id == owner_user_id
+                )
+            )
+        ).all()
+    )
+    by_id = {asset.id: asset for asset in assets}
+    if set(by_id) != ids:
+        raise VideoEditorNotFoundError("部分分段导出文件不存在")
+    storage = AssetStorage(settings)
+    entries = [
+        (
+            storage.path_for(by_id[item["assetId"]]),
+            f"{index:03d}_{segment_filename(str(item.get('name') or '片段'))}",
+        )
+        for index, item in enumerate(segments, 1)
+    ]
+    if any(not path.is_file() for path, _ in entries):
+        raise VideoEditorNotFoundError("部分分段导出文件不存在")
+    # The response owns cleanup after this worker has finished, even on cancellation.
+    worker = asyncio.create_task(asyncio.to_thread(_archive, entries))
+    try:
+        return await asyncio.shield(worker)
+    except asyncio.CancelledError:
+        path = await worker
+        path.unlink(missing_ok=True)
+        raise
+    except FileNotFoundError:
+        raise VideoEditorNotFoundError("部分分段导出文件不存在") from None

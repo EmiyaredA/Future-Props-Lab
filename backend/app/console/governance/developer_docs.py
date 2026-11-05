@@ -1,7 +1,7 @@
 """Serve an allowlisted documentation projection only after principal authorization."""
 
-from app.capabilities.identity.errors import AccountError
 from app.runtime.config import REPO_ROOT
+from studio.contracts.identity.errors import AccountError
 
 ROOT = REPO_ROOT
 

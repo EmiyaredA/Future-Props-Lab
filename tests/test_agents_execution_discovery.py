@@ -10,19 +10,12 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.apps.agent_workbench.execution import projects
-from app.capabilities.identity.permissions import role_scopes
 from app.runtime.config import get_settings
-from fpl_agents.application import create_app
-from fpl_agents.migrations.registry import MIGRATIONS
-from fpl_agents.models import WorkbenchExecutionJob
-from fpl_host.transport import NativeTransport
-from fpl_host.workbench_worker import WorkbenchConfiguration, WorkbenchWorker
-from fpl_runtime.claims import HEADER, Actor, issue_context, verify_context
-from fpl_runtime.cloud_authority import CloudAuthority
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
-from fpl_runtime.workbench_execution import (
+from studio.apps.agent_workbench.execution import projects
+from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
+from studio.apps.agent_workbench.storage.service_models import WorkbenchExecutionJob
+from studio.assembly.independent.agent_workbench.application import create_app
+from studio.contracts.agent_workbench.execution import (
     CATALOG_PATH,
     CHATS_PATH,
     DIRECTORY_PATH,
@@ -35,6 +28,13 @@ from fpl_runtime.workbench_execution import (
     source_path,
     turn_path,
 )
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER, Actor, issue_context, verify_context
+from studio.contracts.identity.cloud_authority import CloudAuthority
+from studio.contracts.identity.permissions import role_scopes
+from studio.host.agent_execution.workbench_worker import WorkbenchConfiguration, WorkbenchWorker
+from studio.host.transport import NativeTransport
+from studio.runtime.database.migrations import apply
 
 INGRESS = "isolated-workbench-ingress-" * 2
 COLLECTOR = "isolated-workbench-collector-" * 2

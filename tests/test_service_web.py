@@ -8,7 +8,7 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
-from fpl_runtime.web import attach_web, load_release
+from studio.runtime.http.web import attach_web, load_release
 
 
 def write_release(root, **changes):

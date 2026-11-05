@@ -6,9 +6,9 @@ from typing import Any
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
-from app.runtime.time import utc_now
+from studio.runtime.database.orm_base import Base
+from studio.runtime.ids import new_id
+from studio.runtime.time import utc_now
 
 
 class ToolApiIntegration(Base):

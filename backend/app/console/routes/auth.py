@@ -6,7 +6,6 @@ from datetime import timedelta
 
 from fastapi import HTTPException, Request, Response
 
-from app.capabilities.identity.permissions import role_permissions
 from app.capabilities.identity.security import SESSION_ABSOLUTE_DAYS
 from app.capabilities.identity.session_policy import STUDIO_SESSION, SessionPolicy
 from app.console.governance.profile import avatar_url
@@ -20,6 +19,7 @@ from app.console.schemas.accounts import (
     SecurityAuditListOut,
 )
 from app.deps import SessionDep, authenticate_studio_request
+from studio.contracts.identity.permissions import role_permissions
 
 
 def _user_out(user) -> CurrentUserOut:

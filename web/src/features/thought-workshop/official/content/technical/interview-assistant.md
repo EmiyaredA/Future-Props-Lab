@@ -57,6 +57,6 @@ CLI 获得任务专用工具和受控执行目录，个人插件、通用 Shell 
 
 ## 代码入口
 
-1. `backend/app/apps/interview_assistant/runner.py`
-2. `backend/app/apps/interview_assistant/schemas.py`
+1. `backend/studio/apps/interview_assistant/runner.py`
+2. `backend/studio/contracts/interview_assistant/documents.py`
 3. `web/src/features/interview-assistant/InterviewAssistantPage.tsx`

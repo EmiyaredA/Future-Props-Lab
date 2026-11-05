@@ -159,8 +159,8 @@ async def clean_up_created_notes():
 @pytest.mark.asyncio
 @pytest.mark.parametrize("asset_kind", ["image", "attachment"])
 async def test_import_rolls_back_records_and_staged_files(monkeypatch, asset_kind):
-    from app.apps.thought_workshop.notes import Notes, ThoughtError
     from app.capabilities.asset_store.library import AssetLibrary
+    from studio.apps.thought_workshop.notes import Notes, ThoughtError
 
     staged = []
     original_stage = AssetLibrary.stage_local_copy
@@ -238,7 +238,7 @@ async def test_import_rolls_back_records_and_staged_files(monkeypatch, asset_kin
     ],
 )
 def test_invalid_node_grammar_is_rejected(content):
-    from app.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
+    from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
 
     with pytest.raises(ValueError):
         ThoughtNoteIn(document={"type": "doc", "content": content})

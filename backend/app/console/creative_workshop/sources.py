@@ -3,7 +3,9 @@
 import io
 from typing import Protocol
 
-from fpl_runtime.creative_source_snapshot import CreativeSource as CreativeSource
+from studio.contracts.creative_workshop.creative_source_snapshot import (
+    CreativeSource as CreativeSource,
+)
 
 
 class CreativeSources(Protocol):

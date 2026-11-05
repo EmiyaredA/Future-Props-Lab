@@ -23,8 +23,8 @@ from app.llm.providers.realtime.contracts import (
     RealtimeProviderUnavailableError,
     ResolvedRealtimeModel,
 )
-from app.runtime.ids import new_id
 from app.runtime.outbound_urls import require_safe_provider_websocket_url
+from studio.runtime.ids import new_id
 
 
 class SenseAudioRealtimeBridge:

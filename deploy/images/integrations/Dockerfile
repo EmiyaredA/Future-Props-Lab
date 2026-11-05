@@ -6,9 +6,9 @@ COPY backend/ /app/backend/
 COPY web/ /app/web/
 COPY deploy/contracts/ownership.json /app/deploy/contracts/ownership.json
 ENV PYTHONPATH=/app/backend PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
-RUN python -c "import fpl_integrations.application"
+RUN python -c "import studio.assembly.independent.integrations.application"
 ARG FPL_SERVICE_VERSION
 ENV FPL_SERVICE_VERSION=$FPL_SERVICE_VERSION
 EXPOSE 8080
-ENTRYPOINT ["python", "-m", "fpl_integrations"]
+ENTRYPOINT ["python", "-m", "studio.assembly.independent.integrations.cli"]
 CMD ["serve"]

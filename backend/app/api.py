@@ -1,32 +1,5 @@
 from fastapi import APIRouter, Depends
 
-from app.apps.agent_workbench.routes import router as agent_workbench_router
-from app.apps.audio_annotation.routes import router as audio_annotation_router
-from app.apps.director_desk.routes import router as director_desk_router
-from app.apps.galgame_workshop.routes import router as galgame_workshop_router
-from app.apps.interview_assistant.routes import router as interview_assistant_router
-from app.apps.motion_compositor.routes.compatibility import router as motion_compositor_router
-from app.apps.presentation_workshop.routes.compatibility import (
-    router as presentation_workshop_router,
-)
-from app.apps.thought_workshop import content_exports_http as thought_conversion
-from app.apps.thought_workshop.external_sync.records_http import router as sync_records_router
-from app.apps.thought_workshop.routes import router as thought_workshop_router
-from app.apps.thought_workshop.routes.community import router as community_router
-from app.apps.thought_workshop.routes.community_tables import router as community_tables_router
-from app.apps.thought_workshop.routes.external_sync import router as article_sync_router
-from app.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
-from app.apps.video_editor.routes.compatibility import router as video_editor_router
-from app.apps.visual_workshop.acceptance.review_routes import router as visual_review_router
-from app.apps.visual_workshop.acceptance.routes import router as visual_acceptance_router
-from app.apps.visual_workshop.acceptance.standard_routes import router as visual_standard_router
-from app.apps.visual_workshop.generation_routes import (
-    router as visual_generation_records_router,
-)
-from app.apps.visual_workshop.routes import router as visual_workshop_router
-from app.apps.visual_workshop.routes.assistant import router as visual_assistant_router
-from app.apps.visual_workshop.routes.generation import router as visual_generation_router
-from app.apps.visual_workshop.routes.outputs import router as visual_outputs_router
 from app.capabilities.asset_store.routes import image_crop, media_info, video_frames
 from app.console.amadeus.actions import register_video_executor
 from app.console.routes.account_management import router as management_router
@@ -61,6 +34,41 @@ from app.llm.routes.models import (
 )
 from app.tool_navigation.routes import router as tool_navigation_router
 from app.tool_navigation.video_download_routes import router as video_download_router
+from studio.apps.agent_workbench.transport.website import router as agent_workbench_router
+from studio.apps.audio_annotation.routes import router as audio_annotation_router
+from studio.apps.director_desk.transport.website import router as director_desk_router
+from studio.apps.galgame_workshop.transport.website import router as galgame_workshop_router
+from studio.apps.interview_assistant.transport.website import router as interview_assistant_router
+from studio.apps.motion_compositor.transport.website.compatibility import (
+    router as motion_compositor_router,
+)
+from studio.apps.presentation_workshop.transport.website.compatibility import (
+    router as presentation_workshop_router,
+)
+from studio.apps.thought_workshop import content_exports_http as thought_conversion
+from studio.apps.thought_workshop.external_sync.records_http import router as sync_records_router
+from studio.apps.thought_workshop.transport.website import router as thought_workshop_router
+from studio.apps.thought_workshop.transport.website.community import router as community_router
+from studio.apps.thought_workshop.transport.website.community_tables import (
+    router as community_tables_router,
+)
+from studio.apps.thought_workshop.transport.website.external_sync import (
+    router as article_sync_router,
+)
+from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
+from studio.apps.video_editor.transport.website.compatibility import router as video_editor_router
+from studio.apps.visual_workshop.acceptance.review_routes import router as visual_review_router
+from studio.apps.visual_workshop.acceptance.routes import router as visual_acceptance_router
+from studio.apps.visual_workshop.acceptance.standard_routes import router as visual_standard_router
+from studio.apps.visual_workshop.generation_routes import router as visual_generation_records_router
+from studio.apps.visual_workshop.transport.website import router as visual_workshop_router
+from studio.apps.visual_workshop.transport.website.assistant import (
+    router as visual_assistant_router,
+)
+from studio.apps.visual_workshop.transport.website.generation import (
+    router as visual_generation_router,
+)
+from studio.apps.visual_workshop.transport.website.outputs import router as visual_outputs_router
 
 register_video_executor(apply_assistant_timeline_batch)
 

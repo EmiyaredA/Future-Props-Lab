@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.llm.catalog.metadata import categories_for_provider
 from app.llm.models import ModelCatalogState, ModelEntry, ModelProvider
-from app.runtime.ids import new_id
+from studio.runtime.ids import new_id
 
 
 @dataclass(frozen=True)

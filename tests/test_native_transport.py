@@ -6,8 +6,8 @@ from starlette.applications import Starlette
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
-from fpl_host.transport import LeaseEnded, NativeTransport, ProtocolConflict
-from fpl_runtime.request_limit import RequestLimit
+from studio.host.transport import LeaseEnded, NativeTransport, ProtocolConflict
+from studio.runtime.http.request_limit import RequestLimit
 
 
 @pytest.mark.parametrize(

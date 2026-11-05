@@ -1,0 +1,95 @@
+"""Launch the dedicated Remote process with its read-only transport projection."""
+
+import argparse
+import os
+from pathlib import Path
+
+import uvicorn
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
+from cryptography.hazmat.primitives.serialization import load_pem_public_key
+
+from studio.apps.remote_desktop.settings import RemoteSettings
+from studio.apps.remote_desktop.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.remote_desktop.application import create_app
+from studio.assembly.independent.remote_desktop.maintenance import (
+    create_export_app,
+    create_import_app,
+)
+from studio.config.cloud_projection import CloudProjection
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.management.migration_batches import MigrationPlan
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.native_ingress import NativeWorkerOptions
+from studio.runtime.lifecycle.locking import service_lock
+
+
+def main():
+    parser = argparse.ArgumentParser(description="FPL Remote")
+    parser.add_argument(
+        "command", choices=("serve", "migrate", "migration-export", "migration-import")
+    )
+    parser.add_argument("--state-root", type=Path, default=Path("/state"))
+    parser.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
+    parser.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
+    parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
+    parser.add_argument(
+        "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
+    )
+    parser.add_argument("--schema", type=Path, default=Path("/app/deploy/contracts/openapi.json"))
+    parser.add_argument("--guacd-host", choices=("guacd", "127.0.0.1"), default="guacd")
+    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--setup-options", type=Path, default=Path("/run/fpl/remote-setup.json"))
+    parser.add_argument("--migration-plan", type=Path)
+    parser.add_argument("--legacy-db", type=Path)
+    options = parser.parse_args()
+    if options.command.startswith("migration-"):
+        if options.migration_plan is None or (
+            (options.command == "migration-export") != (options.legacy_db is not None)
+        ):
+            parser.error("维护入口需要迁移计划，仅导出入口接受源快照")
+        try:
+            plan = MigrationPlan.read(options.migration_plan)
+        except (ValueError, OSError):
+            parser.error("迁移计划无法读取或格式无效")
+        if options.legacy_db is not None:
+            app = create_export_app(plan=plan, source_path=options.legacy_db)
+        else:
+            app = create_import_app(plan=plan, state_root=options.state_root)
+        uvicorn.run(app, host="127.0.0.1", port=options.port, proxy_headers=False, access_log=False)
+        return
+    if options.migration_plan is not None or options.legacy_db is not None:
+        parser.error("迁移计划与源快照仅用于维护入口")
+    if options.command == "migrate":
+        with service_lock(options.state_root):
+            apply(options.state_root / "service.db", "remote", MIGRATIONS)
+        return
+    public_key = load_pem_public_key(options.public_key.read_bytes())
+    if not isinstance(public_key, Ed25519PublicKey):
+        parser.error("Identity 公钥类型无效")
+    setup = (
+        NativeWorkerOptions.model_validate_json(options.setup_options.read_bytes())
+        if options.setup_options.is_file()
+        else None
+    )
+    projection = None
+    if setup is not None:
+        projection = CloudProjection(
+            "remote",
+            Path(os.environ["FPL_REMOTE_CLOUD_PROJECTION_DIR"]),
+            Path(os.environ["FPL_CLOUD_SETTINGS_COMMIT_DIR"]),
+        )
+    app = create_app(
+        state_root=options.state_root,
+        settings=RemoteSettings.read(options.config, guacd_host=options.guacd_host),
+        public_key=public_key,
+        credential=options.identity_token.read_text().strip(),
+        catalog=RouteCatalog.read(options.catalog),
+        schema_path=options.schema,
+        setup_options=setup,
+        cloud_projection=projection,
+    )
+    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+
+
+if __name__ == "__main__":
+    main()

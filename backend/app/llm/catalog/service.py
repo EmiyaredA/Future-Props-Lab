@@ -26,8 +26,8 @@ from app.llm.schemas.model_service import (
     ProviderOut,
 )
 from app.runtime.credentials import encrypt_secret
-from app.runtime.revisions import RevisionConflictError
 from app.runtime.secret_hints import encrypted_secret_hint
+from studio.runtime.revisions import RevisionConflictError
 
 
 class ResourceNotFoundError(Exception):

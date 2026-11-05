@@ -18,7 +18,7 @@ from app.llm.schemas.call_log import (
     CallLogOut,
     CallLogStatsOut,
 )
-from app.runtime.time import iso_utc
+from studio.runtime.time import iso_utc
 
 
 def _credential_fields(row: LlmCallLog) -> dict:

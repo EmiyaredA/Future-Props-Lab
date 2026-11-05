@@ -22,7 +22,7 @@ from app.llm.schemas.model_test import (
     ModelTestGenerationAssetOut,
 )
 from app.runtime.config import Settings, get_settings
-from app.runtime.time import iso_utc, utc_now
+from studio.runtime.time import iso_utc, utc_now
 
 MAX_DRAFT_ASSETS = 50
 DRAFT_TTL = timedelta(hours=24)

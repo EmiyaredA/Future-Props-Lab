@@ -15,8 +15,8 @@ from app.llm.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
 from app.llm.task_outcomes import confirmed_terminal
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError, fingerprint
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import utc_now
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import utc_now
 
 ACTIVE = ("queued", "submitting", "pending", "processing", "running")
 

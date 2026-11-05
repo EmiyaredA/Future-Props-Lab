@@ -76,5 +76,5 @@ useNoteDraft 按账号、账号、笔记和标签页保存本机草稿，提供�
 ## 代码入口
 
 1. `backend/app/runtime/project_records.py`
-2. `backend/app/apps/thought_workshop/history.py`
+2. `backend/studio/apps/thought_workshop/history.py`
 3. `web/src/features/thought-workshop/historyDiff.ts`

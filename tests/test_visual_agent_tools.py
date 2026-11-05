@@ -7,13 +7,13 @@ import pytest
 from pydantic import ValidationError
 from sqlalchemy import delete, func, select
 
-from app.apps.visual_workshop.assistant.tools import visual_agent_tools
-from app.apps.visual_workshop.models import VisualGenerationTask
 from app.capabilities.agents.harness import ToolExecutionContext
 from app.llm.models import ModelEntry, ModelProvider
 from app.main import app
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.assistant.tools import visual_agent_tools
+from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 
 
 @pytest.mark.asyncio
@@ -237,7 +237,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
             placed = (
                 await client.get(f"/v1/visual-workshop/projects/{project['id']}/canvas")
             ).json()["nodes"]
-            from app.apps.visual_workshop.node_placement import automatic_node_position
+            from studio.apps.visual_workshop.node_placement import automatic_node_position
 
             assert placed[0]["position"] == {"x": 120, "y": 160}
             assert placed[1]["position"] == automatic_node_position(placed[:1], "image")

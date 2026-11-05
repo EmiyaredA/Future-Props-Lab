@@ -12,7 +12,11 @@ from PIL import Image, ImageFilter
 from starlette.websockets import WebSocketDisconnect
 
 from app.capabilities.identity.rate_limit import clear_attempts
-from fpl_runtime.cloud_authority import DESKTOP_COOKIE, TICKET_SECONDS, desktop_ticket_digest
+from studio.contracts.identity.cloud_authority import (
+    DESKTOP_COOKIE,
+    TICKET_SECONDS,
+    desktop_ticket_digest,
+)
 
 from .vnc_check import password_rejected
 

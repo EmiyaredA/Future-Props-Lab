@@ -17,20 +17,20 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.capabilities.identity.permissions import role_scopes
 from app.llm.models import LlmCallLog, ModelProvider, RuntimeAdmission
 from app.runtime.config import Settings, get_settings
-from app.runtime.time import utc_now
-from fpl_models.account_directory import Target, Targets
-from fpl_models.application import create_app
-from fpl_models.audit_client import PreparedChange
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import GovernanceAudit
-from fpl_models.templates import initialize_account_catalog
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.migrations import apply
-from fpl_runtime.model_audit import ModelAuditReceipt, PreparedModelAudit
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.model_service.account_directory import Target, Targets
+from studio.apps.model_service.audit.audit_client import PreparedChange
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import GovernanceAudit
+from studio.apps.model_service.templates import initialize_account_catalog
+from studio.assembly.independent.model_service.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.model_service.model_audit import ModelAuditReceipt, PreparedModelAudit
+from studio.runtime.database.migrations import apply
+from studio.runtime.time import utc_now
 
 
 class Port:
@@ -239,7 +239,7 @@ async def test_template_sync_rechecks_current_admin_and_target_and_preserves_oth
 def test_models_import_does_not_load_account_assets_or_singleton_database():
     source = """
 import sys
-import fpl_models.application
+import studio.assembly.independent.model_service.application
 for name in sys.modules:
     assert name not in {
         'app.runtime.db','app.orm',
@@ -450,7 +450,7 @@ async def test_models_all_owned_runners_start_and_stop_with_independent_schema(c
 
 
 async def test_independent_models_contract_matches_page_build_input(case):
-    from fpl_runtime.protocol_hash import public_contract
+    from studio.contracts.gateway.protocol_hash import public_contract
 
     catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
     aggregate = json.loads(Path("web/src/generated/openapi.json").read_text())

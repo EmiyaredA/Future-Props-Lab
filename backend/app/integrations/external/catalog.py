@@ -6,8 +6,8 @@ from sqlalchemy.exc import IntegrityError
 
 from app.runtime.config import get_settings
 from app.runtime.credentials import SecretCipher
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import iso_utc, utc_now
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import iso_utc, utc_now
 
 from .contracts import ConnectionCredentials, ExternalError, document_target
 from .feishu import FeishuClient

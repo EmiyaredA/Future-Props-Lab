@@ -77,5 +77,5 @@ schema_version 决定正文节点如何解释，sceneVersion 决定场景如何�
 ## 代码入口
 
 1. `web/src/features/thought-workshop/diagrams/model.ts`
-2. `backend/app/apps/thought_workshop/schemas/canvas.py`
-3. `backend/app/apps/thought_workshop/canvas_export.py`
+2. `backend/studio/apps/thought_workshop/schemas/canvas.py`
+3. `backend/studio/apps/thought_workshop/canvas_export.py`

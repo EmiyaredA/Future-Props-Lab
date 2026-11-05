@@ -18,8 +18,8 @@ from app.demo_runtime.runtime import tool_reply
 from app.integrations.mcp.catalog import McpCatalog
 from app.integrations.tool_apis.catalog import ToolApiCatalog
 from app.runtime.operation_receipts import OperationError
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import utc_now
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import utc_now
 
 VideoExecutor = Callable[[str, str, str, dict[str, Any]], Awaitable[dict[str, Any]]]
 _video_executor: VideoExecutor | None = None

@@ -9,12 +9,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.apps.thought_workshop.errors import ThoughtError
-from app.capabilities.identity.principal import StudioPrincipal
-from fpl_runtime.account_directory import AccountProfile, CallerProfile, DirectoryQuery
-from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
-from fpl_runtime.routing import RouteCatalog
-from fpl_thought.account_directory import HttpAccountDirectory
+from studio.apps.thought_workshop.account_directory import HttpAccountDirectory
+from studio.apps.thought_workshop.errors import ThoughtError
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.account_directory import (
+    AccountProfile,
+    CallerProfile,
+    DirectoryQuery,
+)
+from studio.contracts.identity.delegation import RequestGrant, permitted, target_permission_path
+from studio.contracts.identity.principal import StudioPrincipal
 
 ROOT = Path(__file__).resolve().parents[1]
 

@@ -18,17 +18,20 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from app.capabilities.identity.permissions import role_scopes
 from app.integrations.mcp.client import DiscoveredTool, DiscoveryResult
 from app.runtime.config import Settings, get_settings
-from fpl_integrations.application import create_app
-from fpl_integrations.migrations.registry import MIGRATIONS
-from fpl_integrations.records import ValidationAttempt
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.integration_intents import IntegrationDecision, IntegrationIntentReceipt
-from fpl_runtime.migrations import apply
-from fpl_runtime.protocol_hash import public_contract
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.integrations.records import ValidationAttempt
+from studio.apps.integrations.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.integrations.application import create_app
+from studio.contracts.gateway.protocol_hash import public_contract
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.integrations.integration_intents import (
+    IntegrationDecision,
+    IntegrationIntentReceipt,
+)
+from studio.runtime.database.migrations import apply
 
 
 class Ports:
@@ -233,7 +236,7 @@ async def test_owned_skills_upload_preview_download_and_delete(case):
 
 def test_integrations_source_does_not_load_foreign_state():
     source = """import sys
-from fpl_integrations.application import create_app
+from studio.assembly.independent.integrations.application import create_app
 for forbidden in (
     'app.runtime.db','app.orm','app.console','app.llm.models',
     'app.capabilities.asset_store.models','app.apps',
@@ -257,7 +260,7 @@ async def test_skill_files_follow_confirmed_database_state_after_lost_commit_rep
     from app.integrations.models import SkillIntegration
     from app.integrations.skills.archive import SkillArchiveStorage
     from app.integrations.skills.catalog import SkillCatalog
-    from fpl_integrations.skill_files import reconcile_skill_files
+    from studio.apps.integrations.skill_files import reconcile_skill_files
 
     class Archive:
         filename = "skill.zip"
@@ -341,7 +344,7 @@ async def test_tool_validation_binds_actual_input_and_rejects_invalid_body(case)
 
 
 async def test_validation_recovery_routes_are_account_scoped_and_fail_closed(case):
-    from fpl_runtime.integration_intents import IntegrationScope
+    from studio.contracts.integrations.integration_intents import IntegrationScope
 
     identity = str(uuid4())
     scope = IntegrationScope(

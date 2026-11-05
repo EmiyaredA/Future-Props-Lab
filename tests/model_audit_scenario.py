@@ -8,17 +8,21 @@ from sqlalchemy import select
 
 from app.console.models.accounts import SecurityAuditEvent
 from app.runtime.operation_receipts import OperationError
-from app.runtime.time import utc_now
-from fpl_identity.models import ModelAuditDelivery, ModelAuditIntent
-from fpl_models.audit import add_child_event, add_event
-from fpl_models.audit_client import ModelAuditClient
-from fpl_models.audit_delivery import ModelAuditDelivery as DeliveryRunner
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS, GovernanceAudit
-from fpl_runtime.claims import HEADER, verify_context
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_runtime.model_audit import AuditSource, ChildModelAudit, ModelAuditRecord
+from studio.apps.identity.storage.service_models import ModelAuditDelivery, ModelAuditIntent
+from studio.apps.model_service.audit.audit import add_child_event, add_event
+from studio.apps.model_service.audit.audit_client import ModelAuditClient
+from studio.apps.model_service.audit.audit_delivery import ModelAuditDelivery as DeliveryRunner
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS, GovernanceAudit
+from studio.contracts.identity.claims import HEADER, verify_context
+from studio.contracts.model_service.model_audit import (
+    AuditSource,
+    ChildModelAudit,
+    ModelAuditRecord,
+)
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.time import utc_now
 
 
 class LostCommitReply(httpx.AsyncBaseTransport):

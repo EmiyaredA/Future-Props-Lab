@@ -13,23 +13,23 @@ from starlette.responses import JSONResponse
 
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
-from app.problem_details import http_exception_handler, validation_exception_handler
-from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
-from fpl_assets.models import MODELS
-from fpl_assets.reference_changes import ReferenceChanges
-from fpl_assets.retention_api import router
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app
-from fpl_identity.migrations.registry import MIGRATIONS
-from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.capability_client import CapabilityDenied
-from fpl_runtime.claims import HEADER, issue_context, verify_context
-from fpl_runtime.database import Database
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.retention_authority import verify_retention
-from fpl_runtime.retention_client import RetentionClient
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.asset_library.clients.retention import RetentionClient
+from studio.apps.asset_library.references.reference_changes import ReferenceChanges
+from studio.apps.asset_library.references.retention_api import router
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.asset_library.storage.service_models import MODELS
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.identity.application import create_app
+from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.contracts.asset_library.retention_authority import verify_retention
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER, issue_context, verify_context
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.http.capability_client import CapabilityDenied
+from studio.runtime.http.problem_details import http_exception_handler, validation_exception_handler
 
 state = Path(os.environ["IDENTITY_TEST_ROOT"])
 private = Ed25519PrivateKey.generate()

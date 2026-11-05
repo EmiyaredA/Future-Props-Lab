@@ -4,10 +4,10 @@ import hashlib
 
 from pydantic import TypeAdapter
 
-from fpl_assets.migration_application import PREFIX
-from fpl_assets.migration_blobs import BLOBS, DATASET, AssetBlob, receipt_for
-from fpl_assets.migration_records import DATASETS
-from fpl_runtime.migration_batches import BatchReceipt
+from studio.apps.asset_library.migration_blobs import BLOBS, DATASET, AssetBlob, receipt_for
+from studio.apps.asset_library.storage.migration_records import DATASETS
+from studio.assembly.independent.asset_library.maintenance import PREFIX
+from studio.contracts.management.migration_batches import BatchReceipt
 
 from .migration_transfer import DatasetTransfer, loopback, run_cli
 

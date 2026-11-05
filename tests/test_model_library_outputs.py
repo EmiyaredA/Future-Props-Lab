@@ -20,18 +20,18 @@ from app.capabilities.asset_store.errors import AssetError
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.library_outputs import library_outputs
-from fpl_assets.application import create_app
-from fpl_assets.library_outputs import LibraryOutputFiles
-from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_assets.models import ModelLibraryOutputReceipt
-from fpl_assets.settings import StorageSettings
-from fpl_models.library_outputs import HttpLibraryOutputs
-from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
-from fpl_runtime.migrations import apply
-from fpl_runtime.model_outputs import ModelOutputDescription, model_output_path
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.asset_library.library_outputs import LibraryOutputFiles
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.service_models import ModelLibraryOutputReceipt
+from studio.apps.model_service.library_outputs import HttpLibraryOutputs
+from studio.assembly.independent.asset_library.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.delegation import RequestGrant, permitted, target_permission_path
+from studio.runtime.database.migrations import apply
+from studio.runtime.files.signed_payloads import ModelOutputDescription, model_output_path
+from studio.runtime.http.capability_client import CapabilityClient, CapabilityDenied
 
 
 def audio(frames=800):
@@ -336,7 +336,7 @@ async def test_capability_client_authorizes_before_sending_and_refuses_redirects
         transport=httpx.MockTransport(handler),
     )
     try:
-        from fpl_runtime.capability_client import CapabilityUnavailable
+        from studio.runtime.http.capability_client import CapabilityUnavailable
 
         with pytest.raises(CapabilityUnavailable):
             await client.model_library_output(
@@ -363,7 +363,7 @@ from app.llm.playground.attachments import ModelTestAttachments
 from app.llm.routes.model_inference import router
 from app.llm.routes.models.model_test_generation import router
 for module in ('app.runtime.db', 'app.orm', 'app.capabilities.asset_store.models',
-    'app.console.models.accounts', 'app.apps.visual_workshop.models'):
+    'app.console.models.accounts', 'studio.apps.visual_workshop.storage.models'):
     assert module not in sys.modules, module
 """
     result = subprocess.run(
@@ -384,17 +384,17 @@ for module in ('app.runtime.db', 'app.orm', 'app.capabilities.asset_store.models
 async def test_real_identity_delegation_checks_credentials_live_session_and_logout(
     instance, tmp_path, monkeypatch
 ):
-    from fpl_identity.accounts import create_account
-    from fpl_identity.application import create_app as create_identity
-    from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-    from fpl_runtime.identity_client import LiveAuthorization
+    from studio.apps.identity.accounts import create_account
+    from studio.apps.identity.clients.authorization import LiveAuthorization
+    from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+    from studio.assembly.independent.identity.application import create_app as create_identity
 
     app, _client, key, _dependencies = instance
     identity_root = tmp_path / "identity"
     apply(identity_root / "service.db", "identity", IDENTITY_MIGRATIONS)
     catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
     monkeypatch.setattr(
-        "fpl_identity.application.get_settings",
+        "studio.assembly.independent.identity.application.get_settings",
         lambda: SimpleNamespace(database_path=identity_root / "service.db"),
     )
     origin = "http://127.0.0.1:19000"

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
-from fpl_runtime.claims import HEADER, verify_context
+from studio.contracts.identity.claims import HEADER, verify_context
 
 
 class Probe(BaseHTTPRequestHandler):

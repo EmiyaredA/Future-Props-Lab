@@ -9,14 +9,17 @@ from tests.test_community_asset_protocol import scenario  # noqa: F401
 from tests.test_visual_node_review_service import review_mesh
 
 from app.llm.models import LlmCallLog
-from fpl_models.assistant_model_http import router
-from fpl_models.assistant_model_runs import AssistantModelRuns
-from fpl_runtime.project_errors import ProjectResourceError
-from fpl_runtime.timed_peer import TimedPeer
-from fpl_runtime.visual_assistant import SOURCE
-from fpl_runtime.visual_assistant_model import SETTLEMENT_DOMAIN, RecoveredAssistantSettlement
-from fpl_visual.assistant_dispatch_records import VisualAssistantDispatch
-from fpl_visual.assistant_stream import AssistantStream
+from studio.apps.model_service.assistant_model_runs import AssistantModelRuns
+from studio.apps.model_service.transport.assistant_model_http import router
+from studio.apps.visual_workshop.assistant.assistant_stream import AssistantStream
+from studio.apps.visual_workshop.storage.assistant_dispatch_records import VisualAssistantDispatch
+from studio.contracts.visual_workshop.visual_assistant import SOURCE
+from studio.contracts.visual_workshop.visual_assistant_model import (
+    SETTLEMENT_DOMAIN,
+    RecoveredAssistantSettlement,
+)
+from studio.runtime.messaging.timed_peer import TimedPeer
+from studio.runtime.project_errors import ProjectResourceError
 
 SECRET = "isolated-assistant-settlement-credential-" * 2
 

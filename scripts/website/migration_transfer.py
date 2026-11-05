@@ -10,7 +10,12 @@ from uuid import uuid5
 
 import httpx
 
-from fpl_runtime.migration_batches import MAX_RECORDS, BatchReceipt, MigrationPage, MigrationPlan
+from studio.contracts.management.migration_batches import (
+    MAX_RECORDS,
+    BatchReceipt,
+    MigrationPage,
+    MigrationPlan,
+)
 
 
 @dataclass(frozen=True)

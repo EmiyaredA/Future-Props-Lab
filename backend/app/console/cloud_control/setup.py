@@ -8,7 +8,7 @@ from fastapi import HTTPException
 
 from app.console.governance.deployment_config import config_bytes, replace_config, revision
 from app.runtime.config import get_cloud_settings
-from fpl_config import CONFIG_FILE
+from studio.config import CONFIG_FILE
 
 from .access import enrolled
 from .schemas import CloudSetup

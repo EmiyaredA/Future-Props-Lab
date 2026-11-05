@@ -10,14 +10,14 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.asset_store.models import VisualAsset
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.model_outputs import ModelOutputDescription
-from fpl_runtime.video_exports import output_peer
-from fpl_runtime.video_segment_handoff import SegmentTarget, asset_peer
-from fpl_runtime.video_segments import OUTPUTS, SegmentBatchManifest
-from fpl_video.application import PROJECTS, create_app
-from fpl_video.migrations.registry import MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.video_editor.application import PROJECTS, create_app
+from studio.contracts.video_editor.video_exports import output_peer
+from studio.contracts.video_editor.video_segment_handoff import SegmentTarget, asset_peer
+from studio.contracts.video_editor.video_segments import OUTPUTS, SegmentBatchManifest
+from studio.runtime.database.migrations import apply
+from studio.runtime.files.signed_payloads import ModelOutputDescription
 
 ROOT = Path(__file__).resolve().parents[1]
 

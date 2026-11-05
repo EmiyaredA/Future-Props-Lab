@@ -6,9 +6,10 @@ from pathlib import Path
 
 import httpx
 
-from fpl_runtime.edit_receipt_migration import SUFFIX
-from fpl_runtime.migration_batches import MigrationPlan
-from fpl_runtime.visual_migration import (
+from studio.apps.visual_workshop.storage.migration_records import DATASETS, OPERATIONS
+from studio.assembly.independent.visual_workshop.maintenance import PREFIX
+from studio.contracts.management.migration_batches import MigrationPlan
+from studio.contracts.visual_workshop.visual_migration import (
     ACCEPTANCE_PINS_DATASET,
     ACCEPTANCE_PINS_PATH,
     CANVAS_PINS_DATASET,
@@ -19,8 +20,7 @@ from fpl_runtime.visual_migration import (
     CanvasPinPage,
     ConversationPinPage,
 )
-from fpl_visual.migration_application import PREFIX
-from fpl_visual.migration_records import DATASETS, OPERATIONS
+from studio.runtime.database.edit_receipt_migration import SUFFIX
 
 from .migrate_assets import verify_originals
 from .migration_transfer import DatasetTransfer, loopback, project_datasets, transfer

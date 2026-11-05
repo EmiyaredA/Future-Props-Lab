@@ -14,13 +14,17 @@ from tests.test_community_asset_protocol import (
 from tests.test_thought_community_write_service import authorize
 
 from app.capabilities.asset_store.models import VisualAsset
-from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied
-from fpl_runtime.claims import HEADER
-from fpl_runtime.community_uploads import PURPOSE, CommunityUploadScope, public_path
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.thought_archives import ArchiveAuthenticator
-from fpl_runtime.thought_uploads import ThoughtUploadDescription
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.thought_workshop.community_uploads import (
+    PURPOSE,
+    CommunityUploadScope,
+    public_path,
+)
+from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
+from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadDescription
+from studio.runtime.http.capability_client import CapabilityClient, CapabilityDenied
 
 
 async def test_upload_stage_requires_an_exact_source_grant_and_peer_proof(scenario):  # noqa: F811

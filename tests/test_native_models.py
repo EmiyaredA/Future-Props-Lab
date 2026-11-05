@@ -28,20 +28,24 @@ from app.llm.models import (
 )
 from app.llm.schemas.local_models import LocalModelActionIn
 from app.llm.task_outcomes import SUBMISSION_INTERRUPTED_MESSAGE
-from fpl_host.models_control import ModelsControl
-from fpl_host.models_transport import ModelsTransport
-from fpl_host.models_worker import ModelsWorker
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS, TaskAuthorization
-from fpl_models.native_api import attach_native
-from fpl_models.native_models import NativeModelBroker
-from fpl_models.native_records import NativeModelJob
-from fpl_models.task_records import task_fingerprint
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_runtime.native_protocol import NativeLease
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.native_models import NativeModelBroker
+from studio.apps.model_service.storage.native_records import NativeModelJob
+from studio.apps.model_service.storage.service_models import (
+    ACCOUNT_MODELS,
+    MODELS,
+    TaskAuthorization,
+)
+from studio.apps.model_service.storage.task_records import task_fingerprint
+from studio.apps.model_service.transport.native_api import attach_native
+from studio.contracts.agent_workbench.native import NativeLease
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.host.local_models.models_control import ModelsControl
+from studio.host.local_models.models_transport import ModelsTransport
+from studio.host.local_models.models_worker import ModelsWorker
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 MODEL = "qwen3-tts-0.6b-base"
 
@@ -462,8 +466,8 @@ async def test_public_or_wrong_purpose_native_management_is_rejected(case):
 def test_native_mac_modules_do_not_import_service_orm_or_database(tmp_path):
     code = """
 import sys
-import fpl_host.models_worker
-for name in ('app.runtime.db', 'app.llm.models', 'fpl_models.models',
+import studio.host.local_models.models_worker
+for name in ('app.runtime.db', 'app.llm.models', 'studio.apps.model_service.storage.service_models',
     'app.console.models.accounts'):
     assert name not in sys.modules, name
 """
@@ -723,7 +727,7 @@ async def test_uncertain_native_submission_cannot_delete_original_task_or_input(
 
 async def test_command_receipt_waits_for_fresh_observation_after_older_report(tmp_path):
     """A report sampled before installation cannot arrive after completion."""
-    from fpl_runtime.native_protocol import NativeLease, NativeOutcome
+    from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 
     old_report_started, release_old_report = asyncio.Event(), asyncio.Event()
     deliveries = []

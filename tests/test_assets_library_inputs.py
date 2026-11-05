@@ -10,12 +10,12 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from app.capabilities.asset_store.models import VisualAsset
-from fpl_assets.application import create_app
-from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_assets.settings import StorageSettings
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.asset_library.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.runtime.database.migrations import apply
 
 
 class Dependencies:

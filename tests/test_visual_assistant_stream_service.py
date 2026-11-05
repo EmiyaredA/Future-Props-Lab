@@ -11,16 +11,16 @@ from tests.test_independent_project_catalog import authorize
 from tests.test_visual_assistant_submission import SECRET
 from tests.test_visual_node_review_service import review_mesh
 
-from app.apps.visual_workshop.models import VisualAssistantAction
 from app.capabilities.agents.harness import ModelTextDelta, ModelTurnEnd, ToolCall, Usage
 from app.llm.models import LlmCallLog, ModelEntry
-from fpl_models.assistant_model_http import router
-from fpl_models.assistant_model_runs import AssistantModelRuns
-from fpl_runtime.claims import HEADER
-from fpl_runtime.project_errors import ProjectResourceError
-from fpl_runtime.timed_peer import TimedPeer
-from fpl_runtime.visual_assistant import SOURCE
-from fpl_runtime.visual_assistant_model import SETTLEMENT_DOMAIN
+from studio.apps.model_service.assistant_model_runs import AssistantModelRuns
+from studio.apps.model_service.transport.assistant_model_http import router
+from studio.apps.visual_workshop.storage.models import VisualAssistantAction
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.visual_workshop.visual_assistant import SOURCE
+from studio.contracts.visual_workshop.visual_assistant_model import SETTLEMENT_DOMAIN
+from studio.runtime.messaging.timed_peer import TimedPeer
+from studio.runtime.project_errors import ProjectResourceError
 
 
 async def stream(app, case, source, body, listener):
@@ -113,8 +113,10 @@ async def test_native_visual_stream_approval_and_canvas_cas(
                 yield ModelTextDelta("模型答复")
                 yield ModelTurnEnd(usage=Usage(5, 8, 13))
 
-    monkeypatch.setattr("fpl_models.assistant_model_runs.decrypt_secret", lambda _: "fixture")
-    monkeypatch.setattr("fpl_models.assistant_model_runs.HttpAgentAdapter", Adapter)
+    monkeypatch.setattr(
+        "studio.apps.model_service.assistant_model_runs.decrypt_secret", lambda _: "fixture"
+    )
+    monkeypatch.setattr("studio.apps.model_service.assistant_model_runs.HttpAgentAdapter", Adapter)
     peer = TimedPeer(SECRET, domain=SETTLEMENT_DOMAIN)
     async with review_mesh(case, tmp_path) as (visual, send, _faults), visual() as app:
         assert app.state.public_routes_complete

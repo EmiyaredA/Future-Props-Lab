@@ -50,7 +50,7 @@ uv run python scripts/website/agents_docker_smoke.py \
 
 此项使用真实独立工作台容器与 Mac 采集进程，原生来源为测试生成的日志，不读取个人 Agent 历史。验证独立替换容器后的历史、检查点、增量同步与新账号登录；确认工作台库不含账号或其他工坊表。`--browser` 使用真实 Chromium 验证无门户进程时的新登录、历史阅读、旧链接、主题、390／768／1600px 布局和未保存确认。先将 Chromium 安装至项目忽略目录：`PLAYWRIGHT_BROWSERS_PATH=$PWD/.local/playwright-browsers npx playwright install chromium`。
 
-Mac 采集 CLI 为 `uv run python -m fpl_host collect --connection PATH --state-root PATH`。连接描述是受保护配置投影，只含回环 URL 和限定 worker 凭据，要求当前用户所有及 0600 权限；它不是配置真源。正式启动协调器与投影生成仍待完成，不手工配置正式凭据。
+Mac 采集 CLI 为 `uv run python -m studio.assembly.host.cli collect --connection PATH --state-root PATH`。连接描述是受保护配置投影，只含回环 URL 和限定 worker 凭据，要求当前用户所有及 0600 权限；它不是配置真源。正式启动协调器与投影生成仍待完成，不手工配置正式凭据。
 
 原生入口拒绝浏览器 Origin，浏览器入口不转发私有协议。网关使用独立原生通道证明，采集器再提供 worker 凭据；工作台不持有网关的 Identity 凭据。任务持久化账号、请求 ID、租约和不可变结果；领取使用 SQLite CAS，空队列轮询不持有写锁。未知结果不重派。跟随任务按当前来源版本和账号授权复核，单帧回执与检查点在同一短事务提交；确认丢失可重发原帧，暂停和解除绑定拒绝旧任务写入。原生文件不改写。
 
@@ -256,7 +256,7 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 
 构建浏览器程序可运行 `npm run services:build:web -- tools`，再把返回目录作为 `--web-release` 传给镜像构建。隔离运行 `fpl-tools-browser-71a1b5d024` 验证了 Chromium 登录态收藏、工具目录手机宽度、两条深链接及旧程序版本写入拒绝，也检查了公网监听的页面与未登录 API 响应。
 
-本机文件库打开可额外加载 `deploy/tools-native.compose.yaml`。隔离环境为 Tools、Identity 与原生入口分别设置用途限定凭据，Gateway 的独立回环监听登记 Tools 原生通道。Mac worker 由 `uv run python -m fpl_host.tools_worker` 启动，使用明确指定的回环桥接地址、独占凭据文件、Assets 状态根目录和自有回执目录。容器只接收任务与回执。公网及 Management API Key 无权打开本机目录。
+本机文件库打开可额外加载 `deploy/tools-native.compose.yaml`。隔离环境为 Tools、Identity 与原生入口分别设置用途限定凭据，Gateway 的独立回环监听登记 Tools 原生通道。Mac worker 由 `uv run python -m studio.host.project_files.tools_worker` 启动，使用明确指定的回环桥接地址、独占凭据文件、Assets 状态根目录和自有回执目录。容器只接收任务与回执。公网及 Management API Key 无权打开本机目录。
 
 隔离运行 `fpl-tools-native-245d307d35` 通过真实回环入口、签名账号会话和 Mac worker 逻辑完成目录请求。测试适配器记录了唯一的 Finder 启动参数，验证路径归属并拒绝浏览器访问原生入口。自动化用例另验证回执丢失后的恢复、过期未领取任务和公网管理员限制。
 
@@ -271,9 +271,9 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 迁移计划是 0600 的 JSON 文件，保存本次的 `run_id`、旧站提交 `source_revision`、源数据库摘要 `source_database_sha256`、已核对的账号 UUID 清单 `owner_ids` 和单次迁移专用随机 `token`。账号清单须来自已核验的 Identity 数据。分开启动两个维护进程，再运行传输程序。
 
 ```sh
-uv run python -m fpl_tools migration-export --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.tools.cli migration-export --migration-plan "$plan" \
   --legacy-db "$snapshot/future-props.db" --port 19561
-uv run python -m fpl_tools migration-import --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.tools.cli migration-import --migration-plan "$plan" \
   --state-root "$tools_state" --port 19562
 uv run python -m scripts.website.migrate_tools_navigation --plan "$plan" \
   --source http://127.0.0.1:19561 --target http://127.0.0.1:19562
@@ -286,9 +286,9 @@ uv run python -m scripts.website.migrate_tools_navigation --plan "$plan" \
 使用已核验的账号计划，先导入父目录，再导入素材记录，最后传输原件。记录保留 ID、项目作用域、目录、版本和时间戳。原件按账号及记录推导路径，逐个核对长度和 SHA256。传输流通过临时文件落盘并原子发布。已提交的原件按摘要重放。未知原件、跨账号目录、父目录冲突或仍待恢复的项目删除暂存都会停止迁移。
 
 ```sh
-uv run python -m fpl_assets migration-export --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.asset_library.cli migration-export --migration-plan "$plan" \
   --legacy-db "$snapshot/future-props.db" --port 19569
-uv run python -m fpl_assets migration-import --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.asset_library.cli migration-import --migration-plan "$plan" \
   --state-root "$assets_state" --port 19570
 uv run python -m scripts.website.migrate_assets --plan "$plan" \
   --source http://127.0.0.1:19569 --target http://127.0.0.1:19570
@@ -301,9 +301,9 @@ uv run python -m scripts.website.migrate_assets --plan "$plan" \
 与 Tools 使用同一份源快照和迁移计划。Identity 的账号数据集核对计划中的全部账号 UUID，随后导入 Studio 会话、Management API Key、加密 TOTP 登记和会话解锁记录。保留密码摘要、原账号 ID、角色、凭据范围、过期与撤销状态。旧站的会话保持 Studio 用途。管理中台需要其专用会话。凭据摘要和加密 TOTP 记录只通过显式回环维护进程传输，报告只保存数据集计数与批次摘要。
 
 ```sh
-uv run python -m fpl_identity migration-export --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.identity.cli migration-export --migration-plan "$plan" \
   --legacy-db "$snapshot/future-props.db" --port 19563
-uv run python -m fpl_identity migration-import --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.identity.cli migration-import --migration-plan "$plan" \
   --state-root "$identity_state" --port 19564
 uv run python -m scripts.website.migrate_identity --plan "$plan" \
   --source http://127.0.0.1:19563 --target http://127.0.0.1:19564
@@ -324,9 +324,9 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 目录按供应商分组、供应商、模型和账号目录修订的顺序导入。每个模型只能指向已导入的本账号供应商。保持原 ID、版本、能力配置和密文。目标维护进程用原配置的加密密钥验证每份供应商密文，错误密钥会阻止导入。维护配置由当前用户独占，包含目标数据库绝对路径及原密钥。
 
 ```sh
-uv run python -m fpl_models migration-export --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.model_service.cli migration-export --migration-plan "$plan" \
   --legacy-db "$snapshot/future-props.db" --port 19571
-uv run python -m fpl_models migration-import --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.model_service.cli migration-import --migration-plan "$plan" \
   --state-root "$models_state" --config "$models_config" --port 19572
 uv run python -m scripts.website.migrate_model_catalog --plan "$plan" \
   --source http://127.0.0.1:19571 --target http://127.0.0.1:19572
@@ -343,9 +343,9 @@ uv run python -m scripts.website.migrate_model_catalog --plan "$plan" \
 复用已封存快照和 Identity 确认过的账号计划。项目文档、修订号、动作和历史时间戳经回环维护接口迁移。每条记录独立分页，单条请求超过 32 MiB 会停止迁移。文件按账号以及项目或动作库分区传输，单文件上限与导演台日常上传一致。SHA256 校验通过后原子发布，再持久记录回执。相同文件重放时核对磁盘字节。未登记账号、项目引用缺失、额外目标文件、摘要不符或仍待恢复的删除暂存都会阻止验收。
 
 ```sh
-uv run python -m fpl_director migration-export --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.director_desk.cli migration-export --migration-plan "$plan" \
   --legacy-db "$snapshot/future-props.db" --port 19567
-uv run python -m fpl_director migration-import --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.director_desk.cli migration-import --migration-plan "$plan" \
   --state-root "$director_state" --port 19568
 uv run python -m scripts.website.migrate_director --plan "$plan" \
   --source http://127.0.0.1:19567 --target http://127.0.0.1:19568
@@ -363,13 +363,13 @@ uv run python -m scripts.website.migrate_director --plan "$plan" \
 
 运行 `npm run services:build:web -- agent-runtime`，用返回的 `--web-release` 构建 Agent Runtime 镜像。叠加 `deploy/agent-runtime.compose.yaml` 并配置自有状态目录、Identity 公钥和私有原生配置。Gateway 的回环原生入口使用单独 Agent Runtime 通道凭据，Identity 登记不同的服务凭据。容器只持有原生任务及回执。
 
-Mac worker 从 `uv run python -m fpl_host.agent_connections_worker` 启动，显式传入专用回环 `--bridge`、当前用户独占的 `--worker-token`、`--state-root` 及部署 `--config`。编程智能体目录、重新检测和启用沿用发布契约。本机管理员近期密码验证后可启用已安装及已登录的连接。写入前再次检查原会话，回执丢失后重放原结果。公开访问看不到可执行文件路径，也不能启用 CLI。项目和对话的原生执行能力仍是正式就绪门禁。
+Mac worker 从 `uv run python -m studio.host.agent_execution.agent_connections_worker` 启动，显式传入专用回环 `--bridge`、当前用户独占的 `--worker-token`、`--state-root` 及部署 `--config`。编程智能体目录、重新检测和启用沿用发布契约。本机管理员近期密码验证后可启用已安装及已登录的连接。写入前再次检查原会话，回执丢失后重放原结果。公开访问看不到可执行文件路径，也不能启用 CLI。项目和对话的原生执行能力仍是正式就绪门禁。
 
 三容器运行 `fpl-agent-runtime-browser-64ccdf16ce` 验证了 Mac 回环、隔离 TOML 写入和 Chromium 390px 浏览器启用流程。模拟 CLI 返回固定版本与模型，无须真实供应商凭据。定向测试覆盖公网路径遮蔽、写入前撤权及丢失回执后的恢复。
 
 ### Amadeus 记录服务
 
-运行 `npm run services:build -- amadeus --build` 并加载 `deploy/amadeus.compose.yaml`，为 Amadeus 提供独立状态目录、Identity 公钥和专属凭据。先显式执行服务迁移至 0002。三容器隔离运行 `fpl-amadeus-records-df66597c64` 验证网关账号鉴权、会话修订、旧模型协议的 410 响应和重启后的记录读回。当前装配包含全部 34 项公开操作，含分块导入、账号文件清单、按摘要保存、原件下载和登记业务操作的目录与读取。跨服务读取沿用同版本自动化白名单，并经 Identity 获取精确到目标方法和路径的身份凭据。Skill 通过同账号已启用版本的精确授权获取，校验 ZIP 摘要和文件清单后原子固定在对话目录。加载 `deploy/amadeus-native.compose.yaml` 并在网关登记 `amadeus` 回环通道后，Mac 运行 `uv run python -m fpl_host.amadeus_worker`，指定 `--bridge`、`--worker-token`、`--amadeus-root` 与独立 `--state-root`。浏览器 Finder 操作要求本机 Session 和实时复核。四容器隔离运行 `fpl-amadeus-native-6443e4d049` 已通过 Skill 固定版本、原生租约和重启验收。已批准的工作文件写入和脚本文件保存使用同一 CAS 领取与持久结算。登记跨服务动作使用绑定查询与正文摘要的 Identity 授权，未确认写入保留 unknown。外部工具经 Identity 的精确 Intent 和 Integrations 0010 持久回执执行，视频批次仍用 Video CAS。脚本由原生 worker 在账户会话沙箱执行并输出 NDJSON。隔离四容器 `fpl-amadeus-actions-ef92aa1d1c` 已验证真实 Mac 脚本 stdout 和结算。CLI 对话需要为同一 worker 传入 `--agent-config` 与 `--agent-state-root`，仅使用已登记的 CLI 连接及专用档案。就绪校验要求对话 worker；五容器隔离运行 `fpl-amadeus-dialogue-2a20d293a5` 验证实际 Mac App Server 子进程、受限工具、重启和 Portal 中 1440、768、390 像素的 Chromium 历史读回。
+运行 `npm run services:build -- amadeus --build` 并加载 `deploy/amadeus.compose.yaml`，为 Amadeus 提供独立状态目录、Identity 公钥和专属凭据。先显式执行服务迁移至 0002。三容器隔离运行 `fpl-amadeus-records-df66597c64` 验证网关账号鉴权、会话修订、旧模型协议的 410 响应和重启后的记录读回。当前装配包含全部 34 项公开操作，含分块导入、账号文件清单、按摘要保存、原件下载和登记业务操作的目录与读取。跨服务读取沿用同版本自动化白名单，并经 Identity 获取精确到目标方法和路径的身份凭据。Skill 通过同账号已启用版本的精确授权获取，校验 ZIP 摘要和文件清单后原子固定在对话目录。加载 `deploy/amadeus-native.compose.yaml` 并在网关登记 `amadeus` 回环通道后，Mac 运行 `uv run python -m studio.host.agent_execution.amadeus_worker`，指定 `--bridge`、`--worker-token`、`--amadeus-root` 与独立 `--state-root`。浏览器 Finder 操作要求本机 Session 和实时复核。四容器隔离运行 `fpl-amadeus-native-6443e4d049` 已通过 Skill 固定版本、原生租约和重启验收。已批准的工作文件写入和脚本文件保存使用同一 CAS 领取与持久结算。登记跨服务动作使用绑定查询与正文摘要的 Identity 授权，未确认写入保留 unknown。外部工具经 Identity 的精确 Intent 和 Integrations 0010 持久回执执行，视频批次仍用 Video CAS。脚本由原生 worker 在账户会话沙箱执行并输出 NDJSON。隔离四容器 `fpl-amadeus-actions-ef92aa1d1c` 已验证真实 Mac 脚本 stdout 和结算。CLI 对话需要为同一 worker 传入 `--agent-config` 与 `--agent-state-root`，仅使用已登记的 CLI 连接及专用档案。就绪校验要求对话 worker；五容器隔离运行 `fpl-amadeus-dialogue-2a20d293a5` 验证实际 Mac App Server 子进程、受限工具、重启和 Portal 中 1440、768、390 像素的 Chromium 历史读回。
 
 ### 旧站快照及恢复目录演练
 
@@ -395,7 +395,7 @@ uv run python -m scripts.website.legacy_snapshot restore \
 Remote 设置需要 0003 迁移及 `deploy/remote-settings.compose.yaml`。用独立原生凭据注册 Gateway 的 `remote` 回环通道。启动 Mac worker 时显式提供专用状态目录、原生 worker 凭据、权威部署 TOML 和预先创建的投影根目录。
 
 ```sh
-uv run python -m fpl_host.cloud_setup_worker \
+uv run python -m studio.host.deployment.cloud_setup_worker \
   --bridge "http://127.0.0.1:$native_port/remote" --worker-token "$remote_worker_token" \
   --state-root "$remote_worker_state" --config "$deployment_config" \
   --projections "$cloud_projection_root"
@@ -412,9 +412,9 @@ Guacamole 伴随进程使用 `deploy/remote-guacd.compose.yaml`。将已验收�
 历史桌面空闲偏好使用同一份已封存源和迁移计划，目标为已初始化且停止运行的 Remote 状态目录。
 
 ```sh
-uv run python -m fpl_remote migration-export --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.remote_desktop.cli migration-export --migration-plan "$plan" \
   --legacy-db "$snapshot/future-props.db" --port 19565
-uv run python -m fpl_remote migration-import --migration-plan "$plan" \
+uv run python -m studio.assembly.independent.remote_desktop.cli migration-import --migration-plan "$plan" \
   --state-root "$remote_state" --port 19566
 uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
   --source http://127.0.0.1:19565 --target http://127.0.0.1:19566
@@ -429,7 +429,7 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 隔离运行 `fpl-interview-browser-11cf956d81` 通过 Gateway、Identity 和 Interview 验证登录、材料上传下载、旧浏览器版本拒绝、回环公网入口、容器重启和 390/768/1440px Chromium 界面。浏览器版本为 `3c3351e4400104946723`，Interview 镜像为 `fpl/interview:2f0792d1f1351f07fbc6`。历史数据迁移和真实 Codex 连接仍由正式就绪门禁跟踪。
 
-启用执行时叠加 `deploy/interview-native.compose.yaml`。为 Gateway 的 Interview 原生回环入口、Identity 用途限定访问和每个 Mac worker 分别生成凭据。容器读取专用的 `FPL_INTERVIEW_NATIVE_OPTIONS`。Mac worker 用 `uv run python -m fpl_host.interview_worker` 启动，参数为 `--bridge`、`--worker-token`、`--state-root` 和 `--config`。回环地址须包含 `/interview`，凭据和配置须由当前用户独占。
+启用执行时叠加 `deploy/interview-native.compose.yaml`。为 Gateway 的 Interview 原生回环入口、Identity 用途限定访问和每个 Mac worker 分别生成凭据。容器读取专用的 `FPL_INTERVIEW_NATIVE_OPTIONS`。Mac worker 用 `uv run python -m studio.host.agent_execution.interview_worker` 启动，参数为 `--bridge`、`--worker-token`、`--state-root` 和 `--config`。回环地址须包含 `/interview`，凭据和配置须由当前用户独占。
 
 任务只向 worker 交付对应场次的冻结输入和原件。运行时复核账号权限并持续检查租约。重复回执复用已入库的交付。重启、超时、权限撤销和输入版本变化会终止旧任务或阻止其发布。真实供应商凭据和任务材料保持在隔离执行边界内。
 
@@ -552,7 +552,7 @@ Visual 生成任务与批次需要 `deploy/visual-generation.compose.yaml`。将
 
 视觉验收的固定模型回执使用 Models 的 0018 迁移。Models 只返回固定连接的公开投影，保留同账号同运行 ID 的精确请求摘要、结果和调用日志。中断后未知的供应商调用禁止重提。Rendering 通过 Assets 的同项目版本化原件进行基础取样，自动取样与手动区间取样分别授权。
 
-节点固定模型验收另需 Visual 的 0009 迁移。Visual 冻结画布和方案版本后登记原件，逐来源结算 Assets 证据回执，随后经 Identity 复核执行账号并调用固定模型。Visual 重启后从已有证据和模型回执续跑。隔离七容器运行 `fpl-visual-node-native-283354a174` 验证真实 FFmpeg 取样、封闭 SSE 夹具、Chromium 页面和重启后的证据摘要。Mac CLI 验收需要 `deploy/agent-runtime.compose.yaml`、Agent Runtime 的 0002 迁移及已登记的 Mac worker。以 `fpl_host.agent_connections_worker` 启动同一版本 worker，使用独占的 TOML 与原生凭据，固定连接由可信本机设置启用。Agent Runtime 只为仍有效的租约提供同项目保留素材。追加帧以 SHA256 核验，发布后由 Assets 持有。Agent Runtime 的暂存保留至执行截止后一小时供回执恢复。隔离七容器运行 `fpl-visual-native-agent-531ece22b9` 经回环原生网关启动真实受限 CLI 子进程，核验 MCP 媒体操作、追加帧摘要、容器重启和 Chromium 入口。
+节点固定模型验收另需 Visual 的 0009 迁移。Visual 冻结画布和方案版本后登记原件，逐来源结算 Assets 证据回执，随后经 Identity 复核执行账号并调用固定模型。Visual 重启后从已有证据和模型回执续跑。隔离七容器运行 `fpl-visual-node-native-283354a174` 验证真实 FFmpeg 取样、封闭 SSE 夹具、Chromium 页面和重启后的证据摘要。Mac CLI 验收需要 `deploy/agent-runtime.compose.yaml`、Agent Runtime 的 0002 迁移及已登记的 Mac worker。以 `studio.host.agent_execution.agent_connections_worker` 启动同一版本 worker，使用独占的 TOML 与原生凭据，固定连接由可信本机设置启用。Agent Runtime 只为仍有效的租约提供同项目保留素材。追加帧以 SHA256 核验，发布后由 Assets 持有。Agent Runtime 的暂存保留至执行截止后一小时供回执恢复。隔离七容器运行 `fpl-visual-native-agent-531ece22b9` 经回环原生网关启动真实受限 CLI 子进程，核验 MCP 媒体操作、追加帧摘要、容器重启和 Chromium 入口。
 
 Visual 助手的私网模型轮次需要 Models 的 0019 迁移。Models 绑定账号、项目、对话和运行，持有固定模型签名、额度和唯一调用日志。已完成轮次可按相同摘要重放，提交中断的轮次保持结果未知。公开消息流与审批继续使用原 URL 和 SSE v2 事件。
 
@@ -574,8 +574,8 @@ Galgame 快照 ZIP 导入使用 `deploy/galgame-snapshots.compose.yaml`，与 `d
 
 ### Agent 工作台的项目发现
 
-启动前应用 Agents 的 0004 迁移，并叠加 `deploy/agents-execution.compose.yaml`。将 `FPL_AGENTS_EXECUTION_WORKERS` 指向独立执行凭据文件。Mac 的 `fpl_host.workbench_worker` 通过同版本回环网关领取任务，使用可信本机 TOML 核对允许的目录、项目和 CLI。公网仅能看到当前账号授权的预设项目，创建对话需有效的云控解锁。登记目录仅允许可信本机入口。另需应用 Agents 的 0005 迁移。执行 worker 同时轮询目录和轮次通道。运行撤权、失败或服务重启时队列暂停，用户重新解锁后可恢复。源码预览只为持有相应活动的账号从受管项目读取。
+启动前应用 Agents 的 0004 迁移，并叠加 `deploy/agents-execution.compose.yaml`。将 `FPL_AGENTS_EXECUTION_WORKERS` 指向独立执行凭据文件。Mac 的 `studio.host.agent_execution.workbench_worker` 通过同版本回环网关领取任务，使用可信本机 TOML 核对允许的目录、项目和 CLI。公网仅能看到当前账号授权的预设项目，创建对话需有效的云控解锁。登记目录仅允许可信本机入口。另需应用 Agents 的 0005 迁移。执行 worker 同时轮询目录和轮次通道。运行撤权、失败或服务重启时队列暂停，用户重新解锁后可恢复。源码预览只为持有相应活动的账号从受管项目读取。
 
 ### Agent 工作台历史维护
 
-应用 Agents 的 0006 迁移后，使用同一迁移计划分别启动 `python -m fpl_agents migration-export` 与 `python -m fpl_agents migration-import` 的独立回环端口。导出端只接受已封存的兼容数据库，目标端只挂载 Agents 状态目录。执行 `uv run python -m scripts.website.migrate_agents_history` 并传入计划和两端地址。重复执行复用同批回执。核对账号归属、历史记录和重建索引摘要后，才启动普通业务入口。旧待执行队列需重新授权后恢复。
+应用 Agents 的 0006 迁移后，使用同一迁移计划分别启动 `python -m studio.assembly.independent.agent_workbench.cli migration-export` 与 `python -m studio.assembly.independent.agent_workbench.cli migration-import` 的独立回环端口。导出端只接受已封存的兼容数据库，目标端只挂载 Agents 状态目录。执行 `uv run python -m scripts.website.migrate_agents_history` 并传入计划和两端地址。重复执行复用同批回执。核对账号归属、历史记录和重建索引摘要后，才启动普通业务入口。旧待执行队列需重新授权后恢复。

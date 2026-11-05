@@ -11,8 +11,8 @@ from tests.test_account_system import create_test_account, login_and_change_pass
 from tests.test_knowledge_community import COMM, ROOT
 from tests.test_knowledge_community import community as community
 
-from app.apps.thought_workshop.publication.access import effective_role
 from app.main import app
+from studio.apps.thought_workshop.publication.access import effective_role
 
 pytestmark = [pytest.mark.asyncio, pytest.mark.real_auth]
 
@@ -177,7 +177,7 @@ async def test_import_replays_concurrent_requests_and_resolves_only_visible_publ
 
 
 async def test_import_failure_rolls_back_content_mapping_and_receipt(administrator, monkeypatch):
-    from app.apps.thought_workshop.publication import imports
+    from studio.apps.thought_workshop.publication import imports
 
     c = administrator
     before = (await c.get(ROOT + "/knowledge-bases")).json()

@@ -12,7 +12,6 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, HTTPException
 
-from app.capabilities.identity.permissions import role_scopes
 from app.llm.catalog.http_bindings import CatalogBindings
 from app.llm.models import (
     LocalModelInstallation,
@@ -22,17 +21,18 @@ from app.llm.models import (
     ModelSupplier,
 )
 from app.llm.routes.models import catalog, suppliers
-from app.problem_details import http_exception_handler, revision_conflict_handler
-from app.runtime.orm_base import Base
-from app.runtime.revisions import RevisionConflictError
-from fpl_models.defaults import OwnedCatalogDefaults
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import AccountDefaults
-from fpl_runtime.authentication import SignedIdentity
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.model_service.defaults import OwnedCatalogDefaults
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import AccountDefaults
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.contracts.identity.permissions import role_scopes
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.orm_base import Base
+from studio.runtime.database.sessions import Database
+from studio.runtime.http.authentication import SignedIdentity
+from studio.runtime.http.problem_details import http_exception_handler, revision_conflict_handler
+from studio.runtime.revisions import RevisionConflictError
 
 assert "app.runtime.db" not in sys.modules
 assert "app.console.models.accounts" not in sys.modules

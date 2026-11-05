@@ -33,22 +33,27 @@ from tests.test_community_asset_protocol import CATALOG, Mesh
 from tests.test_tools_navigation_migration import available_ports, listener
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
-from fpl_assets.application import create_app as create_assets
-from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
-from fpl_assets.settings import StorageSettings
-from fpl_motion.application import create_app as create_motion
-from fpl_motion.migrations.registry import MIGRATIONS as MOTION_MIGRATIONS
-from fpl_rendering.application import create_app as create_rendering
-from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
-from fpl_rendering.settings import RenderingSettings
-from fpl_runtime.capability_client import CapabilityClient
-from fpl_runtime.claims import HEADER, Actor, issue_context, verify_context
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migration_batches import MigrationPlan
-from fpl_runtime.migrations import apply
-from fpl_runtime.video_segments import bundle_grant
-from fpl_video.application import create_app as create_video
-from fpl_video.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.media_rendering.settings import RenderingSettings
+from studio.apps.media_rendering.storage.migrations.registry import (
+    MIGRATIONS as RENDERING_MIGRATIONS,
+)
+from studio.apps.motion_compositor.storage.migrations.registry import (
+    MIGRATIONS as MOTION_MIGRATIONS,
+)
+from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS as VIDEO_MIGRATIONS
+from studio.assembly.independent.asset_library.application import create_app as create_assets
+from studio.assembly.independent.media_rendering.application import create_app as create_rendering
+from studio.assembly.independent.motion_compositor.application import create_app as create_motion
+from studio.assembly.independent.video_editor.application import create_app as create_video
+from studio.contracts.identity.claims import HEADER, Actor, issue_context, verify_context
+from studio.contracts.management.migration_batches import MigrationPlan
+from studio.contracts.video_editor.video_segments import bundle_grant
+from studio.deployment.images import ENTRY_POINTS
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityClient
 
 MOTION_PROJECTS = "/v1/motion-compositor/projects"
 VIDEO_PROJECTS = "/v1/video-editor/projects"
@@ -276,7 +281,7 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
                         plan_path,
                         "--legacy-db",
                         legacy_db,
-                        module=f"fpl_{service}",
+                        module=ENTRY_POINTS[service],
                         prefix=prefix,
                     )
                 ),
@@ -288,7 +293,7 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
                         plan_path,
                         "--state-root",
                         target,
-                        module=f"fpl_{service}",
+                        module=ENTRY_POINTS[service],
                         prefix=prefix,
                     )
                 ),
@@ -335,7 +340,7 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
                 plan_path,
                 "--state-root",
                 rendering_root,
-                module="fpl_rendering",
+                module="studio.assembly.independent.media_rendering.cli",
                 prefix=MOTION_OUTPUTS.prefix,
             )
         )

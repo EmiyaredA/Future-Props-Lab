@@ -16,25 +16,27 @@ from app.console.models.accounts import SecurityAuditEvent
 from app.integrations.models import ToolApiIntegration
 from app.llm.models import RuntimeAdmission
 from app.runtime.config import Settings
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app as identity_app
-from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-from fpl_integrations.application import create_app as integrations_app
-from fpl_integrations.demo_records import DemoToolInstallation
-from fpl_integrations.migrations.registry import MIGRATIONS as INTEGRATION_MIGRATIONS
-from fpl_integrations.validation import ValidationCapacityClient
-from fpl_models.application import create_app as models_app
-from fpl_models.audit_client import ModelAuditClient
-from fpl_models.audit_delivery import ModelAuditDelivery
-from fpl_models.demo_installations import DemoInstallClient
-from fpl_models.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
-from fpl_models.templates import initialize_account_catalog
-from fpl_runtime.capability_client import CapabilityClient
-from fpl_runtime.claims import HEADER
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.integration_client import IntegrationIntentClient
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from studio.apps.integrations.clients.authority import IntegrationIntentClient
+from studio.apps.integrations.storage.demo_records import DemoToolInstallation
+from studio.apps.integrations.storage.migrations.registry import (
+    MIGRATIONS as INTEGRATION_MIGRATIONS,
+)
+from studio.apps.integrations.validation import ValidationCapacityClient
+from studio.apps.model_service.audit.audit_client import ModelAuditClient
+from studio.apps.model_service.audit.audit_delivery import ModelAuditDelivery
+from studio.apps.model_service.demo_installations import DemoInstallClient
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
+from studio.apps.model_service.templates import initialize_account_catalog
+from studio.assembly.independent.identity.application import create_app as identity_app
+from studio.assembly.independent.integrations.application import create_app as integrations_app
+from studio.assembly.independent.model_service.application import create_app as models_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityClient
 
 
 class Mesh(httpx.AsyncBaseTransport):

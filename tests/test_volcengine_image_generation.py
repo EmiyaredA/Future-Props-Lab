@@ -6,16 +6,16 @@ import httpx
 import pytest
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
-from app.apps.visual_workshop.generation import GenerationError, VisualGeneration
-from app.apps.visual_workshop.models import VisualCanvasDocument, VisualWorkshopProject
 from app.capabilities.asset_store.models import VisualAsset
 from app.llm.generation_runtime import ImmediateGenerationResult
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, generate_image
-from app.llm.schemas.generation_tasks import ImageGenerationTaskCreateIn
 from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
+from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
+from studio.contracts.model_service.generation_tasks import ImageGenerationTaskCreateIn
 
 
 @pytest.mark.asyncio

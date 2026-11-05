@@ -2,7 +2,6 @@
 
 from typing import Protocol
 
-from app.capabilities.identity.principal import StudioPrincipal
 from app.console.creative_workshop.catalog import CreativeError
 from app.console.creative_workshop.schemas import (
     CreativeInstallOut,
@@ -10,6 +9,7 @@ from app.console.creative_workshop.schemas import (
     CreativeInstallPreviewOut,
     CreativeStdioSetupIn,
 )
+from studio.contracts.identity.principal import StudioPrincipal
 
 
 class CreativeInstallationPort(Protocol):

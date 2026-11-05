@@ -34,9 +34,9 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetReferencePatchIn,
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION
-from app.runtime.orm_base import Base
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import utc_now
+from studio.runtime.database.orm_base import Base
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import utc_now
 
 
 class VisualAssets(AssetFolders):

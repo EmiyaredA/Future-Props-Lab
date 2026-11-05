@@ -42,7 +42,6 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetOut,
     VisualAssetPatchIn,
 )
-from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
 from app.capabilities.asset_store.thumbnails import ThumbnailSize, thumbnail
 from app.console.file_library import (
     LibraryFolderArchive,
@@ -50,6 +49,7 @@ from app.console.file_library import (
 )
 from app.deps import OwnerDep, SessionDep, StudioAuth, require_recent_reauthentication
 from app.runtime.config import get_settings
+from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter(tags=["file-management"])
 

@@ -16,11 +16,11 @@ from tests.test_community_asset_protocol import (  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.asset_store.library import AssetLibrary
-from fpl_annotation.application import create_app
-from fpl_annotation.migrations.registry import MIGRATIONS
-from fpl_runtime.annotation_assets import SOURCE
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
+from studio.apps.audio_annotation.storage.migrations.registry import MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.assembly.independent.audio_annotation.application import create_app
+from studio.contracts.asset_library.annotation import SOURCE
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 PROJECTS = f"{SOURCE}/projects"

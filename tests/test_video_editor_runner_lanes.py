@@ -6,9 +6,9 @@ import pytest
 import pytest_asyncio
 from sqlalchemy import delete
 
-from app.apps.video_editor.models import VideoEditorProject, VideoEditorTask
-from app.apps.video_editor.runner import VideoEditorRunner
 from app.runtime.db import SessionLocal
+from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.apps.video_editor.storage.models import VideoEditorProject, VideoEditorTask
 
 
 @pytest_asyncio.fixture(autouse=True)

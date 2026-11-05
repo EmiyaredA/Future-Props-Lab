@@ -10,9 +10,6 @@ import pytest
 from pydantic import ValidationError
 from tests.test_generation_task_driver import FakeStore, _driver, _task
 
-from app.apps.visual_workshop.generation import VisualGeneration
-from app.apps.visual_workshop.models import VisualWorkshopProject
-from app.apps.visual_workshop.schemas.workshop import VisualCanvasVideoGenerationDraft
 from app.llm.inference.catalog import normalize_parameters
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.playground.generation import ModelTestGeneration
@@ -27,13 +24,16 @@ from app.llm.providers.autodl_workflows import (
     prepare_payload,
     validate_references,
 )
-from app.llm.schemas.generation_tasks import VideoGenerationTaskCreateIn
 from app.llm.schemas.model_inference import InferenceTaskIn
 from app.llm.schemas.model_service import ProviderIn
 from app.llm.schemas.model_test import ModelTestVideoGenerationIn
 from app.orm import bind_owner
 from app.runtime.credentials import encrypt_secret
 from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.schemas.workshop import VisualCanvasVideoGenerationDraft
+from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
+from studio.apps.visual_workshop.website.generation import VisualGeneration
+from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
 
 
 def request(model):
@@ -235,7 +235,7 @@ def test_canvas_long_prompt_versions_roundtrip_and_existing_draft_limits():
         .prompt
         == "x" * 20000
     )
-    from app.apps.visual_workshop.schemas.workshop import VisualCanvasImageGenerationDraft
+    from studio.apps.visual_workshop.schemas.workshop import VisualCanvasImageGenerationDraft
 
     with pytest.raises(ValidationError):
         VisualCanvasImageGenerationDraft(prompt="x" * 6001)
@@ -246,11 +246,11 @@ def test_canvas_long_prompt_versions_roundtrip_and_existing_draft_limits():
 async def test_options_and_all_admission_paths_share_the_contract(model_slug):
     from sqlalchemy import delete
 
-    from app.apps.visual_workshop.models import VisualGenerationTask
     from app.capabilities.asset_store.models import VisualAsset
     from app.capabilities.asset_store.storage import AssetStorage
     from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
     from app.runtime.config import get_settings
+    from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 
     async with SessionLocal() as session:
         bind_owner(session, "test-user")
@@ -403,10 +403,10 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
 
 @pytest.mark.asyncio
 async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upload(monkeypatch):
-    from app.apps.visual_workshop import generation_runner as visual_module
     from app.llm import visual_generation_submission as visual_submission
     from app.llm.inference import runner as inference_module
     from app.llm.playground import generation_runner as test_module
+    from studio.apps.visual_workshop.website import generation_runner as visual_module
 
     captured = []
 
@@ -480,9 +480,9 @@ async def test_recovery_never_resubmits_and_existing_result_only_retries_downloa
 
 @pytest.mark.asyncio
 async def test_canvas_frame_links_preserve_roles_order_snapshot_and_cas():
-    from app.apps.visual_workshop.models import VisualCanvasDocument
-    from app.apps.visual_workshop.outputs.history import OutputError
-    from app.apps.visual_workshop.outputs.references import resolve_references
+    from studio.apps.visual_workshop.outputs.history import OutputError
+    from studio.apps.visual_workshop.outputs.references import resolve_references
+    from studio.apps.visual_workshop.storage.models import VisualCanvasDocument
 
     canvas = SimpleNamespace(
         revision=3,

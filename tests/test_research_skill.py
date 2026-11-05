@@ -150,8 +150,8 @@ def test_malformed_nested_fields_produce_errors(value):
 
 
 def test_table_templates_follow_native_table_and_view_validation():
-    from app.apps.thought_workshop.multitable.schemas import TableSpec
-    from app.apps.thought_workshop.multitable.validation import validate_table
+    from studio.apps.thought_workshop.multitable.schemas import TableSpec
+    from studio.apps.thought_workshop.multitable.validation import validate_table
 
     templates = json.loads((SKILL / "assets/ledger-tables.json").read_text())
     assert len({table["id"] for table in templates}) == len(templates)

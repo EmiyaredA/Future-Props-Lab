@@ -4,7 +4,7 @@ import pytest
 from cryptography.fernet import Fernet
 
 from app.runtime.config import Settings
-from fpl_config import ConfigurationError, read_config
+from studio.config import ConfigurationError, read_config
 
 ORIGIN = "https://studio.example.test"
 

@@ -63,14 +63,14 @@ ignore = ["B008"]
 "db/migrations/versions/r0060_model_inference.py" = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "db"]
+known-first-party = ["app", "db", "studio"]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["backend/app", "backend/fpl_config", "backend/fpl_runtime", "backend/fpl_deployment", "backend/fpl_identity", "backend/fpl_agents", "backend/fpl_host", "backend/fpl_gateway", "backend/fpl_assets", "backend/fpl_portal", "backend/fpl_management", "backend/fpl_rendering", "backend/fpl_models", "backend/fpl_thought", "backend/fpl_integrations", "backend/fpl_creative", "backend/fpl_visual", "backend/fpl_galgame", "backend/fpl_tools", "backend/fpl_director", "backend/fpl_agent_runtime", "backend/fpl_remote", "backend/fpl_video", "db"]
+packages = ["backend/app", "backend/studio", "db"]
 
 [tool.uv.sources]
 future-props-lab-sdk = { path = "sdk/python", editable = true }

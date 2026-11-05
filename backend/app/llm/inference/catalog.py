@@ -14,15 +14,15 @@ from app.llm.providers.local_qwen import speech_parameters
 from app.llm.providers.seedance_parameters import normalize_video_parameters, video_capabilities
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.providers.volcengine_image import SEEDREAM_MODEL, SEEDREAM_SIZES
-from app.llm.schemas.generation_tasks import (
-    AudioGenerationTaskCreateIn,
-    ImageGenerationTaskCreateIn,
-    VideoGenerationTaskCreateIn,
-)
 from app.llm.schemas.local_models import SpeechSynthesisParameters
 from app.llm.schemas.model_inference import InferenceModelOut, InferenceOptionsOut, InferenceTextIn
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import OperationError
+from studio.contracts.model_service.generation_tasks import (
+    AudioGenerationTaskCreateIn,
+    ImageGenerationTaskCreateIn,
+    VideoGenerationTaskCreateIn,
+)
 
 GENERATION_KINDS = {
     "senseaudio_image": "image",

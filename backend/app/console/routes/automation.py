@@ -17,7 +17,7 @@ from app.console.schemas.automation import (
 from app.deps import SessionDep, StudioAuth
 from app.runtime.operation_receipts import OperationError
 from app.runtime.website import require_local_browser
-from fpl_runtime.service_status import ServicesStatusOut, monolith_status, status_time
+from studio.contracts.gateway.service_status import ServicesStatusOut, monolith_status, status_time
 
 router = APIRouter(prefix="/automation", tags=["automation"])
 

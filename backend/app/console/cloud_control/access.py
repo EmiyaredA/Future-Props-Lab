@@ -12,8 +12,8 @@ from sqlalchemy import delete, select, text
 from app.console.models.accounts import AuthSession, User
 from app.runtime.config import get_cloud_settings
 from app.runtime.credentials import decrypt_secret, encrypt_secret
-from app.runtime.time import utc_now
-from fpl_runtime.cloud_authority import TICKET_SECONDS as TICKET_SECONDS
+from studio.contracts.identity.cloud_authority import TICKET_SECONDS as TICKET_SECONDS
+from studio.runtime.time import utc_now
 
 from .models import CloudFactor, CloudUnlock
 

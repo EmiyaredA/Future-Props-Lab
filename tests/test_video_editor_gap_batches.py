@@ -9,8 +9,8 @@ import httpx
 import pytest
 from PIL import Image
 
-from app.apps.video_editor.runner import VideoEditorRunner
 from app.main import app
+from studio.apps.video_editor.runner import VideoEditorRunner
 
 
 def picture(clip_id, start, duration=100_003):

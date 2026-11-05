@@ -10,9 +10,10 @@ from tempfile import TemporaryDirectory
 from anyio.to_thread import run_sync
 from PIL import Image
 
+from studio.contracts.media_rendering.output_formats import OUTPUT_NAMES
+
 from .motion_document import MotionComposition
 from .motion_frames import MotionFrameRenderer
-from .motion_output_formats import OUTPUT_NAMES
 
 
 def encode_video(frames: Path, output: Path, fps: int, format_name: str) -> None:

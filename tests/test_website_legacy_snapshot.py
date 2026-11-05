@@ -30,18 +30,21 @@ from scripts.website.migration_transfer import pages, transfer
 from tests.presentation_helpers import element, sample_document
 from tests.test_tools_navigation_migration import available_ports, listener
 
-from app.apps.presentation_workshop.templates.schema import TemplateDefinition
-from fpl_assets.migration_blobs import BLOBS as ASSET_BLOBS
-from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
-from fpl_director.migration_files import FILES as DIRECTOR_FILES
-from fpl_director.migrations.registry import MIGRATIONS as DIRECTOR_MIGRATIONS
-from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-from fpl_models.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
-from fpl_presentation.migrations.registry import MIGRATIONS as PRESENTATION_MIGRATIONS
-from fpl_remote.migrations.registry import MIGRATIONS as REMOTE_MIGRATIONS
-from fpl_runtime.migration_batches import MigrationPlan
-from fpl_runtime.migrations import apply
-from fpl_tools.migrations.registry import MIGRATIONS as TOOLS_MIGRATIONS
+from studio.apps.asset_library.migration_blobs import BLOBS as ASSET_BLOBS
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.director_desk.migration_files import FILES as DIRECTOR_FILES
+from studio.apps.director_desk.storage.migrations.registry import MIGRATIONS as DIRECTOR_MIGRATIONS
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
+from studio.apps.presentation_workshop.storage.migrations.registry import (
+    MIGRATIONS as PRESENTATION_MIGRATIONS,
+)
+from studio.apps.presentation_workshop.templates.schema import TemplateDefinition
+from studio.apps.remote_desktop.storage.migrations.registry import MIGRATIONS as REMOTE_MIGRATIONS
+from studio.apps.tools.storage.migrations.registry import MIGRATIONS as TOOLS_MIGRATIONS
+from studio.contracts.management.migration_batches import MigrationPlan
+from studio.deployment.images import ENTRY_POINTS
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 PASSWORD = "Isolated-rollback-credential-2026!"
@@ -148,7 +151,7 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
         root = parent / f"independent-{service}"
         apply(root / "service.db", service, migrations)
         source_port, target_port = available_ports()
-        settings = {"module": f"fpl_{service}", "prefix": datasets[0].prefix}
+        settings = {"module": ENTRY_POINTS[service], "prefix": datasets[0].prefix}
         flags = ()
         if service == "models":
             config_file = parent / "models-maintenance.toml"
@@ -299,7 +302,7 @@ def verify_presentation_references(client, parent, plan_path, plan, source, acco
         plan_path,
         "--state-root",
         parent / "independent-assets",
-        module="fpl_assets",
+        module="studio.assembly.independent.asset_library.cli",
         prefix=projects.prefix,
     ) as assets:
         headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
@@ -328,7 +331,7 @@ def verify_presentation_references(client, parent, plan_path, plan, source, acco
         plan_path,
         "--state-root",
         parent / "independent-assets",
-        module="fpl_assets",
+        module="studio.assembly.independent.asset_library.cli",
         prefix=projects.prefix,
     ) as assets:
         records = [

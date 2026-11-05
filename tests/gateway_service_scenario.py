@@ -10,13 +10,13 @@ from uuid import uuid4
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from fpl_gateway.application import create_app
-from fpl_gateway.migrations.registry import MIGRATIONS
-from fpl_gateway.service_status import ServiceMonitor
-from fpl_runtime.claims import Actor, issue_context, verify_context
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
-from fpl_runtime.service_status import DeploymentServicesOut
+from studio.apps.gateway.service_status import ServiceMonitor
+from studio.apps.gateway.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.gateway.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.gateway.service_status import DeploymentServicesOut
+from studio.contracts.identity.claims import Actor, issue_context, verify_context
+from studio.runtime.database.migrations import apply
 
 assert "app.main" not in sys.modules and "app.orm" not in sys.modules
 assert "app.console.models.accounts" not in sys.modules

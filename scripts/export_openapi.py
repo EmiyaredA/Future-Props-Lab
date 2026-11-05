@@ -15,7 +15,7 @@ os.environ["FPL_STUDIO_TOKEN"] = ""
 from fastapi import FastAPI  # noqa: E402
 
 from app.main import app  # noqa: E402
-from fpl_management.routes import router as management_router  # noqa: E402
+from studio.apps.management.transport.service import router as management_router  # noqa: E402
 
 
 def management_schema():

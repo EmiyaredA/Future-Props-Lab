@@ -67,6 +67,6 @@ erDiagram
 
 ## 代码入口
 
-1. `backend/app/apps/thought_workshop/models.py`
-2. `backend/app/apps/thought_workshop/notes.py`
+1. `backend/studio/apps/thought_workshop/storage/models.py`
+2. `backend/studio/apps/thought_workshop/notes.py`
 3. `backend/app/capabilities/asset_store/models.py`

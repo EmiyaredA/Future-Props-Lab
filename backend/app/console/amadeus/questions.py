@@ -8,7 +8,7 @@ from app.console.amadeus.models import AmadeusQuestion, AmadeusRun
 from app.console.amadeus.run_records import RunRecords as Runs
 from app.console.amadeus.schemas import QuestionAnswerIn, QuestionIn, QuestionOut
 from app.runtime.operation_receipts import OperationError
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 def _out(row: AmadeusQuestion) -> QuestionOut:

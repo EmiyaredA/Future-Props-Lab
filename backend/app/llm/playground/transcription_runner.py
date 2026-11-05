@@ -24,9 +24,9 @@ from app.llm.schemas.model_test import ModelTestTranscriptionResultDetailOut
 from app.llm.task_outcomes import TaskClaimRejected
 from app.runtime.config import Settings, get_settings
 from app.runtime.credentials import decrypt_secret
-from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.task_records import load_runner_task, recovery_accounts
-from app.runtime.time import utc_now
+from studio.runtime.tasks.polling import PollingTaskRunner
+from studio.runtime.time import utc_now
 
 
 class ModelTestTranscriptionRunner(PollingTaskRunner):

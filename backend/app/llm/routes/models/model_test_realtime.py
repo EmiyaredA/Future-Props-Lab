@@ -4,13 +4,13 @@ from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, WebSocket
 
-from app.capabilities.identity.errors import AccountError
 from app.deps import SessionDep, StudioAuth, resolve_studio_websocket_principal
 from app.llm.admission import admission_for
 from app.llm.http_credentials import socket_credential
 from app.llm.realtime import list_realtime_models, run_realtime_model_test
 from app.llm.schemas.realtime_voice import RealtimeVoiceOptionsOut
 from app.runtime.config import get_settings
+from studio.contracts.identity.errors import AccountError
 
 router = APIRouter(tags=["model-test"])
 

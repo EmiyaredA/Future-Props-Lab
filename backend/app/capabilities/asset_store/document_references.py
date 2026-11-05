@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.library import AssetError
-from app.runtime.orm_base import Base
+from studio.runtime.database.orm_base import Base
 
 
 async def protect_document_references(session: AsyncSession, asset_ids: list[str]) -> None:

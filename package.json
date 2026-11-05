@@ -61,7 +61,7 @@
     "images:check": "uv run python scripts/generate_image_variants.py --check",
     "start:legacy": "uv run python scripts/website/serve.py",
     "management:start": "uv run python scripts/management/start.py --only-management",
-    "management:worker": "uv run python -m fpl_host.management",
+    "management:worker": "uv run python -m studio.assembly.host.management",
     "build:management": "npm run build:service --workspace web -- management",
     "website:service:legacy": "uv run python scripts/website/service.py"
   },

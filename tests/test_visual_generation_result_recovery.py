@@ -4,9 +4,9 @@ import httpx
 import pytest
 from sqlalchemy import func, select
 
-from app.apps.visual_workshop.models import VisualGenerationTask
 from app.main import app
 from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 
 
 async def fixture_task(

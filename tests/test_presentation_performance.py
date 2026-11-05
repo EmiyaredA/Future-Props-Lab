@@ -10,8 +10,8 @@ from pathlib import Path
 import pytest
 from tests.presentation_helpers import element
 
-from app.apps.presentation_workshop.exports import build_export
-from app.apps.presentation_workshop.schemas.document import PresentationProjectOut
+from studio.apps.presentation_workshop.exports import build_export
+from studio.apps.presentation_workshop.schemas.document import PresentationProjectOut
 
 
 @pytest.mark.skipif(

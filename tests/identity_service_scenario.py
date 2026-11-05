@@ -14,15 +14,21 @@ import jwt
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app
-from fpl_identity.migrations.registry import MIGRATIONS
-from fpl_identity.models import AccountEvent
-from fpl_runtime.claims import HEADER, issue_context, verify_context
-from fpl_runtime.creative_install_evidence import INSTALL_PATH, verify_install_evidence
-from fpl_runtime.creative_source_evidence import SOURCE_PATH, verify_source_evidence
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS
+from studio.apps.identity.storage.service_models import AccountEvent
+from studio.assembly.independent.identity.application import create_app
+from studio.contracts.creative_workshop.creative_install_evidence import (
+    INSTALL_PATH,
+    verify_install_evidence,
+)
+from studio.contracts.creative_workshop.creative_source_evidence import (
+    SOURCE_PATH,
+    verify_source_evidence,
+)
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER, issue_context, verify_context
+from studio.runtime.database.migrations import apply
 
 state = Path(os.environ["IDENTITY_TEST_ROOT"])
 assert "app.main" not in sys.modules
@@ -61,9 +67,13 @@ password = "Identity-Test-Password-2026!"
 
 
 async def creative_catalog(browser, unsafe, owner):
-    from fpl_creative.application import create_app as create_creative
-    from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
-    from fpl_runtime.creative_authors import ITEM, PATH
+    from studio.apps.creative_workshop.storage.migrations.registry import (
+        MIGRATIONS as CREATIVE_MIGRATIONS,
+    )
+    from studio.assembly.independent.creative_workshop.application import (
+        create_app as create_creative,
+    )
+    from studio.contracts.creative_workshop.creative_authors import ITEM, PATH
 
     root = state.parent / "creative"
     credential = "creative-test-service-credential-123456"
@@ -555,12 +565,12 @@ async def scenario():
                 == owner
             )
             from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
-            from fpl_creative.install_authorization import (
+            from studio.apps.creative_workshop.install_authorization import (
                 IdentityInstallAuthorization,
                 InstallAuthorizationDenied,
                 InstallSource,
             )
-            from fpl_runtime.identity_client import LiveAuthorization
+            from studio.apps.identity.clients.authorization import LiveAuthorization
 
             live_creative = LiveAuthorization(
                 service="creative",

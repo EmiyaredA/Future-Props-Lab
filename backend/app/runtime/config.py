@@ -10,8 +10,8 @@ from cryptography.fernet import Fernet
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from fpl_config import CONFIG_FILE, ConfigurationError, read_config
-from fpl_config.cloud_projection import CloudProjection
+from studio.config import CONFIG_FILE, ConfigurationError, read_config
+from studio.config.cloud_projection import CloudProjection
 
 REPO_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
 

@@ -2,8 +2,8 @@
 
 import pytest
 
-from fpl_host import deployment_preflight
-from fpl_runtime.catalog import BY_ID
+from studio.contracts.gateway.catalog import BY_ID
+from studio.host.deployment import deployment_preflight
 
 
 def test_all_selected_service_databases_are_checked_without_writing(monkeypatch, tmp_path):
@@ -58,10 +58,10 @@ def test_unknown_configured_service_and_missing_state_fail_closed(monkeypatch, t
 
 
 def test_real_outdated_service_schema_is_rejected_without_migrating(tmp_path):
-    from fpl_agents.migrations.registry import MIGRATIONS as AGENTS
-    from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY
-    from fpl_management.migrations.registry import MIGRATIONS as MANAGEMENT
-    from fpl_runtime.migrations import apply
+    from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS as AGENTS
+    from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY
+    from studio.apps.management.storage.migrations.registry import MIGRATIONS as MANAGEMENT
+    from studio.runtime.database.migrations import apply
 
     for service, registry in (
         ("identity", IDENTITY),
@@ -97,7 +97,7 @@ def test_launcher_does_not_invoke_compose_when_selected_database_fails(monkeypat
         start, "read_config", lambda _path: {"fpl_deployment_environment": environment}
     )
     monkeypatch.setattr(
-        "fpl_host.management.configuration", lambda _path: ({}, control, None, tmp_path)
+        "studio.assembly.host.management.configuration", lambda _path: ({}, control, None, tmp_path)
     )
     monkeypatch.setattr(start, "service_lock", lambda _state: nullcontext())
     monkeypatch.setattr(sys, "argv", ["start", "--config", str(config)])

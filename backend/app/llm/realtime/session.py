@@ -29,8 +29,8 @@ from app.llm.providers.realtime.constants import (
 from app.llm.providers.realtime.contracts import RealtimeProviderUnavailableError
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.catalog import RealtimeModelUnavailableError, resolve_realtime_model
-from app.runtime.ids import new_id
 from app.runtime.ownership import bind_owner
+from studio.runtime.ids import new_id
 
 PERMISSION_RECHECK_SECONDS = 5
 

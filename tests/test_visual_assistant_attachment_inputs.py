@@ -11,18 +11,18 @@ from tests.test_visual_compositions_service import png
 from tests.test_visual_node_review_service import review_mesh
 
 from app.capabilities.agents.harness import ToolExecutionContext
-from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.capability_client import CapabilityDenied
-from fpl_runtime.claims import HEADER
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.visual_assistant import (
+from studio.apps.visual_workshop.assistant.assistant_canvas_actions import AssistantCanvasActions
+from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.contracts.visual_workshop.visual_assistant import (
     INPUT_PURPOSE,
     SOURCE,
     AttachmentInputQuery,
     CanvasAssetSearch,
     approval_path,
 )
-from fpl_visual.assistant_canvas_actions import AssistantCanvasActions
+from studio.runtime.http.capability_client import CapabilityDenied
 
 
 async def test_visual_assistant_reads_only_prepared_project_attachments(

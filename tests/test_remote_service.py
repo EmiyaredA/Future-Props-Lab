@@ -9,13 +9,13 @@ from tests.test_independent_project_catalog import authorize
 
 from app.console.cloud_control.desktop_bridge import GuacdReader, instruction
 from app.runtime.config import get_settings
-from fpl_identity.accounts import create_account
-from fpl_remote.application import create_app
-from fpl_remote.migrations.registry import MIGRATIONS
-from fpl_remote.settings import RemoteSettings
-from fpl_runtime.claims import HEADER
-from fpl_runtime.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
-from fpl_runtime.migrations import apply
+from studio.apps.identity.accounts import create_account
+from studio.apps.remote_desktop.settings import RemoteSettings
+from studio.apps.remote_desktop.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.remote_desktop.application import create_app
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 ORIGIN = "http://127.0.0.1:19000"

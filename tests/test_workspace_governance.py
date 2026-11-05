@@ -4,12 +4,12 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from app.capabilities.identity.permissions import role_permissions, role_scopes
-from app.capabilities.identity.principal import StudioPrincipal
-from app.capabilities.identity.route_permissions import ROUTE_PERMISSIONS
 from app.console.governance.provisioning import create_account
 from app.main import app
 from app.runtime.db import SessionLocal
+from studio.contracts.identity.permissions import role_permissions, role_scopes
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.identity.route_permissions import ROUTE_PERMISSIONS
 
 pytestmark = pytest.mark.real_auth
 
@@ -93,7 +93,7 @@ def test_every_business_operation_has_an_explicit_policy():
         if path not in {"/health", "/ready"}
         and not path.startswith(("/v1/account", "/v1/auth", "/v1/platform", "/v1/public-workspace"))
     }
-    from fpl_deployment.contracts import operation_owner
+    from studio.deployment.contracts import operation_owner
 
     model_governance = {
         (method.upper(), path)
@@ -107,7 +107,7 @@ def test_every_business_operation_has_an_explicit_policy():
         ("POST", "/v1/account/demo-services/{service_id}/install"),
         ("PATCH", "/v1/account/project-certification/{kind}/{project_id}"),
     }
-    from fpl_management.routes import router
+    from studio.apps.management.transport.service import router
 
     management = {(method, route.path) for route in router.routes for method in route.methods}
     assert actual | model_governance | directory | management == set(ROUTE_PERMISSIONS)

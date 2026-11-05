@@ -15,9 +15,9 @@ from tests.test_community_asset_protocol import (  # noqa: F401
 )
 from tests.test_independent_project_catalog import authorize
 
-from fpl_runtime.migrations import apply
-from fpl_tools.application import create_app
-from fpl_tools.migrations.registry import MIGRATIONS
+from studio.apps.tools.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.tools.application import create_app
+from studio.runtime.database.migrations import apply
 
 ROOT = Path(__file__).resolve().parents[1]
 STATE = "/v1/tool-navigation/state"
@@ -84,11 +84,11 @@ async def test_tools_library_reveal_is_local_and_replays_a_lost_worker_acknowled
     monkeypatch,
 ):
     from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
-    from fpl_host.tools_worker import ToolsWorker
-    from fpl_host.transport import NativeTransport
-    from fpl_runtime.claims import HEADER, Actor, issue_context, verify_context
-    from fpl_runtime.tools_native import OPEN_PATH, VIDEO_DEPS_PATH, ToolsNativeOptions
-    from fpl_tools import host as tools_host
+    from studio.apps.tools import host as tools_host
+    from studio.contracts.identity.claims import HEADER, Actor, issue_context, verify_context
+    from studio.contracts.tools.tools_native import OPEN_PATH, VIDEO_DEPS_PATH, ToolsNativeOptions
+    from studio.host.project_files.tools_worker import ToolsWorker
+    from studio.host.transport import NativeTransport
 
     case = scenario
     root = tmp_path / "tools"
@@ -236,7 +236,7 @@ async def test_tools_library_reveal_is_local_and_replays_a_lost_worker_acknowled
 def test_tools_worker_uses_only_the_owned_library_path(tmp_path):
     from uuid import uuid4
 
-    from fpl_host.tools_worker import reveal_library
+    from studio.host.project_files.tools_worker import reveal_library
 
     owner = str(uuid4())
     path = tmp_path / "accounts" / owner / "library" / "assets"
@@ -258,7 +258,7 @@ def test_tools_native_download_workspace_binds_bytes_without_exposing_paths(tmp_
     from uuid import uuid4
 
     from app.tool_navigation.video_download_errors import VideoDownloadError
-    from fpl_host.tools_video import VideoWorkspace
+    from studio.host.project_files.tools_video import VideoWorkspace
 
     calls = []
 
@@ -288,13 +288,13 @@ def test_tools_native_download_workspace_binds_bytes_without_exposing_paths(tmp_
 async def test_tools_download_artifact_commit_checks_digest_and_replays_after_reopen(tmp_path):
     from hashlib import sha256
 
-    from app.runtime.time import utc_now
     from app.tool_navigation.video_download_errors import VideoDownloadError
-    from fpl_runtime.database import Database
-    from fpl_runtime.native_queue import NativeQueue
-    from fpl_runtime.tools_video import DOWNLOAD_VIDEO, VideoDownloadResult
-    from fpl_tools.models import ToolsDownloadArtifact, ToolsNativeJob
-    from fpl_tools.video_files import DownloadFiles
+    from studio.apps.tools.storage.service_models import ToolsDownloadArtifact, ToolsNativeJob
+    from studio.apps.tools.video_files import DownloadFiles
+    from studio.contracts.tools.tools_video import DOWNLOAD_VIDEO, VideoDownloadResult
+    from studio.runtime.database.sessions import Database
+    from studio.runtime.tasks.native_queue import NativeQueue
+    from studio.runtime.time import utc_now
 
     models = (ToolsNativeJob, ToolsDownloadArtifact)
     apply(tmp_path / "service.db", "tools", MIGRATIONS)
@@ -351,11 +351,11 @@ async def test_tools_native_video_replays_delivery_and_serves_owned_bytes(
 
     from app.capabilities.asset_store.models import VisualAsset
     from app.tool_navigation.video_download_contracts import BinaryStatus, VideoDownloadDepsOut
-    from fpl_host.tools_worker import ToolsWorker
-    from fpl_host.transport import NativeTransport
-    from fpl_runtime.identity_client import LiveAuthorization
-    from fpl_runtime.tools_native import ToolsNativeOptions
-    from fpl_runtime.tools_video import VIDEO_JOB_PATH
+    from studio.apps.identity.clients.authorization import LiveAuthorization
+    from studio.contracts.tools.tools_native import ToolsNativeOptions
+    from studio.contracts.tools.tools_video import VIDEO_JOB_PATH
+    from studio.host.project_files.tools_worker import ToolsWorker
+    from studio.host.transport import NativeTransport
 
     case = scenario
     root = tmp_path / "tools"

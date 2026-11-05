@@ -8,18 +8,18 @@ import numpy as np
 import pytest
 from sqlalchemy import select
 
-from app.apps.video_editor.audio_matching import VideoEditorAudioMatching
-from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
-from app.apps.video_editor.models import VideoEditorAssetMetadata
-from app.apps.video_editor.schemas import VideoEditorTimelineBatchIn
-from app.apps.video_editor.schemas.audio_seam import AudioSeamCandidatesIn
-from app.apps.video_editor.timeline import apply_operations
 from app.capabilities.media_rendering.audio_matching import (
     SAMPLE_RATE,
     rank_audio_seams,
 )
 from app.main import app
 from app.runtime.db import SessionLocal
+from studio.apps.video_editor.audio_alignment.audio_matching import VideoEditorAudioMatching
+from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
+from studio.apps.video_editor.schemas import VideoEditorTimelineBatchIn
+from studio.apps.video_editor.schemas.audio_seam import AudioSeamCandidatesIn
+from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata
+from studio.apps.video_editor.timeline import apply_operations
 
 
 def _document() -> dict:

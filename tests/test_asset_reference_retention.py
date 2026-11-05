@@ -9,13 +9,17 @@ from sqlalchemy.exc import IntegrityError
 
 from app.capabilities.asset_store.library import AssetError
 from app.capabilities.asset_store.models import VisualAsset
-from fpl_assets.migration_models import MIGRATION_MODELS
-from fpl_assets.migrations.registry import MIGRATIONS
-from fpl_assets.models import MODELS, AssetReferencePin, AssetReferenceReceipt
-from fpl_assets.references import AssetReferences, protect_references
-from fpl_runtime.asset_references import ReferenceUpdate
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply, check
+from studio.apps.asset_library.migration_models import MIGRATION_MODELS
+from studio.apps.asset_library.references.references import AssetReferences, protect_references
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
+from studio.apps.asset_library.storage.service_models import (
+    MODELS,
+    AssetReferencePin,
+    AssetReferenceReceipt,
+)
+from studio.contracts.asset_library.references import ReferenceUpdate
+from studio.runtime.database.migrations import apply, check
+from studio.runtime.database.sessions import Database
 
 
 @pytest.fixture

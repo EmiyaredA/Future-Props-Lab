@@ -11,31 +11,33 @@ from fastapi import FastAPI
 from sqlalchemy import delete, select, update
 from starlette.datastructures import UploadFile
 
-from app.apps.thought_workshop.models import ThoughtKnowledgeBase, ThoughtNote
-from app.apps.thought_workshop.publication.models import (
+from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.models import VisualAsset
+from studio.apps.asset_library.community_assets import CommunityAssetChecks
+from studio.apps.asset_library.settings import StorageSettings
+from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from studio.apps.thought_workshop.community.community_access import published_asset
+from studio.apps.thought_workshop.community.community_evidence import CommunityEvidenceVerifier
+from studio.apps.thought_workshop.community.community_evidence import router as evidence_router
+from studio.apps.thought_workshop.publication.models import (
     ArticleMember,
     Publication,
     PublishedArticle,
 )
-from app.capabilities.asset_store.library import AssetLibrary
-from app.capabilities.asset_store.models import VisualAsset
-from fpl_assets.application import create_app as create_assets
-from fpl_assets.community_assets import CommunityAssetChecks
-from fpl_assets.migrations.registry import MIGRATIONS as ASSET_MIGRATIONS
-from fpl_assets.settings import StorageSettings
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app as create_identity
-from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-from fpl_runtime.claims import HEADER
-from fpl_runtime.database import Database
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
-from fpl_thought.community_access import published_asset
-from fpl_thought.community_evidence import CommunityEvidenceVerifier
-from fpl_thought.community_evidence import router as evidence_router
-from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
-from fpl_thought.models import ACCOUNT_MODELS, MODELS
+from studio.apps.thought_workshop.storage.migrations.registry import (
+    MIGRATIONS as THOUGHT_MIGRATIONS,
+)
+from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.assembly.independent.asset_library.application import create_app as create_assets
+from studio.assembly.independent.identity.application import create_app as create_identity
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
@@ -304,7 +306,7 @@ async def test_membership_or_session_revocation_invalidates_existing_proof(scena
 
 
 async def test_wrong_owner_or_stale_evidence_cannot_become_a_file_read(scenario):
-    from fpl_runtime.community_assets import verify_community_asset
+    from studio.contracts.thought_workshop.community_assets import verify_community_asset
 
     case = scenario
     token = await grant(case)
@@ -355,7 +357,7 @@ async def test_private_evidence_endpoint_requires_dedicated_nonbrowser_peer(scen
 
 
 async def test_identity_grant_binds_browser_viewer_and_public_asset_path(scenario):
-    from fpl_runtime.community_assets import verify_community_asset
+    from studio.contracts.thought_workshop.community_assets import verify_community_asset
 
     case = scenario
     token = await grant(case)
@@ -404,8 +406,8 @@ async def test_withdrawn_publication_and_missing_checks_fail_closed(scenario):
 def test_community_capability_has_strict_five_second_lifetime():
     import jwt
 
-    from fpl_runtime.claims import Actor, issue_context
-    from fpl_runtime.community_assets import (
+    from studio.contracts.identity.claims import Actor, issue_context
+    from studio.contracts.thought_workshop.community_assets import (
         CommunityAssetEvidence,
         CommunityAssetRequest,
         issue_community_asset,
@@ -455,7 +457,7 @@ async def test_published_cover_reads_only_while_still_current(scenario):
 
 
 async def test_public_asset_url_without_note_id_resolves_current_multitable_attachment(scenario):
-    from app.apps.thought_workshop.multitable.models import (
+    from studio.apps.thought_workshop.multitable.models import (
         DataAsset,
         DataField,
         DataRecord,
@@ -504,10 +506,10 @@ async def test_public_asset_url_without_note_id_resolves_current_multitable_atta
 async def test_browser_route_streams_through_three_services_and_rechecks_revocation(scenario):
     from PIL import Image
 
-    from app.apps.thought_workshop.account_directory import DirectoryBindings
-    from fpl_runtime.authentication import SignedIdentity
-    from fpl_thought.account_directory import HttpAccountDirectory
-    from fpl_thought.community_http import CommunityFiles, router
+    from studio.apps.thought_workshop.account_directory import HttpAccountDirectory
+    from studio.apps.thought_workshop.transport.community_http import CommunityFiles, router
+    from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
+    from studio.runtime.http.authentication import SignedIdentity
 
     case = scenario
     app = FastAPI()
@@ -607,12 +609,14 @@ async def test_browser_route_streams_through_three_services_and_rechecks_revocat
 
 
 async def test_note_batch_http_with_real_identity_and_assets_retention(scenario):
-    from fpl_assets.references import AssetReferences
-    from fpl_runtime.asset_references import ReferenceUpdate
-    from fpl_runtime.retention_client import RetentionClient
-    from fpl_thought.application import create_app as create_thought
-    from fpl_thought.retention import ThoughtReferenceDelivery
-    from fpl_thought.retention_records import ThoughtReferenceMutation
+    from studio.apps.asset_library.clients.retention import RetentionClient
+    from studio.apps.asset_library.references.references import AssetReferences
+    from studio.apps.thought_workshop.retention import ThoughtReferenceDelivery
+    from studio.apps.thought_workshop.storage.retention_records import ThoughtReferenceMutation
+    from studio.assembly.independent.thought_workshop.application import (
+        create_app as create_thought,
+    )
+    from studio.contracts.asset_library.references import ReferenceUpdate
 
     case = scenario
     await AssetReferences(case.assets.state.database).replace(
@@ -877,8 +881,11 @@ async def test_note_batch_http_with_real_identity_and_assets_retention(scenario)
 async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenario, tmp_path):
     import hashlib
 
-    from fpl_runtime.delegation import RequestGrant
-    from fpl_runtime.thought_uploads import ThoughtUploadDescription, upload_path
+    from studio.contracts.identity.delegation import RequestGrant
+    from studio.contracts.thought_workshop.thought_uploads import (
+        ThoughtUploadDescription,
+        upload_path,
+    )
 
     case = scenario
     live = LiveAuthorization(service="assets", credential=ASSETS_SECRET, transport=case.mesh)
@@ -920,8 +927,8 @@ async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenar
         assert upload.status_code == 200, upload.text
         retry = await client.post("http://assets" + target, headers=headers, content=content)
         assert retry.status_code == 200 and retry.json()["id"] == upload.json()["id"]
-        from fpl_runtime.capability_client import CapabilityDenied
-        from fpl_thought.upload_transport import send_staged_upload
+        from studio.apps.thought_workshop.uploads.upload_transport import send_staged_upload
+        from studio.runtime.http.capability_client import CapabilityDenied
 
         staged = tmp_path / "thought-upload"
         staged.write_bytes(content)
@@ -940,8 +947,12 @@ async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenar
         result = await send_staged_upload(**options)
         assert result.id == upload.json()["id"]
         assert staged.read_bytes() == content
-        from fpl_thought.upload_intents import deliver_staged_upload, stage_path, stage_upload
-        from fpl_thought.upload_records import ThoughtUploadIntent
+        from studio.apps.thought_workshop.storage.upload_records import ThoughtUploadIntent
+        from studio.apps.thought_workshop.uploads.upload_intents import (
+            deliver_staged_upload,
+            stage_path,
+            stage_upload,
+        )
 
         async with case.db.sessions(info={"owner_user_id": case.viewer}) as session:
             await stage_upload(
@@ -1005,8 +1016,10 @@ async def test_thought_upload_delegates_real_session_to_owned_assets_only(scenar
 
 
 async def test_thought_directory_mutations_use_owned_revisions_and_withdraw(scenario):
-    from fpl_runtime.retention_client import RetentionClient
-    from fpl_thought.application import create_app as create_thought
+    from studio.apps.asset_library.clients.retention import RetentionClient
+    from studio.assembly.independent.thought_workshop.application import (
+        create_app as create_thought,
+    )
 
     case = scenario
     app = create_thought(
@@ -1115,10 +1128,12 @@ async def test_thought_directory_mutations_use_owned_revisions_and_withdraw(scen
 
 
 async def test_thought_lifespan_recovers_pre_intent_upload_under_service_lock(scenario):
-    from fpl_runtime.locking import service_lock
-    from fpl_runtime.retention_client import RetentionClient
-    from fpl_thought.application import create_app as create_thought
-    from fpl_thought.upload_intents import stage_path
+    from studio.apps.asset_library.clients.retention import RetentionClient
+    from studio.apps.thought_workshop.uploads.upload_intents import stage_path
+    from studio.assembly.independent.thought_workshop.application import (
+        create_app as create_thought,
+    )
+    from studio.runtime.lifecycle.locking import service_lock
 
     case = scenario
     orphan = stage_path(case.db.root, case.viewer, "interrupted", "a" * 64)

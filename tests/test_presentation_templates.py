@@ -12,10 +12,10 @@ from pptx import Presentation
 from tests.presentation_helpers import sample_document
 from tests.test_presentation_image_version import delete_asset, upload
 
-from app.apps.presentation_workshop.schemas.document import PresentationDocument
-from app.apps.presentation_workshop.templates.resolver import materialize, resolve_document
-from app.apps.presentation_workshop.templates.schema import TemplateDefinition
 from app.main import app
+from studio.apps.presentation_workshop.schemas.document import PresentationDocument
+from studio.apps.presentation_workshop.templates.resolver import materialize, resolve_document
+from studio.apps.presentation_workshop.templates.schema import TemplateDefinition
 
 ROOT = "/v1/presentation-workshop"
 FIXTURE = Path(__file__).parent / "fixtures/presentation_template_cases.json"

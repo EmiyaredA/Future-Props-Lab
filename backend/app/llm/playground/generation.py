@@ -34,9 +34,9 @@ from app.llm.schemas.model_test import (
 from app.runtime.config import Settings, get_settings
 from app.runtime.image_sizes import ThumbnailSize
 from app.runtime.raster import RasterPreviewError, derived_thumbnail
-from app.runtime.revisions import RevisionConflictError
 from app.runtime.task_admission import TaskAdmission
-from app.runtime.time import iso_utc, utc_now
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import iso_utc, utc_now
 
 ACTIVE_GENERATION_STATUSES = ("queued", "submitting", "pending", "processing")
 

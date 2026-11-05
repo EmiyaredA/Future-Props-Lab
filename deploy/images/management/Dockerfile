@@ -14,5 +14,5 @@ ENV XDG_CONFIG_HOME=/tmp/caddy-config XDG_DATA_HOME=/tmp/caddy-data
 ARG FPL_SERVICE_VERSION
 ENV FPL_SERVICE_VERSION=$FPL_SERVICE_VERSION
 EXPOSE 8080 9000 28081 29090
-ENTRYPOINT ["python", "-m", "fpl_management"]
+ENTRYPOINT ["python", "-m", "studio.assembly.independent.management.cli"]
 CMD ["serve"]

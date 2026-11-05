@@ -13,15 +13,15 @@ from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.asset_store.library import AssetLibrary
 from app.capabilities.asset_store.storage import AssetStorage
-from fpl_assets.galgame_upload_recovery import recover_uploads
-from fpl_assets.models import GalgameUploadStage
-from fpl_assets.references import AssetReferences
-from fpl_galgame.application import create_app
-from fpl_galgame.migrations.registry import MIGRATIONS
-from fpl_runtime.asset_references import ReferenceUpdate
-from fpl_runtime.galgame_upload import PREFIX
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
+from studio.apps.asset_library.galgame.galgame_upload_recovery import recover_uploads
+from studio.apps.asset_library.references.references import AssetReferences
+from studio.apps.asset_library.storage.service_models import GalgameUploadStage
+from studio.apps.galgame_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.assembly.independent.galgame_workshop.application import create_app
+from studio.contracts.asset_library.references import ReferenceUpdate
+from studio.contracts.galgame_workshop.galgame_upload import PREFIX
+from studio.runtime.database.migrations import apply
 
 PROJECTS = "/v1/galgame-workshop/projects"
 

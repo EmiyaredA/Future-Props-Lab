@@ -6,17 +6,17 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
-from app.apps.visual_workshop.models import VisualGenerationTask
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers._senseaudio import ProviderTaskStatus
 from app.llm.providers.zealman_video import create_task
 from app.llm.providers.zealman_workflows import U06, U17
-from app.llm.schemas.workflow_video import WorkflowVideoParameters
 from app.llm.task_execution import TaskExecutionInfo
 from app.main import app
 from app.runtime.db import SessionLocal
-from app.runtime.time import utc_now
+from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+from studio.contracts.model_service.workflow_video import WorkflowVideoParameters
+from studio.runtime.time import utc_now
 
 
 @pytest.mark.asyncio
@@ -61,7 +61,7 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
 
     monkeypatch.setattr("app.llm.visual_generation_submission.upload_reference", upload)
     monkeypatch.setattr("app.llm.visual_generation_submission.create_task", submit)
-    monkeypatch.setattr("app.apps.visual_workshop.generation_runner.get_task", poll)
+    monkeypatch.setattr("studio.apps.visual_workshop.website.generation_runner.get_task", poll)
     monkeypatch.setattr("app.llm.generation_runtime.media.assert_public_https", allow)
     provider = ModelProvider(
         owner_user_id="test-user",

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from app.console.amadeus import files
 from app.runtime.operation_receipts import OperationError
-from fpl_runtime.amadeus_skills import ID, VERSION
+from studio.contracts.amadeus.amadeus_skills import ID, VERSION
 
 MAX_SKILL_FILE_BYTES = 1024 * 1024
 

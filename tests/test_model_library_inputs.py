@@ -26,13 +26,13 @@ from app.llm.models import (
 )
 from app.llm.playground.transcription import ModelTestTranscription
 from app.llm.schemas.model_test import ModelTestTranscriptionCreateIn
-from fpl_models.library_inputs import HttpLibraryInputs
-from fpl_models.migrations.registry import MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_runtime.database import Database
-from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.model_service.library_inputs import HttpLibraryInputs
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.delegation import RequestGrant, permitted, target_permission_path
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 def audio():
@@ -332,7 +332,7 @@ def test_fresh_input_consumers_do_not_load_foreign_orm_or_global_database():
 import sys
 import app.llm.inference.assets
 import app.llm.playground.transcription
-import fpl_models.library_inputs
+import studio.apps.model_service.library_inputs
 assert 'app.runtime.db' not in sys.modules
 assert 'app.orm' not in sys.modules
 assert not any(name.startswith(('app.console.models', 'app.apps.',

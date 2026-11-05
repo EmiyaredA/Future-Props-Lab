@@ -19,8 +19,6 @@ from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import CATALOG, GATEWAY_SECRET, PASSWORD
 from tests.test_tools_navigation_migration import available_ports, listener
 
-from app.capabilities.identity.permissions import role_scopes
-from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.security import CSRF_COOKIE, SESSION_COOKIE
 from app.capabilities.identity.session_policy import MANAGEMENT_SESSION
 from app.console.cloud_control.access import start_enrollment, totp, verify
@@ -34,14 +32,16 @@ from app.console.schemas.registration import (
     RegistrationInviteIn,
 )
 from app.runtime.config import get_settings
-from app.runtime.time import utc_now
 from db.migrations import apply_migrations
-from fpl_identity.application import create_app
-from fpl_identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER
-from fpl_identity.migrations.registry import MIGRATIONS
-from fpl_runtime.claims import HEADER, verify_context
-from fpl_runtime.migration_batches import MigrationPlan
-from fpl_runtime.migrations import apply
+from studio.apps.identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.identity.application import create_app
+from studio.contracts.identity.claims import HEADER, verify_context
+from studio.contracts.identity.permissions import role_scopes
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.contracts.management.migration_batches import MigrationPlan
+from studio.runtime.database.migrations import apply
+from studio.runtime.time import utc_now
 
 pytestmark = pytest.mark.real_auth
 
@@ -216,7 +216,7 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
     apply(target / "service.db", "identity", MIGRATIONS)
     source_port, target_port = available_ports()
     headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
-    common = {"module": "fpl_identity", "prefix": CREDENTIALS[0].prefix}
+    common = {"module": "studio.assembly.independent.identity.cli", "prefix": CREDENTIALS[0].prefix}
 
     with (
         httpx.Client(timeout=5, trust_env=False) as client,

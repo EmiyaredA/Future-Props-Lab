@@ -61,8 +61,8 @@ async def test_restart_recovery_preserves_replies_and_unblocks_each_conversation
 
 async def test_recovery_uses_scoped_writes_in_an_independent_models_database(tmp_path):
     from app.llm.models import ModelEntry, ModelProvider, ModelSupplier
-    from app.runtime.orm_base import Base
-    from fpl_runtime.database import Database
+    from studio.runtime.database.orm_base import Base
+    from studio.runtime.database.sessions import Database
 
     owned = (ModelSupplier, ModelProvider, ModelEntry, ModelTestConversation, ModelTestMessage)
     database = Database("models", tmp_path, models=owned)

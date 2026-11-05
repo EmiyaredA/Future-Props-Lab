@@ -43,14 +43,14 @@ async def clear_private_projects(owner="test-user"):
     """Fixture cleanup uses the same ordered reference deletion as business writes."""
     from sqlalchemy import delete, select
 
-    from app.apps.galgame_workshop.models import GalgameWorkshopProject
-    from app.apps.galgame_workshop.projects import GalgameWorkshopProjects
-    from app.apps.video_editor.models import VideoEditorProject
-    from app.apps.video_editor.projects import VideoEditorProjects
-    from app.apps.visual_workshop.models import VisualWorkshopProject
-    from app.apps.visual_workshop.projects import VisualWorkshopProjects
     from app.orm import TENANT_MODELS
     from app.runtime.db import SessionLocal
+    from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
+    from studio.apps.galgame_workshop.website.projects import GalgameWorkshopProjects
+    from studio.apps.video_editor.projects import VideoEditorProjects
+    from studio.apps.video_editor.storage.models import VideoEditorProject
+    from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
+    from studio.apps.visual_workshop.website.projects import VisualWorkshopProjects
 
     dependents = {
         "thought_sync_tasks",

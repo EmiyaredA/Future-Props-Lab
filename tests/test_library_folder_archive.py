@@ -7,13 +7,13 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualAssetFolder,
 )
 from app.main import app
 from app.runtime.db import SessionLocal
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 
 PNG = b"\x89PNG\r\n\x1a\nfolder-archive"
 
@@ -186,7 +186,7 @@ async def test_library_folder_import_skips_unsafe_and_unsupported_entries() -> N
 
 @pytest.mark.asyncio
 async def test_library_folder_routes_are_registered_for_content_permissions() -> None:
-    from app.capabilities.identity.route_permissions import route_permission
+    from studio.contracts.identity.route_permissions import route_permission
 
     assert route_permission("GET", "/v1/file-library/folder-exports") == "content.read"
     assert route_permission("POST", "/v1/file-library/folder-archive-imports") == "content.write"

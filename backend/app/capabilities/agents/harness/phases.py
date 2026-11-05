@@ -9,13 +9,6 @@ from uuid import uuid4
 
 from app.capabilities.agents.harness.approval import ApprovalBroker
 from app.capabilities.agents.harness.context import ContextCompiler
-from app.capabilities.agents.harness.contracts import (
-    AgentMessage,
-    ModelAdapter,
-    ModelTextDelta,
-    ModelTurnEnd,
-    ModelUsageUpdate,
-)
 from app.capabilities.agents.harness.types import (
     AgentDefinition,
     AgentEvent,
@@ -24,6 +17,13 @@ from app.capabilities.agents.harness.types import (
     ProposedAction,
     ToolBinding,
     ToolExecutionContext,
+)
+from studio.contracts.agent_runtime.dialogue import (
+    AgentMessage,
+    ModelAdapter,
+    ModelTextDelta,
+    ModelTurnEnd,
+    ModelUsageUpdate,
 )
 
 

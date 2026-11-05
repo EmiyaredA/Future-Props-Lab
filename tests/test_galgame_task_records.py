@@ -8,20 +8,20 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_creative_project_certification import CREDENTIALS
 from tests.test_independent_project_catalog import authorize
 
-from app.apps.galgame_workshop.models import (
+from app.capabilities.asset_store.library import AssetLibrary
+from studio.apps.asset_library.references.references import AssetReferences
+from studio.apps.galgame_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.galgame_workshop.storage.models import (
     GalgameAnnotationImportTask,
     GalgameStorySnapshot,
     GalgameVideoEditorHandoffTask,
     GalgameVideoExportTask,
     GalgameWorkshopProject,
 )
-from app.capabilities.asset_store.library import AssetLibrary
-from fpl_assets.references import AssetReferences
-from fpl_galgame.application import create_app
-from fpl_galgame.migrations.registry import MIGRATIONS
-from fpl_runtime.asset_references import ReferenceUpdate
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.assembly.independent.galgame_workshop.application import create_app
+from studio.contracts.asset_library.references import ReferenceUpdate
+from studio.runtime.database.migrations import apply
 
 BASE = "/v1/galgame-workshop/projects"
 

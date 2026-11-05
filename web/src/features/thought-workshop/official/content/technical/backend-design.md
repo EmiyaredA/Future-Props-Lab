@@ -69,6 +69,6 @@ StudioPrincipal 是唯一租户来源，业务请求不接收客户端声明 own
 
 ## 代码入口
 
-1. `backend/app/apps/thought_workshop/notes.py`
+1. `backend/studio/apps/thought_workshop/notes.py`
 2. `backend/app/deps.py`
 3. `backend/app/runtime/project_records.py`

@@ -1,6 +1,6 @@
 """Transfer stopped Workbench history and verify its rebuilt text index."""
 
-from fpl_agents.migration_application import DATASETS, PREFIX, SEARCH
+from studio.assembly.independent.agent_workbench.maintenance import DATASETS, PREFIX, SEARCH
 
 from .migration_transfer import project_datasets, run_cli
 

@@ -19,7 +19,7 @@ from app.llm.models import (
 )
 from app.main import app
 from app.runtime.db import SessionLocal
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 async def create_test_account(*, platform_admin: bool = False) -> tuple[str, str]:

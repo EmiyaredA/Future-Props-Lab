@@ -6,23 +6,23 @@ from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS, PROJECTS
 from tests.test_independent_project_catalog import authorize
 
-from app.apps.galgame_workshop.models import GalgameAssetTranscriptionTask
 from app.llm.models import ModelEntry, ModelProvider
-from fpl_models.galgame_asr_http import router
-from fpl_models.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_runtime.claims import HEADER
-from fpl_runtime.database import Database
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.galgame_snapshot import (
+from studio.apps.galgame_workshop.storage.models import GalgameAssetTranscriptionTask
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODELS_MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.transport.galgame_asr_http import router
+from studio.contracts.galgame_workshop.galgame_snapshot import (
     IMPORT,
     MODEL_PURPOSE,
     MODEL_REFERENCE_PREFIX,
     MODEL_RESOLVE_PREFIX,
     ModelReference,
 )
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 async def seed_transcription_model(database, owner, name):

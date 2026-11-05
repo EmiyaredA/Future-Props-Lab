@@ -24,7 +24,7 @@ from app.llm.schemas.model_service import ProviderIn
 from app.main import app
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
-from app.runtime.revisions import RevisionConflictError
+from studio.runtime.revisions import RevisionConflictError
 
 MODEL = "qwen3-tts-0.6b-base"
 

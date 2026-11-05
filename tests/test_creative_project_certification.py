@@ -15,19 +15,19 @@ from tests.test_community_asset_protocol import (
     scenario,  # noqa: F401
 )
 
-from app.apps.galgame_workshop.models import GalgameWorkshopProject
-from app.apps.visual_workshop.models import VisualWorkshopProject
 from app.console.models.accounts import SecurityAuditEvent
-from fpl_creative.application import create_app as creative_app
-from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE
-from fpl_galgame.application import create_app as galgame_app
-from fpl_galgame.migrations.registry import MIGRATIONS as GALGAME
-from fpl_identity.accounts import create_account
-from fpl_runtime.claims import HEADER
-from fpl_runtime.migrations import apply
-from fpl_runtime.project_certification import PREFIX, PROJECT_EVENT, CertificationCommand
-from fpl_visual.application import create_app as visual_app
-from fpl_visual.migrations.registry import MIGRATIONS as VISUAL
+from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS as CREATIVE
+from studio.apps.galgame_workshop.storage.migrations.registry import MIGRATIONS as GALGAME
+from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
+from studio.apps.identity.accounts import create_account
+from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS as VISUAL
+from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
+from studio.assembly.independent.creative_workshop.application import create_app as creative_app
+from studio.assembly.independent.galgame_workshop.application import create_app as galgame_app
+from studio.assembly.independent.visual_workshop.application import create_app as visual_app
+from studio.contracts.identity.certification import PREFIX, PROJECT_EVENT, CertificationCommand
+from studio.contracts.identity.claims import HEADER
+from studio.runtime.database.migrations import apply
 
 ORIGIN = "http://127.0.0.1:19000"
 ADDRESS = "203.0.113.7"

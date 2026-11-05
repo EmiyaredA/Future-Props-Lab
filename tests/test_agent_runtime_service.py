@@ -11,18 +11,18 @@ from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # n
 from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.agents.cli.contracts import AgentOut, CatalogOut
-from app.capabilities.agents.cli.definitions import DEFINITIONS
-from app.runtime.time import utc_now
-from fpl_agent_runtime.application import create_app
-from fpl_agent_runtime.migrations.registry import MIGRATIONS
-from fpl_agent_runtime.models import ConnectionJob
-from fpl_agent_runtime.review_http import NATIVE
-from fpl_host.agent_connections_worker import ConnectionWorker
-from fpl_host.transport import NativeTransport
-from fpl_identity.accounts import create_account
-from fpl_runtime.agent_connections import DETECT, PREFIX, ConnectionOptions
-from fpl_runtime.claims import HEADER, issue_context, verify_context
-from fpl_runtime.migrations import apply
+from studio.apps.agent_runtime.storage.migrations.registry import MIGRATIONS
+from studio.apps.agent_runtime.storage.service_models import ConnectionJob
+from studio.apps.agent_runtime.transport.review_http import NATIVE
+from studio.apps.identity.accounts import create_account
+from studio.assembly.independent.agent_runtime.application import create_app
+from studio.contracts.agent_runtime.connections import DETECT, PREFIX, ConnectionOptions
+from studio.contracts.agent_runtime.definitions import DEFINITIONS
+from studio.contracts.identity.claims import HEADER, issue_context, verify_context
+from studio.host.agent_execution.agent_connections_worker import ConnectionWorker
+from studio.host.transport import NativeTransport
+from studio.runtime.database.migrations import apply
+from studio.runtime.time import utc_now
 
 ROOT = Path(__file__).resolve().parents[1]
 SERVICE = "agent-runtime"

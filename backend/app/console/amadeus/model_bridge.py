@@ -9,7 +9,6 @@ from collections.abc import AsyncIterator
 from time import monotonic
 from uuid import uuid4
 
-from app.capabilities.agents.harness.contracts import AgentMessage, ImageInput, ToolCall, ToolSpec
 from app.console.amadeus.schemas import ModelTurnIn
 from app.demo_runtime.runtime import mock_transport
 from app.llm.credential_snapshot import CredentialSnapshot
@@ -19,6 +18,7 @@ from app.llm.providers.agent import HttpAgentAdapter
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
 from app.runtime.operation_receipts import OperationError
+from studio.contracts.agent_runtime.dialogue import AgentMessage, ImageInput, ToolCall, ToolSpec
 
 MAX_IMAGE_BYTES = 350 * 1024
 MAX_TOTAL_IMAGE_BYTES = 700 * 1024

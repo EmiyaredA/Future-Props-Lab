@@ -7,12 +7,12 @@ from pathlib import Path
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app
-from fpl_identity.migrations.registry import MIGRATIONS
-from fpl_runtime.claims import HEADER, verify_context
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.identity.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER, verify_context
+from studio.runtime.database.migrations import apply
 
 state = Path(os.environ["MODEL_GOVERNANCE_ROOT"])
 key = Ed25519PrivateKey.generate()

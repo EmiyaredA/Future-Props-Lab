@@ -11,13 +11,18 @@ from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario
 from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.asset_store.library import AssetLibrary
-from fpl_runtime.annotation_assets import PURPOSE, SOURCE, AudioAssetDescription, AudioAssetQuery
-from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied
-from fpl_runtime.claims import HEADER
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.retention_client import RetentionClient
+from studio.apps.asset_library.clients.retention import RetentionClient
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.contracts.asset_library.annotation import (
+    PURPOSE,
+    SOURCE,
+    AudioAssetDescription,
+    AudioAssetQuery,
+)
+from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.runtime.http.capability_client import CapabilityClient, CapabilityDenied
 
 TOKEN = "annotation-protocol-test-" * 2
 

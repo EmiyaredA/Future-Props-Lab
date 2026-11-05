@@ -71,4 +71,4 @@ stateDiagram-v2
 
 1. `backend/app/llm/generation_runtime/driver.py`
 2. `backend/app/llm/generation_runtime/media.py`
-3. `backend/app/apps/visual_workshop/generation_runner.py`
+3. `backend/studio/apps/visual_workshop/website/generation_runner.py`

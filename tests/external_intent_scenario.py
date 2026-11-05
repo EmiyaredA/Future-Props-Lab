@@ -2,10 +2,14 @@
 
 from uuid import uuid4
 
-from fpl_runtime.claims import HEADER, verify_context
-from fpl_runtime.external_sync import ExternalClose, ExternalIntentGrant, ExternalRead
-from fpl_runtime.integration_client import IntegrationIntentClient
-from fpl_runtime.integration_intents import IntegrationScope
+from studio.apps.integrations.clients.authority import IntegrationIntentClient
+from studio.contracts.identity.claims import HEADER, verify_context
+from studio.contracts.integrations.external_sync import (
+    ExternalClose,
+    ExternalIntentGrant,
+    ExternalRead,
+)
+from studio.contracts.integrations.integration_intents import IntegrationScope
 
 
 async def exercise_external_intents(browser, private, transport, unsafe, key, credentials, owner):

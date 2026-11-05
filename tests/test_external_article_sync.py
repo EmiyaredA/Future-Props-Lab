@@ -11,9 +11,6 @@ import pytest
 from PIL import Image
 from sqlalchemy import select
 
-from app.apps.thought_workshop.external_sync.content import project_content
-from app.apps.thought_workshop.external_sync.models import ArticleSyncTask
-from app.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
 from app.integrations.external.contracts import (
     ConnectionCredentials,
     ExternalError,
@@ -22,6 +19,9 @@ from app.integrations.external.contracts import (
 from app.integrations.external.feishu import FeishuClient
 from app.main import app
 from app.runtime.db import SessionLocal
+from studio.apps.thought_workshop.external_sync.content import project_content
+from studio.apps.thought_workshop.external_sync.models import ArticleSyncTask
+from studio.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
 
 
 class FakeFeishu:

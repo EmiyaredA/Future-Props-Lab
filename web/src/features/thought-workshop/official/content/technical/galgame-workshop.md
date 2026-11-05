@@ -68,6 +68,6 @@ Story 入口处理格式适配并调用纯校验。身份与角色检查确认 I
 
 ## 代码入口
 
-1. `backend/app/apps/galgame_workshop/schemas/story_validation.py`
-2. `backend/app/apps/galgame_workshop/story/story_flow.py`
-3. `backend/app/apps/galgame_workshop/story/operations.py`
+1. `backend/studio/apps/galgame_workshop/schemas/story_validation.py`
+2. `backend/studio/apps/galgame_workshop/story/story_flow.py`
+3. `backend/studio/apps/galgame_workshop/story/operations.py`

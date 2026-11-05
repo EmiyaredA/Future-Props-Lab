@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from app.llm.local_models import downloads
 from app.llm.local_models.files import owned_path
-from app.llm.local_models.manifest import HERE, manifest
+from studio.config.local_models import HERE, manifest
 
 
 async def command(*args, timeout=900, env=None):

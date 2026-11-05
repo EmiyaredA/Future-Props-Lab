@@ -13,34 +13,38 @@ from starlette.datastructures import UploadFile
 from tests.test_community_asset_protocol import ASSETS_SECRET, CATALOG, scenario  # noqa: F401
 from tests.test_creative_project_certification import CREDENTIALS, ORIGIN, PROJECTS
 
-from app.apps.galgame_workshop.models import (
+from app.capabilities.asset_store.library import AssetLibrary
+from studio.apps.asset_library.storage.service_models import AssetReferencePin, AssetReferenceSet
+from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetMetadata,
     GalgameProjectAssetReference,
     GalgameStoryDocument,
     GalgameStorySnapshot,
 )
-from app.apps.visual_workshop.acceptance.models import (
+from studio.apps.galgame_workshop.storage.service_models import GalgameStoryReferenceMutation
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.visual_workshop.acceptance.models import (
     AcceptanceRun,
     AcceptanceStandardVersion,
     AcceptanceTemplate,
 )
-from app.apps.visual_workshop.models import (
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.storage.models import (
     VisualGenerationBatch,
     VisualGenerationTask,
     VisualWorkshopProject,
 )
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
-from app.capabilities.asset_store.library import AssetLibrary
-from fpl_assets.models import AssetReferencePin, AssetReferenceSet
-from fpl_galgame.models import GalgameStoryReferenceMutation
-from fpl_runtime.asset_references import PrepareReferenceChange
-from fpl_runtime.capability_client import CapabilityClient, CapabilityDenied, CapabilityUnavailable
-from fpl_runtime.claims import HEADER
-from fpl_runtime.delegation import RequestGrant
-from fpl_runtime.galgame_assets import PURPOSE as GALGAME_FILES_READ
-from fpl_runtime.galgame_assets import GalgameAssetQuery
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
+from studio.contracts.asset_library.references import PrepareReferenceChange
+from studio.contracts.galgame_workshop.galgame_assets import PURPOSE as GALGAME_FILES_READ
+from studio.contracts.galgame_workshop.galgame_assets import GalgameAssetQuery
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.identity.delegation import RequestGrant
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import (
+    CapabilityClient,
+    CapabilityDenied,
+    CapabilityUnavailable,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 

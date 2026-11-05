@@ -16,28 +16,41 @@ from sqlalchemy import select
 from app.console.creative_workshop.models import CreativeItem, CreativeRelease
 from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
 from app.runtime.config import Settings
-from fpl_creative.decision_http import InstallDecisionEndpoint
-from fpl_creative.decision_http import router as decision_router
-from fpl_creative.fence_records import CreativeInstallFence
-from fpl_creative.install_authorization import IdentityInstallAuthorization, InstallSource
-from fpl_creative.install_batch import build_install_batch
-from fpl_creative.install_grants import InstallGrantAuthority
-from fpl_creative.install_target import HttpCreativeInstallTarget
-from fpl_creative.installation_coordinator import InstallationCoordinator
-from fpl_creative.installation_outbox import InstallationOutbox
-from fpl_creative.migrations.registry import MIGRATIONS as CREATIVE_MIGRATIONS
-from fpl_creative.skill_archive import CreativeSkillArchives, SkillArchivePacker
-from fpl_creative.storage import creative_database
-from fpl_integrations.creative_authority import CreativeHttpAuthority
-from fpl_integrations.creative_http import router as target_router
-from fpl_integrations.creative_installations import CreativeInstallations
-from fpl_integrations.migrations.registry import MIGRATIONS as INTEGRATION_MIGRATIONS
-from fpl_integrations.models import MODELS
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.creative_install_evidence import INSTALL_PATH, issue_install_evidence
-from fpl_runtime.creative_integrations import CreativeInstallBatch, CreativeInstallPart
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
+from studio.apps.creative_workshop.install_authorization import (
+    IdentityInstallAuthorization,
+    InstallSource,
+)
+from studio.apps.creative_workshop.install_batch import build_install_batch
+from studio.apps.creative_workshop.install_grants import InstallGrantAuthority
+from studio.apps.creative_workshop.install_target import HttpCreativeInstallTarget
+from studio.apps.creative_workshop.installation_coordinator import InstallationCoordinator
+from studio.apps.creative_workshop.installation_outbox import InstallationOutbox
+from studio.apps.creative_workshop.skill_archive import CreativeSkillArchives, SkillArchivePacker
+from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
+from studio.apps.creative_workshop.storage.file_paths import creative_database
+from studio.apps.creative_workshop.storage.migrations.registry import (
+    MIGRATIONS as CREATIVE_MIGRATIONS,
+)
+from studio.apps.creative_workshop.transport.decision_http import InstallDecisionEndpoint
+from studio.apps.creative_workshop.transport.decision_http import router as decision_router
+from studio.apps.integrations.creative_authority import CreativeHttpAuthority
+from studio.apps.integrations.creative_installations import CreativeInstallations
+from studio.apps.integrations.storage.migrations.registry import (
+    MIGRATIONS as INTEGRATION_MIGRATIONS,
+)
+from studio.apps.integrations.storage.service_models import MODELS
+from studio.apps.integrations.transport.creative_http import router as target_router
+from studio.contracts.creative_workshop.creative_install_evidence import (
+    INSTALL_PATH,
+    issue_install_evidence,
+)
+from studio.contracts.creative_workshop.creative_integrations import (
+    CreativeInstallBatch,
+    CreativeInstallPart,
+)
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 
 class Live:

@@ -13,9 +13,9 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
-from app.runtime.revisions import RevisionConflictError
-from fpl_assets.models import VisualProjectFileLink
-from fpl_assets.project_links import ProjectFileLinks
+from studio.apps.asset_library.project_links import ProjectFileLinks
+from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
+from studio.runtime.revisions import RevisionConflictError
 
 
 async def setup_links(owned):

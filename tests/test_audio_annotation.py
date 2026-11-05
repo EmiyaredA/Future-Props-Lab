@@ -8,7 +8,6 @@ import httpx
 import pytest
 from tests.account_fixtures import account_record
 
-from app.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
 from app.capabilities.transcription.support import (
     resolve_transcription_language,
     resolve_transcription_target_language,
@@ -20,6 +19,7 @@ from app.main import app
 from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
+from studio.apps.audio_annotation.projects import AudioAnnotationError, AudioAnnotationProjects
 
 
 def wav_bytes(seconds: float = 1.0) -> bytes:

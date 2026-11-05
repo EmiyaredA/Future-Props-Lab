@@ -78,4 +78,4 @@ classDiagram
 
 1. `backend/app/capabilities/media_rendering/motion_document.py`
 2. `backend/app/capabilities/media_rendering/motion_frames.py`
-3. `backend/app/apps/motion_compositor/snapshots.py`
+3. `backend/studio/apps/motion_compositor/snapshots.py`

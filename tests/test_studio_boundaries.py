@@ -1,0 +1,191 @@
+"""Architecture gates for components already migrated to Studio."""
+
+import ast
+from importlib.util import resolve_name
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+STUDIO = ROOT / "backend/studio"
+
+
+def imports(path, *, include_types=True):
+    module = ".".join(path.relative_to(ROOT / "backend").with_suffix("").parts)
+    package = (
+        module.removesuffix(".__init__")
+        if path.name == "__init__.py"
+        else module.rpartition(".")[0]
+    )
+    tree = ast.parse(path.read_text())
+    if not include_types:
+
+        class RuntimeImports(ast.NodeTransformer):
+            def visit_If(self, node):
+                if isinstance(node.test, ast.Name) and node.test.id == "TYPE_CHECKING":
+                    return None
+                return self.generic_visit(node)
+
+        tree = RuntimeImports().visit(tree)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            yield from (alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            imported = (
+                resolve_name("." * node.level + (node.module or ""), package)
+                if node.level
+                else node.module or ""
+            )
+            if imported != module.removesuffix(".__init__"):
+                yield imported
+            for alias in node.names:
+                candidate = imported + "." + alias.name
+                location = ROOT / "backend" / candidate.replace(".", "/")
+                if location.with_suffix(".py").is_file() or (location / "__init__.py").is_file():
+                    yield candidate
+
+
+def test_studio_pure_components_do_not_load_adapters():
+    forbidden = (
+        "app",
+        "fpl_",
+        "fastapi",
+        "starlette",
+        "sqlalchemy",
+        "httpx",
+        "studio.assembly",
+        "studio.host",
+    )
+    violations = []
+    for path in STUDIO.rglob("*.py"):
+        parts = path.relative_to(STUDIO).parts
+        pure = parts[0] in {"contracts", "config"}
+        pure |= parts[0] == "runtime" and len(parts) == 2
+        pure |= "rules" in path.parts or "use_cases" in path.parts
+        pure |= path.name == "ports.py"
+        if not pure:
+            continue
+        for module in imports(path):
+            foreign_implementation = parts[0] in {
+                "contracts",
+                "config",
+                "runtime",
+            } and module.startswith("studio.apps.")
+            if (
+                foreign_implementation
+                or module.startswith(forbidden)
+                or any(
+                    part in module.split(".")
+                    for part in ("storage", "clients", "transport", "routes")
+                )
+            ):
+                violations.append(f"{path.relative_to(ROOT)} imports {module}")
+    assert not violations, "\n".join(violations)
+
+
+def test_studio_components_do_not_have_import_cycles():
+    modules = {}
+    for path in STUDIO.rglob("*.py"):
+        name = ".".join(path.relative_to(ROOT / "backend").with_suffix("").parts)
+        modules[name.removesuffix(".__init__")] = path
+    graph = {
+        name: set(imports(path, include_types=False)) & modules.keys()
+        for name, path in modules.items()
+    }
+    visited = set()
+    active = []
+
+    def visit(name):
+        assert name not in active, " -> ".join([*active, name])
+        if name in visited:
+            return
+        active.append(name)
+        for dependency in sorted(graph[name]):
+            visit(dependency)
+        active.pop()
+        visited.add(name)
+
+    for name in sorted(graph):
+        visit(name)
+
+
+def test_studio_namespace_initializers_do_not_import_applications():
+    roots = [STUDIO, STUDIO / "apps", STUDIO / "contracts", STUDIO / "assembly"]
+    for directory in roots:
+        path = directory / "__init__.py"
+        assert path.is_file()
+        assert not list(imports(path)), f"{path} eagerly loads other components"
+
+
+def test_migrated_packages_have_one_source_owner():
+    assert (STUDIO / "config/__init__.py").is_file()
+    assert (STUDIO / "apps/audio_annotation/use_cases/edit_document.py").is_file()
+    for directory in (
+        ROOT / "backend/fpl_config",
+        ROOT / "backend/fpl_annotation",
+        ROOT / "backend/app/apps/audio_annotation",
+    ):
+        assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"
+
+
+def test_old_prefixed_packages_cannot_be_reintroduced():
+    assert not list((ROOT / "backend").glob("fpl_*"))
+    for path in (ROOT / "backend").rglob("*.py"):
+        assert not any(name.startswith("fpl_") for name in imports(path)), path
+    legacy = ROOT / "backend/app/apps"
+    assert not [p for p in legacy.rglob("*.py") if p.parent != legacy], "stale app slice"
+
+
+def test_runtime_mechanisms_do_not_import_application_implementations():
+    for path in (STUDIO / "runtime").rglob("*.py"):
+        for name in imports(path):
+            assert not name.startswith(
+                ("app.", "studio.apps.", "studio.assembly.", "studio.host.")
+            ), f"{path.relative_to(ROOT)} imports {name}"
+
+
+def test_public_client_parents_cannot_eagerly_load_foreign_implementations():
+    from studio.deployment.images import PUBLIC_CLIENT_PARENTS
+
+    for name in PUBLIC_CLIENT_PARENTS:
+        path = ROOT / "backend" / name.replace(".", "/") / "__init__.py"
+        assert not list(imports(path)), f"{name} eagerly loads an implementation"
+
+
+def test_annotation_image_keeps_entrypoint_and_excludes_legacy_adapters():
+    from studio.deployment.images import source_closure
+
+    closure = source_closure(ROOT, "annotation")
+    assert "studio.assembly.independent.audio_annotation.cli" in closure
+    assert "studio.apps.audio_annotation.use_cases.edit_document" in closure
+    assert "studio.apps.audio_annotation.storage.document_edits" in closure
+    assert "studio" in closure
+    assert "app.main" not in closure
+    assert "studio.apps.audio_annotation.legacy_sources" not in closure
+
+
+def test_identity_image_includes_migrated_configuration():
+    from studio.deployment.images import source_closure
+
+    assert "studio.config" in source_closure(ROOT, "identity")
+
+
+@pytest.mark.parametrize(
+    "module",
+    [
+        "studio.apps.audio_annotation.models",
+        "studio.apps.unknown.models",
+        "studio.apps.audio_annotation.clients.unreviewed",
+    ],
+)
+def test_service_closure_rejects_foreign_studio_storage(tmp_path, module):
+    from studio.deployment.images import source_closure
+
+    entry = tmp_path / "backend/studio/assembly/independent/identity/cli.py"
+    entry.parent.mkdir(parents=True)
+    entry.write_text(f"import {module}\n")
+    foreign = tmp_path / "backend" / (module.replace(".", "/") + ".py")
+    foreign.parent.mkdir(parents=True)
+    foreign.write_text('"""Foreign storage."""\n')
+    with pytest.raises(ValueError, match="越界依赖"):
+        source_closure(tmp_path, "identity")

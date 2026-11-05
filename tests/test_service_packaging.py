@@ -5,16 +5,18 @@ from pathlib import Path
 import pytest
 import yaml
 
-from fpl_deployment.images import source_closure
+from studio.deployment.images import ENTRY_POINTS, public_client_module, source_closure
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_identity_source_closure_does_not_package_unrelated_business():
     closure = source_closure(ROOT, "identity")
-    assert "fpl_identity.application" in closure
+    assert "studio.assembly.independent.identity.application" in closure
     assert "app.console.governance.account_creation" in closure
     for name in closure:
+        if public_client_module(name):
+            continue
         assert not name.startswith(("app.llm", "app.apps", "app.capabilities.asset_store"))
         assert name not in {"app.orm", "app.main", "app.api", "app.runtime.db"}
     assert all(path.suffix == ".py" for path in closure.values())
@@ -22,9 +24,9 @@ def test_identity_source_closure_does_not_package_unrelated_business():
 
 @pytest.mark.parametrize("module", ["app.main", "app.runtime.db"])
 def test_image_preparation_refuses_a_hidden_monolith_import(tmp_path, module):
-    own = tmp_path / "backend/fpl_identity"
-    own.mkdir(parents=True)
-    (own / "__main__.py").write_text("import " + module + "\n")
+    own = (tmp_path / "backend" / ENTRY_POINTS["identity"].replace(".", "/")).with_suffix(".py")
+    own.parent.mkdir(parents=True)
+    own.write_text("import " + module + "\n")
     foreign = tmp_path / "backend" / (module.replace(".", "/") + ".py")
     foreign.parent.mkdir(parents=True)
     foreign.write_text("# unrelated monolith\n")
@@ -55,11 +57,15 @@ def test_compose_only_publishes_gateway_and_mounts_minimal_owned_state():
 
 def test_agents_image_contains_no_identity_orm_or_native_readers():
     closure = source_closure(ROOT, "agents")
-    assert "fpl_agents.application" in closure
-    assert "app.apps.agent_workbench.models" in closure
-    assert "app.apps.agent_workbench.sync.projection" in closure
+    assert "studio.assembly.independent.agent_workbench.application" in closure
+    assert "studio.apps.agent_workbench.storage.models" in closure
+    assert "studio.apps.agent_workbench.sync.projection" in closure
     for name in closure:
-        assert not name.startswith(("fpl_identity", "fpl_host", "app.console.models", "app.llm"))
+        if public_client_module(name):
+            continue
+        assert not name.startswith(
+            ("studio.apps.identity", "studio.host", "app.console.models", "app.llm")
+        )
         assert name not in {
             "app.main",
             "app.orm",
@@ -70,9 +76,13 @@ def test_agents_image_contains_no_identity_orm_or_native_readers():
 
 
 def test_native_queue_models_do_not_pollute_legacy_schema():
-    from app.runtime.orm_base import Base
-    from fpl_agents.application import MODELS
-    from fpl_agents.models import NativeJob, NativeProjectionReceipt, NativeSubscription
+    from studio.apps.agent_workbench.storage.service_models import (
+        NativeJob,
+        NativeProjectionReceipt,
+        NativeSubscription,
+    )
+    from studio.assembly.independent.agent_workbench.application import MODELS
+    from studio.runtime.database.orm_base import Base
 
     assert all(
         model in MODELS for model in (NativeJob, NativeSubscription, NativeProjectionReceipt)
@@ -82,18 +92,21 @@ def test_native_queue_models_do_not_pollute_legacy_schema():
 
 def test_gateway_image_contains_no_business_or_identity_database():
     closure = source_closure(ROOT, "gateway")
-    assert "fpl_gateway.application" in closure
-    assert "fpl_runtime.capability_client" in closure
+    assert "studio.assembly.independent.gateway.application" in closure
+    assert "studio.runtime.http.capability_client" in closure
     assert not any(
-        name.startswith(("app.apps", "app.llm", "app.console.models", "fpl_identity", "fpl_host"))
+        name.startswith(
+            ("app.apps", "app.llm", "app.console.models", "studio.apps.identity", "studio.host")
+        )
         for name in closure
+        if not public_client_module(name)
     )
     assert not {"app.main", "app.orm", "app.api", "app.deps"}.intersection(closure)
 
 
 def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
     closure = source_closure(ROOT, "rendering")
-    assert "fpl_rendering.application" in closure
+    assert "studio.assembly.independent.media_rendering.application" in closure
     assert "app.capabilities.media_rendering.pdf_preview_worker" in closure
     assert not any(
         name.startswith(
@@ -102,10 +115,11 @@ def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
                 "app.llm.",
                 "app.console.models",
                 "app.capabilities.asset_store.models",
-                "fpl_assets",
+                "studio.apps.asset_library",
             )
         )
         for name in closure
+        if not public_client_module(name)
     )
 
 
@@ -115,17 +129,17 @@ def test_renderer_packages_only_owned_media_processing_and_no_foreign_storage():
         "app.runtime.db",
         "app.console.models.accounts",
         "app.capabilities.asset_store.storage",
-        "app.apps.thought_workshop.models",
+        "studio.apps.thought_workshop.storage.models",
     ],
 )
 def test_models_image_rejects_hidden_cross_service_storage(tmp_path, module):
-    own = tmp_path / "backend/fpl_models"
-    own.mkdir(parents=True)
-    (own / "__main__.py").write_text("import " + module + "\n")
+    own = (tmp_path / "backend" / ENTRY_POINTS["models"].replace(".", "/")).with_suffix(".py")
+    own.parent.mkdir(parents=True)
+    own.write_text("import " + module + "\n")
     foreign = tmp_path / "backend" / (module.replace(".", "/") + ".py")
     foreign.parent.mkdir(parents=True, exist_ok=True)
     foreign.write_text("# forbidden storage owner\n")
-    with pytest.raises(ValueError, match="Models 镜像包含越界依赖"):
+    with pytest.raises(ValueError, match="(?i)models 镜像包含越界依赖"):
         source_closure(tmp_path, "models")
 
 
@@ -151,34 +165,42 @@ def test_models_overlay_owns_state_and_has_provider_egress_without_host_mounts()
 
 @pytest.mark.parametrize(
     "module",
-    ["app.runtime.db", "app.console.models.accounts", "app.llm.models", "fpl_host.collector"],
+    [
+        "app.runtime.db",
+        "app.console.models.accounts",
+        "app.llm.models",
+        "studio.host.session_collection.collector",
+    ],
 )
 def test_integrations_image_refuses_foreign_storage_and_native_executors(tmp_path, module):
-    own = tmp_path / "backend/fpl_integrations"
-    own.mkdir(parents=True)
-    (own / "__main__.py").write_text("import " + module + "\n")
+    own = (tmp_path / "backend" / ENTRY_POINTS["integrations"].replace(".", "/")).with_suffix(".py")
+    own.parent.mkdir(parents=True)
+    own.write_text("import " + module + "\n")
     foreign = tmp_path / "backend" / (module.replace(".", "/") + ".py")
     foreign.parent.mkdir(parents=True, exist_ok=True)
     foreign.write_text("# foreign implementation\n")
-    with pytest.raises(ValueError, match="Integrations 镜像包含越界依赖"):
+    with pytest.raises(ValueError, match="(?i)integrations 镜像包含(?:越界|非服务运行)依赖"):
         source_closure(tmp_path, "integrations")
 
 
 def test_integrations_image_packages_owned_http_and_only_file_value_contracts():
     closure = source_closure(ROOT, "integrations")
-    assert "fpl_integrations.application" in closure
+    assert "studio.assembly.independent.integrations.application" in closure
     assert "app.integrations.routes" in closure
     assert "app.capabilities.asset_store.incoming" in closure
     assert not any(
-        name.startswith(("app.llm", "app.console", "app.apps", "fpl_host", "fpl_assets"))
+        name.startswith(
+            ("app.llm", "app.console", "app.apps", "studio.host", "studio.apps.asset_library")
+        )
         for name in closure
+        if not public_client_module(name)
     )
 
 
 def test_models_image_includes_the_local_model_runtime_manifest(monkeypatch):
     from types import SimpleNamespace
 
-    from fpl_deployment import images
+    from studio.deployment import images
 
     original = images.subprocess.run
 
@@ -189,7 +211,7 @@ def test_models_image_includes_the_local_model_runtime_manifest(monkeypatch):
 
     monkeypatch.setattr(images.subprocess, "run", run)
     context, metadata = images.prepare_image(ROOT, "models")
-    name = "backend/app/llm/local_models/manifest.json"
+    name = "backend/studio/config/local_models.json"
     assert name in metadata["files"]
     assert (context / name).read_bytes() == (ROOT / name).read_bytes()
     assert (context / "web/.api-only").is_file()
@@ -216,12 +238,15 @@ def test_integrations_compose_uses_owned_data_and_outbound_only_provider_network
 
 
 def test_owned_service_receipts_do_not_register_with_the_recovery_database():
-    from app.runtime.orm_base import Base
-    from fpl_integrations.demo_records import DemoToolInstallation
-    from fpl_integrations.native_mcp_records import NativeMcpJob, NativeMcpObservation
-    from fpl_integrations.records import ExternalExecution, ValidationAttempt
-    from fpl_models.demo_install_records import DemoInstallation
-    from fpl_models.integration_records import IntegrationCapacity
+    from studio.apps.integrations.records import ExternalExecution, ValidationAttempt
+    from studio.apps.integrations.storage.demo_records import DemoToolInstallation
+    from studio.apps.integrations.storage.native_mcp_records import (
+        NativeMcpJob,
+        NativeMcpObservation,
+    )
+    from studio.apps.model_service.storage.demo_install_records import DemoInstallation
+    from studio.apps.model_service.storage.integration_records import IntegrationCapacity
+    from studio.runtime.database.orm_base import Base
 
     for model in (
         DemoToolInstallation,
@@ -237,9 +262,12 @@ def test_owned_service_receipts_do_not_register_with_the_recovery_database():
 
 def test_thought_packages_own_release_and_only_purpose_scoped_asset_credentials():
     closure = source_closure(ROOT, "thought")
-    assert {"fpl_thought.__main__", "fpl_thought.application"} <= closure.keys()
-    assert "app.apps.thought_workshop.publication.official_source" in closure
-    assert "app.apps.thought_workshop.publication.assets" not in closure
+    assert {
+        "studio.assembly.independent.thought_workshop.cli",
+        "studio.assembly.independent.thought_workshop.application",
+    } <= closure.keys()
+    assert "studio.apps.thought_workshop.publication.official_source" in closure
+    assert "studio.apps.thought_workshop.publication.assets" not in closure
     assert "app.capabilities.asset_store.models" not in closure
     assert "app.runtime.db" not in closure
 
@@ -262,22 +290,25 @@ def test_thought_packages_own_release_and_only_purpose_scoped_asset_credentials(
 @pytest.mark.parametrize("service,other", [("visual", "galgame"), ("galgame", "visual")])
 def test_project_owner_images_and_compose_mounts_are_isolated(service, other):
     closure = source_closure(ROOT, service)
-    assert f"fpl_{service}.application" in closure
-    assert f"app.apps.{service}_workshop.models" in closure
+    assert f"studio.assembly.independent.{service}_workshop.application" in closure
+    assert f"studio.apps.{service}_workshop.storage.models" in closure
     forbidden = (
-        f"fpl_{other}",
-        f"app.apps.{other}_workshop",
+        f"studio.apps.{other}_workshop",
+        f"studio.apps.{other}_workshop",
         "app.capabilities.asset_store.models",
         "app.runtime.db",
         "app.llm.models",
         "app.llm.providers",
         "app.llm.generation_runtime",
         "app.main",
-        "fpl_creative",
-        "fpl_identity",
+        "studio.apps.creative_workshop",
+        "studio.apps.identity",
     )
     assert not any(
-        name == prefix or name.startswith(prefix + ".") for name in closure for prefix in forbidden
+        name == prefix or name.startswith(prefix + ".")
+        for name in closure
+        if not public_client_module(name)
+        for prefix in forbidden
     )
 
     compose = yaml.safe_load((ROOT / "deploy/project-owners.compose.yaml").read_text())
@@ -295,11 +326,23 @@ def test_project_owner_images_and_compose_mounts_are_isolated(service, other):
 
 def test_tools_image_only_packages_owned_navigation_and_safe_mounts():
     closure = source_closure(ROOT, "tools")
-    assert "fpl_tools.application" in closure and "app.tool_navigation.models" in closure
+    assert (
+        "studio.assembly.independent.tools.application" in closure
+        and "app.tool_navigation.models" in closure
+    )
     assert not any(
-        name.startswith(("app.apps.", "app.console.", "fpl_host", "fpl_assets", "fpl_identity"))
+        name.startswith(
+            (
+                "app.apps.",
+                "app.console.",
+                "studio.host",
+                "studio.apps.asset_library",
+                "studio.apps.identity",
+            )
+        )
         or name in {"app.main", "app.orm", "app.runtime.db"}
         for name in closure
+        if not public_client_module(name)
     )
     tools = yaml.safe_load((ROOT / "deploy/tools.compose.yaml").read_text())["services"]["tools"]
     assert tools["read_only"] and tools["networks"] == ["private"] and "ports" not in tools

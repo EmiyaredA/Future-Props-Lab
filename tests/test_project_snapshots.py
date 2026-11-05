@@ -12,24 +12,24 @@ import pytest
 from sqlalchemy import delete
 
 import app.capabilities.asset_store.project_folders as folder_module
-from app.apps.galgame_workshop.models import (
-    GalgameWorkshopProject,
-)
-from app.apps.video_editor.models import (
-    VideoEditorProject,
-)
-from app.apps.visual_workshop.models import (
-    VisualWorkshopProject,
-)
 from app.capabilities.asset_store.layout_migration import reconcile_snapshot_imports
 from app.capabilities.asset_store.project_folders import open_project_folder
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.identity.principal import StudioPrincipal
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
 from app.orm import bind_owner
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
+from studio.apps.galgame_workshop.storage.models import (
+    GalgameWorkshopProject,
+)
+from studio.apps.video_editor.storage.models import (
+    VideoEditorProject,
+)
+from studio.apps.visual_workshop.storage.models import (
+    VisualWorkshopProject,
+)
+from studio.contracts.identity.principal import StudioPrincipal
 
 
 async def _reset_projects() -> None:

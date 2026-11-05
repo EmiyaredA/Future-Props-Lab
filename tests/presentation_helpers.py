@@ -1,4 +1,4 @@
-from app.apps.presentation_workshop.schemas.document import PresentationDocument
+from studio.apps.presentation_workshop.schemas.document import PresentationDocument
 
 
 def element(kind="text", **overrides):

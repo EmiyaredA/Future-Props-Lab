@@ -2,7 +2,7 @@
 
 import hashlib
 
-from fpl_identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER, AvatarReceipt
+from studio.apps.identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER, AvatarReceipt
 
 
 def transfer_avatars(client, plan, source, target):

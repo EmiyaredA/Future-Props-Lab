@@ -10,25 +10,29 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI, HTTPException
 from sqlalchemy import event, select
 
-from app.apps.thought_workshop.account_directory import DirectoryBindings
-from app.apps.thought_workshop.models import ThoughtNoteHistory
-from app.apps.thought_workshop.routes import router as thought_router
-from app.apps.thought_workshop.routes.community import router as community_router
-from app.apps.thought_workshop.routes.community_tables import router as community_tables_router
-from app.capabilities.identity.errors import AccountError
-from app.capabilities.identity.principal import StudioPrincipal
-from app.problem_details import account_exception_handler, http_exception_handler
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app
-from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-from fpl_runtime.account_directory import DirectoryQuery
-from fpl_runtime.authentication import SignedIdentity
-from fpl_runtime.database import Database
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
-from fpl_thought.account_directory import HttpAccountDirectory
-from fpl_thought.migrations.registry import MIGRATIONS as THOUGHT_MIGRATIONS
-from fpl_thought.models import ACCOUNT_MODELS, MODELS
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from studio.apps.thought_workshop.account_directory import HttpAccountDirectory
+from studio.apps.thought_workshop.storage.migrations.registry import (
+    MIGRATIONS as THOUGHT_MIGRATIONS,
+)
+from studio.apps.thought_workshop.storage.models import ThoughtNoteHistory
+from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.thought_workshop.transport.website import router as thought_router
+from studio.apps.thought_workshop.transport.website.community import router as community_router
+from studio.apps.thought_workshop.transport.website.community_tables import (
+    router as community_tables_router,
+)
+from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
+from studio.assembly.independent.identity.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.account_directory import DirectoryQuery
+from studio.contracts.identity.errors import AccountError
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
+from studio.runtime.http.authentication import SignedIdentity
+from studio.runtime.http.problem_details import account_exception_handler, http_exception_handler
 
 root = Path(os.environ["THOUGHT_DIRECTORY_ROOT"]).resolve()
 assert root.is_relative_to(Path(tempfile.gettempdir()).resolve())

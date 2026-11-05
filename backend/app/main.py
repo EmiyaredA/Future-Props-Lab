@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from functools import partial
 from types import SimpleNamespace
 
 from fastapi import FastAPI
@@ -13,34 +14,6 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 import app.orm  # noqa: F401 — register tenant listeners
 from app.api import api_router
-from app.apps.agent_workbench.execution.runner import WorkbenchRuns
-from app.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
-from app.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
-from app.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
-from app.apps.audio_annotation.transcription import legacy_transcribe
-from app.apps.director_desk.agent_session import DirectorEditorSessions
-from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
-from app.apps.galgame_workshop.assets.asr import GalgameAsrRunner
-from app.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
-from app.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
-from app.apps.interview_assistant.executor_status import executor_status
-from app.apps.interview_assistant.runner import InterviewPreparationRunner
-from app.apps.motion_compositor.legacy_project_resources import LegacyProjectResources
-from app.apps.motion_compositor.runner import MotionExportRunner
-from app.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
-from app.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
-from app.apps.thought_workshop.account_directory import DirectoryBindings
-from app.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
-from app.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
-from app.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
-from app.apps.thought_workshop.legacy_writing import LegacyWritingModels
-from app.apps.thought_workshop.writing import WritingBindings
-from app.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
-from app.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
-from app.apps.video_editor.runner import VideoEditorRunner
-from app.apps.visual_workshop.acceptance.runner import AcceptanceRunner
-from app.apps.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
-from app.apps.visual_workshop.generation_runner import VisualGenerationRunner
 from app.capabilities.agents.sessions.access import LocalSourceAccess
 from app.capabilities.asset_store.account_upgrade import upgrade_pending
 from app.capabilities.asset_store.layout_migration import (
@@ -102,19 +75,51 @@ from app.llm.playground.legacy_generation_references import LegacyGenerationRefe
 from app.llm.playground.recovery import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from app.llm.provider_transports import ProviderTransports
-from app.problem_details import (
+from app.runtime.config import get_settings
+from app.runtime.db import SessionLocal, close_website_database
+from db.migrations import apply_migrations
+from db.migrations.registry import LATEST_MIGRATION_ID
+from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
+from studio.apps.agent_workbench.execution.storage import interrupt_all as interrupt_workbench_runs
+from studio.apps.agent_workbench.sync.runner import WorkbenchSyncRunner
+from studio.apps.audio_annotation.legacy_sources import LegacyAnnotationSources
+from studio.apps.audio_annotation.projects import AudioAnnotationProjects
+from studio.apps.audio_annotation.transcription import legacy_transcribe
+from studio.apps.director_desk.agent_session import DirectorEditorSessions
+from studio.apps.galgame_workshop.assets.annotation_import_runner import (
+    GalgameAnnotationImportRunner,
+)
+from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
+from studio.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
+from studio.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from studio.apps.interview_assistant.executor_status import executor_status
+from studio.apps.interview_assistant.runner import InterviewPreparationRunner
+from studio.apps.motion_compositor.legacy_project_resources import LegacyProjectResources
+from studio.apps.motion_compositor.runner import MotionExportRunner
+from studio.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
+from studio.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
+from studio.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
+from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
+from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
+from studio.apps.thought_workshop.legacy_writing import LegacyWritingModels
+from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
+from studio.apps.thought_workshop.writing import WritingBindings
+from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
+from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
+from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
+from studio.apps.visual_workshop.assistant.actions import recover_interrupted_visual_assistant_runs
+from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+from studio.assembly.annotation import document_editor
+from studio.runtime.http.problem_details import (
     account_exception_handler,
     http_exception_handler,
     revision_conflict_handler,
     storage_operational_error_handler,
     validation_exception_handler,
 )
-from app.runtime.config import get_settings
-from app.runtime.db import SessionLocal, close_website_database
-from app.runtime.polling_runner import RunnerSupervisor
-from app.runtime.revisions import RevisionConflictError
-from db.migrations import apply_migrations
-from db.migrations.registry import LATEST_MIGRATION_ID
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.tasks.polling import RunnerSupervisor
 
 settings = get_settings()
 
@@ -194,6 +199,12 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.state.database = SimpleNamespace(sessions=SessionLocal)
+app.state.annotation_document_editor = document_editor
+app.state.annotation_projects = lambda _request, session: AudioAnnotationProjects(
+    session, sources=LegacyAnnotationSources(session, settings)
+)
+app.state.annotation_transcriber = lambda _request, session: partial(legacy_transcribe, session)
+app.state.annotation_staging = None
 app.state.director_editor = DirectorEditorSessions(SessionLocal)
 app.state.code_agent_catalog = lambda _request, *, can_enable: code_agent_catalog(
     can_enable=can_enable
@@ -229,13 +240,11 @@ SessionLocal.configure(
         **SessionLocal.kw.get("info", {}),
         "thought_asset_metadata_factory": LegacyAssetMetadata,
         "interview_executor_status": executor_status,
-        "annotation_sources": LegacyAnnotationSources,
         "presentation_project_assets": LegacyProjectAssets,
         "motion_project_resources": LegacyProjectResources,
         "video_project_layouts": LegacyVideoLayouts,
         "video_timeline_assets": LegacyTimelineAssets,
         "presentation_import": import_legacy_presentation,
-        "annotation_transcribe": legacy_transcribe,
         "creative_authors_factory": LegacyCreativeAuthors,
         "creative_archives_factory": LegacyCreativeArchives,
         "creative_sources_factory": LegacyCreativeSources,

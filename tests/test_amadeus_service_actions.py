@@ -6,9 +6,9 @@ import httpx
 from tests.test_community_asset_protocol import CATALOG, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from fpl_amadeus.application import create_app
-from fpl_amadeus.migrations.registry import MIGRATIONS
-from fpl_runtime.migrations import apply
+from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.amadeus.application import create_app
+from studio.runtime.database.migrations import apply
 
 
 async def test_action_stream_claim_and_write_share_the_same_approval(
@@ -113,8 +113,8 @@ async def test_approved_operation_binds_exact_bytes_and_does_not_retry_uncertain
     scenario,  # noqa: F811
     tmp_path,
 ):
-    from fpl_runtime.approved_operations import PURPOSE, request_digest
-    from fpl_runtime.delegation import RequestGrant, permitted
+    from studio.contracts.identity.approved_operations import PURPOSE, request_digest
+    from studio.contracts.identity.delegation import RequestGrant, permitted
 
     case = scenario
     root = tmp_path / "amadeus"

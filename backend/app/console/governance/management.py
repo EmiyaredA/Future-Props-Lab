@@ -3,7 +3,6 @@
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.capabilities.identity.principal import StudioPrincipal
 from app.console.governance.governance_transactions import (
     begin_governance,
     cas,
@@ -12,6 +11,7 @@ from app.console.governance.governance_transactions import (
 )
 from app.console.governance.service import AccountError, add_audit_event, reset_password
 from app.console.models import User
+from studio.contracts.identity.principal import StudioPrincipal
 
 
 async def account_page(

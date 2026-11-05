@@ -9,17 +9,19 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from app.apps.galgame_workshop.assets.annotation_import_runner import GalgameAnnotationImportRunner
-from app.apps.galgame_workshop.models import (
+from app.main import app
+from app.orm import bind_owner
+from app.runtime.db import SessionLocal
+from studio.apps.galgame_workshop.assets.annotation_import_runner import (
+    GalgameAnnotationImportRunner,
+)
+from studio.apps.galgame_workshop.readiness import GalgameReadiness
+from studio.apps.galgame_workshop.schemas import GalgameStoryReportIssue
+from studio.apps.galgame_workshop.storage.models import (
     GalgameAnnotationImportTask,
     GalgameAssetMetadata,
     GalgameWorkshopProject,
 )
-from app.apps.galgame_workshop.readiness import GalgameReadiness
-from app.apps.galgame_workshop.schemas import GalgameStoryReportIssue
-from app.main import app
-from app.orm import bind_owner
-from app.runtime.db import SessionLocal
 
 
 def _audio_bytes(seconds: float = 1.0) -> bytes:

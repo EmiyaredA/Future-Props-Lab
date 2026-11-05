@@ -238,15 +238,18 @@ def test_runtime_contract_has_no_notebook_model_or_api():
 
     assert not any("notebook" in path for path in app.openapi()["paths"])
     for path in [
-        "backend/app/apps/thought_workshop/models.py",
-        "backend/app/apps/thought_workshop/schemas/workshop.py",
-        "backend/app/apps/thought_workshop/notes.py",
+        "backend/studio/apps/thought_workshop/storage/models.py",
+        "backend/studio/apps/thought_workshop/schemas/workshop.py",
+        "backend/studio/apps/thought_workshop/notes.py",
         "web/src/features/thought-workshop/api.ts",
         "web/src/features/thought-workshop/queryKeys.ts",
     ]:
         source = Path(path).read_text()
         assert "notebook_id" not in source and "ThoughtNotebook" not in source
-    assert "ThoughtFolder" not in Path("backend/app/apps/thought_workshop/models.py").read_text()
+    assert (
+        "ThoughtFolder"
+        not in Path("backend/studio/apps/thought_workshop/storage/models.py").read_text()
+    )
 
 
 @pytest.mark.asyncio

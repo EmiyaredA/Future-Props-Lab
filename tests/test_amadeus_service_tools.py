@@ -9,13 +9,15 @@ from tests.test_independent_project_catalog import authorize
 from tests.test_integrations_application import Ports
 
 from app.runtime.config import Settings
-from fpl_amadeus.application import create_app as create_amadeus
-from fpl_amadeus.migrations.registry import MIGRATIONS as AMADEUS_MIGRATIONS
-from fpl_integrations.application import create_app as create_integrations
-from fpl_integrations.migrations.registry import MIGRATIONS as INTEGRATION_MIGRATIONS
-from fpl_runtime.integration_client import IntegrationIntentClient
-from fpl_runtime.integration_intents import TOOL_CALL_PATH
-from fpl_runtime.migrations import apply
+from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS as AMADEUS_MIGRATIONS
+from studio.apps.integrations.clients.authority import IntegrationIntentClient
+from studio.apps.integrations.storage.migrations.registry import (
+    MIGRATIONS as INTEGRATION_MIGRATIONS,
+)
+from studio.assembly.independent.amadeus.application import create_app as create_amadeus
+from studio.assembly.independent.integrations.application import create_app as create_integrations
+from studio.contracts.integrations.integration_intents import TOOL_CALL_PATH
+from studio.runtime.database.migrations import apply
 
 
 class ToolMesh(httpx.AsyncBaseTransport):

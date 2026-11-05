@@ -17,11 +17,11 @@ from scripts.website.migrate_tools_navigation import NAVIGATION
 from scripts.website.migration_transfer import transfer
 
 from db.migrations.runner import apply_migrations
-from fpl_runtime.migration_batches import MAX_RECORDS, MigrationPlan
-from fpl_runtime.migrations import apply
-from fpl_tools.migration_application import PREFIX
-from fpl_tools.migrations.registry import MIGRATIONS
-from fpl_tools.navigation_migration import NavigationPage
+from studio.apps.tools.navigation_migration import NavigationPage
+from studio.apps.tools.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.tools.maintenance import PREFIX
+from studio.contracts.management.migration_batches import MAX_RECORDS, MigrationPlan
+from studio.runtime.database.migrations import apply
 
 
 def legacy_database(path, owner, other):
@@ -65,7 +65,15 @@ def available_ports():
 
 
 @contextmanager
-def listener(client, port, command, plan, *args, module="fpl_tools", prefix=PREFIX):
+def listener(
+    client,
+    port,
+    command,
+    plan,
+    *args,
+    module="studio.assembly.independent.tools.cli",
+    prefix=PREFIX,
+):
     address = f"http://127.0.0.1:{port}"
     with subprocess.Popen(
         [

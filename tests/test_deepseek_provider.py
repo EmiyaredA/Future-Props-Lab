@@ -9,7 +9,6 @@ from datetime import datetime
 import httpx
 import pytest
 
-from app.capabilities.agents.harness.contracts import ModelUsageUpdate
 from app.llm.call_logs.reproduction import build_reproduction_bundle
 from app.llm.models import LlmCallLog
 from app.llm.providers.agent import AgentMessage, HttpAgentAdapter, ModelTurnEnd, ToolCall, ToolSpec
@@ -20,6 +19,7 @@ from app.llm.providers.streaming import (
     stream_text_completion,
 )
 from app.llm.providers.text import invoke_diagnostic
+from studio.contracts.agent_runtime.dialogue import ModelUsageUpdate
 
 
 def frame(payload):

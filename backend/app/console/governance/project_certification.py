@@ -1,9 +1,9 @@
 from typing import Literal
 
-from app.capabilities.identity.errors import AccountError
 from app.console.governance.governance_transactions import begin_governance, cas
 from app.console.governance.service import add_audit_event
 from app.orm import CERTIFIABLE_PROJECT_ROOTS
+from studio.contracts.identity.errors import AccountError
 
 
 async def certify_project(

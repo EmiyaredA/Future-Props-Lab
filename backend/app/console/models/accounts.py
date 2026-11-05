@@ -5,9 +5,9 @@ from datetime import datetime
 from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.runtime.ids import new_id
-from app.runtime.orm_base import Base
-from app.runtime.time import utc_now
+from studio.runtime.database.orm_base import Base
+from studio.runtime.ids import new_id
+from studio.runtime.time import utc_now
 
 
 class User(Base):

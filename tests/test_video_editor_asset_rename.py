@@ -7,10 +7,10 @@ import httpx
 import pytest
 from fastapi import Request
 
-from app.apps.video_editor.runner import VideoEditorRunner
 from app.deps import SessionDep, require_studio_auth
 from app.main import app
 from app.orm import bind_owner
+from studio.apps.video_editor.runner import VideoEditorRunner
 
 
 @pytest.fixture(scope="module")

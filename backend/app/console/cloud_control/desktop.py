@@ -4,8 +4,8 @@ import asyncio
 
 from app.runtime.config import get_cloud_settings
 from app.runtime.db import SessionLocal
-from fpl_runtime.cloud_authority import DESKTOP_COOKIE as DESKTOP_COOKIE
-from fpl_runtime.cloud_authority import DESKTOP_SOCKET as DESKTOP_SOCKET
+from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE as DESKTOP_COOKIE
+from studio.contracts.identity.cloud_authority import DESKTOP_SOCKET as DESKTOP_SOCKET
 
 from . import desktop_bridge
 from .access import desktop_authorized

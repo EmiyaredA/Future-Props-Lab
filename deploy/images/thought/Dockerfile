@@ -6,9 +6,9 @@ COPY backend/ /app/backend/
 COPY web/ /app/web/
 COPY deploy/contracts/ /app/deploy/contracts/
 ENV PYTHONPATH=/app/backend PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
-RUN python -c "import fpl_thought.application"
+RUN python -c "import studio.assembly.independent.thought_workshop.application"
 ARG FPL_SERVICE_VERSION
 ENV FPL_SERVICE_VERSION=$FPL_SERVICE_VERSION
 EXPOSE 8080
-ENTRYPOINT ["python", "-m", "fpl_thought"]
+ENTRYPOINT ["python", "-m", "studio.assembly.independent.thought_workshop.cli"]
 CMD ["serve"]

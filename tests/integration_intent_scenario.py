@@ -14,19 +14,19 @@ from sqlalchemy import select
 from app.llm.models import RuntimeAdmission
 from app.runtime.config import Settings
 from external_intent_scenario import exercise_external_intents
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app
-from fpl_identity.migrations.registry import MIGRATIONS
-from fpl_identity.models import IntegrationIntent
-from fpl_models.admission import ModelAdmission
-from fpl_models.application import create_app as models_app
-from fpl_models.integration_records import IntegrationCapacity
-from fpl_models.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
-from fpl_runtime.claims import HEADER
-from fpl_runtime.integration_client import IntegrationIntentClient
-from fpl_runtime.integration_intents import IntegrationScope
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS
+from studio.apps.identity.storage.service_models import IntegrationIntent
+from studio.apps.integrations.clients.authority import IntegrationIntentClient
+from studio.apps.model_service.admission.admission import ModelAdmission
+from studio.apps.model_service.storage.integration_records import IntegrationCapacity
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
+from studio.assembly.independent.identity.application import create_app
+from studio.assembly.independent.model_service.application import create_app as models_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import HEADER
+from studio.contracts.integrations.integration_intents import IntegrationScope
+from studio.runtime.database.migrations import apply
 
 
 async def main():

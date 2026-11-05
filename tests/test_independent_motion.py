@@ -19,18 +19,20 @@ from tests.test_community_asset_protocol import (  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
 from app.capabilities.asset_store.library import AssetLibrary
-from fpl_motion import file_routes
-from fpl_motion.application import PROJECTS, create_app
-from fpl_motion.migrations.registry import MIGRATIONS
-from fpl_motion.resources import ProjectResources
-from fpl_rendering.application import create_app as rendering_app
-from fpl_rendering.migrations.registry import MIGRATIONS as RENDERING_MIGRATIONS
-from fpl_rendering.settings import RenderingSettings
-from fpl_runtime.capability_client import CapabilityClient, CapabilityUnavailable
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.motion_snapshot import ARCHIVE_DOMAIN, IMPORT
-from fpl_runtime.thought_archives import ArchiveAuthenticator
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.media_rendering.settings import RenderingSettings
+from studio.apps.media_rendering.storage.migrations.registry import (
+    MIGRATIONS as RENDERING_MIGRATIONS,
+)
+from studio.apps.motion_compositor.resources import ProjectResources
+from studio.apps.motion_compositor.storage.migrations.registry import MIGRATIONS
+from studio.apps.motion_compositor.transport import file_routes
+from studio.assembly.independent.media_rendering.application import create_app as rendering_app
+from studio.assembly.independent.motion_compositor.application import PROJECTS, create_app
+from studio.contracts.motion_compositor.motion_snapshot import ARCHIVE_DOMAIN, IMPORT
+from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityClient, CapabilityUnavailable
 
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = "motion-identity-fixture-secret-unique"

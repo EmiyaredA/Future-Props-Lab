@@ -5,8 +5,8 @@ import httpx
 import pytest
 from pydantic import ValidationError
 
-from app.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
 from app.main import app
+from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdk/python/src"))
 

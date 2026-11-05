@@ -70,6 +70,6 @@ erDiagram
 
 ## 代码入口
 
-1. `backend/app/apps/audio_annotation/schemas/document.py`
-2. `backend/app/apps/audio_annotation/transcription.py`
-3. `backend/app/apps/audio_annotation/exports.py`
+1. `backend/studio/apps/audio_annotation/schemas/document.py`
+2. `backend/studio/apps/audio_annotation/transcription.py`
+3. `backend/studio/apps/audio_annotation/exports.py`

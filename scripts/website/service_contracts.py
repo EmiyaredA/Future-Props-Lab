@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from fpl_deployment.contracts import generate  # noqa: E402
+from studio.deployment.contracts import generate  # noqa: E402
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

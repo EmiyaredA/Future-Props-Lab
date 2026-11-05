@@ -8,7 +8,7 @@ import httpx
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 POLL_RETRY_PREFIX = "供应商状态查询暂时失败"
 LEGACY_POLL_ERRORS = frozenset(

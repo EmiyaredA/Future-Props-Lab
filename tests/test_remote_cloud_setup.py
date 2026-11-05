@@ -9,18 +9,18 @@ from sqlalchemy import select
 from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from fpl_config.cloud_projection import CloudProjection
-from fpl_host.cloud_setup_worker import CloudSetupWorker
-from fpl_host.transport import NativeTransport
-from fpl_identity.accounts import create_account
-from fpl_remote.application import create_app
-from fpl_remote.migrations.registry import MIGRATIONS
-from fpl_remote.models import RemoteSetupJob
-from fpl_remote.settings import RemoteSettings
-from fpl_runtime.claims import HEADER, issue_context, verify_context
-from fpl_runtime.cloud_setup import SETTINGS_PATH
-from fpl_runtime.migrations import apply
-from fpl_runtime.native_ingress import NativeWorkerOptions
+from studio.apps.identity.accounts import create_account
+from studio.apps.remote_desktop.settings import RemoteSettings
+from studio.apps.remote_desktop.storage.migrations.registry import MIGRATIONS
+from studio.apps.remote_desktop.storage.service_models import RemoteSetupJob
+from studio.assembly.independent.remote_desktop.application import create_app
+from studio.config.cloud_projection import CloudProjection
+from studio.contracts.identity.claims import HEADER, issue_context, verify_context
+from studio.contracts.remote_desktop.setup import SETTINGS_PATH
+from studio.host.deployment.cloud_setup_worker import CloudSetupWorker
+from studio.host.transport import NativeTransport
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.native_ingress import NativeWorkerOptions
 
 CREDENTIAL = "isolated-remote-service-credential-" * 2
 INGRESS = "isolated-remote-ingress-credential-" * 2

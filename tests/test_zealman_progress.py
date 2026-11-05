@@ -9,7 +9,7 @@ from app.llm.providers.zealman_live import ZealmanLiveMonitor, apply_event
 from app.llm.providers.zealman_progress import execution_info
 from app.llm.providers.zealman_video import get_task
 from app.llm.task_execution import TaskExecutionInfo
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 
 @pytest.mark.parametrize(

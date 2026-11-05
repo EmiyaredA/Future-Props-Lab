@@ -10,7 +10,7 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 from app.llm.credential_snapshot import snapshot_from_actor, snapshot_from_row
-from fpl_runtime.claims import Actor, issue_context, verify_context
+from studio.contracts.identity.claims import Actor, issue_context, verify_context
 
 
 def test_snapshot_and_log_query_imports_do_not_initialize_identity_or_monolith_storage():

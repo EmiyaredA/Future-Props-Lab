@@ -12,15 +12,20 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from PIL import Image
 from pypdf import PdfWriter
 
-from fpl_rendering.application import create_app
-from fpl_rendering.migrations.registry import MIGRATIONS
-from fpl_rendering.models import GalgameExportJob, MotionRenderJob, VideoExportJob, VideoMediaJob
-from fpl_rendering.settings import RenderingSettings
-from fpl_runtime.capability_client import CapabilityDenied
-from fpl_runtime.claims import Actor, issue_context, verify_context
-from fpl_runtime.migrations import apply
-from fpl_runtime.protocol_hash import public_contract
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.media_rendering.settings import RenderingSettings
+from studio.apps.media_rendering.storage.migrations.registry import MIGRATIONS
+from studio.apps.media_rendering.storage.service_models import (
+    GalgameExportJob,
+    MotionRenderJob,
+    VideoExportJob,
+    VideoMediaJob,
+)
+from studio.assembly.independent.media_rendering.application import create_app
+from studio.contracts.gateway.protocol_hash import public_contract
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context, verify_context
+from studio.runtime.database.migrations import apply
+from studio.runtime.http.capability_client import CapabilityDenied
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
@@ -239,7 +244,7 @@ async def test_cancelled_grid_waits_for_writer_before_removing_output(instance, 
 
     from app.capabilities.asset_store.schemas.video_frames import VideoFramesIn
     from app.capabilities.media_rendering.preview_metadata import PreviewSource
-    from fpl_rendering import previews
+    from studio.apps.media_rendering import previews
 
     app, _client, _private, _inputs, _identity = instance
     started, release = threading.Event(), threading.Event()

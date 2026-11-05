@@ -7,7 +7,7 @@ from tests.test_asset_owned_files import owned as owned
 
 from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from fpl_assets.layout import StorageLayouts
+from studio.apps.asset_library.layout import StorageLayouts
 
 
 async def legacy_file(owned):

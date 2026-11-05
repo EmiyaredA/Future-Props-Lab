@@ -3,7 +3,7 @@
 from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.runtime.orm_base import Base
+from studio.runtime.database.orm_base import Base
 
 
 class AccountStorageUpgradeRoot(Base):

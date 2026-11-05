@@ -2,8 +2,8 @@
 
 import pytest
 
-from fpl_assets.settings import load_settings
-from fpl_config import ConfigurationError
+from studio.apps.asset_library.settings import load_settings
+from studio.config import ConfigurationError
 
 
 def test_minimal_assets_configuration_needs_no_secret(tmp_path):

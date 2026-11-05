@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from fpl_runtime.delegation import RequestGrant, permitted
-from fpl_runtime.resource_routes import RESOURCE_ROUTES, page_link
-from fpl_runtime.routing import RouteCatalog
+from studio.contracts.gateway.resource_routes import RESOURCE_ROUTES, page_link
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.delegation import RequestGrant, permitted
 
 CATALOG = RouteCatalog.read(Path(__file__).resolve().parents[1] / "deploy/contracts/ownership.json")
 

@@ -15,14 +15,14 @@ from tests.test_account_system import create_test_account, login_and_change_pass
 from tests.test_thought_workshop import note_body
 from tests.thought_helpers import create_note
 
-from app.apps.thought_workshop.canvas_export import canvas_svg, wrapped_lines
-from app.apps.thought_workshop.schemas.document import (
+from app.main import app
+from studio.apps.thought_workshop.canvas_export import canvas_svg, wrapped_lines
+from studio.apps.thought_workshop.schemas.document import (
     document_text,
     file_ids,
     safe_link,
     validate_document,
 )
-from app.main import app
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "sdk/python/src"))
 

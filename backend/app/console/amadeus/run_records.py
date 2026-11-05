@@ -24,7 +24,7 @@ from app.console.amadeus.schemas import (
     RunOut,
 )
 from app.runtime.operation_receipts import OperationError
-from app.runtime.time import utc_now
+from studio.runtime.time import utc_now
 
 ACTIVE = frozenset({"running", "cancelling"})
 TERMINAL = frozenset(

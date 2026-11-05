@@ -2,8 +2,8 @@
 
 import pytest
 
-from app.apps.thought_workshop.knowledge_tools.references import reference_ids, remap_references
-from app.apps.thought_workshop.schemas.document import validate_document
+from studio.apps.thought_workshop.knowledge_tools.references import reference_ids, remap_references
+from studio.apps.thought_workshop.schemas.document import validate_document
 
 
 def card(target="target"):

@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.integrations.models import IntegrationCheck
 from app.integrations.schemas import IntegrationCheckOut
-from app.runtime.time import iso_utc
+from studio.runtime.time import iso_utc
 
 
 def check_out(row: IntegrationCheck) -> IntegrationCheckOut:

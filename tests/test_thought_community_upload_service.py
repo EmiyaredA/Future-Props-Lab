@@ -10,11 +10,11 @@ from tests.test_community_asset_protocol import (
 from tests.test_thought_archive_import_service import thought_app
 from tests.test_thought_community_write_service import authorize, change_role, prepare_case
 
-from app.apps.thought_workshop.publication.models import CommunityUpload
 from app.capabilities.asset_store.models import VisualAsset
-from fpl_runtime.community_uploads import PREFIX, public_path
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.thought_archives import SETTLE_PATH
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.thought_workshop.publication.models import CommunityUpload
+from studio.contracts.thought_workshop.community_uploads import PREFIX, public_path
+from studio.contracts.thought_workshop.thought_archives import SETTLE_PATH
 
 DATA = b"attachment from a community editor"
 PATH = public_path("pub", "note")

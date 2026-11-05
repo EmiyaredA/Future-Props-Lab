@@ -34,8 +34,8 @@ from app.integrations.schemas import (
 from app.runtime.config import get_settings
 from app.runtime.credentials import SecretCipher
 from app.runtime.ownership import require_owner_id
-from app.runtime.revisions import RevisionConflictError
-from app.runtime.time import iso_utc, utc_now
+from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.time import iso_utc, utc_now
 
 
 def _tool_out(row: McpDiscoveredTool) -> McpToolOut:

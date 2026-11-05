@@ -9,13 +9,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.apps.thought_workshop.assistant import prepare
-from app.apps.thought_workshop.schemas.workshop import ThoughtAssistantIn
-from app.apps.thought_workshop.writing import WritingModel
-from fpl_models.writing import WritingResponse, live_deltas
-from fpl_runtime.delegation import RequestGrant, permitted, target_permission_path
-from fpl_runtime.routing import RouteCatalog
-from fpl_runtime.writing import WRITING_MODELS_PATH, WritingInput
+from studio.apps.model_service.writing import WritingResponse, live_deltas
+from studio.apps.thought_workshop.assistant import prepare
+from studio.apps.thought_workshop.schemas.workshop import ThoughtAssistantIn
+from studio.apps.thought_workshop.writing import WritingModel
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.delegation import RequestGrant, permitted, target_permission_path
+from studio.contracts.thought_workshop.writing import WRITING_MODELS_PATH, WritingInput
 
 ROOT = Path(__file__).resolve().parents[1]
 

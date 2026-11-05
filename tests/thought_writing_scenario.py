@@ -10,23 +10,23 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from app.apps.thought_workshop.assistant import PreparedWriting
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider, RuntimeAdmission
 from app.llm.provider_transports import ProviderTransports
 from app.runtime.ownership import bind_owner
-from fpl_identity.accounts import create_account
-from fpl_identity.application import create_app
-from fpl_identity.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
-from fpl_models.admission import ModelAdmission
-from fpl_models.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
-from fpl_models.models import ACCOUNT_MODELS, MODELS
-from fpl_models.writing import router
-from fpl_runtime.database import Database
-from fpl_runtime.identity_client import LiveAuthorization
-from fpl_runtime.migrations import apply
-from fpl_runtime.routing import RouteCatalog
-from fpl_runtime.writing import WritingInput
-from fpl_thought.writing_models import HttpWritingModels
+from studio.apps.identity.accounts import create_account
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
+from studio.apps.model_service.admission.admission import ModelAdmission
+from studio.apps.model_service.storage.migrations.registry import MIGRATIONS as MODEL_MIGRATIONS
+from studio.apps.model_service.storage.service_models import ACCOUNT_MODELS, MODELS
+from studio.apps.model_service.writing import router
+from studio.apps.thought_workshop.assistant import PreparedWriting
+from studio.apps.thought_workshop.writing_models import HttpWritingModels
+from studio.assembly.independent.identity.application import create_app
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.thought_workshop.writing import WritingInput
+from studio.runtime.database.migrations import apply
+from studio.runtime.database.sessions import Database
 
 root = Path(os.environ["THOUGHT_WRITING_ROOT"]).resolve()
 assert root.is_relative_to(Path(tempfile.gettempdir()).resolve())

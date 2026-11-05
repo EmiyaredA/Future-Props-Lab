@@ -29,7 +29,7 @@ from tests.test_galgame_history_migration import open_peers, verify_edit_replay
 from tests.test_tools_navigation_migration import available_ports
 from tests.test_website_legacy_snapshot import PASSWORD, REVISION, ROOT, configuration, website
 
-from app.apps.visual_workshop.acceptance.models import (
+from studio.apps.visual_workshop.acceptance.models import (
     AcceptanceAssetReference,
     AcceptanceRepairDraft,
     AcceptanceRun,
@@ -38,7 +38,9 @@ from app.apps.visual_workshop.acceptance.models import (
     AcceptanceTemplate,
     NodeAcceptanceBinding,
 )
-from app.apps.visual_workshop.models import (
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.visual_workshop.storage.models import (
     VisualAssistantAction,
     VisualAssistantConversation,
     VisualAssistantMessage,
@@ -46,9 +48,7 @@ from app.apps.visual_workshop.models import (
     VisualGenerationBatch,
     VisualGenerationTask,
 )
-from app.apps.visual_workshop.outputs.models import VisualNodeOutput
-from fpl_runtime.migration_batches import MigrationPlan
-from fpl_visual.migrations.registry import MIGRATIONS
+from studio.contracts.management.migration_batches import MigrationPlan
 
 PROJECTS = "/v1/visual-workshop/projects"
 

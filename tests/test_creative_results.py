@@ -3,12 +3,15 @@
 import httpx
 import pytest
 
-from fpl_creative.install_authorization import InstallSource
-from fpl_creative.install_target import HttpCreativeInstallTarget
-from fpl_runtime.capability_client import CapabilityUnavailable
-from fpl_runtime.creative_integrations import CreativeInstallBatch, CreativeInstallPart
-from fpl_runtime.creative_results import CreativeResultAuthenticator
-from fpl_runtime.integration_intents import digest
+from studio.apps.creative_workshop.install_authorization import InstallSource
+from studio.apps.creative_workshop.install_target import HttpCreativeInstallTarget
+from studio.contracts.creative_workshop.creative_integrations import (
+    CreativeInstallBatch,
+    CreativeInstallPart,
+)
+from studio.contracts.creative_workshop.creative_results import CreativeResultAuthenticator
+from studio.contracts.integrations.integration_intents import digest
+from studio.runtime.http.capability_client import CapabilityUnavailable
 
 
 def batch():
@@ -41,7 +44,9 @@ async def test_unsigned_or_replayed_absence_never_allows_new_submission(monkeypa
         body=body,
     )
     source = InstallSource("source", "evidence", b'{"release_id":"release"}')
-    monkeypatch.setattr("fpl_creative.install_target.secrets.token_hex", lambda _n: "b" * 32)
+    monkeypatch.setattr(
+        "studio.apps.creative_workshop.install_target.secrets.token_hex", lambda _n: "b" * 32
+    )
     for header in ({}, {"X-Fpl-Creative-Result": signature}):
 
         async def reply(_request, result_headers=header):

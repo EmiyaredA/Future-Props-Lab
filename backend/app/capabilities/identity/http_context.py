@@ -4,9 +4,9 @@ from datetime import timedelta
 
 from fastapi import HTTPException, Request
 
-from app.capabilities.identity.principal import StudioPrincipal
 from app.capabilities.identity.security import REAUTH_MINUTES
-from app.runtime.time import utc_now
+from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.time import utc_now
 
 
 def client_ip(request: Request) -> str:

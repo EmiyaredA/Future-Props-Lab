@@ -10,27 +10,27 @@ from uuid import uuid4
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from fpl_agents.application import create_app
-from fpl_agents.migrations.registry import MIGRATIONS
-from fpl_agents.supervisor import CollectionSupervisor
-from fpl_runtime.claims import Actor, issue_context
-from fpl_runtime.migrations import apply
-from fpl_runtime.native_protocol import NativeLease
-from fpl_runtime.protocol_hash import public_contract
-from fpl_runtime.routing import RouteCatalog
+from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
+from studio.apps.agent_workbench.supervisor import CollectionSupervisor
+from studio.assembly.independent.agent_workbench.application import create_app
+from studio.contracts.agent_workbench.native import NativeLease
+from studio.contracts.gateway.protocol_hash import public_contract
+from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.claims import Actor, issue_context
+from studio.runtime.database.migrations import apply
 
 assert "app.main" not in sys.modules and "app.orm" not in sys.modules
 assert "app.console.models.accounts" not in sys.modules
 assert "app.runtime.db" not in sys.modules
 assert not any(
     name.startswith(
-        ("app.llm", "app.capabilities.agents.sessions.parsers", "app.apps.visual_workshop")
+        ("app.llm", "app.capabilities.agents.sessions.parsers", "studio.apps.visual_workshop")
     )
     for name in sys.modules
 )
 
-from fpl_host.agent_sources import OPERATIONS, execute  # noqa: E402
-from fpl_host.receipts import ReceiptStore  # noqa: E402
+from studio.host.receipts import ReceiptStore  # noqa: E402
+from studio.host.session_collection.agent_sources import OPERATIONS, execute  # noqa: E402
 
 state = Path(os.environ["AGENTS_TEST_ROOT"])
 native_root = state.parent / "native"
@@ -143,7 +143,7 @@ async def journey():
             stop.set()
             await task
             async with app.state.database.sessions(info={"allow_system_reads": True}) as db:
-                from app.apps.agent_workbench.models import WorkbenchSource
+                from studio.apps.agent_workbench.storage.models import WorkbenchSource
 
                 row = await db.get(WorkbenchSource, source["id"])
             await CollectionSupervisor(app.state.database, identity).ensure(row, 0)
