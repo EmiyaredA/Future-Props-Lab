@@ -92,15 +92,19 @@ def run(options):
 
 if __name__ == "__main__":
     try:
-        from studio.assembly.independent.agent_workbench.maintenance import (
-            create_export_app,
-            create_import_app,
-        )
-        from studio.runtime.database.project_history_migration import handle_maintenance
-
         arguments = parser()
         options = arguments.parse_args()
-        if not handle_maintenance(arguments, options, create_export_app, create_import_app):
+        if options.command in {"migration-export", "migration-import"}:
+            from studio.assembly.independent.agent_workbench.maintenance import (
+                create_export_app,
+                create_import_app,
+            )
+            from studio.runtime.database.project_history_migration import handle_maintenance
+
+            handle_maintenance(arguments, options, create_export_app, create_import_app)
+        else:
+            if options.migration_plan is not None or options.legacy_db is not None:
+                arguments.error("迁移计划与源快照仅用于维护入口")
             run(options)
     except (ValueError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)

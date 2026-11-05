@@ -13,6 +13,7 @@ from sqlalchemy import select
 from studio.apps.model_service.storage.models.model_service import ModelEntry
 from studio.apps.thought_workshop.publication.models import Publication
 from studio.apps.thought_workshop.publication.use_cases import Community
+from studio.apps.thought_workshop.storage.migration_receipts import ThoughtImportReceipt
 from studio.apps.thought_workshop.storage.migrations.registry import MIGRATIONS
 from studio.apps.thought_workshop.storage.models import (
     ThoughtKnowledgeBase,
@@ -31,7 +32,9 @@ def test_thought_schema_owns_every_registered_table_without_external_fks(tmp_pat
     check(path, "thought", MIGRATIONS)
     with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as db:
         tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        assert tables == {model.__tablename__ for model in MODELS} | {"_fpl_service_schema"}
+        assert tables == {model.__tablename__ for model in (*MODELS, ThoughtImportReceipt)} | {
+            "_fpl_service_schema"
+        }
         assert not tables.intersection(
             {"users", "visual_assets", "llm_call_logs", "integration_external_connections"}
         )

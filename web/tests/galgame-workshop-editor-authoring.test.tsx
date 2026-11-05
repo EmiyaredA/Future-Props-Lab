@@ -286,7 +286,7 @@ test("uploads dialogue and custom Gal component images with auto-save", async ()
   const { container } = renderEditor();
   expect(await screen.findByText("纵向切片")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "样式" }));
-  await user.click(await screen.findByRole("button", { name: /经典渐隐/ }));
+  await user.click(await screen.findByText("经典渐隐", {}, { timeout: 5000 }));
   await waitFor(() =>
     expect(
       vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1].presentation

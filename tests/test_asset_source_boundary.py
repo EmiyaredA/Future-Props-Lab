@@ -19,14 +19,14 @@ def test_asset_use_cases_load_no_visual_orm_and_legacy_export_is_explicit():
 import sys
 from studio.apps.asset_library.files import Files
 from studio.assembly.independent.asset_library.application import create_app
+from studio.apps.asset_library.storage.migration_records import LEGACY_VISUAL_LINKS
 from studio.apps.asset_library.storage.service_models import MODELS
 assert not any(name.startswith("app.apps.") for name in sys.modules)
 assert "studio.assembly.website.models" not in sys.modules
 assert "studio.apps.identity.storage.models.accounts" not in sys.modules
-from studio.apps.asset_library.storage.models import VisualProjectAssetReference
-from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference as owned
-assert VisualProjectAssetReference is owned
-assert owned not in MODELS
+assert "studio.apps.visual_workshop.asset_references.models" not in sys.modules
+assert LEGACY_VISUAL_LINKS.name == "visual_project_asset_references"
+assert LEGACY_VISUAL_LINKS.name not in {model.__tablename__ for model in MODELS}
 """,
         ],
         cwd=ROOT,

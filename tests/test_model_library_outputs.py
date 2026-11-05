@@ -386,20 +386,30 @@ for module in ('studio.runtime.database.website',
 async def test_real_identity_delegation_checks_credentials_live_session_and_logout(
     instance, tmp_path, monkeypatch
 ):
+    from cryptography.fernet import Fernet
+
     from studio.apps.identity.accounts import create_account
     from studio.apps.identity.clients.authorization import LiveAuthorization
     from studio.apps.identity.storage.migrations.registry import MIGRATIONS as IDENTITY_MIGRATIONS
     from studio.assembly.independent.identity.application import create_app as create_identity
+    from studio.config.settings import Settings
 
     app, _client, key, _dependencies = instance
     identity_root = tmp_path / "identity"
     apply(identity_root / "service.db", "identity", IDENTITY_MIGRATIONS)
     catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
+    origin = "http://127.0.0.1:19000"
+    settings = Settings(
+        _config_file=None,
+        _read_environment=False,
+        fpl_database_path=str(identity_root / "service.db"),
+        cors_origins=origin,
+        fpl_secrets_key=Fernet.generate_key().decode(),
+    )
     monkeypatch.setattr(
         "studio.assembly.independent.identity.application.get_settings",
-        lambda: SimpleNamespace(database_path=identity_root / "service.db"),
+        lambda: settings,
     )
-    origin = "http://127.0.0.1:19000"
     gateway, model_token, asset_token = [
         value * 3 for value in ("synthetic-gateway-", "synthetic-models-", "synthetic-assets-")
     ]

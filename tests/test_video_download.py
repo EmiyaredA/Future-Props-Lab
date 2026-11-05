@@ -193,14 +193,19 @@ async def test_deps_and_job_lifecycle(monkeypatch, tmp_path: Path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_missing_deps_block_job_creation(monkeypatch) -> None:
+async def test_missing_deps_block_job_creation(tmp_path, monkeypatch) -> None:
     monkeypatch.setattr(
-        app.state.video_downloads,
-        "probe",
-        lambda: vd.VideoDownloadDepsOut(
-            ready=False,
-            yt_dlp=vd.BinaryStatus(name="yt-dlp", ok=False, hint="安装 yt-dlp"),
-            ffmpeg=vd.BinaryStatus(name="ffmpeg", ok=True, path="/bin/ffmpeg", version="ok"),
+        app.state,
+        "video_downloads",
+        vd.VideoDownloads(
+            root=tmp_path,
+            download=app.state.video_downloads.download,
+            ingest=app.state.video_downloads.ingest,
+            probe=lambda: vd.VideoDownloadDepsOut(
+                ready=False,
+                yt_dlp=vd.BinaryStatus(name="yt-dlp", ok=False, hint="安装 yt-dlp"),
+                ffmpeg=vd.BinaryStatus(name="ffmpeg", ok=True, path="/bin/ffmpeg", version="ok"),
+            ),
         ),
     )
     transport = httpx.ASGITransport(app=app)
