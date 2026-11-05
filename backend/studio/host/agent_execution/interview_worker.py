@@ -13,10 +13,7 @@ from types import SimpleNamespace
 import httpx
 from pydantic import ValidationError
 
-from app.capabilities.agents.cli.catalog import inspect_connection
 from studio.apps.interview_assistant.bundles import acceptance
-from studio.apps.interview_assistant.codex import CodexExecutor, executable, frozen_context
-from studio.config.settings import get_settings
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.interview_assistant.documents import PreparationBundle
 from studio.contracts.interview_assistant.execution import (
@@ -27,13 +24,17 @@ from studio.contracts.interview_assistant.execution import (
 )
 from studio.host.receipts import ReceiptStore
 from studio.host.transport import LeaseEnded, NativeTransport, ProtocolConflict
-from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.lifecycle.locking import service_lock
+from studio.runtime.operation_errors import OperationError
 
 UNAVAILABLE = WorkerStatus(available=False, code="executor_unavailable")
 
 
 async def check_codex():
+    from app.capabilities.agents.cli.catalog import inspect_connection
+    from studio.apps.interview_assistant.codex import executable
+    from studio.config.settings import get_settings
+
     try:
         executable()
         status = await inspect_connection(
@@ -48,6 +49,8 @@ async def check_codex():
 
 class InterviewWorker:
     def __init__(self, transport, state_root, *, executor=None, probe=check_codex):
+        from studio.apps.interview_assistant.codex import CodexExecutor
+
         self.transport, self.probe = transport, probe
         self.executor = executor if executor is not None else CodexExecutor()
         self.receipts = ReceiptStore(state_root / "receipts", retain_acknowledged_payload=False)
@@ -66,6 +69,8 @@ class InterviewWorker:
             shutil.rmtree(path)
 
     async def run_task(self, lease, body):
+        from studio.apps.interview_assistant.codex import frozen_context
+
         if not (await self.probe()).available:
             return {"failed": "executor_unavailable", "message": "本机 Codex 暂不可用"}
         supplied = lease.model_dump(mode="json")

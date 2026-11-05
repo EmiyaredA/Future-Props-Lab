@@ -1,8 +1,13 @@
 """Interview room and material writes stay inside their independent owner."""
 
+import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import httpx
+from cryptography.fernet import Fernet
 from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
@@ -13,6 +18,42 @@ from studio.runtime.database.migrations import apply
 ROOT = Path(__file__).resolve().parents[1]
 BASE = "/v1/interview-assistant"
 ROOMS = BASE + "/rooms"
+
+
+def test_interview_worker_does_not_bind_settings_before_parsing_config(tmp_path):
+    config = tmp_path / "worker.toml"
+    config.write_text(
+        "[security]\nsecrets_key = "
+        + json.dumps(Fernet.generate_key().decode())
+        + '\n[code_agents]\ncodex_executable = "/fixture/codex"\n'
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            """
+import os
+import sys
+from pathlib import Path
+from studio.host.agent_execution.interview_worker import InterviewWorker
+os.environ["FPL_CONFIG_FILE"] = sys.argv[1]
+InterviewWorker(None, Path(sys.argv[2]))
+from studio.config.settings import get_settings
+assert get_settings().fpl_code_agents_codex_executable == "/fixture/codex"
+""",
+            str(config),
+            str(tmp_path / "worker"),
+        ],
+        cwd=ROOT,
+        env={
+            **{key: value for key, value in os.environ.items() if not key.startswith("FPL_")},
+            "PYTHONPATH": str(ROOT / "backend"),
+        },
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 async def test_room_receipt_and_material_survive_independent_restart(scenario, tmp_path):  # noqa: F811
