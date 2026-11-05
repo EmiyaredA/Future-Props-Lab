@@ -478,6 +478,13 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
     model = runtime / "local-models/fixture/weights.bin"
     model.parent.mkdir(parents=True)
     model.write_bytes(b"isolated local weights")
+    interpreter = runtime / legacy_snapshot.MODEL_ENVIRONMENT / "python/python/bin/python3"
+    interpreter.parent.mkdir(parents=True)
+    interpreter.write_bytes(b"isolated bundled interpreter fixture")
+    interpreter.chmod(0o755)
+    venv_python = runtime / legacy_snapshot.MODEL_VENV_PYTHON
+    venv_python.parent.mkdir(parents=True)
+    venv_python.symlink_to(interpreter)
     (runtime / ".trash").mkdir(mode=0o700)
     (runtime / "fixture-link").symlink_to("local-models/fixture/weights.bin")
     web = tmp_path / "web"
@@ -681,6 +688,10 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
     assert proof["files"] >= 8
     assert (snapshot / legacy_snapshot.CONFIG).read_bytes() == config.read_bytes()
     assert (snapshot / ".runtime/fixture-link").is_symlink()
+    sealed_python = snapshot / ".runtime" / legacy_snapshot.MODEL_VENV_PYTHON
+    assert venv_python.readlink() == interpreter
+    assert not sealed_python.readlink().is_absolute()
+    assert sealed_python.resolve() == snapshot / ".runtime" / interpreter.relative_to(runtime)
     snapshot_database = snapshot / ".runtime" / legacy_snapshot.DATABASE
     assert legacy_snapshot.digest(snapshot_database) == legacy_snapshot.digest(database)
     migrate_rehearsal(snapshot_database, tmp_path, account, proof["manifest_sha256"])
@@ -695,6 +706,9 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
     model.write_bytes(b"isolated simulated source failure")
     assert legacy_snapshot.restore(snapshot, target, REVISION, seal) == proof
     assert (target / ".runtime/fixture-link").read_bytes() == b"isolated local weights"
+    restored_python = target / ".runtime" / legacy_snapshot.MODEL_VENV_PYTHON
+    assert restored_python.resolve() == target / ".runtime" / interpreter.relative_to(runtime)
+    assert restored_python.read_bytes() == interpreter.read_bytes()
     assert (target / ".runtime/.trash").is_dir()
     assert model.read_bytes() == b"isolated simulated source failure"
     assert (target / legacy_snapshot.CONFIG).read_bytes() == config.read_bytes()
@@ -745,3 +759,14 @@ def test_stopped_site_reopens_from_verified_runtime_and_original_config(tmp_path
     with pytest.raises(ValueError, match="快照文件验证失败"):
         legacy_snapshot.restore(snapshot, refused, REVISION, seal)
     assert not refused.exists()
+
+
+def test_snapshot_rejects_external_absolute_model_link(tmp_path):
+    runtime = tmp_path / ".runtime"
+    outside = tmp_path / "outside"
+    outside.write_text("not part of the snapshot")
+    link = runtime / legacy_snapshot.MODEL_VENV_PYTHON
+    link.parent.mkdir(parents=True)
+    link.symlink_to(outside)
+    with pytest.raises(ValueError, match="外部或失效链接"):
+        legacy_snapshot.runtime_inventory(runtime, allow_legacy_python_link=True)

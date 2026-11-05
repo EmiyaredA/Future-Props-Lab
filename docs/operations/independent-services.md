@@ -381,6 +381,8 @@ Mac worker 从 `uv run python -m studio.host.agent_execution.agent_connections_w
 
 恢复包包含停机网站的完整 `.runtime/` 运行树、原始 `backend/config.toml` 和逐文件清单。清单覆盖目录及权限、内部相对链接、文件大小和 SHA256、配置摘要与 SQLite 迁移顺序。数据库检查使用只读连接并逐条核对注册表 checksum。运行锁未释放、数据库仍打开、WAL 未结算、外部链接、文件变化或版本不符都会阻止发布恢复包。
 
+旧本机模型虚拟环境的 `venv/bin/python` 可能以绝对路径指向同一运行树的打包解释器。封存时只在副本中把这条链接换成指向同一文件的相对链接，并核对解释器字节。外部链接仍阻止封存。Mac worker 使用搬迁后路径时，须另外验证 Python 环境、模型权重与合成流程。
+
 在独立验收目录和对应旧站提交下运行下列命令。所有输出目录必须预先选择为空路径，父目录已存在。
 
 ```sh

@@ -21,6 +21,8 @@ DATABASE = "future-props.db"
 MANIFEST = "manifest.json"
 RUNTIME = ".runtime"
 CONFIG = Path("backend/config.toml")
+MODEL_ENVIRONMENT = Path("local-models/environments/v1")
+MODEL_VENV_PYTHON = (MODEL_ENVIRONMENT / "venv/bin/python").as_posix()
 
 
 def digest(path):
@@ -45,7 +47,7 @@ def private_config(path):
     return path.resolve()
 
 
-def runtime_inventory(root):
+def runtime_inventory(root, *, allow_legacy_python_link=False):
     records = {}
     for base, dirs, files in os.walk(root, followlinks=False):
         for name in sorted([*dirs, *files]):
@@ -54,9 +56,23 @@ def runtime_inventory(root):
             mode = path.lstat().st_mode
             if stat.S_ISLNK(mode):
                 reference = os.readlink(path)
+                try:
+                    resolved = path.resolve()
+                except RuntimeError:
+                    raise ValueError(f"运行目录包含循环链接 {key}") from None
+                if (
+                    allow_legacy_python_link
+                    and key == MODEL_VENV_PYTHON
+                    and Path(reference).is_relative_to(root / MODEL_ENVIRONMENT / "python")
+                    and resolved.is_relative_to(root / MODEL_ENVIRONMENT / "python")
+                    and path.is_file()
+                ):
+                    # uv points the venv at our bundled interpreter by its original
+                    # absolute path. Seal the equivalent portable link in the copy.
+                    reference = os.path.relpath(resolved, path.parent)
                 if (
                     Path(reference).is_absolute()
-                    or not path.resolve().is_relative_to(root)
+                    or not resolved.is_relative_to(root)
                     or not path.exists()
                 ):
                     raise ValueError(f"运行目录包含外部或失效链接 {key}")
@@ -74,7 +90,7 @@ def runtime_inventory(root):
     return records
 
 
-def manifest(runtime, config, revision):
+def manifest(runtime, config, revision, *, allow_legacy_python_link=False):
     database = runtime / DATABASE
     if database.is_symlink() or not database.is_file():
         raise ValueError("正式网站数据库缺失")
@@ -86,7 +102,7 @@ def manifest(runtime, config, revision):
         "version": 1,
         "source_revision": revision,
         "runtime_mode": stat.S_IMODE(runtime.stat().st_mode),
-        "files": runtime_inventory(runtime),
+        "files": runtime_inventory(runtime, allow_legacy_python_link=allow_legacy_python_link),
         "config_sha256": digest(config),
         "database_migrations": migrations,
     }
@@ -142,8 +158,13 @@ def publish_to(target):
                 shutil.rmtree(stage)
 
 
-def copy_contents(runtime, config, target):
+def copy_contents(runtime, config, target, *, portable_python=None):
     copy_tree(runtime, target / RUNTIME)
+    if portable_python is not None:
+        copied_link = target / RUNTIME / MODEL_VENV_PYTHON
+        if copied_link.is_symlink() and copied_link.readlink().is_absolute():
+            copied_link.unlink()
+            copied_link.symlink_to(portable_python)
     (target / CONFIG.parent).mkdir(mode=0o700)
     copy_file(config, target / CONFIG)
 
@@ -170,12 +191,13 @@ def create(runtime, config, output, revision):
         raise ValueError("网站锁文件无效")
     with locked(lock):
         assert_stopped(runtime / DATABASE)
-        original = manifest(runtime, config, revision)
+        original = manifest(runtime, config, revision, allow_legacy_python_link=True)
         with publish_to(output) as stage:
-            copy_contents(runtime, config, stage)
+            portable_python = original["files"].get(MODEL_VENV_PYTHON, {}).get("link")
+            copy_contents(runtime, config, stage, portable_python=portable_python)
             if manifest(stage / RUNTIME, stage / CONFIG, revision) != original:
                 raise ValueError("快照文件与源目录不一致")
-            if manifest(runtime, config, revision) != original:
+            if manifest(runtime, config, revision, allow_legacy_python_link=True) != original:
                 raise ValueError("复制期间源运行文件发生变化")
             report = stage / MANIFEST
             report.touch(mode=0o600)
