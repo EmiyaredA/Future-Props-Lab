@@ -358,12 +358,12 @@ test("保存失败重试与输入法期间的快捷键隔离", async ({ page }) 
   );
 });
 
-test("只读工作区可以浏览放映，编辑入口隐藏", async ({ page }) => {
+test("只读账号可以浏览放映，编辑入口隐藏", async ({ page }) => {
   await create(page);
   await page.route("**/v1/auth/me", async (route) => {
     const response = await route.fetch();
     const principal = await response.json();
-    principal.workspace.permission_keys = ["content.read", "files.read"];
+    principal.permission_keys = ["content.read", "files.read"];
     await route.fulfill({ response, json: principal });
   });
   await page.reload();

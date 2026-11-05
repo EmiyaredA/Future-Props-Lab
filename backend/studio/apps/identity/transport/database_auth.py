@@ -3,6 +3,8 @@
 import secrets
 from datetime import timedelta
 
+from anyio import CancelScope
+from anyio.lowlevel import checkpoint_if_cancelled
 from fastapi import HTTPException, Request, WebSocket
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -75,15 +77,18 @@ async def authenticate_database_request(
     allowed_origins: tuple[str, ...],
     allow_forced_password_change: bool = False,
 ) -> StudioPrincipal:
-    # Business code may borrow its own database session or send a streaming response.
-    async with sessions() as credentials:
-        principal = await _read_principal(
-            request,
-            credentials,
-            required_scope=required_scope,
-            allowed_origins=allowed_origins,
-            allow_forced_password_change=allow_forced_password_change,
-        )
+    # A disconnect must leave the credentials connection reusable before it cancels business work.
+    await checkpoint_if_cancelled()
+    with CancelScope(shield=True):
+        async with sessions() as credentials:
+            principal = await _read_principal(
+                request,
+                credentials,
+                required_scope=required_scope,
+                allowed_origins=allowed_origins,
+                allow_forced_password_change=allow_forced_password_change,
+            )
+    await checkpoint_if_cancelled()
     request.state.studio_principal = principal
     bind_owner(session, principal.user_id)
     return principal
