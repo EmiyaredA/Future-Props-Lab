@@ -57,6 +57,10 @@ for (const width of [1440, 1000, 390]) {
           },
         }),
       );
+      await page.route(
+        "**/v1/integrations/skills/*/versions/*/files",
+        (route) => route.fulfill({ json: { files: [] } }),
+      );
       await page.goto("/integrations/skills");
       const cards = page.locator(".skill-card");
       await expect(cards).toHaveCount(skills.length);
@@ -118,7 +122,7 @@ for (const width of [1440, 1000, 390]) {
       await expect(
         dialog.getByRole("heading", { name: skills[0].name, exact: true }),
       ).toBeVisible();
-      await expect(dialog.locator(".skill-details > p")).toHaveText(
+      await expect(dialog.locator(".skill-details-heading p")).toHaveText(
         skills[0].description,
       );
       await expect(dialog.getByLabel("全部标签").locator("span")).toHaveText(
@@ -136,6 +140,10 @@ for (const width of [1440, 1000, 390]) {
       ).toBe(true);
       const close = dialog.getByRole("button", { name: "关闭" });
       await expect(close).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(
+        dialog.getByRole("button", { name: "下载 ZIP" }),
+      ).toBeFocused();
       await page.keyboard.press("Tab");
       await expect(close).toBeFocused();
       await dialog.evaluate((element) => {

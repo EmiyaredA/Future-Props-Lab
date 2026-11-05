@@ -2,12 +2,7 @@ import { importAndPublish, legacyTarget } from "./official-import-helpers";
 import { test, expect, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { unzipSync, strFromU8 } from "fflate";
-import {
-  openNoteHistory,
-  saveNote,
-  pickNoteMore,
-  pickProjectMore,
-} from "./thought-helpers";
+import { openNoteHistory, saveNote, pickNoteMore } from "./thought-helpers";
 
 const root = "/v1/thought-workshop";
 async function fixture(page: Page, count = 1) {
@@ -165,7 +160,7 @@ test("each tab keeps its own failed draft and saving one leaves the other recove
   const records = () =>
     page.evaluate(async (noteId) => {
       const db = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open("fpl-thought-drafts", 2);
+        const request = indexedDB.open("fpl-thought-drafts");
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
       });
@@ -329,7 +324,7 @@ test("whole library HTML contains relative navigation, references, offline math 
   expect(updated.ok(), await updated.text()).toBe(true);
   await page.goto(`/apps/thought-workshop/knowledge-bases/${project.id}`);
   const download = page.waitForEvent("download");
-  await pickProjectMore(page, "导出整库 HTML");
+  await pickNoteMore(page, "导出整库 HTML");
   const path = await (await download).path();
   const files = unzipSync(new Uint8Array(await readFile(path!)));
   const html = strFromU8(files[`documents/${note.id}.html`]);
@@ -474,7 +469,7 @@ test("reference, find replacement, templates, copies and named history connect i
     .click();
   await page.getByRole("menuitem", { name: "从模板新建", exact: true }).click();
   const templates = page.getByRole("alertdialog", {
-    name: "Workspace 文档模板",
+    name: "账号文档模板",
     exact: true,
   });
   await templates
