@@ -378,7 +378,9 @@ async def test_audio_seam_api_requires_current_revision_and_ready_same_source() 
         ] == 3
         async with SessionLocal() as session:
             with pytest.raises(VideoEditorNotFoundError):
-                await VideoEditorAudioMatching(session, "different-workspace").candidates(
+                await VideoEditorAudioMatching(
+                    session, "different-workspace", settings=app.state.settings
+                ).candidates(
                     project_id,
                     AudioSeamCandidatesIn(expectedRevision=1, fromClipId="a", toClipId="b"),
                 )

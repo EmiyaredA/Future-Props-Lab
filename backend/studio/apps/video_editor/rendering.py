@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.media_rendering.local.presets import RENDER_PRESETS
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
@@ -15,6 +16,7 @@ from studio.apps.video_editor.schemas import (
 )
 from studio.apps.video_editor.storage.models import VideoEditorTask
 from studio.apps.video_editor.task_reads import task_out
+from studio.config.settings import Settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.revisions import require_revision_write
 from studio.runtime.time import utc_now
@@ -23,6 +25,10 @@ PRESETS = RENDER_PRESETS
 
 
 class VideoEditorRenders(VideoRenderPreflight):
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, settings: Settings) -> None:
+        super().__init__(session, owner_user_id)
+        self.settings = settings
+
     async def create(self, project_id: str, body: VideoEditorRenderCreateIn) -> VideoEditorTaskOut:
         existing = (
             await self.session.execute(
@@ -144,7 +150,7 @@ class VideoEditorRenders(VideoRenderPreflight):
             expected=expected_revision,
             load_current=lambda: self.get(project_id, task_id),
         )
-        media = VideoEditorMedia(self.session, self.owner_user_id)
+        media = VideoEditorMedia(self.session, self.owner_user_id, settings=self.settings)
         derived_paths = []
         try:
             if task.output_asset_id:

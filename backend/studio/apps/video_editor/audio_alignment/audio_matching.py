@@ -15,13 +15,15 @@ from studio.apps.video_editor.schemas.audio_seam import (
     AudioSeamCandidatesOut,
 )
 from studio.apps.video_editor.timeline import VideoEditorTimelines
+from studio.config.settings import Settings
 from studio.runtime.revisions import RevisionConflictError
 
 
 class VideoEditorAudioMatching:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
+        self.settings = settings
 
     async def candidates(
         self,
@@ -38,7 +40,7 @@ class VideoEditorAudioMatching:
         _track, source, target = audio_seam_pair(
             timeline.document, body.from_clip_id, body.to_clip_id
         )
-        media = VideoEditorMedia(self.session, self.owner_user_id)
+        media = VideoEditorMedia(self.session, self.owner_user_id, settings=self.settings)
         asset, metadata = await media.asset(project_id, source["assetId"])
         if asset.media_kind != "audio" or metadata.processing_status != "ready":
             raise VideoEditorValidationError("音频素材尚未准备好", code="audio_not_ready")

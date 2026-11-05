@@ -27,7 +27,7 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorTimeline,
 )
 from studio.apps.video_editor.timeline_file_removal import without_file
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.contracts.asset_library.file_types import VIDEO_EDITABLE_EXTENSIONS
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.revisions import RevisionConflictError, require_revision_write
@@ -37,12 +37,10 @@ VIDEO_EDITOR_EXTENSIONS = VIDEO_EDITABLE_EXTENSIONS
 
 
 class VideoEditorMedia:
-    def __init__(
-        self, session: AsyncSession, owner_user_id: str, settings: Settings | None = None
-    ) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
         self.library = AssetLibrary(session, self.settings)
 

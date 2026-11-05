@@ -205,7 +205,7 @@ def bind_components(app, settings, database):
             "motion_project_resources": partial(
                 LegacyProjectResources, storage=AssetStorage(settings)
             ),
-            "video_project_layouts": LegacyVideoLayouts,
+            "video_project_layouts": partial(LegacyVideoLayouts, storage=AssetStorage(settings)),
             "video_timeline_assets": LegacyTimelineAssets,
             "presentation_import": partial(import_legacy_presentation, settings=settings),
         }

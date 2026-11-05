@@ -217,9 +217,9 @@ async def test_text_api_save_reload_layer_cas_and_workspace_isolation():
         assert (await client.get(base + "/text-clips/text-a/layer")).status_code == 422
         async with SessionLocal() as session:
             with pytest.raises(VideoEditorNotFoundError):
-                await VideoEditorFrames(session, "another-workspace").text_layer(
-                    project["id"], clip_id="text-a", revision=1
-                )
+                await VideoEditorFrames(
+                    session, "another-workspace", settings=app.state.settings
+                ).text_layer(project["id"], clip_id="text-a", revision=1)
         invalid = await commit(
             1, [{"type": "updateClip", "clipId": "text-a", "patch": {"text": "  "}}]
         )

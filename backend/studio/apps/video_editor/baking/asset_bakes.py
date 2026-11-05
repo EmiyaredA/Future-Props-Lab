@@ -10,13 +10,14 @@ from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import VideoEditorAssetBakeCreateIn, VideoEditorTaskOut
 from studio.apps.video_editor.storage.models import VideoEditorTask
 from studio.apps.video_editor.task_reads import task_out
+from studio.config.settings import Settings
 
 
 class VideoEditorAssetBakes:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.media = VideoEditorMedia(session, owner_user_id)
+        self.media = VideoEditorMedia(session, owner_user_id, settings=settings)
 
     async def create(
         self, project_id: str, asset_id: str, body: VideoEditorAssetBakeCreateIn

@@ -6,14 +6,13 @@ from sqlalchemy import select
 
 from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION, AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset
-from studio.config.settings import get_settings
 from studio.runtime.database.project_files import creating_project_layout, deleting_project_layout
 
 
 class LegacyVideoLayouts:
-    def __init__(self, session, owner_user_id):
+    def __init__(self, session, owner_user_id, *, storage: AssetStorage):
         self.session, self.owner_user_id = session, owner_user_id
-        self.storage = AssetStorage(get_settings())
+        self.storage = storage
 
     def create_layout(self, project_id):
         return creating_project_layout(

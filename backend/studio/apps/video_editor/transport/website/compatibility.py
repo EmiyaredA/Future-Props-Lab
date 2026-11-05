@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, Response
 from starlette.background import BackgroundTask
 
@@ -39,7 +39,6 @@ from studio.apps.video_editor.transport.website.render_preflight import router a
 from studio.apps.video_editor.transport.website.tasks import router as tasks_router
 from studio.apps.video_editor.transport.website.timeline import router as timeline_router
 from studio.assembly.http_dependencies import OwnerDep, SessionDep, StudioAuth
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOut
 from studio.host.project_files.folders import ProjectFolderError, open_project_folder
@@ -56,13 +55,14 @@ def _error(exc):
 
 @router.post("/projects/snapshot-imports", response_model=VideoEditorProjectSnapshotImportOut)
 async def import_project_snapshot(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     file: Annotated[UploadFile, File()],
 ) -> VideoEditorProjectSnapshotImportOut:
     try:
         return await VideoEditorProjectSnapshots(
-            session, get_settings(), owner_user_id
+            session, request.app.state.settings, owner_user_id
         ).import_snapshot(file)
     except ProjectSnapshotError as exc:
         raise _error(exc) from None
@@ -74,12 +74,12 @@ async def import_project_snapshot(
     responses={200: {"content": {"application/zip": {}}}},
 )
 async def export_project_snapshot(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str
 ) -> FileResponse:
     try:
-        exported = await VideoEditorProjectSnapshots(session, get_settings(), owner_user_id).export(
-            project_id
-        )
+        exported = await VideoEditorProjectSnapshots(
+            session, request.app.state.settings, owner_user_id
+        ).export(project_id)
     except ProjectSnapshotError as exc:
         raise _error(exc) from None
     return FileResponse(
@@ -92,6 +92,7 @@ async def export_project_snapshot(
 
 @router.post("/projects/{project_id}/open-folder", response_model=ProjectFolderOpenOut)
 async def reveal_project_folder(
+    request: Request,
     principal: StudioAuth,
     session: SessionDep,
     owner_user_id: OwnerDep,
@@ -105,7 +106,7 @@ async def reveal_project_folder(
     try:
         await VideoEditorProjects(session, owner_user_id).get(project_id)
         await open_project_folder(
-            AssetStorage(get_settings()),
+            AssetStorage(request.app.state.settings),
             "video-editor",
             project_id,
             owner_user_id=owner_user_id,
@@ -117,43 +118,53 @@ async def reveal_project_folder(
 
 @router.get("/import-sources", response_model=VideoEditorAvailableAssetListOut)
 async def import_sources(
-    session: SessionDep, owner_user_id: OwnerDep
+    request: Request, session: SessionDep, owner_user_id: OwnerDep
 ) -> VideoEditorAvailableAssetListOut:
-    return await VideoEditorMedia(session, owner_user_id).available()
+    return await VideoEditorMedia(
+        session, owner_user_id, settings=request.app.state.settings
+    ).available()
 
 
 @router.get("/projects/{project_id}/assets", response_model=VideoEditorAssetListOut)
 async def list_assets(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str
 ) -> VideoEditorAssetListOut:
     try:
-        return await VideoEditorMedia(session, owner_user_id).list(project_id)
+        return await VideoEditorMedia(
+            session, owner_user_id, settings=request.app.state.settings
+        ).list(project_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
 
 
 @router.post("/projects/{project_id}/assets", response_model=VideoEditorAssetOut)
 async def upload_asset(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     upload: Annotated[UploadFile, File()],
 ) -> VideoEditorAssetOut:
     try:
-        return await VideoEditorMedia(session, owner_user_id).upload(project_id, upload)
+        return await VideoEditorMedia(
+            session, owner_user_id, settings=request.app.state.settings
+        ).upload(project_id, upload)
     except (VideoEditorNotFoundError, AssetError) as exc:
         raise _error(exc) from None
 
 
 @router.post("/projects/{project_id}/assets/import", response_model=VideoEditorAssetListOut)
 async def import_assets(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     body: VideoEditorAssetImportIn,
 ) -> VideoEditorAssetListOut:
     try:
-        return await VideoEditorMedia(session, owner_user_id).import_assets(project_id, body)
+        return await VideoEditorMedia(
+            session, owner_user_id, settings=request.app.state.settings
+        ).import_assets(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError, AssetError) as exc:
         raise _error(exc) from None
 
@@ -162,16 +173,19 @@ async def import_assets(
     "/projects/{project_id}/assets/{asset_id}/proxy/retry", response_model=VideoEditorAssetOut
 )
 async def retry_proxy(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str, asset_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str, asset_id: str
 ) -> VideoEditorAssetOut:
     try:
-        return await VideoEditorMedia(session, owner_user_id).retry(project_id, asset_id)
+        return await VideoEditorMedia(
+            session, owner_user_id, settings=request.app.state.settings
+        ).retry(project_id, asset_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
 
 
 @router.patch("/projects/{project_id}/assets/{asset_id}", response_model=VideoEditorAssetOut)
 async def patch_asset(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
@@ -179,13 +193,16 @@ async def patch_asset(
     body: VideoEditorAssetPatchIn,
 ) -> VideoEditorAssetOut:
     try:
-        return await VideoEditorMedia(session, owner_user_id).patch(project_id, asset_id, body)
+        return await VideoEditorMedia(
+            session, owner_user_id, settings=request.app.state.settings
+        ).patch(project_id, asset_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 
 
 @router.post("/projects/{project_id}/assets/{asset_id}/bakes", response_model=VideoEditorTaskOut)
 async def create_asset_bake(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
@@ -193,19 +210,21 @@ async def create_asset_bake(
     body: VideoEditorAssetBakeCreateIn,
 ) -> VideoEditorTaskOut:
     try:
-        return await VideoEditorAssetBakes(session, owner_user_id).create(
-            project_id, asset_id, body
-        )
+        return await VideoEditorAssetBakes(
+            session, owner_user_id, settings=request.app.state.settings
+        ).create(project_id, asset_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 
 
 @router.delete("/projects/{project_id}/assets/{asset_id}")
 async def delete_asset(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str, asset_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str, asset_id: str
 ) -> dict[str, bool]:
     try:
-        await VideoEditorMedia(session, owner_user_id).delete(project_id, asset_id)
+        await VideoEditorMedia(session, owner_user_id, settings=request.app.state.settings).delete(
+            project_id, asset_id
+        )
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
     return {"deleted": True}
@@ -213,6 +232,7 @@ async def delete_asset(
 
 @router.get("/projects/{project_id}/assets/{asset_id}/{variant}")
 async def asset_variant(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
@@ -222,15 +242,17 @@ async def asset_variant(
     if variant not in {"proxy", "thumbnail", "waveform"}:
         raise HTTPException(404, {"code": "not_found", "message": "派生素材不存在"})
     try:
-        _asset, metadata = await VideoEditorMedia(session, owner_user_id).asset(
-            project_id, asset_id
-        )
+        _asset, metadata = await VideoEditorMedia(
+            session, owner_user_id, settings=request.app.state.settings
+        ).asset(project_id, asset_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
     filename = getattr(metadata, f"{variant}_filename")
     if not filename:
         raise HTTPException(404, {"code": "not_found", "message": "派生素材尚未生成"})
-    path = VideoEditorMedia(session, owner_user_id).derived_path(project_id, filename)
+    path = VideoEditorMedia(
+        session, owner_user_id, settings=request.app.state.settings
+    ).derived_path(project_id, filename)
     if not path.is_file():
         raise HTTPException(404, {"code": "not_found", "message": "派生素材文件不存在"})
     return FileResponse(path, media_type=guessed_mime(path), content_disposition_type="inline")
@@ -241,19 +263,23 @@ async def asset_variant(
     response_model=AudioSeamCandidatesOut,
 )
 async def audio_seam_candidates(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     body: AudioSeamCandidatesIn,
 ) -> AudioSeamCandidatesOut:
     try:
-        return await VideoEditorAudioMatching(session, owner_user_id).candidates(project_id, body)
+        return await VideoEditorAudioMatching(
+            session, owner_user_id, settings=request.app.state.settings
+        ).candidates(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 
 
 @router.get("/projects/{project_id}/preview/frame")
 async def exact_frame(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
@@ -263,7 +289,9 @@ async def exact_frame(
     without_chroma_clip_id: str | None = Query(default=None, alias="withoutChromaClipId"),
 ) -> Response:
     try:
-        png = await VideoEditorFrames(session, owner_user_id).render(
+        png = await VideoEditorFrames(
+            session, owner_user_id, settings=request.app.state.settings
+        ).render(
             project_id,
             revision=revision,
             time_us=time_us,
@@ -285,6 +313,7 @@ async def exact_frame(
     responses={200: {"content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}}},
 )
 async def text_clip_layer(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
@@ -292,9 +321,9 @@ async def text_clip_layer(
     revision: int = Query(ge=0),
 ) -> Response:
     try:
-        png = await VideoEditorFrames(session, owner_user_id).text_layer(
-            project_id, clip_id=clip_id, revision=revision
-        )
+        png = await VideoEditorFrames(
+            session, owner_user_id, settings=request.app.state.settings
+        ).text_layer(project_id, clip_id=clip_id, revision=revision)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
     return Response(png, media_type="image/png", headers={"Cache-Control": "private, no-cache"})
@@ -302,29 +331,35 @@ async def text_clip_layer(
 
 @router.post("/projects/{project_id}/renders", response_model=VideoEditorTaskOut)
 async def create_render(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     body: VideoEditorRenderCreateIn,
 ) -> VideoEditorTaskOut:
     try:
-        return await VideoEditorRenders(session, owner_user_id).create(project_id, body)
+        return await VideoEditorRenders(
+            session, owner_user_id, settings=request.app.state.settings
+        ).create(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 
 
 @router.post("/projects/{project_id}/renders/{task_id}/cancel", response_model=VideoEditorTaskOut)
 async def cancel_render(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str, task_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str, task_id: str
 ) -> VideoEditorTaskOut:
     try:
-        return await VideoEditorRenders(session, owner_user_id).cancel(project_id, task_id)
+        return await VideoEditorRenders(
+            session, owner_user_id, settings=request.app.state.settings
+        ).cancel(project_id, task_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
 
 
 @router.delete("/projects/{project_id}/renders/{task_id}")
 async def delete_render(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
@@ -332,9 +367,9 @@ async def delete_render(
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await VideoEditorRenders(session, owner_user_id).delete(
-            project_id, task_id, expected_revision
-        )
+        await VideoEditorRenders(
+            session, owner_user_id, settings=request.app.state.settings
+        ).delete(project_id, task_id, expected_revision)
     except (VideoEditorNotFoundError, VideoEditorValidationError, AssetError) as exc:
         raise _error(exc) from None
     return {"deleted": True}
@@ -372,10 +407,12 @@ async def cancel_segment_export(
     responses={200: {"content": {"application/zip": {}}}},
 )
 async def download_segment_export(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str, task_id: str
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str, task_id: str
 ) -> FileResponse:
     try:
-        path = await download_segments(session, get_settings(), owner_user_id, project_id, task_id)
+        path = await download_segments(
+            session, request.app.state.settings, owner_user_id, project_id, task_id
+        )
     except (VideoEditorNotFoundError, AssetError) as exc:
         raise _error(exc) from None
     return FileResponse(

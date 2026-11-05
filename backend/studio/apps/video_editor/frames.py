@@ -23,7 +23,7 @@ from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEdito
 from studio.apps.video_editor.projects import VideoEditorProjects
 from studio.apps.video_editor.schemas import VideoEditorClip, parse_timeline_document
 from studio.apps.video_editor.storage.models import VideoEditorTimeline
-from studio.config.settings import get_settings
+from studio.config.settings import Settings
 from studio.runtime.revisions import RevisionConflictError
 
 
@@ -70,10 +70,10 @@ def _text_layer_png(clip: VideoEditorClip, font_path: Path | None) -> bytes:
 
 
 class VideoEditorFrames:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, settings: Settings) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.storage = AssetStorage(get_settings())
+        self.storage = AssetStorage(settings)
 
     async def render(
         self,

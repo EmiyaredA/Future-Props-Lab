@@ -42,3 +42,11 @@ configuration explicitly. Legacy project resources use the storage supplied at
 assembly. The Video Editor handoff receives the same configuration so its
 media copy uses the same website data root. Architecture tests guard the
 Assets, Models, Motion and Presentation packages against global settings lookup.
+
+## Video Editor adapter follow-up
+
+Website media, exact frames, audio matching, bakes, rendering, snapshot
+operations, and folder reveal take configuration from the serving application.
+The project layout adapter receives the assembled storage. Video Editor joins
+the guard against process-global configuration selection. The targeted video and
+motion tests passed 68 cases, and architecture and assembly checks passed 43.

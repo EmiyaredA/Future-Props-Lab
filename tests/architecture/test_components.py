@@ -24,7 +24,14 @@ def test_interview_file_scope_is_explicit():
 
 
 @pytest.mark.parametrize(
-    "application", ["asset_library", "model_service", "motion_compositor", "presentation_workshop"]
+    "application",
+    [
+        "asset_library",
+        "model_service",
+        "motion_compositor",
+        "presentation_workshop",
+        "video_editor",
+    ],
 )
 def test_migrated_apps_never_select_process_global_configuration(application):
     violations = []
