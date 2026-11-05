@@ -4,10 +4,10 @@ import time
 
 from fastapi import HTTPException
 
-from app.capabilities.agents.activity import positive_int, tool_details
 from studio.apps.agent_workbench.execution import project_files
 from studio.apps.agent_workbench.execution.transcripts import get_turn
 from studio.apps.agent_workbench.execution.turn_records import begin
+from studio.contracts.agent_workbench.activity import positive_int, tool_details
 
 
 def managed_activity_details(name, payload):

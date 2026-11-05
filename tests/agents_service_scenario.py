@@ -29,7 +29,7 @@ assert not any(
     name.startswith(
         (
             "studio.apps.model_service",
-            "app.capabilities.agents.sessions.parsers",
+            "studio.host.session_collection.parsers",
             "studio.apps.visual_workshop",
         )
     )

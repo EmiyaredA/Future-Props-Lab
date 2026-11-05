@@ -2,9 +2,9 @@
 
 import asyncio
 
-from .attachments import read_reference
-from .catalog import candidates
-from .locations import validate_location
+from studio.host.session_collection.attachments import read_reference
+from studio.host.session_collection.catalog import candidates
+from studio.host.session_collection.locations import validate_location
 
 
 class LocalSourceAccess:

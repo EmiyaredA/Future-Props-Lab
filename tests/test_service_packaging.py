@@ -85,7 +85,7 @@ def test_agents_image_contains_no_identity_orm_or_native_readers():
             "studio.assembly.website.models",
             "studio.assembly.website.routes",
             "studio.assembly.http_dependencies",
-            "app.capabilities.agents.sessions.catalog",
+            "studio.host.session_collection.catalog",
         }
 
 

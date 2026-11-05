@@ -1,8 +1,8 @@
 from pathlib import Path
 
-from . import parsers
-from .files import JsonlAdapter
-from .opencode import OpenCodeAdapter, OpenCodeServerAdapter
+from studio.host.session_collection import parsers
+from studio.host.session_collection.files import JsonlAdapter
+from studio.host.session_collection.opencode import OpenCodeAdapter, OpenCodeServerAdapter
 
 NAMES = {
     "codex": "Codex",

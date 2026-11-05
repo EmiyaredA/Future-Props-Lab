@@ -99,6 +99,9 @@
 - CLI/SDK/MCP 使用网站地址和 Management API Key。`studio/contracts/gateway/automation_operations.json` 维护业务白名单，`/v1/automation` 提供能力发现与有归属校验的资源链接；不控制浏览器标签页，不开放账号治理、密钥管理或任意系统命令。客户端凭据目录 0700、文件 0600，不通过参数或日志传递密钥。
 - Amadeus 共享记录和恢复归 `studio/apps/amadeus/storage/`，公开协议归 `contracts/amadeus/`。
   会话文件适配必须显式接收根目录；Finder 与脚本进程适配归 Host，禁止回退全局配置。
+- Agent 原生会话格式、受限附件、只读文件与本机 OpenCode 读取归 `studio/host/session_collection/`；
+  历史快照和活动展示协议归 `studio/contracts/agent_workbench/`。服务只能消费公开契约与采集回执，
+  不加载 Host 解析器；父包不通过懒加载转发符号。
 - Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证

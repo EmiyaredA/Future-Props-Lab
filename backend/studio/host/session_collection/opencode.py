@@ -10,12 +10,11 @@ from pathlib import Path
 
 import httpx
 
-from app.capabilities.agents.activity import tool_details
-
-from .attachments import reference
-from .contracts import Entry, ReadBatch, SessionInfo
-from .files import discover_files, safe_path
-from .parsers import native_id, text, timestamp
+from studio.contracts.agent_workbench.activity import tool_details
+from studio.contracts.agent_workbench.session_history import Entry, ReadBatch, SessionInfo
+from studio.host.session_collection.attachments import reference
+from studio.host.session_collection.files import discover_files, safe_path
+from studio.host.session_collection.parsers import native_id, text, timestamp
 
 
 def entries(messages):

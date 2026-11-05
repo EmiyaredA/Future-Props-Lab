@@ -56,6 +56,6 @@ OpenCode HTTP 来源必须是用户明确提供的回环地址，不接受 URL �
 
 ## 代码入口
 
-1. `backend/app/capabilities/agents/sessions`
+1. `backend/studio/host/session_collection`
 2. `backend/studio/apps/agent_workbench/sync/runner.py`
 3. `web/src/features/agent-workbench/AgentWorkbenchPage.tsx`

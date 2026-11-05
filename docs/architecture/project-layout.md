@@ -115,7 +115,7 @@ backend/
 
 `capabilities/agents/cli/dialogue.py` 统一管理 CLI 分派、专用 profile、watchdog 和工具传输。工作台与 Amadeus 提供工具、事件回调及各自的运行上下文。Codex 对话就绪统一校验登录及隔离策略，模型目录的读取状态独立。
 
-`backend/studio/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/app/capabilities/agents/sessions/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权和执行授权独立。工作台的 `execution/` 拥有 FPL 创建的 CLI 会话、轮次、待执行队列、插入回执和项目审批；CLI 通信与 MCP 中继由 `capabilities/agents/cli/` 共用。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
+`backend/studio/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/studio/host/session_collection/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权和执行授权独立。工作台的 `execution/` 拥有 FPL 创建的 CLI 会话、轮次、待执行队列、插入回执和项目审批；CLI 通信与 MCP 中继由 `capabilities/agents/cli/` 共用。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
 
 ## 浏览器加载与图片派生
 
@@ -1053,3 +1053,7 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 `studio/apps/remote_desktop/use_cases/preferences.py` 定义按账号读取和完整 CAS 更新端口，`storage/preferences.py` 每次操作使用独立短会话。HTTP 层只映射冲突快照，提交成功后才通知活动连接重新读取空闲策略；取消或写入失败回滚，响应丢失后重读版本。网站与独立 Remote 使用相同用例和存储适配。公开 DTO 归 `studio/contracts/remote_desktop/desktop.py`，VNC 探测归 Remote 的 `clients/vnc_probe.py`。
 
 `studio/assembly/website/desktop.py` 注入本地身份查询与偏好端口，不重导出协议符号。`cloud_setup.py` 组合 Identity 登记状态与 Host 的配置修改；Host 工作进程使用相同的显式路径配置适配，不导入网站装配。`public_access.py` 拥有附加网站监听与 SSH 子进程生命周期，凭据定位在 `studio/host/deployment/web_profiles.py`，公开状态与错误在 `studio/contracts/gateway/web_access.py`。原持久凭据目录、配置键、服务 ID 和网络协议不变，旧云控与 web_access 源码目录已删除。
+
+### Agent 本机会话采集边界
+
+`studio/host/session_collection/` 归并原生 JSONL、SQLite、本机 OpenCode HTTP 和受限附件读取，和已有采集 worker、检查点日志共处同一主机边界。`studio/contracts/agent_workbench/session_history.py` 定义历史快照及只读适配协议，`activity.py` 定义允许展示的活动字段与协议归一化；服务端投影只依赖这两份公开协议。删除旧 sessions 父包的动态重导出，调用方直接导入具体契约或本机适配；各独立镜像继续禁止打包 Host。采集仍只读，原生文件、字节检查点、账号绑定和本机执行授权不改变。

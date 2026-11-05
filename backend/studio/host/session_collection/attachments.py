@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
-from .files import open_regular
+from studio.host.session_collection.files import open_regular
 
 
 def reference(value):

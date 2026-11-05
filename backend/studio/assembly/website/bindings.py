@@ -5,7 +5,6 @@ import secrets
 import time
 from functools import partial
 
-from app.capabilities.agents.sessions.access import LocalSourceAccess
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
 from studio.apps.agent_workbench.events import stream_events
@@ -75,6 +74,7 @@ from studio.config import REPO_ROOT
 from studio.config.settings import get_cloud_settings
 from studio.host.project_files.video_dependencies import probe_deps
 from studio.host.project_files.video_execution import _run_yt_dlp
+from studio.host.session_collection.access import LocalSourceAccess
 from studio.runtime.http.rate_limit import AttemptLimiter
 from studio.runtime.secrets import SecretCipher
 from studio.runtime.time import utc_now

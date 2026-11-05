@@ -6,9 +6,9 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
-from app.capabilities.agents.sessions.attachments import read_reference
-from app.capabilities.agents.sessions.catalog import candidates, get_adapter
-from app.capabilities.agents.sessions.locations import validate_location
+from studio.host.session_collection.attachments import read_reference
+from studio.host.session_collection.catalog import candidates, get_adapter
+from studio.host.session_collection.locations import validate_location
 
 
 class CollectionRequest(BaseModel):

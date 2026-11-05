@@ -8,7 +8,6 @@ import httpx
 from sqlalchemy import delete, func, select, update
 from watchfiles import awatch
 
-from app.capabilities.agents.sessions import get_adapter
 from studio.apps.agent_workbench.storage.models import (
     WorkbenchChange,
     WorkbenchCheckpoint,
@@ -16,6 +15,7 @@ from studio.apps.agent_workbench.storage.models import (
     WorkbenchSource,
 )
 from studio.apps.agent_workbench.sync.projection import apply_batch
+from studio.host.session_collection.catalog import get_adapter
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now

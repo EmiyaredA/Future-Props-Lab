@@ -3,8 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.capabilities.agents.activity import ActivityDetails
-from app.capabilities.agents.sessions.contracts import AgentId
+from studio.contracts.agent_workbench.activity import ActivityDetails
+from studio.contracts.agent_workbench.session_history import AgentId
 
 
 class StrictInput(BaseModel):

@@ -2,8 +2,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.capabilities.agents.activity import ActivityDetails
 from studio.contracts.agent_runtime.definitions import AgentId
+from studio.contracts.agent_workbench.activity import ActivityDetails
 
 
 class Input(BaseModel):

@@ -6,10 +6,9 @@ import json
 from datetime import UTC, datetime
 from pathlib import Path
 
-from app.capabilities.agents.activity import positive_int, question_answers, tool_details
-
-from .attachments import reference
-from .contracts import Entry, SessionInfo
+from studio.contracts.agent_workbench.activity import positive_int, question_answers, tool_details
+from studio.contracts.agent_workbench.session_history import Entry, SessionInfo
+from studio.host.session_collection.attachments import reference
 
 
 def timestamp(value) -> str:

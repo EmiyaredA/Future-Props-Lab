@@ -6,12 +6,12 @@ from dataclasses import dataclass
 from fastapi import HTTPException
 from pydantic import TypeAdapter, ValidationError
 
-from app.capabilities.agents.sessions.contracts import ReadBatch
 from studio.apps.agent_workbench.storage.service_models import (
     NativeProjectionReceipt,
     NativeSubscription,
 )
 from studio.apps.agent_workbench.sync.projection import apply_batch
+from studio.contracts.agent_workbench.session_history import ReadBatch
 from studio.runtime.tasks.native_queue import digest
 
 BATCH = TypeAdapter(ReadBatch)

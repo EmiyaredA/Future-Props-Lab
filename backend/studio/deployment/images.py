@@ -129,8 +129,8 @@ FORBIDDEN_AGENTS = (
     "app.console.models",
     "studio.assembly.http_dependencies",
     "studio.host",
-    "app.capabilities.agents.sessions.catalog",
-    "app.capabilities.agents.sessions.parsers",
+    "studio.host.session_collection.catalog",
+    "studio.host.session_collection.parsers",
     "studio.apps.agent_workbench.sync.runner",
 )
 

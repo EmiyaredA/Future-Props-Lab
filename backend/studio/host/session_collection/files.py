@@ -11,8 +11,8 @@ from copy import deepcopy
 from dataclasses import asdict
 from pathlib import Path
 
-from .contracts import ReadBatch, SessionInfo
-from .inline_images import compact_image_record
+from studio.contracts.agent_workbench.session_history import ReadBatch, SessionInfo
+from studio.host.session_collection.inline_images import compact_image_record
 
 MAX_CHUNK = 4 * 1024 * 1024
 MAX_RECORD = 64 * 1024 * 1024

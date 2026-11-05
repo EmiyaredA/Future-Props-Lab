@@ -6,8 +6,8 @@ import json
 import pytest
 import zstandard
 
-from app.capabilities.agents.sessions import files
-from app.capabilities.agents.sessions.inline_images import compact_image_record
+from studio.host.session_collection import files
+from studio.host.session_collection.inline_images import compact_image_record
 
 
 @pytest.mark.parametrize("chunk_size", [1, 2, 7, 127, 512])

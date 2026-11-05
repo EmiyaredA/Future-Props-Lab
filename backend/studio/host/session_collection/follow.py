@@ -8,8 +8,8 @@ from dataclasses import asdict
 import httpx
 from watchfiles import awatch
 
-from app.capabilities.agents.sessions.catalog import get_adapter
-from app.capabilities.agents.sessions.locations import validate_location
+from studio.host.session_collection.catalog import get_adapter
+from studio.host.session_collection.locations import validate_location
 from studio.host.transport import LeaseEnded, ProtocolConflict
 
 logger = logging.getLogger(__name__)

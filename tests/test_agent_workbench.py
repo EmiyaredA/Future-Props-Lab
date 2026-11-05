@@ -12,8 +12,6 @@ from fastapi import FastAPI, Request
 from sqlalchemy import event, insert, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-from app.capabilities.agents.sessions import get_adapter
-from app.capabilities.agents.sessions.access import LocalSourceAccess
 from db.migrations import apply_migrations
 from studio.apps.agent_workbench.events import event_page
 from studio.apps.agent_workbench.storage.models import WorkbenchCheckpoint, WorkbenchSession
@@ -26,6 +24,8 @@ from studio.assembly.http_dependencies import SessionDep, db_session, require_st
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.host.session_collection.access import LocalSourceAccess
+from studio.host.session_collection.catalog import get_adapter
 
 
 def encode(*records):
@@ -366,7 +366,7 @@ async def test_codex_native_title_index_updates_without_becoming_message_history
 def test_plain_history_uses_bounded_batches_without_compressed_expansion_limit(
     tmp_path, monkeypatch
 ):
-    from app.capabilities.agents.sessions import files
+    from studio.host.session_collection import files
 
     monkeypatch.setattr(files, "MAX_CHUNK", 128)
     monkeypatch.setattr(files, "MAX_EXPANDED", 128)
@@ -459,7 +459,7 @@ def test_dsh_compressed_frames_and_incremental_follow(tmp_path):
 async def test_dsh_normalization_upgrade_backfills_error_without_clearing_history(
     store, tmp_path, monkeypatch
 ):
-    from app.capabilities.agents.sessions import files, parsers
+    from studio.host.session_collection import files, parsers
 
     sessions, client = store
     records = [
@@ -749,7 +749,7 @@ async def test_stream_reauthorizes_after_session_revocation(store):
 
 
 def test_opencode_server_is_readonly_and_preserves_native_message_ids(monkeypatch):
-    from app.capabilities.agents.sessions.opencode import OpenCodeServerAdapter
+    from studio.host.session_collection.opencode import OpenCodeServerAdapter
 
     calls = []
     answer = {"value": "initial"}
@@ -910,7 +910,7 @@ async def test_ten_thousand_metadata_records_paginate_before_history_index(store
 
 
 async def test_history_pagination_keeps_entries_with_the_same_native_ordinal(store, tmp_path):
-    from app.capabilities.agents.sessions.contracts import Entry, ReadBatch, SessionInfo
+    from studio.contracts.agent_workbench.session_history import Entry, ReadBatch, SessionInfo
 
     sessions, client = store
     source = await bind(client, tmp_path)
@@ -948,8 +948,8 @@ async def test_history_pagination_keeps_entries_with_the_same_native_ordinal(sto
 
 
 def test_native_tool_metadata_keeps_association_without_inventing_missing_results():
-    from app.capabilities.agents.sessions import opencode, parsers
-    from app.capabilities.agents.sessions.contracts import SessionInfo
+    from studio.contracts.agent_workbench.session_history import SessionInfo
+    from studio.host.session_collection import opencode, parsers
 
     info = SessionInfo()
     parsers.codex({"type": "turn_context", "payload": {"turn_id": "turn-1"}}, 1, info, "")

@@ -138,6 +138,7 @@ def test_migrated_packages_have_one_source_owner():
         ROOT / "backend/app/console/file_library",
         ROOT / "backend/app/console/cloud_control",
         ROOT / "backend/app/capabilities/web_access",
+        ROOT / "backend/app/capabilities/agents/sessions",
     ):
         assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"
 
@@ -175,6 +176,14 @@ def test_remote_preference_transport_has_no_database_dependency():
     )
     for dependency in imports(route):
         assert ".storage" not in dependency and not dependency.startswith("sqlalchemy")
+
+
+def test_session_collection_parent_and_history_contracts_do_not_load_adapters():
+    assert not list(imports(STUDIO / "host/session_collection/__init__.py"))
+    assert not (ROOT / "backend/app/capabilities/agents/activity.py").exists()
+    for name in ("session_history.py", "activity.py"):
+        for dependency in imports(STUDIO / "contracts/agent_workbench" / name):
+            assert not dependency.startswith(("studio.host", "studio.apps", "app"))
 
 
 def test_runtime_mechanisms_do_not_import_application_implementations():
