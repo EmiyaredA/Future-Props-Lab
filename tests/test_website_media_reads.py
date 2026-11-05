@@ -1,5 +1,6 @@
 """Real website identity is rechecked after processing, using only the isolated test database."""
 
+import asyncio
 import io
 
 import httpx
@@ -12,6 +13,40 @@ from tests.test_account_system import (
 )
 
 from website_test_support import app
+
+
+@pytest.mark.real_auth
+async def test_media_preview_releases_credentials_before_borrowing_asset(monkeypatch):
+    username, temporary = await create_test_account()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        await login_and_change_password(client, username, temporary)
+        image = io.BytesIO()
+        Image.new("RGB", (8, 6), "red").save(image, "PNG")
+        upload = await client.post(
+            "/v1/files",
+            headers=unsafe_headers(client),
+            files={"upload": ("preview.png", image.getvalue(), "image/png")},
+        )
+        assert upload.status_code in {200, 201}, upload.text
+        checked = []
+        pool = app.state.database.engine.pool
+        factory = app.state.media_reads
+
+        def reads(request):
+            checked.append(pool.checkedout())
+            return factory(request)
+
+        monkeypatch.setattr(app.state, "media_reads", reads)
+        path = f"/v1/files/{upload.json()['id']}/preview"
+        preview = await client.get(path)
+        assert preview.status_code == 200, preview.text
+        assert checked == [0]
+        monkeypatch.setattr(app.state, "media_reads", factory)
+        async with asyncio.timeout(15):
+            concurrent = await asyncio.gather(*(client.get(path) for _ in range(24)))
+        assert [response.status_code for response in concurrent] == [200] * 24
 
 
 @pytest.mark.real_auth

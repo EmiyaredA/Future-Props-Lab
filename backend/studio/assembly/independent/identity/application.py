@@ -152,6 +152,7 @@ def create_app(
     app.state.model_audit_inbox = ModelAuditInbox(database, private_key.public_key(), catalog)
     app.state.studio_http_auth = partial(
         authenticate_database_request,
+        sessions=database.sessions,
         allowed_origins=tuple(settings.cors_origin_list),
     )
     app.state.account_creator = create_account

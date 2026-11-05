@@ -70,6 +70,29 @@ async def authenticate_database_request(
     request: Request,
     session: AsyncSession,
     *,
+    sessions,
+    required_scope: str,
+    allowed_origins: tuple[str, ...],
+    allow_forced_password_change: bool = False,
+) -> StudioPrincipal:
+    # Business code may borrow its own database session or send a streaming response.
+    async with sessions() as credentials:
+        principal = await _read_principal(
+            request,
+            credentials,
+            required_scope=required_scope,
+            allowed_origins=allowed_origins,
+            allow_forced_password_change=allow_forced_password_change,
+        )
+    request.state.studio_principal = principal
+    bind_owner(session, principal.user_id)
+    return principal
+
+
+async def _read_principal(
+    request: Request,
+    session: AsyncSession,
+    *,
     required_scope: str,
     allowed_origins: tuple[str, ...],
     allow_forced_password_change: bool = False,
@@ -158,8 +181,6 @@ async def authenticate_database_request(
                 "message": "请先完成账号文件迁移并重启应用",
             },
         )
-    request.state.studio_principal = principal
-    bind_owner(session, principal.user_id)
     return principal
 
 

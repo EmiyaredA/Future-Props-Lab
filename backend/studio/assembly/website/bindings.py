@@ -156,7 +156,9 @@ def bind_components(app, settings, database):
     )
     app.state.code_agent_enable = lambda _request, agent_id: enable_connection(agent_id)
     app.state.studio_http_auth = partial(
-        authenticate_database_request, allowed_origins=tuple(settings.cors_origin_list)
+        authenticate_database_request,
+        sessions=sessions,
+        allowed_origins=tuple(settings.cors_origin_list),
     )
     app.state.studio_socket_auth = authenticate_database_websocket
     app.state.integration_bindings = integration_bindings(
