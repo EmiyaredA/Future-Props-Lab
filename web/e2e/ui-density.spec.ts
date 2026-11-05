@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { setResponsiveTheme } from "./responsive-capture";
 
-test("management pages remain readable at compact sizes", async ({
+test("business pages remain readable at compact sizes", async ({
   page,
 }, info) => {
   test.setTimeout(180_000);
@@ -61,13 +61,16 @@ test("management pages remain readable at compact sizes", async ({
     "/apps/motion-compositor",
   ]) {
     await page.goto(path);
-    await expect(
-      page.locator(".studio-main, .workshop-main").getByRole("heading").first(),
-    ).toBeVisible();
+    const surface = page
+      .locator(".studio-main, .workshop-main, .independent-content")
+      .first();
+    const ready =
+      path === "/files"
+        ? surface.getByRole("button", { name: "上传文件", exact: true })
+        : surface.getByRole("heading").first();
+    await expect(ready).toBeVisible();
     expect(
-      await page
-        .locator(".studio-main, .workshop-main")
-        .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+      await surface.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
       path,
     ).toBe(true);
     await page.screenshot({

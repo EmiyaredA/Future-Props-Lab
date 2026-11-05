@@ -69,6 +69,10 @@ test("render task cards adapt to themes, filters and small screens", async ({
     `**/v1/video-editor/projects/${project.id}/segment-exports`,
     (route) => route.fulfill({ json: { items: segments } }),
   );
+  await page.route(
+    `**/v1/video-editor/projects/${project.id}/clip-merges`,
+    (route) => route.fulfill({ json: { items: [] } }),
+  );
   await page.setViewportSize({ width: 1440, height: 1100 });
   await page.goto("/apps/video-editor/tasks");
   const root = page.locator(".ve-tasks-page");
