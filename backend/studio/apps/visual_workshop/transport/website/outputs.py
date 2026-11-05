@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 
 from studio.apps.visual_workshop.canvas import VisualCanvasDocuments
 from studio.apps.visual_workshop.outputs.history import NodeOutputs, OutputError
@@ -13,7 +13,6 @@ from studio.apps.visual_workshop.outputs.schemas import (
 from studio.apps.visual_workshop.outputs.uploads import upload_version
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentOut
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.errors import AssetError
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
@@ -55,6 +54,7 @@ async def add_node_output(
 
 @router.post("/{project_id}/nodes/{node_id}/output-uploads", response_model=VisualCanvasDocumentOut)
 async def upload_node_output(
+    request: Request,
     project_id: str,
     node_id: str,
     session: SessionDep,
@@ -65,7 +65,7 @@ async def upload_node_output(
     try:
         await upload_version(
             NodeOutputs(session, owner_user_id),
-            get_settings(),
+            request.app.state.settings,
             project_id,
             node_id,
             file,
@@ -123,6 +123,7 @@ async def delete_node_output(
 
 @router.post("/{project_id}/node-uploads", response_model=VisualCanvasDocumentOut)
 async def upload_material_node(
+    request: Request,
     project_id: str,
     session: SessionDep,
     owner_user_id: OwnerDep,
@@ -139,7 +140,7 @@ async def upload_material_node(
     try:
         return await upload_material(
             session,
-            get_settings(),
+            request.app.state.settings,
             owner_user_id,
             project_id,
             file,

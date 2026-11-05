@@ -45,6 +45,7 @@ async def clear_private_projects(owner="test-user"):
 
     from sqlalchemy import delete, select
 
+    from studio.apps.asset_library.storage.file_paths import AssetStorage
     from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
     from studio.apps.galgame_workshop.website.projects import GalgameWorkshopProjects
     from studio.apps.video_editor.projects import VideoEditorProjects
@@ -72,7 +73,10 @@ async def clear_private_projects(owner="test-user"):
     for model, use_case in [
         (VideoEditorProject, VideoEditorProjects),
         (GalgameWorkshopProject, partial(GalgameWorkshopProjects, settings=app.state.settings)),
-        (VisualWorkshopProject, VisualWorkshopProjects),
+        (
+            VisualWorkshopProject,
+            partial(VisualWorkshopProjects, storage=AssetStorage(app.state.settings)),
+        ),
     ]:
         async with SessionLocal() as reader:
             roots = list(

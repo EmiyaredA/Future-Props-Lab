@@ -58,3 +58,13 @@ operations receive the serving application's settings. The Galgame ASR record
 reader has a separate domain method name. The shared HTTP error mapper imports
 only the exceptions it maps. The Galgame and repository regressions passed 155
 tests.
+
+## Visual storage follow-up
+
+Visual project layout, snapshot and reference operations, output uploads, and
+material uploads use the serving website's file configuration. Project
+construction receives storage explicitly. The GIF upload limit and path checks
+exercise the application instance's settings even after other tests reset
+global settings. The combined Models, Visual, Galgame and assembly regression
+passed 75 tests. Contract and SDK checks passed, along with the 23 entrypoint
+and source closure probes.

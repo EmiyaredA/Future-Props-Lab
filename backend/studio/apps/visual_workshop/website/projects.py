@@ -20,7 +20,6 @@ from studio.apps.visual_workshop.storage.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,
 )
-from studio.config.settings import get_settings
 from studio.runtime.database.operation_receipts import forget
 from studio.runtime.database.project_files import creating_project_layout, deleting_project_layout
 from studio.runtime.database.project_records import (
@@ -37,10 +36,10 @@ class VisualWorkshopProjectNotFoundError(Exception):
 
 
 class VisualWorkshopProjects:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, storage: AssetStorage) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.storage = AssetStorage(get_settings())
+        self.storage = storage
 
     async def list(self) -> VisualWorkshopProjectListOut:
         rows = await list_owned_projects(self.session, VisualWorkshopProject, self.owner_user_id)

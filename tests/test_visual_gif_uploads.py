@@ -11,7 +11,6 @@ from PIL import Image
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.media_rendering.local import gif_upload as video_uploads
 from studio.apps.media_rendering.local.animated_image import gif_to_mp4
-from studio.config.settings import get_settings
 from website_test_support import app
 
 
@@ -174,7 +173,8 @@ async def test_failed_gif_upload_preserves_canvas_and_leaves_no_assets(failure, 
         elif failure == "dimensions":
             data = data[:6] + (8193).to_bytes(2, "little") + data[8:]
         elif failure == "oversize":
-            monkeypatch.setattr(get_settings(), "fpl_visual_asset_max_bytes", 10)
+            settings = app.state.settings.model_copy(update={"fpl_visual_asset_max_bytes": 10})
+            monkeypatch.setattr(app.state, "settings", settings)
             expected_status = 413
         elif failure in {"unavailable", "timeout"}:
             monkeypatch.setattr(
@@ -228,7 +228,7 @@ async def test_concurrent_canvas_edit_during_conversion_wins_without_orphan_file
         assert (await client.get("/v1/files", params={"project_id": project})).json()["items"] == []
         assert (await client.get(path + "/nodes/dance/outputs")).json()["items"] == []
         root = (
-            AssetStorage(get_settings()).project_root(
+            AssetStorage(app.state.settings).project_root(
                 "visual-workshop", project, owner_user_id="test-user"
             )
             / "assets"
@@ -409,7 +409,7 @@ async def test_inspection_failure_leaves_no_output_or_files(failure, monkeypatch
         assert not [
             p
             for p in (
-                AssetStorage(get_settings()).project_root(
+                AssetStorage(app.state.settings).project_root(
                     "visual-workshop", project, owner_user_id="test-user"
                 )
                 / "assets"
