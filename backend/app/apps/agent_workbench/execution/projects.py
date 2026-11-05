@@ -7,8 +7,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 
 from fastapi import HTTPException
-from sqlalchemy import select
-from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy import select, text
 
 from app.runtime.config import REPO_ROOT, get_cloud_settings
 from app.runtime.ids import new_id
@@ -140,18 +139,26 @@ async def recent(db, owner, settings):
 async def register(db, owner, root):
     settings = get_cloud_settings()
     root = str(await asyncio.to_thread(validate_project_root, root, settings))
-    timestamp = time.time_ns()
-    statement = (
-        insert(WorkbenchProject)
-        .values(id=f"local-{new_id()}", owner_user_id=owner, root=root, last_used_at=timestamp)
-        .on_conflict_do_update(
-            index_elements=[WorkbenchProject.owner_user_id, WorkbenchProject.root],
-            set_={"last_used_at": timestamp},
-        )
-        .returning(WorkbenchProject.id)
-    )
+    return await register_verified(db, owner, root)
+
+
+async def register_verified(db, owner, root):
     await db.rollback()
-    identity = await db.scalar(statement)
+    await db.execute(text("BEGIN IMMEDIATE"))
+    row = await db.scalar(
+        select(WorkbenchProject).where(
+            WorkbenchProject.owner_user_id == owner, WorkbenchProject.root == root
+        )
+    )
+    timestamp = time.time_ns()
+    if row is None:
+        row = WorkbenchProject(
+            id=f"local-{new_id()}", owner_user_id=owner, root=root, last_used_at=timestamp
+        )
+        db.add(row)
+    else:
+        row.last_used_at = timestamp
+    identity = row.id
     await db.commit()
     return ProjectChoice(id=identity, label=label_for(root))
 
@@ -177,6 +184,10 @@ async def binding(db, identity, owner, *, local, settings=None):
         )
         if row is not None:
             return AuthorizedProject(identity, row.root, label_for(row.root), source="local")
+    return configured_binding(identity, owner, settings)
+
+
+def configured_binding(identity, owner, settings):
     project = settings.fpl_cloud_control_projects.get(identity)
     if project is None or owner not in project.user_ids:
         raise HTTPException(404, "项目不可用")

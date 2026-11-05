@@ -13,6 +13,7 @@ from app.apps.agent_workbench.models import WorkbenchCheckpoint, WorkbenchSource
 from app.capabilities.identity.permissions import CLOUD_CONTROL_PERMISSION
 from app.runtime.config import get_settings
 from app.runtime.ownership import bind_owner
+from fpl_runtime.workbench_execution import DISCOVERY_OPERATIONS
 
 from .models import NativeJob, NativeSubscription, NativeWorkerSeen
 
@@ -24,11 +25,18 @@ class Worker:
 
 
 class NativeTransport:
-    def __init__(self, app, *, ingress_token, workers, operations):
+    def __init__(self, app, *, ingress_token, workers, operations, execution_workers=None):
         if len(ingress_token) < 32 or any(len(token) < 32 for token in workers.values()):
             raise ValueError("原生采集通道凭据强度不足")
         self.app, self.ingress, self.workers = app, ingress_token, dict(workers)
         self.operations = frozenset(operations)
+        self.execution_workers = dict(execution_workers or {})
+        native_tokens = {ingress_token, *workers.values()}
+        if any(
+            not isinstance(token, str) or len(token) < 32 or token in native_tokens
+            for token in self.execution_workers.values()
+        ) or len(set(self.execution_workers.values())) != len(self.execution_workers):
+            raise ValueError("工作台执行与采集需要独立凭据")
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or not scope["path"].startswith("/_native/"):
@@ -37,15 +45,22 @@ class NativeTransport:
         headers = Headers(scope=scope)
         proof = headers.get("x-fpl-native-ingress", "")
         bearer = headers.get("authorization", "").removeprefix("Bearer ")
+        execution = scope["path"].startswith("/_native/v1/execution/")
+        workers = self.execution_workers if execution else self.workers
+        operations = DISCOVERY_OPERATIONS if execution else self.operations
         worker = next(
             (
-                Worker(name, self.operations)
-                for name, token in self.workers.items()
-                if secrets.compare_digest(token, bearer)
+                Worker(name, operations)
+                for name, token in workers.items()
+                if secrets.compare_digest(token.encode(), bearer.encode())
             ),
             None,
         )
-        if not secrets.compare_digest(proof, self.ingress) or worker is None:
+        if (
+            not secrets.compare_digest(proof.encode(), self.ingress.encode())
+            or worker is None
+            or (execution and ("origin" in headers or "cookie" in headers))
+        ):
             await JSONResponse(
                 {"code": "native_worker_required"}, 403, headers={"Cache-Control": "no-store"}
             )(scope, receive, send)

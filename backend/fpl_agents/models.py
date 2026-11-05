@@ -8,6 +8,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from app.apps.agent_workbench.models import WorkbenchSource
 from app.runtime.ids import new_id
 from app.runtime.time import utc_now
+from fpl_runtime.native_records import NativeJobFields
 
 
 class NativeBase(DeclarativeBase):
@@ -67,3 +68,8 @@ class NativeWorkerSeen(NativeBase):
     __tablename__ = "agent_native_worker_seen"
     id: Mapped[str] = mapped_column(String(100), primary_key=True)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class WorkbenchExecutionJob(NativeJobFields, NativeBase):
+    __tablename__ = "agent_workbench_execution_jobs"
+    __table_args__ = (UniqueConstraint("owner_user_id", "request_id"),)

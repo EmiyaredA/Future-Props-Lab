@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
 from app.apps.agent_workbench.execution import transcripts
-from app.apps.agent_workbench.execution.projects import registered_labels
+from app.apps.agent_workbench.execution.projects import register_verified, registered_labels
 from app.apps.agent_workbench.execution.schemas import (
     ApprovalDecision,
     ChatCreate,
@@ -22,7 +22,19 @@ from app.apps.agent_workbench.execution.schemas import (
     TurnOut,
 )
 from fpl_runtime.http_dependencies import SessionDep, StudioAuth
+from fpl_runtime.workbench_execution import (
+    CATALOG,
+    CHECK_PROJECT,
+    DIRECTORIES,
+    REGISTER,
+    DirectoryQuery,
+    Discovery,
+    ProjectCheck,
+    ProjectReady,
+    RegisterProject,
+)
 
+from .execution_discovery import recent_roots, registered_project_root, store_verified_chat
 from .routes import require_workbench_session
 
 router = APIRouter(
@@ -33,8 +45,20 @@ router = APIRouter(
 
 
 @router.get("/execution/catalog", response_model=ExecutionCatalog)
-async def catalog():
-    return ExecutionCatalog(enabled=False, projects=[], agents=[])
+async def catalog(request: Request, db: SessionDep, principal: StudioAuth):
+    host = request.app.state.execution_discovery
+    if not host.configured:
+        return ExecutionCatalog(enabled=False, projects=[], agents=[])
+    token = request.state.service_assertion
+    authority = await host.authority(token, CATALOG)
+    if not authority.enabled:
+        return ExecutionCatalog(enabled=False, projects=[], agents=[])
+    local = request.state.service_actor.local
+    recent = await recent_roots(db, principal.user_id) if local else []
+    await db.rollback()
+    return await host.execute(
+        principal.user_id, token, CATALOG, Discovery(local=local, recent=recent)
+    )
 
 
 @router.get("/chats", response_model=list[ChatOut])
@@ -48,21 +72,68 @@ def unavailable():
     )
 
 
+async def local_discovery(request, operation, owner, scope):
+    if not request.state.service_actor.local:
+        raise HTTPException(403, "此操作仅支持本机网站入口")
+    host = request.app.state.execution_discovery
+    if not host.configured:
+        raise unavailable()
+    token = request.state.service_assertion
+    authority = await host.authority(token, operation)
+    if not authority.enabled:
+        raise HTTPException(403, "该账号或入口未启用云控操作")
+    return await host.execute(owner, token, operation, scope)
+
+
 @router.get("/execution/directories", response_model=DirectoryListing)
 async def directories(
-    parent: Annotated[str | None, Query(max_length=4096)] = None,  # noqa: ARG001
+    request: Request,
+    principal: StudioAuth,
+    parent: Annotated[str | None, Query(max_length=4096)] = None,
 ):
-    raise unavailable()
+    return await local_discovery(
+        request, DIRECTORIES, principal.user_id, DirectoryQuery(parent=parent)
+    )
 
 
 @router.post("/execution/projects", response_model=ProjectChoice)
-async def register_project(_body: ProjectDirectory):
-    raise unavailable()
+async def register_project(
+    request: Request, body: ProjectDirectory, db: SessionDep, principal: StudioAuth
+):
+    result = await local_discovery(
+        request, REGISTER, principal.user_id, RegisterProject(root=body.root)
+    )
+    return await register_verified(db, principal.user_id, result["root"])
 
 
 @router.post("/chats", response_model=ChatOut, status_code=201)
-async def create_chat(_body: ChatCreate):
-    raise unavailable()
+async def create_chat(request: Request, body: ChatCreate, db: SessionDep, principal: StudioAuth):
+    host = request.app.state.execution_discovery
+    if not host.configured:
+        raise unavailable()
+    token, local = request.state.service_assertion, request.state.service_actor.local
+    await host.authority(token, CHECK_PROJECT)
+    root = await registered_project_root(db, principal.user_id, body.project_id) if local else None
+    await db.rollback()
+    result = ProjectReady.model_validate(
+        await host.execute(
+            principal.user_id,
+            token,
+            CHECK_PROJECT,
+            ProjectCheck(
+                project_id=body.project_id, agent=body.agent_id, local=local, registered_root=root
+            ),
+        )
+    )
+    return await store_verified_chat(
+        db,
+        principal.user_id,
+        body.project_id,
+        body.agent_id,
+        result.label,
+        local=local,
+        expected_root=root,
+    )
 
 
 @router.get("/chats/{chat_id}", response_model=ChatDetail)

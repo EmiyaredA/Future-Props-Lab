@@ -21,6 +21,9 @@ def parser():
     )
     result.add_argument("--workers", type=Path, default=Path("/run/fpl/workers.json"))
     result.add_argument(
+        "--execution-workers", type=Path, default=Path("/run/fpl/execution-workers.json")
+    )
+    result.add_argument(
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
     result.add_argument("--identity-url", default="http://identity:8080")
@@ -59,17 +62,26 @@ def run(options):
         public = load_pem_public_key(options.public_key.read_bytes())
         if not isinstance(public, Ed25519PublicKey):
             raise ValueError("Identity 公钥类型无效")
+        identity_token = options.identity_token.read_text().strip()
+        execution_workers = (
+            json.loads(options.execution_workers.read_text())
+            if options.execution_workers.is_file()
+            else {}
+        )
+        if identity_token in execution_workers.values():
+            raise ValueError("工作台执行必须使用独立身份凭据")
         app = create_app(
             state_root=state,
             catalog=RouteCatalog.read(options.catalog),
             public_key=public,
             identity=LiveAuthorization(
                 service="agents",
-                credential=options.identity_token.read_text().strip(),
+                credential=identity_token,
                 base_url=options.identity_url,
             ),
             native_ingress_token=options.native_ingress_token.read_text().strip(),
             workers=json.loads(options.workers.read_text()),
+            execution_workers=execution_workers,
             web_root=options.web_root if (options.web_root / "build.json").is_file() else None,
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )

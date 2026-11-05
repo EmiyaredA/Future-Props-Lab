@@ -14,7 +14,7 @@ from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal
 from app.runtime.ids import new_id
 
-from . import commands, project_files, storage
+from . import commands, project_files, storage, turn_records
 
 
 def tool(name, description, **properties):
@@ -45,14 +45,14 @@ class WorkbenchRuns:
     async def cancel(self, db, owner, chat_id, turn_id):
         key = (owner, chat_id, turn_id)
         task = self.tasks.get(turn_id)
-        if not await storage.request_cancellation(db, key, running_task=bool(task)):
+        if not await turn_records.request_cancellation(db, key, running_task=bool(task)):
             return
         if not task.done():
             if not task.cancelling():
                 task.cancel()
             await asyncio.gather(task, return_exceptions=True)
         async with SessionLocal() as session:
-            await storage.finish_turn(session, key, "cancelled", only_cancelling=True)
+            await turn_records.finish_turn(session, key, "cancelled", only_cancelling=True)
 
     async def close(self):
         tasks = list(self.tasks.values())
@@ -87,7 +87,7 @@ class Turn:
         if not self.pending_text:
             return
         async with SessionLocal() as db:
-            await storage.append_answer(db, self.key, self.pending_text)
+            await turn_records.append_answer(db, self.key, self.pending_text)
         self.pending_text = ""
         self.last_flush = asyncio.get_running_loop().time()
 
@@ -100,13 +100,13 @@ class Turn:
     async def approve(self, kind, title, preview, operation):
         identity = new_id()
         async with SessionLocal() as db:
-            await storage.propose_approval(
+            await turn_records.propose_approval(
                 db, self.key, dict(id=identity, kind=kind, title=title, preview=preview)
             )
 
         while True:
             async with SessionLocal() as db:
-                decision = await storage.read_approval_status(db, self.key, identity)
+                decision = await turn_records.read_approval_status(db, self.key, identity)
             if decision != "pending":
                 break
             await asyncio.sleep(0.3)
@@ -137,7 +137,7 @@ class Turn:
             # The side effect and receipt cannot commit together; cancellation leaves it unknown.
             if not asyncio.current_task().cancelling():
                 async with SessionLocal() as db:
-                    await storage.settle_approval(db, self.key, identity, status)
+                    await turn_records.settle_approval(db, self.key, identity, status)
 
     def tools(self, project):
         options = [
@@ -302,4 +302,4 @@ class Turn:
         finally:
             await self.flush()
             async with SessionLocal() as db:
-                await storage.finish_turn(db, self.key, status, error)
+                await turn_records.finish_turn(db, self.key, status, error)

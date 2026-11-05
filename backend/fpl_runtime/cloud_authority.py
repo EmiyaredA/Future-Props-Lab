@@ -33,7 +33,11 @@ def permits_cloud_authority(service, method, path):
         }
     if service != "agents":
         return False
-    if (method, path) == ("GET", "/v1/agent-workbench/execution/catalog"):
+    if (method, path) in {
+        ("GET", "/v1/agent-workbench/execution/catalog"),
+        ("GET", "/v1/agent-workbench/execution/directories"),
+        ("POST", "/v1/agent-workbench/execution/projects"),
+    }:
         return True
     return method == "POST" and bool(
         re.fullmatch(

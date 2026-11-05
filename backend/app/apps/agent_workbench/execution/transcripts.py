@@ -1,8 +1,13 @@
 """Account-scoped workbench transcript reads and interrupted turn recovery."""
 
+import time
+
 from fastapi import HTTPException
 from sqlalchemy import select, text
 
+from app.runtime.ids import new_id
+
+from . import projects
 from .models import WorkbenchChat, WorkbenchTurn
 from .schemas import ChatDetail, ChatOut, TurnOut
 
@@ -132,3 +137,18 @@ async def recover_owned_turns(sessions):
     for owner in owners:
         async with sessions(info={"owner_user_id": owner}) as session:
             await interrupt_all(session)
+
+
+async def store_chat(db, owner, project_id, agent_id, project_label, *, local):
+    if local:
+        await projects.touch(db, owner, project_id)
+    chat = WorkbenchChat(
+        id=new_id(),
+        owner_user_id=owner,
+        project_id=project_id,
+        agent_id=agent_id,
+        created_at=int(time.time()),
+    )
+    db.add(chat)
+    await db.commit()
+    return ChatOut.model_validate(chat).model_copy(update={"project_label": project_label})

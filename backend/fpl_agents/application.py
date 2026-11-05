@@ -36,9 +36,17 @@ from fpl_runtime.native_queue import NativeQueue
 from fpl_runtime.request_limit import RequestLimit
 
 from .authorization import NativeTransport
+from .execution_discovery import ExecutionDiscovery
 from .execution_http import router as execution_router
+from .execution_native_http import router as execution_native
 from .migrations.registry import MIGRATIONS
-from .models import NativeJob, NativeProjectionReceipt, NativeSubscription, NativeWorkerSeen
+from .models import (
+    NativeJob,
+    NativeProjectionReceipt,
+    NativeSubscription,
+    NativeWorkerSeen,
+    WorkbenchExecutionJob,
+)
 from .native_access import NativeSourceAccess
 from .native_api import router as native_router
 from .routes import router
@@ -58,6 +66,7 @@ MODELS = (
     NativeSubscription,
     NativeProjectionReceipt,
     NativeWorkerSeen,
+    WorkbenchExecutionJob,
 )
 
 
@@ -72,6 +81,7 @@ def create_app(
     version="development",
     collect=True,
     web_root=None,
+    execution_workers=None,
 ):
     database = Database(
         "agents",
@@ -82,11 +92,13 @@ def create_app(
     if get_settings().database_path != database.path:
         raise ValueError("工作台配置必须指向自己的数据目录")
     supervisor = CollectionSupervisor(database, identity)
+    discovery = ExecutionDiscovery(database, identity, configured=bool(execution_workers))
 
     @asynccontextmanager
     async def lifespan(_app):
         check(database.path, "agents", MIGRATIONS)
         await recover_owned_turns(database.sessions)
+        await discovery.recover()
         if collect and get_settings().fpl_agent_workbench_enabled:
             await supervisor.start()
         try:
@@ -114,6 +126,7 @@ def create_app(
         clock=utc_now,
     )
     app.state.workbench_native = NativeSourceAccess(app.state.native_queue)
+    app.state.execution_discovery = discovery
 
     async def reauthorize(request):
         if not await identity.active(
@@ -145,6 +158,8 @@ def create_app(
     app.include_router(router, prefix="/v1")
     app.include_router(execution_router, prefix="/v1")
     app.include_router(native_router)
+    if execution_workers:
+        app.include_router(execution_native)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -174,6 +189,7 @@ def create_app(
         ingress_token=native_ingress_token,
         workers=workers,
         operations=COLLECTOR_OPERATIONS,
+        execution_workers=execution_workers,
     )
 
     @app.get("/health")
