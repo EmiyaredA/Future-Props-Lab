@@ -13,12 +13,14 @@ from studio.apps.model_service.catalog_migration import (
     inventory,
 )
 from studio.apps.model_service.storage.migration_history import DATASETS as HISTORY
+from studio.apps.model_service.storage.migration_inference_files import PREFIX as INFERENCE_FILES
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
+from studio.apps.model_service.transport.migration_inference_http import mount_inference
 from studio.runtime.database.migration_apps import export_app, import_app, mount_dataset
 from studio.runtime.database.project_history_migration import mount_project_history
 
 PREFIX = "/v1/migration/models"
-TRANSPORT = {"maximum": 32 * 1024 * 1024}
+TRANSPORT = {"maximum": 32 * 1024 * 1024, "streaming_prefix": INFERENCE_FILES + "/"}
 
 
 def mount_catalog(app, plan, sessions, *, source=None, cipher=None):
@@ -58,6 +60,7 @@ def mount_catalog(app, plan, sessions, *, source=None, cipher=None):
 def create_export_app(*, plan, source_path):
     app, sessions, source = export_app(plan, source_path, **TRANSPORT)
     mount_project_history(app, plan, sessions, PREFIX, HISTORY, ModelsImportReceipt, source=source)
+    mount_inference(app, plan, sessions, root=source.path.parent, source=source)
     return mount_catalog(app, plan, sessions, source=source)
 
 
@@ -70,4 +73,5 @@ def create_import_app(*, plan, state_root, secret_key):
     )
     app, database = import_app(plan, state_root, "models", models, MIGRATIONS, **TRANSPORT)
     mount_project_history(app, plan, database.sessions, PREFIX, HISTORY, ModelsImportReceipt)
+    mount_inference(app, plan, database.sessions, root=database.root)
     return mount_catalog(app, plan, database.sessions, cipher=cipher)

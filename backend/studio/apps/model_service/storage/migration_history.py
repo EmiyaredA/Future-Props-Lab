@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import Field, JsonValue
 
+from studio.apps.model_service.storage.migration_inference import DATASETS as INFERENCE
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.contracts.management.migration_batches import MigrationBatch, MigrationPage
 from studio.contracts.management.project_history import HistoryRecord, Identifier
@@ -36,4 +37,7 @@ class Calls(MigrationBatch[Call]):
     dataset: Literal["models.call-logs"]
 
 
-DATASETS = (ProjectDataset("models.call-logs", LlmCallLog, Call, Calls, MigrationPage[Calls]),)
+DATASETS = (
+    ProjectDataset("models.call-logs", LlmCallLog, Call, Calls, MigrationPage[Calls]),
+    *INFERENCE,
+)
