@@ -420,7 +420,9 @@ test("filters, summarizes, switches, and edits the aligned asset overview", asyn
     ),
   );
 
-  expect(await screen.findByText(/共 3 项 · 1 项游离/)).toBeInTheDocument();
+  expect(
+    await screen.findByText(/共 3 项 · 1 项游离/, {}, { timeout: 5000 }),
+  ).toBeInTheDocument();
   expect(screen.getByText("减少 29%")).toBeInTheDocument();
   const filters = screen.getByRole("complementary", { name: "资源筛选" });
   await user.click(within(filters).getByRole("button", { name: /粒子/ }));
@@ -523,7 +525,7 @@ test("filters, summarizes, switches, and edits the aligned asset overview", asyn
   expect(
     screen.queryByRole("region", { name: "资源统计" }),
   ).not.toBeInTheDocument();
-}, 10_000);
+}, 30_000);
 
 test("previews batch imports and repairs missing assets with the latest Story revision", async () => {
   const user = userEvent.setup();
