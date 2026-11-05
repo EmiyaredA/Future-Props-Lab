@@ -7,12 +7,12 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
 from studio.apps.creative_workshop.install_authorization import (
     IdentityInstallAuthorization,
     InstallAuthorizationDenied,
     InstallSource,
 )
+from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
 from studio.contracts.creative_workshop.creative_install_evidence import (
     INSTALL_PATH,
     issue_install_evidence,

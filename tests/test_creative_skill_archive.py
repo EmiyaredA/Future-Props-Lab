@@ -76,8 +76,6 @@ async def test_cancelled_pack_closes_result_when_background_thread_finishes(tmp_
 
 
 async def test_changed_published_skill_cannot_be_accepted_or_sent(tmp_path):
-    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-    from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
     from studio.apps.creative_workshop.install_batch import build_install_batch
     from studio.apps.creative_workshop.installation_outbox import (
         InstallationOutbox,
@@ -86,6 +84,8 @@ async def test_changed_published_skill_cannot_be_accepted_or_sent(tmp_path):
     from studio.apps.creative_workshop.skill_archive import CreativeSkillArchives
     from studio.apps.creative_workshop.storage.file_paths import creative_database
     from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
+    from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
+    from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
     from studio.runtime.database.migrations import apply
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)

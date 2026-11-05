@@ -9,8 +9,8 @@ from uuid import uuid4
 
 from PIL import Image, UnidentifiedImageError
 
-from studio.config.settings import get_settings
 from studio.contracts.asset_library.incoming import IncomingFile
+from studio.contracts.creative_workshop.errors import CreativeFileError
 
 MAX_COVER_BYTES = 5 * 1024 * 1024
 PRIVATE_FILE_NAMES = {".env", ".npmrc", "id_rsa", "id_ed25519", "credentials.json", "secrets.json"}
@@ -21,10 +21,6 @@ PRIVATE_TEXT = re.compile(
 )
 
 
-class CreativeFileError(ValueError):
-    pass
-
-
 class CreativeFileSettings(Protocol):
     @property
     def runtime_path(self) -> Path: ...
@@ -33,10 +29,7 @@ class CreativeFileSettings(Protocol):
     def fpl_skill_archive_max_bytes(self) -> int: ...
 
 
-def resolve_file(
-    owner_user_id: str, relative: str, *, settings: CreativeFileSettings | None = None
-) -> Path:
-    settings = settings or get_settings()
+def resolve_file(owner_user_id: str, relative: str, *, settings: CreativeFileSettings) -> Path:
     if (
         not owner_user_id
         or owner_user_id in {".", ".."}
@@ -58,7 +51,7 @@ def resolve_file(
 
 
 async def save_cover(
-    owner_user_id: str, upload: IncomingFile, *, settings: CreativeFileSettings | None = None
+    owner_user_id: str, upload: IncomingFile, *, settings: CreativeFileSettings
 ) -> str:
     payload = bytearray()
     try:
@@ -96,7 +89,7 @@ async def save_skill_draft(
     upload: IncomingFile,
     *,
     archive_parser,
-    settings: CreativeFileSettings | None = None,
+    settings: CreativeFileSettings,
 ) -> tuple[str, dict]:
     stage_root = resolve_file(owner_user_id, "creative-workshop/.staging", settings=settings)
     staged = await archive_parser.stage(owner_user_id, upload)
@@ -125,7 +118,7 @@ def copy_skill_release(
     source_relative: str,
     release_id: str,
     *,
-    settings: CreativeFileSettings | None = None,
+    settings: CreativeFileSettings,
 ) -> str:
     source = resolve_file(owner_user_id, source_relative, settings=settings)
     if not (source / "SKILL.md").is_file():

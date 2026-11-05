@@ -2,13 +2,13 @@
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.console.creative_workshop.schemas import CreativeInstallOut, CreativeInstallPreviewIn
 from studio.apps.creative_workshop.install_authorization import (
     InstallAuthorizationDenied,
     InstallSource,
 )
 from studio.apps.creative_workshop.install_batch import build_install_batch
 from studio.apps.creative_workshop.installation_outbox import InstallIntentConflict
+from studio.contracts.creative_workshop.catalog import CreativeInstallOut, CreativeInstallPreviewIn
 from studio.contracts.creative_workshop.creative_install_evidence import INSTALL_PATH
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 

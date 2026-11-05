@@ -74,6 +74,9 @@
 - 集成中心目录、外部连接与 Skill 操作共用 `studio/apps/integrations/` 实现，依赖由网站和
   独立装配显式提供；不得在目录构造器回退读取全局配置、创建默认加密器或查找全局客户端。
   公共 DTO 和 MCP 能力协议归 `studio/contracts/integrations/`，密钥加密机制归 `runtime/secrets.py`。
+- 创作工坊的发布过滤在 `studio/apps/creative_workshop/rules/publication.py` 保持纯函数；
+  作者目录、来源、归档和文件设置通过 `CreativeResources` 显式传入，不写入 Session 服务定位表。
+  安装用例调用注入端口，兼容网站跨表存储与独立投递分别由装配选择；不得回退读取全局配置。
 - 音频标注文档编辑由 `EditDocument` 执行版本判断与纯转换，`DocumentEdits` 在一个事务内提交
   CAS 与回执；并发失败复查原请求回执，取消回滚。HTTP 层只映射领域错误。
 - `backend/studio/` 全树纳入文件和目录行数预算；迁移路径同时更新入口、镜像闭包、打包、

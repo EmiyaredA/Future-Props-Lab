@@ -16,10 +16,15 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from PIL import Image
 from sqlalchemy import insert, select, update
 
-from app.console.creative_workshop.models import CreativeInstallation, CreativeItem, CreativeRelease
+from creative_test_support import isolated_resources
 from studio.apps.creative_workshop.storage.file_paths import creative_database
 from studio.apps.creative_workshop.storage.migration_catalog import CreativeImportReceipt
 from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.creative_workshop.storage.models import (
+    CreativeInstallation,
+    CreativeItem,
+    CreativeRelease,
+)
 from studio.apps.creative_workshop.storage.service_models import MODELS
 from studio.assembly.independent.creative_workshop.application import create_app
 from studio.contracts.gateway.protocol_hash import public_contract
@@ -91,10 +96,9 @@ async def test_creative_readiness_requires_started_storage_and_complete_release(
 
 
 async def test_creative_catalog_uses_owned_cover_and_skill_directories(tmp_path, monkeypatch):
-    from app.console.creative_workshop import files
-    from app.console.creative_workshop.catalog import CreativeCatalog
-    from app.console.creative_workshop.schemas import CreativeDraftIn
-    from app.console.creative_workshop.sources import MemoryIncoming
+    from studio.apps.creative_workshop.catalog import CreativeCatalog
+    from studio.apps.creative_workshop.catalog_sources import MemoryIncoming
+    from studio.contracts.creative_workshop.catalog import CreativeDraftIn
     from studio.contracts.identity.principal import StudioPrincipal
 
     def reject_legacy_settings():
@@ -105,7 +109,7 @@ async def test_creative_catalog_uses_owned_cover_and_skill_directories(tmp_path,
             assert item_id
             return author_id
 
-    monkeypatch.setattr(files, "get_settings", reject_legacy_settings)
+    monkeypatch.setattr("studio.config.settings.get_settings", reject_legacy_settings)
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     database = creative_database(tmp_path)
     image = BytesIO()
@@ -122,10 +126,10 @@ async def test_creative_catalog_uses_owned_cover_and_skill_directories(tmp_path,
         scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
     )
     try:
-        async with database.sessions(
-            info={"owner_user_id": "alice", "creative_authors": Authors()}
-        ) as session:
-            catalog = CreativeCatalog(session, actor)
+        async with database.sessions(info={"owner_user_id": "alice"}) as session:
+            catalog = CreativeCatalog(
+                session, actor, resources=isolated_resources(tmp_path, Authors())
+            )
             draft = await catalog.create(
                 CreativeDraftIn(kind="skill", title="Owned cover", summary="An owned example")
             )
@@ -268,8 +272,8 @@ from studio.apps.creative_workshop.storage.service_models import MODELS
 from studio.apps.creative_workshop.storage.file_paths import creative_database
 from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
 from studio.runtime.database.migrations import apply
-from app.console.creative_workshop.catalog import CreativeCatalog
-from app.console.creative_workshop.models import CreativeItem
+from studio.apps.creative_workshop.catalog import CreativeCatalog
+from studio.apps.creative_workshop.storage.models import CreativeItem
 root=Path(sys.argv[1]);apply(root/'service.db','creative',MIGRATIONS)
 async def run():
  db=creative_database(root)

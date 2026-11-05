@@ -3767,24 +3767,6 @@
       "model": "DesktopPreference"
     },
     {
-      "table": "creative_items",
-      "service": "creative",
-      "module": "app.console.creative_workshop.models",
-      "model": "CreativeItem"
-    },
-    {
-      "table": "creative_releases",
-      "service": "creative",
-      "module": "app.console.creative_workshop.models",
-      "model": "CreativeRelease"
-    },
-    {
-      "table": "creative_installations",
-      "service": "creative",
-      "module": "app.console.creative_workshop.models",
-      "model": "CreativeInstallation"
-    },
-    {
       "table": "platform_settings",
       "service": "identity",
       "module": "app.console.models.platform_governance",
@@ -4161,6 +4143,24 @@
       "service": "creative",
       "module": "studio.apps.creative_workshop.storage.migration_catalog",
       "model": "CreativeImportReceipt"
+    },
+    {
+      "table": "creative_items",
+      "service": "creative",
+      "module": "studio.apps.creative_workshop.storage.models",
+      "model": "CreativeItem"
+    },
+    {
+      "table": "creative_releases",
+      "service": "creative",
+      "module": "studio.apps.creative_workshop.storage.models",
+      "model": "CreativeRelease"
+    },
+    {
+      "table": "creative_installations",
+      "service": "creative",
+      "module": "studio.apps.creative_workshop.storage.models",
+      "model": "CreativeInstallation"
     },
     {
       "table": "director_import_receipts",

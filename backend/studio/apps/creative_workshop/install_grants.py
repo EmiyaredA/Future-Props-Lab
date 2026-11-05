@@ -6,7 +6,7 @@ from typing import Literal
 import jwt
 from pydantic import ValidationError
 
-from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
+from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
 from studio.contracts.creative_workshop.creative_install_evidence import AUDIENCE
 from studio.contracts.creative_workshop.creative_integrations import (
     CreativeInstallBatch,

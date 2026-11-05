@@ -7,8 +7,8 @@ from uuid import uuid5
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import select, text
 
-from app.console.creative_workshop.models import CreativeItem, CreativeRelease
 from studio.apps.creative_workshop.storage.migration_catalog import CreativeImportReceipt
+from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
 from studio.contracts.management.migration_batches import BatchReceipt
 from studio.runtime.database.migration_receipts import has_receipt, record_receipt
 from studio.runtime.files.migration_files import (

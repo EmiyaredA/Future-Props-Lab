@@ -6,7 +6,7 @@ transport. Until those ports are independently configured this is not mounted.
 
 from typing import Protocol
 
-from app.console.creative_workshop.schemas import CreativeInstallOut, CreativeInstallPreviewIn
+from studio.contracts.creative_workshop.catalog import CreativeInstallOut, CreativeInstallPreviewIn
 from studio.contracts.creative_workshop.creative_integrations import CreativeInstallBatch
 from studio.contracts.integrations.integration_intents import digest
 

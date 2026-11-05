@@ -645,8 +645,6 @@ async def test_creative_source_grant_controls_real_target_and_receipt_recovery(
     import jwt
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-    from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
     from studio.apps.creative_workshop.install_authorization import (
         IdentityInstallAuthorization,
         InstallAuthorizationDenied,
@@ -658,6 +656,8 @@ async def test_creative_source_grant_controls_real_target_and_receipt_recovery(
     from studio.apps.creative_workshop.storage.migrations.registry import (
         MIGRATIONS as CREATIVE_MIGRATIONS,
     )
+    from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
+    from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
     from studio.contracts.creative_workshop.creative_install_evidence import (
         INSTALL_PATH,
         issue_install_evidence,
@@ -767,10 +767,10 @@ async def test_independent_install_http_recovers_a_lost_target_reply(installatio
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     from fastapi import FastAPI
 
-    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
     from studio.apps.creative_workshop.storage.migrations.registry import (
         MIGRATIONS as CREATIVE_MIGRATIONS,
     )
+    from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
     from studio.apps.integrations.creative_authority import CreativeHttpAuthority
     from studio.apps.integrations.transport.creative_http import router
     from studio.apps.integrations.transport.creative_stdio_http import router as setup_router
@@ -1068,8 +1068,6 @@ async def test_verified_target_cancellation_releases_source_fence_and_blocks_lat
 ):
     from sqlalchemy import select, update
 
-    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-    from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
     from studio.apps.creative_workshop.installation_outbox import (
         InstallationOutbox,
         InstallIntentConflict,
@@ -1079,6 +1077,8 @@ async def test_verified_target_cancellation_releases_source_fence_and_blocks_lat
     from studio.apps.creative_workshop.storage.migrations.registry import (
         MIGRATIONS as CREATIVE_MIGRATIONS,
     )
+    from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
+    from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
 
     root = tmp_path / "creative-cancel"
     root.mkdir()

@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
-from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
-from app.console.creative_workshop.files import CreativeFileError
-from app.console.creative_workshop.install import CreativeInstaller
-from app.console.creative_workshop.schemas import (
+from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.contracts.creative_workshop.catalog import (
     CreativeDraftIn,
     CreativeDraftUpdateIn,
     CreativeImportIn,
@@ -19,7 +17,7 @@ from app.console.creative_workshop.schemas import (
     CreativeRevisionIn,
     CreativeStdioSetupIn,
 )
-from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.contracts.creative_workshop.errors import CreativeError, CreativeFileError
 from studio.contracts.integrations.errors import IntegrationValidationError
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.files.raster import RasterPreviewError
@@ -38,6 +36,7 @@ def _raise(exc: Exception) -> None:
 
 @catalog_router.get("/items", response_model=CreativePageOut)
 async def list_items(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     kind: str | None = None,
@@ -47,7 +46,7 @@ async def list_items(
     limit: int = Query(24, ge=1, le=48),
 ) -> CreativePageOut:
     try:
-        return await CreativeCatalog(session, principal).list(
+        return await request.app.state.creative_catalog(request, session, principal).list(
             kind=kind,
             query=q,
             mine=mine,
@@ -60,41 +59,51 @@ async def list_items(
 
 @catalog_router.post("/items", response_model=CreativeItemOut, status_code=201)
 async def create_item(
-    session: SessionDep, principal: StudioAuth, body: CreativeDraftIn
+    request: Request, session: SessionDep, principal: StudioAuth, body: CreativeDraftIn
 ) -> CreativeItemOut:
     try:
-        return await CreativeCatalog(session, principal).create(body)
+        return await request.app.state.creative_catalog(request, session, principal).create(body)
     except CreativeError as exc:
         _raise(exc)
 
 
 @router.post("/items/from-integration", response_model=CreativeItemOut, status_code=201)
 async def import_item(
-    session: SessionDep, principal: StudioAuth, body: CreativeImportIn
+    request: Request, session: SessionDep, principal: StudioAuth, body: CreativeImportIn
 ) -> CreativeItemOut:
     try:
-        return await CreativeCatalog(session, principal).import_source(body.kind, body.source_id)
+        return await request.app.state.creative_catalog(request, session, principal).import_source(
+            body.kind, body.source_id
+        )
     except CreativeError as exc:
         _raise(exc)
 
 
 @catalog_router.get("/releases/{release_id}", response_model=CreativeReleaseOut)
 async def get_release(
-    session: SessionDep, principal: StudioAuth, release_id: str
+    request: Request, session: SessionDep, principal: StudioAuth, release_id: str
 ) -> CreativeReleaseOut:
     try:
-        return await CreativeCatalog(session, principal).get_release(release_id)
+        return await request.app.state.creative_catalog(request, session, principal).get_release(
+            release_id
+        )
     except CreativeError as exc:
         _raise(exc)
 
 
 @catalog_router.get("/releases/{release_id}/cover")
 async def release_cover(
-    session: SessionDep, principal: StudioAuth, release_id: str, size: ThumbnailSize | None = None
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    release_id: str,
+    size: ThumbnailSize | None = None,
 ) -> FileResponse:
     try:
         return FileResponse(
-            await CreativeCatalog(session, principal).release_cover_file(release_id, size),
+            await request.app.state.creative_catalog(
+                request, session, principal
+            ).release_cover_file(release_id, size),
             media_type="image/webp",
             headers={"Cache-Control": "private, no-store"},
         )
@@ -104,46 +113,67 @@ async def release_cover(
 
 @catalog_router.get("/items/{item_id}", response_model=CreativeItemOut)
 async def get_item(
-    session: SessionDep, principal: StudioAuth, item_id: str, draft: bool = False
+    request: Request, session: SessionDep, principal: StudioAuth, item_id: str, draft: bool = False
 ) -> CreativeItemOut:
     try:
-        return await CreativeCatalog(session, principal).get(item_id, draft=draft)
+        return await request.app.state.creative_catalog(request, session, principal).get(
+            item_id, draft=draft
+        )
     except CreativeError as exc:
         _raise(exc)
 
 
 @catalog_router.patch("/items/{item_id}", response_model=CreativeItemOut)
 async def update_item(
-    session: SessionDep, principal: StudioAuth, item_id: str, body: CreativeDraftUpdateIn
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    item_id: str,
+    body: CreativeDraftUpdateIn,
 ) -> CreativeItemOut:
     try:
-        return await CreativeCatalog(session, principal).update(item_id, body)
+        return await request.app.state.creative_catalog(request, session, principal).update(
+            item_id, body
+        )
     except CreativeError as exc:
         _raise(exc)
 
 
 @catalog_router.post("/items/{item_id}/publish", response_model=CreativeItemOut)
 async def publish_item(
-    session: SessionDep, principal: StudioAuth, item_id: str, body: CreativeRevisionIn
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    item_id: str,
+    body: CreativeRevisionIn,
 ) -> CreativeItemOut:
     try:
-        return await CreativeCatalog(session, principal).publish(item_id, body.expected_revision)
+        return await request.app.state.creative_catalog(request, session, principal).publish(
+            item_id, body.expected_revision
+        )
     except (CreativeError, CreativeFileError) as exc:
         _raise(exc)
 
 
 @catalog_router.post("/items/{item_id}/withdraw", response_model=CreativeItemOut)
 async def withdraw_item(
-    session: SessionDep, principal: StudioAuth, item_id: str, body: CreativeRevisionIn
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    item_id: str,
+    body: CreativeRevisionIn,
 ) -> CreativeItemOut:
     try:
-        return await CreativeCatalog(session, principal).withdraw(item_id, body.expected_revision)
+        return await request.app.state.creative_catalog(request, session, principal).withdraw(
+            item_id, body.expected_revision
+        )
     except CreativeError as exc:
         _raise(exc)
 
 
 @catalog_router.get("/items/{item_id}/cover")
 async def item_cover(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     item_id: str,
@@ -152,7 +182,9 @@ async def item_cover(
 ) -> FileResponse:
     try:
         return FileResponse(
-            await CreativeCatalog(session, principal).cover_file(item_id, draft=draft, size=size),
+            await request.app.state.creative_catalog(request, session, principal).cover_file(
+                item_id, draft=draft, size=size
+            ),
             media_type="image/webp",
             headers={"Cache-Control": "private, no-store"},
         )
@@ -162,6 +194,7 @@ async def item_cover(
 
 @catalog_router.post("/items/{item_id}/cover", response_model=CreativeItemOut)
 async def upload_cover(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     item_id: str,
@@ -169,7 +202,7 @@ async def upload_cover(
     file: UploadFile = File(),
 ) -> CreativeItemOut:
     try:
-        return await CreativeCatalog(session, principal).upload_cover(
+        return await request.app.state.creative_catalog(request, session, principal).upload_cover(
             item_id, expected_revision, file
         )
     except (CreativeError, CreativeFileError) as exc:
@@ -178,6 +211,7 @@ async def upload_cover(
 
 @catalog_router.post("/items/{item_id}/skill-archive", response_model=CreativeItemOut)
 async def upload_skill(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     item_id: str,
@@ -185,7 +219,7 @@ async def upload_skill(
     file: UploadFile = File(),
 ) -> CreativeItemOut:
     try:
-        return await CreativeCatalog(session, principal).upload_skill(
+        return await request.app.state.creative_catalog(request, session, principal).upload_skill(
             item_id, expected_revision, file
         )
     except (CreativeError, CreativeFileError, IntegrationValidationError) as exc:
@@ -194,33 +228,36 @@ async def upload_skill(
 
 @router.post("/installations/preview", response_model=CreativeInstallPreviewOut)
 async def preview_install(
-    session: SessionDep, principal: StudioAuth, body: CreativeInstallPreviewIn
+    request: Request, session: SessionDep, principal: StudioAuth, body: CreativeInstallPreviewIn
 ) -> CreativeInstallPreviewOut:
     try:
-        return await CreativeInstaller(session, principal).preview(body)
+        return await request.app.state.creative_installer(request, session, principal).preview(body)
     except CreativeError as exc:
         _raise(exc)
 
 
 @router.post("/installations", response_model=CreativeInstallOut, status_code=201)
 async def install(
-    session: SessionDep, principal: StudioAuth, body: CreativeInstallPreviewIn
+    request: Request, session: SessionDep, principal: StudioAuth, body: CreativeInstallPreviewIn
 ) -> CreativeInstallOut:
     try:
-        return await CreativeInstaller(session, principal).install(body)
+        return await request.app.state.creative_installer(request, session, principal).install(body)
     except CreativeError as exc:
         _raise(exc)
 
 
 @router.post("/installations/{installation_id}/stdio", response_model=CreativeInstallOut)
 async def configure_stdio(
+    request: Request,
     session: SessionDep,
     principal: StudioAuth,
     installation_id: str,
     body: CreativeStdioSetupIn,
 ) -> CreativeInstallOut:
     try:
-        return await CreativeInstaller(session, principal).configure_stdio(installation_id, body)
+        return await request.app.state.creative_installer(
+            request, session, principal
+        ).configure_stdio(installation_id, body)
     except CreativeError as exc:
         _raise(exc)
 

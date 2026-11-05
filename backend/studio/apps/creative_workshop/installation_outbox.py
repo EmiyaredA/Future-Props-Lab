@@ -9,18 +9,18 @@ from dataclasses import dataclass, replace
 
 from sqlalchemy import delete, select, text
 
-from app.console.creative_workshop.models import (
-    CreativeInstallation,
-    CreativeItem,
-    CreativeRelease,
-)
-from app.console.creative_workshop.schemas import CreativeInstallOut, CreativeInstallPreviewIn
 from studio.apps.creative_workshop.storage.fence_records import (
     CreativeInstallCancellation,
     CreativeInstallFence,
 )
 from studio.apps.creative_workshop.storage.installation_records import CreativeInstallOperation
+from studio.apps.creative_workshop.storage.models import (
+    CreativeInstallation,
+    CreativeItem,
+    CreativeRelease,
+)
 from studio.apps.creative_workshop.storage.stdio_records import StdioRecordError, merge_resource
+from studio.contracts.creative_workshop.catalog import CreativeInstallOut, CreativeInstallPreviewIn
 from studio.contracts.creative_workshop.creative_integrations import CreativeInstallBatch
 from studio.contracts.integrations.integration_intents import digest
 

@@ -7,10 +7,6 @@ from app.capabilities.agents.sessions.access import LocalSourceAccess
 from app.console.amadeus.actions import ActionExecution
 from app.console.amadeus.execution import CodeAgentRuns
 from app.console.cloud_control.desktop import DesktopConnection
-from app.console.creative_workshop.legacy_archives import LegacyCreativeArchives
-from app.console.creative_workshop.legacy_authors import LegacyCreativeAuthors
-from app.console.creative_workshop.legacy_install import LegacyCreativeInstaller
-from app.console.creative_workshop.legacy_sources import LegacyCreativeSources
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
 from app.tool_navigation.video_download import VideoDownloads
@@ -65,6 +61,7 @@ from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.assembly.annotation import document_editor
 from studio.assembly.website.account_provisioning import create_account
+from studio.assembly.website.creative import bind_creative
 from studio.assembly.website.integrations import integration_bindings
 from studio.assembly.website.media import bind_media
 from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
@@ -74,6 +71,7 @@ from studio.runtime.http.rate_limit import AttemptLimiter
 
 
 def bind_components(app, settings, database):
+    bind_creative(app, settings)
     app.state.auth_attempts = AttemptLimiter()
     app.state.developer_documents = DeveloperDocuments(InstalledDocuments(REPO_ROOT))
     app.state.resource_links = lambda _request, session, _principal: ResourceLinks(
@@ -151,10 +149,6 @@ def bind_components(app, settings, database):
             "video_project_layouts": LegacyVideoLayouts,
             "video_timeline_assets": LegacyTimelineAssets,
             "presentation_import": import_legacy_presentation,
-            "creative_authors_factory": LegacyCreativeAuthors,
-            "creative_archives_factory": LegacyCreativeArchives,
-            "creative_sources_factory": partial(LegacyCreativeSources, settings=settings),
-            "creative_installer_factory": LegacyCreativeInstaller,
         }
     )
 

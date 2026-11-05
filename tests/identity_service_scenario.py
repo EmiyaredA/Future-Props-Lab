@@ -567,13 +567,13 @@ async def scenario():
                 ).owner_user_id
                 == owner
             )
-            from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
             from studio.apps.creative_workshop.install_authorization import (
                 IdentityInstallAuthorization,
                 InstallAuthorizationDenied,
                 InstallSource,
             )
             from studio.apps.identity.clients.authorization import LiveAuthorization
+            from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
 
             live_creative = LiveAuthorization(
                 service="creative",

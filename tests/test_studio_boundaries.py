@@ -132,6 +132,7 @@ def test_migrated_packages_have_one_source_owner():
         ROOT / "backend/app/capabilities/asset_store",
         ROOT / "backend/app/capabilities/media_rendering",
         ROOT / "backend/app/integrations",
+        ROOT / "backend/app/console/creative_workshop",
         ROOT / "backend/app/console/file_library",
     ):
         assert not list(directory.rglob("*.py")), f"stale implementation in {directory}"
@@ -173,6 +174,23 @@ def test_article_sync_does_not_construct_integration_storage():
         for name in imports(path):
             if name.startswith("studio.apps.integrations."):
                 assert name.startswith("studio.apps.integrations.clients."), (path, name)
+
+
+def test_creative_resources_are_explicit_not_session_services():
+    for path in (STUDIO / "apps/creative_workshop").rglob("*.py"):
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                name = (
+                    node.func.id
+                    if isinstance(node.func, ast.Name)
+                    else node.func.attr
+                    if isinstance(node.func, ast.Attribute)
+                    else ""
+                )
+                assert name != "get_settings", path
+            if isinstance(node, ast.Attribute) and node.attr == "info":
+                assert path.name == "file_paths.py", path
 
 
 def test_public_client_parents_cannot_eagerly_load_foreign_implementations():

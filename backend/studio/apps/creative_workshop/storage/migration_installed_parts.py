@@ -4,8 +4,12 @@ from uuid import uuid5
 
 from sqlalchemy import select
 
-from app.console.creative_workshop.models import CreativeInstallation, CreativeItem, CreativeRelease
 from studio.apps.creative_workshop.install_batch import ReleaseSnapshot, install_part
+from studio.apps.creative_workshop.storage.models import (
+    CreativeInstallation,
+    CreativeItem,
+    CreativeRelease,
+)
 from studio.contracts.creative_workshop.creative_integrations import part_fingerprint
 from studio.contracts.creative_workshop.installation_migration import (
     DATASET,

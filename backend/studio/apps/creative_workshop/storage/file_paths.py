@@ -5,9 +5,9 @@ from pathlib import Path
 
 from sqlalchemy import event, exists, inspect, select
 
-from app.console.creative_workshop.files import resolve_file
-from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+from studio.apps.creative_workshop.storage.catalog_files import resolve_file
 from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
+from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
 from studio.apps.creative_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
 from studio.apps.integrations.clients.skill_archive import SkillArchiveStager
 from studio.runtime.database.sessions import Database, ServiceSession, ServiceStorageError
@@ -158,9 +158,18 @@ SKILL_MAX_FILES = 500
 @dataclass(frozen=True)
 class CreativeStorageSettings:
     runtime_path: Path
-    fpl_skill_archive_max_bytes: int
-    fpl_skill_expanded_max_bytes: int
-    fpl_skill_max_files: int
+    fpl_skill_archive_max_bytes: int = SKILL_ARCHIVE_MAX_BYTES
+    fpl_skill_expanded_max_bytes: int = SKILL_EXPANDED_MAX_BYTES
+    fpl_skill_max_files: int = SKILL_MAX_FILES
+
+    def __post_init__(self):
+        limits = (
+            self.fpl_skill_archive_max_bytes,
+            self.fpl_skill_expanded_max_bytes,
+            self.fpl_skill_max_files,
+        )
+        if any(type(limit) is not int or limit < 1 for limit in limits):
+            raise ValueError("Skill 归档大小限制无效")
 
 
 @dataclass(frozen=True)
@@ -172,24 +181,7 @@ class CreativeArchiveStaging:
         return await SkillArchiveStager(root, self.settings).stage(upload)
 
 
-def creative_database(
-    state_root,
-    *,
-    skill_archive_max_bytes=SKILL_ARCHIVE_MAX_BYTES,
-    skill_expanded_max_bytes=SKILL_EXPANDED_MAX_BYTES,
-    skill_max_files=SKILL_MAX_FILES,
-):
-    limits = (skill_archive_max_bytes, skill_expanded_max_bytes, skill_max_files)
-    if any(type(limit) is not int or limit < 1 for limit in limits):
-        raise ValueError("Skill 归档大小限制无效")
+def creative_database(state_root):
     database = Database("creative", state_root, models=MODELS, account_models=ACCOUNT_MODELS)
-    settings = CreativeStorageSettings(database.root, *limits)
-    database.sessions.configure(
-        sync_session_class=CreativeSession,
-        info={
-            **database.sessions.kw["info"],
-            "creative_file_settings": settings,
-            "creative_archives": CreativeArchiveStaging(settings),
-        },
-    )
+    database.sessions.configure(sync_session_class=CreativeSession)
     return database

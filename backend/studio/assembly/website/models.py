@@ -15,9 +15,6 @@ from app.console.amadeus.models import (
 )
 from app.console.cloud_control.models import CloudFactor, CloudUnlock
 from app.console.cloud_control.preference_models import DesktopPreference
-from app.console.creative_workshop.models import (
-    CreativeInstallation,
-)
 from app.console.models.platform_governance import PlatformSetting
 from app.tool_navigation.models import (
     ToolNavigationItem,
@@ -40,6 +37,7 @@ from studio.apps.audio_annotation.models import (
     AudioAnnotationProject,
     AudioAnnotationWaveform,
 )
+from studio.apps.creative_workshop.storage.models import CreativeInstallation
 from studio.apps.director_desk.storage.models import DirectorDeskProject, DirectorDeskUserMotion
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAnnotationImportTask,

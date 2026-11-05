@@ -8,16 +8,22 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.console.routes.creative_workshop import catalog_router
 from studio.apps.creative_workshop.authors import HttpCreativeAuthors
+from studio.apps.creative_workshop.catalog import CreativeCatalog
+from studio.apps.creative_workshop.catalog_resources import CreativeResources
 from studio.apps.creative_workshop.install_authorization import IdentityInstallAuthorization
 from studio.apps.creative_workshop.install_grants import InstallGrantAuthority
 from studio.apps.creative_workshop.install_target import HttpCreativeInstallTarget
 from studio.apps.creative_workshop.installation_coordinator import InstallationCoordinator
 from studio.apps.creative_workshop.installation_outbox import InstallationOutbox
 from studio.apps.creative_workshop.skill_archive import CreativeSkillArchives, SkillArchivePacker
-from studio.apps.creative_workshop.storage.file_paths import creative_database
+from studio.apps.creative_workshop.storage.file_paths import (
+    CreativeArchiveStaging,
+    CreativeStorageSettings,
+    creative_database,
+)
 from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
+from studio.apps.creative_workshop.transport.catalog_http import catalog_router
 from studio.apps.creative_workshop.transport.certification_http import (
     router as certification_router,
 )
@@ -93,6 +99,29 @@ def create_app(
     app.state.creative_capabilities = capabilities
     app.state.certifications = certifications
 
+    app.state.creative_files = CreativeStorageSettings(database.root)
+
+    def catalog_for(request, session, principal, *, sources=None):
+        authors = HttpCreativeAuthors(
+            assertion=request.state.service_assertion,
+            method=request.method,
+            path=request.url.path,
+            credential=credential,
+            transport=transport,
+        )
+        return CreativeCatalog(
+            session,
+            principal,
+            resources=CreativeResources(
+                authors=authors,
+                archives=CreativeArchiveStaging(app.state.creative_files),
+                settings=app.state.creative_files,
+                sources=sources,
+            ),
+        )
+
+    app.state.creative_catalog = catalog_for
+
     async def request_session(request: Request):
         assertion = request.state.service_assertion
         method, path = request.method, request.url.path
@@ -101,14 +130,7 @@ def create_app(
             raise HTTPException(503, "creative_identity_unavailable")
         if current is not True:
             raise HTTPException(401, "creative_authorization_revoked")
-        authors = HttpCreativeAuthors(
-            assertion=assertion,
-            method=method,
-            path=path,
-            credential=credential,
-            transport=transport,
-        )
-        async with database.sessions(info={"creative_authors": authors}) as session:
+        async with database.sessions() as session:
             yield session
 
     app.dependency_overrides[db_session] = request_session
@@ -124,7 +146,7 @@ def create_app(
             for secret in credentials
         ) or len(set(credentials)) != len(credentials):
             raise ValueError("Creative 安装和身份凭据必须独立")
-        settings = database.sessions.kw["info"]["creative_file_settings"]
+        settings = app.state.creative_files
         packer = SkillArchivePacker(
             root=database.root,
             max_files=settings.fpl_skill_max_files,

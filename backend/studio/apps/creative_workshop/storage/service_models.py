@@ -1,11 +1,15 @@
 """Creative-owned records; foreign account IDs are opaque in the service schema."""
 
-from app.console.creative_workshop.models import CreativeInstallation, CreativeItem, CreativeRelease
 from studio.apps.creative_workshop.storage.fence_records import (
     CreativeInstallCancellation,
     CreativeInstallFence,
 )
 from studio.apps.creative_workshop.storage.installation_records import CreativeInstallOperation
+from studio.apps.creative_workshop.storage.models import (
+    CreativeInstallation,
+    CreativeItem,
+    CreativeRelease,
+)
 
 MODELS = (
     CreativeItem,

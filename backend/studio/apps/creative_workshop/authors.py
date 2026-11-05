@@ -2,12 +2,12 @@
 
 import httpx
 
-from app.console.creative_workshop.catalog import CreativeError
 from studio.contracts.creative_workshop.creative_authors import (
     PATH,
     CreativeAuthorName,
     CreativeAuthorQuery,
 )
+from studio.contracts.creative_workshop.errors import CreativeError
 
 
 class HttpCreativeAuthors:

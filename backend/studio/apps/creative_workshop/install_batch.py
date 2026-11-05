@@ -3,8 +3,8 @@
 from dataclasses import dataclass
 from uuid import uuid4
 
-from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
+from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
+from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
 from studio.contracts.creative_workshop.creative_integrations import (
     CreativeInstallBatch,
     CreativeInstallPart,

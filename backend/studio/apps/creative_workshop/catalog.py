@@ -2,155 +2,50 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from urllib.parse import urlsplit
 
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.console.creative_workshop.archives import archives
-from app.console.creative_workshop.authors import authors
-from app.console.creative_workshop.files import (
-    CreativeFileSettings,
+from studio.apps.creative_workshop.catalog_resources import CreativeResources
+from studio.apps.creative_workshop.catalog_sources import MemoryIncoming
+from studio.apps.creative_workshop.rules.publication import (
+    KIND_VALUES,
+    check_public_structure,
+    public_manifest,
+)
+from studio.apps.creative_workshop.storage.catalog_files import (
     copy_skill_release,
     resolve_file,
     save_cover,
     save_skill_draft,
 )
-from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-from app.console.creative_workshop.schemas import (
+from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
+from studio.contracts.asset_library.incoming import IncomingFile
+from studio.contracts.creative_workshop.catalog import (
     CreativeDraftIn,
     CreativeDraftUpdateIn,
     CreativeItemOut,
     CreativePageOut,
     CreativeReleaseOut,
 )
-from app.console.creative_workshop.sources import MemoryIncoming, sources
-from studio.config.settings import get_settings
-from studio.contracts.asset_library.incoming import IncomingFile
+from studio.contracts.creative_workshop.errors import CreativeError
 from studio.contracts.identity.principal import StudioPrincipal
-from studio.contracts.integrations.catalog import ToolApiCreateIn
 from studio.runtime.files.image_sizes import ThumbnailSize
 from studio.runtime.files.raster import derived_thumbnail
-from studio.runtime.http.outbound_urls import normalize_integration_http_url
 from studio.runtime.ids import new_id
 from studio.runtime.time import iso_utc, utc_now
 
-KIND_VALUES = {"tool_api", "mcp", "skill", "bundle"}
-SENSITIVE_KEYS = {
-    "authorization",
-    "api_key",
-    "apikey",
-    "access_key",
-    "accesskey",
-    "token",
-    "secret",
-    "password",
-    "bearer",
-    "credential",
-    "private_key",
-}
-
-
-class CreativeError(Exception):
-    def __init__(self, message: str, status: int = 422, code: str = "invalid_creative_item"):
-        self.message = message
-        self.status = status
-        self.code = code
-        super().__init__(message)
-
-
-def _check_public_structure(value: object) -> None:
-    if isinstance(value, dict):
-        for key, child in value.items():
-            if any(part in str(key).lower() for part in SENSITIVE_KEYS):
-                raise CreativeError("公开配置不能包含凭据字段")
-            _check_public_structure(child)
-    elif isinstance(value, list):
-        for child in value:
-            _check_public_structure(child)
-    elif isinstance(value, str) and ("Bearer " in value or "-----BEGIN " in value):
-        raise CreativeError("公开配置疑似包含凭据")
-
-
-def _http_url_without_private_query(url: str) -> str:
-    parsed = urlsplit(url)
-    if parsed.username or parsed.password or parsed.query or parsed.fragment:
-        raise CreativeError("公开 URL 不能包含账号、查询参数或片段")
-    return url
-
-
-def _public_manifest(item: CreativeItem) -> dict:
-    draft = dict(item.draft_manifest or {})
-    if item.kind == "tool_api":
-        allowed = {
-            key: draft[key]
-            for key in (
-                "method",
-                "url",
-                "auth_kind",
-                "auth_header_name",
-                "parameters_schema",
-                "query_template",
-                "body_template",
-            )
-            if key in draft
-        }
-        allowed.setdefault("method", "GET")
-        allowed.setdefault("auth_kind", "none")
-        allowed.setdefault("parameters_schema", {"type": "object", "properties": {}})
-        allowed.setdefault("query_template", {})
-        _check_public_structure(allowed)
-        try:
-            checked = ToolApiCreateIn.model_validate(
-                {**allowed, "name": item.title, "description": item.summary, "enabled": False}
-            )
-        except ValueError as exc:
-            raise CreativeError(f"工具 API 配置无效：{exc}") from exc
-        allowed["url"] = _http_url_without_private_query(checked.url)
-        return allowed
-    if item.kind == "mcp":
-        transport = draft.get("transport")
-        if transport == "streamable_http":
-            url = draft.get("url", "")
-            if not isinstance(url, str) or not url:
-                raise CreativeError("HTTP MCP 需要 URL")
-            try:
-                checked_url = normalize_integration_http_url(url)
-            except ValueError as exc:
-                raise CreativeError(str(exc)) from exc
-            result = {"transport": transport, "url": _http_url_without_private_query(checked_url)}
-        elif transport == "stdio":
-            hint = str(draft.get("command_hint", "")).strip()
-            if not hint or len(hint) > 200:
-                raise CreativeError("stdio MCP 需要简短的本机安装命令提示")
-            if "/" in hint or "\\" in hint:
-                raise CreativeError("stdio 命令提示不能包含本机路径")
-            result = {"transport": transport, "command_hint": hint}
-        else:
-            raise CreativeError("MCP 连接类型无效")
-        _check_public_structure(result)
-        return result
-    if item.kind == "skill":
-        if not item.draft_skill_path:
-            raise CreativeError("发布 Skill 前须上传 ZIP 文件")
-        return {
-            key: draft[key]
-            for key in ("name", "description", "content_sha256", "file_count", "expanded_bytes")
-            if key in draft
-        }
-    return {}
-
 
 class CreativeCatalog:
-    def __init__(self, session: AsyncSession, principal: StudioPrincipal) -> None:
-        self.session = session
-        self.principal = principal
-        # Resolve the mandatory port before any operation can commit a draft.
-        self.author_directory = authors(session)
-        self.file_settings: CreativeFileSettings | None = session.info.get("creative_file_settings")
-        if session.info.get("service_id") == "creative" and self.file_settings is None:
-            raise RuntimeError("创意工坊未配置自有文件目录")
+    def __init__(
+        self, session: AsyncSession, principal: StudioPrincipal, *, resources: CreativeResources
+    ) -> None:
+        self.session, self.principal = session, principal
+        self.author_directory = resources.authors
+        self.archive_parser = resources.archives
+        self.source_reader = resources.sources
+        self.file_settings = resources.settings
 
     def _can_write(self) -> None:
         if not self.principal.allows("content.write"):
@@ -410,7 +305,7 @@ class CreativeCatalog:
             owner,
             item_id,
             upload,
-            archive_parser=archives(self.session),
+            archive_parser=self.archive_parser,
             settings=self.file_settings,
         )
         commit_started = False
@@ -495,7 +390,7 @@ class CreativeCatalog:
             raise CreativeError("草稿已在其他位置更新", 409, "revision_conflict")
         if not item.title or not item.summary:
             raise CreativeError("发布前须填写名称和简介")
-        _check_public_structure([item.title, item.summary, item.description, item.tags])
+        check_public_structure([item.title, item.summary, item.description, item.tags])
         components: list[str] = []
         if item.kind == "bundle":
             components = list(item.draft_components or [])
@@ -510,7 +405,13 @@ class CreativeCatalog:
         else:
             if item.draft_components:
                 raise CreativeError("独立能力不能包含其他能力")
-        manifest = _public_manifest(item)
+        manifest = public_manifest(
+            kind=item.kind,
+            title=item.title,
+            summary=item.summary,
+            manifest=item.draft_manifest,
+            has_skill=bool(item.draft_skill_path),
+        )
         current_version = (
             await self.session.scalar(
                 select(func.max(CreativeRelease.version)).where(CreativeRelease.item_id == item.id)
@@ -595,8 +496,10 @@ class CreativeCatalog:
             raise CreativeError("需要集成管理权限", 403, "permission_denied")
         if request_item_id and await self.session.get(CreativeItem, request_item_id) is not None:
             return await self.get(request_item_id, draft=True)
+        if self.source_reader is None:
+            raise CreativeError("创作来源服务尚未连接", 503, "creative_source_unavailable")
         try:
-            snapshot = await sources(self.session).snapshot(
+            snapshot = await self.source_reader.snapshot(
                 owner=self.principal.owner_user_id, kind=kind, source_id=source_id
             )
         except ValueError as exc:
@@ -608,8 +511,7 @@ class CreativeCatalog:
         except ValueError as exc:
             raise CreativeError(str(exc)) from exc
         if archive is not None and (
-            kind != "skill"
-            or len(archive) > (self.file_settings or get_settings()).fpl_skill_archive_max_bytes
+            kind != "skill" or len(archive) > self.file_settings.fpl_skill_archive_max_bytes
         ):
             raise CreativeError("创作来源数据无效")
         item_id = request_item_id or new_id()
@@ -621,7 +523,7 @@ class CreativeCatalog:
                 owner,
                 item_id,
                 MemoryIncoming(archive),
-                archive_parser=archives(self.session),
+                archive_parser=self.archive_parser,
                 settings=self.file_settings,
             )
         item = CreativeItem(

@@ -10,7 +10,11 @@ from pydantic import Field
 from sqlalchemy import select
 from sqlalchemy.orm import DeclarativeBase
 
-from app.console.creative_workshop.models import CreativeInstallation, CreativeItem, CreativeRelease
+from studio.apps.creative_workshop.storage.models import (
+    CreativeInstallation,
+    CreativeItem,
+    CreativeRelease,
+)
 from studio.contracts.management.migration_batches import MigrationBatch, MigrationPage
 from studio.contracts.management.project_history import HistoryRecord, Identifier
 from studio.runtime.database.migration_receipts import ImportReceiptFields

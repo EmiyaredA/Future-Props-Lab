@@ -5,13 +5,14 @@ from uuid import uuid4
 
 import pytest
 
-from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
+from creative_test_support import isolated_resources
 from studio.apps.creative_workshop.installation_outbox import (
     InstallationOutbox,
     InstallIntentConflict,
 )
 from studio.apps.creative_workshop.storage.file_paths import creative_database
 from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
+from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
 from studio.contracts.creative_workshop.creative_integrations import (
     CreativeInstallBatch,
     CreativeInstallPart,
@@ -38,7 +39,7 @@ def batch(name="Tool"):
 
 
 async def seed_release(database):
-    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+    from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
 
     async with database.sessions(info={"owner_user_id": "author"}) as session:
         session.add(
@@ -114,7 +115,7 @@ async def test_concurrent_acceptance_uses_one_uuid_and_refuses_mismatched_root(t
 async def test_receipt_settlement_is_atomic_and_replayable(tmp_path):
     from sqlalchemy import select
 
-    from app.console.creative_workshop.models import CreativeInstallation
+    from studio.apps.creative_workshop.storage.models import CreativeInstallation
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     database = creative_database(tmp_path)
@@ -186,7 +187,7 @@ async def test_lost_source_commit_ack_does_not_create_another_operation(tmp_path
 async def test_first_acceptance_rejects_forged_or_withdrawn_release(tmp_path):
     from sqlalchemy import update
 
-    from app.console.creative_workshop.models import CreativeItem
+    from studio.apps.creative_workshop.storage.models import CreativeItem
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     database = creative_database(tmp_path)
@@ -212,7 +213,7 @@ async def test_first_acceptance_rejects_forged_or_withdrawn_release(tmp_path):
 
 
 async def test_bundle_settlement_recovers_component_records_together(tmp_path):
-    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+    from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     database = creative_database(tmp_path)
@@ -260,7 +261,7 @@ async def test_bundle_settlement_recovers_component_records_together(tmp_path):
         assert installed.resources == [resource]
         from sqlalchemy import select
 
-        from app.console.creative_workshop.models import CreativeInstallation
+        from studio.apps.creative_workshop.storage.models import CreativeInstallation
 
         async with database.sessions(info={"owner_user_id": "alice"}) as session:
             records = list(await session.scalars(select(CreativeInstallation)))
@@ -320,7 +321,7 @@ async def test_coordinator_recovers_lost_target_response_without_resubmission(tm
         assert (await outbox.get("alice", "release")).state == "pending"
         from sqlalchemy import update
 
-        from app.console.creative_workshop.models import CreativeItem
+        from studio.apps.creative_workshop.storage.models import CreativeItem
 
         async with database.sessions(info={"owner_user_id": "author"}) as session:
             await session.execute(
@@ -439,8 +440,8 @@ async def test_coordinator_never_settles_unverified_receipt_or_revoked_actor(tmp
 async def test_withdrawal_prevents_first_target_install_after_acceptance(tmp_path):
     from sqlalchemy import update
 
-    from app.console.creative_workshop.models import CreativeItem
     from studio.apps.creative_workshop.installation_coordinator import InstallationCoordinator
+    from studio.apps.creative_workshop.storage.models import CreativeItem
 
     class Authorization:
         async def require(self, _source, _request):
@@ -478,7 +479,7 @@ async def test_withdrawal_prevents_first_target_install_after_acceptance(tmp_pat
 
 
 async def test_skill_batch_is_bound_to_the_published_release_tree(tmp_path):
-    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
+    from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
     from studio.contracts.creative_workshop.creative_integrations import CreativeSkillBlob
     from studio.runtime.files.skill_tree import skill_tree_sha256
 
@@ -553,13 +554,13 @@ async def test_install_grant_binds_persisted_batch_and_rechecks_current_publicat
     import jwt
     from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-    from app.console.creative_workshop.models import CreativeItem
     from studio.apps.creative_workshop.install_authorization import (
         IdentityInstallAuthorization,
         InstallAuthorizationDenied,
         InstallSource,
     )
     from studio.apps.creative_workshop.install_grants import InstallGrantAuthority
+    from studio.apps.creative_workshop.storage.models import CreativeItem
     from studio.contracts.creative_workshop.creative_install_evidence import (
         INSTALL_PATH,
         issue_install_evidence,
@@ -661,8 +662,8 @@ async def test_install_grant_binds_persisted_batch_and_rechecks_current_publicat
 async def test_fences_survive_restart_and_release_only_with_valid_receipt(tmp_path):
     from sqlalchemy import select, update
 
-    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
     from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
+    from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     database = creative_database(tmp_path)
@@ -733,7 +734,7 @@ async def test_fences_survive_restart_and_release_only_with_valid_receipt(tmp_pa
 async def test_withdraw_and_fence_reservation_cannot_both_win(tmp_path):
     from sqlalchemy import update
 
-    from app.console.creative_workshop.models import CreativeItem
+    from studio.apps.creative_workshop.storage.models import CreativeItem
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     database = creative_database(tmp_path)
@@ -767,8 +768,8 @@ async def test_withdraw_and_fence_reservation_cannot_both_win(tmp_path):
 async def test_bundle_fences_root_and_every_component_until_settlement(tmp_path):
     from sqlalchemy import select, update
 
-    from app.console.creative_workshop.models import CreativeItem, CreativeRelease
     from studio.apps.creative_workshop.storage.fence_records import CreativeInstallFence
+    from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
 
     apply(tmp_path / "service.db", "creative", MIGRATIONS)
     db = creative_database(tmp_path)
@@ -862,7 +863,8 @@ async def test_bundle_fences_root_and_every_component_until_settlement(tmp_path)
 
 
 async def test_catalog_withdraw_is_blocked_by_fence_until_receipt(tmp_path):
-    from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
+    from studio.apps.creative_workshop.catalog import CreativeCatalog
+    from studio.contracts.creative_workshop.errors import CreativeError
     from studio.contracts.identity.principal import StudioPrincipal
 
     class Authors:
@@ -884,11 +886,11 @@ async def test_catalog_withdraw_is_blocked_by_fence_until_receipt(tmp_path):
         outbox = InstallationOutbox(db)
         await outbox.accept("alice", request, value)
         await outbox.fence_for_install("alice", request, value)
-        async with db.sessions(
-            info={"owner_user_id": "author", "creative_authors": Authors()}
-        ) as session:
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
             with pytest.raises(CreativeError) as error:
-                await CreativeCatalog(session, principal).withdraw("item", 0)
+                await CreativeCatalog(
+                    session, principal, resources=isolated_resources(tmp_path, Authors())
+                ).withdraw("item", 0)
             assert error.value.status == 409
         receipt = {
             "operation_id": value.operation_id,
@@ -904,10 +906,10 @@ async def test_catalog_withdraw_is_blocked_by_fence_until_receipt(tmp_path):
             ],
         }
         await outbox.complete("alice", "release", receipt)
-        async with db.sessions(
-            info={"owner_user_id": "author", "creative_authors": Authors()}
-        ) as session:
-            result = await CreativeCatalog(session, principal).withdraw("item", 0)
+        async with db.sessions(info={"owner_user_id": "author"}) as session:
+            result = await CreativeCatalog(
+                session, principal, resources=isolated_resources(tmp_path, Authors())
+            ).withdraw("item", 0)
             assert result.status == "withdrawn" and result.revision == 1
     finally:
         await db.close()

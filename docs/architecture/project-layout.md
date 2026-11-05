@@ -211,6 +211,8 @@ backend/
 
 `studio/apps/model_service/admission/bindings.py` 定义不可变的额度申请、释放、任务保留与派生任务接纳绑定；模型 HTTP 与实时语音从自己的 ASGI 应用取得它，恢复网站显式安装原治理实现。`studio/apps/model_service/inference/receipts.py` 只依赖 Models 任务记录，负责账号限定的请求回执与摘要冲突校验，避免为重放检查导入素材能力。独立账本、队列和跨服务任务授权仍须单独实现，缺少绑定不允许回退单体数据库。
 
+`studio/apps/creative_workshop/catalog.py` 由两套装配共用；`rules/publication.py` 是不依赖数据库的公开配置过滤，输入明确的标题、种类、摘要、配置与 Skill 可用性，不接收 ORM。`catalog_resources.py` 为现有 SQL 目录明确提供作者目录、归档器、来源接口与文件设置；`session.info` 仅保留存储层账号隔离，不查找业务服务。`use_cases/installation.py` 在调用注入的安装端口前复核权限。`storage/website_installation.py` 保留兼容站跨表原子事务，独立服务沿用持久投递和结果核对，后续继续统一业务状态规则。账号作者显示适配由 `identity/storage/creative_authors.py` 拥有；网站装配位于 `assembly/website/creative.py`。旧 `app/console/creative_workshop/` 已移除。
+
 `backend/studio/apps/creative_workshop/` 拥有 Creative 自有表、安装 outbox、文件和独立应用。公开目录复用旧站 HTTP 契约，账号写入继续由 CAS 和持久回执保护。独立应用按签名请求从 Identity 查询作者显示名，只读取 Creative 自有目录中的封面及 Skill 文件。`source_http.py` 根据网关签发的请求体证据，经 Integrations 的 `creative_sources_http.py` 读取同账号快照并核对 Skill 归档摘要。`preview_http.py` 通过按批次摘要绑定的授权查验目标名称与已安装状态。`stdio_http.py` 按安装记录和配置摘要委托 Integrations，环境值由 Integrations 加密保存。Creative 验签后更新安装投影，原安装回执保持可重放。镜像和浏览器入口可独立构建，`deploy/creative.compose.yaml` 提供隔离验收装配。作品认证与历史迁移仍是上线门禁。
 
 `studio/apps/integrations/transport/` 的目录与外部连接路由由两种装配共用；请求数据、MCP 发现结果和外部文档协议归 `studio/contracts/integrations/`，记录归 `storage/`，权限判定归 `rules/access.py`。网站的 `assembly/website/integrations.py` 显式注入密钥加密器、MCP 客户端和 Skill 存储，目录实现不再回退读取全局配置。归档安全校验器归 `clients/skill_archive.py`，账号布局和删除暂存归 `skills/archive.py`，创作工坊只复用前者。思绪同步入口与执行器通过显式连接工厂获取已授权快照和文档能力，不自行构造集成存储；快照不含密文或 ORM。`runtime/secrets.py` 提供显式密钥的加密与诊断脱敏，不导入配置。现存目录类仍兼有 SQL 和用例规则，后续按事务端口分离；本批不改迁移内容或未知结果恢复语义。
@@ -361,9 +363,8 @@ Future-Props-Lab/
 ├── backend/app/
 │   ├── runtime/       # 尚未迁出的凭据适配
 │   ├── capabilities/  # 有契约的共享能力：agents、web_access
-│   ├── console/       # 尚未迁出的治理、助手和创作用例
-│   │   ├── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
-│   │   └── creative_workshop/ # 跨账号公开创作版本、草稿、安装事务与文件校验
+│   ├── console/       # 尚未迁出的治理与助手用例
+│   │   └── amadeus/   # 助手会话、引用快照、审批执行、沙箱脚本与模型桥接
 │   └── tool_navigation/ # 工具目录状态与抖音/B站视频下载；自有 models/schemas/routes
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
@@ -374,7 +375,7 @@ Future-Props-Lab/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
 │   ├── docs/          # Markdown 使用正文、分类与上下文目录、搜索、阅读器及旧链接映射
 │   ├── features/      # 账号治理、首页、应用、文件管理、工坊、工具导航、集成中心与模型功能
-│   │   ├── amadeus/   # 页面侧栏 UI、后端运行重连、控件选取与原生动态头像源画
+│   │   └── amadeus/   # 页面侧栏 UI、后端运行重连、控件选取与原生动态头像源画
 │   │   └── creative-workshop/ # 广场、创作、版本详情、能力选择与安装引导
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
@@ -482,7 +483,7 @@ Future-Props-Lab/
   提供文章同步侧栏和移动弹层；共享 `shared/ui/FeishuMark.tsx` 从 `web/public/providers/` 读取本地品牌标识。
   迁移 `r0088_external_article_sync` 追加五张表；全局唯一目标绑定和
   活跃任务索引确保单目标串行。恢复仅将运行任务标记待核对，不自动重放外部写入。
-- `console/creative_workshop/` 拥有同一部署内共享的创作目录。草稿按作者和当前账号隔离；
+- `studio/apps/creative_workshop/` 拥有同一部署内共享的创作目录。草稿按作者和当前账号隔离；
   公开版本和方案包引用跨账号只读，不能经集成中心直接读取其他账号的配置。
   安装记录属于目标账号，安装事务只复制已公开的允许字段和 Skill 文件；凭据留空，
   stdio MCP 待目标账号管理员填写本机命令。

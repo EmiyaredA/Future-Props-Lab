@@ -7,10 +7,8 @@ import httpx
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 
-from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
-from app.console.creative_workshop.files import CreativeFileError
-from app.console.creative_workshop.schemas import CreativeImportIn, CreativeItemOut
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.contracts.creative_workshop.catalog import CreativeImportIn, CreativeItemOut
 from studio.contracts.creative_workshop.creative_source_evidence import (
     PURPOSE,
     SOURCE_PATH,
@@ -22,6 +20,7 @@ from studio.contracts.creative_workshop.creative_source_snapshot import (
     CreativeSourcePayload,
 )
 from studio.contracts.creative_workshop.creative_transport import CreativeAttestedRequest
+from studio.contracts.creative_workshop.errors import CreativeError, CreativeFileError
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.integrations.errors import IntegrationValidationError
@@ -96,7 +95,6 @@ async def import_item(
         body.source_id,
     ):
         raise HTTPException(403, "creative_source_forbidden")
-    session.info["creative_sources"] = HttpSources(state, proof, envelope)
     item_id = str(
         uuid5(
             NAMESPACE_URL,
@@ -104,9 +102,9 @@ async def import_item(
         )
     )
     try:
-        return await CreativeCatalog(session, principal).import_source(
-            body.kind, body.source_id, request_item_id=item_id
-        )
+        return await state.creative_catalog(
+            request, session, principal, sources=HttpSources(state, proof, envelope)
+        ).import_source(body.kind, body.source_id, request_item_id=item_id)
     except CapabilityDenied as exc:
         raise HTTPException(exc.status, "creative_source_forbidden") from None
     except (httpx.HTTPError, CapabilityUnavailable):

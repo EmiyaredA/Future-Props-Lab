@@ -7,17 +7,8 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
-from app.console.creative_workshop.files import resolve_file
-from app.console.creative_workshop.models import CreativeInstallation, CreativeRelease
-from app.console.creative_workshop.schemas import (
-    CreativeInstallOut,
-    CreativeInstallPartOut,
-    CreativeInstallPreviewIn,
-    CreativeInstallPreviewOut,
-    CreativeStdioSetupIn,
-)
-from app.runtime.credentials import encrypt_secret
+from studio.apps.creative_workshop.storage.catalog_files import resolve_file
+from studio.apps.creative_workshop.storage.models import CreativeInstallation, CreativeRelease
 from studio.apps.integrations.skills.archive import SkillArchiveStorage
 from studio.apps.integrations.storage.models import (
     McpIntegration,
@@ -25,17 +16,27 @@ from studio.apps.integrations.storage.models import (
     SkillVersion,
     ToolApiIntegration,
 )
-from studio.config.settings import get_settings
+from studio.contracts.creative_workshop.catalog import (
+    CreativeInstallOut,
+    CreativeInstallPartOut,
+    CreativeInstallPreviewIn,
+    CreativeInstallPreviewOut,
+    CreativeStdioSetupIn,
+)
+from studio.contracts.creative_workshop.errors import CreativeError
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.contracts.integrations.catalog import McpCreateIn
 from studio.runtime.ids import new_id
 
 
 class LegacyCreativeInstaller:
-    def __init__(self, session: AsyncSession, principal: StudioPrincipal) -> None:
+    def __init__(
+        self, session: AsyncSession, principal: StudioPrincipal, *, catalog, settings, cipher
+    ) -> None:
+        self.settings, self.cipher = settings, cipher
         self.session = session
         self.principal = principal
-        self.catalog = CreativeCatalog(session, principal)
+        self.catalog = catalog
 
     def _authorize(self) -> None:
         if not self.principal.allows("configuration.manage"):
@@ -172,13 +173,15 @@ class LegacyCreativeInstaller:
                     resource_id = ""
                     state = "pending_setup"
                 else:
-                    source = resolve_file(item.origin_owner_user_id, release.skill_path)
+                    source = resolve_file(
+                        item.origin_owner_user_id, release.skill_path, settings=self.settings
+                    )
                     if not (source / "SKILL.md").is_file():
                         raise CreativeError(
                             "Skill 发布文件不可用，安装已取消", 409, "missing_skill_file"
                         )
                     target = SkillArchiveStorage(
-                        get_settings(), self.principal.owner_user_id
+                        self.settings, self.principal.owner_user_id
                     ).final_path(resource_id, "v1")
                     target.parent.mkdir(parents=True, exist_ok=True)
                     copied.append(target.parent)
@@ -300,7 +303,7 @@ class LegacyCreativeInstaller:
                 transport="stdio",
                 command=checked.command,
                 arguments=checked.arguments,
-                environment_ciphertext=encrypt_secret(json.dumps(checked.environment))
+                environment_ciphertext=self.cipher.encrypt(json.dumps(checked.environment))
                 if checked.environment
                 else "",
                 environment_keys=list(checked.environment),

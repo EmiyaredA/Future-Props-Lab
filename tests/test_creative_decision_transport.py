@@ -13,8 +13,6 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
 from studio.apps.creative_workshop.install_authorization import (
     IdentityInstallAuthorization,
     InstallSource,
@@ -30,6 +28,7 @@ from studio.apps.creative_workshop.storage.file_paths import creative_database
 from studio.apps.creative_workshop.storage.migrations.registry import (
     MIGRATIONS as CREATIVE_MIGRATIONS,
 )
+from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
 from studio.apps.creative_workshop.transport.decision_http import InstallDecisionEndpoint
 from studio.apps.creative_workshop.transport.decision_http import router as decision_router
 from studio.apps.integrations.creative_authority import CreativeHttpAuthority
@@ -40,6 +39,7 @@ from studio.apps.integrations.storage.migrations.registry import (
 from studio.apps.integrations.storage.service_models import MODELS
 from studio.apps.integrations.transport.creative_http import router as target_router
 from studio.config.settings import Settings
+from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
 from studio.contracts.creative_workshop.creative_install_evidence import (
     INSTALL_PATH,
     issue_install_evidence,

@@ -3,23 +3,14 @@ from __future__ import annotations
 import io
 import shutil
 import zipfile
-from functools import partial
 
 import pytest
 from fastapi import UploadFile
 from sqlalchemy import select
 from tests.account_fixtures import account_record
 
-from app.console.creative_workshop.catalog import CreativeCatalog, CreativeError
-from app.console.creative_workshop.files import CreativeFileError, resolve_file
-from app.console.creative_workshop.install import CreativeInstaller
-from app.console.creative_workshop.models import CreativeItem, CreativeRelease
-from app.console.creative_workshop.schemas import (
-    CreativeDraftIn,
-    CreativeDraftUpdateIn,
-    CreativeInstallPreviewIn,
-    CreativeStdioSetupIn,
-)
+from studio.apps.creative_workshop.storage.catalog_files import resolve_file
+from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.integrations.storage.models import (
     McpIntegration,
@@ -27,29 +18,19 @@ from studio.apps.integrations.storage.models import (
     SkillVersion,
     ToolApiIntegration,
 )
+from studio.assembly.website.creative import website_catalog as CreativeCatalog
+from studio.assembly.website.creative import website_installer as CreativeInstaller
+from studio.contracts.creative_workshop.catalog import (
+    CreativeDraftIn,
+    CreativeDraftUpdateIn,
+    CreativeInstallPreviewIn,
+    CreativeStdioSetupIn,
+)
+from studio.contracts.creative_workshop.errors import CreativeError, CreativeFileError
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal, settings
-
-
-@pytest.fixture(autouse=True)
-def creative_author_adapter():
-    from app.console.creative_workshop.legacy_archives import LegacyCreativeArchives
-    from app.console.creative_workshop.legacy_authors import LegacyCreativeAuthors
-    from app.console.creative_workshop.legacy_install import LegacyCreativeInstaller
-    from app.console.creative_workshop.legacy_sources import LegacyCreativeSources
-
-    previous = dict(SessionLocal.kw.get("info") or {})
-    SessionLocal.configure(
-        info={
-            **previous,
-            "creative_authors_factory": LegacyCreativeAuthors,
-            "creative_archives_factory": LegacyCreativeArchives,
-            "creative_sources_factory": partial(LegacyCreativeSources, settings=settings),
-            "creative_installer_factory": LegacyCreativeInstaller,
-        }
-    )
-    yield
-    SessionLocal.configure(info=previous)
+from website_test_support import settings as isolated_settings
 
 
 def principal(user_id: str, _owner_user_id: str, _role: str = "admin") -> StudioPrincipal:
@@ -88,8 +69,10 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
             ]
         )
         await session.commit()
-        author = CreativeCatalog(session, principal("creative-a", "creative-a", "user"))
-        viewer = CreativeCatalog(session, principal("creative-b", "creative-b"))
+        author = CreativeCatalog(
+            session, principal("creative-a", "creative-a", "user"), settings=settings
+        )
+        viewer = CreativeCatalog(session, principal("creative-b", "creative-b"), settings=settings)
         tool = await author.create(
             CreativeDraftIn(
                 kind="tool_api",
@@ -126,8 +109,7 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
         )
         await session.commit()
         imported = await CreativeCatalog(
-            session,
-            principal("creative-a", "creative-a", "admin"),
+            session, principal("creative-a", "creative-a", "admin"), settings=settings
         ).import_source("tool_api", "creative-private-source")
         imported = await author.publish(imported.id, imported.revision)
         assert "encrypted-secret-never-publish" not in imported.model_dump_json()
@@ -146,10 +128,18 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
         bundle = await author.publish(bundle.id, bundle.revision)
         assert bundle.components == [published.current_release_id]
         own_preview = await CreativeInstaller(
-            session, principal("creative-a", "creative-a", "user")
+            session,
+            principal("creative-a", "creative-a", "user"),
+            settings=settings,
+            cipher=SecretCipher(settings.fpl_secrets_key),
         ).preview(CreativeInstallPreviewIn(release_id=bundle.current_release_id))
         assert own_preview.installable
-        installer = CreativeInstaller(session, principal("creative-b", "creative-b"))
+        installer = CreativeInstaller(
+            session,
+            principal("creative-b", "creative-b"),
+            settings=settings,
+            cipher=SecretCipher(settings.fpl_secrets_key),
+        )
         install_body = CreativeInstallPreviewIn(release_id=bundle.current_release_id)
         preview = await installer.preview(install_body)
         assert preview.installable and len(preview.parts) == 1
@@ -256,8 +246,13 @@ async def test_cross_workspace_public_catalog_and_atomic_install() -> None:
         broken_bundle = await author.publish(broken_bundle.id, broken_bundle.revision)
         skill_release = await session.get(CreativeRelease, skill.current_release_id)
         assert skill_release
-        shutil.rmtree(resolve_file("creative-a", skill_release.skill_path))
-        other_installer = CreativeInstaller(session, principal("creative-c", "creative-c"))
+        shutil.rmtree(resolve_file("creative-a", skill_release.skill_path, settings=settings))
+        other_installer = CreativeInstaller(
+            session,
+            principal("creative-c", "creative-c"),
+            settings=settings,
+            cipher=SecretCipher(settings.fpl_secrets_key),
+        )
         with pytest.raises(CreativeError):
             await other_installer.install(
                 CreativeInstallPreviewIn(
@@ -294,7 +289,7 @@ async def test_public_manifest_rejects_credentials_and_empty_bundle() -> None:
                 )
             )
         await session.commit()
-        author = CreativeCatalog(session, principal("creative-a", "creative-a"))
+        author = CreativeCatalog(session, principal("creative-a", "creative-a"), settings=settings)
         unsafe = await author.create(
             CreativeDraftIn(
                 kind="tool_api",
@@ -331,21 +326,21 @@ async def test_public_manifest_rejects_credentials_and_empty_bundle() -> None:
 async def test_cover_upload_rechecks_revision_after_file_staging(monkeypatch):
     from sqlalchemy import update
 
-    from app.console.creative_workshop import catalog as module
+    from studio.apps.creative_workshop import catalog as module
 
     owner = "creative-cover-cas"
     async with SessionLocal() as session:
         session.add(account_record(id=owner, name=owner))
         await session.commit()
         actor = principal(owner, owner)
-        item = await CreativeCatalog(session, actor).create(
+        item = await CreativeCatalog(session, actor, settings=settings).create(
             CreativeDraftIn(kind="tool_api", title="cover", summary="test")
         )
         relative = "creative-workshop/covers/cas.webp"
-        target = resolve_file(owner, relative)
+        target = resolve_file(owner, relative, settings=settings)
 
         async def staged(_owner, _upload, *, settings=None):
-            assert settings is None
+            assert settings is isolated_settings
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(b"synthetic cover")
             async with SessionLocal() as other:
@@ -359,7 +354,9 @@ async def test_cover_upload_rechecks_revision_after_file_staging(monkeypatch):
 
         monkeypatch.setattr(module, "save_cover", staged)
         with pytest.raises(CreativeError) as error:
-            await CreativeCatalog(session, actor).upload_cover(item.id, item.revision, None)
+            await CreativeCatalog(session, actor, settings=settings).upload_cover(
+                item.id, item.revision, None
+            )
         assert error.value.code == "revision_conflict"
         assert not target.exists()
         refreshed = await session.get(CreativeItem, item.id)
@@ -369,21 +366,21 @@ async def test_cover_upload_rechecks_revision_after_file_staging(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_cover_commit_response_loss_preserves_committed_file(monkeypatch):
-    from app.console.creative_workshop import catalog as module
+    from studio.apps.creative_workshop import catalog as module
 
     owner = "creative-cover-unknown"
     async with SessionLocal() as session:
         session.add(account_record(id=owner, name=owner))
         await session.commit()
         actor = principal(owner, owner)
-        item = await CreativeCatalog(session, actor).create(
+        item = await CreativeCatalog(session, actor, settings=settings).create(
             CreativeDraftIn(kind="tool_api", title="cover", summary="test")
         )
         relative = "creative-workshop/covers/committed.webp"
-        target = resolve_file(owner, relative)
+        target = resolve_file(owner, relative, settings=settings)
 
         async def staged(_owner, _upload, *, settings=None):
-            assert settings is None
+            assert settings is isolated_settings
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(b"committed cover")
             return relative
@@ -397,7 +394,9 @@ async def test_cover_commit_response_loss_preserves_committed_file(monkeypatch):
         monkeypatch.setattr(module, "save_cover", staged)
         monkeypatch.setattr(session, "commit", lost_ack)
         with pytest.raises(RuntimeError, match="response loss"):
-            await CreativeCatalog(session, actor).upload_cover(item.id, item.revision, None)
+            await CreativeCatalog(session, actor, settings=settings).upload_cover(
+                item.id, item.revision, None
+            )
         assert target.read_bytes() == b"committed cover"
     async with SessionLocal() as session:
         row = await session.get(CreativeItem, item.id)
@@ -422,22 +421,22 @@ def test_creative_files_reject_symlink_paths(tmp_path):
 
 @pytest.mark.asyncio
 async def test_skill_upload_commit_response_loss_keeps_committed_archive(monkeypatch):
-    from app.console.creative_workshop import catalog as module
+    from studio.apps.creative_workshop import catalog as module
 
     owner = "creative-skill-unknown"
     async with SessionLocal() as session:
         session.add(account_record(id=owner, name=owner))
         await session.commit()
         actor = principal(owner, owner)
-        item = await CreativeCatalog(session, actor).create(
+        item = await CreativeCatalog(session, actor, settings=settings).create(
             CreativeDraftIn(kind="skill", title="Skill", summary="test")
         )
         relative = f"creative-workshop/skill-drafts/{item.id}/draft"
-        target = resolve_file(owner, relative)
+        target = resolve_file(owner, relative, settings=settings)
 
         async def staged(_owner, _item_id, _upload, *, archive_parser, settings=None):
             del archive_parser
-            assert settings is None
+            assert settings is isolated_settings
             target.mkdir(parents=True, exist_ok=True)
             (target / "SKILL.md").write_text("# Synthetic Skill")
             return relative, {"name": "synthetic", "content_sha256": "a" * 64}
@@ -451,7 +450,9 @@ async def test_skill_upload_commit_response_loss_keeps_committed_archive(monkeyp
         monkeypatch.setattr(module, "save_skill_draft", staged)
         monkeypatch.setattr(session, "commit", lost_ack)
         with pytest.raises(RuntimeError, match="response loss"):
-            await CreativeCatalog(session, actor).upload_skill(item.id, item.revision, None)
+            await CreativeCatalog(session, actor, settings=settings).upload_skill(
+                item.id, item.revision, None
+            )
         assert (target / "SKILL.md").read_text() == "# Synthetic Skill"
     async with SessionLocal() as session:
         row = await session.get(CreativeItem, item.id)
@@ -465,11 +466,11 @@ async def test_publish_commit_response_loss_preserves_published_archive(monkeypa
         session.add(account_record(id=owner, name=owner))
         await session.commit()
         actor = principal(owner, owner)
-        item = await CreativeCatalog(session, actor).create(
+        item = await CreativeCatalog(session, actor, settings=settings).create(
             CreativeDraftIn(kind="skill", title="Skill", summary="test")
         )
         relative = f"creative-workshop/skill-drafts/{item.id}/draft"
-        target = resolve_file(owner, relative)
+        target = resolve_file(owner, relative, settings=settings)
         target.mkdir(parents=True, exist_ok=True)
         (target / "SKILL.md").write_text("# Synthetic Skill")
         row = await session.get(CreativeItem, item.id)
@@ -484,13 +485,13 @@ async def test_publish_commit_response_loss_preserves_published_archive(monkeypa
 
         monkeypatch.setattr(session, "commit", lost_ack)
         with pytest.raises(RuntimeError, match="response loss"):
-            await CreativeCatalog(session, actor).publish(item.id, item.revision)
+            await CreativeCatalog(session, actor, settings=settings).publish(item.id, item.revision)
     async with SessionLocal() as session:
         row = await session.get(CreativeItem, item.id)
         assert row.status == "published" and row.revision == item.revision + 1
         release = await session.get(CreativeRelease, row.current_release_id)
         assert (
-            resolve_file(owner, release.skill_path) / "SKILL.md"
+            resolve_file(owner, release.skill_path, settings=settings) / "SKILL.md"
         ).read_text() == "# Synthetic Skill"
 
 
@@ -523,13 +524,17 @@ async def test_import_skill_owns_snapshot_after_source_removed():
         original.mkdir(parents=True, exist_ok=True)
         (original / "SKILL.md").write_text("---\nname: owned\ndescription: demo\n---\n# Owned\n")
         actor = principal(owner, owner)
-        result = await CreativeCatalog(session, actor).import_source("skill", "source-skill")
+        result = await CreativeCatalog(session, actor, settings=settings).import_source(
+            "skill", "source-skill"
+        )
         row = await session.get(CreativeItem, result.id)
         assert row.draft_skill_path.startswith("creative-workshop/skill-drafts/")
-        copied = resolve_file(owner, row.draft_skill_path) / "SKILL.md"
+        copied = resolve_file(owner, row.draft_skill_path, settings=settings) / "SKILL.md"
         assert copied.read_bytes() == (original / "SKILL.md").read_bytes()
         shutil.rmtree(original)
-        published = await CreativeCatalog(session, actor).publish(result.id, result.revision)
+        published = await CreativeCatalog(session, actor, settings=settings).publish(
+            result.id, result.revision
+        )
         assert published.status == "published"
         assert copied.is_file()
 
@@ -552,15 +557,15 @@ async def test_import_source_rejects_another_accounts_integration():
         )
         await session.commit()
         with pytest.raises(CreativeError) as error:
-            await CreativeCatalog(session, principal(owner, owner)).import_source(
-                "tool_api", "foreign-source"
-            )
+            await CreativeCatalog(
+                session, principal(owner, owner), settings=settings
+            ).import_source("tool_api", "foreign-source")
         assert error.value.status == 404
 
 
 @pytest.mark.asyncio
 async def test_import_skill_rejects_bad_source_digest():
-    from app.console.creative_workshop.sources import CreativeSource
+    from studio.apps.creative_workshop.catalog_sources import CreativeSource
 
     class Sources:
         async def snapshot(self, *, owner, kind, source_id):
@@ -571,9 +576,10 @@ async def test_import_skill_rejects_bad_source_digest():
     async with SessionLocal() as session:
         session.add(account_record(id=owner, name=owner))
         await session.commit()
-        session.info["creative_sources"] = Sources()
         with pytest.raises(CreativeError, match="摘要不匹配"):
-            await CreativeCatalog(session, principal(owner, owner)).import_source("skill", "x")
+            await CreativeCatalog(
+                session, principal(owner, owner), sources=Sources(), settings=settings
+            ).import_source("skill", "x")
         assert (
             list(
                 (
@@ -586,10 +592,10 @@ async def test_import_skill_rejects_bad_source_digest():
         )
 
 
-def test_publish_skill_rejects_symlink_directory(tmp_path, monkeypatch):
+def test_publish_skill_rejects_symlink_directory(tmp_path):
     from types import SimpleNamespace
 
-    from app.console.creative_workshop import files
+    from studio.apps.creative_workshop.storage import catalog_files as files
 
     account = tmp_path / "accounts" / "owner"
     source = account / "creative-workshop" / "skill-drafts" / "draft"
@@ -600,7 +606,8 @@ def test_publish_skill_rejects_symlink_directory(tmp_path, monkeypatch):
     (outside / "private.txt").write_text("not for publication")
     (source / "linked-directory").symlink_to(outside, target_is_directory=True)
     settings = SimpleNamespace(runtime_path=tmp_path, account_path=lambda _owner: account)
-    monkeypatch.setattr(files, "get_settings", lambda: settings)
     with pytest.raises(CreativeFileError, match="符号链接"):
-        files.copy_skill_release("owner", "creative-workshop/skill-drafts/draft", "release")
+        files.copy_skill_release(
+            "owner", "creative-workshop/skill-drafts/draft", "release", settings=settings
+        )
     assert not (account / "creative-workshop" / "skill-releases" / "release").exists()

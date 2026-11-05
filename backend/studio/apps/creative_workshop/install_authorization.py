@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 import jwt
 from pydantic import ValidationError
 
-from app.console.creative_workshop.schemas import CreativeInstallPreviewIn
+from studio.contracts.creative_workshop.catalog import CreativeInstallPreviewIn
 from studio.contracts.creative_workshop.creative_install_evidence import (
     INSTALL_PATH,
     install_fields,

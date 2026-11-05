@@ -2,13 +2,13 @@
 
 from typing import Protocol
 
-from app.console.creative_workshop.catalog import CreativeError
-from app.console.creative_workshop.schemas import (
+from studio.contracts.creative_workshop.catalog import (
     CreativeInstallOut,
     CreativeInstallPreviewIn,
     CreativeInstallPreviewOut,
     CreativeStdioSetupIn,
 )
+from studio.contracts.creative_workshop.errors import CreativeError
 from studio.contracts.identity.principal import StudioPrincipal
 
 
@@ -21,16 +21,13 @@ class CreativeInstallationPort(Protocol):
 
 
 class CreativeInstaller:
-    def __init__(self, session, principal: StudioPrincipal):
-        self.session, self.principal = session, principal
+    def __init__(self, principal: StudioPrincipal, *, installation: CreativeInstallationPort):
+        self.principal, self.installation = principal, installation
 
     def port(self) -> CreativeInstallationPort:
         if not self.principal.allows("configuration.manage"):
             raise CreativeError("需要当前账号的集成管理权限", 403, "permission_denied")
-        factory = self.session.info.get("creative_installer_factory")
-        if factory is None:
-            raise CreativeError("创作安装服务尚未连接", 503, "creative_install_unavailable")
-        return factory(self.session, self.principal)
+        return self.installation
 
     async def preview(self, body: CreativeInstallPreviewIn) -> CreativeInstallPreviewOut:
         return await self.port().preview(body)

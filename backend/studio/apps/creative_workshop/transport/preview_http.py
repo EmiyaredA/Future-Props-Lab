@@ -4,13 +4,13 @@ import httpx
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, ValidationError
 
-from app.console.creative_workshop.schemas import (
+from studio.apps.creative_workshop.install_batch import build_install_batch
+from studio.apps.creative_workshop.installation_outbox import InstallIntentConflict
+from studio.contracts.creative_workshop.catalog import (
     CreativeInstallPartOut,
     CreativeInstallPreviewIn,
     CreativeInstallPreviewOut,
 )
-from studio.apps.creative_workshop.install_batch import build_install_batch
-from studio.apps.creative_workshop.installation_outbox import InstallIntentConflict
 from studio.contracts.creative_workshop.creative_preview import PUBLIC_PREVIEW, preview_path
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
