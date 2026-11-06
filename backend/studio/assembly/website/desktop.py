@@ -8,10 +8,13 @@ from sqlalchemy.exc import TimeoutError as PoolTimeout
 
 from studio.apps.identity.storage.cloud_access import desktop_authorized
 from studio.apps.remote_desktop.transport import guacamole as desktop_bridge
+from studio.config.settings import get_cloud_settings
 
 
 async def _access(principal, local, _context=None, *, sessions, preferences):
     try:
+        if get_cloud_settings().fpl_cloud_control_apps_enabled:
+            return None
         async with sessions() as db:
             if not await desktop_authorized(db, principal, local=local):
                 return None

@@ -67,31 +67,6 @@ def test_compose_only_publishes_gateway_and_mounts_minimal_owned_state():
     assert document["networks"]["private"]["internal"] is True
 
 
-def test_agents_image_contains_no_identity_orm_or_native_readers():
-    closure = source_closure(ROOT, "agents")
-    assert "studio.assembly.independent.agent_workbench.application" in closure
-    assert "studio.apps.agent_workbench.storage.models" in closure
-    assert "studio.apps.agent_workbench.sync.projection" in closure
-    for name in closure:
-        if public_client_module(name):
-            continue
-        assert not name.startswith(
-            (
-                "studio.apps.identity",
-                "studio.host",
-                "app.console.models",
-                "studio.apps.model_service",
-            )
-        )
-        assert name not in {
-            "studio.assembly.website.application",
-            "studio.assembly.website.models",
-            "studio.assembly.website.routes",
-            "studio.assembly.http_dependencies",
-            "studio.host.session_collection.catalog",
-        }
-
-
 def test_native_queue_models_do_not_pollute_legacy_schema():
     from studio.apps.agent_workbench.storage.service_models import (
         NativeJob,

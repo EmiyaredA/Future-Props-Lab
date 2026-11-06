@@ -53,9 +53,9 @@ try {
   await page.getByRole("link", {name: "云控", exact: true}).click();
   await expect(page).toHaveURL(new URL("/cloud-control", origin).href);
   await expect(page.getByRole("heading", {name: "云控", exact: true})).toBeVisible();
-  await page.goto(new URL("/agents", origin).href);
-  await expect(page.getByRole("region", {name: "Agent 工作台"})).toBeVisible();
-  checks.push("portal login, homepage, application catalogue, Cloud Control link and shared-session Agents entry");
+  await expect(page.getByRole("region", {name: "远程桌面"})).toBeVisible();
+  await expect(page.getByRole("button", {name: "Agent 工作台"})).toHaveCount(0);
+  checks.push("portal login, homepage, application catalogue and desktop-only Cloud Control");
   await page.goto(new URL("/docs.html", origin).href);
   await expect(page.locator(".docs-shell")).toBeVisible();
   await expect(page.locator("h1").first()).toBeVisible();

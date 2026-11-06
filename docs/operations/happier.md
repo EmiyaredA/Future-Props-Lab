@@ -1,40 +1,40 @@
-# 云控 Happier 部署
+# 云控 Happier 部署与切换
 
-Happier 运行在 Mac 上的独立 Relay 和 CLI 容器中。使用新的 Relay 数据卷和一名指定的 FPL 管理员。无设备密钥账号采用明文会话存储，自托管 Relay 可以读取会话。测试项目和 CLI 凭据使用独立副本。
+日常网站的 Agent 工作台使用自托管 Happier Web、SQLite Relay 与 CLI Runner。FPL 管理员通过云控解锁进入工作台，再用 Happier 原生设备密钥登录。Happier 保存加密会话，Runner 使用独立凭据执行。独立 Compose 的云控提供远程桌面。
 
-当前仅通过隔离环境的登录、配对和布局验收。发布版 CLI 0.2.20 与固定源码版 `2aeb139d` 都能配对无设备密钥账号，但启动 Codex 时会在账号设置初始化阶段返回 `ACCOUNT_ENCRYPTION_KEY_REQUIRED`。在兼容版本上通过 Codex 首轮、审批和续聊验收后，再启用公网 Agent。
+## 隔离构建与配对
 
-## 构建与配置
+1. 从仓库根目录运行以下命令。两份镜像使用同一个固定的上游提交。Web 默认首次展开原生右侧文件面板。
 
-1. 将 `FPL_HAPPIER_RELAY_BASE` 设为经过验收的上游 Relay 镜像摘要。Relay 必须在 `GET /v1/features` 广播 `features.encryption.plaintextMachine.enabled`。用 `uv run python scripts/website/build_happier.py /absolute/path/to/happier --origin https://happier.example.com --relay-image "$FPL_HAPPIER_RELAY_BASE"` 构建固定上游 Web。构建启用原生会话右栏的首次打开默认值。Happier 负责布局、拖动、收起和窄屏导航。
-2. 在 `backend/config.toml` 设置 `[remote_web]` 的 HTTPS Studio 来源并启用该入口，配置 `[happier]` 的 `origin`、`admin_user_id`、`listen_port`、`relay_port` 和至少 32 字符的随机 `oidc_client_secret`。该账号同时列入 `[cloud_control].admin_user_ids`。同一 HTTPS Studio 来源无论本机还是外网都走 HTTPS 云控策略，需启用 `[cloud_control].public_enabled` 并关闭 `public_desktop_vnc_only`。可保持 `[website].public_enabled = false`，先从本机反向代理验收。
-3. 让 Studio 和 Happier 使用同站的两个不同 HTTPS 主机名。Mac 本机 HTTPS 代理将 Studio 转发至 `[remote_web].port`，将 Happier 转发至 `[happier].listen_port`。保留原始 Host、Origin 和 WebSocket 升级，禁止代理缓存，并排除 OAuth 回调查询参数的访问日志。Relay 容器也需要通过该域名访问 OIDC 发现、令牌和公钥端点。公网验收使用现有网关的单独 Happier 主机规则和专用 SSH 回环转发，目标为 Mac 的 `[happier].listen_port`。Happier 原始 Relay 端口仅映射到 Mac 回环，浏览器始终走受控入口。
-4. 为 Relay 提供仅含一个 FPL 客户端的 OIDC 配置文件。保留示例中的固定路径和客户端 ID，替换域名。通过环境变量提供与 FPL TOML 一致的密钥。
+   ```sh
+   uv run python scripts/website/build_happier.py /absolute/path/to/happier --origin https://happier.example.com
+   uv run python scripts/website/build_happier.py /absolute/path/to/happier --runner-tag fpl/happier-runner-e2ee:2aeb139d
+   ```
 
-```json
-[
-  {
-    "id": "fpl",
-    "type": "oidc",
-    "displayName": "FPL",
-    "issuer": "https://happier.example.com/v1/cloud-control/happier/oidc",
-    "clientId": "fpl-happier",
-    "clientSecretEnv": "FPL_HAPPIER_OIDC_CLIENT_SECRET",
-    "redirectUrl": "https://happier.example.com/v1/oauth/fpl/callback",
-    "scopes": "openid profile",
-    "fetchUserInfo": false,
-    "storeRefreshToken": false
-  }
-]
-```
+2. 在隔离的 FPL 配置中启用 `[remote_web]`，为 Studio 和 Happier 分别配置同站 HTTPS 主机名。在 `[happier]` 填写 `origin`、`admin_user_id`、`listen_port` 和 `relay_port`。指定管理员同时列入 `[cloud_control].admin_user_ids`。配置升级时从现有 `[happier]` 移除 `oidc_client_secret`，随后用新版本检查配置。保留停机快照中的原配置供回退使用。
+3. 先用 Mac 本机 HTTPS 代理验收。将 Studio 转发到 `[remote_web].port`，将 Happier 转发到 `[happier].listen_port`。保留原始 Host、Origin 和 WebSocket 升级，禁用缓存。同一 HTTPS Studio 来源遵循远程云控策略，需要启用 `[cloud_control].public_enabled` 并关闭 `public_desktop_vnc_only`。此时保持 `[website].public_enabled = false`，公网网关不发布 Happier 主机。
+4. 用独立 Compose 项目、未使用的回环端口和专用项目目录验收。设置 `FPL_HAPPIER_ORIGIN`、`FPL_HAPPIER_RELAY_PORT` 和 `FPL_HAPPIER_PROJECT_ROOT`。Compose 使用新命名的加密数据卷。先临时允许设备密钥账号注册：
 
-5. 用 `uv run python scripts/website/build_happier.py /absolute/path/to/happier --runner-tag fpl/happier-runner:2aeb139d` 构建同一固定源码的 Happier CLI 和 Codex CLI Runner，用于隔离验收。使用 `deploy/happier.compose.yaml`，设置 `FPL_HAPPIER_ORIGIN`、`FPL_HAPPIER_RELAY_PORT`、`FPL_HAPPIER_OIDC_CLIENT_SECRET`、`FPL_HAPPIER_PROVIDERS_FILE` 和 `FPL_HAPPIER_PROJECT_ROOT`。需要其他 CLI 时可扩展同一 Runner 镜像。项目挂载只指向专用目录。CLI 配置与登录保存在独立 Runner 卷。
-6. 用 `docker compose -f deploy/happier.compose.yaml up -d relay` 启动 Relay。在云控打开 Agent 工作台，通过原生 FPL 按钮进入 Happier。执行 `docker compose -f deploy/happier.compose.yaml run --rm runner happier auth login`，在已解锁的 Happier 工作区通过原生配对界面确认。按 CLI 自己的流程准备独立登录，再启动 Runner。
+   ```sh
+   FPL_HAPPIER_BOOTSTRAP_SIGNUP=true docker compose -f deploy/happier.compose.yaml up -d relay
+   ```
 
-如需更换专用 FPL 管理员，使用新的 Happier 来源和新的 Relay 数据卷，避免复用原浏览器保留的 Happier 登录态。
+5. 指定管理员通过 Studio HTTPS 登录，在云控验证密码，打开 Happier 并创建原生账号。把恢复密钥保存在自己的密码管理器。执行 `docker compose -f deploy/happier.compose.yaml run --rm runner happier auth login`，在已解锁的 Happier 浏览器中批准配对。用 Runner 内的 `codex login --device-auth` 准备隔离凭据。
+6. 取消临时注册开关，重新创建 Relay 并启动 Runner：
 
-## 放行检查
+   ```sh
+   FPL_HAPPIER_BOOTSTRAP_SIGNUP=false docker compose -f deploy/happier.compose.yaml up -d --force-recreate relay runner
+   ```
 
-- 宽屏打开一个隔离 Codex 会话，确认左侧会话列表、中间对话和右侧文件面板。检查收起右栏后的偏好、窄屏导航以及切换回桌面时连接是否保持。
-- 在本机和外网分别测试创建、流式输出、审批、文件访问、重连和续聊。试读未挂载的主机路径，确认 Runner 读不到主机目录和其他账号的 CLI 配置。
-- 未解锁、错误账号、重放兑换凭证或绕过 FPL 访问时应拒绝。打开实时连接后分别测试注销、撤权和解锁到期。全部通过后才发布 Happier 公网路由。
+7. 核验设备配对与恢复、新建 Codex 会话、首轮流式响应、审批同意和拒绝、文件访问、断线重连和重启后续聊。检查宽屏原生右栏、窄屏导航、切换桌面后的会话，以及 Runner 对项目之外宿主路径的读取限制。确认直接访问 Happier、错误账号和重放凭证都被拒绝，并核验 FPL 注销、撤权和解锁到期会关闭已连接的实时通道。
+
+## 旧工作台归档与正式发布
+
+1. 隔离验收通过后安排维护窗口。停止接受旧工作台操作，等待或明确结束正在运行的轮次。停止网站、旧 Agents Compose 服务及主机采集与执行进程。
+2. 记录部署中实际使用的 Git 提交。用 `uv run python -m scripts.website.legacy_snapshot create` 封存停机的 FPL 运行目录及配置，保留命令返回的提交、文件数和清单摘要。若运行过独立 Agents 服务，另外封存其数据目录、服务配置与登记的外置原生会话文件，保留文件权限及原路径清单。备份和验收目录使用已确认被 Git 忽略的 `.local/` 或正式备份路径。旧记录只供恢复。
+3. 使用 `legacy_snapshot restore` 和原清单摘要恢复到新的隔离目录。用原部署版本只读核对账号、会话与外置文件引用，保留原件和恢复副本。
+4. 启动新版本与新 Happier 数据卷，先验收本机 HTTPS。独立 Compose 升级时停止并移除旧 Agents 容器，不带 `--volumes`，使用新 Gateway 路由和新的 Portal 构建，检查云控只显示远程桌面。
+5. 本机验收完成后才发布公网 Happier 主机规则。沿用现有网关专用 SSH 回环转发，目标必须为 `[happier].listen_port`，原始 Relay 端口只绑定 Mac 回环。从外部浏览器重复验证解锁、实时连接、会话操作和撤权。
+6. 如需回退，先撤下公网 Happier 路由，停掉新版本及 Runner，按归档提交和清单恢复到独立运行目录后再切回入口。保留新 Happier 卷和恢复密钥，避免丢失切换后创建的会话。
+
+缺少隔离 Codex 凭据或任一运行验收失败时，正式发布保持待验收。

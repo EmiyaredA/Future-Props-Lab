@@ -53,7 +53,6 @@ app = create_app(
     management_local_origin="http://127.0.0.1:19002",
     management_public_origin="https://admin.example.test",
     service_credentials={
-        "agents": "agents-test-service-credential-123456",
         "gateway": "gateway-test-service-credential-123456",
         "creative": "creative-test-service-credential-123456",
         "assets": "assets-test-service-credential-123456",
@@ -226,18 +225,18 @@ async def scenario():
             assert (await client.get("/v1/not-a-real-operation")).status_code == 404
             assert (await client.get("/v1/model-entries")).status_code == 404
             auth_headers = {
-                "X-Fpl-Target-Service": "agents",
+                "X-Fpl-Target-Service": "assets",
                 "X-Fpl-Request-Method": "GET",
-                "X-Fpl-Request-Uri": "/v1/agent-workbench/sessions",
+                "X-Fpl-Request-Uri": "/v1/files",
                 "X-Fpl-Context": "forged-context",
             }
             authorized = await client.get("/_internal/v1/authorize", headers=auth_headers)
             assert authorized.status_code == 204, authorized.text
             actor = verify_context(
                 authorized.headers[HEADER],
-                service="agents",
+                service="assets",
                 method="GET",
-                path="/v1/agent-workbench/sessions",
+                path="/v1/files",
                 public_key=private.public_key(),
             )
             assert actor.user_id == owner and actor.local
@@ -292,20 +291,20 @@ async def scenario():
             ] == "api_key_secret_unavailable"
             assert (await authorize_key()).status_code == 401
             live_body = {
-                "service": "agents",
+                "service": "assets",
                 "method": "GET",
-                "path": "/v1/agent-workbench/sessions",
+                "path": "/v1/files",
                 "assertion": authorized.headers[HEADER],
             }
-            live_headers = {"Authorization": "Bearer agents-test-service-credential-123456"}
+            live_headers = {"Authorization": "Bearer assets-test-service-credential-123456"}
             live = await client.post(
                 "/_internal/v1/authorization/live", json=live_body, headers=live_headers
             )
             assert live.status_code == 200 and live.json()["active"] is True
             task_body = {
-                "service": "agents",
+                "service": "assets",
                 "owner_user_id": owner,
-                "permission": "cloud-control.access",
+                "permission": "content.write",
             }
             task = await client.post(
                 "/_internal/v1/tasks/authorize", json=task_body, headers=live_headers

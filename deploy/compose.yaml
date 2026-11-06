@@ -56,67 +56,6 @@ services:
       start_period: 10s
     networks: [private]
 
-  agents:
-    image: ${FPL_AGENTS_IMAGE:?Build and select an Agents release}
-    user: "${FPL_SERVICE_UID:?Set the data owner UID}:${FPL_SERVICE_GID:?Set the data owner GID}"
-    restart: unless-stopped
-    init: true
-    read_only: true
-    cap_drop: [ALL]
-    security_opt: [no-new-privileges:true]
-    stop_grace_period: 45s
-    cpus: 1
-    mem_limit: 512m
-    tmpfs:
-      - /tmp:mode=1777,size=64m
-    volumes:
-      - type: bind
-        source: ${FPL_AGENTS_STATE:?Select isolated or formally migrated Agents data}
-        target: /state
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${FPL_AGENTS_CONFIG:?Select the minimal read-only Agents TOML}
-        target: /run/fpl/config.toml
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${FPL_IDENTITY_PUBLIC_KEY:?Select Identity public key}
-        target: /run/fpl/identity-public.pem
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${FPL_AGENTS_IDENTITY_TOKEN:?Select Agents service credential}
-        target: /run/fpl/identity-token
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${FPL_AGENTS_NATIVE_INGRESS:?Select native lane proof}
-        target: /run/fpl/native-ingress
-        read_only: true
-        bind:
-          create_host_path: false
-      - type: bind
-        source: ${FPL_AGENTS_WORKERS:?Select collector worker credentials}
-        target: /run/fpl/workers.json
-        read_only: true
-        bind:
-          create_host_path: false
-    healthcheck:
-      test:
-        - CMD
-        - python
-        - -c
-        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health', timeout=2)"
-      interval: 15s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
-    networks: [private]
-
   assets:
     image: ${FPL_ASSETS_IMAGE:?Build and select an Assets release}
     user: ${FPL_SERVICE_UID}:${FPL_SERVICE_GID}

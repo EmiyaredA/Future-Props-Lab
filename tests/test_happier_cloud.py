@@ -1,13 +1,11 @@
-import base64
-import hashlib
-from contextlib import aclosing
-from urllib.parse import parse_qs, urlsplit
+import asyncio
+from contextlib import aclosing, asynccontextmanager
 
 import httpx
-import jwt
 import pytest
 
-from studio.apps.identity.use_cases.happier_oidc import BROWSER_COOKIE, CLIENT_ID
+from studio.apps.identity.use_cases.happier_access import BROWSER_COOKIE
+from studio.assembly.website import happier_ingress
 from studio.assembly.website.happier import Happier
 from studio.config.settings import get_settings
 from test_cloud_control import CLOUD, admin_client, configure, unlock
@@ -21,7 +19,8 @@ class RelayPage(httpx.AsyncByteStream):
         yield b"Happier"
 
 
-async def test_happier_exchange_and_oidc_use_real_fpl_session(monkeypatch):
+@pytest.mark.parametrize("end_grant", ["logout", "revoke", "expiry"])
+async def test_happier_exchange_and_relay_use_real_fpl_session(monkeypatch, end_grant):
     admin, owner = await admin_client(local=False)
     other, other_id = await admin_client(local=False)
     configure(monkeypatch, owner, other_id)
@@ -30,15 +29,20 @@ async def test_happier_exchange_and_oidc_use_real_fpl_session(monkeypatch):
             "fpl_remote_web_origin": "https://test",
             "fpl_happier_origin": "https://happier.test",
             "fpl_happier_admin_user_id": owner,
-            "fpl_happier_oidc_client_secret": "test-client-secret-00000000000000",
         }
     )
     happier = Happier(settings, SessionLocal, read_cloud_settings=get_settings)
     monkeypatch.setattr(app.state, "happier", happier)
     ingress = happier.ingress()
 
+    policy = "plaintext_only"
+
     async def upstream(request):
         assert BROWSER_COOKIE not in request.headers.get("cookie", "")
+        if request.url.path == "/v1/features":
+            return httpx.Response(
+                200, json={"capabilities": {"encryption": {"storagePolicy": policy}}}
+            )
         return httpx.Response(200, stream=RelayPage(), headers={"Content-Type": "text/html"})
 
     await ingress.client.aclose()
@@ -48,10 +52,12 @@ async def test_happier_exchange_and_oidc_use_real_fpl_session(monkeypatch):
         aclosing(other),
         ingress.client,
         httpx.AsyncClient(
-            transport=httpx.ASGITransport(ingress), base_url=happier.identity.origin
+            transport=httpx.ASGITransport(ingress), base_url=happier.access.origin
         ) as browser,
     ):
         launch = CLOUD + "/happier/launch"
+        assert (await admin.get("/v1/agent-workbench/sessions")).status_code == 404
+        assert (await admin.post("/v1/agent-workbench/chats", json={})).status_code == 404
         assert (await browser.get("/")).status_code == 403
         assert (await admin.post(launch)).status_code == 403
         await unlock(admin)
@@ -66,6 +72,11 @@ async def test_happier_exchange_and_oidc_use_real_fpl_session(monkeypatch):
         form = {"ticket": value["ticket"]}
         assert (await browser.post(value["exchange_url"], data=form)).status_code == 403
         browser.headers["Origin"] = "https://test"
+        assert (await browser.post(value["exchange_url"], data=form)).status_code == 503
+        assert (await browser.get("/")).status_code == 403
+        policy = "required_e2ee"
+        value = (await admin.post(launch)).json()
+        form = {"ticket": value["ticket"]}
         exchange = await browser.post(value["exchange_url"], data=form)
         assert exchange.status_code == 204
         assert exchange.headers["access-control-allow-origin"] == "https://test"
@@ -78,59 +89,48 @@ async def test_happier_exchange_and_oidc_use_real_fpl_session(monkeypatch):
         assert page.headers["cache-control"] == "no-store"
         assert (await browser.post("/v1/updates?transport=polling")).status_code == 403
 
-        discovery = (
-            await browser.get(happier.identity.issuer + "/.well-known/openid-configuration")
-        ).json()
-        verifier = "p" * 64
-        challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest())
-        authorize = {
-            "client_id": CLIENT_ID,
-            "response_type": "code",
-            "scope": "openid",
-            "redirect_uri": happier.identity.callback,
-            "state": "s" * 550,
-            "nonce": "test-nonce",
-            "code_challenge_method": "S256",
-            "code_challenge": challenge.rstrip(b"=").decode(),
-        }
-        invalid = await browser.get(
-            discovery["authorization_endpoint"],
-            params={**authorize, "redirect_uri": "https://evil.test"},
-        )
-        assert invalid.status_code == 400
-        callback = await browser.get(discovery["authorization_endpoint"], params=authorize)
-        assert callback.status_code == 302
-        query = parse_qs(urlsplit(callback.headers["location"]).query)
-        assert query["state"] == [authorize["state"]]
-        token_data = {
-            "grant_type": "authorization_code",
-            "redirect_uri": happier.identity.callback,
-            "code": query["code"][0],
-            "code_verifier": verifier,
-        }
-        token = discovery["token_endpoint"]
-        assert (await browser.post(token, data=token_data)).status_code == 401
-        auth = (CLIENT_ID, settings.fpl_happier_oidc_client_secret)
-        result = await browser.post(token, data=token_data, auth=auth)
-        assert result.status_code == 200, result.text
-        jwks = (await browser.get(discovery["jwks_uri"])).json()
-        claims = jwt.decode(
-            result.json()["id_token"],
-            jwt.PyJWK.from_dict(jwks["keys"][0]),
-            algorithms=["RS256"],
-            audience=CLIENT_ID,
-            issuer=happier.identity.issuer,
-        )
-        assert claims["sub"] == owner and claims["nonce"] == "test-nonce"
-        assert (await browser.post(token, data=token_data, auth=auth)).status_code == 400
-        with monkeypatch.context() as policy:
-            policy.setattr(get_settings(), "fpl_cloud_control_admin_user_ids", "")
-            assert (await browser.get("/")).status_code == 403
-        with monkeypatch.context() as time:
-            time.setattr(happier.identity, "clock", lambda: claims["exp"] + 3600)
-            assert (await browser.get("/")).status_code == 403
-        assert (await admin.post("/v1/auth/logout")).status_code == 204
+        assert await close_after_revocation(ingress, browser, admin, monkeypatch, end_grant) == 1008
         assert (await browser.get("/")).status_code == 403
-        assert (
-            await browser.get(discovery["authorization_endpoint"], params=authorize)
-        ).status_code == 403
+
+
+async def close_after_revocation(ingress, browser, admin, monkeypatch, end_grant):
+    class RelaySocket:
+        async def __aiter__(self):
+            yield "initial relay frame"
+            await asyncio.Future()
+
+    @asynccontextmanager
+    async def connect(*_args, **_kwargs):
+        yield RelaySocket()
+
+    monkeypatch.setattr(happier_ingress, "connect", connect)
+    incoming, outgoing = asyncio.Queue(), asyncio.Queue()
+    await incoming.put({"type": "websocket.connect"})
+    cookie = BROWSER_COOKIE + "=" + browser.cookies.get(BROWSER_COOKIE)
+    scope = {
+        "type": "websocket",
+        "scheme": "wss",
+        "path": "/v1/updates",
+        "query_string": b"transport=websocket",
+        "headers": [
+            (b"host", b"happier.test"),
+            (b"origin", b"https://happier.test"),
+            (b"cookie", cookie.encode()),
+        ],
+    }
+    task = asyncio.create_task(ingress(scope, incoming.get, outgoing.put))
+    try:
+        assert (await asyncio.wait_for(outgoing.get(), 3))["type"] == "websocket.accept"
+        assert (await asyncio.wait_for(outgoing.get(), 3))["text"] == "initial relay frame"
+        if end_grant == "logout":
+            assert (await admin.post("/v1/auth/logout")).status_code == 204
+        elif end_grant == "revoke":
+            monkeypatch.setattr(get_settings(), "fpl_cloud_control_admin_user_ids", "")
+        else:
+            monkeypatch.setattr(ingress.access, "clock", lambda: 10**12)
+        closed = await asyncio.wait_for(outgoing.get(), 4)
+        assert closed["type"] == "websocket.close"
+        return closed["code"]
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)

@@ -19,7 +19,7 @@ const applicationLibraries = [
   [
     "agent-workbench",
     "Agent 工作台",
-    "阅读、绑定与持续同步本机编程会话，核对来源与附件权限。",
+    "使用 Happier 管理加密编程会话、Runner 配对和审批。",
   ],
   [
     "interview-assistant",

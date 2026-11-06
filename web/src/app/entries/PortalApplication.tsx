@@ -5,7 +5,6 @@ import { useStudioSession } from "@app/StudioSession";
 import { HomePage } from "@features/home/HomePage";
 import { ApplicationCenterRoute } from "@features/applications/ApplicationCenterRoute";
 import { APPLICATION_DEFINITIONS } from "@features/applications/definitions";
-import { AGENT_WORKBENCH_MODULE as workbench } from "@features/agent-workbench/module";
 import { CloudControlPage } from "@features/cloud-control/CloudControlPage";
 import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
 import { openAmadeus } from "@platform/assistant";
@@ -30,17 +29,7 @@ function PortalContents() {
     >
       <div className="portal-scroll">
         {/^\/cloud-control\/?$/.test(location.pathname) ? (
-          <CloudControlPage
-            owner={me.user.id}
-            onHistory={(id) => {
-              const path = workbench.pathFor("agent-workbench-session", id);
-              if (path) open(path);
-            }}
-            onSources={() => {
-              const path = workbench.pathFor("agent-workbench-sources");
-              if (path) open(path);
-            }}
-          />
+          <CloudControlPage owner={me.user.id} desktopOnly />
         ) : /^\/apps\/?$/.test(location.pathname) ? (
           <ApplicationCenterRoute applications={applications} onOpen={open} />
         ) : (

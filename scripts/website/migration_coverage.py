@@ -7,7 +7,6 @@ from contextlib import closing
 from pathlib import Path
 from uuid import UUID
 
-from studio.apps.agent_workbench.migration_shapes import DATASETS as AGENTS
 from studio.apps.amadeus.storage.migration_history import DATASETS as AMADEUS
 from studio.apps.asset_library.storage.migration_records import DATASETS as ASSETS
 from studio.apps.audio_annotation.storage.migration_records import DATASETS as ANNOTATION
@@ -59,7 +58,6 @@ TRANSFER = {
             *MODELS,
             *MODEL_HISTORY,
             *PRESENTATION,
-            *AGENTS,
             *AMADEUS,
             *INTEGRATIONS,
             *CREATIVE,
@@ -85,7 +83,6 @@ TRANSFER = {
 
 
 REBUILDS = {
-    "agent_workbench_search": "agents.search",
     "thought_document_references": "thought.document-relationships",
     "thought_note_assets": "thought.document-relationships",
     "thought_history_assets": "thought.document-relationships",
@@ -267,6 +264,8 @@ def coverage(snapshot, catalog, owner_ids):
                     if journal["unfinished_records"] or journal["owner_or_path_conflicts"]
                     else "retained_for_rollback"
                 )
+            elif derived.get(name, owners.get(name)) == "agents":
+                status = "retained_for_rollback"
             elif name in TRANSFER:
                 status = "dataset_registered"
             elif name in REBUILDS:
@@ -283,6 +282,8 @@ def coverage(snapshot, catalog, owner_ids):
                 "record_count": count,
                 "status": status,
             }
+            if item["service"] == "agents":
+                item["retained_in"] = "sealed_snapshot"
             if name in TRANSFER:
                 item["dataset"] = TRANSFER[name]
             if name in REBUILDS:

@@ -1825,97 +1825,6 @@
         "title": "ActionOut",
         "type": "object"
       },
-      "ActivityDetails": {
-        "properties": {
-          "answers": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Answers",
-            "type": "array"
-          },
-          "duration_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Duration Ms"
-          },
-          "file": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ActivityFile"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "kind": {
-            "enum": [
-              "file",
-              "search",
-              "web",
-              "question",
-              "command",
-              "duration"
-            ],
-            "title": "Kind",
-            "type": "string"
-          },
-          "label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label"
-          },
-          "questions": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Questions",
-            "type": "array"
-          }
-        },
-        "required": [
-          "kind"
-        ],
-        "title": "ActivityDetails",
-        "type": "object"
-      },
-      "ActivityFile": {
-        "properties": {
-          "line": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Line"
-          },
-          "path": {
-            "title": "Path",
-            "type": "string"
-          }
-        },
-        "required": [
-          "path"
-        ],
-        "title": "ActivityFile",
-        "type": "object"
-      },
       "AddClipOperation": {
         "properties": {
           "clip": {
@@ -1968,41 +1877,6 @@
           "transition"
         ],
         "title": "AddTransitionOperation",
-        "type": "object"
-      },
-      "AgentChoice": {
-        "properties": {
-          "available": {
-            "title": "Available",
-            "type": "boolean"
-          },
-          "id": {
-            "enum": [
-              "codex",
-              "claude-code",
-              "opencode",
-              "dsh",
-              "pi"
-            ],
-            "title": "Id",
-            "type": "string"
-          },
-          "label": {
-            "title": "Label",
-            "type": "string"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "available",
-          "status"
-        ],
-        "title": "AgentChoice",
         "type": "object"
       },
       "AgentOut": {
@@ -2465,79 +2339,6 @@
           }
         },
         "title": "ApplicationState",
-        "type": "object"
-      },
-      "ApprovalDecision": {
-        "additionalProperties": false,
-        "properties": {
-          "approved": {
-            "title": "Approved",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "approved"
-        ],
-        "title": "ApprovalDecision",
-        "type": "object"
-      },
-      "ApprovalOut": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "kind": {
-            "enum": [
-              "write",
-              "command"
-            ],
-            "title": "Kind",
-            "type": "string"
-          },
-          "offset": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Offset"
-          },
-          "preview": {
-            "title": "Preview",
-            "type": "string"
-          },
-          "sequence": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sequence"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "kind",
-          "title",
-          "preview",
-          "status"
-        ],
-        "title": "ApprovalOut",
         "type": "object"
       },
       "ArticleBindingInput": {
@@ -5655,157 +5456,6 @@
         "title": "ChangeSummary",
         "type": "object"
       },
-      "ChatCreate": {
-        "additionalProperties": false,
-        "properties": {
-          "agent_id": {
-            "enum": [
-              "codex",
-              "claude-code",
-              "opencode",
-              "dsh",
-              "pi"
-            ],
-            "title": "Agent Id",
-            "type": "string"
-          },
-          "project_id": {
-            "maxLength": 80,
-            "minLength": 1,
-            "title": "Project Id",
-            "type": "string"
-          }
-        },
-        "required": [
-          "project_id",
-          "agent_id"
-        ],
-        "title": "ChatCreate",
-        "type": "object"
-      },
-      "ChatDetail": {
-        "properties": {
-          "agent_id": {
-            "enum": [
-              "codex",
-              "claude-code",
-              "opencode",
-              "dsh",
-              "pi"
-            ],
-            "title": "Agent Id",
-            "type": "string"
-          },
-          "created_at": {
-            "title": "Created At",
-            "type": "integer"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "project_id": {
-            "title": "Project Id",
-            "type": "string"
-          },
-          "project_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Label"
-          },
-          "queue": {
-            "items": {
-              "$ref": "#/components/schemas/QueuedTurn"
-            },
-            "title": "Queue",
-            "type": "array"
-          },
-          "queue_paused": {
-            "default": false,
-            "title": "Queue Paused",
-            "type": "boolean"
-          },
-          "steerable_turn_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Steerable Turn Id"
-          },
-          "turns": {
-            "items": {
-              "$ref": "#/components/schemas/TurnOut"
-            },
-            "title": "Turns",
-            "type": "array"
-          }
-        },
-        "required": [
-          "id",
-          "project_id",
-          "agent_id",
-          "created_at",
-          "turns"
-        ],
-        "title": "ChatDetail",
-        "type": "object"
-      },
-      "ChatOut": {
-        "properties": {
-          "agent_id": {
-            "enum": [
-              "codex",
-              "claude-code",
-              "opencode",
-              "dsh",
-              "pi"
-            ],
-            "title": "Agent Id",
-            "type": "string"
-          },
-          "created_at": {
-            "title": "Created At",
-            "type": "integer"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "project_id": {
-            "title": "Project Id",
-            "type": "string"
-          },
-          "project_label": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Project Label"
-          }
-        },
-        "required": [
-          "id",
-          "project_id",
-          "agent_id",
-          "created_at"
-        ],
-        "title": "ChatOut",
-        "type": "object"
-      },
       "CheckpointIn": {
         "additionalProperties": false,
         "properties": {
@@ -5983,6 +5633,16 @@
             "title": "Public Enabled",
             "type": "boolean"
           },
+          "remote_apps_enabled": {
+            "default": false,
+            "title": "Remote Apps Enabled",
+            "type": "boolean"
+          },
+          "remote_apps_host_ready": {
+            "default": false,
+            "title": "Remote Apps Host Ready",
+            "type": "boolean"
+          },
           "revision": {
             "title": "Revision",
             "type": "string"
@@ -6057,6 +5717,17 @@
             "title": "Happier Available",
             "type": "boolean"
           },
+          "happier_studio_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Happier Studio Url"
+          },
           "host_label": {
             "title": "Host Label",
             "type": "string"
@@ -6071,6 +5742,11 @@
           },
           "local": {
             "title": "Local",
+            "type": "boolean"
+          },
+          "remote_apps_enabled": {
+            "default": false,
+            "title": "Remote Apps Enabled",
             "type": "boolean"
           },
           "unlocked_until": {
@@ -7912,7 +7588,7 @@
             "items": {
               "$ref": "#/components/schemas/DeploymentServiceState"
             },
-            "maxItems": 23,
+            "maxItems": 22,
             "title": "Services",
             "type": "array"
           }
@@ -8405,57 +8081,6 @@
         "title": "DirectorToolOut",
         "type": "object"
       },
-      "DirectoryChoice": {
-        "properties": {
-          "label": {
-            "title": "Label",
-            "type": "string"
-          },
-          "root": {
-            "title": "Root",
-            "type": "string"
-          }
-        },
-        "required": [
-          "root",
-          "label"
-        ],
-        "title": "DirectoryChoice",
-        "type": "object"
-      },
-      "DirectoryListing": {
-        "properties": {
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/DirectoryChoice"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "parent": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parent"
-          },
-          "selectable": {
-            "title": "Selectable",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "parent",
-          "selectable",
-          "items"
-        ],
-        "title": "DirectoryListing",
-        "type": "object"
-      },
       "DocumentOut": {
         "properties": {
           "document": {
@@ -8641,54 +8266,6 @@
           }
         },
         "title": "EndpointStatus",
-        "type": "object"
-      },
-      "ExecutionCatalog": {
-        "properties": {
-          "agents": {
-            "items": {
-              "$ref": "#/components/schemas/AgentChoice"
-            },
-            "title": "Agents",
-            "type": "array"
-          },
-          "can_select_directory": {
-            "default": false,
-            "title": "Can Select Directory",
-            "type": "boolean"
-          },
-          "enabled": {
-            "title": "Enabled",
-            "type": "boolean"
-          },
-          "projects": {
-            "items": {
-              "$ref": "#/components/schemas/ProjectChoice"
-            },
-            "title": "Projects",
-            "type": "array"
-          },
-          "recent_projects": {
-            "items": {
-              "$ref": "#/components/schemas/RecentProject"
-            },
-            "title": "Recent Projects",
-            "type": "array"
-          },
-          "suggested_directories": {
-            "items": {
-              "$ref": "#/components/schemas/DirectoryChoice"
-            },
-            "title": "Suggested Directories",
-            "type": "array"
-          }
-        },
-        "required": [
-          "enabled",
-          "projects",
-          "agents"
-        ],
-        "title": "ExecutionCatalog",
         "type": "object"
       },
       "Experience": {
@@ -18901,128 +18478,6 @@
         "title": "HappierLaunch",
         "type": "object"
       },
-      "HistoryBlock": {
-        "properties": {
-          "call_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Call Id"
-          },
-          "details": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ActivityDetails"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "kind": {
-            "title": "Kind",
-            "type": "string"
-          },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Status"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          },
-          "tool_name": {
-            "default": "",
-            "title": "Tool Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "kind",
-          "text"
-        ],
-        "title": "HistoryBlock",
-        "type": "object"
-      },
-      "HistoryPresentation": {
-        "properties": {
-          "blocks": {
-            "items": {
-              "$ref": "#/components/schemas/HistoryBlock"
-            },
-            "title": "Blocks",
-            "type": "array"
-          },
-          "call_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Call Id"
-          },
-          "details": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ActivityDetails"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "message_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Message Id"
-          },
-          "status": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Status"
-          },
-          "turn_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Turn Id"
-          }
-        },
-        "title": "HistoryPresentation",
-        "type": "object"
-      },
       "IdlePreference": {
         "additionalProperties": false,
         "properties": {
@@ -19903,73 +19358,34 @@
         "title": "InputReference",
         "type": "object"
       },
-      "InstructionCreate": {
-        "additionalProperties": false,
+      "InstalledRemoteApps": {
         "properties": {
-          "request_id": {
-            "maxLength": 80,
-            "minLength": 1,
-            "title": "Request Id",
-            "type": "string"
+          "allowed_ids": {
+            "items": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            "title": "Allowed Ids",
+            "type": "array"
           },
-          "text": {
-            "maxLength": 16000,
-            "minLength": 1,
-            "pattern": "\\S",
-            "title": "Text",
+          "apps": {
+            "items": {
+              "$ref": "#/components/schemas/RemoteApp"
+            },
+            "title": "Apps",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
             "type": "string"
           }
         },
         "required": [
-          "request_id",
-          "text"
+          "apps",
+          "revision",
+          "allowed_ids"
         ],
-        "title": "InstructionCreate",
-        "type": "object"
-      },
-      "InstructionOut": {
-        "properties": {
-          "offset": {
-            "title": "Offset",
-            "type": "integer"
-          },
-          "request_id": {
-            "title": "Request Id",
-            "type": "string"
-          },
-          "sequence": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sequence"
-          },
-          "status": {
-            "enum": [
-              "sending",
-              "accepted",
-              "rejected",
-              "unknown"
-            ],
-            "title": "Status",
-            "type": "string"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "request_id",
-          "text",
-          "status",
-          "offset"
-        ],
-        "title": "InstructionOut",
+        "title": "InstalledRemoteApps",
         "type": "object"
       },
       "IntegrationCheckOut": {
@@ -28233,24 +27649,6 @@
         "title": "PresentationTransition",
         "type": "object"
       },
-      "ProjectChoice": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "label": {
-            "title": "Label",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "label"
-        ],
-        "title": "ProjectChoice",
-        "type": "object"
-      },
       "ProjectCreateIn": {
         "properties": {
           "aspect": {
@@ -28292,22 +27690,6 @@
           "title"
         ],
         "title": "ProjectCreateIn",
-        "type": "object"
-      },
-      "ProjectDirectory": {
-        "additionalProperties": false,
-        "properties": {
-          "root": {
-            "maxLength": 4096,
-            "minLength": 1,
-            "title": "Root",
-            "type": "string"
-          }
-        },
-        "required": [
-          "root"
-        ],
-        "title": "ProjectDirectory",
         "type": "object"
       },
       "ProjectFolderOpenOut": {
@@ -28988,24 +28370,6 @@
         "title": "QuestionOut",
         "type": "object"
       },
-      "QueuedTurn": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "prompt": {
-            "title": "Prompt",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "prompt"
-        ],
-        "title": "QueuedTurn",
-        "type": "object"
-      },
       "QuotaLimit": {
         "properties": {
           "realtime_voice": {
@@ -29383,29 +28747,6 @@
           "password"
         ],
         "title": "ReauthIn",
-        "type": "object"
-      },
-      "RecentProject": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "label": {
-            "title": "Label",
-            "type": "string"
-          },
-          "root": {
-            "title": "Root",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "label",
-          "root"
-        ],
-        "title": "RecentProject",
         "type": "object"
       },
       "RecordPage": {
@@ -29995,6 +29336,110 @@
           "expected_revision"
         ],
         "title": "RegistrationInvitePatch",
+        "type": "object"
+      },
+      "RemoteApp": {
+        "properties": {
+          "id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "recommended": {
+            "default": false,
+            "title": "Recommended",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "RemoteApp",
+        "type": "object"
+      },
+      "RemoteAppCatalog": {
+        "properties": {
+          "apps": {
+            "items": {
+              "$ref": "#/components/schemas/RemoteApp"
+            },
+            "title": "Apps",
+            "type": "array"
+          }
+        },
+        "required": [
+          "apps"
+        ],
+        "title": "RemoteAppCatalog",
+        "type": "object"
+      },
+      "RemoteAppConnect": {
+        "additionalProperties": false,
+        "properties": {
+          "app_id": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "App Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "app_id"
+        ],
+        "title": "RemoteAppConnect",
+        "type": "object"
+      },
+      "RemoteAppHandshake": {
+        "properties": {
+          "ice_servers": {
+            "items": {
+              "$ref": "#/components/schemas/RemoteAppIceServer"
+            },
+            "title": "Ice Servers",
+            "type": "array"
+          },
+          "ticket": {
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket",
+          "ice_servers"
+        ],
+        "title": "RemoteAppHandshake",
+        "type": "object"
+      },
+      "RemoteAppIceServer": {
+        "properties": {
+          "credential": {
+            "title": "Credential",
+            "type": "string"
+          },
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Urls",
+            "type": "array"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "urls",
+          "username",
+          "credential"
+        ],
+        "title": "RemoteAppIceServer",
         "type": "object"
       },
       "RemoveTrackOperation": {
@@ -30824,6 +30269,31 @@
         "title": "RuntimeQuotasOut",
         "type": "object"
       },
+      "SaveRemoteApps": {
+        "additionalProperties": false,
+        "properties": {
+          "app_ids": {
+            "items": {
+              "pattern": "^[a-f0-9]{64}$",
+              "type": "string"
+            },
+            "maxItems": 32,
+            "title": "App Ids",
+            "type": "array"
+          },
+          "revision": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Revision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "app_ids"
+        ],
+        "title": "SaveRemoteApps",
+        "type": "object"
+      },
       "SavedFilterIn": {
         "additionalProperties": false,
         "properties": {
@@ -31382,7 +30852,6 @@
           "management",
           "identity",
           "portal",
-          "agents",
           "remote",
           "visual",
           "thought",
@@ -32106,46 +31575,6 @@
           "field_id"
         ],
         "title": "Sort",
-        "type": "object"
-      },
-      "SourcePreview": {
-        "properties": {
-          "diff": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Diff"
-          },
-          "line": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Line"
-          },
-          "path": {
-            "title": "Path",
-            "type": "string"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "path",
-          "text"
-        ],
-        "title": "SourcePreview",
         "type": "object"
       },
       "Specification": {
@@ -36040,182 +35469,6 @@
           "sourceInUs"
         ],
         "title": "TrimClipOperation",
-        "type": "object"
-      },
-      "TurnActivity": {
-        "properties": {
-          "call_id": {
-            "title": "Call Id",
-            "type": "string"
-          },
-          "details": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/ActivityDetails"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "offset": {
-            "title": "Offset",
-            "type": "integer"
-          },
-          "sequence": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Sequence"
-          },
-          "source_available": {
-            "default": false,
-            "title": "Source Available",
-            "type": "boolean"
-          },
-          "status": {
-            "enum": [
-              "running",
-              "completed",
-              "failed",
-              "unknown"
-            ],
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "call_id",
-          "name",
-          "offset",
-          "status"
-        ],
-        "title": "TurnActivity",
-        "type": "object"
-      },
-      "TurnCreate": {
-        "additionalProperties": false,
-        "properties": {
-          "mode": {
-            "default": "immediate",
-            "enum": [
-              "immediate",
-              "queue"
-            ],
-            "title": "Mode",
-            "type": "string"
-          },
-          "request_id": {
-            "maxLength": 80,
-            "minLength": 1,
-            "title": "Request Id",
-            "type": "string"
-          },
-          "text": {
-            "maxLength": 16000,
-            "minLength": 1,
-            "pattern": "\\S",
-            "title": "Text",
-            "type": "string"
-          }
-        },
-        "required": [
-          "request_id",
-          "text"
-        ],
-        "title": "TurnCreate",
-        "type": "object"
-      },
-      "TurnOut": {
-        "properties": {
-          "activity": {
-            "items": {
-              "$ref": "#/components/schemas/TurnActivity"
-            },
-            "title": "Activity",
-            "type": "array"
-          },
-          "answer": {
-            "title": "Answer",
-            "type": "string"
-          },
-          "approvals": {
-            "items": {
-              "$ref": "#/components/schemas/ApprovalOut"
-            },
-            "title": "Approvals",
-            "type": "array"
-          },
-          "error": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Error"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "instructions": {
-            "items": {
-              "$ref": "#/components/schemas/InstructionOut"
-            },
-            "title": "Instructions",
-            "type": "array"
-          },
-          "position": {
-            "title": "Position",
-            "type": "integer"
-          },
-          "prompt": {
-            "title": "Prompt",
-            "type": "string"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "started_at": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Started At"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "position",
-          "prompt",
-          "answer",
-          "status",
-          "error",
-          "approvals",
-          "revision"
-        ],
-        "title": "TurnOut",
         "type": "object"
       },
       "UpdateClipOperation": {
@@ -42092,565 +41345,6 @@
         "title": "VisualWorkshopProjectPatchIn",
         "type": "object"
       },
-      "WorkbenchCandidate": {
-        "properties": {
-          "agent_id": {
-            "enum": [
-              "codex",
-              "claude-code",
-              "opencode",
-              "dsh",
-              "pi"
-            ],
-            "title": "Agent Id",
-            "type": "string"
-          },
-          "exists": {
-            "title": "Exists",
-            "type": "boolean"
-          },
-          "label": {
-            "title": "Label",
-            "type": "string"
-          },
-          "root": {
-            "title": "Root",
-            "type": "string"
-          }
-        },
-        "required": [
-          "agent_id",
-          "label",
-          "root",
-          "exists"
-        ],
-        "title": "WorkbenchCandidate",
-        "type": "object"
-      },
-      "WorkbenchEntryOut": {
-        "properties": {
-          "attachments": {
-            "items": {
-              "additionalProperties": true,
-              "type": "object"
-            },
-            "title": "Attachments",
-            "type": "array"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "kind": {
-            "title": "Kind",
-            "type": "string"
-          },
-          "native_id": {
-            "title": "Native Id",
-            "type": "string"
-          },
-          "ordinal": {
-            "title": "Ordinal",
-            "type": "integer"
-          },
-          "parent_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parent Id"
-          },
-          "presentation": {
-            "$ref": "#/components/schemas/HistoryPresentation"
-          },
-          "role": {
-            "title": "Role",
-            "type": "string"
-          },
-          "text": {
-            "title": "Text",
-            "type": "string"
-          },
-          "timestamp": {
-            "title": "Timestamp",
-            "type": "string"
-          },
-          "tool_name": {
-            "title": "Tool Name",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "native_id",
-          "ordinal",
-          "role",
-          "kind",
-          "text",
-          "timestamp",
-          "parent_id",
-          "tool_name",
-          "attachments"
-        ],
-        "title": "WorkbenchEntryOut",
-        "type": "object"
-      },
-      "WorkbenchHistory": {
-        "properties": {
-          "branches": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Branches",
-            "type": "array"
-          },
-          "change_cursor": {
-            "title": "Change Cursor",
-            "type": "integer"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/WorkbenchEntryOut"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
-          },
-          "next_cursor_native_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor Native Id"
-          },
-          "selected_branch": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Selected Branch"
-          }
-        },
-        "required": [
-          "items",
-          "next_cursor",
-          "change_cursor"
-        ],
-        "title": "WorkbenchHistory",
-        "type": "object"
-      },
-      "WorkbenchOperationOut": {
-        "properties": {
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          },
-          "source_id": {
-            "title": "Source Id",
-            "type": "string"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "source_id",
-          "status",
-          "message"
-        ],
-        "title": "WorkbenchOperationOut",
-        "type": "object"
-      },
-      "WorkbenchPreferences": {
-        "additionalProperties": false,
-        "properties": {
-          "alias": {
-            "anyOf": [
-              {
-                "maxLength": 120,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Alias"
-          },
-          "expected_revision": {
-            "minimum": 0.0,
-            "title": "Expected Revision",
-            "type": "integer"
-          },
-          "favorite": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Favorite"
-          }
-        },
-        "required": [
-          "expected_revision"
-        ],
-        "title": "WorkbenchPreferences",
-        "type": "object"
-      },
-      "WorkbenchSessionOut": {
-        "properties": {
-          "agent_id": {
-            "enum": [
-              "codex",
-              "claude-code",
-              "opencode",
-              "dsh",
-              "pi"
-            ],
-            "title": "Agent Id",
-            "type": "string"
-          },
-          "alias": {
-            "title": "Alias",
-            "type": "string"
-          },
-          "archived": {
-            "title": "Archived",
-            "type": "boolean"
-          },
-          "can_send": {
-            "const": false,
-            "default": false,
-            "title": "Can Send",
-            "type": "boolean"
-          },
-          "continuation_reason": {
-            "default": "当前支持查看与同步，继续对话待接入",
-            "title": "Continuation Reason",
-            "type": "string"
-          },
-          "cwd": {
-            "title": "Cwd",
-            "type": "string"
-          },
-          "evidence": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Evidence",
-            "type": "array"
-          },
-          "favorite": {
-            "title": "Favorite",
-            "type": "boolean"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "last_synced_at": {
-            "format": "date-time",
-            "title": "Last Synced At",
-            "type": "string"
-          },
-          "native_id": {
-            "title": "Native Id",
-            "type": "string"
-          },
-          "native_model": {
-            "title": "Native Model",
-            "type": "string"
-          },
-          "origins": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Origins",
-            "type": "array"
-          },
-          "parent_native_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Parent Native Id"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "source_errors": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Source Errors",
-            "type": "array"
-          },
-          "source_ids": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Source Ids",
-            "type": "array"
-          },
-          "title": {
-            "title": "Title",
-            "type": "string"
-          },
-          "updated_at": {
-            "title": "Updated At",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "agent_id",
-          "native_id",
-          "title",
-          "alias",
-          "favorite",
-          "revision",
-          "cwd",
-          "origins",
-          "evidence",
-          "native_model",
-          "parent_native_id",
-          "archived",
-          "updated_at",
-          "last_synced_at"
-        ],
-        "title": "WorkbenchSessionOut",
-        "type": "object"
-      },
-      "WorkbenchSessionPage": {
-        "properties": {
-          "change_cursor": {
-            "title": "Change Cursor",
-            "type": "integer"
-          },
-          "items": {
-            "items": {
-              "$ref": "#/components/schemas/WorkbenchSessionOut"
-            },
-            "title": "Items",
-            "type": "array"
-          },
-          "next_cursor": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Next Cursor"
-          }
-        },
-        "required": [
-          "items",
-          "next_cursor",
-          "change_cursor"
-        ],
-        "title": "WorkbenchSessionPage",
-        "type": "object"
-      },
-      "WorkbenchSourceCreate": {
-        "additionalProperties": false,
-        "properties": {
-          "agent_id": {
-            "enum": [
-              "codex",
-              "claude-code",
-              "opencode",
-              "dsh",
-              "pi"
-            ],
-            "title": "Agent Id",
-            "type": "string"
-          },
-          "endpoint": {
-            "default": "",
-            "maxLength": 255,
-            "title": "Endpoint",
-            "type": "string"
-          },
-          "label": {
-            "maxLength": 120,
-            "minLength": 1,
-            "title": "Label",
-            "type": "string"
-          },
-          "root": {
-            "default": "",
-            "maxLength": 4096,
-            "title": "Root",
-            "type": "string"
-          }
-        },
-        "required": [
-          "agent_id",
-          "label"
-        ],
-        "title": "WorkbenchSourceCreate",
-        "type": "object"
-      },
-      "WorkbenchSourceOut": {
-        "properties": {
-          "agent_id": {
-            "enum": [
-              "codex",
-              "claude-code",
-              "opencode",
-              "dsh",
-              "pi"
-            ],
-            "title": "Agent Id",
-            "type": "string"
-          },
-          "enabled": {
-            "title": "Enabled",
-            "type": "boolean"
-          },
-          "endpoint": {
-            "title": "Endpoint",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "label": {
-            "title": "Label",
-            "type": "string"
-          },
-          "last_synced_at": {
-            "anyOf": [
-              {
-                "format": "date-time",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Last Synced At"
-          },
-          "message": {
-            "title": "Message",
-            "type": "string"
-          },
-          "revision": {
-            "title": "Revision",
-            "type": "integer"
-          },
-          "root": {
-            "title": "Root",
-            "type": "string"
-          },
-          "status": {
-            "title": "Status",
-            "type": "string"
-          },
-          "sync_mode": {
-            "default": "log_follow",
-            "enum": [
-              "log_follow",
-              "native_events",
-              "api_poll"
-            ],
-            "title": "Sync Mode",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "agent_id",
-          "label",
-          "root",
-          "endpoint",
-          "enabled",
-          "revision",
-          "status",
-          "message",
-          "last_synced_at"
-        ],
-        "title": "WorkbenchSourceOut",
-        "type": "object"
-      },
-      "WorkbenchSourcePatch": {
-        "additionalProperties": false,
-        "properties": {
-          "enabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enabled"
-          },
-          "expected_revision": {
-            "minimum": 0.0,
-            "title": "Expected Revision",
-            "type": "integer"
-          },
-          "label": {
-            "anyOf": [
-              {
-                "maxLength": 120,
-                "minLength": 1,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Label"
-          }
-        },
-        "required": [
-          "expected_revision"
-        ],
-        "title": "WorkbenchSourcePatch",
-        "type": "object"
-      },
       "WorkflowNumericParameterOut": {
         "properties": {
           "default": {
@@ -43680,1561 +42374,6 @@
         "summary": "Delete Session",
         "tags": [
           "accounts"
-        ]
-      }
-    },
-    "/v1/agent-workbench/candidates": {
-      "get": {
-        "operationId": "list_candidates_v1_agent_workbench_candidates_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/WorkbenchCandidate"
-                  },
-                  "title": "Response List Candidates V1 Agent Workbench Candidates Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "List Candidates",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats": {
-      "get": {
-        "operationId": "list_chats_v1_agent_workbench_chats_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/ChatOut"
-                  },
-                  "title": "Response List Chats V1 Agent Workbench Chats Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "List Chats",
-        "tags": [
-          "agent-workbench"
-        ]
-      },
-      "post": {
-        "operationId": "create_chat_v1_agent_workbench_chats_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ChatCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChatOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create Chat",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats/{chat_id}": {
-      "get": {
-        "operationId": "detail_v1_agent_workbench_chats__chat_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "chat_id",
-            "required": true,
-            "schema": {
-              "title": "Chat Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ChatDetail"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Detail",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats/{chat_id}/events": {
-      "get": {
-        "operationId": "stream_v1_agent_workbench_chats__chat_id__events_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "chat_id",
-            "required": true,
-            "schema": {
-              "title": "Chat Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Stream",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats/{chat_id}/queue/resume": {
-      "post": {
-        "operationId": "resume_queue_v1_agent_workbench_chats__chat_id__queue_resume_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "chat_id",
-            "required": true,
-            "schema": {
-              "title": "Chat Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Resume Queue",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats/{chat_id}/queue/{turn_id}": {
-      "delete": {
-        "operationId": "remove_queued_v1_agent_workbench_chats__chat_id__queue__turn_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "chat_id",
-            "required": true,
-            "schema": {
-              "title": "Chat Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "turn_id",
-            "required": true,
-            "schema": {
-              "title": "Turn Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Remove Queued",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats/{chat_id}/turns": {
-      "post": {
-        "operationId": "send_turn_v1_agent_workbench_chats__chat_id__turns_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "chat_id",
-            "required": true,
-            "schema": {
-              "title": "Chat Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/TurnCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "202": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TurnOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Send Turn",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/approvals/{approval_id}": {
-      "post": {
-        "operationId": "decide_v1_agent_workbench_chats__chat_id__turns__turn_id__approvals__approval_id__post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "chat_id",
-            "required": true,
-            "schema": {
-              "title": "Chat Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "turn_id",
-            "required": true,
-            "schema": {
-              "title": "Turn Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "approval_id",
-            "required": true,
-            "schema": {
-              "title": "Approval Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ApprovalDecision"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Decide",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/instructions": {
-      "post": {
-        "operationId": "insert_instruction_v1_agent_workbench_chats__chat_id__turns__turn_id__instructions_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "chat_id",
-            "required": true,
-            "schema": {
-              "title": "Chat Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "turn_id",
-            "required": true,
-            "schema": {
-              "title": "Turn Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/InstructionCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/InstructionOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Insert Instruction",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/source": {
-      "get": {
-        "operationId": "preview_source_v1_agent_workbench_chats__chat_id__turns__turn_id__source_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "chat_id",
-            "required": true,
-            "schema": {
-              "title": "Chat Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "turn_id",
-            "required": true,
-            "schema": {
-              "title": "Turn Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "call_id",
-            "required": true,
-            "schema": {
-              "maxLength": 255,
-              "minLength": 1,
-              "title": "Call Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SourcePreview"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Preview Source",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/stop": {
-      "post": {
-        "operationId": "stop_v1_agent_workbench_chats__chat_id__turns__turn_id__stop_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "chat_id",
-            "required": true,
-            "schema": {
-              "title": "Chat Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "turn_id",
-            "required": true,
-            "schema": {
-              "title": "Turn Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Stop",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/events": {
-      "get": {
-        "operationId": "events_v1_agent_workbench_events_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "after",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "After",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "properties": {
-                    "kind": {
-                      "enum": [
-                        "source",
-                        "session",
-                        "reset",
-                        "ready",
-                        "auth_expired"
-                      ],
-                      "title": "Kind",
-                      "type": "string"
-                    },
-                    "sequence": {
-                      "title": "Sequence",
-                      "type": "integer"
-                    },
-                    "session_id": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "title": "Session Id"
-                    }
-                  },
-                  "required": [
-                    "sequence",
-                    "kind"
-                  ],
-                  "title": "WorkbenchEvent",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Events",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/execution/catalog": {
-      "get": {
-        "operationId": "catalog_v1_agent_workbench_execution_catalog_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ExecutionCatalog"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Catalog",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/execution/directories": {
-      "get": {
-        "operationId": "directories_v1_agent_workbench_execution_directories_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "parent",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maxLength": 4096,
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Parent"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DirectoryListing"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Directories",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/execution/projects": {
-      "post": {
-        "operationId": "register_project_v1_agent_workbench_execution_projects_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ProjectDirectory"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectChoice"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Register Project",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/operations/{operation_id}": {
-      "get": {
-        "operationId": "get_operation_v1_agent_workbench_operations__operation_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "operation_id",
-            "required": true,
-            "schema": {
-              "title": "Operation Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkbenchOperationOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Operation",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sessions": {
-      "get": {
-        "operationId": "list_sessions_v1_agent_workbench_sessions_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "q",
-            "required": false,
-            "schema": {
-              "default": "",
-              "maxLength": 200,
-              "title": "Q",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "agent_id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Agent Id"
-            }
-          },
-          {
-            "in": "query",
-            "name": "origin",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Origin"
-            }
-          },
-          {
-            "in": "query",
-            "name": "project",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Project"
-            }
-          },
-          {
-            "in": "query",
-            "name": "archived",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Archived"
-            }
-          },
-          {
-            "in": "query",
-            "name": "favorite",
-            "required": false,
-            "schema": {
-              "default": false,
-              "title": "Favorite",
-              "type": "boolean"
-            }
-          },
-          {
-            "in": "query",
-            "name": "cursor",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maxLength": 1000,
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Cursor"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkbenchSessionPage"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "List Sessions",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sessions/{session_id}": {
-      "get": {
-        "operationId": "get_session_v1_agent_workbench_sessions__session_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkbenchSessionOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Session",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sessions/{session_id}/attachments/{attachment_id}": {
-      "get": {
-        "operationId": "get_attachment_v1_agent_workbench_sessions__session_id__attachments__attachment_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "path",
-            "name": "attachment_id",
-            "required": true,
-            "schema": {
-              "title": "Attachment Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Attachment",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sessions/{session_id}/copy": {
-      "delete": {
-        "operationId": "clear_copy_v1_agent_workbench_sessions__session_id__copy_delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "expected_revision",
-            "required": true,
-            "schema": {
-              "minimum": 0,
-              "title": "Expected Revision",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Clear Copy",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sessions/{session_id}/events": {
-      "get": {
-        "operationId": "session_events_v1_agent_workbench_sessions__session_id__events_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "after",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "After",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "text/event-stream": {
-                "schema": {
-                  "properties": {
-                    "kind": {
-                      "enum": [
-                        "source",
-                        "session",
-                        "reset",
-                        "ready",
-                        "auth_expired"
-                      ],
-                      "title": "Kind",
-                      "type": "string"
-                    },
-                    "sequence": {
-                      "title": "Sequence",
-                      "type": "integer"
-                    },
-                    "session_id": {
-                      "anyOf": [
-                        {
-                          "type": "string"
-                        },
-                        {
-                          "type": "null"
-                        }
-                      ],
-                      "title": "Session Id"
-                    }
-                  },
-                  "required": [
-                    "sequence",
-                    "kind"
-                  ],
-                  "title": "WorkbenchEvent",
-                  "type": "object"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Session Events",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sessions/{session_id}/history": {
-      "get": {
-        "operationId": "history_v1_agent_workbench_sessions__session_id__history_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "before",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Before"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 100,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "branch",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Branch"
-            }
-          },
-          {
-            "in": "query",
-            "name": "before_native_id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maxLength": 255,
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Before Native Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkbenchHistory"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "History",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sessions/{session_id}/preferences": {
-      "patch": {
-        "operationId": "patch_preferences_v1_agent_workbench_sessions__session_id__preferences_patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkbenchPreferences"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkbenchSessionOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Patch Preferences",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sessions/{session_id}/source": {
-      "get": {
-        "operationId": "history_file_v1_agent_workbench_sessions__session_id__source_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "session_id",
-            "required": true,
-            "schema": {
-              "title": "Session Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "path",
-            "required": true,
-            "schema": {
-              "maxLength": 4096,
-              "minLength": 1,
-              "title": "Path",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "line",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 2147483647,
-                  "minimum": 1,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Line"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/SourcePreview"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "History File",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sources": {
-      "get": {
-        "operationId": "list_sources_v1_agent_workbench_sources_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/WorkbenchSourceOut"
-                  },
-                  "title": "Response List Sources V1 Agent Workbench Sources Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "List Sources",
-        "tags": [
-          "agent-workbench"
-        ]
-      },
-      "post": {
-        "operationId": "create_source_v1_agent_workbench_sources_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkbenchSourceCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkbenchSourceOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create Source",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sources/{source_id}": {
-      "delete": {
-        "operationId": "unbind_source_v1_agent_workbench_sources__source_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "source_id",
-            "required": true,
-            "schema": {
-              "title": "Source Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "expected_revision",
-            "required": true,
-            "schema": {
-              "minimum": 0,
-              "title": "Expected Revision",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Unbind Source",
-        "tags": [
-          "agent-workbench"
-        ]
-      },
-      "patch": {
-        "operationId": "patch_source_v1_agent_workbench_sources__source_id__patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "source_id",
-            "required": true,
-            "schema": {
-              "title": "Source Id",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/WorkbenchSourcePatch"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkbenchSourceOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Patch Source",
-        "tags": [
-          "agent-workbench"
-        ]
-      }
-    },
-    "/v1/agent-workbench/sources/{source_id}/scan": {
-      "post": {
-        "operationId": "scan_source_v1_agent_workbench_sources__source_id__scan_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "source_id",
-            "required": true,
-            "schema": {
-              "title": "Source Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "202": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WorkbenchOperationOut"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Scan Source",
-        "tags": [
-          "agent-workbench"
         ]
       }
     },
@@ -48050,6 +45189,128 @@
         "summary": "Service Status",
         "tags": [
           "automation"
+        ]
+      }
+    },
+    "/v1/cloud-control/apps": {
+      "get": {
+        "operationId": "list_apps_v1_cloud_control_apps_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoteAppCatalog"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Apps",
+        "tags": [
+          "cloud-control"
+        ]
+      },
+      "put": {
+        "operationId": "save_apps_v1_cloud_control_apps_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRemoteApps"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstalledRemoteApps"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Apps",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
+    "/v1/cloud-control/apps/connect": {
+      "post": {
+        "operationId": "connect_v1_cloud_control_apps_connect_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoteAppConnect"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemoteAppHandshake"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Connect",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
+    "/v1/cloud-control/apps/installed": {
+      "get": {
+        "operationId": "installed_v1_cloud_control_apps_installed_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstalledRemoteApps"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Installed",
+        "tags": [
+          "cloud-control"
         ]
       }
     },

@@ -120,12 +120,16 @@ class Settings(BaseSettings):
     fpl_cloud_control_vnc_host: str = "host.docker.internal"
     fpl_cloud_control_vnc_port: int = Field(default=5900, ge=1, le=65535)
     fpl_cloud_control_vnc_password: str = Field(default="", repr=False)
+    fpl_cloud_control_apps_enabled: bool = False
+    fpl_cloud_control_apps_host: str = ""
+    fpl_cloud_control_apps_allowed: str = ""
+    fpl_cloud_control_apps_turn_urls: str = ""
+    fpl_cloud_control_apps_turn_secret: str = Field(default="", repr=False)
     fpl_cloud_control_projects: dict[str, CloudProject] = Field(default_factory=dict)
     fpl_happier_admin_user_id: str = ""
     fpl_happier_origin: str = ""
     fpl_happier_listen_port: int = Field(default=28082, ge=1024, le=65535)
     fpl_happier_relay_port: int = Field(default=3005, ge=1024, le=65535)
-    fpl_happier_oidc_client_secret: str = Field(default="", repr=False)
     fpl_code_agents_codex_enabled: bool | None = None
     fpl_code_agents_codex_executable: str = ""
     fpl_code_agents_claude_enabled: bool | None = None
@@ -199,7 +203,6 @@ class Settings(BaseSettings):
                 or any(char.isspace() for char in happier.netloc)
                 or happier.hostname == urlsplit(self.fpl_remote_web_origin).hostname
                 or not self.fpl_happier_admin_user_id
-                or len(self.fpl_happier_oidc_client_secret) < 32
                 or self.fpl_happier_listen_port
                 in {
                     self.fpl_website_port,
@@ -207,7 +210,7 @@ class Settings(BaseSettings):
                     self.fpl_happier_relay_port,
                 }
             ):
-                raise ValueError("Happier 需要独立 HTTPS 来源、管理员、OIDC 密钥和独立监听端口")
+                raise ValueError("Happier 需要独立 HTTPS 来源、指定管理员和独立监听端口")
         try:
             Fernet(self.fpl_secrets_key.encode("ascii"))
         except Exception as exc:

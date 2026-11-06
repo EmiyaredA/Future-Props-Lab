@@ -46,7 +46,6 @@ STEPS = (
     ("visual_history", named_pairs("visual", "assets")),
     ("galgame_history", named_pairs("galgame", "assets")),
     ("interview", pair("interview")),
-    ("agents_history", pair("agents")),
     ("amadeus_history", pair("amadeus")),
     ("tools_navigation", pair("tools")),
     ("remote_preferences", pair("remote")),

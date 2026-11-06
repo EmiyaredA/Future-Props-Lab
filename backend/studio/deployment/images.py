@@ -103,7 +103,6 @@ ENTRY_POINTS = {
     "assets": "studio.assembly.independent.asset_library.cli",
     "management": "studio.assembly.independent.management.cli",
     "identity": "studio.assembly.independent.identity.cli",
-    "agents": "studio.assembly.independent.agent_workbench.cli",
     "gateway": "studio.assembly.independent.gateway.cli",
     "portal": "studio.assembly.independent.portal.cli",
 }
@@ -120,20 +119,6 @@ FORBIDDEN_IDENTITY = (
     "app.capabilities.agents",
     "studio.assembly.website.account_provisioning",
 )
-
-FORBIDDEN_AGENTS = (
-    "studio.assembly.website.application",
-    "studio.assembly.website.routes",
-    "studio.assembly.website.models",
-    "studio.apps.model_service",
-    "app.console.models",
-    "studio.assembly.http_dependencies",
-    "studio.host",
-    "studio.host.session_collection.catalog",
-    "studio.host.session_collection.parsers",
-    "studio.apps.agent_workbench.sync.runner",
-)
-
 
 def module_file(root, name):
     path = root / "backend" / name.replace(".", "/")
@@ -195,10 +180,6 @@ def source_closure(root: Path, service):
                 name == prefix or name.startswith(prefix + ".") for prefix in FORBIDDEN_IDENTITY
             ):
                 raise ValueError(f"Identity 镜像包含越界依赖：{name}")
-            if service == "agents" and any(
-                name == prefix or name.startswith(prefix + ".") for prefix in FORBIDDEN_AGENTS
-            ):
-                raise ValueError(f"Agents 镜像包含越界依赖：{name}")
             if (
                 service == "assets"
                 and name
@@ -752,7 +733,6 @@ def prepare_image(root: Path, service: str, *, web_release=None):
                 payloads[path.relative_to(root).as_posix()] = path.read_bytes()
     web_build = None
     if service in {
-        "agents",
         "portal",
         "assets",
         "management",

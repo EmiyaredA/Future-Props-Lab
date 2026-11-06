@@ -88,7 +88,7 @@
             "items": {
               "$ref": "#/components/schemas/DeploymentServiceState"
             },
-            "maxItems": 23,
+            "maxItems": 22,
             "title": "Services",
             "type": "array"
           }
@@ -283,7 +283,6 @@
           "management",
           "identity",
           "portal",
-          "agents",
           "remote",
           "visual",
           "thought",

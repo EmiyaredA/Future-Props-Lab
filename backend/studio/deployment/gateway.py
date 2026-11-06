@@ -179,17 +179,6 @@ def render_gateway(
                     "    uri @management_api strip_prefix /management",
                 ]
             )
-        lines.extend(
-            [
-                "    @old_agents path /apps/agent-workbench /apps/agent-workbench/*",
-                "    handle @old_agents {",
-                "      route {",
-                "        uri strip_prefix /apps/agent-workbench",
-                "        redir * /agents{uri} 308",
-                "      }",
-                "    }",
-            ]
-        )
         if audience == "studio":
             for index, operation in enumerate(catalog.websockets):
                 name = f"{ingress}_socket_{index}"
@@ -342,7 +331,6 @@ def render_gateway(
         )
         for service, token in sorted(native_tokens.items()):
             if service not in {
-                "agents",
                 "agent-runtime",
                 "amadeus",
                 "management",

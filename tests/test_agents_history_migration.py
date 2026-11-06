@@ -1,21 +1,17 @@
-"""Replay an interrupted Workbench transfer, then verify ownership and the derived index."""
+"""Verify that a sealed website snapshot retains retired workbench data."""
 
 import json
 import sqlite3
 from contextlib import closing
 from uuid import uuid4
 
-import httpx
-from scripts.website.legacy_snapshot import digest
-from scripts.website.migrate_agents_history import verify_index
-from scripts.website.migration_transfer import pages, project_datasets, transfer
-from tests.test_tools_navigation_migration import available_ports, listener
+from cryptography.fernet import Fernet
+from scripts.website import legacy_snapshot
+from scripts.website.migration_coverage import inspect_bundle
+from tests.test_website_legacy_snapshot import REVISION, ROOT, configuration
 
 from db.migrations import apply_migrations
-from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
-from studio.assembly.independent.agent_workbench.maintenance import DATASETS, PREFIX
 from studio.contracts.management.migration_batches import MigrationPlan
-from studio.runtime.database.migrations import apply
 
 
 def seed(path, owner, other):
@@ -154,133 +150,47 @@ def seed(path, owner, other):
     return turn, queued, session
 
 
-def test_agents_history_preserves_owner_and_rebuilds_search_across_restarts(tmp_path):
+def test_retired_workbench_is_restored_from_the_sealed_website_snapshot(tmp_path):
+    runtime = tmp_path / ".runtime"
+    runtime.mkdir(mode=0o700)
+    source = runtime / legacy_snapshot.DATABASE
     owner, other = uuid4(), uuid4()
-    source_db = tmp_path / "legacy.sqlite"
-    turn_id, queued_id, session_id = seed(source_db, owner, other)
-    target = tmp_path / "agents"
-    apply(target / "service.db", "agents", MIGRATIONS)
+    turn_id, queued_id, session_id = seed(source, owner, other)
+    config = tmp_path / "backend/config.toml"
+    configuration(
+        config, database=source, key=Fernet.generate_key().decode(), port=19002, web=tmp_path
+    )
+
+    sealed = tmp_path / "sealed"
+    seal = legacy_snapshot.create(runtime, config, sealed, REVISION)
     plan = MigrationPlan(
         run_id=uuid4(),
-        source_revision="a" * 40,
-        source_database_sha256=digest(source_db),
+        source_revision=REVISION,
+        source_database_sha256=legacy_snapshot.digest(source),
         owner_ids=(owner, other),
         token="isolated-workbench-fixture-token-" * 2,
     )
-    plan_file = tmp_path / "plan.json"
-    plan_file.touch(mode=0o600)
-    plan_file.write_text(
-        json.dumps(
-            {
-                **plan.model_dump(mode="json", exclude={"token"}),
-                "token": plan.token.get_secret_value(),
-            }
-        )
+    catalog = json.loads((ROOT / "deploy/contracts/ownership.json").read_text())
+    report = inspect_bundle(
+        sealed, plan=plan, manifest_sha256=seal["manifest_sha256"], catalog=catalog
     )
-    headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
-    projects, chats, turns, sources, sessions, entries, checkpoints, operations, changes = (
-        project_datasets(PREFIX, DATASETS)
-    )
-    source_port, target_port = available_ports()
+    archived = {row["table"]: row for row in report["tables"] if row["service"] == "agents"}
+    assert archived["workbench_turns"]["record_count"] == 2
+    assert archived["agent_workbench_sessions"]["record_count"] == 1
+    assert {row["status"] for row in archived.values()} == {"retained_for_rollback"}
 
-    def open_source(client):
-        return listener(
-            client,
-            source_port,
-            "migration-export",
-            plan_file,
-            "--legacy-db",
-            source_db,
-            module="studio.assembly.independent.agent_workbench.cli",
-            prefix=projects.prefix,
-        )
-
-    def open_target(client):
-        return listener(
-            client,
-            target_port,
-            "migration-import",
-            plan_file,
-            "--state-root",
-            target,
-            module="studio.assembly.independent.agent_workbench.cli",
-            prefix=projects.prefix,
-        )
-
-    with httpx.Client(timeout=10, trust_env=False) as client, open_source(client) as source:
-        with open_target(client) as destination:
-            for dataset in (projects, chats, turns, sources, sessions):
-                assert transfer(client, plan, source, destination, dataset)["record_count"] >= 1
-            page = next(pages(client, source, headers, plan, owner, entries))
-            invalid = page.batch.model_copy(update={"owner_id": other, "batch_id": uuid4()})
-            denied = client.post(
-                destination + entries.prefix + "/batches",
-                headers={**headers, "X-Fpl-Migration-SHA256": invalid.digest},
-                json=invalid.model_dump(mode="json"),
-            )
-            assert (
-                denied.status_code == 409
-                and denied.json()["code"] == "migration_agents_owner_conflict"
-            )
-            assert transfer(client, plan, source, destination, entries)["record_count"] == 1
-            changed = page.batch.model_copy(
-                update={
-                    "records": (
-                        page.batch.records[0].model_copy(update={"text": "changed entry"}),
-                    ),
-                }
-            )
-            conflict = client.post(
-                destination + entries.prefix + "/batches",
-                headers={**headers, "X-Fpl-Migration-SHA256": changed.digest},
-                json=changed.model_dump(mode="json"),
-            )
-            assert (
-                conflict.status_code == 409
-                and conflict.json()["code"] == "migration_batch_conflict"
-            )
-
-        with open_target(client) as destination:
-            datasets = (
-                projects,
-                chats,
-                turns,
-                sources,
-                sessions,
-                entries,
-                checkpoints,
-                operations,
-                changes,
-            )
-            reports = [transfer(client, plan, source, destination, dataset) for dataset in datasets]
-            assert [report["record_count"] for report in reports] == [1, 1, 2, 1, 1, 1, 1, 1, 2]
-            assert [
-                transfer(client, plan, source, destination, dataset) for dataset in datasets
-            ] == reports
-            index = verify_index(client, plan, source, destination)
-            assert index["record_count"] == 1
-            moved = {
-                item.id: item
-                for page in pages(client, destination, headers, plan, owner, turns)
-                for item in page.batch.records
-            }
-            assert moved[turn_id].status == "interrupted"
-            assert moved[turn_id].approvals[0]["status"] == "unknown"
-            assert (
-                moved[queued_id].status == "queued" and moved[queued_id].queued_session_id is None
-            )
-            assert (
-                next(pages(client, destination, headers, plan, owner, chats))
-                .batch.records[0]
-                .queue_paused
-            )
-            assert (
-                next(pages(client, destination, headers, plan, owner, operations))
-                .batch.records[0]
-                .status
-                == "failed"
-            )
-            assert (
-                next(pages(client, destination, headers, plan, owner, sessions)).batch.records[0].id
-                == session_id
-            )
+    restored = tmp_path / "restored"
+    legacy_snapshot.restore(sealed, restored, REVISION, seal["manifest_sha256"])
+    database = restored / legacy_snapshot.RUNTIME / legacy_snapshot.DATABASE
+    assert legacy_snapshot.digest(database) == legacy_snapshot.digest(source)
+    with closing(sqlite3.connect(database.as_uri() + "?mode=ro", uri=True)) as db:
+        assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+        assert db.execute(
+            "SELECT owner_user_id, answer FROM workbench_turns WHERE id=?", (turn_id,)
+        ).fetchone() == (str(owner), "partial answer")
+        assert db.execute(
+            "SELECT status FROM workbench_turns WHERE id=?", (queued_id,)
+        ).fetchone() == ("queued",)
+        assert db.execute(
+            "SELECT owner_user_id, alias FROM agent_workbench_sessions WHERE id=?", (session_id,)
+        ).fetchone() == (str(owner), "Retained alias")

@@ -27,6 +27,11 @@ FIELDS = {
         "vnc_host": ("fpl_cloud_control_vnc_host", str),
         "vnc_port": ("fpl_cloud_control_vnc_port", int),
         "vnc_password": ("fpl_cloud_control_vnc_password", str),
+        "apps_enabled": ("fpl_cloud_control_apps_enabled", bool),
+        "apps_host": ("fpl_cloud_control_apps_host", str),
+        "apps_allowed": ("fpl_cloud_control_apps_allowed", list),
+        "apps_turn_urls": ("fpl_cloud_control_apps_turn_urls", list),
+        "apps_turn_secret": ("fpl_cloud_control_apps_turn_secret", str),
         "projects": ("fpl_cloud_control_projects", dict),
     },
     "code_agents": {
@@ -48,7 +53,6 @@ FIELDS = {
             "origin": str,
             "listen_port": int,
             "relay_port": int,
-            "oidc_client_secret": str,
         }.items()
     },
     "visual_acceptance": {
@@ -155,7 +159,7 @@ def flatten(document: dict) -> dict:
             ):
                 raise ConfigurationError(f"config.toml 的 {section}.{name} 类型错误")
             if kind is list:
-                separator = "," if name == "cors_origins" else os.pathsep
+                separator = "," if name in {"cors_origins", "apps_turn_urls"} else os.pathsep
                 if any(separator in item for item in value):
                     raise ConfigurationError(f"config.toml 的 {section}.{name} 含非法分隔符")
                 value = separator.join(value)

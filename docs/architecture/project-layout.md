@@ -59,7 +59,7 @@ backend/
 ```
 
 - 应用内部 `storage/models.py` 保存共用业务模型，`storage/service_models.py` 保存独立服务附加模型，`storage/migrations/` 保存独立迁移链；迁移 SQL、ID 与顺序不变。协议适配位于 `transport/`，兼容站路由为 `transport/website/`，其余按实际业务操作命名。音频标注保留其已抽取的 `rules/`、`use_cases/` 和 `ports.py`。
-- `assembly/independent/<应用名>/application.py` 构造服务，`cli.py` 提供启动/迁移命令，`maintenance.py` 提供存在该能力的回环维护装配。例如工作台通过 `python -m studio.assembly.independent.agent_workbench.cli` 启动；对外服务 ID 仍为 `agents`。
+- `assembly/independent/<应用名>/application.py` 构造服务，`cli.py` 提供启动/迁移命令，`maintenance.py` 提供存在该能力的回环维护装配。历史 Agents 服务的装配仅供归档版本参考。
 - `contracts/<所有者>/` 只保存可独立加载的数据形状、协议规则与固定权限；不导入业务实现、HTTP 框架或 ORM。账号权限清单在 `contracts/identity/route_permissions.py`，本地模型固定目录在 `config/local_models.json`。
 - `runtime/database/` 拥有数据库连接、迁移执行、通用 ORM 原语和迁移传输适配；`http/` 拥有身份断言、错误映射、请求限制及静态资源适配；`tasks/` 拥有轮询和租约队列机制；`files/` 与 `messaging/` 拥有受限文件和签名载荷机制。业务状态裁决仍由应用负责。
 - 所属应用的 `clients/` 可发布明确的跨进程客户端。镜像闭包只允许 `deployment/images.py` 显式登记的客户端模块及无副作用父包，继续逐个检查其依赖，不能因此带入该应用的存储或内部用例。
@@ -111,11 +111,9 @@ backend/
 
 ## Agent 工作台
 
-执行切片以已授权项目对象接收账号目录和 TOML 预设。在 SQLite 写事务外完成目录检查，事务内复核归属、项目绑定和轮次状态。执行存储模块统一推进轮次、审批收据与 revision，SSE 取出快照后释放数据库会话再发送。文件工具与命令沙箱共用 `runtime/safe_paths.py` 的安全遍历与路径原语。项目选择器由工作台持有样式和焦点交互。 独立 Agents 复用 transcript 读取、恢复和版本查询，目录绑定保存到自身数据库，浏览和注册路由在 Mac 项目执行就绪前返回 503。
+日常网站的云控页由 `web/src/features/cloud-control/` 嵌入 Happier 原生 Web。`studio/assembly/website/happier.py` 与 `happier_ingress.py` 在独立 HTTPS 来源管理浏览器授权并转发网页、API 和实时连接。Identity 的 `happier_access.py` 持有短期凭证与浏览器授权。Happier 原生账号、设备配对、会话加密和 CLI 生命周期由固定版本的上游实现提供。
 
-`capabilities/agents/cli/dialogue.py` 统一管理 CLI 分派、专用 profile、watchdog 和工具传输。工作台与 Amadeus 提供工具、事件回调及各自的运行上下文。Codex 对话就绪统一校验登录及隔离策略，模型目录的读取状态独立。
-
-`backend/studio/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/studio/host/session_collection/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权和执行授权独立。工作台的 `execution/` 拥有 FPL 创建的 CLI 会话、轮次、待执行队列、插入回执和项目审批。项目绑定、源码读取及后台轮次显式接收装配提供的配置读取器，在授权、写入及文件读取前后重新核对当前策略；目录与标签适配不回退全局配置。CLI 通信与 MCP 中继由 `capabilities/agents/cli/` 共用。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
+旧工作台的数据归属及迁移仍在 `studio/apps/agent_workbench/`。旧站启动、公开 API、独立 Compose 和 Gateway 均不装配此工作台。归档及回退使用原部署版本，详见 [Happier 部署与切换](../operations/happier.md)。
 
 ## 浏览器加载与图片派生
 
@@ -269,7 +267,6 @@ Galgame 剪辑交接由 `studio/apps/galgame_workshop/handoff_jobs.py`、`handof
 `transport/website/` 只保留网站特有执行协议。来源分配与原生跟随验证接收显式启用策略，
 共同的路由工厂接收两种入口各自的请求依赖，保持会话缓存及账号绑定，保留浏览器 Session 和云控权限限制。
 
-Agents 的 `execution_discovery.py` 拥有账号项目发现、登记和创建对话的 Mac 任务边界，`execution_native_http.py` 装配专用回环凭据与租约。`studio/contracts/agent_workbench/execution.py` 保存范围与结果契约。`studio/host/workbench_worker.py` 在受信 Mac 核对项目根与 CLI 签名。工作台的 `execution/turn_records.py` 保存兼容站和独立服务共用的轮次、回答、审批与收尾事务。`execution/transcripts.py` 统一账号读取与恢复；网站的 `execution/storage.py` 仅保留带本机项目授权的操作，不能复制共用读取和状态转换。 `execution/project_tools.py` 持有项目文件与命令工具，运行端提供实时授权和审批回调。
 
 `studio/host/deployment_preflight.py` 在主机启动或 `--check` 时，只读检查本次选中服务各自数据库的服务归属、迁移前缀与 checksum；仅管理端模式不要求未启动的业务服务。未知已配置服务及缺少状态目录时拒绝部署，不创建数据库或应用迁移。启动动作与管理 worker 在所有预检成功后才执行。
 
@@ -294,9 +291,8 @@ Remote 的 `backend/studio/apps/remote_desktop/` 拥有桌面偏好、短期连�
 
 兼容网站的 `assembly/website/happier.py` 装配云控启动凭证与 FPL 会话复核，`happier_ingress.py` 转发独立 HTTPS 浏览器入口和实时连接。单客户端 OIDC 规则归 Identity。 `deploy/happier.compose.yaml` 仅装配上游 Relay 与隔离 CLI Runner，`scripts/website/build_happier.py` 在固定上游 Web 构建中启用原生右侧栏默认值。
 
-Agents 的 `execution_http.py` 读取自有聊天记录并逐次复核 SSE 授权。共享的 `studio/apps/agent_workbench/execution/transcripts.py` 管理会话读回及中断状态。独立立即轮次由 `execution_turns.py` 协调租约，`use_cases/settle_turn.py` 通过 `storage/turn_settlement.py` 在一个短事务内核对账号、执行尝试及载荷并提交回执、轮次与队列暂停。`rules/turn_endings.py` 共用网站、独立执行与恢复的结束规则，迟到回执不覆盖已结束轮次；`studio/host/workbench_turn.py` 在 Mac 执行并提交回执，兼容站与独立服务共用 `turn_activity.py` 的活动投影。
 
-`studio/deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Agents、Gateway、Portal、Assets、Rendering、Management、Models、Integrations、Thought 和 Creative 各自保存依赖锁和镜像定义。Remote 单独使用 `deploy/images/remote/` 锁定 WebSocket 和图片转换依赖。Visual、Galgame、Tools、Director 与 Agent Runtime 共用 `deploy/images/owned-http/` 的依赖锁和镜像定义，镜像构建各自检查源码闭包。`deploy/compose.yaml` 装配基础服务。Mac 管理启动器通过 `studio/host/deployment/compose_selection.py` 按显式镜像和功能配置合并所有服务叠加清单。项目所有者和功能挂载按依赖顺序装配，Guacamole 随 Remote 进入业务启停组。Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。 `backend/studio/apps/tools/` 独立装配账号收藏和最近使用 API，使用自有数据与身份公钥。`deploy/tools.compose.yaml` 提供隔离启动，`web/src/app/entries/tools.tsx` 构建工具目录和两条深链接，`studio/apps/tools/host.py` 管理本机文件库目录任务与回执。`studio/host/tools_worker.py` 从专用回环入口领取有效租约，只在配置的 Assets 根目录下解析当前账号的文件库。视频下载依赖探测复用回环 worker，公开入口隐去可执行文件路径。`videos.py` 保存下载任务，`video_files.py` 核对字节摘要并保存交付回执，`video_library.py` 通过限定授权把文件流交给 Assets。Mac 下载中间文件由 `studio/host/tools_video.py` 管理。 `studio/contracts/management/migration_batches.py` 定义迁移运行计划、规范化摘要和账号回执；Tools 的 `navigation_migration.py` 拥有历史导航数据集，`migration_application.py` 装配独立回环维护入口。由 `scripts/website/migrate_tools_navigation.py` 传输并双向核验批次。
+`studio/deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Gateway、Portal、Assets、Rendering、Management、Models、Integrations、Thought 和 Creative 各自保存依赖锁和镜像定义。Remote 单独使用 `deploy/images/remote/` 锁定 WebSocket 和图片转换依赖。Visual、Galgame、Tools、Director 与 Agent Runtime 共用 `deploy/images/owned-http/` 的依赖锁和镜像定义，镜像构建各自检查源码闭包。`deploy/compose.yaml` 装配基础服务。Mac 管理启动器通过 `studio/host/deployment/compose_selection.py` 按显式镜像和功能配置合并所有服务叠加清单。项目所有者和功能挂载按依赖顺序装配，Guacamole 随 Remote 进入业务启停组。Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收。`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。 `backend/studio/apps/tools/` 独立装配账号收藏和最近使用 API，使用自有数据与身份公钥。`deploy/tools.compose.yaml` 提供隔离启动，`web/src/app/entries/tools.tsx` 构建工具目录和两条深链接，`studio/apps/tools/host.py` 管理本机文件库目录任务与回执。`studio/host/tools_worker.py` 从专用回环入口领取有效租约，只在配置的 Assets 根目录下解析当前账号的文件库。视频下载依赖探测复用回环 worker，公开入口隐去可执行文件路径。`videos.py` 保存下载任务，`video_files.py` 核对字节摘要并保存交付回执，`video_library.py` 通过限定授权把文件流交给 Assets。Mac 下载中间文件由 `studio/host/tools_video.py` 管理。 `studio/contracts/management/migration_batches.py` 定义迁移运行计划、规范化摘要和账号回执；Tools 的 `navigation_migration.py` 拥有历史导航数据集，`migration_application.py` 装配独立回环维护入口。由 `scripts/website/migrate_tools_navigation.py` 传输并双向核验批次。
 
 Galgame 的历史导出与导入由 `studio/apps/galgame_workshop/migration_application.py` 装配。旧 Story 当前索引与快照引用由源侧核对，Assets 校验已导入的文件回执后建立引用投影。批次编排与读回位于 `scripts/website/migrate_galgame_history.py`。
 
@@ -324,7 +320,7 @@ Visual 的 Canvas、工程与历史输出由 `studio/apps/visual_workshop/migrat
 
 Visual 助手的对话、消息和操作记录由 `studio/apps/visual_workshop/conversations.py` 查询。模型选项由 Models 提供账号投影，附件元数据由 Assets 按项目、对话、精确 ID 和保留引用核验。新建及删除对话与素材引用回执共用 Visual 数据事务。 `studio/apps/visual_workshop/migration_assistant.py` 逐条迁移历史对话、消息、附件和操作。Assets 在画布投影与原件摘要通过后恢复同工程的对话素材引用。 Visual 删除项目时由 `studio/apps/visual_workshop/project_deletion.py` 核对项目版本、画布和对话范围，提交删除与恢复回执。Assets 的 `visual_project_removal.py` 在确认回执后清除画布与对话引用、项目放置和私有原件，保留文件库原件。项目文件、放置和分段交接发布在 Assets 写事务中检查删除准备。 Visual 的素材节点与输出上传由 `studio/apps/visual_workshop/uploads.py` 准备画布引用，Assets 的 `visual_upload_stages.py` 流式验证长度与 SHA256，并在画布事务确认后发布原件和引用。GIF 检查版本与 MP4 同批发布；暂存失败和源回滚由 Assets 的日志与清理生命周期处理。
 
-`web/src/app/entries/` 拥有独立应用装配与导航，`agents.tsx` 不加载门户路由，`IndependentShell.tsx` 复用账号、主题和导航组件。`web/service.config.ts` 选择单一入口和所属程序素材，`web/scripts/build-service.mjs` 生成逐文件 SHA256、gzip／Brotli 及单服务契约清单；产物保存在被忽略的 `.local/service-web/`，镜像封装时核验清单。`scripts/website/web_contract.py` 仅读静态契约，不初始化数据库。Models 的 `models.tsx` 只装配模型目录、测试和日志，保留当前账号权限、未保存导航保护及跨应用跳转。程序版本摘要包含所属 HTTP／WebSocket 契约，防止契约变化复用旧缓存；其他服务的契约变化不改变本服务协议摘要。 Visual 的 `visual.tsx` 与 `VisualApplication.tsx` 装配项目、画布、素材和任务入口，复用 Visual 功能页面及权限分支。Visual 镜像在提供程序资源前比对已安装程序的 API 摘要。 Galgame 的 `galgame.tsx` 与 `GalgameApplication.tsx` 独立装配项目列表、总览、编辑及预演，保留账号权限和已保存 Story 的预演回退。
+`web/src/app/entries/` 拥有独立应用装配与导航，`IndependentShell.tsx` 复用账号、主题和导航组件。`web/service.config.ts` 选择单一入口和所属程序素材，`web/scripts/build-service.mjs` 生成逐文件 SHA256、gzip／Brotli 及单服务契约清单；产物保存在被忽略的 `.local/service-web/`，镜像封装时核验清单。`scripts/website/web_contract.py` 仅读静态契约，不初始化数据库。Models 的 `models.tsx` 只装配模型目录、测试和日志，保留当前账号权限、未保存导航保护及跨应用跳转。程序版本摘要包含所属 HTTP／WebSocket 契约，防止契约变化复用旧缓存；其他服务的契约变化不改变本服务协议摘要。 Visual 的 `visual.tsx` 与 `VisualApplication.tsx` 装配项目、画布、素材和任务入口，复用 Visual 功能页面及权限分支。Visual 镜像在提供程序资源前比对已安装程序的 API 摘要。 Galgame 的 `galgame.tsx` 与 `GalgameApplication.tsx` 独立装配项目列表、总览、编辑及预演，保留账号权限和已保存 Story 的预演回退。
 
 `shared/ui/NavigationProtection.tsx` 在每个独立应用内协调多个未保存保护，协议与 Hook 位于 `navigationGuards.ts` 和 `useUnsavedNavigation.tsx`。确认逐项进行，全部通过才继续；明确同意跨页面离开后不重复触发原生提示。`platform/api/applicationBuild.ts` 携带非鉴权的应用版本标记并广播本应用更新，`platform/programAsset.ts` 定位当前程序资源。共享登录通过显式回调清理应用自有临时状态。
 
@@ -481,7 +477,7 @@ Future-Props-Lab/
   `studio/contracts/tools/`。网站临时下载生命周期归 `apps/tools/video_downloads/local_jobs.py`，关闭时等待已接受任务；
   独立服务使用现有持久任务及回执。素材入库由 `assembly/website/video_library.py` 显式连接素材所有者，
   两种下载状态实现尚待后续统一端口，不因目录迁移视为完成。
-- `web/src/features/cloud-control/` 拥有云控两栏／三栏布局、远程画面与验证界面；文件阅读和命令展示仍由 `web/src/features/agent-workbench/` 拥有，通过显式阅读容器接入云控。Identity 的 `use_cases/cloud_unlock.py` 与 `storage/cloud_unlock.py` 负责按会话和用途授予云控权限；Remote Desktop 的 `use_cases/preferences.py` 与 `storage/preferences.py` 拥有空闲锁定偏好，`transport/guacamole.py` 拥有有界桌面协议与连接生命周期；可信本机配置探测归 `studio/host/deployment/cloud_setup.py`，网站组合入口归 `studio/assembly/website/cloud_control.py`。工作台仍可从 `/agents` 阅读已同步的原端会话。
+- `web/src/features/cloud-control/` 拥有云控页面、远程画面、验证界面和 Happier 嵌入容器。Identity 管理按用途分离的云控权限，Remote Desktop 管理空闲偏好与桌面连接。网站组合入口归 `studio/assembly/website/cloud_control.py`。
   API、SSE 与后台采集同时检查 `cloud-control.access`，身份降级后保留原账号副本和检查点。
   当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。
 `web/src/features/applications/ApplicationCard.tsx` 拥有应用目录的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。

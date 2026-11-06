@@ -100,11 +100,13 @@ export function DesktopPassword({
 const presets = [15, 30, 60];
 
 export function DesktopIdle({
+  remoteApps = false,
   minutes,
   revision,
   changed,
   close,
 }: {
+  remoteApps?: boolean;
   minutes: number;
   revision: number;
   changed: () => void;
@@ -169,7 +171,7 @@ export function DesktopIdle({
         <div>
           <h3 id={title}>自动锁定</h3>
           <p id={`${title}-description`}>
-            远程桌面无键鼠操作达到设定时长后锁定。
+            {remoteApps ? "远程应用" : "远程桌面"}无键鼠操作达到设定时长后锁定。
           </p>
         </div>
       </header>

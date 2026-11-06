@@ -14,8 +14,8 @@ from studio.runtime.lifecycle.locking import service_lock
 @pytest.mark.asyncio
 async def test_service_checks_signature_destination_and_real_request_path():
     key = Ed25519PrivateKey.generate()
-    path = "/v1/agent-workbench/sessions"
-    catalog = RouteCatalog([Operation("agents", "GET", path, "list_sessions")])
+    path = "/v1/cloud-control/status"
+    catalog = RouteCatalog([Operation("remote", "GET", path, "status")])
     app = FastAPI()
 
     @app.get(path)
@@ -24,11 +24,11 @@ async def test_service_checks_signature_destination_and_real_request_path():
         return {"owner": actor.user_id, "local": actor.local}
 
     app.add_middleware(
-        SignedIdentity, service="agents", public_key=key.public_key(), catalog=catalog
+        SignedIdentity, service="remote", public_key=key.public_key(), catalog=catalog
     )
     actor = Actor("one", "user", "session", ("studio:read",), session_id="session-one")
     token = issue_context(
-        actor, service="agents", method="GET", path=path, private_key=key, key_id="test"
+        actor, service="remote", method="GET", path=path, private_key=key, key_id="test"
     )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://agents"

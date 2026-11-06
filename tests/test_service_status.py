@@ -51,10 +51,10 @@ def monitor(host, failures=None):
 
 @pytest.mark.parametrize("kind", ["wrong", "redirect"])
 async def test_wrong_service_or_redirect_fails_closed(kind):
-    service, calls = monitor(Host(), {"agents": kind})
+    service, calls = monitor(Host(), {"remote": kind})
     try:
         result = await service.snapshot(assertion="original-gateway-request")
-        item = next(s for s in result.services if s.service_id == "agents")
+        item = next(s for s in result.services if s.service_id == "remote")
         assert item.phase == "failed" and "身份不匹配" in item.detail
         assert not any(name == "unexpected.invalid" for name, _path in calls)
     finally:
@@ -64,19 +64,19 @@ async def test_wrong_service_or_redirect_fails_closed(kind):
 @pytest.mark.parametrize("age,phase", [(0, "stopped"), (60, "unreachable"), (-60, "unreachable")])
 async def test_only_fresh_lifecycle_evidence_can_report_stopped(age, phase):
     service, _ = monitor(
-        Host([{"service_id": "agents", "phase": "stopped", "reason": "process_stopped"}], age=age),
-        {"agents": "offline"},
+        Host([{"service_id": "remote", "phase": "stopped", "reason": "process_stopped"}], age=age),
+        {"remote": "offline"},
     )
     try:
         result = await service.snapshot(assertion="request")
-        assert next(s for s in result.services if s.service_id == "agents").phase == phase
+        assert next(s for s in result.services if s.service_id == "remote").phase == phase
     finally:
         await service.close()
 
 
 async def test_live_readiness_wins_over_earlier_stop_and_probe_results_are_cached():
     service, calls = monitor(
-        Host([{"service_id": "agents", "phase": "stopped", "reason": "process_stopped"}])
+        Host([{"service_id": "remote", "phase": "stopped", "reason": "process_stopped"}])
     )
     try:
         result = await service.snapshot(assertion="request")
@@ -93,16 +93,16 @@ async def test_newer_host_stop_supersedes_cached_success_without_restarting_othe
     service, calls = monitor(host)
     try:
         first = await service.snapshot(assertion="request")
-        assert next(s for s in first.services if s.service_id == "agents").phase == "running"
+        assert next(s for s in first.services if s.service_id == "remote").phase == "running"
         count = len(calls)
         host.value = DeploymentServicesOut(
             observed_at=status_time(),
-            services=[{"service_id": "agents", "phase": "stopped", "reason": "process_stopped"}],
+            services=[{"service_id": "remote", "phase": "stopped", "reason": "process_stopped"}],
         )
         result = {s.service_id: s for s in (await service.snapshot(assertion="request")).services}
-        assert result["agents"].phase == "stopped"
+        assert result["remote"].phase == "stopped"
         assert result["identity"].phase == "running"
-        assert result["agents"].checked_at == host.value.observed_at
+        assert result["remote"].checked_at == host.value.observed_at
         assert len(calls) == count
     finally:
         await service.close()
@@ -144,12 +144,12 @@ async def test_creative_status_includes_project_certification_dependencies():
 
 
 async def test_monitor_outage_is_unknown_and_revocation_is_not_swallowed():
-    service, _ = monitor(Host(unavailable=True), {"agents": "offline"})
+    service, _ = monitor(Host(unavailable=True), {"remote": "offline"})
     try:
         item = next(
             s
             for s in (await service.snapshot(assertion="request")).services
-            if s.service_id == "agents"
+            if s.service_id == "remote"
         )
         assert item.phase == "unreachable" and "不能确认是否已停止" in item.detail
         service.capabilities.denied = True
@@ -175,7 +175,7 @@ async def test_monitor_outage_is_unknown_and_revocation_is_not_swallowed():
     ],
 )
 def test_real_container_lifecycle_has_explicit_explanation(row, phase, reason):
-    value = container_state("agents", row)
+    value = container_state("remote", row)
     assert value.phase == phase and value.reason == reason
 
 
@@ -185,14 +185,14 @@ def test_observer_distinguishes_not_configured_not_started_and_unreadable_docker
     def run(args):
         calls.append(args)
         return (
-            "gateway\nagents\n"
+            "gateway\nremote\n"
             if args[0] == "config"
             else '[{"Service":"gateway","State":"running","Private":"never expose"}]'
         )
 
     values = ServiceObserver(run).read()
     statuses = {s["service_id"]: s for s in values}
-    assert statuses["agents"]["phase"] == "stopped"
+    assert statuses["remote"]["phase"] == "stopped"
     assert statuses["visual"]["phase"] == "not_deployed"
     assert "Private" not in str(values) and "never expose" not in str(values)
     assert calls == [["config", "--services"], ["ps", "--all", "--format", "json"]]
@@ -205,7 +205,7 @@ def test_observer_distinguishes_not_configured_not_started_and_unreadable_docker
 
 def test_running_orphan_container_is_not_reported_as_never_deployed():
     def run(args):
-        return "gateway\n" if args[0] == "config" else '[{"Service":"agents","State":"running"}]'
+        return "gateway\n" if args[0] == "config" else '[{"Service":"remote","State":"running"}]'
 
     values = {s["service_id"]: s for s in ServiceObserver(run).read()}
-    assert values["agents"]["phase"] == "running"
+    assert values["remote"]["phase"] == "running"

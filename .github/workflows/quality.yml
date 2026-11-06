@@ -104,7 +104,7 @@ jobs:
       - run: python3 scripts/check_lfs_assets.py --pointers
 
   docker-isolation:
-    name: Isolated services, lifecycle status and independent application browsers
+    name: Isolated services and independent release builds
     runs-on: ubuntu-latest
     env:
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.local/playwright-browsers
@@ -131,7 +131,6 @@ jobs:
         run: git lfs pull --include="web/public/brand/*-mark.png,web/public/brand/home/*,web/public/brand/thumbnails/*,backend/studio/apps/media_rendering/local/assets/*.ttf" --exclude=""
       - name: Build the independent browser programs
         run: |
-          npm run services:build:web -- agents > .local/service-split/ci-web-build.log
           npm run services:build:web -- portal > .local/service-split/ci-portal-web-build.log
           npm run services:build:web -- assets > .local/service-split/ci-assets-web-build.log
           npm run services:build:web -- management > .local/service-split/ci-management-web-build.log
@@ -145,7 +144,6 @@ jobs:
           import subprocess
           from pathlib import Path
           for service, program_log in (
-              ('agents', '.local/service-split/ci-web-build.log'),
               ('portal', '.local/service-split/ci-portal-web-build.log'),
               ('assets', '.local/service-split/ci-assets-web-build.log'),
               ('management', '.local/service-split/ci-management-web-build.log'),
@@ -157,7 +155,7 @@ jobs:
                       '--build', '--web-release', program['root'],
                   ], stdout=log, check=True)
           PY
-      - name: Verify container isolation, restore and real browser access
+      - name: Verify container isolation, browser authority and restore
         run: |
           uv run python - <<'PY'
           import json
@@ -167,19 +165,8 @@ jobs:
               return json.loads(Path(name).read_text().splitlines()[-1])['image']
           identity = image('.local/service-split/ci-build.log')
           gateway = image('.local/service-split/ci-gateway-build.log')
-          agents = image('.local/service-split/ci-agents-build.log')
-          portal = image('.local/service-split/ci-portal-build.log')
-          assets = image('.local/service-split/ci-assets-build.log')
-          rendering = image('.local/service-split/ci-rendering-build.log')
-          management = image('.local/service-split/ci-management-build.log')
           subprocess.run([
               'uv', 'run', 'python', 'scripts/website/service_docker_smoke.py',
               '--image', identity, '--gateway-image', gateway,
-          ], check=True)
-          subprocess.run([
-              'uv', 'run', 'python', 'scripts/website/agents_docker_smoke.py',
-              '--identity-image', identity, '--agents-image', agents,
-              '--gateway-image', gateway, '--portal-image', portal, '--assets-image', assets,
-              '--rendering-image', rendering, '--management-image', management, '--browser',
           ], check=True)
           PY

@@ -11,6 +11,7 @@ from studio.assembly.http_dependencies import (
 )
 from studio.assembly.website import cloud_setup as setup
 from studio.assembly.website.happier import launch_router
+from studio.assembly.website.remote_apps import router as apps_router
 from studio.config.settings import get_cloud_settings
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
 from studio.contracts.remote_desktop.desktop import (
@@ -36,6 +37,8 @@ async def status(request: Request, response: Response, db: SessionDep, principal
     local = local_request(request)
     enabled = access.allowed(principal, local=local)
     preference = await request.app.state.desktop_preferences.read(owner=principal.user_id)
+    happier = request.app.state.happier
+    happier_available = bool(enabled and happier and happier.available(request, principal))
     return CloudStatus(
         enabled=enabled,
         host_label=settings.fpl_cloud_control_host_label,
@@ -43,12 +46,14 @@ async def status(request: Request, response: Response, db: SessionDep, principal
         desktop_authorized=await access.desktop_authorized(db, principal, local=local),
         idle_minutes=preference.idle_minutes,
         idle_revision=preference.revision,
+        remote_apps_enabled=settings.fpl_cloud_control_apps_enabled,
         local=local,
         unlocked_until=await access.unlock_expiry(db, principal, local=local),
-        happier_available=bool(
-            enabled
-            and request.app.state.happier
-            and request.app.state.happier.available(request, principal)
+        happier_available=happier_available,
+        happier_studio_url=(
+            happier.studio_origin + "/cloud-control?view=agent"
+            if local and happier and happier.eligible(principal) and not happier_available
+            else None
         ),
     )
 
@@ -78,6 +83,8 @@ async def save_idle(request: Request, body: IdlePreference, principal: StudioAut
 
 @router.post("/desktop/connect", status_code=204)
 async def connect(request: Request, body: DesktopLogin, db: SessionDep, principal: StudioAuth):
+    if get_cloud_settings().fpl_cloud_control_apps_enabled:
+        raise HTTPException(404, "请使用远程应用")
     local = local_request(request)
     if not await access.desktop_authorized(db, principal, local=local):
         raise HTTPException(
@@ -111,6 +118,9 @@ async def connect(request: Request, body: DesktopLogin, db: SessionDep, principa
 async def desktop_socket(socket: WebSocket):
     local = local_request(socket)
     settings = get_cloud_settings()
+    if settings.fpl_cloud_control_apps_enabled:
+        await socket.close(4403)
+        return
     local_origins = {"http://127.0.0.1:3000", f"http://127.0.0.1:{settings.fpl_website_port}"}
     origins = local_origins if local else {settings.fpl_remote_web_origin}
     if (
@@ -145,3 +155,4 @@ async def settings_save(request: Request, body: CloudSetupUpdate, principal: Stu
 
 router.include_router(unlock_router)
 router.include_router(launch_router)
+router.include_router(apps_router)

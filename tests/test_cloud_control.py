@@ -5,8 +5,6 @@ import os
 import sys
 from contextlib import aclosing, asynccontextmanager
 from datetime import timedelta
-from pathlib import Path
-from threading import Event
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -18,20 +16,16 @@ from sqlalchemy import text
 from db.migrations import runner as migration_runner
 from studio.apps.agent_workbench.execution import (
     project_files,
-    projects,
-    runner,
     storage,
-    transcripts,
 )
 from studio.apps.agent_workbench.transport import (
     turn_events as events,
 )
-from studio.apps.agent_workbench.transport.website import execution
 from studio.apps.identity.storage import cloud_access as access
 from studio.apps.remote_desktop.transport import guacamole as desktop
 from studio.assembly.website import desktop as desktop_binding
 from studio.assembly.website.account_provisioning import create_account
-from studio.config.settings import CloudProject, get_settings
+from studio.config.settings import get_settings
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
 from studio.runtime.time import utc_now
 from website_test_support import SessionLocal, app
@@ -39,7 +33,6 @@ from website_test_support import SessionLocal, app
 pytestmark = pytest.mark.real_auth
 PASSWORD = "Cloud-Control-Isolated-Test-2026!"
 CLOUD = "/v1/cloud-control"
-WORKBENCH = "/v1/agent-workbench"
 
 
 async def admin_client(local=True, *, role="admin"):
@@ -381,170 +374,6 @@ def test_project_migration_preserves_existing_chat_binding(tmp_path, monkeypatch
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
-async def await_turn(client, path, status):
-    for _ in range(100):
-        result = await client.get(path)
-        assert result.status_code == 200, result.text
-        turns = result.json()["turns"]
-        if turns and turns[-1]["status"] == status:
-            return turns[-1]
-        await asyncio.sleep(0.04)
-    pytest.fail(f"Expected {status}, got {turns}")
-
-
-async def test_local_project_picker_keeps_recent_projects_private(monkeypatch, tmp_path):
-    client, owner = await admin_client()
-    other, other_id = await admin_client()
-    remote, remote_id = await admin_client(local=False)
-    member, member_id = await admin_client(role="user")
-    configure(monkeypatch, owner, other_id, remote_id, member_id)
-    monkeypatch.setattr(get_settings(), "fpl_cloud_control_public_desktop_vnc_only", False)
-    root = tmp_path.resolve() / "home"
-    anchor = root / "Projects"
-    project = anchor / "work"
-    child = project / "subproject"
-    child.mkdir(parents=True)
-    legacy = tmp_path.resolve() / "legacy"
-    legacy.mkdir()
-    monkeypatch.setattr(
-        get_settings(),
-        "fpl_cloud_control_projects",
-        {"legacy": CloudProject(label="Legacy", root=str(legacy), user_ids=[owner])},
-    )
-    (anchor / ".hidden").mkdir()
-    (anchor / "secrets").mkdir()
-    (anchor / "alias").symlink_to(project)
-    (anchor / "document.txt").touch()
-    monkeypatch.setattr(Path, "home", lambda: root)
-
-    async def inspect(*_args, **_kwargs):
-        return {"enabled": False}
-
-    async def connection(*_args, **_kwargs):
-        return "/fixture/cli"
-
-    monkeypatch.setattr(storage, "inspect_connection", inspect)
-    monkeypatch.setattr(execution, "resolve_connection", connection)
-    directories = WORKBENCH + "/execution/directories"
-    registry = WORKBENCH + "/execution/projects"
-    catalog = WORKBENCH + "/execution/catalog"
-    async with aclosing(client), aclosing(other), aclosing(remote), aclosing(member):
-        for forbidden in (remote, member):
-            assert (await forbidden.get(directories)).status_code == 403
-            assert (await forbidden.post(registry, json={"root": str(project)})).status_code == 403
-        assert (await remote.get(catalog)).json()["suggested_directories"] == []
-        assert (await client.get(directories)).json()["items"] == [
-            {"root": str(anchor), "label": "项目"}
-        ]
-        listing = await client.get(directories, params={"parent": str(anchor)})
-        assert listing.headers["cache-control"] == "no-store"
-        parent = listing.json()
-        assert parent == {
-            "parent": None,
-            "selectable": False,
-            "items": [{"root": str(project), "label": "work"}],
-        }
-        leaf = (await client.get(directories, params={"parent": str(project)})).json()
-        assert leaf["selectable"] and leaf["parent"] == str(anchor)
-        assert leaf["items"] == [{"root": str(child), "label": "subproject"}]
-        assert (await client.get(directories, params={"parent": str(root)})).status_code == 409
-        for invalid in (
-            anchor,
-            anchor / "alias",
-            anchor / "secrets",
-            anchor / "work" / ".." / "work",
-        ):
-            assert (await client.post(registry, json={"root": str(invalid)})).status_code == 409
-        registrations = await asyncio.gather(
-            *(client.post(registry, json={"root": str(project)}) for _ in range(3))
-        )
-        assert all(created.status_code == 200 for created in registrations)
-        selected = registrations[0].json()
-        assert all(created.json() == selected for created in registrations)
-        assert (await client.post(registry, json={"root": str(project) + "/"})).json() == selected
-        assert (await other.get(catalog)).json()["recent_projects"] == []
-        assert (await other.post(registry, json={"root": str(project)})).json()["id"] != selected[
-            "id"
-        ]
-        assert (await client.get(catalog)).json()["recent_projects"] == [
-            {**selected, "root": str(project)}
-        ]
-        body = {"project_id": selected["id"], "agent_id": "codex"}
-        assert (await client.post(WORKBENCH + "/chats", json=body)).status_code == 403
-        await unlock(client)
-        await unlock(other)
-        assert (await other.post(WORKBENCH + "/chats", json=body)).status_code == 404
-        opened = await client.post(WORKBENCH + "/chats", json=body)
-        assert opened.status_code == 201, opened.text
-        path = f"{WORKBENCH}/chats/{opened.json()['id']}"
-        remote.cookies.update(client.cookies)
-        remote.headers["X-CSRF-Token"] = client.headers["X-CSRF-Token"]
-        assert (
-            await remote.post("/v1/auth/reauth", json={"password": PASSWORD})
-        ).status_code == 204
-        assert (await remote.get(catalog)).json()["recent_projects"] == []
-        assert (
-            await remote.post(WORKBENCH + "/chats", json={**body, "project_id": "legacy"})
-        ).status_code == 201
-        assert (await remote.post(WORKBENCH + "/chats", json=body)).status_code == 404
-        assert (
-            await remote.post(path + "/turns", json={"request_id": "public", "text": "hi"})
-        ).status_code == 404
-        project.rename(anchor / "moved")
-        assert (await client.get(catalog)).json()["recent_projects"] == []
-        assert (await client.get(path)).json()["project_label"] == "work"
-        failed = await client.post(path + "/turns", json={"request_id": "moved", "text": "hi"})
-        assert failed.status_code == 409
-
-
-async def test_slow_project_check_releases_sqlite_and_rechecks_binding(monkeypatch, tmp_path):
-    client, owner = await admin_client()
-    configure(monkeypatch, owner)
-    settings = get_settings()
-    roots = {name: tmp_path / name for name in ("slow", "fast")}
-    for root in roots.values():
-        root.mkdir()
-    bindings = {
-        name: CloudProject(label=name, root=str(root.resolve()), user_ids=[owner])
-        for name, root in roots.items()
-    }
-    monkeypatch.setattr(settings, "fpl_cloud_control_projects", bindings)
-    check = projects.validate_project_root
-    loop = asyncio.get_running_loop()
-    entered, release = asyncio.Event(), Event()
-
-    def slow_check(root, current_settings):
-        if root == bindings["slow"].root:
-            loop.call_soon_threadsafe(entered.set)
-            assert release.wait(10)
-        return check(root, current_settings)
-
-    async def connection(*_args, **_kwargs):
-        return "/fixture/cli"
-
-    monkeypatch.setattr(projects, "validate_project_root", slow_check)
-    monkeypatch.setattr(execution, "resolve_connection", connection)
-    async with aclosing(client):
-        await unlock(client)
-        path = WORKBENCH + "/chats"
-        slow = asyncio.create_task(
-            client.post(path, json={"project_id": "slow", "agent_id": "codex"})
-        )
-        try:
-            await asyncio.wait_for(entered.wait(), 3)
-            fast = await asyncio.wait_for(
-                client.post(path, json={"project_id": "fast", "agent_id": "codex"}), 3
-            )
-            assert fast.status_code == 201, fast.text
-            monkeypatch.setattr(
-                settings, "fpl_cloud_control_projects", {**bindings, "slow": bindings["fast"]}
-            )
-        finally:
-            release.set()
-            result = await slow
-        assert result.status_code == 409, result.text
-
-
 async def test_execution_stream_releases_session_before_sending():
     open_sessions = 0
 
@@ -580,130 +409,6 @@ async def test_execution_stream_releases_session_before_sending():
         assert open_sessions == 0
         assert (await anext(stream)).startswith(": heartbeat")
         assert open_sessions == 0
-
-
-@pytest.mark.parametrize("agent", ["codex", "claude-code", "opencode", "dsh", "pi"])
-async def test_managed_chat_keeps_context_and_executes_approved_file_once(
-    monkeypatch,
-    tmp_path,
-    agent,
-):
-    client, owner = await admin_client()
-    other, other_id = await admin_client()
-    configure(monkeypatch, owner, other_id)
-    root = tmp_path.resolve() / "work"
-    root.mkdir()
-    monkeypatch.setattr(
-        get_settings(),
-        "fpl_cloud_control_projects",
-        {
-            "project": CloudProject(label="Test project", root=str(root), user_ids=[owner]),
-        },
-    )
-    captured = []
-
-    async def resolve(*_args, **_kwargs):
-        return "/fixture/cli"
-
-    async def dialogue(kind, _executable, _model, prompt, _tools, call, emit, **_kwargs):
-        assert kind == agent
-        captured.append(prompt)
-        if kind == "codex" and len(captured) != 2:
-            await call("write_file", {"path": "hello.txt", "content": "approved"})
-        await emit("assistant_delta", {"text": "hello"})
-
-    monkeypatch.setattr(execution, "resolve_connection", resolve)
-    monkeypatch.setattr(runner, "resolve_connection", resolve)
-    monkeypatch.setattr(runner, "run_dialogue", dialogue)
-    async with aclosing(client), aclosing(other):
-        await unlock(client)
-        identity = "project"
-        if agent == "pi":
-            picked = await client.post(WORKBENCH + "/execution/projects", json={"root": str(root)})
-            assert picked.status_code == 200, picked.text
-            identity = picked.json()["id"]
-        response = await client.post(
-            WORKBENCH + "/chats",
-            json={
-                "project_id": identity,
-                "agent_id": agent,
-            },
-        )
-        assert response.status_code == 201, response.text
-        path = f"{WORKBENCH}/chats/{response.json()['id']}"
-        assert (await other.get(path)).status_code == 404
-        body = {"request_id": "first", "text": "first prompt"}
-        first = await client.post(path + "/turns", json=body)
-        assert first.status_code == 202, first.text
-        replay = await client.post(path + "/turns", json=body)
-        assert replay.json()["id"] == first.json()["id"]
-        if agent == "codex":
-            pending = await await_turn(client, path, "waiting_approval")
-            assert not (root / "hello.txt").exists()
-            identity = pending["approvals"][0]["id"]
-            approval = f"{path}/turns/{pending['id']}/approvals/{identity}"
-            assert (await client.post(approval, json={"approved": True})).status_code == 204
-        await await_turn(client, path, "completed")
-        if agent == "codex":
-            assert (root / "hello.txt").read_text() == "approved"
-            assert (await client.post(approval, json={"approved": True})).status_code == 409
-        assert (
-            await client.post(path + "/turns", json={"request_id": "second", "text": "follow up"})
-        ).status_code == 202
-        await await_turn(client, path, "completed")
-        assert len(captured) == 2
-        assert "first prompt" in captured[-1] and "follow up" in captured[-1]
-        if agent == "codex":
-            assert (
-                await client.post(path + "/turns", json={"request_id": "stop", "text": "stop me"})
-            ).status_code == 202
-            pending = await await_turn(client, path, "waiting_approval")
-            assert (await client.post(path + f"/turns/{pending['id']}/stop")).status_code == 204
-            stopped = await await_turn(client, path, "cancelled")
-            assert stopped["approvals"][0]["status"] == "expired"
-
-            assert (
-                await client.post(path + "/turns", json={"request_id": "swap", "text": "swap"})
-            ).status_code == 202
-            pending = await await_turn(client, path, "waiting_approval")
-            original = root.rename(root.with_name("old-work"))
-            root.mkdir()
-            identity = pending["approvals"][0]["id"]
-            approval = f"{path}/turns/{pending['id']}/approvals/{identity}"
-            assert (await client.post(approval, json={"approved": True})).status_code == 204
-            done = await await_turn(client, path, "completed")
-            assert done["approvals"][0]["status"] == "failed"
-            assert not (root / "hello.txt").exists()
-            assert (original / "hello.txt").read_text() == "approved"
-
-            loop = asyncio.get_running_loop()
-            entered, release = asyncio.Event(), Event()
-            write = project_files.write_file
-
-            def delayed_write(*args, **kwargs):
-                loop.call_soon_threadsafe(entered.set)
-                assert release.wait(10)
-                return write(*args, **kwargs)
-
-            monkeypatch.setattr(project_files, "write_file", delayed_write)
-            assert (
-                await client.post(path + "/turns", json={"request_id": "writing", "text": "write"})
-            ).status_code == 202
-            pending = await await_turn(client, path, "waiting_approval")
-            identity = pending["approvals"][0]["id"]
-            turn_path = f"{path}/turns/{pending['id']}"
-            assert (
-                await client.post(turn_path + f"/approvals/{identity}", json={"approved": True})
-            ).status_code == 204
-            try:
-                await asyncio.wait_for(entered.wait(), 3)
-                stop = asyncio.create_task(client.post(turn_path + "/stop"))
-                await await_turn(client, path, "cancelling")
-            finally:
-                release.set()
-            assert (await stop).status_code == 204
-            stopped = await await_turn(client, path, "cancelled")
-            assert stopped["approvals"][0]["status"] == "unknown"
 
 
 async def desktop_asgi(client, origin, *, local=True):
@@ -784,8 +489,6 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
             assert (
                 await client.post(CLOUD + "/unlock", json={"purpose": "agent"})
             ).status_code == 403
-            catalog = (await client.get(WORKBENCH + "/execution/catalog")).json()
-            assert not catalog["enabled"]
             monkeypatch.setattr(settings, "fpl_cloud_control_public_enabled", False)
             denied = await client.post(CLOUD + "/desktop/connect", json={"password": "fixture"})
             assert denied.status_code == 403
@@ -847,53 +550,6 @@ async def test_sandboxed_preset_can_read_project_but_cannot_read_private_paths(t
     assert good == {"exit_code": 0, "output": "sample"}
     denied = await run_command(str(root), CloudCommand(label="read", argv=["/bin/cat", ".env"]))
     assert denied["exit_code"] != 0 and "private fixture" not in denied["output"]
-
-
-async def test_restart_expires_pending_approval_and_preserves_unknown_result():
-    from studio.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchTurn
-
-    client, owner = await admin_client()
-    identity = str(uuid4())
-    async with aclosing(client):
-        async with SessionLocal() as db:
-            db.add(
-                WorkbenchChat(
-                    id=identity,
-                    owner_user_id=owner,
-                    project_id="fixture",
-                    agent_id="codex",
-                    created_at=1,
-                )
-            )
-            await db.flush()
-            db.add(
-                WorkbenchTurn(
-                    id=identity,
-                    owner_user_id=owner,
-                    chat_id=identity,
-                    client_id=identity,
-                    position=1,
-                    prompt="test",
-                    answer="partial",
-                    status="waiting_approval",
-                    approvals=[
-                        dict(
-                            id="first", kind="write", title="a.txt", preview="", status="executing"
-                        ),
-                        dict(
-                            id="second", kind="write", title="b.txt", preview="", status="pending"
-                        ),
-                    ],
-                    revision=1,
-                )
-            )
-            await db.commit()
-        async with SessionLocal() as db:
-            await transcripts.interrupt_all(db, owner)
-        chat = (await client.get(f"{WORKBENCH}/chats/{identity}")).json()
-        turn = chat["turns"][0]
-        assert turn["status"] == "interrupted" and turn["answer"] == "partial"
-        assert [item["status"] for item in turn["approvals"]] == ["unknown", "expired"]
 
 
 @pytest.mark.parametrize("vnc_only", [False, True])
@@ -964,10 +620,6 @@ async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tm
         assert (await other.post(enable)).status_code == 403
         assert (await client.post(enable)).status_code == 204
         assert config.get_cloud_settings().fpl_code_agents_codex_executable == sys.executable
-        catalog = (await client.get(WORKBENCH + "/execution/catalog")).json()
-        assert catalog["agents"] == [
-            {"id": "codex", "label": "Codex", "available": True, "status": "已连接"}
-        ]
 
 
 async def test_idle_preference_checks_revision_and_desktop_activity_is_explicit(monkeypatch):

@@ -1,21 +1,13 @@
-# Agent 工作台：原生记录与阅读副本
+# Agent 工作台：设备密钥与旧会话归档
 
-本篇说明管理员如何使用云控中的 Agent 工作台，核对实际操作、保存状态和账号边界。普通用户不能访问工作台，管理员也不能读取其他账号的副本。
+Happier 的设备密钥保护新会话。旧 FPL 会话随停机快照归档，可用对应部署版本恢复。
 
 ## 操作与核验
 
-原生日志是上下文真源，FPL 将条目、索引、检查点和来源绑定保存到当前账号。同一来源不能被不同账号重叠绑定；管理员也不能读取其他账号的会话副本。
-
-完成后核对页面显示的账号、对象名称和最新状态；若状态仍为进行中或有错误提示，先保留当前内容并查看原因，不能把按钮点击本身视为操作成功。
-
-## 保存与能力边界
-
-停用同步后不再采集；解除绑定仍保留 FPL 已有副本。只有相关来源全部停用后才能清除 FPL 阅读副本。上述操作不删除原始日志，重新绑定后可重新读取，不能通过手工修改数据库修复检查点。
-
-> [!NOTE]
-> 本机与公网浏览器访问同一部署时使用相同账号隔离规则。新的来源绑定只能在运行 FPL 的 Mac 上，经后端确认的本机网站入口执行；公开地址不会扩大账号权限。
+1. 用独立浏览器从已解锁的 Studio HTTPS 入口打开 Happier，按原生恢复流程输入已保存的恢复密钥。确认能读回原来的加密会话。
+2. 旧 FPL 链接会进入云控 Agent 页签。需要查阅旧记录时，由部署者用封存清单恢复到隔离目录，再用归档对应的版本核对账号和会话。
 
 ## 相关阅读
 
-- [Agent 工作台：查阅与附件下载](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/delivery)
-- [Agent 工作台：来源不可达与能力边界](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/help)
+- [打开 Happier 工作台](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/overview)
+- [排查连接与解锁](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/help)

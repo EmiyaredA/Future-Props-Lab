@@ -65,7 +65,7 @@ identity = create_app(
     public_origin="https://studio.example.test",
     management_local_origin="http://127.0.0.1:19002",
     private_key=Ed25519PrivateKey.generate(),
-    service_credentials={"models": model_token, "agents": agent_token},
+    service_credentials={"models": model_token, "tools": agent_token},
 )
 
 
@@ -160,9 +160,9 @@ async def scenario():
                     credentials.pop("models")
                     assert (await client.get(path, headers=auth)).status_code == 403
                     credentials["models"] = model_token
-                    credentials["agents"] = model_token
+                    credentials["tools"] = model_token
                     assert (await client.get(path, headers=auth)).status_code == 403
-                    credentials["agents"] = agent_token
+                    credentials["tools"] = agent_token
                     pending = await client.get(path, headers=auth)
                     assert (
                         pending.status_code == 200

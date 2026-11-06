@@ -91,7 +91,11 @@ export const serviceAssets = {
     "brand/favicon.png",
     "brand/home/kurisu-idle.png",
     "brand/home/kurisu-idle.webm",
-    "brand/agent-workbench-mark.png",
+    "providers/codex-logo.svg",
+    "providers/claudecode-logo.svg",
+    "providers/opencode-logo.svg",
+    "providers/deepseek-logo.svg",
+    "providers/pi-logo.svg",
     "brand/presentation-workshop-mark.png",
     "brand/thought-workshop-mark.png",
     "brand/interview-assistant-mark.png",
@@ -107,21 +111,9 @@ export const serviceAssets = {
       .sort()
       .map((name) => "docs/" + name),
   ],
-  agents: [
-    "brand/brand-mark.png",
-    "brand/favicon.png",
-    "providers/codex-logo.svg",
-    "providers/claudecode-logo.svg",
-    "providers/opencode-logo.svg",
-    "providers/deepseek-logo.svg",
-    "providers/pi-logo.svg",
-  ],
 };
 
 // Repo-owned generated paths are fixed inputs to each independent program build.
-serviceAssets.portal.push(
-  ...serviceAssets.agents.filter((name) => name.startsWith("providers/")),
-);
 const loadingAssets = [
   "divergence-meter.webp",
   "dr-pepper.webp",

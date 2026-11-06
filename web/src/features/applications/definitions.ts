@@ -118,18 +118,6 @@ export const INTERVIEW_ASSISTANT_DEFINITION = {
   brandImage: "/brand/interview-assistant-mark.png",
 } as const satisfies ApplicationDefinition;
 
-export const AGENT_WORKBENCH_DEFINITION = {
-  id: "agent-workbench",
-  serviceId: "agents",
-  name: "Agent 工作台",
-  category: "development",
-  description: "查看本机 APP 与 CLI 的已有编程会话，实时跟随新增内容。",
-  capabilities: ["会话", "编程", "实时同步"],
-  path: "/agents",
-  icon: MessagesSquare,
-  brandImage: "/brand/agent-workbench-mark.png",
-} as const satisfies ApplicationDefinition;
-
 export const APPLICATION_DEFINITIONS = [
   PRESENTATION_WORKSHOP_DEFINITION,
   THOUGHT_WORKSHOP_DEFINITION,

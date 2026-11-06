@@ -31,7 +31,6 @@ export default defineConfig(async (environment) => {
   if (
     !service ||
     ![
-      "agents",
       "portal",
       "assets",
       "management",
@@ -69,7 +68,6 @@ export default defineConfig(async (environment) => {
       programResources(
         serviceAssets[
           service as
-            | "agents"
             | "portal"
             | "assets"
             | "management"

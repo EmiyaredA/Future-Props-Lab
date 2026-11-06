@@ -2,7 +2,7 @@
 
 本轮正在把网站单体迁为同仓库的独立服务。正式网站仍由网站入口运行；未完成所有服务、数据导入与恢复验收前，不停止正式实例，不连接或迁移正式数据库。
 
-服务集合以 `backend/studio/contracts/gateway/catalog.py` 和生成的 `deploy/contracts/ownership.json` 为准。当前完整 Compose 装配包括 23 个登记服务、Remote 的 Guacamole 伴随容器和 7 个本机 worker。本文保留了各拆分阶段的验证记录，正式切换以同一候选提交的整站门禁为准。
+服务集合以 `backend/studio/contracts/gateway/catalog.py` 和生成的 `deploy/contracts/ownership.json` 为准。当前完整 Compose 装配包括 22 个登记服务、Remote 的 Guacamole 伴随容器和 7 个本机 worker。本文保留了各拆分阶段的验证记录，正式切换以同一候选提交的整站门禁为准。
 
 ## 已实现的运行边界
 
@@ -20,13 +20,11 @@ npm run services:build -- identity --build
 npm run services:build -- gateway --build
 npm run services:build:web -- portal
 npm run services:build -- portal --build --web-release .local/service-web/portal/BUILD_ID
-npm run services:build:web -- agents
-npm run services:build -- agents --build --web-release .local/service-web/agents/BUILD_ID
 ```
 
 每个登记服务使用各自的独立镜像入口。带网页的服务先构建对应的前端发布目录，再传入 `--web-release` 生成镜像。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计的源码与依赖闭包。镜像仅打包所需的代码、依赖、程序资源和契约，版本由实际输入内容决定。
 
-`deploy/compose.yaml` 装配 Identity、Agents、Portal、Assets、Rendering 和 Gateway。管理启动器按照部署配置和 `studio.host.deployment.compose_selection` 选择并检查其他服务及所需的叠加清单。启动只使用已构建镜像。数据库初始化通过所属镜像显式执行 `migrate`，已有数据库迁移历史不符时启动失败。`create-admin` 接受标准输入 JSON，仅用于没有账号的新安装。已有正式账号通过受控导入保留。
+`deploy/compose.yaml` 装配 Identity、Portal、Assets、Rendering 和 Gateway。管理启动器按照部署配置和 `studio.host.deployment.compose_selection` 选择并检查其他服务及所需的叠加清单。启动只使用已构建镜像。数据库初始化通过所属镜像显式执行 `migrate`，已有数据库迁移历史不符时启动失败。`create-admin` 接受标准输入 JSON，仅用于没有账号的新安装。已有正式账号通过受控导入保留。
 
 ## Docker 隔离验收
 
@@ -42,37 +40,11 @@ npm run services:test:docker -- --image fpl/identity:VERSION --gateway-image fpl
 
 所有 Compose 调用显式使用 `--env-file /dev/null`。业务服务仅连接内部网络，没有宿主发布端口；Gateway 另连入口 bridge，仅发布浏览器两个入口及原生采集专用的 127.0.0.1:29090 入口。每个服务只绑定自己的数据目录及最小只读配置，禁止用户主目录和 Docker Socket。Gateway 的官方 Caddy 二进制带低端口文件能力，当前显式保留该单项容器能力以保证可执行，其余能力均移除。
 
-### 管理中台浏览器验收
-
-完整 Compose 启动并创建隔离管理员后，由测试启动器把两个回环入口和测试账号传给 Playwright。使用下列环境变量运行 `npm run test:e2e:management --workspace web`。
-
-- `FPL_E2E_MANAGEMENT_ORIGIN` 与 `FPL_E2E_STUDIO_ORIGIN` 分别指向本次 Compose 的管理和业务回环入口。
-- `FPL_E2E_MANAGEMENT_USERNAME` 与 `FPL_E2E_MANAGEMENT_PASSWORD` 由启动器传入测试子进程。
-- `FPL_E2E_OUTPUT` 指向本次验收目录，保存各页面的桌面及手机截图。
-
-该模式使用实际网关和服务，验证八个管理页面、管理会话隔离、邀请码一次性展示、业务入口注册、普通账号的访问限制和兑换记录。运行结束后由 Compose 启动器销毁该测试环境。日常开发可直接运行同一命令，使用独立前端的模拟响应测试。
-
-## 工作台与原生采集验收
-
-```sh
-uv run python scripts/website/agents_docker_smoke.py \
-  --identity-image fpl/identity:VERSION --agents-image fpl/agents:VERSION \
-  --gateway-image fpl/gateway:VERSION --browser
-```
-
-此项使用真实独立工作台容器与 Mac 采集进程，原生来源为测试生成的日志，不读取个人 Agent 历史。验证独立替换容器后的历史、检查点、增量同步与新账号登录；确认工作台库不含账号或其他工坊表。`--browser` 使用真实 Chromium 验证无门户进程时的新登录、历史阅读、旧链接、主题、390／768／1600px 布局和未保存确认。先将 Chromium 安装至项目忽略目录：`PLAYWRIGHT_BROWSERS_PATH=$PWD/.local/playwright-browsers npx playwright install chromium`。
-
-Mac 采集 CLI 为 `uv run python -m studio.assembly.host.cli collect --connection PATH --state-root PATH`。连接描述是受保护配置投影，只含回环 URL 和限定 worker 凭据，要求当前用户所有及 0600 权限；它不是配置真源。正式启动协调器与投影生成仍待完成，不手工配置正式凭据。
-
-原生入口拒绝浏览器 Origin，浏览器入口不转发私有协议。网关使用独立原生通道证明，采集器再提供 worker 凭据；工作台不持有网关的 Identity 凭据。任务持久化账号、请求 ID、租约和不可变结果；领取使用 SQLite CAS，空队列轮询不持有写锁。未知结果不重派。跟随任务按当前来源版本和账号授权复核，单帧回执与检查点在同一短事务提交；确认丢失可重发原帧，暂停和解除绑定拒绝旧任务写入。原生文件不改写。
-
-工作台的长期 SSE 通过 Identity 复核原会话；账号不可用时关闭流。原生采集器离线保留阅读副本并提示状态。普通业务上游只收到绑定该请求的签名上下文，网关移除原 Session Cookie 和 Authorization，避免完整浏览器凭据落入业务服务。
-
 ## 网关委托与独立程序版本
 
 网关能力发现读取固定的聚合契约。资源链接通过明确的 GET 查询所属服务，身份服务只为预先登记的调用方、来源操作和用途签发目标断言，注销后拒绝继续委托。变更通知使用独立发布方凭据、事件 ID 和持久回执，不读取其他服务的数据库；各业务服务的通知发件箱仍需随后接通。
 
-工作台页面只包含自身入口、账号组件与阅读功能，程序 URL 为 `/_apps/agents/BUILD_ID/`。构建生成逐文件哈希与压缩副本，镜像封装时再次核验；不挂载源码。启动还校验页面的单服务 API 哈希。旧页面版本只会被相应服务拒绝写入，其他应用和不携带浏览器版本标记的 SDK 保持原公共契约。缺失资源与未知 API 返回 404。旧 `/apps/agent-workbench` 链接按 [Caddy redir 语法](https://caddyserver.com/docs/caddyfile/directives/redir) 显式指定匹配器，跳转到 `/agents`。
+独立 Web 程序各自构建逐文件哈希与压缩副本，镜像封装和启动分别核验资源与单服务 API 哈希。旧 Agents 页面、API 和采集通道已下线。
 
 Gateway 的 Mac 公网访问管理桥接和各服务的通知发件箱尚未完成；相应管理调用会明确返回组件不可用。服务状态聚合已接入 Management 的受限观测接口，见下文；其余门禁不能用当前隔离验收替代。
 
@@ -437,7 +409,7 @@ uv run python -m scripts.website.prepare_migration_plan \
 
 为同一份计划启动各服务的回环维护入口。每个进程使用独立端口。导出只读取封存快照，导入只挂载对应目标服务的状态目录，普通业务入口保持停写。
 
-维护地址以 JSON 对象保存，键名为各所有者的 `<service>-source` 和 `<service>-target`。需要成对登记的服务为 `identity`、`assets`、`models`、`integrations`、`thought`、`creative`、`director`、`annotation`、`presentation`、`motion`、`video`、`visual`、`galgame`、`interview`、`agents`、`amadeus`、`tools`、`remote`。另登记 `rendering-target`。地址清单权限为 0600，验收目录权限为 0700。
+维护地址以 JSON 对象保存，键名为各所有者的 `<service>-source` 和 `<service>-target`。需要成对登记的服务为 `identity`、`assets`、`models`、`integrations`、`thought`、`creative`、`director`、`annotation`、`presentation`、`motion`、`video`、`visual`、`galgame`、`interview`、`amadeus`、`tools`、`remote`。另登记 `rendering-target`。地址清单权限为 0600，验收目录权限为 0700。
 
 ```sh
 uv run python -m scripts.website.migrate_site \
@@ -633,13 +605,9 @@ Galgame 快照 ZIP 导入使用 `deploy/galgame-snapshots.compose.yaml`，与 `d
 
 完整 Galgame 装配覆盖归属清单中的 52 个公开操作。`/ready` 要求发布版本匹配、归档密钥已挂载且后台执行器健康。剪辑交接还需要 `deploy/video.compose.yaml`，使用其中的 Video 归档配置。隔离验收在剪辑工坊打开目标时间线，随后重启 Galgame、Rendering 和 Video 并读回相同的目标项目 ID。
 
-### Agent 工作台的项目发现
+### 旧 Agent 工作台归档
 
-启动前应用 Agents 的 0004 迁移，并叠加 `deploy/agents-execution.compose.yaml`。将 `FPL_AGENTS_EXECUTION_WORKERS` 指向独立执行凭据文件。Mac 的 `studio.host.agent_execution.workbench_worker` 通过同版本回环网关领取任务，使用可信本机 TOML 核对允许的目录、项目和 CLI。公网仅能看到当前账号授权的预设项目，创建对话需有效的云控解锁。登记目录仅允许可信本机入口。另需应用 Agents 的 0005 迁移。执行 worker 同时轮询目录和轮次通道。运行撤权、失败或服务重启时队列暂停，用户重新解锁后可恢复。源码预览只为持有相应活动的账号从受管项目读取。
-
-### Agent 工作台历史维护
-
-应用 Agents 的 0006 迁移后，使用同一迁移计划分别启动 `python -m studio.assembly.independent.agent_workbench.cli migration-export` 与 `python -m studio.assembly.independent.agent_workbench.cli migration-import` 的独立回环端口。导出端只接受已封存的兼容数据库，目标端只挂载 Agents 状态目录。执行 `uv run python -m scripts.website.migrate_agents_history` 并传入计划和两端地址。重复执行复用同批回执。核对账号归属、历史记录和重建索引摘要后，才启动普通业务入口。旧待执行队列需重新授权后恢复。
+独立 Compose 已移除 Agents 服务和工作台执行覆盖。旧工作台表在覆盖报告中标为 `retained_for_rollback`，随封存快照保留。恢复步骤见 [Happier 部署与切换](happier.md)。
 
 ### Thought 文档、表格与素材引用迁移
 

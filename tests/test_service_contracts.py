@@ -18,8 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def test_all_public_operations_and_tables_have_reviewable_owners():
     data = document(ROOT)
-    assert len(SERVICES) == 23
-    assert len(data["operations"]) > 590
+    assert len(SERVICES) == 22
+    assert len(data["operations"]) > 550
     assert len(data["tables"]) > 100
     assert any(
         t["table"] == "creative_install_operations" and t["service"] == "creative"
@@ -29,14 +29,12 @@ def test_all_public_operations_and_tables_have_reviewable_owners():
         next(o["service"] for o in data["operations"] if o["path"] == "/v1/auth/login")
         == "identity"
     )
-    assert (
-        next(o["service"] for o in data["operations"] if o["path"] == "/v1/agent-workbench/sources")
-        == "agents"
-    )
+    assert not any(o["path"].startswith("/v1/agent-workbench/") for o in data["operations"])
+    assert not any(page["service"] == "agents" for page in data["pages"])
     generate(ROOT, check=True)
     assert data["partitions"]["platform_settings"]["prefixes"]["account_defaults:"] == "models"
     catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
-    assert catalog.match("GET", "/v1/agent-workbench/sessions/owned").service == "agents"
+    assert catalog.match("GET", "/v1/agent-workbench/sessions/owned") is None
     assert catalog.match("GET", "/v1/unregistered") is None
 
 
@@ -47,7 +45,7 @@ def test_cloud_control_capabilities_keep_their_registered_owners():
     paths = {item["path"]: item["service"] for item in data["operations"]}
     assert paths["/v1/cloud-control/unlock"] == "identity"
     assert paths["/v1/cloud-control/desktop/connect"] == "remote"
-    assert paths["/v1/agent-workbench/chats/{chat_id}/events"] == "agents"
+    assert paths["/v1/cloud-control/happier/launch"] == "gateway"
     assert paths["/v1/code-agents/{agent_id}/enable"] == "agent-runtime"
     assert "/v1/code-agents/grants" not in paths
     tables = {item["table"]: item["service"] for item in data["tables"]}
@@ -79,13 +77,13 @@ def test_routes_refuse_ambiguous_templates_and_contract_drift():
 def test_identity_assertion_is_bound_to_service_method_path_and_signature():
     key = Ed25519PrivateKey.generate()
     actor = Actor("owner-a", "user", "session", ("studio:read",), session_id="session-a")
-    options = dict(service="agents", method="GET", path="/v1/agent-workbench/sessions")
+    options = dict(service="remote", method="GET", path="/v1/cloud-control/status")
     token = issue_context(actor, **options, private_key=key, key_id="one")
     assert verify_context(token, **options, public_key=key.public_key()) == actor
     for change in [
-        {"service": "remote"},
+        {"service": "assets"},
         {"method": "POST"},
-        {"path": "/v1/agent-workbench/candidates"},
+        {"path": "/v1/cloud-control/settings"},
         {"public_key": Ed25519PrivateKey.generate().public_key()},
     ]:
         with pytest.raises(jwt.InvalidTokenError):

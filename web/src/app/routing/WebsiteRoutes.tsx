@@ -9,7 +9,6 @@ import { PageErrorBoundary } from "@app/PageErrorBoundary";
 import { isWorkshopPage, hasReadOnlyRoute } from "@app/routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { accountAllows } from "@features/accounts/permissions";
-import { CloudControlAccess } from "@features/cloud-control/CloudControlAccess";
 import { CloudControlPage } from "@features/cloud-control/CloudControlPage";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { StudioShell } from "@app/layout/StudioSidebar";
@@ -26,7 +25,6 @@ import {
   VIDEO_EDITOR_MODULE,
   MOTION_COMPOSITOR_MODULE,
   INTERVIEW_ASSISTANT_MODULE,
-  AGENT_WORKBENCH_MODULE,
 } from "@app/applicationRegistry";
 import {
   isAudioAnnotationPage,
@@ -40,7 +38,6 @@ import {
 } from "@app/routes";
 
 const InterviewAssistantPage = lazy(INTERVIEW_ASSISTANT_MODULE.pages.workspace);
-const AgentWorkbenchPage = lazy(AGENT_WORKBENCH_MODULE.pages.workspace);
 
 const HomePage = lazy(() =>
   import("@features/home/HomePage").then((module) => ({
@@ -160,7 +157,6 @@ export default function WebsiteRoutes() {
     const applications: Record<string, string> = {
       "presentation-workshop": "演示工坊",
       "interview-assistant": "面试助手",
-      "agent-workbench": "Agent 工作台",
       "thought-workshop": "思绪工坊",
       "visual-workshop": "视觉创作工坊",
       "galgame-workshop": "Galgame 工坊",
@@ -247,25 +243,6 @@ export default function WebsiteRoutes() {
       </PageBoundary>
     );
   }
-
-  if (page === "agent-workbench-session" || page === "agent-workbench-sources")
-    return (
-      <StudioShell page="cloud-control" navigate={navigate}>
-        <CloudControlAccess>
-          <PageBoundary>
-            <AgentWorkbenchPage
-              key={me.user.id}
-              scopeKey={me.user.id}
-              sessionId={route.projectId}
-              sourcesPage={page === "agent-workbench-sources"}
-              onOpenSession={(id) => navigate("agent-workbench-session", id)}
-              onSources={() => navigate("agent-workbench-sources")}
-              onBack={() => navigate("cloud-control")}
-            />
-          </PageBoundary>
-        </CloudControlAccess>
-      </StudioShell>
-    );
 
   if (page === "interview-assistant-session")
     return (
@@ -634,8 +611,9 @@ export default function WebsiteRoutes() {
         ) : page === "cloud-control" ? (
           <CloudControlPage
             owner={me.user.id}
-            onHistory={(id) => navigate("agent-workbench-session", id)}
-            onSources={() => navigate("agent-workbench-sources")}
+            preferAgent={
+              new URLSearchParams(route.search).get("view") === "agent"
+            }
           />
         ) : page === "files" ? (
           <FileManagementPage

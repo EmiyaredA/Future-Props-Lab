@@ -2,6 +2,7 @@
 
 import os
 import time
+from datetime import timedelta
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -9,6 +10,7 @@ from sqlalchemy import select
 from studio.apps.identity.storage.models.accounts import AuthSession, User
 from studio.apps.identity.storage.models.cloud import CloudUnlock
 from studio.config.settings import get_cloud_settings
+from studio.contracts.identity.authentication import REAUTH_MINUTES
 from studio.contracts.identity.cloud_authority import TICKET_SECONDS as TICKET_SECONDS
 from studio.runtime.time import utc_now
 
@@ -72,6 +74,15 @@ async def desktop_authorized(db, principal, *, local):
             CloudUnlock.desktop_verified.is_(True),
             AuthSession.reauthenticated_at > AuthSession.created_at,
         )
+    return bool(await db.scalar(query))
+
+
+async def recently_reauthenticated(db, principal):
+    now = utc_now()
+    query = session_query(principal, now=now).where(
+        AuthSession.reauthenticated_at > AuthSession.created_at,
+        AuthSession.reauthenticated_at >= now - timedelta(minutes=REAUTH_MINUTES),
+    )
     return bool(await db.scalar(query))
 
 

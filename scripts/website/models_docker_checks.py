@@ -174,7 +174,7 @@ def verify_models(
 
     stable = {
         name: started(name)
-        for name in ("identity", "gateway", "agents", "assets", "rendering", "management")
+        for name in ("identity", "gateway", "assets", "rendering", "management")
     }
     compose("up", "--detach", "--no-deps", "--force-recreate", "models")
     assert (

@@ -77,7 +77,7 @@ def exercise_rendering(*, root, client, unsafe, compose, started, wait):
     assert response.status_code == 200, response.text
     with Image.open(io.BytesIO(response.content)) as image:
         assert image.format == "PNG"
-    stable = {name: started(name) for name in ("identity", "gateway", "agents", "assets", "portal")}
+    stable = {name: started(name) for name in ("identity", "gateway", "assets", "portal")}
     compose("up", "--detach", "--no-deps", "--force-recreate", "rendering")
     assert wait(client, path + "/preview").json()["kind"] == "video"
     assert all(started(name) == timestamp for name, timestamp in stable.items())

@@ -46,7 +46,6 @@ def exercise(
     subprocess.run(["git", "check-ignore", "--quiet", str(root)], cwd=ROOT, check=True)
     root.mkdir(parents=True, mode=0o700)
     (root / "identity").mkdir(mode=0o700)
-    (root / "agents").mkdir(mode=0o700)
     (root / "gateway").mkdir(mode=0o700)
     (root / "portal").mkdir(mode=0o700)
     gateway_token = secrets.token_urlsafe(48)
@@ -68,9 +67,6 @@ def exercise(
         "gateway-token": gateway_token.encode(),
         "service-credentials.json": json.dumps({"gateway": gateway_token}).encode(),
         "publishers.json": b"{}",
-        "workers.json": b"{}",
-        "native-ingress": secrets.token_urlsafe(48).encode(),
-        "agents-token": secrets.token_urlsafe(48).encode(),
         "identity-public.pem": key.public_key().public_bytes(
             serialization.Encoding.PEM,
             serialization.PublicFormat.SubjectPublicKeyInfo,
@@ -83,7 +79,6 @@ def exercise(
             control=control,
         ).encode(),
     }
-    material["agents.toml"] = material["identity.toml"]
     material["gateway.toml"] = material["identity.toml"]
     if thought_image:
         thought_token, assets_token, community_token, upload_token = thought_credentials
@@ -126,13 +121,7 @@ def exercise(
             "FPL_GATEWAY_IDENTITY_TOKEN": str(root / "gateway-token"),
             "FPL_GATEWAY_PUBLISHERS": str(root / "publishers.json"),
             "FPL_IDENTITY_SERVICE_CREDENTIALS": str(root / "service-credentials.json"),
-            "FPL_AGENTS_IMAGE": image,
-            "FPL_AGENTS_STATE": str(root / "agents"),
-            "FPL_AGENTS_CONFIG": str(root / "agents.toml"),
             "FPL_IDENTITY_PUBLIC_KEY": str(root / "identity-public.pem"),
-            "FPL_AGENTS_IDENTITY_TOKEN": str(root / "agents-token"),
-            "FPL_AGENTS_NATIVE_INGRESS": str(root / "native-ingress"),
-            "FPL_AGENTS_WORKERS": str(root / "workers.json"),
             "FPL_NATIVE_PORT": "19090",
             "FPL_SERVICE_UID": str(os.getuid()),
             "FPL_SERVICE_GID": str(os.getgid()),
@@ -161,7 +150,7 @@ def exercise(
         )
     fixture = {
         "services": {
-            "agents": {
+            "remote": {
                 "image": image,
                 "entrypoint": ["python", "/probe.py"],
                 "command": [],
@@ -242,7 +231,7 @@ def exercise(
         extra = ("thought", "assets") if thought_image else ()
         for service in extra:
             compose("run", "--rm", "--no-deps", service, "migrate")
-        compose("up", "--detach", "--no-build", "identity", "gateway", "agents", *extra)
+        compose("up", "--detach", "--no-build", "identity", "gateway", "remote", *extra)
         base = f"http://127.0.0.1:{local_port}"
         with httpx.Client(base_url=base, timeout=3, trust_env=False) as client:
 
@@ -270,7 +259,7 @@ def exercise(
                 client.get("/v1/auth/me", headers={"Origin": "https://attacker.test"}).status_code
                 == 403
             )
-            assert client.get("/v1/agent-workbench/sessions").status_code == 401
+            assert client.get("/v1/cloud-control/status").status_code == 401
             checks.append("unknown routes, Host/Origin and authorization are enforced")
             login = client.post(
                 "/v1/auth/login",
@@ -315,8 +304,8 @@ def exercise(
             )
             assert conflict_profile.status_code == 409
             checks.append("profile CAS, multipart avatar and private Range responses work")
-            # This disposable upstream verifies the transport protocol; it is not an Agents service.
-            proxied = wait_for("/v1/agent-workbench/sessions").json()
+            # The disposable upstream verifies the transport protocol.
+            proxied = wait_for("/v1/cloud-control/status").json()
             assert proxied == {
                 "owner": owner,
                 "local": True,
@@ -336,7 +325,7 @@ def exercise(
                     "X-Fpl-Context": "forged",
                     "X-Forwarded-Host": f"127.0.0.1:{local_port}",
                 }
-                response = public.get("/v1/agent-workbench/sessions", headers=public_headers)
+                response = public.get("/v1/cloud-control/status", headers=public_headers)
                 assert response.status_code == 200, response.text
                 assert response.json() == {
                     "owner": owner,

@@ -83,7 +83,7 @@ def exercise_assets(*, root, repo, client, unsafe, compose, started, wait, brows
         )
         if result.returncode:
             raise AssertionError(result.stdout + result.stderr)
-    stable = {service: started(service) for service in ("identity", "agents", "gateway")}
+    stable = {service: started(service) for service in ("identity", "gateway")}
     compose("up", "--detach", "--no-deps", "--force-recreate", "assets")
     assert wait(client, path).content == content
     assert all(started(service) == stamp for service, stamp in stable.items())

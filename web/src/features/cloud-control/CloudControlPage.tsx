@@ -1,11 +1,11 @@
 import { useEffect, useId, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Monitor, Terminal } from "lucide-react";
-import { WorkbenchChatPanel, workbenchKeys } from "@features/agent-workbench";
 import { CloudSetupDialog } from "./CloudSetupDialog";
 import { CloudControlAccess } from "./CloudControlAccess";
 import { CloudUnlock } from "./CloudUnlock";
 import { RemoteDesktop } from "./RemoteDesktop";
+import { RemoteApps } from "./RemoteApps";
 import { HappierWorkspace } from "./HappierWorkspace";
 import { readCloudStatus } from "./cloudApi";
 import "./workspace-layout.css";
@@ -22,7 +22,8 @@ function viewKey(owner: string) {
   return `fpl.cloud-control.view.${owner}`;
 }
 
-function savedView(owner: string): View {
+function savedView(owner: string, preferAgent: boolean): View {
+  if (preferAgent) return "agent";
   try {
     return localStorage.getItem(viewKey(owner)) === "agent"
       ? "agent"
@@ -34,16 +35,21 @@ function savedView(owner: string): View {
 
 function CloudWorkspace({
   owner,
-  onHistory,
-  onSources,
+  preferAgent = false,
+  desktopOnly = false,
 }: {
   owner: string;
-  onHistory: (id?: string) => void;
-  onSources: () => void;
+  preferAgent?: boolean;
+  desktopOnly?: boolean;
 }) {
-  const queryClient = useQueryClient();
   const paneId = useId();
-  const [view, setView] = useState<View>(() => savedView(owner));
+  const [selected, setView] = useState<View>(() =>
+    savedView(owner, preferAgent),
+  );
+  const view = desktopOnly ? "desktop" : selected;
+  useEffect(() => {
+    if (preferAgent) setView("agent");
+  }, [preferAgent]);
 
   function selectView(next: View) {
     setView(next);
@@ -61,6 +67,9 @@ function CloudWorkspace({
     refetchInterval: 15_000,
   });
   const [now, setNow] = useState(() => Date.now());
+  const desktopLabel = status.data?.remote_apps_enabled
+    ? "远程应用"
+    : "远程桌面";
   const unlocked = (status.data?.unlocked_until ?? 0) * 1000 > now;
   useEffect(() => {
     const interval = window.setInterval(() => setNow(Date.now()), 1000);
@@ -74,7 +83,7 @@ function CloudWorkspace({
       <header className="cloud-page-header">
         <div>
           <h1 id="cloud-control-title">云控</h1>
-          <p>远程桌面与 Agent 工作台</p>
+          <p>{desktopOnly ? desktopLabel : `${desktopLabel}与 Agent 工作台`}</p>
         </div>
         <div className="cloud-header-controls">
           <div
@@ -82,7 +91,7 @@ function CloudWorkspace({
             role="group"
             aria-label="云控视图"
           >
-            {viewOrder.map((item) => {
+            {(desktopOnly ? viewOrder.slice(0, 1) : viewOrder).map((item) => {
               const { label, Icon } = VIEWS[item];
               return (
                 <button
@@ -93,7 +102,7 @@ function CloudWorkspace({
                   onClick={() => selectView(item)}
                 >
                   <Icon size={15} aria-hidden="true" />
-                  {label}
+                  {item === "desktop" ? desktopLabel : label}
                 </button>
               );
             })}
@@ -109,34 +118,34 @@ function CloudWorkspace({
       </header>
       {status.error && <p role="alert">{status.error.message}</p>}
       <div className="cloud-workspace">
-        <RemoteDesktop
-          paneId={`${paneId}-desktop`}
-          status={status.data}
-          visible={view === "desktop"}
-          onUnlock={() => setDialog("desktop")}
-          onSetup={() => setDialog("setup")}
-          onChange={() => void status.refetch()}
-        />
-        {status.data?.happier_available ? (
+        {status.data?.remote_apps_enabled ? (
+          <RemoteApps
+            owner={owner}
+            paneId={`${paneId}-desktop`}
+            status={status.data}
+            visible={view === "desktop"}
+            onUnlock={() => setDialog("desktop")}
+            onChange={() => void status.refetch()}
+          />
+        ) : (
+          <RemoteDesktop
+            paneId={`${paneId}-desktop`}
+            status={status.data}
+            visible={view === "desktop"}
+            onUnlock={() => setDialog("desktop")}
+            onSetup={() => setDialog("setup")}
+            onChange={() => void status.refetch()}
+          />
+        )}
+        {!desktopOnly && (
           <HappierWorkspace
             paneId={`${paneId}-agent`}
             hidden={view !== "agent"}
+            loading={status.isPending}
+            available={status.data?.happier_available ?? false}
+            studioUrl={status.data?.happier_studio_url}
             unlocked={unlocked}
             onUnlock={() => setDialog("agent")}
-            onHistory={() => onHistory()}
-          />
-        ) : (
-          <WorkbenchChatPanel
-            paneId={`${paneId}-agent`}
-            hidden={view !== "agent"}
-            owner={owner}
-            host={status.data?.host_label ?? "Mac"}
-            enabled={status.data?.enabled ?? false}
-            unlocked={unlocked}
-            onUnlock={() => setDialog("agent")}
-            onSetup={status.data?.local ? () => setDialog("setup") : undefined}
-            onHistory={onHistory}
-            onSources={onSources}
           />
         )}
       </div>
@@ -144,17 +153,13 @@ function CloudWorkspace({
         <CloudSetupDialog
           owner={owner}
           close={() => setDialog(undefined)}
-          changed={() => {
-            void status.refetch();
-            void queryClient.invalidateQueries({
-              queryKey: workbenchKeys.executionCatalog(owner),
-            });
-          }}
+          changed={() => void status.refetch()}
         />
       )}
       {dialog && dialog !== "setup" && (
         <CloudUnlock
           purpose={dialog}
+          remoteApps={status.data?.remote_apps_enabled}
           close={() => setDialog(undefined)}
           unlocked={() => {
             setDialog(undefined);

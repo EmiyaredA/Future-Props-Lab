@@ -27,7 +27,6 @@ API_OWNERS = {
     "management": "management",
     "account": "identity",
     "auth": "identity",
-    "agent-workbench": "agents",
     "amadeus": "amadeus",
     "audio-annotation": "annotation",
     "automation": "gateway",
@@ -243,6 +242,11 @@ CONFIG_FIELD_OWNERS = {
         "vnc_host": "remote",
         "vnc_port": "remote",
         "vnc_password": "remote",
+        "apps_enabled": "remote",
+        "apps_host": "remote",
+        "apps_allowed": "remote",
+        "apps_turn_urls": "remote",
+        "apps_turn_secret": "remote",
         "projects": "agents",
     },
     "http": {"cors_origins": "gateway", "auth_cookie_secure": "identity"},
@@ -269,7 +273,8 @@ def configuration_owners():
         if set(owners) != fields.keys():
             raise ValueError(f"配置分组字段缺少服务归属：{group}")
         for service in owners.values():
-            if service != "per-service":
+            # Historical configuration stays attributable for backup and recovery.
+            if service not in {"per-service", "agents"}:
                 service_by_id(service)
         result[group] = owners
     return result

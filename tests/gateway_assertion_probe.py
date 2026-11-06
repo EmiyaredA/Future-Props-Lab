@@ -16,7 +16,7 @@ class Probe(BaseHTTPRequestHandler):
         try:
             actor = verify_context(
                 self.headers.get(HEADER, ""),
-                service="agents",
+                service="remote",
                 method="GET",
                 path=self.path.split("?")[0],
                 public_key=key,

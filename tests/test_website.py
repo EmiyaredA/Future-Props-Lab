@@ -220,7 +220,7 @@ async def test_public_admin_cannot_manage_host_or_public_access_even_with_spoofe
             ("/v1/automation/access", 403),
             ("/v1/tool-navigation/codex-source", 404),
             ("/v1/tool-navigation/storage-usage", 404),
-            ("/v1/agent-workbench/candidates", 403),
+            ("/v1/agent-workbench/candidates", 404),
         ]:
             response = await public.get(
                 path, headers={"x-fpl-desktop-token": "forged", "x-forwarded-for": "127.0.0.1"}

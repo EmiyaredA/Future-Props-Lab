@@ -99,27 +99,40 @@ function SetupForm({
       >
         <header className="cloud-setup-section-heading">
           <Monitor size={17} aria-hidden="true" />
-          <h3 id="cloud-setup-host">桌面连接</h3>
+          <h3 id="cloud-setup-host">
+            {data.remote_apps_enabled ? "远程应用连接" : "桌面连接"}
+          </h3>
         </header>
-        <dl className="cloud-setup-readiness">
-          <div>
-            <dt>guacd</dt>
-            <dd data-ready={data.guacd_ready}>
-              {data.guacd_ready ? "就绪" : "未就绪"}
-            </dd>
-          </div>
-          <div>
-            <dt>Mac 屏幕共享</dt>
-            <dd data-ready={data.screen_sharing_ready === true}>
-              {data.screen_sharing_ready === null
-                ? "待验证"
-                : data.screen_sharing_ready
-                  ? "就绪"
-                  : "未就绪"}
-            </dd>
-          </div>
-        </dl>
-        {!data.guacd_ready && (
+        {data.remote_apps_enabled ? (
+          <dl className="cloud-setup-readiness">
+            <div>
+              <dt>Mac 远程应用辅助程序</dt>
+              <dd data-ready={data.remote_apps_host_ready}>
+                {data.remote_apps_host_ready ? "已配置" : "未配置"}
+              </dd>
+            </div>
+          </dl>
+        ) : (
+          <dl className="cloud-setup-readiness">
+            <div>
+              <dt>guacd</dt>
+              <dd data-ready={data.guacd_ready}>
+                {data.guacd_ready ? "就绪" : "未就绪"}
+              </dd>
+            </div>
+            <div>
+              <dt>Mac 屏幕共享</dt>
+              <dd data-ready={data.screen_sharing_ready === true}>
+                {data.screen_sharing_ready === null
+                  ? "待验证"
+                  : data.screen_sharing_ready
+                    ? "就绪"
+                    : "未就绪"}
+              </dd>
+            </div>
+          </dl>
+        )}
+        {!data.remote_apps_enabled && !data.guacd_ready && (
           <p className="cloud-setup-hint">启动本机 guacd 后刷新状态。</p>
         )}
         <label className="cloud-setup-field">
@@ -140,7 +153,7 @@ function SetupForm({
               value={password}
               onChange={(event) => setPassword(event.target.value)}
             />
-            <small>保存桌面设置前验证。</small>
+            <small>保存连接设置前验证。</small>
           </label>
         ) : (
           <div className="cloud-setup-verified">
@@ -159,13 +172,16 @@ function SetupForm({
         <div className="cloud-setup-public">
           <SetupCheckbox checked={publicEnabled} onChange={setPublicEnabled}>
             {data.public_desktop_vnc_only
-              ? "允许已授权管理员从公网连接桌面"
+              ? data.remote_apps_enabled
+                ? "允许已授权管理员从公网连接应用"
+                : "允许已授权管理员从公网连接桌面"
               : "允许已授权管理员从公网连接"}
           </SetupCheckbox>
           {data.public_desktop_vnc_only && (
             <p className="cloud-setup-hint">
-              公网桌面首次连接需要验证 FPL 管理员密码，再输入 VNC 密码。Agent
-              执行仅限本机。
+              {data.remote_apps_enabled
+                ? "公网首次连接应用需要验证 FPL 管理员密码。Agent 执行仅限本机。"
+                : "公网桌面首次连接需要验证 FPL 管理员密码，再输入 VNC 密码。Agent 执行仅限本机。"}
             </p>
           )}
         </div>

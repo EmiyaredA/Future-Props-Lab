@@ -666,15 +666,14 @@ export const PLATFORM_READING: Record<
   },
   "agent-workbench/overview": {
     summary:
-      "以管理员账号在网站打开「云控 → Agent 工作台」。先查看来源，再阅读会话；这里展示已有 Codex、Claude Code、OpenCode、DeepSeek H",
+      "日常网站的云控通过 Happier 管理编程会话。指定管理员需要 FPL 密码解锁和 Happier 设备密钥。",
     related: [
       { libraryId: "agent-workbench", documentId: "workflow" },
       { libraryId: "agent-workbench", documentId: "storage" },
     ],
   },
   "agent-workbench/workflow": {
-    summary:
-      "打开「来源」，选择已检测目录或通过原生目录选择器指定位置。核对工具和路径，确认当前账号保存阅读副本，点击绑定并开始同步。返回会话并在原工具产生一条完整新记录，应看到最后同",
+    summary: "使用经过管理员批准配对的 Runner，选择授权项目和已经配置的 CLI。",
     related: [
       { libraryId: "agent-workbench", documentId: "storage" },
       { libraryId: "agent-workbench", documentId: "delivery" },
@@ -682,23 +681,21 @@ export const PLATFORM_READING: Record<
   },
   "agent-workbench/storage": {
     summary:
-      "原生日志是上下文真源，FPL 将条目、索引、检查点和来源绑定保存到当前账号。同一来源不能被不同账号重叠绑定；管理员也不能读取其他账号的会话副本。",
+      "Happier 的设备密钥保护新会话。旧 FPL 会话随停机快照归档，可用对应部署版本恢复。",
     related: [
       { libraryId: "agent-workbench", documentId: "delivery" },
       { libraryId: "agent-workbench", documentId: "help" },
     ],
   },
   "agent-workbench/delivery": {
-    summary:
-      "选中会话后先核对 Agent、项目路径和来源依据，再浏览分页历史。全文搜索只检索已经同步的正文；尚未落盘的半条记录要等原端完成写入。",
+    summary: "Happier 原生会话管理回复、审批和项目文件浏览。",
     related: [
       { libraryId: "agent-workbench", documentId: "help" },
       { libraryId: "agent-workbench", documentId: "overview" },
     ],
   },
   "agent-workbench/help": {
-    summary:
-      "来源状态异常时先检查原工具路径和格式，再重新扫描。缺少默认 Pi 目录时使用实际宿主目录。OpenCode 可连接已运行的本机回环 HTTP 实例，SSE 只触发补读，不",
+    summary: "先区分 Studio 入口、FPL 解锁、Relay 和 Runner 状态，再恢复连接。",
     related: [
       { libraryId: "agent-workbench", documentId: "overview" },
       { libraryId: "agent-workbench", documentId: "workflow" },

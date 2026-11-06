@@ -2,6 +2,8 @@
 
 import asyncio
 import os
+import sys
+from pathlib import Path
 
 import tomlkit
 from fastapi import HTTPException
@@ -29,9 +31,15 @@ async def probe_port(port, *, vnc=False):
 
 
 async def read_snapshot(path, raw, settings):
-    guacd, sharing = await asyncio.gather(
-        probe_port(settings.fpl_cloud_control_guacd_port),
-        probe_port(settings.fpl_cloud_control_vnc_port, vnc=True),
+    apps = settings.fpl_cloud_control_apps_enabled
+    host = Path(settings.fpl_cloud_control_apps_host)
+    guacd, sharing = (
+        (False, None)
+        if apps
+        else await asyncio.gather(
+            probe_port(settings.fpl_cloud_control_guacd_port),
+            probe_port(settings.fpl_cloud_control_vnc_port, vnc=True),
+        )
     )
     if config_bytes(path) != raw:
         raise HTTPException(409, "配置已变更，请刷新后重试")
@@ -42,6 +50,14 @@ async def read_snapshot(path, raw, settings):
         public_enabled=settings.fpl_cloud_control_public_enabled,
         public_desktop_vnc_only=settings.fpl_cloud_control_public_desktop_vnc_only,
         guacd_ready=guacd,
+        remote_apps_enabled=apps,
+        remote_apps_host_ready=(
+            apps
+            and sys.platform == "darwin"
+            and host.is_absolute()
+            and host.is_file()
+            and os.access(host, os.X_OK)
+        ),
         screen_sharing_ready=(
             sharing
             if settings.fpl_cloud_control_vnc_host in {"127.0.0.1", "host.docker.internal"}

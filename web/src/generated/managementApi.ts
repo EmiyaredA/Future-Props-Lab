@@ -276,7 +276,7 @@ export interface components {
          * ServiceId
          * @enum {string}
          */
-        ServiceId: "gateway" | "management" | "identity" | "portal" | "agents" | "remote" | "visual" | "thought" | "galgame" | "video" | "motion" | "presentation" | "annotation" | "director" | "interview" | "creative" | "assets" | "models" | "rendering" | "agent-runtime" | "integrations" | "amadeus" | "tools";
+        ServiceId: "gateway" | "management" | "identity" | "portal" | "remote" | "visual" | "thought" | "galgame" | "video" | "motion" | "presentation" | "annotation" | "director" | "interview" | "creative" | "assets" | "models" | "rendering" | "agent-runtime" | "integrations" | "amadeus" | "tools";
         /**
          * ServicePhase
          * @enum {string}

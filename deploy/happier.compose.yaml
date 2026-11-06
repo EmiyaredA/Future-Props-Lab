@@ -1,32 +1,20 @@
 # Dedicated local relay and CLI runner. Public traffic must use the FPL ingress.
 services:
   relay:
-    image: ${FPL_HAPPIER_RELAY_IMAGE:-fpl/happier:2aeb139d}
+    image: ${FPL_HAPPIER_RELAY_IMAGE:-fpl/happier-e2ee:2aeb139d}
     ports:
       - "127.0.0.1:${FPL_HAPPIER_RELAY_PORT:-3005}:3005"
     environment:
       HAPPIER_PUBLIC_SERVER_URL: ${FPL_HAPPIER_ORIGIN:?Set the canonical HTTPS Happier origin}
       HAPPIER_WEBAPP_URL: ${FPL_HAPPIER_ORIGIN:?Set the canonical HTTPS Happier origin}
-      AUTH_ANONYMOUS_SIGNUP_ENABLED: "false"
-      AUTH_REQUIRED_LOGIN_PROVIDERS: fpl
-      AUTH_PROVIDERS_CONFIG_PATH: /happier-auth/providers.json
-      FPL_HAPPIER_OIDC_CLIENT_SECRET: ${FPL_HAPPIER_OIDC_CLIENT_SECRET:?Set the FPL OIDC client secret}
-      HAPPIER_FEATURE_E2EE__KEYLESS_ACCOUNTS_ENABLED: "1"
-      HAPPIER_FEATURE_ENCRYPTION__STORAGE_POLICY: plaintext_only
-      HAPPIER_FEATURE_AUTH_OAUTH__KEYLESS_ENABLED: "1"
-      HAPPIER_FEATURE_AUTH_OAUTH__KEYLESS_PROVIDERS: fpl
-      HAPPIER_FEATURE_AUTH_OAUTH__KEYLESS_AUTO_PROVISION: "1"
+      AUTH_ANONYMOUS_SIGNUP_ENABLED: ${FPL_HAPPIER_BOOTSTRAP_SIGNUP:-false}
+      HAPPIER_FEATURE_ENCRYPTION__STORAGE_POLICY: required_e2ee
+      HAPPIER_FEATURE_E2EE__KEYLESS_ACCOUNTS_ENABLED: "0"
     volumes:
-      - relay-data:/data
-      - type: bind
-        source: ${FPL_HAPPIER_PROVIDERS_FILE:?Set the absolute OIDC provider file path}
-        target: /happier-auth/providers.json
-        read_only: true
-        bind:
-          create_host_path: false
+      - relay-e2ee-data:/data
 
   runner:
-    image: ${FPL_HAPPIER_RUNNER_IMAGE:-fpl/happier-runner:2aeb139d}
+    image: ${FPL_HAPPIER_RUNNER_IMAGE:-fpl/happier-runner-e2ee:2aeb139d}
     user: "1000:1000"
     command: ["happier", "daemon", "start-sync"]
     working_dir: /projects/workspace
@@ -43,7 +31,7 @@ services:
     tmpfs:
       - /tmp:mode=1777
     volumes:
-      - runner-home:/runner
+      - runner-e2ee-home:/runner
       - type: bind
         source: ${FPL_HAPPIER_PROJECT_ROOT:?Set the absolute authorized project directory}
         target: /projects/workspace
@@ -51,5 +39,5 @@ services:
           create_host_path: false
 
 volumes:
-  relay-data:
-  runner-home:
+  relay-e2ee-data:
+  runner-e2ee-home:

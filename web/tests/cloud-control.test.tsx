@@ -30,7 +30,7 @@ vi.mock("@features/cloud-control/cloudApi", () => ({
   }),
 }));
 
-it("opens Happier once and preserves the same frame across cloud view changes", async () => {
+it("retries an unavailable relay and preserves the same frame across cloud view changes", async () => {
   const queryClient = new QueryClient();
   queryClient.setQueryDefaults(["cloud-control", "happier-owner", "status"], {
     staleTime: Infinity,
@@ -54,7 +54,9 @@ it("opens Happier once and preserves the same frame across cloud view changes", 
     );
     expect(init.credentials).toBe("include");
     expect((init.body as URLSearchParams).get("ticket")).toBe("fixture");
-    return { ok: true };
+    return exchange.mock.calls.length === 1
+      ? { status: 503, ok: false }
+      : { ok: true };
   });
   vi.stubGlobal("fetch", exchange);
   try {
@@ -64,17 +66,17 @@ it("opens Happier once and preserves the same frame across cloud view changes", 
           userId="happier-owner"
           permissions={["cloud-control.access"]}
         >
-          <CloudControlPage
-            owner="happier-owner"
-            onHistory={vi.fn()}
-            onSources={vi.fn()}
-          />
+          <CloudControlPage owner="happier-owner" />
         </AccountAccessProvider>
       </QueryClientProvider>,
     );
     expect(exchange).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /^Agent 工作台$/ }));
     await waitFor(() => expect(exchange).toHaveBeenCalledTimes(1));
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Happier 暂不可用",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
     const frame = await screen.findByTitle("Happier Agent 工作台");
     await waitFor(() =>
       expect(frame).toHaveAttribute("src", "https://happier.example.test/"),
@@ -86,22 +88,13 @@ it("opens Happier once and preserves the same frame across cloud view changes", 
     fireEvent.click(screen.getByRole("button", { name: /^Agent 工作台$/ }));
     expect(screen.getByTitle("Happier Agent 工作台")).toBe(frame);
     expect(frame).toBeVisible();
-    expect(exchange).toHaveBeenCalledTimes(1);
+    expect(exchange).toHaveBeenCalledTimes(2);
   } finally {
     vi.unstubAllGlobals();
     localStorage.removeItem("fpl.cloud-control.view.happier-owner");
   }
 });
-vi.mock("@features/agent-workbench/executionApi", () => ({
-  getChats: async () => [],
-}));
-vi.mock("@features/agent-workbench/api", async (original) => ({
-  ...(await original<typeof import("@features/agent-workbench/api")>()),
-  getSessions: async () => ({ items: [] }),
-}));
-
-it("switches cloud views and remembers the selection per account", () => {
-  const open = vi.fn();
+it("switches cloud views and remembers the selection per account", async () => {
   const queryClient = new QueryClient();
   const view = (owner: string) => (
     <QueryClientProvider client={queryClient}>
@@ -109,7 +102,7 @@ it("switches cloud views and remembers the selection per account", () => {
         userId={owner}
         permissions={["cloud-control.access"]}
       >
-        <CloudControlPage owner={owner} onHistory={open} onSources={vi.fn()} />
+        <CloudControlPage owner={owner} />
       </AccountAccessProvider>
     </QueryClientProvider>
   );
@@ -122,9 +115,9 @@ it("switches cloud views and remembers the selection per account", () => {
     const agent = screen.getByRole("region", { name: "Agent 工作台" });
     expect(agent).toBeVisible();
     expect(screen.queryByRole("region", { name: "远程桌面" })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "会话历史" }));
-    fireEvent.click(screen.getByRole("button", { name: "查看完整工作台" }));
-    expect(open).toHaveBeenCalledWith();
+    expect(
+      await screen.findByText("此账号或入口尚未启用 Happier。"),
+    ).toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /^远程桌面$/ }));
     fireEvent.click(screen.getByRole("button", { name: /^Agent 工作台$/ }));
     expect(screen.getByRole("region", { name: "Agent 工作台" })).toBe(agent);
@@ -184,16 +177,15 @@ it("omits the workbench from applications and stale recent entries", () => {
 it("preserves workbench deep links and removes retired tool pages", () => {
   expect(parseRoute("/cloud-control").page).toBe("cloud-control");
   expect(pathFor("cloud-control")).toBe("/cloud-control");
-  expect(parseRoute("/agents/sessions/session-one")).toMatchObject({
-    page: "agent-workbench-session",
-    projectId: "session-one",
-  });
-  expect(parseRoute("/apps/agent-workbench/sources").page).toBe(
-    "agent-workbench-sources",
-  );
-  expect(pathFor("agent-workbench-session", "session-one")).toBe(
+  for (const path of [
     "/agents/sessions/session-one",
-  );
+    "/apps/agent-workbench/sources",
+  ]) {
+    expect(parseRoute(path)).toEqual({
+      page: "cloud-control",
+      search: "?view=agent",
+    });
+  }
   expect(parseRoute("/tools/storage-usage").page).toBe("tools");
   expect(parseRoute("/tools/codex-model-source").page).toBe("tools");
 });

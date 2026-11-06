@@ -325,7 +325,6 @@ class TaskAuthorizationRequest(BaseModel):
 
 
 TASK_PERMISSIONS = {
-    "agents": frozenset({CLOUD_CONTROL_PERMISSION}),
     "interview": frozenset({"content.write"}),
     "rendering": frozenset({"content.write"}),
     "visual": frozenset({"content.write"}),

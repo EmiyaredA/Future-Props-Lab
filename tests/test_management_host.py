@@ -31,7 +31,7 @@ def control(tmp_path, runner):
     return DeploymentControl(
         compose_file=compose,
         project_name="isolated-test",
-        services=["gateway", "portal", "agents"],
+        services=["gateway", "portal", "remote"],
         environment={},
         tunnels={"business": Tunnel(), "management": Tunnel()},
         runner=runner,
@@ -51,7 +51,7 @@ async def test_fixed_commands_do_not_stop_governance_or_accept_arbitrary_argumen
                 (
                     '[{"Service":"gateway","State":"running"},'
                     '{"Service":"portal","State":"running"},'
-                    '{"Service":"agents","State":"running"}]'
+                    '{"Service":"remote","State":"running"}]'
                 )
                 if not any("kill" in call for call in calls)
                 else "[]"
@@ -67,7 +67,7 @@ async def test_fixed_commands_do_not_stop_governance_or_accept_arbitrary_argumen
         return None
 
     await managed.execute("management.application", {"action": "stop"}, allowed)
-    assert any(command[-4:] == ["SIGTERM", "gateway", "portal", "agents"] for command in calls)
+    assert any(command[-4:] == ["SIGTERM", "gateway", "portal", "remote"] for command in calls)
     assert not any(
         "identity" in command or "management" in command or "models" in command for command in calls
     )
@@ -310,7 +310,7 @@ async def test_partial_business_crash_keeps_siblings_running_and_recovers(tmp_pa
 
     def runner(command, **_kwargs):
         calls.append(command)
-        rows = [{"Service": name, "State": "running"} for name in ("gateway", "portal", "agents")]
+        rows = [{"Service": name, "State": "running"} for name in ("gateway", "portal", "remote")]
         if not recovered:
             if failure == "missing":
                 rows.pop(1)
@@ -358,7 +358,7 @@ async def test_business_start_failure_preserves_running_services(tmp_path):
         states = (
             "[]"
             if any("kill" in call for call in calls)
-            else '[{"Service":"agents","State":"running"}]'
+            else '[{"Service":"remote","State":"running"}]'
         )
         return SimpleNamespace(returncode=0, stdout=states if "ps" in command else "")
 

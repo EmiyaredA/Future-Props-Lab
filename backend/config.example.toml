@@ -31,6 +31,12 @@ host_label = "Mac"
 guacd_port = 4822
 vnc_host = "host.docker.internal"
 vnc_port = 5900
+# 通过局域网与公网验收后，启用 Mac 单窗口远控。
+apps_enabled = false
+apps_host = ""
+apps_allowed = []
+apps_turn_urls = []
+apps_turn_secret = ""
 # VNC 密码在网页连接弹窗输入。
 # [cloud_control.projects.my-project]
 # label = "My project"
@@ -43,8 +49,6 @@ origin = ""
 admin_user_id = ""
 listen_port = 28082
 relay_port = 3005
-# 仅在正式 config.toml 写入随机密钥，与 Happier OIDC 客户端配置一致。
-oidc_client_secret = ""
 
 [remote_web]
 # 兼容旧配置字段，自动启动由 website.public_enabled 控制。

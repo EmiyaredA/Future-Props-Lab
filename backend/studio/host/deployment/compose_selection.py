@@ -44,7 +44,6 @@ FEATURE_FILES = (
         ("video", "visual"),
         ("FPL_VIDEO_SEGMENT_VISUAL_KEY", "FPL_VISUAL_SEGMENT_ASSETS_KEY"),
     ),
-    ("agents-execution", ("agents",), ("FPL_AGENTS_EXECUTION_WORKERS",)),
     ("tools-native", ("tools",), ("FPL_TOOLS_NATIVE_CONFIG",)),
     ("interview-native", ("interview",), ("FPL_INTERVIEW_NATIVE_OPTIONS",)),
     ("amadeus-native", ("amadeus",), ("FPL_AMADEUS_NATIVE_CONFIG",)),

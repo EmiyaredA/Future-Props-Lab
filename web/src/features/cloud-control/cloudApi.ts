@@ -30,3 +30,19 @@ export const getSetup = async (signal?: AbortSignal) =>
   unwrap(await api.GET("/v1/cloud-control/settings", { signal }));
 export const saveSetup = async (body: Schemas["CloudSetupUpdate"]) =>
   unwrap(await api.PUT("/v1/cloud-control/settings", { body }));
+
+export type RemoteApp = Schemas["RemoteApp"];
+export type InstalledRemoteApps = Schemas["InstalledRemoteApps"];
+export const readRemoteApps = async (signal?: AbortSignal) =>
+  unwrap(await api.GET("/v1/cloud-control/apps", { signal }));
+export const readInstalledRemoteApps = async (signal?: AbortSignal) =>
+  unwrap(await api.GET("/v1/cloud-control/apps/installed", { signal }));
+export const saveRemoteApps = async (body: Schemas["SaveRemoteApps"]) =>
+  unwrap(await api.PUT("/v1/cloud-control/apps", { body }));
+export const connectRemoteApp = async (app_id: string, signal: AbortSignal) =>
+  unwrap(
+    await api.POST("/v1/cloud-control/apps/connect", {
+      body: { app_id },
+      signal,
+    }),
+  );

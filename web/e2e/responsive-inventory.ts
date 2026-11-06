@@ -14,8 +14,6 @@ export const desktopSurfaces = {} as const;
 
 // Every application route must name its responsive scenario owner.
 export const responsiveOwners = {
-  "agent-workbench-session": "shell",
-  "agent-workbench-sources": "shell",
   "interview-assistant-session": "shell",
   home: "shell",
   "creative-workshop": "shell",
@@ -116,7 +114,6 @@ export const independentApplications = {
   director: ["/apps/director-desk", "/apps/director-desk/projects/:id"],
   tools: ["/tools", "/tools/video-frame-exporter", "/tools/video-downloader"],
   portal: ["/", "/home", "/apps", "/docs.html"],
-  agents: ["/agents", "/agents/sources", "/agents/sessions/:id"],
 } as const;
 
 export const staticPaths = [

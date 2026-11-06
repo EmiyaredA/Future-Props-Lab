@@ -7,7 +7,6 @@ import { VISUAL_WORKSHOP_MODULE } from "@features/visual-workshop/module";
 import { VIDEO_EDITOR_MODULE } from "@features/video-editor/module";
 import { MOTION_COMPOSITOR_MODULE } from "@features/motion-compositor/module";
 import { INTERVIEW_ASSISTANT_MODULE } from "@features/interview-assistant/module";
-import { AGENT_WORKBENCH_MODULE } from "@features/agent-workbench/module";
 
 export const APPLICATION_MODULES = [
   PRESENTATION_WORKSHOP_MODULE,
@@ -24,7 +23,7 @@ export const APPLICATION_MODULES = [
 export { APPLICATION_DEFINITIONS } from "@features/applications/definitions";
 
 export function matchApplicationPath(pathname: string) {
-  for (const application of [AGENT_WORKBENCH_MODULE, ...APPLICATION_MODULES]) {
+  for (const application of APPLICATION_MODULES) {
     const match = application.matchPath(pathname);
     if (match) return match;
   }
@@ -36,7 +35,7 @@ export function applicationPathFor(
   projectId?: string,
   documentId?: string,
 ) {
-  for (const application of [AGENT_WORKBENCH_MODULE, ...APPLICATION_MODULES]) {
+  for (const application of APPLICATION_MODULES) {
     const path = (
       application as import("@features/applications/module").ApplicationModule
     ).pathFor(page, projectId, documentId);
@@ -58,4 +57,3 @@ export { THOUGHT_WORKSHOP_MODULE };
 export { PRESENTATION_WORKSHOP_MODULE };
 export { DIRECTOR_DESK_MODULE };
 export { INTERVIEW_ASSISTANT_MODULE };
-export { AGENT_WORKBENCH_MODULE };

@@ -222,7 +222,7 @@ async def scenario():
                         "application": {"phase": "running"},
                         "services": [
                             {
-                                "service_id": "agents",
+                                "service_id": "remote",
                                 "phase": "stopped",
                                 "reason": "process_stopped",
                             }

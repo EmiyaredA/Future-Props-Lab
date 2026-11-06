@@ -15,7 +15,6 @@ const web = path.join(repo, "web");
 const service = process.argv[2];
 if (
   ![
-    "agents",
     "portal",
     "assets",
     "management",

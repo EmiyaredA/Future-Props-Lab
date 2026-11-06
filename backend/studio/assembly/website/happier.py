@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request, Response
 
 from studio.apps.identity.storage.cloud_access import unlock_expiry
-from studio.apps.identity.use_cases.happier_oidc import EXCHANGE_PATH, HappierIdentity
+from studio.apps.identity.use_cases.happier_access import EXCHANGE_PATH, HappierAccess
 from studio.assembly.http_dependencies import StudioAuth
 from studio.assembly.website.happier_ingress import HappierIngress
 from studio.contracts.identity.happier import HappierLaunch
@@ -17,25 +17,28 @@ class Happier:
         self.admin_user_id = settings.fpl_happier_admin_user_id
         self.sessions = sessions
         self.read_cloud_settings = read_cloud_settings
-        self.identity = HappierIdentity(
+        self.access = HappierAccess(
             origin=settings.fpl_happier_origin,
-            client_secret=settings.fpl_happier_oidc_client_secret,
             authorize_grant=self.authorize_grant,
         )
         self.relay_port = settings.fpl_happier_relay_port
 
     def ingress(self):
         return HappierIngress(
-            self.identity, studio_origin=self.studio_origin, relay_port=self.relay_port
+            self.access, studio_origin=self.studio_origin, relay_port=self.relay_port
+        )
+
+    def eligible(self, principal):
+        return (
+            principal.auth_kind == "session"
+            and principal.user_id == self.admin_user_id
+            and principal.is_platform_admin
         )
 
     def available(self, request, principal):
-        origin = f"{request.url.scheme}://{request.url.netloc}"
         return (
-            origin == self.studio_origin
-            and principal.auth_kind == "session"
-            and principal.user_id == self.admin_user_id
-            and principal.is_platform_admin
+            self.eligible(principal)
+            and f"{request.url.scheme}://{request.url.netloc}" == self.studio_origin
         )
 
     async def expiry(self, principal, local):
@@ -60,7 +63,7 @@ async def launch_happier(request: Request, response: Response, principal: Studio
     expires = await happier.expiry(principal, local)
     if not expires:
         raise HTTPException(403, "请先验证管理员密码")
-    ticket = happier.identity.launch(principal, local, expires)
+    ticket = happier.access.launch(principal, local, expires)
     if ticket is None:
         raise HTTPException(429, "Happier 启动请求过多，请稍后重试")
-    return HappierLaunch(exchange_url=happier.identity.origin + EXCHANGE_PATH, ticket=ticket)
+    return HappierLaunch(exchange_url=happier.access.origin + EXCHANGE_PATH, ticket=ticket)

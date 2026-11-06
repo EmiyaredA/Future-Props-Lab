@@ -55,7 +55,6 @@
     "services:contracts:check": "uv run python scripts/website/service_contracts.py --check",
     "services:build": "uv run python scripts/website/service_build.py",
     "services:build:web": "npm run build:service --workspace web --",
-    "services:test:agents": "uv run python scripts/website/agents_docker_smoke.py",
     "services:test:docker": "uv run python scripts/website/service_docker_smoke.py",
     "images:generate": "uv run python scripts/generate_image_variants.py",
     "images:check": "uv run python scripts/generate_image_variants.py --check",

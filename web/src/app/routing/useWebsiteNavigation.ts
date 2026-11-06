@@ -22,7 +22,6 @@ export function useWebsiteNavigation() {
       );
     }
     if (
-      window.location.pathname.startsWith("/apps/agent-workbench") ||
       /^\/tools\/(storage-usage|codex-model-source)\/?$/.test(
         window.location.pathname,
       )

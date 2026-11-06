@@ -1,21 +1,13 @@
-# Agent 工作台：查阅与附件下载
+# Agent 工作台：查看文件与继续会话
 
-本篇说明管理员如何使用云控中的 Agent 工作台，核对实际操作、保存状态和账号边界。普通用户不能访问工作台，管理员也不能读取其他账号的副本。
+Happier 原生会话管理回复、审批和项目文件浏览。
 
 ## 操作与核验
 
-选中会话后先核对 Agent、项目路径和来源依据，再浏览分页历史。全文搜索只检索已经同步的正文；尚未落盘的半条记录要等原端完成写入。
-
-完成后核对页面显示的账号、对象名称和最新状态；若状态仍为进行中或有错误提示，先保留当前内容并查看原因，不能把按钮点击本身视为操作成功。
-
-## 保存与能力边界
-
-附件入口只下载当前账号已同步消息实际引用、且处于绑定根内的普通文件，单文件上限 16 MiB。根外项目文件和符号链接不可读取；会话阅读副本不等于完整工程备份，本批没有跨工具恢复原生会话的导出功能。
-
-> [!NOTE]
-> 本机与公网浏览器访问同一部署时使用相同账号隔离规则。新的来源绑定只能在运行 FPL 的 Mac 上，经后端确认的本机网站入口执行；公开地址不会扩大账号权限。
+1. 在会话里确认机器和项目路径，在文件面板打开项目文件。核对面板显示的路径与当前项目一致。
+2. 刷新或重新进入 Happier，从列表打开同一个会话。看到已有消息后再发送新消息，确认新回复追加到该会话。
 
 ## 相关阅读
 
-- [Agent 工作台：来源不可达与能力边界](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/help)
-- [Agent 工作台：阅读现有会话](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/overview)
+- [配对并开始会话](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/workflow)
+- [排查连接与解锁](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/help)

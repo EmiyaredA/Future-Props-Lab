@@ -11,7 +11,7 @@ REVISION = "2aeb139d391ba53685d18805d784438fd0e11a5a"
 SETTINGS = "apps/ui/sources/sync/domains/settings/registry/local/localSettingDefinitions.ts"
 
 
-def build(checkout, origin, relay_image, tag, runner_tag):
+def build(checkout, origin, tag, runner_tag):
     output = ROOT / ".local" / "happier-build"
     subprocess.run(["git", "check-ignore", "-q", str(output / "context")], cwd=ROOT, check=True)
     output.mkdir(parents=True, exist_ok=True)
@@ -34,13 +34,12 @@ def build(checkout, origin, relay_image, tag, runner_tag):
         defaults.write_text(source.replace(before, before.replace("false", "true")))
         dockerfile = context / "Dockerfile"
         source = dockerfile.read_text().replace(
-            "FROM node:", "ARG FPL_HAPPIER_RELAY_BASE=scratch\n\nFROM node:", 1
+            "RUN apt-get update",
+            "RUN sed -i 's|http://deb.debian.org|https://deb.debian.org|g' "
+            "/etc/apt/sources.list.d/debian.sources && apt-get -o Acquire::Retries=3 update",
         )
         dockerfile.write_text(
             source
-            + "\nFROM ${FPL_HAPPIER_RELAY_BASE} AS fpl-relay\n"
-            + "COPY --from=webapp-builder /repo/apps/ui/dist /opt/fpl-happier/ui-web\n"
-            + "ENV HAPPIER_SERVER_UI_DIR=/opt/fpl-happier/ui-web\n"
             + "\nFROM deps-alpine-build AS fpl-cli-builder\n"
             + "COPY . .\n"
             + "RUN cd apps/cli && HAPPIER_CLI_PKGROLL_TIMEOUT_MS=1800000 "
@@ -57,11 +56,9 @@ def build(checkout, origin, relay_image, tag, runner_tag):
             if runner_tag
             else [
                 "--target",
-                "fpl-relay",
+                "relay-server-local-source",
                 "--build-arg",
                 f"EXPO_PUBLIC_HAPPIER_SERVER_URL={origin}",
-                "--build-arg",
-                f"FPL_HAPPIER_RELAY_BASE={relay_image}",
                 "--tag",
                 tag,
             ]
@@ -73,10 +70,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("checkout", type=Path)
     parser.add_argument("--origin")
-    parser.add_argument("--relay-image")
-    parser.add_argument("--tag", default=f"fpl/happier:{REVISION[:8]}")
+    parser.add_argument("--tag", default=f"fpl/happier-e2ee:{REVISION[:8]}")
     parser.add_argument("--runner-tag", help="Build the matching CLI runner instead of the relay")
     args = parser.parse_args()
-    if not args.runner_tag and not (args.origin and args.relay_image):
-        parser.error("Relay builds require --origin and --relay-image")
-    build(args.checkout, args.origin, args.relay_image, args.tag, args.runner_tag)
+    if not args.runner_tag and not args.origin:
+        parser.error("Relay builds require --origin")
+    build(args.checkout, args.origin, args.tag, args.runner_tag)

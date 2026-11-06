@@ -1,6 +1,6 @@
 # Future Props Lab
 
-「云控 → Agent 工作台」仅允许管理员浏览器 Session 访问，支持查看与持续同步本机 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 的已有会话。APP／CLI 依据原生证据识别；在本机网站入口绑定当前账号来源后开始采集，本批续聊输入禁用。使用、配置及兼容边界见 [Agent 工作台](docs/reference/agent-workbench.md)。
+「云控 → Agent 工作台」在日常网站嵌入自托管 Happier。FPL 管理员通过密码解锁进入，随后使用 Happier 原生设备密钥登录。部署、项目挂载与旧工作台归档见 [Happier 部署与切换](docs/operations/happier.md)。
 
 未来道具研究所的模型基础设施管理台。项目从 Sayflow 的工程边界中提取了模型目录、模型调用日志、管理端主题与文档中心壳，不包含 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展和多实例部署；实时语音仅作为模型测试能力，文件语音识别、录音分段标注与 Galgame 配音流程仍是正式能力。
 

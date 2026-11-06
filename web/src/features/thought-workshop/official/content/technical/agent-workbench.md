@@ -1,5 +1,8 @@
 # Agent 工作台：原生会话、检查点与账号投影
 
+> [!NOTE]
+> 本文记录已归档的 FPL 工作台实现。当前入口与操作见[打开 Happier 工作台](/apps/thought-workshop/official-knowledge-bases/agent-workbench/documents/overview)。
+
 Agent 工作台从管理员专属「云控」进入，入口为 `/agents`，读取已经存在的本机编程会话。原端继续维护会话，FPL 按账号保存可重建的阅读投影与检查点，再通过变化事件通知页面重读。来源绑定和附件范围是私人文件访问边界，原生记录的标题、项目路径和宿主证据则帮助用户判断当前正在阅读什么。
 
 ## 从来源到阅读副本，哪些状态由谁拥有
@@ -58,4 +61,4 @@ OpenCode HTTP 来源必须是用户明确提供的回环地址，不接受 URL �
 
 1. `backend/studio/host/session_collection`
 2. `backend/studio/apps/agent_workbench/sync/runner.py`
-3. `web/src/features/agent-workbench/AgentWorkbenchPage.tsx`
+3. 归档提交中的 `web/src/features/agent-workbench/AgentWorkbenchPage.tsx`

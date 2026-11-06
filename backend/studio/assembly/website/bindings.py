@@ -5,12 +5,6 @@ from functools import partial
 
 from app.console.governance.code_agent_connections import enable_connection
 from app.console.governance.code_agents import catalog as code_agent_catalog
-from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
-from studio.apps.agent_workbench.execution.transcripts import latest_turn_version
-from studio.apps.agent_workbench.storage.change_events import SqlChangeEvents
-from studio.apps.agent_workbench.storage.turn_versions import SqlTurnVersions
-from studio.apps.agent_workbench.transport.change_events import stream_events
-from studio.apps.agent_workbench.transport.turn_events import stream_turns
 from studio.apps.amadeus.execution.website_actions import ActionExecution
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
 from studio.apps.asset_library.storage.file_paths import AssetStorage
@@ -21,7 +15,6 @@ from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.apps.gateway.storage.website_resources import WebsiteResources
 from studio.apps.gateway.use_cases.resource_links import ResourceLinks
 from studio.apps.identity.storage.cloud_unlock import CloudUnlockRecords
-from studio.apps.identity.storage.workbench_access import WorkbenchStreamAuthorization
 from studio.apps.identity.transport.database_auth import (
     authenticate_database_request,
     authenticate_database_websocket,
@@ -79,13 +72,13 @@ from studio.assembly.website.desktop import DesktopConnection
 from studio.assembly.website.integrations import integration_bindings
 from studio.assembly.website.media import bind_media
 from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
+from studio.assembly.website.remote_apps import RemoteApps
 from studio.assembly.website.thought_writing import WebsiteWritingModels
 from studio.assembly.website.video_library import ingest_library
 from studio.config import REPO_ROOT
 from studio.config.settings import get_cloud_settings
 from studio.host.project_files.video_dependencies import probe_deps
 from studio.host.project_files.video_execution import _run_yt_dlp
-from studio.host.session_collection.access import LocalSourceAccess
 from studio.runtime.files.raster import RasterPreviews
 from studio.runtime.http.rate_limit import AttemptLimiter
 from studio.runtime.secrets import SecretCipher
@@ -219,12 +212,6 @@ def bind_components(app, settings, database):
             decrypt=app.state.model_template_cipher.decrypt,
         )
     )
-    app.state.workbench_enabled = lambda: settings.fpl_agent_workbench_enabled
-    app.state.workbench_native = LocalSourceAccess()
-    workbench_authorizer = WorkbenchStreamAuthorization(sessions, clock=utc_now).check
-    app.state.workbench_event_stream = partial(
-        stream_events, changes=SqlChangeEvents(sessions), authorizer=workbench_authorizer
-    )
     app.state.account_creator = create_account
     app.state.account_storage_check = upgrade_pending
     app.state.code_agent_runs = CodeAgentRuns(
@@ -233,24 +220,10 @@ def bind_components(app, settings, database):
         skills=lambda session, owner: app.state.integration_bindings.skills(None, session, owner),
     )
     app.state.desktop_preferences = DesktopPreferences(PreferenceRecords(sessions))
+    app.state.remote_apps = RemoteApps(sessions=sessions, preferences=app.state.desktop_preferences)
     app.state.cloud_desktop = DesktopConnection(
         sessions=sessions,
         settings_reader=get_cloud_settings,
         attempts=app.state.auth_attempts,
         preferences=app.state.desktop_preferences,
-    )
-    app.state.workbench_settings = get_cloud_settings
-    app.state.workbench_runs = WorkbenchRuns(
-        sessions=sessions, settings=settings, load_settings=app.state.workbench_settings
-    )
-    app.state.workbench_turn_stream = partial(
-        stream_turns,
-        versions=SqlTurnVersions(
-            sessions,
-            load=latest_turn_version,
-            readiness=lambda owner, chat_id, _version: app.state.workbench_runs.ready_turn(
-                owner, chat_id
-            ),
-        ),
-        authorizer=workbench_authorizer,
     )

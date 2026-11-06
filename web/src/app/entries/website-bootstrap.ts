@@ -1,8 +1,12 @@
+import { cloudAgentPath, legacyAgentPath } from "@app/routing/legacyAgent";
 import { recoverPage } from "@app/recovery";
 import { startBootLoading } from "@app/bootLoading";
 import "@app/recovery.css";
 
 // Keep this entry independent of React and feature modules: import failures must stay visible.
+if (legacyAgentPath.test(window.location.pathname)) {
+  window.history.replaceState({}, "", cloudAgentPath);
+}
 const stopBootLoading = startBootLoading();
 void import("./website").then(stopBootLoading).catch((error: unknown) => {
   stopBootLoading();

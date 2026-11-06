@@ -50,7 +50,7 @@ async def test_two_factories_own_separate_storage_and_lifecycle_components(tmp_p
             "amadeus_actions",
             "demo_runtime",
             "video_downloads",
-            "workbench_runs",
+            "cloud_desktop",
         ):
             assert getattr(first.state, component) is not getattr(second.state, component)
         assert (

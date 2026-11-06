@@ -11,6 +11,8 @@ class CloudStatus(BaseModel):
     idle_minutes: int
     idle_revision: int
     happier_available: bool = False
+    remote_apps_enabled: bool = False
+    happier_studio_url: str | None = None
 
 
 class DesktopLogin(BaseModel):
@@ -41,6 +43,8 @@ class CloudSetup(BaseModel):
     public_desktop_vnc_only: bool
     guacd_ready: bool
     screen_sharing_ready: bool | None
+    remote_apps_enabled: bool = False
+    remote_apps_host_ready: bool = False
 
 
 class CloudSetupUpdate(BaseModel):

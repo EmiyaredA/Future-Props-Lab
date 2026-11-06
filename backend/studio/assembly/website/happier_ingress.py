@@ -3,17 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-import base64
-import binascii
-from urllib.parse import parse_qsl, unquote_plus, urlsplit
+from urllib.parse import parse_qsl, urlsplit
 
 import httpx
 from starlette.applications import Starlette
 from starlette.requests import Request
 from starlette.responses import (
-    JSONResponse,
     PlainTextResponse,
-    RedirectResponse,
     Response,
     StreamingResponse,
 )
@@ -22,9 +18,8 @@ from starlette.websockets import WebSocketDisconnect
 from websockets.asyncio.client import connect
 from websockets.exceptions import WebSocketException
 
-from studio.apps.identity.use_cases.happier_oidc import BROWSER_COOKIE, EXCHANGE_PATH, OIDC_PATH
+from studio.apps.identity.use_cases.happier_access import BROWSER_COOKIE, EXCHANGE_PATH
 
-DISCOVERY = "/.well-known/openid-configuration"
 UPDATES = "/v1/updates"
 # Match the pinned Happier relay's default Socket.IO payload limit.
 MAX_UPDATES_FRAME_BYTES = 25_000_000
@@ -52,21 +47,16 @@ RESPONSE_HEADERS = {
 
 
 class HappierIngress:
-    def __init__(self, identity, *, studio_origin, relay_port):
-        self.identity = identity
+    def __init__(self, access, *, studio_origin, relay_port):
+        self.access = access
         self.studio_origin = studio_origin
-        self.host = urlsplit(identity.origin).netloc
+        self.host = urlsplit(access.origin).netloc
         self.upstream = f"http://127.0.0.1:{relay_port}"
         self.socket_url = f"ws://127.0.0.1:{relay_port}"
         self.client = httpx.AsyncClient(trust_env=False)
         self.app = Starlette(
             routes=[
                 Route(EXCHANGE_PATH, self.exchange, methods=["POST"]),
-                Route(OIDC_PATH + DISCOVERY, self.discovery),
-                Route(DISCOVERY + OIDC_PATH, self.discovery),
-                Route(OIDC_PATH + "/jwks", self.jwks),
-                Route(OIDC_PATH + "/authorize", self.authorize),
-                Route(OIDC_PATH + "/token", self.token, methods=["POST"]),
                 WebSocketRoute(UPDATES, self.updates),
                 WebSocketRoute(UPDATES + "/", self.updates),
                 Route(
@@ -112,8 +102,8 @@ class HappierIngress:
         await self.app(scope, receive, protect)
 
     async def current_grant(self, connection):
-        grant = self.identity.browser_grant(connection.cookies.get(BROWSER_COOKIE))
-        return grant if grant and await self.identity.allowed(grant) else None
+        grant = self.access.browser_grant(connection.cookies.get(BROWSER_COOKIE))
+        return grant if grant and await self.access.allowed(grant) else None
 
     async def exchange(self, request):
         if request.headers.get("origin") != self.studio_origin:
@@ -124,45 +114,39 @@ class HappierIngress:
             "Vary": "Origin",
         }
         form = await small_form(request)
-        grant = self.identity.launches.redeem(form.get("ticket", ""))
-        if not grant or not await self.identity.allowed(grant):
+        grant = self.access.launches.redeem(form.get("ticket", ""))
+        if not grant or not await self.access.allowed(grant):
+            return PlainTextResponse("云控授权已过期，请回到工作台重试。", 403, headers=headers)
+        if not await self.relay_ready():
+            return PlainTextResponse("Happier 暂不可用，请稍后重试。", 503, headers=headers)
+        if not await self.access.allowed(grant):
             return PlainTextResponse("云控授权已过期，请回到工作台重试。", 403, headers=headers)
         response = Response(status_code=204, headers=headers)
         response.set_cookie(
             BROWSER_COOKIE,
-            self.identity.cookie(grant),
-            max_age=max(0, grant.expires - int(self.identity.clock())),
+            self.access.cookie(grant),
+            max_age=max(0, grant.expires - int(self.access.clock())),
             httponly=True,
             secure=True,
             samesite="strict",
         )
         return response
 
-    async def discovery(self, _request):
-        return JSONResponse(self.identity.discovery())
-
-    async def jwks(self, _request):
-        return JSONResponse(self.identity.jwks())
-
-    async def authorize(self, request):
-        grant = await self.current_grant(request)
-        if not grant:
-            return PlainTextResponse("请从 FPL 云控打开 Happier。", 403)
-        target = self.identity.authorize(grant, request.query_params)
-        return RedirectResponse(target, 302) if target else oauth_error("invalid_request")
-
-    async def token(self, request):
-        params = await small_form(request)
-        client_id, secret = client_credentials(request, params)
-        if not self.identity.client_authenticated(client_id, secret):
-            return oauth_error("invalid_client", 401)
-        token = await self.identity.token(params)
-        return JSONResponse(token) if token else oauth_error("invalid_grant")
+    async def relay_ready(self):
+        try:
+            features = await self.client.get(self.upstream + "/v1/features", timeout=3)
+            features.raise_for_status()
+            if features.json()["capabilities"]["encryption"]["storagePolicy"] != "required_e2ee":
+                return False
+            async with self.client.stream("GET", self.upstream + "/", timeout=3) as page:
+                return page.is_success and "text/html" in page.headers.get("content-type", "")
+        except (httpx.HTTPError, ValueError, TypeError, KeyError):
+            return False
 
     async def forward(self, request):
         if (
             request.method not in SAFE_METHODS
-            and request.headers.get("origin") != self.identity.origin
+            and request.headers.get("origin") != self.access.origin
         ):
             return PlainTextResponse("Forbidden", 403)
         grant = await self.current_grant(request)
@@ -186,7 +170,7 @@ class HappierIngress:
             result = await self.client.send(outgoing, stream=True)
         except httpx.HTTPError:
             return PlainTextResponse("Happier 暂不可用。", 502)
-        if polling and not await self.identity.allowed(grant):
+        if polling and not await self.access.allowed(grant):
             await result.aclose()
             return PlainTextResponse("云控授权已过期。", 403)
 
@@ -208,27 +192,27 @@ class HappierIngress:
     async def updates(self, socket):
         grant = await self.current_grant(socket)
         target = raw_target(self.socket_url, socket.scope)
-        if socket.headers.get("origin") != self.identity.origin or not grant or not target:
+        if socket.headers.get("origin") != self.access.origin or not grant or not target:
             await socket.close(1008)
             return
         try:
             async with connect(
                 str(target),
-                origin=self.identity.origin,
+                origin=self.access.origin,
                 proxy=None,
                 open_timeout=5,
                 close_timeout=1,
                 max_size=MAX_UPDATES_FRAME_BYTES,
             ) as upstream:
                 await socket.accept()
-                await relay_updates(socket, upstream, self.identity, grant)
+                await relay_updates(socket, upstream, self.access, grant)
         except (OSError, TimeoutError, WebSocketException):
             await socket.close(1011)
         except WebSocketDisconnect:
             pass
 
 
-async def relay_updates(socket, upstream, identity, grant):
+async def relay_updates(socket, upstream, access, grant):
     async def read_browser():
         while True:
             frame = await socket.receive()
@@ -245,8 +229,8 @@ async def relay_updates(socket, upstream, identity, grant):
         await socket.close(1000)
 
     async def watch_access():
-        while await identity.allowed(grant):
-            await asyncio.sleep(min(2, max(0, grant.expires - identity.clock())))
+        while await access.allowed(grant):
+            await asyncio.sleep(min(2, max(0, grant.expires - access.clock())))
         await socket.close(1008)
 
     tasks = [asyncio.create_task(run()) for run in (read_browser, read_relay, watch_access)]
@@ -282,25 +266,3 @@ async def small_form(request: Request):
     except (UnicodeDecodeError, ValueError):
         return {}
     return dict(pairs) if len(dict(pairs)) == len(pairs) else {}
-
-
-def client_credentials(request, params):
-    header = request.headers.get("authorization", "")
-    if not header:
-        return params.get("client_id", ""), params.get("client_secret", "")
-    scheme, _, encoded = header.partition(" ")
-    if scheme.lower() != "basic" or len(encoded) > 8192:
-        return "", ""
-    try:
-        client_id, separator, secret = (
-            base64.b64decode(encoded, validate=True).decode().partition(":")
-        )
-    except (binascii.Error, UnicodeDecodeError):
-        return "", ""
-    if not separator or "client_secret" in params:
-        return "", ""
-    return unquote_plus(client_id), unquote_plus(secret)
-
-
-def oauth_error(error, status=400):
-    return JSONResponse({"error": error}, status)

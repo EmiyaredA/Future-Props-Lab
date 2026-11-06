@@ -6,13 +6,17 @@ export function HappierWorkspace({
   hidden,
   unlocked,
   onUnlock,
-  onHistory,
+  loading,
+  available,
+  studioUrl,
 }: {
   paneId: string;
   hidden: boolean;
   unlocked: boolean;
   onUnlock: () => void;
-  onHistory: () => void;
+  loading: boolean;
+  available: boolean;
+  studioUrl?: string | null;
 }) {
   return (
     <section
@@ -21,16 +25,23 @@ export function HappierWorkspace({
       aria-label="Agent 工作台"
       className="cloud-happier"
     >
-      {unlocked ? (
+      {available && unlocked ? (
         <HappierFrame visible={!hidden} />
       ) : (
         <div className="cloud-happier-state">
-          <button type="button" className="btn" onClick={onUnlock}>
-            解锁 Agent 工作台
-          </button>
-          <button type="button" className="btn" onClick={onHistory}>
-            查看 FPL 历史
-          </button>
+          {loading ? (
+            <p role="status">正在检查 Happier…</p>
+          ) : studioUrl ? (
+            <a className="btn" href={studioUrl}>
+              从 Studio HTTPS 入口登录
+            </a>
+          ) : available ? (
+            <button type="button" className="btn" onClick={onUnlock}>
+              解锁 Agent 工作台
+            </button>
+          ) : (
+            <p>此账号或入口尚未启用 Happier。</p>
+          )}
         </div>
       )}
     </section>
@@ -54,6 +65,8 @@ function HappierFrame({ visible }: { visible: boolean }) {
           body: new URLSearchParams({ ticket }),
           signal: controller.signal,
         });
+        if (response.status === 503)
+          throw new Error("Happier 暂不可用，请稍后重试");
         if (!response.ok) throw new Error("Happier 授权失败，请重试");
         if (!controller.signal.aborted)
           setSource(new URL("/", exchange_url).href);
