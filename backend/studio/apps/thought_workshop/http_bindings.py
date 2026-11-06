@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
-from studio.apps.thought_workshop.website.asset_metadata import AssetMetadataBindings
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata, AssetMetadataBindings
 from studio.assembly.http_dependencies import PublicStudioAuth, StudioAuth
 from studio.assembly.http_dependencies import SessionDep as BaseSessionDep
 
@@ -25,7 +25,9 @@ async def bind_ports(request, session, principal):
         await directory.profiles(ids=(principal.user_id,))
     except ThoughtError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
-    if isinstance(getattr(request.app.state, "thought_assets", None), AssetMetadataBindings):
+    if "thought_asset_metadata_factory" not in session.info and isinstance(
+        getattr(request.app.state, "thought_assets", None), AssetMetadataBindings
+    ):
         asset_port = await request_asset_metadata(request, session, principal)
 
         def asset_metadata_for_owner(_session, owner):
@@ -45,6 +47,16 @@ async def request_asset_metadata(request, session, principal):
         raise ThoughtError("素材目录尚未连接", 503, "asset_metadata_unavailable")
     port = binding.for_request(request, session, principal)
     return await port if inspect.isawaitable(port) else port
+
+
+async def thought_assets(request: Request, session: BaseSessionDep, principal: StudioAuth):
+    try:
+        return await request_asset_metadata(request, session, principal)
+    except ThoughtError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+
+
+AssetMetadataDep = Annotated[AssetMetadata, Depends(thought_assets)]
 
 
 async def thought_session(request: Request, session: BaseSessionDep, principal: StudioAuth):

@@ -52,10 +52,12 @@ from studio.apps.presentation_workshop.legacy_project_assets import LegacyProjec
 from studio.apps.presentation_workshop.projects import Presentations
 from studio.apps.remote_desktop.storage.preferences import PreferenceRecords
 from studio.apps.remote_desktop.use_cases.preferences import DesktopPreferences
+from studio.apps.thought_workshop.archives.backup import BackupLimits
 from studio.apps.thought_workshop.external_sync.use_cases import ArticleSync
 from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
 from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadataBindings
 from studio.apps.thought_workshop.writing import WritingBindings
 from studio.apps.tools.storage.navigation import NavigationRecords
 from studio.apps.tools.use_cases.navigation import ToolNavigation
@@ -221,6 +223,15 @@ def bind_components(app, settings, database, *, read_cloud_settings):
         return LegacyAssetMetadata(session, owner, storage=AssetStorage(settings))
 
     app.state.article_assets = thought_metadata
+    app.state.thought_assets = AssetMetadataBindings(
+        for_request=lambda _request, session, principal: thought_metadata(
+            session, principal.user_id
+        )
+    )
+    app.state.thought_backup_limits = BackupLimits(
+        maximum_files=settings.fpl_project_snapshot_max_files,
+        maximum_bytes=settings.fpl_project_snapshot_max_bytes,
+    )
     motion_storage = AssetStorage(settings)
     app.state.motion_projects = lambda _request, session, owner: MotionProjects(
         session, owner, resources=LegacyProjectResources(session, owner, storage=motion_storage)

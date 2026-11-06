@@ -13,7 +13,7 @@ from sqlalchemy import text
 from studio.apps.thought_workshop.backup_manifest import collect_backup
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.notes import Notes
-from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata
 
 
 @dataclass(frozen=True)
@@ -29,7 +29,9 @@ class BackupLimits:
             raise ValueError("Thought 备份限制无效")
 
 
-async def export_backup(session, owner, knowledge_base_id, limits: BackupLimits):
+async def export_backup(
+    session, owner, knowledge_base_id, limits: BackupLimits, *, assets: AssetMetadata
+):
     await session.rollback()
     await session.execute(text("BEGIN"))
     payload, asset_ids = await collect_backup(Notes(session, owner), knowledge_base_id)
@@ -37,7 +39,6 @@ async def export_backup(session, owner, knowledge_base_id, limits: BackupLimits)
     if len(asset_ids) + 1 > limits.maximum_files:
         raise ThoughtError("笔记集合超过备份上限", 413)
 
-    assets = metadata(session, owner)
     entries = await assets.describe(asset_ids)
     if set(entries) != asset_ids:
         raise ThoughtError("备份引用的文件不存在", 404)

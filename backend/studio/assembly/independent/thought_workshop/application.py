@@ -245,7 +245,7 @@ def create_app(
         )
     )
     app.include_router(reads_router, prefix="/v1")
-    app.include_router(backup_router, prefix="/v1")
+    app.include_router(backup_router, prefix="/v1/thought-workshop", tags=["thought-workshop"])
     app.include_router(archive_router, prefix="/v1")
     app.include_router(content_exports_router, prefix="/v1")
     app.include_router(sync_records_router, prefix="/v1")

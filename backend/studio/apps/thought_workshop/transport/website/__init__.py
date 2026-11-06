@@ -1,9 +1,7 @@
 from typing import Literal
 
 from fastapi import APIRouter, File, Header, HTTPException, Query, Request, UploadFile
-from fastapi.responses import FileResponse
 from pydantic import ValidationError
-from starlette.background import BackgroundTask
 
 from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.thought_workshop.attachments import upload_attachment
@@ -13,7 +11,7 @@ from studio.apps.thought_workshop.knowledge import KnowledgeBases
 from studio.apps.thought_workshop.link_preview import preview_link
 from studio.apps.thought_workshop.notes import Notes, ThoughtError, note_out
 from studio.apps.thought_workshop.operations import apply_operations as thought_operations
-from studio.apps.thought_workshop.portability import export_backup, import_backup
+from studio.apps.thought_workshop.portability import import_backup
 from studio.apps.thought_workshop.schemas.history import ThoughtHistoryDetail, ThoughtHistoryList
 from studio.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBaseIn,
@@ -36,6 +34,7 @@ from studio.apps.thought_workshop.schemas.workshop import (
     ThoughtNoteTransitionIn,
     ThoughtRevisionIn,
 )
+from studio.apps.thought_workshop.transport.backup_http import router as backup_router
 from studio.apps.thought_workshop.transport.website.knowledge_tools import (
     router as knowledge_tools_router,
 )
@@ -208,26 +207,6 @@ async def upload_image(
     return ThoughtImageOut(asset_id=row.id)
 
 
-@router.get("/backup", response_class=FileResponse)
-async def backup(
-    request: Request,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
-    knowledge_base_id: str | None = None,
-):
-    import shutil
-
-    path = await call(
-        export_backup(Notes(session, owner_user_id), request.app.state.settings, knowledge_base_id)
-    )
-    return FileResponse(
-        path,
-        filename="thought-workshop.zip",
-        media_type="application/zip",
-        background=BackgroundTask(shutil.rmtree, path.parent, ignore_errors=True),
-    )
-
-
 @router.post("/imports", response_model=ThoughtImportOut)
 async def imports(
     request: Request,
@@ -338,6 +317,7 @@ async def move_entry(
     return await call(Directory(session, owner_user_id).move(project_id, body))
 
 
+router.include_router(backup_router)
 router.include_router(knowledge_tools_router)
 
 router.include_router(multitable_router)
