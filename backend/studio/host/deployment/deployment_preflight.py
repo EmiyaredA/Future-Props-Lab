@@ -8,7 +8,6 @@ from studio.runtime.database.migrations import check
 
 MIGRATION_MODULES = {
     "agent-runtime": "studio.apps.agent_runtime.storage.migrations.registry",
-    "agents": "studio.apps.agent_workbench.storage.migrations.registry",
     "amadeus": "studio.apps.amadeus.storage.migrations.registry",
     "annotation": "studio.apps.audio_annotation.storage.migrations.registry",
     "assets": "studio.apps.asset_library.storage.migrations.registry",

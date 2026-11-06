@@ -9,6 +9,7 @@ import pytest
 import yaml
 
 from studio.deployment.images import ENTRY_POINTS, public_client_module, source_closure
+from studio.host.deployment.deployment_preflight import MIGRATION_MODULES
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -48,6 +49,7 @@ def test_image_preparation_refuses_a_hidden_monolith_import(tmp_path, module):
 
 def test_compose_only_publishes_gateway_and_mounts_minimal_owned_state():
     document = yaml.safe_load((ROOT / "deploy/compose/compose.yaml").read_text())
+    assert MIGRATION_MODULES.keys() == ENTRY_POINTS.keys()
     for name, service in document["services"].items():
         assert service["read_only"] is True
         if name == "gateway":

@@ -3559,6 +3559,11 @@
       "service": "remote",
       "path": "/v1/cloud-control/desktop/socket",
       "permission": "cloud-control.access"
+    },
+    {
+      "service": "remote",
+      "path": "/v1/cloud-control/apps/socket",
+      "permission": "cloud-control.access"
     }
   ],
   "tables": [

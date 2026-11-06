@@ -1,6 +1,6 @@
 """Minimal, immutable projection of the installed Remote configuration."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from urllib.parse import urlsplit
 
 from studio.config import read_config
@@ -15,6 +15,8 @@ class RemoteSettings:
     fpl_cloud_control_guacd_port: int = 4822
     fpl_cloud_control_vnc_host: str = "host.docker.internal"
     fpl_cloud_control_vnc_port: int = 5900
+    apps_turn_urls: str = ""
+    apps_turn_secret: str = field(default="", repr=False)
 
     def __post_init__(self):
         local, public = urlsplit(self.local_origin), urlsplit(self.public_origin)
@@ -54,6 +56,8 @@ class RemoteSettings:
             "fpl_cloud_control_guacd_port",
             "fpl_cloud_control_vnc_host",
             "fpl_cloud_control_vnc_port",
+            "fpl_cloud_control_apps_turn_urls",
+            "fpl_cloud_control_apps_turn_secret",
         }
         if fields.keys() - permitted:
             raise ValueError("Remote 配置包含其他服务字段")
@@ -67,4 +71,6 @@ class RemoteSettings:
                 "fpl_cloud_control_vnc_host", "host.docker.internal"
             ),
             fpl_cloud_control_vnc_port=fields.get("fpl_cloud_control_vnc_port", 5900),
+            apps_turn_urls=fields.get("fpl_cloud_control_apps_turn_urls", ""),
+            apps_turn_secret=fields.get("fpl_cloud_control_apps_turn_secret", ""),
         )

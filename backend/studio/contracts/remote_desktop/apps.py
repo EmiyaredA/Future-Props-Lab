@@ -3,6 +3,9 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field
 
 AppId = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
+APPS_PATH = "/v1/cloud-control/apps"
+APP_SOCKET = APPS_PATH + "/socket"
+APP_PROTOCOL = "fpl-remote-app-v1"
 
 
 class RemoteApp(BaseModel):
@@ -40,3 +43,9 @@ class RemoteAppIceServer(BaseModel):
 class RemoteAppHandshake(BaseModel):
     ticket: str
     ice_servers: list[RemoteAppIceServer]
+
+
+class NativeAppLease(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    session: str = Field(pattern=r"^[a-f0-9]{32}$")
+    app_id: AppId

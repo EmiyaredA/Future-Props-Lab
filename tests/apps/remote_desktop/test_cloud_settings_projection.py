@@ -16,12 +16,20 @@ def test_cloud_projection_commit_changes_both_owner_views_together(tmp_path):
     publisher.synchronize(b"[cloud_control]\nhost_label = 'Old Mac'\n")
     candidate = publisher.prepare(
         b"[cloud_control]\nenabled = true\nadmin_user_ids = ['owner']\nhost_label = 'New Mac'\n"
-        b"vnc_password = 'never-published'\n"
+        b"vnc_password = 'never-published'\napps_enabled = true\n"
     )
-    assert remote.read() == {"fpl_cloud_control_host_label": "Old Mac"}
+    assert remote.read() == {
+        "fpl_cloud_control_host_label": "Old Mac",
+        "fpl_cloud_control_apps_enabled": False,
+        "fpl_cloud_control_apps_allowed": "",
+    }
     assert policy.read()["fpl_cloud_control_enabled"] is False
     publisher.commit(candidate)
-    assert remote.read() == {"fpl_cloud_control_host_label": "New Mac"}
+    assert remote.read() == {
+        "fpl_cloud_control_host_label": "New Mac",
+        "fpl_cloud_control_apps_enabled": True,
+        "fpl_cloud_control_apps_allowed": "",
+    }
     assert policy.read() == {
         "fpl_cloud_control_enabled": True,
         "fpl_cloud_control_public_enabled": False,

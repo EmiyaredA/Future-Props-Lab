@@ -8,6 +8,7 @@ from pathlib import Path
 from studio.contracts.amadeus.amadeus_skills import SKILL_FILE_ROUTE
 from studio.contracts.gateway.catalog import service_by_id
 from studio.contracts.identity.cloud_authority import DESKTOP_SOCKET
+from studio.contracts.remote_desktop.apps import APP_SOCKET
 
 
 def operation_pattern(path):
@@ -38,6 +39,7 @@ class SocketOperation:
 SOCKET_OPERATIONS = (
     SocketOperation("models", "/v1/model-test/realtime", "models.use"),
     SocketOperation("remote", DESKTOP_SOCKET, "cloud-control.access"),
+    SocketOperation("remote", APP_SOCKET, "cloud-control.access"),
 )
 
 

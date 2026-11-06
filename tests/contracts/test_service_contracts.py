@@ -176,17 +176,19 @@ def test_gateway_matches_real_socket_upgrade_and_strips_forged_protocol_headers(
     )
     rendered = render_gateway(catalog, **options)
     for ingress in ("local", "public"):
-        matcher = "@" + ingress + "_socket_0"
-        assert (
-            matcher
-            + " {\n      method GET\n      path /v1/model-test/realtime"
-            + "\n      header Upgrade websocket"
-            in rendered
-        )
-    assert rendered.count("request_header X-Fpl-Request-Protocol websocket") == 4
-    assert rendered.count("header_up -Upgrade") == 4
-    assert rendered.count("header_up -Connection") == 4
-    assert rendered.count("header_up -Sec-WebSocket-*") == 4
+        for index, operation in enumerate(catalog.websockets):
+            matcher = f"@{ingress}_socket_{index}"
+            assert (
+                matcher
+                + f" {{\n      method GET\n      path {operation.path}"
+                + "\n      header Upgrade websocket"
+                in rendered
+            )
+    count = 2 * len(catalog.websockets)
+    assert rendered.count("request_header X-Fpl-Request-Protocol websocket") == count
+    assert rendered.count("header_up -Upgrade") == count
+    assert rendered.count("header_up -Connection") == count
+    assert rendered.count("header_up -Sec-WebSocket-*") == count
     assert "request_header X-Fpl-Request-Protocol http" not in rendered
     assert rendered.index("request_header -X-Fpl-*") < rendered.index(
         "request_header X-Fpl-Request-Protocol websocket"

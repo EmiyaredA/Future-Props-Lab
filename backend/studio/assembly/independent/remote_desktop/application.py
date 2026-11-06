@@ -16,10 +16,13 @@ from studio.apps.remote_desktop.storage.migrations.registry import MIGRATIONS
 from studio.apps.remote_desktop.storage.preference_models import DesktopPreference
 from studio.apps.remote_desktop.storage.preferences import PreferenceRecords
 from studio.apps.remote_desktop.storage.service_models import RemoteSetupJob
+from studio.apps.remote_desktop.transport.app_relay import AppRelay
+from studio.apps.remote_desktop.transport.app_relay import router as app_relay_router
+from studio.apps.remote_desktop.transport.apps_http import router as apps_router
 from studio.apps.remote_desktop.transport.desktop_http import router
-from studio.apps.remote_desktop.transport.disabled_app_http import router as disabled_app_router
 from studio.apps.remote_desktop.transport.guacamole import DesktopConnection
 from studio.apps.remote_desktop.transport.setup_native_http import router as setup_native_router
+from studio.apps.remote_desktop.use_cases.app_sessions import AppSessions
 from studio.apps.remote_desktop.use_cases.preferences import DesktopPreferences
 from studio.config import ConfigurationError
 from studio.contracts.gateway.protocol_hash import public_contract
@@ -61,6 +64,11 @@ def create_app(
     identity = LiveAuthorization(service="remote", credential=credential, transport=transport)
 
     async def current_access(principal, _local, assertion):
+        try:
+            if cloud_projection and cloud_projection.read()["fpl_cloud_control_apps_enabled"]:
+                return None
+        except ConfigurationError:
+            return None
         current = await identity.cloud_authority(
             assertion=assertion, method="GET", path=DESKTOP_SOCKET
         )
@@ -115,13 +123,16 @@ def create_app(
     app.state.cloud_projection = cloud_projection
     app.state.guacd_ready = guacd_ready
     app.state.cloud_setup = SetupHost(database, identity) if setup_options else None
+    app.state.app_sessions = AppSessions()
+    app.state.app_relay = AppRelay()
     app.include_router(setup_native_router)
+    app.include_router(app_relay_router)
     app.add_middleware(NativeIngress, options=setup_options, state_key="remote_worker")
-    app.add_middleware(RequestLimit, prefix="/_native/", maximum=32 * 1024)
+    app.add_middleware(RequestLimit, prefix="/_native/", maximum=160 * 1024)
     app.state.cloud_identity = identity
     app.state.identity_public_key = public_key
     app.include_router(router, prefix="/v1")
-    app.include_router(disabled_app_router, prefix="/v1")
+    app.include_router(apps_router, prefix="/v1")
     app.add_middleware(SignedIdentity, service="remote", public_key=public_key, catalog=catalog)
     app.add_middleware(RequestLimit, prefix="/v1/cloud-control/", maximum=64 * 1024)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)
@@ -147,10 +158,13 @@ def create_app(
         if app.state.cloud_setup is None or not app.state.cloud_setup.ready:
             raise HTTPException(503, "remote_setup_worker_unavailable")
         try:
-            cloud_projection.read()
+            policy = cloud_projection.read()
         except ConfigurationError:
             raise HTTPException(503, "remote_cloud_projection_unavailable") from None
-        if not await guacd_ready():
+        apps_enabled = policy["fpl_cloud_control_apps_enabled"]
+        if apps_enabled and not app.state.app_relay.ready:
+            raise HTTPException(503, "remote_app_worker_unavailable")
+        if not apps_enabled and not await guacd_ready():
             raise HTTPException(503, "remote_guacamole_unavailable")
         async with database.sessions() as db:
             await db.execute(text("SELECT 1"))

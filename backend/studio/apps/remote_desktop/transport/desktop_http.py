@@ -21,6 +21,13 @@ from studio.runtime.http.website import require_local_browser
 router = APIRouter(prefix="/cloud-control", tags=["cloud-control"])
 
 
+def remote_policy(state):
+    try:
+        return state.cloud_projection.read() if state.cloud_projection is not None else {}
+    except ConfigurationError:
+        raise HTTPException(503, "remote_cloud_projection_unavailable") from None
+
+
 async def authority(request):
     result = await request.app.state.cloud_identity.cloud_authority(
         assertion=request.state.service_assertion,
@@ -39,21 +46,17 @@ async def status(request: Request, principal: StudioAuth):
     current = await authority(request)
     preference = await request.app.state.desktop_preferences.read(owner=principal.user_id)
     state = request.app.state
-    label = state.remote_settings.host_label
-    if state.cloud_projection is not None:
-        try:
-            label = state.cloud_projection.read()["fpl_cloud_control_host_label"]
-        except ConfigurationError:
-            raise HTTPException(503, "remote_cloud_projection_unavailable") from None
+    policy = remote_policy(state)
     return CloudStatus(
         enabled=current.enabled,
-        host_label=label,
+        host_label=policy.get("fpl_cloud_control_host_label", state.remote_settings.host_label),
         desktop_configured=current.desktop_configured,
         desktop_authorized=current.desktop_authorized,
         idle_minutes=preference.idle_minutes,
         idle_revision=preference.revision,
         local=request.state.service_actor.local,
         unlocked_until=current.unlocked_until,
+        remote_apps_enabled=policy.get("fpl_cloud_control_apps_enabled", False),
     )
 
 
@@ -84,6 +87,8 @@ async def save_idle(request: Request, body: IdlePreference, principal: StudioAut
 
 @router.post("/desktop/connect", status_code=204)
 async def connect(request: Request, body: DesktopLogin, principal: StudioAuth):
+    if remote_policy(request.app.state).get("fpl_cloud_control_apps_enabled"):
+        raise HTTPException(404, "请使用远程应用")
     current = await authority(request)
     if not current.desktop_authorized:
         raise HTTPException(
@@ -118,6 +123,8 @@ async def connect(request: Request, body: DesktopLogin, principal: StudioAuth):
 async def desktop_socket(socket: WebSocket):
     assertion = socket.headers.get(HEADER, "")
     try:
+        if remote_policy(socket.app.state).get("fpl_cloud_control_apps_enabled"):
+            raise ValueError("desktop disabled while app windows are enabled")
         actor = verify_context(
             assertion,
             service="remote",
@@ -125,7 +132,7 @@ async def desktop_socket(socket: WebSocket):
             path=socket.url.path,
             public_key=socket.app.state.identity_public_key,
         )
-    except (ValueError, TypeError, jwt.InvalidTokenError):
+    except (HTTPException, ValueError, TypeError, jwt.InvalidTokenError):
         await socket.close(4403)
         return
     options = socket.app.state.remote_settings
@@ -172,4 +179,6 @@ async def setup_snapshot(request, owner, body=None):
     if setup is None:
         raise HTTPException(503, "云控配置协调器尚未就绪")
     value = await setup.run(request, owner, body)
+    if value.remote_apps_enabled:
+        return value
     return value.model_copy(update={"guacd_ready": await request.app.state.guacd_ready()})

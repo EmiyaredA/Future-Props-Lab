@@ -5,6 +5,9 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from studio.contracts.remote_desktop.apps import APP_SOCKET
+from studio.contracts.remote_desktop.setup import REQUESTS
+
 DESKTOP_SOCKET = "/v1/cloud-control/desktop/socket"
 DESKTOP_COOKIE = "fpl_desktop_ticket"
 AUTHORITY_PATH = "/_internal/v1/cloud-control/authority"
@@ -23,13 +26,14 @@ def is_desktop_upgrade(service, method, path):
 
 def permits_cloud_authority(service, method, path):
     if service == "remote":
-        return (method, path) in {
+        return (method, path) in REQUESTS.values() or (method, path) in {
             ("GET", "/v1/cloud-control/status"),
             ("GET", "/v1/cloud-control/settings"),
             ("PUT", "/v1/cloud-control/settings"),
             ("PUT", "/v1/cloud-control/desktop/idle"),
             ("POST", "/v1/cloud-control/desktop/connect"),
             ("GET", DESKTOP_SOCKET),
+            ("GET", APP_SOCKET),
         }
     if service != "agents":
         return False
@@ -69,3 +73,4 @@ class CloudAuthority(BaseModel):
     unlocked_until: int = Field(default=0, ge=0)
     desktop_configured: bool = False
     desktop_authorized: bool = False
+    recently_reauthenticated: bool = False

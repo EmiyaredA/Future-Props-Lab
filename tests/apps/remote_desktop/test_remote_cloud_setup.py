@@ -1,6 +1,9 @@
 """Exercise trusted-local settings through the independently leased Mac coordinator."""
 
 import asyncio
+import json
+import sys
+from contextlib import asynccontextmanager
 from dataclasses import replace
 
 import httpx
@@ -14,11 +17,15 @@ from studio.apps.remote_desktop.storage.service_models import RemoteSetupJob
 from studio.assembly.independent.remote_desktop.application import create_app
 from studio.config.cloud_projection import CloudProjection
 from studio.contracts.identity.claims import HEADER, issue_context, verify_context
+from studio.contracts.remote_desktop.apps import APP_PROTOCOL, APP_SOCKET, APPS_PATH, RemoteApp
 from studio.contracts.remote_desktop.setup import SETTINGS_PATH
 from studio.host.deployment.cloud_setup_worker import CloudSetupWorker
+from studio.host.remote_apps import relay as host_relay
+from studio.host.remote_apps import setup as host_apps
 from studio.host.transport import NativeTransport
 from studio.runtime.database.migrations import apply
 from studio.runtime.http.native_ingress import NativeWorkerOptions
+from tests.apps.remote_desktop.test_remote_service import websocket
 from tests.apps.thought_workshop.test_community_asset_protocol import (  # noqa: F401
     CATALOG,
     PASSWORD,
@@ -30,6 +37,172 @@ CREDENTIAL = "isolated-remote-service-credential-" * 2
 INGRESS = "isolated-remote-ingress-credential-" * 2
 TOKEN = "isolated-remote-mac-credential-" * 2
 ORIGIN = "http://127.0.0.1:19000"
+
+
+async def test_remote_apps_route_setup_and_revocable_window_relay(
+    scenario,  # noqa: F811
+    tmp_path,
+    monkeypatch,
+):
+    case = scenario
+    async with case.identity.state.database.sessions() as db:
+        account, _ = await create_account(
+            db,
+            username="app-admin",
+            display_name="App Admin",
+            password=PASSWORD,
+            platform_role="admin",
+        )
+        owner = account.id
+    case.identity.state.identity_options["service_credentials"]["remote"] = CREDENTIAL
+    result = await case.browser.post(
+        "/v1/auth/login", json={"username": "app-admin", "password": PASSWORD}
+    )
+    assert result.status_code == 200, result.text
+    case.csrf = case.browser.cookies["fpl_csrf"]
+    headers = {"Origin": ORIGIN, "X-CSRF-Token": case.csrf}
+    host = tmp_path / "mac"
+    host.mkdir()
+    config = host / "config.toml"
+    config.write_text(
+        f"[cloud_control]\nenabled = true\nadmin_user_ids = [{json.dumps(owner)}]\n"
+        f"apps_enabled = true\napps_host = {json.dumps(sys.executable)}\n"
+        f"[security]\nsecrets_key = '{Fernet.generate_key().decode()}'\n"
+    )
+    projections = host / "projections"
+    projections.mkdir()
+    monkeypatch.setenv("FPL_IDENTITY_CLOUD_PROJECTION_DIR", str(projections / "identity"))
+    monkeypatch.setenv("FPL_CLOUD_SETTINGS_COMMIT_DIR", str(projections / "committed"))
+    projection = CloudProjection("remote", projections / "remote", projections / "committed")
+    root = tmp_path / "remote"
+    apply(root / "service.db", "remote", MIGRATIONS)
+    app = create_app(
+        state_root=root,
+        settings=RemoteSettings(ORIGIN),
+        public_key=case.key.public_key(),
+        credential=CREDENTIAL,
+        catalog=CATALOG,
+        transport=case.mesh,
+        cloud_projection=projection,
+        setup_options=NativeWorkerOptions(
+            identity_credential=CREDENTIAL,
+            ingress=INGRESS,
+            workers={"mac": TOKEN},
+        ),
+    )
+    native = NativeTransport(
+        service="remote",
+        base_url=ORIGIN + "/remote",
+        credential=TOKEN,
+        transport=Bridge(app),
+    )
+    worker = CloudSetupWorker(native, config, projections, host)
+    app_id = "a" * 64
+    other_id = "b" * 64
+
+    async def catalog(_path):
+        return [RemoteApp(id=app_id, name="Fixture window"), RemoteApp(id=other_id, name="Hidden")]
+
+    @asynccontextmanager
+    async def fake_window(_path, command, target):
+        assert (command, target) == ("session", app_id)
+        process = await asyncio.create_subprocess_exec(
+            sys.executable,
+            "-u",
+            "-c",
+            "import json,sys; input(); assert json.loads(input())['type']=='offer'; "
+            "print(json.dumps({'type':'answer','sdp':'v=0'})); sys.stdin.read()",
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+        )
+        try:
+            yield process
+        finally:
+            process.stdin.close()
+            await process.wait()
+
+    monkeypatch.setattr(host_apps, "installed_apps", catalog)
+    monkeypatch.setattr(host_relay, "run_host", fake_window)
+
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=ORIGIN) as api,
+        asyncio.timeout(35),
+    ):
+        background = asyncio.create_task(worker.run())
+        try:
+            while (await api.get("/ready")).status_code != 200:
+                await asyncio.sleep(0.05)
+
+            async def call(method, path, **kwargs):
+                proof = await authorize(case, "remote", method, path)
+                return await api.request(method, path, headers=proof, **kwargs)
+
+            installed = await call("GET", APPS_PATH + "/installed")
+            assert installed.status_code == 200, installed.text
+            edit = {"revision": installed.json()["revision"], "app_ids": [app_id]}
+            assert (await call("PUT", APPS_PATH, json=edit)).status_code == 403
+            assert (
+                await case.browser.post(
+                    "/v1/auth/reauth", json={"password": PASSWORD}, headers=headers
+                )
+            ).status_code == 204
+            saved = await call("PUT", APPS_PATH, json=edit)
+            assert saved.status_code == 200 and saved.json()["allowed_ids"] == [app_id], saved.text
+            listed = await call("GET", APPS_PATH)
+            assert [item["id"] for item in listed.json()["apps"]] == [app_id]
+            assert (await call("PUT", APPS_PATH, json=edit)).status_code == 409
+            assert (
+                await call("POST", APPS_PATH + "/connect", json={"app_id": other_id})
+            ).status_code == 404
+            issued = await call("POST", APPS_PATH + "/connect", json={"app_id": app_id})
+            assert issued.status_code == 200, issued.text
+            proof = await case.browser.get(
+                "/_internal/v1/authorize",
+                headers={
+                    "X-Fpl-Target-Service": "remote",
+                    "X-Fpl-Request-Method": "GET",
+                    "X-Fpl-Request-Uri": APP_SOCKET,
+                    "X-Fpl-Request-Protocol": "websocket",
+                },
+            )
+            assert proof.status_code == 204, proof.text
+            task, incoming, outgoing = await websocket(
+                app,
+                proof.headers[HEADER],
+                path=APP_SOCKET,
+                protocol=APP_PROTOCOL,
+            )
+            try:
+                assert (await outgoing.get())["subprotocol"] == APP_PROTOCOL
+                await incoming.put(
+                    {
+                        "type": "websocket.receive",
+                        "text": json.dumps({"ticket": issued.json()["ticket"]}),
+                    }
+                )
+                await incoming.put(
+                    {
+                        "type": "websocket.receive",
+                        "text": '{"type":"offer","sdp":"v=0"}',
+                    }
+                )
+                assert json.loads((await outgoing.get())["text"]) == {
+                    "type": "answer",
+                    "sdp": "v=0",
+                }
+                assert (
+                    await case.browser.post("/v1/auth/logout", headers=headers)
+                ).status_code == 204
+                assert (await outgoing.get())["type"] == "websocket.close"
+                await task
+                assert app.state.app_relay.window is None
+            finally:
+                task.cancel()
+                await asyncio.gather(task, return_exceptions=True)
+        finally:
+            background.cancel()
+            await asyncio.gather(background, return_exceptions=True)
 
 
 class Bridge(httpx.AsyncBaseTransport):

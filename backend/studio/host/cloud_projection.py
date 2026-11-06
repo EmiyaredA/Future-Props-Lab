@@ -18,6 +18,8 @@ DEFAULTS = {
     "public_desktop_vnc_only": False,
     "admin_user_ids": [],
     "host_label": "Mac",
+    "apps_enabled": False,
+    "apps_allowed": [],
 }
 
 

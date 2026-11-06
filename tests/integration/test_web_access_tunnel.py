@@ -1,5 +1,4 @@
 import asyncio
-from contextlib import suppress
 from types import SimpleNamespace
 
 import pytest
@@ -61,11 +60,11 @@ async def test_failed_public_probe_preserves_established_ssh_tunnel(monkeypatch,
     monkeypatch.setattr(runtime.asyncio, "create_subprocess_exec", start_ssh)
     monkeypatch.setattr(access, "check_public", check_public)
     task = asyncio.create_task(access.follow_tunnel())
+    access.tunnel_task = task
     try:
         await asyncio.wait_for(recovered.wait(), 5)
         assert len(children) == 1
         assert children[0].returncode is None
     finally:
-        task.cancel()
-        with suppress(asyncio.CancelledError):
-            await task
+        await access.stop_public()
+    assert children[0].returncode == -15

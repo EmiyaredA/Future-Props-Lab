@@ -14,7 +14,7 @@ FILES = {
     "identity": frozenset(
         {"enabled", "public_enabled", "public_desktop_vnc_only", "admin_user_ids"}
     ),
-    "remote": frozenset({"host_label"}),
+    "remote": frozenset({"host_label", "apps_enabled", "apps_allowed"}),
 }
 COMMIT = "cloud-settings.toml"
 MAX_BYTES = 64 * 1024
@@ -55,11 +55,14 @@ class CloudProjection:
             if hashlib.sha256(data).hexdigest() != digest:
                 raise ConfigurationError("云控配置投影摘要不匹配")
             document = tomllib.loads(data.decode())
-            if (
-                document.keys() != {"cloud_control"}
-                or not isinstance(document["cloud_control"], dict)
-                or document["cloud_control"].keys() != FILES[self.owner]
-            ):
+            cloud = document.get("cloud_control")
+            if document.keys() != {"cloud_control"} or not isinstance(cloud, dict):
+                raise ConfigurationError("云控配置投影包含未授权字段")
+            # The previous Remote projection carries just the host label.
+            # Treat missing app policy as disabled until the Mac publishes it.
+            if self.owner == "remote" and cloud.keys() == {"host_label"}:
+                cloud.update(apps_enabled=False, apps_allowed=[])
+            if cloud.keys() != FILES[self.owner]:
                 raise ConfigurationError("云控配置投影包含未授权字段")
             return flatten(document)
         except (OSError, UnicodeError, tomllib.TOMLDecodeError):

@@ -15,15 +15,29 @@ from studio.config import ConfigurationError
 from studio.config.settings import Settings
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.remote_desktop.desktop import CloudSetupUpdate
-from studio.contracts.remote_desktop.setup import OPERATIONS, READ, SAVE
+from studio.contracts.remote_desktop.setup import (
+    APP_OPERATIONS,
+    APP_SAVE,
+    OPERATIONS,
+    READ_ONLY,
+    SAVE,
+)
 from studio.host.cloud_projection import CloudPublisher
 from studio.host.deployment.cloud_setup import assert_setup_account, read_snapshot, setup_edit
 from studio.host.receipts import ReceiptStore
+from studio.host.remote_apps.relay import run_app_relay
+from studio.host.remote_apps.setup import snapshot as app_snapshot
 from studio.host.transport import LeaseEnded, NativeTransport, ProtocolConflict
 from studio.runtime.lifecycle.locking import service_lock
 
 logger = logging.getLogger(__name__)
-ERRORS = {403: "setup_forbidden", 409: "configuration_conflict", 422: "invalid_setup"}
+ERRORS = {
+    403: "setup_forbidden",
+    404: "apps_disabled",
+    409: "configuration_conflict",
+    422: "invalid_setup",
+    503: "apps_unavailable",
+}
 
 
 class CloudSetupWorker:
@@ -31,7 +45,9 @@ class CloudSetupWorker:
         self.transport, self.config = transport, config
         self.publisher = CloudPublisher(projections)
         self.receipts = ReceiptStore(
-            state_root / "receipts", readonly_operations={READ}, retain_acknowledged_payload=False
+            state_root / "receipts",
+            readonly_operations=READ_ONLY,
+            retain_acknowledged_payload=False,
         )
 
     def synchronize(self):
@@ -46,13 +62,23 @@ class CloudSetupWorker:
     async def execute(self, lease):
         if lease.operation not in OPERATIONS:
             raise ProtocolConflict("云控设置租约超出本机能力")
-        if lease.operation == READ and lease.payload:
+        if lease.operation in READ_ONLY and lease.payload:
             raise ProtocolConflict("云控设置读取不得携带修改参数")
         try:
             await self.authority(lease)
             owner = lease.owner_user_id
             settings = Settings(_config_file=self.config, _read_environment=False)
             assert_setup_account(settings, owner)
+            if lease.operation in APP_OPERATIONS:
+                result = await app_snapshot(
+                    self.config,
+                    operation=lease.operation,
+                    payload=lease.payload,
+                    authorize=lambda: self.authority(lease),
+                )
+                if lease.operation == APP_SAVE:
+                    await asyncio.to_thread(self.synchronize)
+                return NativeOutcome(status="completed", result=result.model_dump(mode="json"))
             if lease.operation == SAVE:
                 body = CloudSetupUpdate.model_validate(lease.payload)
                 await self.save(lease, owner, body)
@@ -108,6 +134,7 @@ class CloudSetupWorker:
             await self.deliver(lease, await self.receipts.execute_async(lease, self.execute))
 
     async def run(self):
+        relay = asyncio.create_task(run_app_relay(self.transport, self.config))
         try:
             while True:
                 try:
@@ -119,6 +146,8 @@ class CloudSetupWorker:
                     logger.warning("云控设置通道未确认，保留原回执")
                     await asyncio.sleep(5)
         finally:
+            relay.cancel()
+            await asyncio.gather(relay, return_exceptions=True)
             await self.transport.close()
 
 

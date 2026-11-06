@@ -4,6 +4,7 @@ import asyncio
 import json
 import time
 from contextlib import suppress
+from functools import partial
 
 from starlette.websockets import WebSocketDisconnect
 
@@ -16,8 +17,11 @@ class SignalingError(ValueError):
 
 
 async def read_message(socket):
-    raw = await socket.receive_text()
-    if len(raw.encode()) > MAX_MESSAGE:
+    event = await socket.receive()
+    if event["type"] == "websocket.disconnect":
+        raise WebSocketDisconnect(event.get("code", 1000))
+    raw = event.get("text")
+    if not isinstance(raw, str) or len(raw.encode()) > MAX_MESSAGE:
         raise SignalingError
     data = json.loads(raw)
     if not isinstance(data, dict):
@@ -31,8 +35,22 @@ async def send_host(process, data):
 
 
 async def bridge(socket, process, *, access, ice_servers):
+    async def receive_host():
+        line = await process.stdout.readline()
+        return json.loads(line) if line else None
+
+    await relay_signaling(
+        socket,
+        send=partial(send_host, process),
+        receive=receive_host,
+        access=access,
+        ice_servers=ice_servers,
+    )
+
+
+async def relay_signaling(socket, *, send, receive, access, ice_servers):
     last_input = time.monotonic()
-    await send_host(process, {"type": "configure", "ice_servers": ice_servers})
+    await send({"type": "configure", "ice_servers": ice_servers})
 
     async def to_host():
         offered = False
@@ -45,21 +63,20 @@ async def bridge(socket, process, *, access, ice_servers):
                 and message["sdp"].startswith("v=0")
             ):
                 offered = True
-                await send_host(process, {"type": "offer", "sdp": message["sdp"]})
+                await send({"type": "offer", "sdp": message["sdp"]})
             elif (
                 message.get("type") == "select"
                 and offered
                 and type(message.get("window")) is int
                 and 0 < message["window"] <= 2**32 - 1
             ):
-                await send_host(process, {"type": "select", "window": message["window"]})
+                await send({"type": "select", "window": message["window"]})
             else:
                 raise SignalingError
 
     async def to_browser():
         nonlocal last_input
-        while line := await process.stdout.readline():
-            message = json.loads(line)
+        while (message := await receive()) is not None:
             if message["type"] == "activity":
                 last_input = time.monotonic()
             elif message["type"] in HOST_MESSAGES:
@@ -70,25 +87,31 @@ async def bridge(socket, process, *, access, ice_servers):
 
     async def monitor():
         while True:
-            minutes = await access()
+            try:
+                minutes = await asyncio.wait_for(access(), 3)
+            except TimeoutError:
+                return 4411, "无法复核远程应用授权"
             if minutes is None:
-                await socket.close(4403, "应用授权已失效")
-                return
+                return 4403, "应用授权已失效"
             if time.monotonic() - last_input >= minutes * 60:
-                await socket.close(4408, "远程应用已自动锁定")
-                return
+                return 4408, "远程应用已自动锁定"
             await asyncio.sleep(2)
 
     tasks = [asyncio.create_task(run()) for run in (to_host, to_browser, monitor)]
+    close = (1000, "")
     try:
         done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
         for task in done:
-            task.result()
+            result = task.result()
+            if result:
+                close = result
     except (WebSocketDisconnect, BrokenPipeError, ConnectionResetError):
         pass
+    except ValueError:
+        close = (4400, "远程应用信令格式无效")
     finally:
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
-        with suppress(RuntimeError, OSError):
-            await socket.close()
+        with suppress(WebSocketDisconnect, RuntimeError, OSError):
+            await socket.close(*close)

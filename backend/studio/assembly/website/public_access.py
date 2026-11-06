@@ -5,6 +5,7 @@ import contextlib
 import json
 import socket
 from datetime import UTC, datetime
+from urllib.parse import urlsplit
 from uuid import uuid4
 
 import httpx
@@ -85,7 +86,7 @@ class WebAccess:
         )
 
     async def __call__(self, app, scope, receive, send):
-        if self.local.phase != "ready" or not (self.public_enabled or self.local_https_enabled):
+        if not (self.public_enabled or self.local_https_enabled):
             if scope["type"] == "websocket":
                 await send({"type": "websocket.close", "code": 1008})
             else:
@@ -172,11 +173,12 @@ class WebAccess:
     async def stop_public(self):
         self.public_enabled = False
         task, self.tunnel_task = self.tunnel_task, None
+        # Close the reverse listener before waiting for the polling task to unwind.
+        await self.stop_child()
         if task:
             task.cancel()
             with contextlib.suppress(asyncio.CancelledError):
                 await task
-        await self.stop_child()
         self.public.phase, self.public.error = "off", ""
 
     async def stop_child(self):
@@ -263,7 +265,10 @@ class WebAccess:
             return
         try:
             async with httpx.AsyncClient(trust_env=False, timeout=3) as client:
-                response = await client.get(self.local.url + "/ready")
+                response = await client.get(
+                    self.local.url + "/ready",
+                    headers={"Host": urlsplit(self.profile.origin).netloc},
+                )
             if (
                 response.status_code != 200
                 or response.headers.get("x-fpl-web-instance") != self.instance

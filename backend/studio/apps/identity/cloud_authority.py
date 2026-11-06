@@ -66,6 +66,7 @@ async def cloud_authority(request: Request, response: Response, body: CloudAutho
             return CloudAuthority(active=False)
         # A response describes one policy version, even if an update lands mid-query.
         settings = request.app.state.read_cloud_settings()
+        reauthenticated = await access.recently_reauthenticated(db, principal)
         return CloudAuthority(
             active=True,
             enabled=access.allowed(principal, local=actor.local, settings=settings),
@@ -78,4 +79,5 @@ async def cloud_authority(request: Request, response: Response, body: CloudAutho
             desktop_authorized=await access.desktop_authorized(
                 db, principal, local=actor.local, settings=settings
             ),
+            recently_reauthenticated=reauthenticated,
         )

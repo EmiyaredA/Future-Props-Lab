@@ -27,7 +27,7 @@ CLOUD = "/v1/cloud-control"
 CREDENTIAL = "remote-service-identity-credential-fixture"
 
 
-async def websocket(app, assertion, *, origin=ORIGIN):
+async def websocket(app, assertion, *, origin=ORIGIN, path=DESKTOP_SOCKET, protocol="guacamole"):
     outgoing, incoming = asyncio.Queue(), asyncio.Queue()
     incoming.put_nowait({"type": "websocket.connect"})
     task = asyncio.create_task(
@@ -35,10 +35,10 @@ async def websocket(app, assertion, *, origin=ORIGIN):
             {
                 "type": "websocket",
                 "scheme": "ws",
-                "path": DESKTOP_SOCKET,
+                "path": path,
                 "query_string": b"",
                 "root_path": "",
-                "subprotocols": ["guacamole"],
+                "subprotocols": [protocol],
                 "headers": [(b"origin", origin.encode()), (HEADER.encode(), assertion.encode())],
                 "state": {},
                 "client": ("127.0.0.1", 10000),

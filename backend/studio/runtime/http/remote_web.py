@@ -10,6 +10,8 @@ from starlette.datastructures import Headers
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.responses import JSONResponse, PlainTextResponse
 
+from studio.contracts.remote_desktop.apps import APP_SOCKET
+
 
 class RemoteWeb:
     def __init__(self, *, origin: str, port: int, static, authenticate, secure_cookies=True):
@@ -56,6 +58,7 @@ class RemoteWeb:
             await reject(404, "Not Found")
             return
         if websocket and path not in {
+            APP_SOCKET,
             "/v1/model-test/realtime",
             "/v1/cloud-control/desktop/socket",
         }:
