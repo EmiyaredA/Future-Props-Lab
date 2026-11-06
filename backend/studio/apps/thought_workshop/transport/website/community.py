@@ -4,7 +4,10 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.http_bindings import CommunityDirectoryDep
+from studio.apps.thought_workshop.http_bindings import (
+    CommunityDirectoryDep,
+    request_account_directory,
+)
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
 from studio.apps.thought_workshop.publication.assets import LegacyCommunityFiles
 from studio.apps.thought_workshop.publication.http import router as metadata_router
@@ -24,6 +27,7 @@ from studio.apps.thought_workshop.publication.schemas import (
 from studio.apps.thought_workshop.publication.use_cases import Community
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut, ThoughtImportOut
 from studio.assembly.http_dependencies import PublicStudioAuth
+from studio.assembly.http_dependencies import SessionDep as BaseSessionDep
 from studio.contracts.asset_library.errors import AssetError
 from studio.runtime.files.image_sizes import ThumbnailSize
 
@@ -252,12 +256,12 @@ async def manage(
 @router.post("/official-import", response_model=ThoughtImportOut)
 async def import_official(
     body: SeedImportInput,
-    session: SessionDep,
-    accounts: CommunityDirectoryDep,
+    session: BaseSessionDep,
     principal: PublicStudioAuth,
     request: Request,
 ):
     async with request.app.state.thought_official_imports:
+        accounts = await request_account_directory(request, session, principal)
         return await call(import_source(session, principal, body, accounts=accounts))
 
 

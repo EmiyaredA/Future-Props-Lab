@@ -1,6 +1,8 @@
 """An independent official import persists notes, projections and replay receipts."""
 
 import asyncio
+from time import monotonic
+from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
@@ -11,6 +13,7 @@ from studio.apps.asset_library.clients.retention import RetentionClient
 from studio.apps.asset_library.storage.service_models import AssetReferenceSet
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.thought_workshop import account_directory
 from studio.apps.thought_workshop.official_projections import OfficialProjections
 from studio.apps.thought_workshop.retention import ThoughtReferenceDelivery
 from studio.assembly.independent.thought_workshop.application import create_app
@@ -26,7 +29,10 @@ from tests.apps.thought_workshop.test_community_asset_protocol import (
 )
 
 
-async def test_official_import_replays_and_delivers_empty_projections(scenario):  # noqa: F811
+async def test_official_import_replays_and_delivers_empty_projections(
+    scenario,  # noqa: F811
+    monkeypatch,
+):
     case = scenario
     async with case.identity.state.database.sessions() as session:
         admin, _ = await create_account(
@@ -108,9 +114,24 @@ async def test_official_import_replays_and_delivers_empty_projections(scenario):
         result = imported.json()
         assert len(result["knowledge_base_ids"]) == info["library_count"]
         assert len(result["note_ids"]) == info["article_count"]
-        replayed = await thought.post(
-            path, headers=await authorize(browser, "POST", path), json=body
-        )
+        headers = await authorize(browser, "POST", path)
+        lock = app.state.thought_official_imports
+        waiting = asyncio.Event()
+        acquire = lock.acquire
+
+        async def observe_wait():
+            waiting.set()
+            return await acquire()
+
+        async with lock:
+            monkeypatch.setattr(lock, "acquire", observe_wait)
+            replay = asyncio.create_task(thought.post(path, headers=headers, json=body))
+            await asyncio.wait_for(waiting.wait(), timeout=10)
+            monkeypatch.setattr(
+                account_directory, "time", SimpleNamespace(monotonic=lambda: monotonic() + 6)
+            )
+        replayed = await replay
+        assert replayed.status_code == 200, replayed.text
         assert replayed.json() == result
 
         delivery = ThoughtReferenceDelivery(app.state.database.sessions, client)

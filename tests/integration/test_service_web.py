@@ -14,16 +14,19 @@ from studio.runtime.http.web import attach_web, load_release
 def write_release(root, **changes):
     root.mkdir(exist_ok=True)
     (root / "assets").mkdir(exist_ok=True)
-    values = {"agents.html": b"<div>owned program</div>", "assets/main.js": b"console.log('owned')"}
+    values = {
+        "thought.html": b"<div>owned program</div>",
+        "assets/main.js": b"console.log('owned')",
+    }
     values["assets/main.js.gz"] = gzip.compress(values["assets/main.js"], mtime=0)
     for name, value in values.items():
         (root / name).write_bytes(value)
     manifest = {
         "version": 1,
-        "service": "agents",
+        "service": "thought",
         "build_id": "a" * 20,
         "api_sha256": "b" * 64,
-        "entry": "agents.html",
+        "entry": "thought.html",
         "files": [
             {"path": name, "bytes": len(value), "sha256": hashlib.sha256(value).hexdigest()}
             for name, value in values.items()
@@ -36,13 +39,15 @@ def write_release(root, **changes):
 
 async def test_program_pages_assets_ranges_and_missing_resources(tmp_path):
     write_release(tmp_path)
-    release = load_release(tmp_path, "agents")
+    release = load_release(tmp_path, "thought")
     app = FastAPI()
-    attach_web(app, release, pages=("/agents", "/agents/sessions/{session_id}"))
+    attach_web(
+        app, release, pages=("/apps/thought-workshop", "/apps/thought-workshop/notes/{note_id}")
+    )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app), base_url="http://fixture"
     ) as client:
-        page = await client.get("/agents")
+        page = await client.get("/apps/thought-workshop")
         assert page.status_code == 200 and "owned program" in page.text
         assert page.headers["cache-control"] == "no-cache"
         url = release.prefix + "/assets/main.js"
@@ -62,7 +67,7 @@ async def test_program_pages_assets_ranges_and_missing_resources(tmp_path):
         for missing in (
             release.prefix + "/assets/missing.js",
             release.prefix + "/assets/main.js.gz",
-            "/agents/missing",
+            "/apps/thought-workshop/missing",
             "/v1/not-found",
             release.prefix + "/../private.txt",
         ):
@@ -85,14 +90,14 @@ async def test_only_outdated_matching_application_writes_are_blocked(tmp_path):
     async def read():
         return {"saved": bool(writes)}
 
-    attach_web(app, load_release(tmp_path, "agents"), pages=("/agents",))
+    attach_web(app, load_release(tmp_path, "thought"), pages=("/apps/thought-workshop",))
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app), base_url="http://fixture"
     ) as client:
-        old = {"X-Application-Id": "agents", "X-Application-Build": "old"}
+        old = {"X-Application-Id": "thought", "X-Application-Build": "old"}
         response = await client.post("/v1/example", headers=old)
         assert response.status_code == 409 and writes == []
-        assert response.headers["x-application-id"] == "agents"
+        assert response.headers["x-application-id"] == "thought"
         assert response.headers["x-application-build"] == "a" * 20
         assert (await client.get("/v1/example", headers=old)).status_code == 200
         assert (await client.post("/v1/example")).status_code == 200
@@ -117,23 +122,23 @@ async def test_only_outdated_matching_application_writes_are_blocked(tmp_path):
 def test_manifest_rejects_wrong_service_or_contract_metadata(tmp_path, change):
     write_release(tmp_path, **change)
     with pytest.raises(ValueError):
-        load_release(tmp_path, "agents")
+        load_release(tmp_path, "thought")
 
 
 def test_modified_or_untracked_files_and_links_block_program_publication(tmp_path):
     write_release(tmp_path)
     (tmp_path / "assets/main.js").write_text("changed")
     with pytest.raises(ValueError):
-        load_release(tmp_path, "agents")
+        load_release(tmp_path, "thought")
     write_release(tmp_path)
     extra = tmp_path / "private.toml"
     extra.write_text("must not be served")
     with pytest.raises(ValueError):
-        load_release(tmp_path, "agents")
+        load_release(tmp_path, "thought")
     extra.unlink()
     (tmp_path / "linked").symlink_to(tmp_path / "assets", target_is_directory=True)
     with pytest.raises(ValueError):
-        load_release(tmp_path, "agents")
+        load_release(tmp_path, "thought")
 
 
 async def test_portal_docs_alias_only_redirects_verified_program_resources(tmp_path):
@@ -157,7 +162,7 @@ async def test_portal_docs_alias_only_redirects_verified_program_resources(tmp_p
         resource = await client.get(redirect.headers["location"])
         assert resource.content == body and "immutable" in resource.headers["cache-control"]
         assert (await client.get("/docs/missing.svg")).status_code == 404
-    manifest["service"] = "agents"
+    manifest["service"] = "thought"
     (tmp_path / "build.json").write_text(json.dumps(manifest))
     with pytest.raises(ValueError):
-        load_release(tmp_path, "agents")
+        load_release(tmp_path, "thought")

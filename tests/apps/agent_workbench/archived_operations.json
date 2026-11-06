@@ -1,0 +1,212 @@
+[
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/candidates",
+    "operation_id": "list_candidates_v1_agent_workbench_candidates_get",
+    "permission": "content.read"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/chats",
+    "operation_id": "list_chats_v1_agent_workbench_chats_get",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "POST",
+    "path": "/v1/agent-workbench/chats",
+    "operation_id": "create_chat_v1_agent_workbench_chats_post",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/chats/{chat_id}",
+    "operation_id": "detail_v1_agent_workbench_chats__chat_id__get",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/chats/{chat_id}/events",
+    "operation_id": "stream_v1_agent_workbench_chats__chat_id__events_get",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "POST",
+    "path": "/v1/agent-workbench/chats/{chat_id}/queue/resume",
+    "operation_id": "resume_queue_v1_agent_workbench_chats__chat_id__queue_resume_post",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "DELETE",
+    "path": "/v1/agent-workbench/chats/{chat_id}/queue/{turn_id}",
+    "operation_id": "remove_queued_v1_agent_workbench_chats__chat_id__queue__turn_id__delete",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "POST",
+    "path": "/v1/agent-workbench/chats/{chat_id}/turns",
+    "operation_id": "send_turn_v1_agent_workbench_chats__chat_id__turns_post",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "POST",
+    "path": "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/approvals/{approval_id}",
+    "operation_id": "decide_v1_agent_workbench_chats__chat_id__turns__turn_id__approvals__approval_id__post",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "POST",
+    "path": "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/instructions",
+    "operation_id": "insert_instruction_v1_agent_workbench_chats__chat_id__turns__turn_id__instructions_post",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/source",
+    "operation_id": "preview_source_v1_agent_workbench_chats__chat_id__turns__turn_id__source_get",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "POST",
+    "path": "/v1/agent-workbench/chats/{chat_id}/turns/{turn_id}/stop",
+    "operation_id": "stop_v1_agent_workbench_chats__chat_id__turns__turn_id__stop_post",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/events",
+    "operation_id": "events_v1_agent_workbench_events_get",
+    "permission": "content.read"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/execution/catalog",
+    "operation_id": "catalog_v1_agent_workbench_execution_catalog_get",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/execution/directories",
+    "operation_id": "directories_v1_agent_workbench_execution_directories_get",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "POST",
+    "path": "/v1/agent-workbench/execution/projects",
+    "operation_id": "register_project_v1_agent_workbench_execution_projects_post",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/operations/{operation_id}",
+    "operation_id": "get_operation_v1_agent_workbench_operations__operation_id__get",
+    "permission": "content.read"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/sessions",
+    "operation_id": "list_sessions_v1_agent_workbench_sessions_get",
+    "permission": "content.read"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/sessions/{session_id}",
+    "operation_id": "get_session_v1_agent_workbench_sessions__session_id__get",
+    "permission": "content.read"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/sessions/{session_id}/attachments/{attachment_id}",
+    "operation_id": "get_attachment_v1_agent_workbench_sessions__session_id__attachments__attachment_id__get",
+    "permission": "content.read"
+  },
+  {
+    "service": "agents",
+    "method": "DELETE",
+    "path": "/v1/agent-workbench/sessions/{session_id}/copy",
+    "operation_id": "clear_copy_v1_agent_workbench_sessions__session_id__copy_delete",
+    "permission": "content.write"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/sessions/{session_id}/events",
+    "operation_id": "session_events_v1_agent_workbench_sessions__session_id__events_get",
+    "permission": "content.read"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/sessions/{session_id}/history",
+    "operation_id": "history_v1_agent_workbench_sessions__session_id__history_get",
+    "permission": "content.read"
+  },
+  {
+    "service": "agents",
+    "method": "PATCH",
+    "path": "/v1/agent-workbench/sessions/{session_id}/preferences",
+    "operation_id": "patch_preferences_v1_agent_workbench_sessions__session_id__preferences_patch",
+    "permission": "content.write"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/sessions/{session_id}/source",
+    "operation_id": "history_file_v1_agent_workbench_sessions__session_id__source_get",
+    "permission": "cloud-control.access"
+  },
+  {
+    "service": "agents",
+    "method": "GET",
+    "path": "/v1/agent-workbench/sources",
+    "operation_id": "list_sources_v1_agent_workbench_sources_get",
+    "permission": "content.read"
+  },
+  {
+    "service": "agents",
+    "method": "POST",
+    "path": "/v1/agent-workbench/sources",
+    "operation_id": "create_source_v1_agent_workbench_sources_post",
+    "permission": "content.write"
+  },
+  {
+    "service": "agents",
+    "method": "DELETE",
+    "path": "/v1/agent-workbench/sources/{source_id}",
+    "operation_id": "unbind_source_v1_agent_workbench_sources__source_id__delete",
+    "permission": "content.write"
+  },
+  {
+    "service": "agents",
+    "method": "PATCH",
+    "path": "/v1/agent-workbench/sources/{source_id}",
+    "operation_id": "patch_source_v1_agent_workbench_sources__source_id__patch",
+    "permission": "content.write"
+  },
+  {
+    "service": "agents",
+    "method": "POST",
+    "path": "/v1/agent-workbench/sources/{source_id}/scan",
+    "operation_id": "scan_source_v1_agent_workbench_sources__source_id__scan_post",
+    "permission": "content.write"
+  }
+]

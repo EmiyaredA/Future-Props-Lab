@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-from pathlib import Path
 from time import time
 from uuid import uuid4
 
@@ -10,7 +9,7 @@ import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 from sqlalchemy import select
 
-from studio.apps.agent_workbench.execution import project_files, projects
+from studio.apps.agent_workbench.execution import project_files, project_paths, projects
 from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
 from studio.apps.agent_workbench.storage.models import WorkbenchSession
 from studio.apps.agent_workbench.storage.service_models import WorkbenchExecutionJob
@@ -30,13 +29,13 @@ from studio.contracts.agent_workbench.execution import (
     source_path,
     turn_path,
 )
-from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import HEADER, Actor, issue_context, verify_context
 from studio.contracts.identity.cloud_authority import CloudAuthority, permits_cloud_authority
 from studio.contracts.identity.permissions import role_scopes
 from studio.host.agent_execution.workbench_worker import WorkbenchConfiguration, WorkbenchWorker
 from studio.host.transport import NativeTransport
 from studio.runtime.database.migrations import apply
+from tests.apps.agent_workbench.archive_database import archive_catalog
 
 INGRESS = "isolated-workbench-ingress-" * 2
 COLLECTOR = "isolated-workbench-collector-" * 2
@@ -74,7 +73,7 @@ class Bridge(httpx.AsyncBaseTransport):
 async def test_native_workbench_project_discovery_keeps_roots_local(tmp_path, monkeypatch):
     owner, other = str(uuid4()), str(uuid4())
     key = Ed25519PrivateKey.generate()
-    catalog = RouteCatalog.read(Path("deploy/contracts/ownership.json"))
+    catalog = archive_catalog(monkeypatch)
     service = tmp_path / "service"
     work = tmp_path / "projects" / "Owned"
     profiles = tmp_path / "agent-runtime"
@@ -90,6 +89,9 @@ async def test_native_workbench_project_discovery_keeps_roots_local(tmp_path, mo
     get_settings.cache_clear()
     monkeypatch.setattr(projects, "anchors", lambda: {work.parent: "Fixture projects"})
     monkeypatch.setattr(projects, "suggestions", lambda _settings: [])
+    # Pytest's retained evidence runs under the repository's hidden .local directory.
+    visible = project_paths.visible
+    monkeypatch.setattr(project_paths, "visible", lambda name: name == ".local" or visible(name))
     apply(service / "service.db", "agents", MIGRATIONS)
     identity = Identity(key.public_key())
     app = create_app(

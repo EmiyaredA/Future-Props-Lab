@@ -31,7 +31,7 @@ async def test_service_checks_signature_destination_and_real_request_path():
         actor, service="remote", method="GET", path=path, private_key=key, key_id="test"
     )
     async with httpx.AsyncClient(
-        transport=httpx.ASGITransport(app=app), base_url="http://agents"
+        transport=httpx.ASGITransport(app=app), base_url="http://remote"
     ) as client:
         assert (
             await client.get(
@@ -50,7 +50,7 @@ async def test_service_checks_signature_destination_and_real_request_path():
         assert response.json() == {"owner": "one", "local": False}
         assert response.headers["Cache-Control"] == "no-store"
         wrong = issue_context(
-            actor, service="remote", method="GET", path=path, private_key=key, key_id="test"
+            actor, service="thought", method="GET", path=path, private_key=key, key_id="test"
         )
         assert (await client.get(path, headers={"X-Fpl-Context": wrong})).status_code == 401
         assert (

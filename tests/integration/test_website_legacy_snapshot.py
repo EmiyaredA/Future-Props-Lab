@@ -169,7 +169,7 @@ def migrate_rehearsal(snapshot_db, parent, account, manifest_sha256):
     assert receipts["pending_records"] == 0
     assert receipts["status"] == "dataset_registered"
     assert indexed["presentation_template_assets"]["dataset"] == "presentation.template-references"
-    assert indexed["agent_workbench_search"]["status"] == "rebuild_registered"
+    assert indexed["agent_workbench_search"]["status"] == "retained_for_rollback"
     assert indexed["model_catalog_state"]["dataset"] == "models.catalog-state"
     assert indexed["interview_rooms"]["dataset"] == "interview.rooms"
     assert indexed["platform_settings"]["rollback_records"] == {"agent-runtime": 1}
