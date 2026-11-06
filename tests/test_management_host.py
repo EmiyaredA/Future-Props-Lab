@@ -444,7 +444,8 @@ def test_management_composes_every_registered_service_and_explicit_feature(monke
     from studio.contracts.gateway.catalog import BY_ID
 
     deploy = ROOT / "deploy"
-    overlays = set(deploy.glob("*.compose.yaml"))
+    # Happier has its own relay and runner project, outside Studio management.
+    overlays = set(deploy.glob("*.compose.yaml")) - {deploy / "happier.compose.yaml"}
     base = deploy / "compose.yaml"
     environment = {
         key: "fixture"

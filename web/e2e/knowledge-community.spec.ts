@@ -118,6 +118,7 @@ test("全局入口仅在库外显示，三类知识库保留返回入口和独�
     "PUT",
   );
   const sidebar = page.locator('aside[aria-label="知识库导航"]');
+  const openDirectory = page.getByRole("button", { name: /^(笔记)?目录$/ });
   await expect(
     sidebar.getByRole("navigation", { name: "思绪工坊入口" }),
   ).toBeVisible();
@@ -152,8 +153,7 @@ test("全局入口仅在库外显示，三类知识库保留返回入口和独�
     await page.goto(resource.path);
     for (const width of [1600, 768, 390]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
-      if (width <= 1200)
-        await page.getByRole("button", { name: "目录", exact: true }).click();
+      if (width <= 1200) await openDirectory.click();
       await expect(sidebar).toBeVisible();
       await expect(
         sidebar.getByRole("navigation", { name: "思绪工坊入口" }),
@@ -184,7 +184,7 @@ test("全局入口仅在库外显示，三类知识库保留返回入口和独�
       if (width <= 1200) await page.keyboard.press("Escape");
     }
     await page.reload();
-    await page.getByRole("button", { name: "目录", exact: true }).click();
+    await openDirectory.click();
     const back = sidebar.getByRole("button", {
       name: resource.back,
       exact: true,
