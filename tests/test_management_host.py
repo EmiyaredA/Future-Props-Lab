@@ -11,10 +11,38 @@ from studio.contracts.agent_workbench.native import NativeLease
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.deployment.gateway import render_gateway
 from studio.deployment.images import public_client_module, source_closure
+from studio.host.deployment.compose_selection import repository_manifest
 from studio.host.deployment.management_control import DeploymentControl, redact
 from studio.host.receipts import ReceiptStore
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_relocated_repository_manifest_preserves_relative_credential_base(tmp_path):
+    deploy = tmp_path / "deploy"
+    old = deploy / "compose.yaml"
+    manifest = deploy / "compose" / "compose.yaml"
+    manifest.parent.mkdir(parents=True)
+    manifest.touch()
+
+    for configured in (old, manifest):
+        selected, project_directory = repository_manifest(tmp_path, configured)
+        control = DeploymentControl(
+            compose_file=selected,
+            project_directory=project_directory,
+            project_name="studio-test",
+            services=["portal"],
+            environment={},
+            tunnels={},
+        )
+        assert control.compose_file == manifest
+        assert control.project_directory == deploy
+        assert control.prefix[4:8] == ["--project-directory", str(deploy), "--file", str(manifest)]
+
+    external = tmp_path / "release" / "compose.yaml"
+    assert repository_manifest(tmp_path, external) == (external, None)
+    old.symlink_to(manifest)
+    assert repository_manifest(tmp_path, old) == (old, None)
 
 
 class Tunnel:
@@ -261,7 +289,7 @@ async def test_tunnel_rejects_mismatched_gateway_builds(tmp_path, monkeypatch):
 def test_management_overlay_has_only_its_own_state_and_no_host_secrets():
     import yaml
 
-    document = yaml.safe_load((ROOT / "deploy/management.compose.yaml").read_text())
+    document = yaml.safe_load((ROOT / "deploy/compose/management.compose.yaml").read_text())
     service = document["services"]["management"]
     assert service["read_only"] is True and service["cap_drop"] == ["ALL"]
     for volume in service["volumes"]:
@@ -443,7 +471,7 @@ def test_management_composes_every_registered_service_and_explicit_feature(monke
 
     from studio.contracts.gateway.catalog import BY_ID
 
-    deploy = ROOT / "deploy"
+    deploy = ROOT / "deploy" / "compose"
     # Happier has its own relay and runner project, outside Studio management.
     overlays = set(deploy.glob("*.compose.yaml")) - {deploy / "happier.compose.yaml"}
     base = deploy / "compose.yaml"
@@ -502,7 +530,7 @@ def test_management_composes_every_registered_service_and_explicit_feature(monke
 def test_incomplete_compose_release_fails_before_host_commands(environment, failure):
     with pytest.raises(ValueError, match=failure):
         DeploymentControl(
-            compose_file=ROOT / "deploy" / "compose.yaml",
+            compose_file=ROOT / "deploy" / "compose" / "compose.yaml",
             project_name="isolated-full-stack",
             services=["portal"],
             environment=environment,
@@ -532,7 +560,7 @@ async def test_remote_companion_follows_business_start_and_stop():
         return None
 
     control = DeploymentControl(
-        compose_file=ROOT / "deploy" / "compose.yaml",
+        compose_file=ROOT / "deploy" / "compose" / "compose.yaml",
         project_name="isolated-remote",
         services=["remote"],
         environment={"FPL_REMOTE_IMAGE": "fixture", "FPL_GUACD_IMAGE": "fixture"},

@@ -10,6 +10,7 @@ import httpx
 
 from studio.config import read_config
 from studio.contracts.gateway.web_access import GatewayProfile
+from studio.host.deployment.compose_selection import repository_manifest
 from studio.host.deployment.management_control import DeploymentControl
 from studio.host.deployment.management_tunnels import GatewayTunnel
 from studio.host.deployment.management_worker import ManagementWorker
@@ -54,8 +55,12 @@ def configuration(path):
     )
     if credentials.is_symlink():
         raise ValueError("SSH 凭据目录不能是符号链接")
+    manifest, project_directory = repository_manifest(
+        root, location(values["fpl_deployment_compose_file"])
+    )
     control = DeploymentControl(
-        compose_file=location(values["fpl_deployment_compose_file"]),
+        compose_file=manifest,
+        project_directory=project_directory,
         project_name=values["fpl_deployment_project_name"],
         services=values["fpl_management_host_business_services"].split(os.pathsep),
         environment=values.get("fpl_deployment_environment", {}),

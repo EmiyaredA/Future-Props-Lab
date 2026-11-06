@@ -37,7 +37,7 @@ worker 只运行固定 Compose 服务组的启动、SIGTERM、显式 SIGKILL、�
 
 所有 Compose 调用显式传入 `--env-file /dev/null`，并禁用 `.env` 自动加载。持久配置真源为 `backend/config.toml`。`[management]` 声明本机来源和公网 HTTPS 来源，公网值只填来源，例如 `https://studio.futurepropslab.cn`，访问路径由管理网关提供。`[deployment]` 声明 Compose 项目与受限环境投影，`[management_host]` 声明本机 worker，`[management_remote]` 声明管理隧道。服务配置、Caddyfile 和凭据文件是带 0600 权限的部署投影。
 
-使用 `deploy/compose.yaml` 与 `deploy/management.compose.yaml` 两份清单。Identity 增加独立管理网关凭据与来源，service credentials 中显式登记 management。管理镜像只获得 Identity 公钥、自己的服务凭据、worker 验证材料、自有数据库及只读路由/程序，不获得 Identity 私钥。
+使用 `deploy/compose/compose.yaml` 与 `deploy/compose/management.compose.yaml` 两份清单。Identity 增加独立管理网关凭据与来源，service credentials 中显式登记 management。管理镜像只获得 Identity 公钥、自己的服务凭据、worker 验证材料、自有数据库及只读路由/程序，不获得 Identity 私钥。
 
 启动只核验自有 schema，不执行迁移。显式 `python -m studio.assembly.independent.management.cli migrate` 必须在停止对应管理实例后执行；Identity 自有迁移同理。新库必须由服务迁移初始化或通过已验收的正式导入流程建立，不能复制完整旧库。正式停机导出、导入、校验和切换由多服务部署流程统一完成；本任务的隔离验收不接通正式数据。
 

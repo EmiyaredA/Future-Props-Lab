@@ -28,8 +28,8 @@ Happier 运行在 Mac 上的独立 Relay 和 CLI 容器中。使用新的 Relay 
 ]
 ```
 
-5. 用 `uv run python scripts/website/build_happier.py /absolute/path/to/happier --runner-tag fpl/happier-runner:2aeb139d` 构建同一固定源码的 Happier CLI 和 Codex CLI Runner，用于隔离验收。使用 `deploy/happier.compose.yaml`，设置 `FPL_HAPPIER_ORIGIN`、`FPL_HAPPIER_RELAY_PORT`、`FPL_HAPPIER_OIDC_CLIENT_SECRET`、`FPL_HAPPIER_PROVIDERS_FILE` 和 `FPL_HAPPIER_PROJECT_ROOT`。需要其他 CLI 时可扩展同一 Runner 镜像。项目挂载只指向专用目录。CLI 配置与登录保存在独立 Runner 卷。
-6. 用 `docker compose -f deploy/happier.compose.yaml up -d relay` 启动 Relay。在云控打开 Agent 工作台，通过原生 FPL 按钮进入 Happier。执行 `docker compose -f deploy/happier.compose.yaml run --rm runner happier auth login`，在已解锁的 Happier 工作区通过原生配对界面确认。按 CLI 自己的流程准备独立登录，再启动 Runner。
+5. 用 `uv run python scripts/website/build_happier.py /absolute/path/to/happier --runner-tag fpl/happier-runner:2aeb139d` 构建同一固定源码的 Happier CLI 和 Codex CLI Runner，用于隔离验收。使用 `deploy/compose/happier.compose.yaml`，设置 `FPL_HAPPIER_ORIGIN`、`FPL_HAPPIER_RELAY_PORT`、`FPL_HAPPIER_OIDC_CLIENT_SECRET`、`FPL_HAPPIER_PROVIDERS_FILE` 和 `FPL_HAPPIER_PROJECT_ROOT`。需要其他 CLI 时可扩展同一 Runner 镜像。项目挂载只指向专用目录。CLI 配置与登录保存在独立 Runner 卷。
+6. 用 `docker compose --project-directory deploy -f deploy/compose/happier.compose.yaml up -d relay` 启动 Relay。在云控打开 Agent 工作台，通过原生 FPL 按钮进入 Happier。执行 `docker compose --project-directory deploy -f deploy/compose/happier.compose.yaml run --rm runner happier auth login`，在已解锁的 Happier 工作区通过原生配对界面确认。按 CLI 自己的流程准备独立登录，再启动 Runner。
 
 如需更换专用 FPL 管理员，使用新的 Happier 来源和新的 Relay 数据卷，避免复用原浏览器保留的 Happier 登录态。
 

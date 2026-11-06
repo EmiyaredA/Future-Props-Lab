@@ -243,19 +243,21 @@ def exercise(
         "compose",
         "--env-file",
         "/dev/null",
+        "--project-directory",
+        str(ROOT / "deploy"),
         "--project-name",
         project,
         "--file",
-        str(ROOT / "deploy/compose.yaml"),
+        str(ROOT / "deploy/compose/compose.yaml"),
         "--file",
-        str(ROOT / "deploy/agents-execution.compose.yaml"),
+        str(ROOT / "deploy/compose/agents-execution.compose.yaml"),
     ]
     if models_image:
-        prefix.extend(["--file", str(ROOT / "deploy/models.compose.yaml")])
+        prefix.extend(["--file", str(ROOT / "deploy/compose/models.compose.yaml")])
     if integrations_image:
-        prefix.extend(["--file", str(ROOT / "deploy/integrations.compose.yaml")])
+        prefix.extend(["--file", str(ROOT / "deploy/compose/integrations.compose.yaml")])
     if management_image:
-        prefix.extend(["--file", str(ROOT / "deploy/management.compose.yaml")])
+        prefix.extend(["--file", str(ROOT / "deploy/compose/management.compose.yaml")])
 
     def compose(*args, input_text=None, check=True, timeout_seconds=120):
         result = subprocess.run(

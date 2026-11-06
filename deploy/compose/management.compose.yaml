@@ -1,4 +1,4 @@
-# Overlay used together with deploy/compose.yaml. All state/config selections are explicit.
+# Overlay used together with deploy/compose/compose.yaml. All state/config selections are explicit.
 services:
   identity:
     volumes:

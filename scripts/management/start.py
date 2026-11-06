@@ -39,7 +39,7 @@ def main():
             control.services,
             ROOT,
             only_management=options.only_management,
-            credential_root=control.compose_file.parent,
+            credential_root=control.project_directory,
         )
         subprocess.run([*command, "config", "--quiet"], env=env, check=True, cwd=ROOT)
         if options.check:

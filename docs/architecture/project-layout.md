@@ -221,11 +221,11 @@ Models 所有调用链显式接收当前装配的配置：测试台附件、生�
 
 `studio/apps/creative_workshop/catalog.py` 由两套装配共用；`rules/publication.py` 是不依赖数据库的公开配置过滤，输入明确的标题、种类、摘要、配置与 Skill 可用性，不接收 ORM。`catalog_resources.py` 为现有 SQL 目录明确提供作者目录、归档器、来源接口与文件设置；`session.info` 仅保留存储层账号隔离，不查找业务服务。`use_cases/installation.py` 在调用注入的安装端口前复核权限。`storage/website_installation.py` 保留兼容站跨表原子事务，独立服务沿用持久投递和结果核对，后续继续统一业务状态规则。账号作者显示适配由 `identity/storage/creative_authors.py` 拥有；网站装配位于 `assembly/website/creative.py`。旧 `app/console/creative_workshop/` 已移除。
 
-`backend/studio/apps/creative_workshop/` 拥有 Creative 自有表、安装 outbox、文件和独立应用。公开目录复用旧站 HTTP 契约，账号写入继续由 CAS 和持久回执保护。独立应用按签名请求从 Identity 查询作者显示名，只读取 Creative 自有目录中的封面及 Skill 文件。`source_http.py` 根据网关签发的请求体证据，经 Integrations 的 `creative_sources_http.py` 读取同账号快照并核对 Skill 归档摘要。`preview_http.py` 通过按批次摘要绑定的授权查验目标名称与已安装状态。`stdio_http.py` 按安装记录和配置摘要委托 Integrations，环境值由 Integrations 加密保存。Creative 验签后更新安装投影，原安装回执保持可重放。镜像和浏览器入口可独立构建，`deploy/creative.compose.yaml` 提供隔离验收装配。作品认证与历史迁移仍是上线门禁。
+`backend/studio/apps/creative_workshop/` 拥有 Creative 自有表、安装 outbox、文件和独立应用。公开目录复用旧站 HTTP 契约，账号写入继续由 CAS 和持久回执保护。独立应用按签名请求从 Identity 查询作者显示名，只读取 Creative 自有目录中的封面及 Skill 文件。`source_http.py` 根据网关签发的请求体证据，经 Integrations 的 `creative_sources_http.py` 读取同账号快照并核对 Skill 归档摘要。`preview_http.py` 通过按批次摘要绑定的授权查验目标名称与已安装状态。`stdio_http.py` 按安装记录和配置摘要委托 Integrations，环境值由 Integrations 加密保存。Creative 验签后更新安装投影，原安装回执保持可重放。镜像和浏览器入口可独立构建，`deploy/compose/creative.compose.yaml` 提供隔离验收装配。作品认证与历史迁移仍是上线门禁。
 
 `studio/apps/integrations/transport/` 的目录与外部连接路由由两种装配共用；请求数据、MCP 发现结果和外部文档协议归 `studio/contracts/integrations/`，记录归 `storage/`，权限判定归 `rules/access.py`。网站的 `assembly/website/integrations.py` 显式注入密钥加密器、MCP 客户端和 Skill 存储，目录实现不再回退读取全局配置。归档安全校验器归 `clients/skill_archive.py`，账号布局和删除暂存归 `skills/archive.py`，创作工坊只复用前者。思绪同步入口与执行器通过显式连接工厂获取已授权快照和文档能力，不自行构造集成存储；快照不含密文或 ORM。`runtime/secrets.py` 提供显式密钥的加密与诊断脱敏，不导入配置。现存目录类仍兼有 SQL 和用例规则，后续按事务端口分离；本批不改迁移内容或未知结果恢复语义。
 
-`backend/studio/apps/integrations/` 拥有独立工具、MCP、Skills、外部连接 HTTP 装配、自有迁移和执行回执。`studio/contracts/integrations/integration_intents.py` / `integration_client.py` 将来源账号请求、资源与输入摘要绑定到 Identity 固定执行意图；Models 自有验证额度和演示安装回执保留跨服务幂等，不读取 Integrations 数据库。飞书同步由私有固定步骤协议执行，未知供应商响应不能自动重放。Skills 文件按本服务已提交记录恢复。`native_mcp.py` / `native_http.py` 对接主动连接的 Mac MCP worker，容器不持有主机命令、个人环境或目录。`deploy/integrations.compose.yaml` 只挂载所属状态、只读配置与用途限定凭据，外联使用单独网络；是否启用由 TOML 中明确选定的镜像决定。完整容器、原生与浏览器验收仍为正式切换前置条件。
+`backend/studio/apps/integrations/` 拥有独立工具、MCP、Skills、外部连接 HTTP 装配、自有迁移和执行回执。`studio/contracts/integrations/integration_intents.py` / `integration_client.py` 将来源账号请求、资源与输入摘要绑定到 Identity 固定执行意图；Models 自有验证额度和演示安装回执保留跨服务幂等，不读取 Integrations 数据库。飞书同步由私有固定步骤协议执行，未知供应商响应不能自动重放。Skills 文件按本服务已提交记录恢复。`native_mcp.py` / `native_http.py` 对接主动连接的 Mac MCP worker，容器不持有主机命令、个人环境或目录。`deploy/compose/integrations.compose.yaml` 只挂载所属状态、只读配置与用途限定凭据，外联使用单独网络；是否启用由 TOML 中明确选定的镜像决定。完整容器、原生与浏览器验收仍为正式切换前置条件。
 
 `studio/apps/integrations/storage/catalog_migration.py` 提供 Tool API、MCP 服务与发现工具、外部连接和检查历史的数据集。独立回环维护入口使用目标私有 TOML 的原加密密钥校验凭据，导入事务保留密文并提交批次回执。
 
@@ -250,7 +250,7 @@ Galgame 剪辑交接由 `studio/apps/galgame_workshop/handoff_jobs.py`、`handof
 
 `studio/apps/thought_workshop/upload_intents.py` 与 `studio/apps/asset_library/thought_uploads.py` 提供按账号绑定的私有上传回执，Identity 只为指定来源和目标签发上传委托。`upload_transport.py` 为已暂存上传逐请求换取绑定摘要的 Identity 委托并流式传输，来源服务仅在收到按账号、文件摘要和随机数认证的有效回执后确认并清理暂存；Assets 未配置独立回执密钥时拒绝该私有上传。`upload_recovery.py` 在启动独占锁内仅清理已确认副本和无持久意图的中断暂存；未决意图继续保留。该协议已通过隔离服务测试；独立 Thought 已装配公开上传入口，远端自动重放 worker 尚未接入，恢复网站暂不按重试标识去重。独立 Thought 的部分 HTTP 装配已包括目录移动、文档恢复和知识库回收／恢复，并保留现有版本控制及撤回发布规则；retention worker 已存在，但 `/ready` 始终返回 503，直至素材引用迁移及剩余业务能力完成。
 
-`backend/studio/apps/thought_workshop/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，通过显式选择的 `deploy/thought.compose.yaml` 提供独立部署入口。`web/src/app/entries/thought.tsx` 提供可独立构建的浏览器入口，与兼容站共用 Thought 模块的知识库、社区和旧链接路由。搜索、引用解析、反向链接、复制预检、检查点、阅读偏好、表格查询、社区收藏、社区管理元数据、官方包预检、同步绑定及任务记录查询共用 HTTP 装配。模型写作通过 `studio/contracts/thought_workshop/writing.py` 绑定笔记、请求摘要和原账号操作，由 `studio/apps/model_service/writing.py` 管理模型选择、流式调用、日志及配额。账户备份复用 `backup_manifest.py` 的现有归档格式，`studio/apps/thought_workshop/backup.py` 读取 Thought 一致快照并在结束读事务后按素材版本下载、核对大小及生成归档。素材引用变更通过独立的引用准备与回执提交。共享的 `studio/apps/asset_library/clients/reference_mutations.py` 在来源服务的自有账本中保存准备与结果，重启后补发确认。Thought 保留自己的账本表和正文、历史及表格引用规则。 归档和独立社区编辑把已准备的素材快照显式传给文档和表格校验，独立于请求会话的通用素材适配。
+`backend/studio/apps/thought_workshop/` 拥有 Thought 自有表清单、仅保留自有外键的独立迁移与写作 HTTP 适配，通过显式选择的 `deploy/compose/thought.compose.yaml` 提供独立部署入口。`web/src/app/entries/thought.tsx` 提供可独立构建的浏览器入口，与兼容站共用 Thought 模块的知识库、社区和旧链接路由。搜索、引用解析、反向链接、复制预检、检查点、阅读偏好、表格查询、社区收藏、社区管理元数据、官方包预检、同步绑定及任务记录查询共用 HTTP 装配。模型写作通过 `studio/contracts/thought_workshop/writing.py` 绑定笔记、请求摘要和原账号操作，由 `studio/apps/model_service/writing.py` 管理模型选择、流式调用、日志及配额。账户备份复用 `backup_manifest.py` 的现有归档格式，`studio/apps/thought_workshop/backup.py` 读取 Thought 一致快照并在结束读事务后按素材版本下载、核对大小及生成归档。素材引用变更通过独立的引用准备与回执提交。共享的 `studio/apps/asset_library/clients/reference_mutations.py` 在来源服务的自有账本中保存准备与结果，重启后补发确认。Thought 保留自己的账本表和正文、历史及表格引用规则。 归档和独立社区编辑把已准备的素材快照显式传给文档和表格校验，独立于请求会话的通用素材适配。
 
 `studio/apps/thought_workshop/sync_binding.py` 通过按文章、连接和请求摘要绑定的授权查询 Integrations。Thought 保留同步绑定和修订控制，Integrations 持有连接凭据和远程访问。`publication_retention.py` 将公开封面绑定到发布记录，源知识库替换封面时保留已发布素材。发布写入和回执状态共用事务，历史发布在切换前须建立经核验的初始引用。
 
@@ -285,7 +285,7 @@ Agents 的 `execution_discovery.py` 拥有账号项目发现、登记和创建�
 
 Agent Runtime 的 `backend/studio/apps/agent_runtime/` 拥有编程智能体目录、检测、启用和原生回执队列。
 `backend/studio/host/agent_execution/agent_connections_worker.py` 通过独立回环入口执行本机 CLI 探测，在写入部署配置前再次核验授权。
-`deploy/agent-runtime.compose.yaml` 只挂载服务自有数据与最小凭据。
+`deploy/compose/agent-runtime.compose.yaml` 只挂载服务自有数据与最小凭据。
 独立页面由 `web/src/app/entries/agent-runtime.tsx` 构建。
 
 Models 的 `backend/studio/apps/model_service/catalog_migration.py` 按账号传输历史目录和加密供应商凭据。
@@ -296,13 +296,13 @@ Assets 的 `backend/studio/assembly/independent/asset_library/maintenance.py` �
 
 Remote 的 `backend/studio/apps/remote_desktop/` 拥有桌面偏好、短期连接票据与 WebSocket。 `studio/host/cloud_projection.py` 按归属发布 Mac 云控策略，`studio/config/cloud_projection.py` 核对当前提交和服务自己的 TOML 摘要。Remote 维护受认证的设置租约与结果，`studio/host/cloud_setup_worker.py` 在 Mac 按配置修订保存并发布投影。
 共享 `studio/apps/remote_desktop/transport/guacamole.py` 负责 Guacamole 协议，旧站与 Remote 分别注入自己的授权和连接端口。历史偏好由 `studio/apps/remote_desktop/preference_migration.py` 在回环维护入口导入，Identity 的 `credential_migration.py` 保留历史加密 TOTP 登记与归属会话。
-`deploy/remote.compose.yaml` 只装配私网桌面服务，另需显式选择 Guacamole 对端。Identity 提供限定到原请求的会话复核。
+`deploy/compose/remote.compose.yaml` 只装配私网桌面服务，另需显式选择 Guacamole 对端。Identity 提供限定到原请求的会话复核。
 
-兼容网站的 `assembly/website/happier.py` 装配云控启动凭证与 FPL 会话复核，`happier_ingress.py` 转发独立 HTTPS 浏览器入口和实时连接。单客户端 OIDC 规则归 Identity。 `deploy/happier.compose.yaml` 仅装配上游 Relay 与隔离 CLI Runner，`scripts/website/build_happier.py` 在固定上游 Web 构建中启用原生右侧栏默认值。
+兼容网站的 `assembly/website/happier.py` 装配云控启动凭证与 FPL 会话复核，`happier_ingress.py` 转发独立 HTTPS 浏览器入口和实时连接。单客户端 OIDC 规则归 Identity。 `deploy/compose/happier.compose.yaml` 仅装配上游 Relay 与隔离 CLI Runner，`scripts/website/build_happier.py` 在固定上游 Web 构建中启用原生右侧栏默认值。
 
 Agents 的 `execution_http.py` 读取自有聊天记录并逐次复核 SSE 授权。共享的 `studio/apps/agent_workbench/execution/transcripts.py` 管理会话读回及中断状态。独立立即轮次由 `execution_turns.py` 协调租约，`use_cases/settle_turn.py` 通过 `storage/turn_settlement.py` 在一个短事务内核对账号、执行尝试及载荷并提交回执、轮次与队列暂停。`rules/turn_endings.py` 共用网站、独立执行与恢复的结束规则，迟到回执不覆盖已结束轮次；`studio/host/workbench_turn.py` 在 Mac 执行并提交回执，兼容站与独立服务共用 `turn_activity.py` 的活动投影。
 
-`studio/deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Agents、Gateway、Portal、Assets、Rendering、Management、Models、Integrations、Thought 和 Creative 各自保存依赖锁和镜像定义。Remote 单独使用 `deploy/images/remote/` 锁定 WebSocket 和图片转换依赖。Visual、Galgame、Tools、Director 与 Agent Runtime 共用 `deploy/images/owned-http/` 的依赖锁和镜像定义，镜像构建各自检查源码闭包。`deploy/compose.yaml` 装配基础服务。Mac 管理启动器通过 `studio/host/deployment/compose_selection.py` 按显式镜像和功能配置合并所有服务叠加清单。项目所有者和功能挂载按依赖顺序装配，Guacamole 随 Remote 进入业务启停组。Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。 `backend/studio/apps/tools/` 独立装配账号收藏和最近使用 API，使用自有数据与身份公钥。`deploy/tools.compose.yaml` 提供隔离启动，`web/src/app/entries/tools.tsx` 构建工具目录和两条深链接，`studio/apps/tools/host.py` 管理本机文件库目录任务与回执。`studio/host/tools_worker.py` 从专用回环入口领取有效租约，只在配置的 Assets 根目录下解析当前账号的文件库。视频下载依赖探测复用回环 worker，公开入口隐去可执行文件路径。`videos.py` 保存下载任务，`video_files.py` 核对字节摘要并保存交付回执，`video_library.py` 通过限定授权把文件流交给 Assets。Mac 下载中间文件由 `studio/host/tools_video.py` 管理。 `studio/contracts/management/migration_batches.py` 定义迁移运行计划、规范化摘要和账号回执；Tools 的 `navigation_migration.py` 拥有历史导航数据集，`migration_application.py` 装配独立回环维护入口。由 `scripts/website/migrate_tools_navigation.py` 传输并双向核验批次。
+`studio/deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Agents、Gateway、Portal、Assets、Rendering、Management、Models、Integrations、Thought 和 Creative 各自保存依赖锁和镜像定义。Remote 单独使用 `deploy/images/remote/` 锁定 WebSocket 和图片转换依赖。Visual、Galgame、Tools、Director 与 Agent Runtime 共用 `deploy/images/owned-http/` 的依赖锁和镜像定义，镜像构建各自检查源码闭包。`deploy/compose/compose.yaml` 装配基础服务。 仓库清单与功能叠加同放 `deploy/compose/`，管理装配仍以 `deploy/` 解析相对凭据和挂载路径。已有的仓库基础清单配置可解析到新路径。Mac 管理启动器通过 `studio/host/deployment/compose_selection.py` 按显式镜像和功能配置合并所有服务叠加清单。项目所有者和功能挂载按依赖顺序装配，Guacamole 随 Remote 进入业务启停组。Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收，`agents_docker_smoke.py` 验证真实工作台容器和 Mac 原生采集器；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。 `backend/studio/apps/tools/` 独立装配账号收藏和最近使用 API，使用自有数据与身份公钥。`deploy/compose/tools.compose.yaml` 提供隔离启动，`web/src/app/entries/tools.tsx` 构建工具目录和两条深链接，`studio/apps/tools/host.py` 管理本机文件库目录任务与回执。`studio/host/tools_worker.py` 从专用回环入口领取有效租约，只在配置的 Assets 根目录下解析当前账号的文件库。视频下载依赖探测复用回环 worker，公开入口隐去可执行文件路径。`videos.py` 保存下载任务，`video_files.py` 核对字节摘要并保存交付回执，`video_library.py` 通过限定授权把文件流交给 Assets。Mac 下载中间文件由 `studio/host/tools_video.py` 管理。 `studio/contracts/management/migration_batches.py` 定义迁移运行计划、规范化摘要和账号回执；Tools 的 `navigation_migration.py` 拥有历史导航数据集，`migration_application.py` 装配独立回环维护入口。由 `scripts/website/migrate_tools_navigation.py` 传输并双向核验批次。
 
 Galgame 的历史导出与导入由 `studio/apps/galgame_workshop/migration_application.py` 装配。旧 Story 当前索引与快照引用由源侧核对，Assets 校验已导入的文件回执后建立引用投影。批次编排与读回位于 `scripts/website/migrate_galgame_history.py`。
 
@@ -861,7 +861,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 `web/src/features/director-desk/` 拥有项目列表、`.director` 导入导出和三维编辑器，查询键在 `queryKeys.ts`。
 `backend/studio/apps/director_desk/` 装配独立 ASGI 和显式 schema，持有自有账号目录和中断删除恢复。
 编辑器会话在应用实例内持有，校验项目归属时只访问当前实例的会话工厂。
-`deploy/director.compose.yaml` 装配隔离服务，`web/src/app/entries/director.tsx` 构建项目列表与三维预演深链接。
+`deploy/compose/director.compose.yaml` 装配隔离服务，`web/src/app/entries/director.tsx` 构建项目列表与三维预演深链接。
 编辑器的 `model.ts` 是类型及公共入口，`model-constants.ts`、`model-creation.ts`、`model-validation.ts`
 分别维护常量与复制、对象创建、项目校验；`assets/catalog/shape-types.ts` 保存资产形状契约，
 `cinematography/camera-effects-types.ts` 保存镜头效果类型，`scenes/scene-document-types.ts` 保存戏段快照类型，
@@ -1016,7 +1016,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 ## 独立管理服务
 
-`backend/studio/apps/management/` 拥有管理装配、公开协议、自有运维任务/状态 ORM、显式迁移和 worker 接收协议；不导入其他服务 ORM。Identity 拥有管理会话及用途迁移；Models 拥有模板、额度与演示治理，浏览器经独立管理网关访问这些接口。`backend/studio/assembly/host/management*.py` 拥有 Mac 限定 Compose 控制、双 SSH 生命周期和持久执行回执。`scripts/management/` 拥有一键启动及独立 LaunchAgent。`web/src/app/entries/management.tsx` 拥有独立入口与认证装配，`features/accounts/management/` 拥有运行与访问页面；公开类型来自单独管理 OpenAPI。`deploy/management.compose.yaml` 是独立管理部署叠加清单，`deploy/images/management/` 保存最小依赖锁和镜像定义。验证入口为 `tests/test_management_service.py`、`tests/test_management_host.py` 与 `web/playwright.management.config.ts`。详见[管理服务参考](../reference/management-service.md)。
+`backend/studio/apps/management/` 拥有管理装配、公开协议、自有运维任务/状态 ORM、显式迁移和 worker 接收协议；不导入其他服务 ORM。Identity 拥有管理会话及用途迁移；Models 拥有模板、额度与演示治理，浏览器经独立管理网关访问这些接口。`backend/studio/assembly/host/management*.py` 拥有 Mac 限定 Compose 控制、双 SSH 生命周期和持久执行回执。`scripts/management/` 拥有一键启动及独立 LaunchAgent。`web/src/app/entries/management.tsx` 拥有独立入口与认证装配，`features/accounts/management/` 拥有运行与访问页面；公开类型来自单独管理 OpenAPI。`deploy/compose/management.compose.yaml` 是独立管理部署叠加清单，`deploy/images/management/` 保存最小依赖锁和镜像定义。验证入口为 `tests/test_management_service.py`、`tests/test_management_host.py` 与 `web/playwright.management.config.ts`。详见[管理服务参考](../reference/management-service.md)。
 
 
 ### 应用服务状态

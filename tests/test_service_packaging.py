@@ -47,7 +47,7 @@ def test_image_preparation_refuses_a_hidden_monolith_import(tmp_path, module):
 
 
 def test_compose_only_publishes_gateway_and_mounts_minimal_owned_state():
-    document = yaml.safe_load((ROOT / "deploy/compose.yaml").read_text())
+    document = yaml.safe_load((ROOT / "deploy/compose/compose.yaml").read_text())
     for name, service in document["services"].items():
         assert service["read_only"] is True
         if name == "gateway":
@@ -172,7 +172,7 @@ def test_models_image_rejects_hidden_cross_service_storage(tmp_path, module):
 
 
 def test_models_overlay_owns_state_and_has_provider_egress_without_host_mounts():
-    document = yaml.safe_load((ROOT / "deploy/models.compose.yaml").read_text())
+    document = yaml.safe_load((ROOT / "deploy/compose/models.compose.yaml").read_text())
     service = document["services"]["models"]
     assert set(document["services"]) == {"models"}
     assert service["read_only"] and service["cap_drop"] == ["ALL"]
@@ -283,7 +283,7 @@ def test_service_image_payload_is_readable_by_nonroot_under_private_umask(tmp_pa
 
 
 def test_integrations_compose_uses_owned_data_and_outbound_only_provider_network():
-    document = yaml.safe_load((ROOT / "deploy/integrations.compose.yaml").read_text())
+    document = yaml.safe_load((ROOT / "deploy/compose/integrations.compose.yaml").read_text())
     service = document["services"]["integrations"]
     assert set(document["services"]) == {"integrations"}
     assert service["read_only"] and service["cap_drop"] == ["ALL"]
@@ -336,7 +336,9 @@ def test_thought_packages_own_release_and_only_purpose_scoped_asset_credentials(
     assert "studio.apps.asset_library.storage.models" not in closure
     assert "studio.runtime.database.website" not in closure
 
-    services = yaml.safe_load((ROOT / "deploy/thought.compose.yaml").read_text())["services"]
+    services = yaml.safe_load((ROOT / "deploy/compose/thought.compose.yaml").read_text())[
+        "services"
+    ]
     thought, assets = services["thought"], services["assets"]
     assert thought["networks"] == ["private"]
     assert thought["read_only"] and thought["cap_drop"] == ["ALL"]
@@ -376,7 +378,7 @@ def test_project_owner_images_and_compose_mounts_are_isolated(service, other):
         for prefix in forbidden
     )
 
-    compose = yaml.safe_load((ROOT / "deploy/project-owners.compose.yaml").read_text())
+    compose = yaml.safe_load((ROOT / "deploy/compose/project-owners.compose.yaml").read_text())
     unit = compose["services"][service]
     assert unit["read_only"] and unit["networks"] == ["private"] and "ports" not in unit
     state, credential, key = (
@@ -414,7 +416,9 @@ def test_tools_image_only_packages_owned_navigation_and_safe_mounts():
         for name in closure
         if not public_client_module(name)
     )
-    tools = yaml.safe_load((ROOT / "deploy/tools.compose.yaml").read_text())["services"]["tools"]
+    tools = yaml.safe_load((ROOT / "deploy/compose/tools.compose.yaml").read_text())["services"][
+        "tools"
+    ]
     assert tools["read_only"] and tools["networks"] == ["private"] and "ports" not in tools
     assert set(mount["target"] for mount in tools["volumes"]) == {
         "/state",

@@ -84,7 +84,7 @@ async def test_creative_restart_checks_credentials_before_stopping(tmp_path, cre
     credential = (tmp_path / "FPL_GATEWAY_IDENTITY_TOKEN").read_text()
     (tmp_path / "FPL_GATEWAY_TOKEN").write_text(credential)
     control = DeploymentControl(
-        compose_file=Path("deploy/compose.yaml"),
+        compose_file=Path("deploy/compose/compose.yaml"),
         project_name="isolated-credential-restart",
         services=["creative", "integrations"],
         environment={
@@ -171,7 +171,7 @@ def test_launcher_does_not_invoke_compose_when_selected_database_fails(monkeypat
     config = tmp_path / "config.toml"
     environment = {"FPL_MANAGEMENT_IMAGE": "fixture"}
     control = SimpleNamespace(
-        env={}, prefix=["docker", "compose"], services=["assets"], compose_file=tmp_path / "compose"
+        env={}, prefix=["docker", "compose"], services=["assets"], project_directory=tmp_path
     )
     monkeypatch.setattr(
         start, "read_config", lambda _path: {"fpl_deployment_environment": environment}
