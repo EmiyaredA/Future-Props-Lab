@@ -15,7 +15,6 @@ from studio.apps.motion_compositor.schemas import (
     HandoffOut,
 )
 from studio.apps.motion_compositor.storage.models import MotionDocument, MotionTask
-from studio.apps.video_editor.handoffs.motion_handoff import import_motion_export
 from studio.config.settings import Settings
 from studio.contracts.motion_compositor.document import MotionComposition
 from studio.runtime.revisions import RevisionConflictError
@@ -147,18 +146,19 @@ class MotionExports:
             raise MotionNotFound("导出文件不存在")
         return path, filename
 
-    async def handoff(self, project_id: str, task_id: str, body: HandoffIn) -> HandoffOut:
+    async def handoff(
+        self, project_id: str, task_id: str, body: HandoffIn, *, import_video
+    ) -> HandoffOut:
         task = await self.row(project_id, task_id)
         source, filename = await self.download(project_id, task_id, body.format)
         document = MotionComposition.model_validate(task.snapshot_document)
         start = int(task.request_payload["startFrame"])
         end = int(task.request_payload.get("endFrame") or document.settings.duration_frames)
         duration_us = round((end - start) * 1_000_000 / document.settings.fps)
-        target_id, asset_id = await import_motion_export(
+        target_id, asset_id = await import_video(
             self.session,
             self.owner_user_id,
             source,
-            settings=self.settings,
             filename=filename,
             duration_us=duration_us,
             target_project_id=body.target_project_id,

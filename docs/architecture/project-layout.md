@@ -177,6 +177,8 @@ backend/
 
 特效制作的项目适配由 HTTP 装配和网站渲染 Runner 显式构造。网站使用共享库资源，独立服务使用签名素材请求与引用协调器。编辑、导出、快照与交接复用账号范围的项目适配。
 
+视频剪辑的项目创建与删除显式接收布局适配，时间轴编辑、合并和分段导出显式接收素材读取端口。网站装配也为助手编辑和特效导入绑定相同的账号范围适配。
+
 `backend/studio/apps/motion_compositor/` 装配独立特效项目、文稿及编辑批次。业务规则仍在 `studio/apps/motion_compositor/`。独立编辑通过 `studio/contracts/motion_compositor/motion_assets.py` 的签名委托读取当前项目文件描述，Assets 单独持有文件。旧站通过显式文件布局端口保持兼容。
 
 `backend/studio/apps/video_editor/` 装配独立视频剪辑项目和时间轴读取。项目事务复用 `studio/apps/video_editor/`，空项目只需要自有项目与时间轴记录，旧站的素材目录由显式兼容适配器维护。独立镜像不加载素材 ORM。

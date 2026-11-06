@@ -63,6 +63,7 @@ from studio.apps.tools.storage.navigation import NavigationRecords
 from studio.apps.tools.use_cases.navigation import ToolNavigation
 from studio.apps.tools.video_downloads.local_jobs import VideoDownloads
 from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
+from studio.apps.video_editor.handoffs.motion_handoff import import_motion_export
 from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.assembly.annotation import (
@@ -121,8 +122,27 @@ def bind_components(app, settings, database, *, read_cloud_settings):
         ingest=partial(ingest_library, sessions=sessions, settings=settings),
         probe=probe_deps,
     )
+    video_layouts = partial(LegacyVideoLayouts, storage=AssetStorage(settings))
+    app.state.video_layouts = lambda _request, session, owner: video_layouts(session, owner)
+    app.state.video_assets = lambda _request, session, owner: LegacyTimelineAssets(session, owner)
+
+    async def import_motion_video(session, owner, source, **details):
+        return await import_motion_export(
+            session,
+            owner,
+            source,
+            settings=settings,
+            layouts=video_layouts(session, owner),
+            assets=LegacyTimelineAssets(session, owner),
+            **details,
+        )
+
+    app.state.motion_video_import = import_motion_video
     app.state.amadeus_actions = ActionExecution(
-        partial(apply_assistant_timeline_batch, sessions=sessions), files_root=settings.runtime_path
+        partial(
+            apply_assistant_timeline_batch, sessions=sessions, asset_reader=LegacyTimelineAssets
+        ),
+        files_root=settings.runtime_path,
     )
     app.state.demo_runtime = DemoRuntime(partial(read_demo_configuration, sessions=sessions))
     app.state.interview_files_root = settings.runtime_path
@@ -210,8 +230,6 @@ def bind_components(app, settings, database, *, read_cloud_settings):
         info={
             **sessions.kw.get("info", {}),
             "thought_asset_metadata_factory": thought_metadata,
-            "video_project_layouts": partial(LegacyVideoLayouts, storage=AssetStorage(settings)),
-            "video_timeline_assets": LegacyTimelineAssets,
         }
     )
 

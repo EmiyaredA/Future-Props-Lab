@@ -228,7 +228,7 @@ async def send_to_video_editor(
 ) -> HandoffOut:
     try:
         return await MotionExports(projects, settings=request.app.state.settings).handoff(
-            project_id, task_id, body
+            project_id, task_id, body, import_video=request.app.state.motion_video_import
         )
     except (MotionNotFound, MotionInvalid) as exc:
         raise _error(exc) from None

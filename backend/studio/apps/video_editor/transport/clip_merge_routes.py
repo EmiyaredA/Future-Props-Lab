@@ -28,9 +28,10 @@ async def create_clip_merge(
     if request.app.state.render_delivery is None:
         raise _error(VideoEditorUnavailableError("剪辑合并暂不可用"))
     try:
+        assets = request.app.state.video_assets(request, session, owner_user_id)
         return await VideoEditorClipMerges(
             session, owner_user_id, dispatch=dispatch_clip_merge
-        ).create(project_id, body)
+        ).create(project_id, body, assets=assets)
     except (
         VideoEditorNotFoundError,
         VideoEditorUnavailableError,

@@ -49,7 +49,7 @@ class SegmentRequests:
             )
         return timeline
 
-    async def create(self, project, body):
+    async def create(self, project, body, *, media):
         payload = body.model_dump(mode="json", by_alias=True)
         existing = await self._existing(project, body.request_id, payload)
         if existing is not None:
@@ -62,7 +62,6 @@ class SegmentRequests:
             target = await plan_target(self.request, body.target)
         selected = segment_selection(document, body.segments)
         ids = {item["assetId"] for item in selected}
-        media = self.session.info["video_timeline_assets"](self.session, self.owner)
         assets = await media.describe(project, ids)
         if assets.keys() != ids or any(
             item.processing_status != "ready" or item.kind != "video" for item in assets.values()

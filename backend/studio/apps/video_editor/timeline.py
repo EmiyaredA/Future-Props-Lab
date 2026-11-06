@@ -753,7 +753,7 @@ async def validate_timeline(assets, project_id: str, document: dict) -> dict:
 
 class VideoEditorTimelines(VideoTimelineRead):
     async def apply(
-        self, project_id: str, body: VideoEditorTimelineBatchIn
+        self, project_id: str, body: VideoEditorTimelineBatchIn, *, assets
     ) -> VideoEditorTimelineOut:
         existing = (
             await self.session.execute(
@@ -785,7 +785,6 @@ class VideoEditorTimelines(VideoTimelineRead):
             op.model_dump(mode="json", by_alias=True, exclude_none=True) for op in body.operations
         ]
         source_document = row.document
-        assets = self.session.info["video_timeline_assets"](self.session, self.owner_user_id)
         merge_contexts = await operation_contexts(
             self.session, self.owner_user_id, assets, project_id, body.operations
         )

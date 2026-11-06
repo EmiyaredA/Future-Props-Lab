@@ -30,7 +30,10 @@ async def create_segment_export(
     if request.app.state.render_delivery is None:
         raise _error(VideoEditorUnavailableError("分段导出暂不可用"))
     try:
-        return await SegmentRequests(session, owner_user_id, request).create(project_id, body)
+        media = request.app.state.video_assets(request, session, owner_user_id)
+        return await SegmentRequests(session, owner_user_id, request).create(
+            project_id, body, media=media
+        )
     except (
         VideoEditorNotFoundError,
         VideoEditorUnavailableError,

@@ -88,4 +88,8 @@ async def clear_private_projects(owner="test-user"):
             )
         for identity, revision in roots:
             async with SessionLocal() as session:
-                await use_case(session, owner).delete(identity, revision)
+                if model is VideoEditorProject:
+                    layouts = app.state.video_layouts(None, session, owner)
+                    await use_case(session, owner).delete(identity, revision, layouts=layouts)
+                else:
+                    await use_case(session, owner).delete(identity, revision)
