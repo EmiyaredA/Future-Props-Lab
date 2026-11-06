@@ -181,10 +181,10 @@ def initial_document(body: ProjectCreateIn) -> MotionComposition:
 
 
 class MotionProjects:
-    def __init__(self, session: AsyncSession, owner_user_id: str) -> None:
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, resources) -> None:
         self.session = session
         self.owner_user_id = owner_user_id
-        self.resources = session.info["motion_project_resources"](session, owner_user_id)
+        self.resources = resources
 
     async def row(self, project_id: str) -> MotionProject:
         return await load_owned_project(

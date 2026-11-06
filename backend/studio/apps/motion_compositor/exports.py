@@ -43,9 +43,9 @@ def export_out(row):
 
 
 class Exports:
-    def __init__(self, session, owner):
-        self.session, self.owner = session, owner
-        self.projects = MotionProjects(session, owner)
+    def __init__(self, projects: MotionProjects):
+        self.session, self.owner = projects.session, projects.owner_user_id
+        self.projects = projects
 
     async def previous(self, project_id, body, payload):
         row = await self.session.scalar(

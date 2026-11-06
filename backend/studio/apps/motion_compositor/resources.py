@@ -19,9 +19,10 @@ from studio.runtime.project_errors import ProjectResourceError
 
 
 class ProjectResources:
-    def __init__(self, connection, session, capabilities, coordinator):
+    def __init__(self, connection, session, capabilities, coordinator, *, owner):
         self.connection, self.session, self.capabilities = connection, session, capabilities
         self.coordinator = coordinator
+        self.owner = owner
 
     def create_layout(self, project_id):
         return self.change_layout(project_id, -1, deleted=False)
@@ -32,7 +33,7 @@ class ProjectResources:
     async def prepare_layout(self, project_id, expected):
         try:
             return await self.coordinator.prepare(
-                owner=self.session.info["owner_user_id"],
+                owner=self.owner,
                 assertion=self.connection.state.service_assertion,
                 source_method=self.connection.method,
                 source_path=self.connection.url.path,

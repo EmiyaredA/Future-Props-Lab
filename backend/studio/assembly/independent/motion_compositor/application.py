@@ -10,11 +10,11 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.requests import HTTPConnection
 
 from studio.apps.asset_library.clients.archive_transfer import ArchiveTransport
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.motion_compositor.export_delivery import ExportDelivery
+from studio.apps.motion_compositor.projects import MotionProjects
 from studio.apps.motion_compositor.resources import ProjectResources
 from studio.apps.motion_compositor.snapshot_imports import MotionImportDelivery, SnapshotImports
 from studio.apps.motion_compositor.storage.migrations.registry import MIGRATIONS
@@ -206,11 +206,19 @@ def create_app(
         run_worker=run_worker,
     )
 
-    async def request_session(connection: HTTPConnection):
+    def motion_projects(connection, session, owner):
+        return MotionProjects(
+            session,
+            owner,
+            resources=ProjectResources(
+                connection, session, capabilities, app.state.reference_mutations, owner=owner
+            ),
+        )
+
+    app.state.motion_projects = motion_projects
+
+    async def request_session():
         async with database.sessions() as session:
-            session.info["motion_project_resources"] = lambda db, _owner: ProjectResources(
-                connection, db, capabilities, app.state.reference_mutations
-            )
             yield session
 
     app.dependency_overrides[db_session] = request_session

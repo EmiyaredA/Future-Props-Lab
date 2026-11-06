@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from functools import partial
 
 from fastapi import FastAPI
 
@@ -151,7 +152,11 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             GalgameVideoEditorHandoffRunner(session_factory=sessions, settings=settings),
             VideoEditorRunner(session_factory=sessions, settings=settings),
             VideoEditorRunner(lane="media", session_factory=sessions, settings=settings),
-            MotionExportRunner(session_factory=sessions, settings=settings),
+            MotionExportRunner(
+                session_factory=sessions,
+                settings=settings,
+                projects=partial(lifespan_app.state.motion_projects, None),
+            ),
         )
     )
     lifespan_app.state.runner_supervisor = supervisor

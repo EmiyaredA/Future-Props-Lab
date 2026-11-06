@@ -46,6 +46,7 @@ from studio.apps.model_service.playground.legacy_generation_references import (
 from studio.apps.model_service.transcription.annotation import AnnotationTranscription
 from studio.apps.model_service.transport.provider_bindings import ProviderTransports
 from studio.apps.motion_compositor.legacy_project_resources import LegacyProjectResources
+from studio.apps.motion_compositor.projects import MotionProjects
 from studio.apps.portal.storage.documents import InstalledDocuments
 from studio.apps.portal.use_cases.documents import DeveloperDocuments
 from studio.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
@@ -192,6 +193,10 @@ def bind_components(app, settings, database):
         return LegacyAssetMetadata(session, owner, storage=AssetStorage(settings))
 
     app.state.article_assets = thought_metadata
+    motion_storage = AssetStorage(settings)
+    app.state.motion_projects = lambda _request, session, owner: MotionProjects(
+        session, owner, resources=LegacyProjectResources(session, owner, storage=motion_storage)
+    )
     presentation_storage = AssetStorage(settings)
     app.state.presentation_projects = lambda _request, session, owner: Presentations(
         session,
@@ -205,9 +210,6 @@ def bind_components(app, settings, database):
         info={
             **sessions.kw.get("info", {}),
             "thought_asset_metadata_factory": thought_metadata,
-            "motion_project_resources": partial(
-                LegacyProjectResources, storage=AssetStorage(settings)
-            ),
             "video_project_layouts": partial(LegacyVideoLayouts, storage=AssetStorage(settings)),
             "video_timeline_assets": LegacyTimelineAssets,
         }

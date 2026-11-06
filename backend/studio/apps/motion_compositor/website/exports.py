@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.media_rendering.local.motion_outputs import OUTPUT_NAMES
@@ -24,10 +23,10 @@ from studio.runtime.time import utc_now
 
 
 class MotionExports:
-    def __init__(self, session: AsyncSession, owner_user_id: str, *, settings: Settings) -> None:
-        self.session = session
-        self.owner_user_id = owner_user_id
-        self.projects = MotionProjects(session, owner_user_id)
+    def __init__(self, projects: MotionProjects, *, settings: Settings) -> None:
+        self.session = projects.session
+        self.owner_user_id = projects.owner_user_id
+        self.projects = projects
         self.settings = settings
         self.storage = AssetStorage(settings)
 

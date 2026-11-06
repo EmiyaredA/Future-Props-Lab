@@ -59,12 +59,21 @@ def test_migrated_apps_never_select_process_global_configuration(application):
     assert not violations, violations
 
 
-def test_presentation_components_receive_request_ports():
-    keys = {"presentation_project_assets", "presentation_retention", "presentation_import"}
+@pytest.mark.parametrize(
+    ("application", "keys"),
+    [
+        (
+            "presentation_workshop",
+            {"presentation_project_assets", "presentation_retention", "presentation_import"},
+        ),
+        ("motion_compositor", {"motion_project_resources"}),
+    ],
+)
+def test_migrated_components_receive_request_ports(application, keys):
     locations = [
-        *(STUDIO / "apps/presentation_workshop").rglob("*.py"),
+        *(STUDIO / "apps" / application).rglob("*.py"),
         STUDIO / "assembly/website/bindings.py",
-        STUDIO / "assembly/independent/presentation_workshop/application.py",
+        STUDIO / "assembly/independent" / application / "application.py",
     ]
     for path in locations:
         tree = ast.parse(path.read_text())

@@ -175,6 +175,8 @@ backend/
 
 `backend/studio/apps/presentation_workshop/` 装配独立演示文稿项目 API、迁移和持久引用结果。共享文稿用例在 `studio/apps/presentation_workshop/`，兼容装配注入原文件库，独立装配以 `studio/contracts/presentation_workshop/presentation_assets.py` 的签名契约向 Assets 读取素材描述和指定版本的 SVG。项目 CAS、编辑回执与素材引用结果在文稿服务的一次事务内提交。 两套装配为每个请求显式提供素材读取、留存和导入适配，项目与模板共用同一事务上下文。
 
+特效制作的项目适配由 HTTP 装配和网站渲染 Runner 显式构造。网站使用共享库资源，独立服务使用签名素材请求与引用协调器。编辑、导出、快照与交接复用账号范围的项目适配。
+
 `backend/studio/apps/motion_compositor/` 装配独立特效项目、文稿及编辑批次。业务规则仍在 `studio/apps/motion_compositor/`。独立编辑通过 `studio/contracts/motion_compositor/motion_assets.py` 的签名委托读取当前项目文件描述，Assets 单独持有文件。旧站通过显式文件布局端口保持兼容。
 
 `backend/studio/apps/video_editor/` 装配独立视频剪辑项目和时间轴读取。项目事务复用 `studio/apps/video_editor/`，空项目只需要自有项目与时间轴记录，旧站的素材目录由显式兼容适配器维护。独立镜像不加载素材 ORM。

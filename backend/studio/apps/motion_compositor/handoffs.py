@@ -17,8 +17,8 @@ from studio.runtime.ids import new_id
 from .exports import Exports
 
 
-async def transfer(request, session, owner, project, task_id, body):
-    exports = Exports(session, owner)
+async def transfer(request, projects, project, task_id, body):
+    exports = Exports(projects)
     task = await exports.task(project, task_id)
     document = MotionComposition.model_validate(task.snapshot_document)
     start = int(task.request_payload["startFrame"])

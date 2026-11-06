@@ -17,11 +17,11 @@ from starlette.background import BackgroundTask
 from studio.apps.motion_compositor.projects import (
     MotionInvalid,
     MotionNotFound,
-    MotionProjects,
     MotionUnavailable,
 )
 from studio.apps.motion_compositor.schemas import ProjectOut
 from studio.apps.motion_compositor.snapshot_format import archive_asset, archive_manifest
+from studio.apps.motion_compositor.transport.dependencies import MotionDep
 from studio.apps.motion_compositor.transport.file_routes import ASSETS, read_json
 from studio.apps.motion_compositor.transport.website.errors import _error
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
@@ -79,16 +79,13 @@ async def write_archive(request, project_id, scope, assets, title, document, tar
 @router.get(
     "/projects/{project_id}/snapshot", responses={200: {"content": {"application/zip": {}}}}
 )
-async def export_snapshot(
-    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str
-) -> FileResponse:
+async def export_snapshot(request: Request, projects: MotionDep, project_id: str) -> FileResponse:
     try:
-        projects = MotionProjects(session, owner_user_id)
         project = await projects.get(project_id)
         document = (await projects.document(project_id)).document
     except MotionNotFound as exc:
         raise _error(exc) from None
-    await session.rollback()
+    await projects.session.rollback()
 
     slots = request.app.state.snapshot_slots
     if slots.locked():
