@@ -39,7 +39,7 @@ sequenceDiagram
 
 OpenCode HTTP 来源必须是用户明确提供的回环地址，不接受 URL 凭据、外部主机、重定向和任意路径。SSE 仅触发快照补读，断开时回退周期校准；它不意味着 FPL 已取得对话提交、审批、取消或窗口控制能力。历史阅读也不依赖 Amadeus 的执行开关，登录状态及模型配置不会从阅读来源自动继承。
 
-管理员降级或账号停用后，HTTP、事件流与后台采集停止访问；已有副本和检查点仍归原账号所有。独立服务装配保留在服务化分支，正式切换遵循其验收流程。
+在归档实现中，管理员降级或账号停用后，HTTP、事件流与后台采集停止访问；已有副本和检查点仍归原账号所有。当前迁移把这些记录随旧站快照封存，供回滚恢复。
 
 ## 授权、分页与附件构成同一账号边界
 
@@ -61,4 +61,4 @@ OpenCode HTTP 来源必须是用户明确提供的回环地址，不接受 URL �
 
 1. `backend/studio/host/session_collection`
 2. `backend/studio/apps/agent_workbench/sync/runner.py`
-3. 归档提交中的 `web/src/features/agent-workbench/AgentWorkbenchPage.tsx`
+3. `scripts/website/legacy_snapshot.py`，保存可供回滚的旧站快照。

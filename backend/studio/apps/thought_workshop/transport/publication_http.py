@@ -26,9 +26,10 @@ async def import_official(
     projections = OfficialProjections(
         owner=principal.user_id, identity=request.app.state.identity, **context(request)
     )
-    return await guarded(
-        import_source(session, principal, body, accounts=accounts, projections=projections)
-    )
+    async with request.app.state.thought_official_imports:
+        return await guarded(
+            import_source(session, principal, body, accounts=accounts, projections=projections)
+        )
 
 
 @router.put("/libraries/{library_id}/publication", response_model=PublicationConfig)

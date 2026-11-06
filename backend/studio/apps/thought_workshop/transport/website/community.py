@@ -255,8 +255,10 @@ async def import_official(
     session: SessionDep,
     accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
+    request: Request,
 ):
-    return await call(import_source(session, principal, body, accounts=accounts))
+    async with request.app.state.thought_official_imports:
+        return await call(import_source(session, principal, body, accounts=accounts))
 
 
 router.include_router(metadata_router, prefix="")

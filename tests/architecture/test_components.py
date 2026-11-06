@@ -482,7 +482,7 @@ def test_compatibility_settings_are_not_application_internal_models():
     }
 
 
-def test_workbench_website_does_not_duplicate_shared_turn_records():
+def test_archived_workbench_keeps_shared_turn_records_off_the_website():
     path = STUDIO / "apps/agent_workbench/execution/storage.py"
     definitions = {
         node.name
@@ -506,7 +506,7 @@ def test_workbench_website_does_not_duplicate_shared_turn_records():
     }
     assert not definitions & shared
     lifecycle = (STUDIO / "assembly/website/lifecycle.py").read_text()
-    assert "await recover_owned_turns(sessions)" in lifecycle
+    assert "recover_owned_turns" not in lifecycle
 
 
 def test_workbench_never_discovers_process_global_configuration():

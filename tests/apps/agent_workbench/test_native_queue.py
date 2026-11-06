@@ -10,17 +10,14 @@ from sqlalchemy import select, update
 
 from studio.apps.agent_workbench.storage.service_models import NativeJob
 from studio.contracts.agent_workbench.native import NativeOutcome
-from studio.runtime.database.sessions import Database, ServiceStorageError
+from studio.runtime.database.sessions import ServiceStorageError
 from studio.runtime.tasks.native_queue import NativeQueue, NativeQueueError
+from tests.apps.agent_workbench.archive_database import open_archive
 
 
 @pytest.fixture
-async def queue(tmp_path):
-    root = tmp_path / "agents"
-    root.mkdir()
-    database = Database("agents", root, models=(NativeJob,))
-    async with database.engine.begin() as connection:
-        await connection.run_sync(NativeJob.__table__.create)
+async def queue(tmp_path, monkeypatch):
+    database = open_archive(tmp_path, monkeypatch)
     clock = SimpleNamespace(now=datetime(2026, 11, 2, 10))
     instance = NativeQueue(
         database,

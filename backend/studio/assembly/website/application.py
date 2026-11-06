@@ -1,5 +1,7 @@
 """Construct a website with explicit settings, storage and component lifetimes."""
 
+from asyncio import Lock
+
 from fastapi.middleware.cors import CORSMiddleware
 
 from studio.assembly.website.bindings import bind_components
@@ -14,6 +16,7 @@ def create_app(settings, *, database=None, read_cloud_settings=None):
     database = database or WebsiteDatabase(settings.database_url, session_class=WebsiteSession)
     app = create_http_app(lifespan_context=lifespan)
     app.state.settings, app.state.database = settings, database
+    app.state.thought_official_imports = Lock()
 
     def instance_settings():
         return settings

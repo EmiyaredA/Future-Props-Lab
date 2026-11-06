@@ -1,6 +1,7 @@
 """Fail-closed assembly for the independent Thought service under construction."""
 
 import json
+from asyncio import Lock
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -203,6 +204,7 @@ def create_app(
     app.state.database, app.state.identity = database, identity
     app.state.thought_backup_limits = backup_limits
     app.state.thought_archive_delivery = archives
+    app.state.thought_official_imports = Lock()
     app.state.thought_community_uploads = community_uploads
     app.state.thought_references, app.state.community_files = references, files
     app.state.thought_sync_reads = sync_reads

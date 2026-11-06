@@ -15,6 +15,10 @@ attachment-free manifest before any preparation, retain every successful
 preparation for rollback and perform the existing live authority check
 before the source writes.
 
+Each application instance admits one official archive import at a time.
+A duplicate waits outside the SQLite write transaction, then replays the
+durable receipt before preparing projections or allocating new records.
+
 ## Alternatives considered
 
 Increasing the signed assertion lifetime would alter request authority
@@ -32,3 +36,5 @@ flow. The source transaction and archive format retain their contracts.
 The real independent import runs through Identity, Assets and Thought.
 A fault in one projection confirms the successful sibling is aborted.
 Archive import also exercises a failure on its second staged document.
+The compatibility website checks that concurrent requests with the same
+ID both return the same imported IDs and that the receipt stays readable.
