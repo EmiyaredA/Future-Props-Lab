@@ -10,12 +10,12 @@ import pytest
 from tests.test_community_asset_protocol import CATALOG, PASSWORD, scenario  # noqa: F401
 from tests.test_independent_project_catalog import authorize
 
-from app.capabilities.agents.cli.contracts import AgentOut, CatalogOut
 from studio.apps.agent_runtime.storage.migrations.registry import MIGRATIONS
 from studio.apps.agent_runtime.storage.service_models import ConnectionJob
 from studio.apps.agent_runtime.transport.review_http import NATIVE
 from studio.apps.identity.accounts import create_account
 from studio.assembly.independent.agent_runtime.application import create_app
+from studio.contracts.agent_runtime.catalog import AgentOut, CatalogOut
 from studio.contracts.agent_runtime.connections import DETECT, PREFIX, ConnectionOptions
 from studio.contracts.agent_runtime.definitions import DEFINITIONS
 from studio.contracts.identity.claims import HEADER, issue_context, verify_context

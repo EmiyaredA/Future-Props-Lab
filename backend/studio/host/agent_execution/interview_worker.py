@@ -30,15 +30,14 @@ from studio.runtime.operation_errors import OperationError
 UNAVAILABLE = WorkerStatus(available=False, code="executor_unavailable")
 
 
-async def check_codex():
-    from app.capabilities.agents.cli.catalog import inspect_connection
+async def check_codex(settings):
     from studio.apps.interview_assistant.codex import executable
-    from studio.config.settings import get_settings
+    from studio.host.agent_execution.cli.catalog import inspect_connection
 
     try:
-        executable()
+        executable(settings)
         status = await inspect_connection(
-            get_settings(), "codex", discover_models=False, app_server=False
+            settings, "codex", discover_models=False, app_server=False
         )
         if status["available"]:
             return WorkerStatus(available=True, code="ready", version=status["version"])
@@ -48,11 +47,9 @@ async def check_codex():
 
 
 class InterviewWorker:
-    def __init__(self, transport, state_root, *, executor=None, probe=check_codex):
-        from studio.apps.interview_assistant.codex import CodexExecutor
-
+    def __init__(self, transport, state_root, *, executor, probe):
         self.transport, self.probe = transport, probe
-        self.executor = executor if executor is not None else CodexExecutor()
+        self.executor = executor
         self.receipts = ReceiptStore(state_root / "receipts", retain_acknowledged_payload=False)
         self.attempts = state_root / "attempts"
         if self.attempts.is_symlink():
@@ -217,8 +214,17 @@ def main():
     except (OSError, ValueError):
         parser.error("Interview 配置和 worker 凭据须为当前用户独占的普通文件")
     os.environ["FPL_CONFIG_FILE"] = str(args.config.resolve())
+    from studio.apps.interview_assistant.codex import CodexExecutor, executable
+    from studio.config.settings import get_cloud_settings
+
     with service_lock(args.state_root):
-        asyncio.run(InterviewWorker(bridge, args.state_root.resolve()).run())
+        worker = InterviewWorker(
+            bridge,
+            args.state_root.resolve(),
+            executor=CodexExecutor(lambda: executable(get_cloud_settings())),
+            probe=lambda: check_codex(get_cloud_settings()),
+        )
+        asyncio.run(worker.run())
 
 
 if __name__ == "__main__":

@@ -4,9 +4,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.capabilities.agents.cli.conversation import codex_turn
-from app.capabilities.agents.cli.instructions import LiveInstructions
-from app.capabilities.agents.cli.native import pi
+from studio.host.agent_execution.cli.conversation import codex_turn
+from studio.host.agent_execution.cli.instructions import LiveInstructions
+from studio.host.agent_execution.cli.native import pi
 
 
 async def no_event(*_args):

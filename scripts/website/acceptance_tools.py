@@ -10,7 +10,7 @@ from studio.apps.visual_workshop.acceptance.execution.task_tools import main  # 
 
 if __name__ == "__main__":
     if sys.argv[1:2] == ["--run-agent"]:
-        from app.capabilities.agents.cli.watchdog import supervise
+        from studio.host.agent_execution.cli.watchdog import supervise
 
         raise SystemExit(supervise(int(sys.argv[2]), sys.argv[3:]))
     main()

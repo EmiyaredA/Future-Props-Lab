@@ -10,6 +10,7 @@ from pathlib import Path
 import httpx
 import pytest
 
+from studio.apps.interview_assistant.codex import CodexExecutor, executable
 from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
 from studio.config.settings import get_settings
@@ -88,6 +89,7 @@ async def test_fictional_docx_real_codex_research(monkeypatch):
 
         await InterviewPreparationRunner(
             allowed,
+            CodexExecutor(lambda: executable(settings)),
             sessions=SessionLocal,
             state_root=app.state.interview_files_root,
             executor_status=app.state.interview_executor_status,

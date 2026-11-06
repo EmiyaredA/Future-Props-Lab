@@ -94,8 +94,9 @@
   网站与独立执行器只负责模型调用适配；网站跨表连接归装配，Models 的转录解密器必须显式注入。
 - `backend/studio/` 全树纳入文件和目录行数预算；迁移路径同时更新入口、镜像闭包、打包、
   契约归属和测试。不得用空目录、软链接或永久转发表示迁移完成。
-- `backend/app/` 暂时保留 `capabilities/`、`console/` 的未归并实现。新业务进入 `studio`；后续迁移须按真实
-  所有者分配这些实现，不能把它们整体搬入一个通用兼容包。`app/apps/` 已无业务源码。
+- `backend/app/` 的源码已迁出。Agent CLI 进程、凭据隔离、探测及 TOML 修改归
+  `studio/host/agent_execution/cli/`。连接 DTO 归 `contracts/agent_runtime/`，公共连接路由归
+  Agent Runtime。兼容站通过 Identity 复核活动账号，独立入口用原有租约访问 Host。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、
   `studio/apps/model_service/transport/website/`、`console/routes/`、`capabilities/*/routes/` 与各业务包 `routes.py` 遵守同一边界。
@@ -284,8 +285,7 @@
   用真实供应商调用代替确定性测试。
 - 单文件软上限：生产 Python 900 行、TS/TSX 1000 行、CSS 800 行，测试文件 1200 行；OpenAPI 等
   生成文件排除。没有任何尺寸豁免机制，超限只能按语义拆分，不得为了过门禁做机械切片。
-- 真正约束体量的是目录预算：`web/src/apps|console` 、`backend/studio/` 与 `backend/app/console|capabilities`
-  下每一层目录直接持有的源码不超过 6000 行，超出必须再分出命名子域。这些目录内的文件名不得带
+- `web/src/apps|console` 和 `backend/studio/` 下每一层目录直接持有的源码不超过 6000 行，超出必须再分出命名子域。这些目录内的文件名不得带
   `-foundation`、`-components`、`-interactions`、`-part\d*`、`-base`、`-extra`、`-misc` 后缀，
   也不得出现只做转发的空壳 `@import` 样式。不得新增编号式 CSS 分片；构建预算脚本只读产物，
   不得在构建后拆分或改写 CSS。

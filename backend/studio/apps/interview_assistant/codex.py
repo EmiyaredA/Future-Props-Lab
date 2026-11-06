@@ -8,17 +8,16 @@ import signal
 import sys
 from pathlib import Path
 
-from app.capabilities.agents.cli.catalog import connection
-from app.capabilities.agents.cli.model_connection import connection_overrides, toml_value
 from studio.apps.interview_assistant.files import exclusive_write, material_path, room_root
-from studio.config.settings import REPO_ROOT, get_settings
+from studio.config.settings import REPO_ROOT
 from studio.contracts.interview_assistant.documents import PreparationBundle
+from studio.host.agent_execution.cli.catalog import connection
+from studio.host.agent_execution.cli.model_connection import connection_overrides, toml_value
 from studio.runtime.database.operation_receipts import OperationError
 
 
-def executable() -> str:
-
-    enabled, path, error = connection(get_settings(), "codex")
+def executable(settings) -> str:
+    enabled, path, error = connection(settings, "codex")
     if error or not enabled or not path:
         raise OperationError(error or "未找到 Codex CLI", "codex_missing", 409)
     return path
@@ -94,7 +93,7 @@ def frozen_context(root: Path, snapshot: dict, original: bytes | None) -> Path:
     return root
 
 
-def invocation(root: Path):
+def invocation(root: Path, executable: str):
     overrides, env = connection_overrides()
     if getattr(sys, "frozen", False):
         binary = (
@@ -150,7 +149,7 @@ def invocation(root: Path):
         }
     )
     command = [
-        executable(),
+        executable,
         "--no-daemon",
         "exec",
         "--ignore-user-config",
@@ -235,8 +234,11 @@ def execution_failure(details) -> OperationError:
 
 
 class CodexExecutor:
+    def __init__(self, resolve_executable):
+        self.resolve_executable = resolve_executable
+
     async def run(self, task, root, on_event, is_active):
-        command, env = invocation(root)
+        command, env = invocation(root, self.resolve_executable())
         if getattr(sys, "frozen", False):
             wrapper = (
                 Path(sys.executable).resolve().parent.parent

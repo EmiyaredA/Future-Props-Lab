@@ -488,32 +488,17 @@ def test_orm_models_only_depend_on_allowed_runtime_primitives() -> None:
 
 
 def test_backend_production_packages_have_no_dependency_cycles() -> None:
-    packages = {
-        path.name
-        for path in BACKEND_APP.iterdir()
-        if path.is_dir() and path.name != "routes" and (path / "__init__.py").is_file()
+    from tests.architecture.test_components import imports
+
+    backend = REPO_ROOT / "backend"
+    modules = {
+        ".".join(path.relative_to(backend).with_suffix("").parts).removesuffix(".__init__"): path
+        for path in _python_files(backend / "studio")
     }
-    graph: dict[str, set[str]] = {package: set() for package in packages}
-    for package in packages:
-        for path in _python_files(BACKEND_APP / package):
-            # Protocol adapters may call into peer packages; they used to live in the
-            # exempted top-level routes/ tree. Ignore the same role under package routes/
-            # directories and package-root routes.py files.
-            rel = path.relative_to(BACKEND_APP / package)
-            if "routes" in rel.parts or rel.name == "routes.py":
-                continue
-            for module in _python_imports(path):
-                parts = module.split(".")
-                if len(parts) >= 2 and parts[0] == "app" and parts[1] in packages:
-                    target = parts[1]
-                    if target == package:
-                        continue
-                    # Console ORM used to live under top-level models/. Business packages may
-                    # import those shapes without forming a console↔llm/demo cycle; console
-                    # governance already depends on llm for template/log use cases.
-                    if target == "console" and module.startswith("app.console.models"):
-                        continue
-                    graph[package].add(target)
+    graph = {
+        name: set(imports(path, include_types=False)) & modules.keys()
+        for name, path in modules.items()
+    }
 
     visiting: list[str] = []
     visited: set[str] = set()
@@ -532,7 +517,7 @@ def test_backend_production_packages_have_no_dependency_cycles() -> None:
         visiting.pop()
         visited.add(package)
 
-    for package in sorted(packages):
+    for package in sorted(graph):
         visit(package)
     assert not cycles, "后端生产包不得形成强依赖环：\n" + "\n".join(
         " -> ".join(cycle) for cycle in sorted(cycles)
@@ -884,18 +869,13 @@ def test_business_routes_are_mounted_under_v1() -> None:
 def test_documented_core_directories_exist() -> None:
     required = (
         "backend/studio/runtime",
-        "backend/app/capabilities",
-        "backend/app/capabilities/agents",
+        "backend/studio/host/agent_execution/cli",
+        "backend/studio/apps/agent_runtime/transport",
         "backend/studio/apps/asset_library",
         "backend/studio/apps/identity/credentials",
         "backend/studio/apps/media_rendering/local",
         "backend/studio/apps/model_service/transcription",
-        "backend/app/console",
         "backend/studio/apps/asset_library/archives",
-        "backend/app/console/governance",
-        "backend/app/console/models",
-        "backend/app/console/routes",
-        "backend/app/console/schemas",
         "backend/studio/apps",
         "backend/studio/apps/presentation_workshop",
         "backend/studio/apps/audio_annotation",

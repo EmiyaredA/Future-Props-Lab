@@ -3,9 +3,8 @@
 from pydantic import ValidationError
 from sqlalchemy import select, update
 
-from app.console.governance.code_agents import authorized
 from studio.apps.interview_assistant.bundles import acceptance
-from studio.apps.interview_assistant.codex import CodexExecutor, task_context
+from studio.apps.interview_assistant.codex import task_context
 from studio.apps.interview_assistant.storage.models import InterviewPreparation, InterviewRoom
 from studio.contracts.interview_assistant.documents import PreparationBundle
 from studio.runtime.database.operation_receipts import OperationError
@@ -18,10 +17,10 @@ class InterviewPreparationRunner(PollingTaskRunner):
     runner_name = "interview-preparation"
     poll_interval_seconds = 1.0
 
-    def __init__(self, actor_allowed, executor=None, *, sessions, executor_status, state_root):
+    def __init__(self, actor_allowed, executor, *, sessions, executor_status, state_root):
         super().__init__()
         self.actor_allowed = actor_allowed
-        self.executor = executor or CodexExecutor()
+        self.executor = executor
         self.sessions = sessions
         self.state_root = state_root
         self.executor_status = executor_status
@@ -61,13 +60,7 @@ class InterviewPreparationRunner(PollingTaskRunner):
             return bool(
                 room
                 and room.active_task_id == task.id
-                and await authorized(
-                    session,
-                    task.owner_user_id,
-                    task.user_id,
-                    "codex",
-                    "interview_preparation",
-                )
+                and task.owner_user_id == task.user_id
                 and await self.actor_allowed(session, task.owner_user_id, task.user_id)
             )
 

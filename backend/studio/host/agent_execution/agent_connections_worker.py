@@ -134,13 +134,13 @@ class ConnectionWorker:
 
 
 async def visual_acceptance_status(*, probe):
-    from app.capabilities.agents.cli.catalog import (
+    from studio.config.settings import get_cloud_settings
+    from studio.host.agent_execution.cli.catalog import (
         DEFINITIONS,
         connection,
         execution_signature,
         inspect_executable,
     )
-    from studio.config.settings import get_cloud_settings
 
     settings = get_cloud_settings()
 
@@ -166,8 +166,10 @@ async def visual_acceptance_status(*, probe):
 
 
 async def serve(args, credential):
-    from app.console.governance.code_agent_connections import enable_connection
-    from app.console.governance.code_agents import catalog
+    from studio.config import CONFIG_FILE
+    from studio.config.settings import get_cloud_settings
+    from studio.host.agent_execution.cli.connection_configuration import enable_connection
+    from studio.host.agent_execution.cli.connections import catalog
     from studio.host.visual_review_worker import VisualReviewWorker
 
     transport = NativeTransport(
@@ -176,8 +178,13 @@ async def serve(args, credential):
     worker = ConnectionWorker(
         transport,
         args.state_root,
-        catalog=catalog,
-        enable=enable_connection,
+        catalog=lambda *, can_enable: catalog(settings=get_cloud_settings(), can_enable=can_enable),
+        enable=lambda agent, *, before_publish: enable_connection(
+            agent,
+            config_file=CONFIG_FILE,
+            read_settings=get_cloud_settings,
+            before_publish=before_publish,
+        ),
         acceptance_status=visual_acceptance_status,
     )
     reviews = VisualReviewWorker(

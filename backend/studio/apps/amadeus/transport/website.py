@@ -13,7 +13,6 @@ from studio.apps.amadeus.execution.website_actions import (
     cancel_actions_for_run,
     execute_action,
 )
-from studio.apps.amadeus.execution.website_runs import Runs
 from studio.apps.amadeus.storage.conversations import Conversations
 from studio.apps.amadeus.storage.files import (
     MAX_FILE_BYTES,
@@ -22,6 +21,7 @@ from studio.apps.amadeus.storage.files import (
     write_file,
 )
 from studio.apps.amadeus.storage.questions import Questions
+from studio.apps.amadeus.storage.runs import RunRecords as Runs
 from studio.apps.amadeus.storage.skill_import import load_skill, read_skill_file
 from studio.apps.integrations.transport.bindings import skill_catalog
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
@@ -123,7 +123,14 @@ async def create_run(
     try:
         from studio.apps.amadeus.execution.website_dialogue import runtime
 
-        result = await Runs(session, principal).create(conversation_id, body)
+        async def connection(agent_id):
+            return await request.app.state.amadeus_resolve(
+                session, principal.owner_user_id, principal.user_id, agent_id
+            )
+
+        result = await Runs(session, principal, resolve_agent=connection).create(
+            conversation_id, body
+        )
         runtime(request.app).start(request.app, request.headers, principal, result.run)
         return result
     except OperationError as exc:

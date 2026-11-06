@@ -37,7 +37,7 @@ import sys
 from pathlib import Path
 from studio.host.agent_execution.interview_worker import InterviewWorker
 os.environ["FPL_CONFIG_FILE"] = sys.argv[1]
-InterviewWorker(None, Path(sys.argv[2]))
+InterviewWorker(None, Path(sys.argv[2]), executor=None, probe=None)
 from studio.config.settings import get_settings
 assert get_settings().fpl_code_agents_codex_executable == "/fixture/codex"
 """,

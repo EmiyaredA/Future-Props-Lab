@@ -30,6 +30,7 @@ from studio.apps.identity.website_access.external_sync import external_sync_acto
 from studio.apps.identity.website_access.interview import interview_actor_allowed
 from studio.apps.identity.website_access.visual_acceptance import acceptance_actor_allowed
 from studio.apps.identity.website_access.workbench import workbench_actor_allowed
+from studio.apps.interview_assistant.codex import CodexExecutor, executable
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
 from studio.apps.model_service.admission.website_queue import (
     claim_visual_capacity,
@@ -85,6 +86,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     await recover_interrupted_model_test_runs(sessions)
     await recover_interrupted_amadeus_runs(sessions=sessions)
     lifespan_app.state.code_agent_runs = CodeAgentRuns(
+        resolve_agent=lifespan_app.state.amadeus_resolve,
         sessions=sessions,
         settings=settings,
         skills=lambda session, owner: lifespan_app.state.integration_bindings.skills(
@@ -103,6 +105,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             ),
             InterviewPreparationRunner(
                 interview_actor_allowed,
+                CodexExecutor(lambda: executable(lifespan_app.state.read_cloud_settings())),
                 state_root=settings.runtime_path,
                 sessions=sessions,
                 executor_status=lifespan_app.state.interview_executor_status,

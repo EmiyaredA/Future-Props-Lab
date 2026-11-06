@@ -29,6 +29,7 @@ def test_interview_file_scope_is_explicit():
         "asset_library",
         "galgame_workshop",
         "identity",
+        "interview_assistant",
         "model_service",
         "motion_compositor",
         "presentation_workshop",
@@ -116,6 +117,17 @@ def imports(path, *, include_types=True):
                 location = ROOT / "backend" / candidate.replace(".", "/")
                 if location.with_suffix(".py").is_file() or (location / "__init__.py").is_file():
                     yield candidate
+
+
+def test_studio_no_longer_loads_the_legacy_backend_namespace():
+    assert not list((ROOT / "backend/app").rglob("*.py"))
+    violations = [
+        (str(path.relative_to(ROOT)), module)
+        for path in STUDIO.rglob("*.py")
+        for module in imports(path)
+        if module == "app" or module.startswith("app.")
+    ]
+    assert not violations, violations
 
 
 def test_studio_pure_components_do_not_load_adapters():

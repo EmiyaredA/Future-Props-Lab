@@ -5,14 +5,14 @@ import json
 
 from fastapi import HTTPException
 
-from app.capabilities.agents.cli.dialogue import run_dialogue
-from app.capabilities.agents.cli.instructions import LiveInstructions
-from app.capabilities.agents.cli.transport import CliError
-from app.console.governance.code_agents import resolve_connection
 from studio.apps.agent_workbench.execution import storage, transcripts, turn_activity, turn_records
 from studio.apps.agent_workbench.execution.project_tools import ProjectTools
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
+from studio.host.agent_execution.cli.connections import resolve_connection
+from studio.host.agent_execution.cli.dialogue import run_dialogue
+from studio.host.agent_execution.cli.instructions import LiveInstructions
+from studio.host.agent_execution.cli.transport import CliError
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.ids import new_id
 
@@ -85,7 +85,7 @@ class WorkbenchRuns:
                 try:
                     agent_id = (await transcripts.get_chat(db, owner, chat_id)).agent_id
                     await db.rollback()
-                    await resolve_connection(agent_id, probe=False)
+                    await resolve_connection(agent_id, settings=self.load_settings(), probe=False)
                     if await storage.claim_queue(
                         db,
                         principal,
@@ -196,7 +196,7 @@ class Turn:
             load_settings=self.load_settings,
         )
         await db.rollback()
-        executable = await resolve_connection(agent_id, probe=probe)
+        executable = await resolve_connection(agent_id, settings=self.load_settings(), probe=probe)
         return agent_id, project, executable
 
     async def flush(self):

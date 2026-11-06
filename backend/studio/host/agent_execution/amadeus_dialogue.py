@@ -9,19 +9,19 @@ from uuid import UUID, uuid4
 import httpx
 from cryptography.fernet import Fernet
 
-from app.capabilities.agents.cli.catalog import (
-    DEFINITIONS,
-    connection,
-    execution_signature,
-    inspect_connection,
-)
-from app.capabilities.agents.cli.dialogue import run_dialogue
 from studio.apps.amadeus.storage.files import work_root
 from studio.config import read_config
 from studio.config.settings import Settings
 from studio.contracts.agent_workbench.native import NativeOutcome
 from studio.contracts.amadeus.amadeus_native import DialoguePlan, DialogueScope
 from studio.contracts.amadeus.tools import TOOLS
+from studio.host.agent_execution.cli.catalog import (
+    DEFINITIONS,
+    connection,
+    execution_signature,
+    inspect_connection,
+)
+from studio.host.agent_execution.cli.dialogue import run_dialogue
 from studio.host.transport import LeaseEnded, ProtocolConflict
 from studio.runtime.database.operation_receipts import OperationError
 

@@ -234,6 +234,7 @@ async def test_cancel_retry_late_completion_and_empty_material(client):
     ).execute(queued["tasks"][0]["id"])
     await runner.InterviewPreparationRunner(
         allowed,
+        FakeExecutor(),
         sessions=SessionLocal,
         state_root=app.state.interview_files_root,
         executor_status=app.state.interview_executor_status,
@@ -405,8 +406,7 @@ def test_cli_configuration_does_not_inherit_backend_credentials(tmp_path, monkey
     )
     monkeypatch.setenv("CODEX_HOME", str(home))
     monkeypatch.setenv("FPL_SECRET_TOKEN", "must-not-inherit")
-    monkeypatch.setattr(codex, "executable", lambda: "/usr/bin/false")
-    command, env = codex.invocation(tmp_path)
+    command, env = codex.invocation(tmp_path, "/usr/bin/false")
     combined = " ".join(command)
     assert "must-not-inherit" not in combined
     assert "FPL_SECRET_TOKEN" not in env
@@ -463,7 +463,6 @@ async def test_codex_subprocess_consumes_jsonl_and_structured_delivery(
     """)
     )
     fake.chmod(0o700)
-    monkeypatch.setattr(codex, "executable", lambda: str(fake))
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "empty-home"))
     events = []
 
@@ -473,7 +472,7 @@ async def test_codex_subprocess_consumes_jsonl_and_structured_delivery(
     async def active():
         return True
 
-    actual, searches = await codex.CodexExecutor().run(task, root, event, active)
+    actual, searches = await codex.CodexExecutor(lambda: str(fake)).run(task, root, event, active)
     assert actual == expected
     assert searches == 1
     assert {item[0] for item in events} == {"material", "search"}
@@ -509,7 +508,6 @@ async def test_cancellation_terminates_the_cli_process_group(client, tmp_path, m
     """)
     )
     fake.chmod(0o700)
-    monkeypatch.setattr(codex, "executable", lambda: str(fake))
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "empty-home"))
 
     async def event(*_data):
@@ -519,7 +517,9 @@ async def test_cancellation_terminates_the_cli_process_group(client, tmp_path, m
         return not (root / "child.pid").exists()
 
     with pytest.raises(OperationError, match="任务已取消"):
-        await asyncio.wait_for(codex.CodexExecutor().run(task, root, event, active), 8)
+        await asyncio.wait_for(
+            codex.CodexExecutor(lambda: str(fake)).run(task, root, event, active), 8
+        )
     pid = int((root / "child.pid").read_text())
     with pytest.raises(ProcessLookupError):
         os.kill(pid, 0)

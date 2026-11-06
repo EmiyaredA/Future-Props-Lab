@@ -2,7 +2,7 @@
 
 ## Studio 组件归属迁移
 
-所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。`backend/app/` 暂时保留 Agent CLI 和连接治理兼容实现；这部分和逐用例解耦仍属于后续迁移，不能把命名空间迁移视为整个方案验收完成。
+所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。Agent CLI 及连接治理也已迁入，`backend/app/` 已无源码。
 
 已落地的目录骨架如下（以仓库根目录下为第一级，展开至第四级）：
 
@@ -113,9 +113,9 @@ backend/
 
 执行切片以已授权项目对象接收账号目录和 TOML 预设。在 SQLite 写事务外完成目录检查，事务内复核归属、项目绑定和轮次状态。执行存储模块统一推进轮次、审批收据与 revision，SSE 取出快照后释放数据库会话再发送。文件工具与命令沙箱共用 `runtime/safe_paths.py` 的安全遍历与路径原语。项目选择器由工作台持有样式和焦点交互。 独立 Agents 复用 transcript 读取、恢复和版本查询，目录绑定保存到自身数据库，浏览和注册路由在 Mac 项目执行就绪前返回 503。
 
-`capabilities/agents/cli/dialogue.py` 统一管理 CLI 分派、专用 profile、watchdog 和工具传输。工作台与 Amadeus 提供工具、事件回调及各自的运行上下文。Codex 对话就绪统一校验登录及隔离策略，模型目录的读取状态独立。
+`studio/host/agent_execution/cli/dialogue.py` 统一管理 CLI 分派、专用 profile、watchdog 和工具传输。工作台与 Amadeus 提供工具、事件回调及各自的运行上下文。Codex 对话就绪统一校验登录及隔离策略，模型目录的读取状态独立。
 
-`backend/studio/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/studio/host/session_collection/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权和执行授权独立。工作台的 `execution/` 拥有 FPL 创建的 CLI 会话、轮次、待执行队列、插入回执和项目审批。项目绑定、源码读取及后台轮次显式接收装配提供的配置读取器，在授权、写入及文件读取前后重新核对当前策略；目录与标签适配不回退全局配置。CLI 通信与 MCP 中继由 `capabilities/agents/cli/` 共用。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
+`backend/studio/apps/agent_workbench/` 拥有当前账号的来源绑定、只读会话投影、搜索、扫描回执和 SSE；`sync/` 在原生 I/O 结束后以短事务保存归一条目与检查点，并独立调度各来源。`backend/studio/host/session_collection/` 拥有五种原生格式、只读文件／SQLite／本机 OpenCode HTTP 适配和受限附件读取，不依赖工作台 ORM；`inline_images.py` 按块省略超大内嵌图片编码，检查点保持原始字节位置。`web/src/features/agent-workbench/` 拥有独立应用注册、三栏阅读、来源管理与账号缓存键。本机网站允许显式填写目录，实际 socket 标记用于新绑定校验。来源授权和执行授权独立。工作台的 `execution/` 拥有 FPL 创建的 CLI 会话、轮次、待执行队列、插入回执和项目审批。项目绑定、源码读取及后台轮次显式接收装配提供的配置读取器，在授权、写入及文件读取前后重新核对当前策略；目录与标签适配不回退全局配置。CLI 通信与 MCP 中继由 `studio/host/agent_execution/cli/` 共用。API、存储与来源矩阵见 [`../reference/agent-workbench.md`](../reference/agent-workbench.md)。
 
 ## 浏览器加载与图片派生
 
@@ -375,9 +375,7 @@ Future-Props-Lab/
 ├── .gitattributes     # 文档图片、固定字体与 VAD 资产的 Git LFS 边界
 ├── backend/studio/config/ # 独立 TOML 格式、字段映射与一次性 .env 转换；不导入 app 或数据库
 ├── backend/config.example.toml # 无真实密钥的配置示例；私有 config.toml 不提交、不打包
-├── backend/app/
-│   ├── capabilities/  # 尚待迁移的本机 Agent 适配：agents
-│   ├── console/       # 尚未迁出的治理与助手用例
+├── backend/studio/host/agent_execution/cli/ # CLI 进程、探测、协议与隔离
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -996,11 +994,11 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 `backend/studio/apps/visual_workshop/acceptance/` 拥有只读动作迁移定义、节点方案 CAS 绑定、自动生成依据、不可变输出验收记录、人工结论、证据、返修和快照兼容。`execution/` 负责无凭据任务包、专用媒体 MCP 和 Agent 报告转换。`runner.py` 复用短事务及 RunnerSupervisor，模型 API 与 Agent 专属结果分别保存。生成快照与上传版本的节点设置明确区分，验收不参与生成、上传、画布保存及最终输出采用的门禁。
 
-`backend/app/capabilities/agents/cli/` 拥有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 的非交互执行。`transport.py` 维护受控环境与进程生命周期，`conversation.py` 维护原有 Codex/Claude 对话协议，`native.py` 维护 OpenCode JSON 事件、Harness ACP 与 Pi RPC，`isolation.py` 只继承模型连接与认证配置并生成临时执行配置；旁置 `.mjs` 资源提供 Pi 的唯一任务工具桥与 Harness 的不可放宽工具 guard，桌面构建显式打包。不包含验收业务。`studio/apps/identity/website_access/visual_acceptance.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
+`backend/studio/host/agent_execution/cli/` 拥有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 的非交互执行。`transport.py` 维护受控环境与进程生命周期，`conversation.py` 维护原有 Codex/Claude 对话协议，`native.py` 维护 OpenCode JSON 事件、Harness ACP 与 Pi RPC，`isolation.py` 只继承模型连接与认证配置并生成临时执行配置；旁置 `.mjs` 资源提供 Pi 的唯一任务工具桥与 Harness 的不可放宽工具 guard，桌面构建显式打包。不包含验收业务。`studio/apps/identity/website_access/visual_acceptance.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
 
 `web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。
 
-- `console/governance/code_agents.py` 解析有效账号自有任务使用的共享 CLI 连接。`code_agent_connections.py` 负责本机启用，`deployment_config.py` 与云控设置共用 TOML 配置锁。`console/routes/code_agents.py` 只做协议适配。`capabilities/agents/cli/` 统一 CLI 发现、模型连接白名单、官方对话与固定任务传输；`scripts/website/codex_login.py` 建立 app-server 的专用登录，云控项目路径由授权文件工具消费；`web/src/features/code-agents/` 拥有管理页和查询键。独立 SDK 的 `mcp.py` 拥有外部 stdio MCP 与内部短期 Socket 中继，不导入后端。
+- `studio/assembly/website/code_agent_access.py` 通过 Identity 复核有效账号。Host 的 `cli/connection_configuration.py` 负责本机启用，共用 TOML 锁和发布前授权。连接 DTO 归 Agent Runtime 契约，两套入口共用 Agent Runtime 路由。独立服务通过持久租约访问 Host。`scripts/website/codex_login.py` 建立 app-server 的专用登录。
 
 ### 视频透明检查与格式信息
 

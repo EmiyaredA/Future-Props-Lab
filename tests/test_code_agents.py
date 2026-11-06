@@ -11,12 +11,12 @@ import httpx
 import pytest
 from sqlalchemy import update
 
-from app.capabilities.agents.cli.catalog import connection, inspect_connection
-from app.capabilities.agents.cli.codex_profile import profile_path
-from app.console.governance.code_agents import resolve_connection
 from studio.apps.amadeus.storage.models import AmadeusConversation
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
+from studio.host.agent_execution.cli.catalog import connection, inspect_connection
+from studio.host.agent_execution.cli.codex_profile import profile_path
+from studio.host.agent_execution.cli.connections import resolve_connection
 from studio.runtime.database.operation_receipts import OperationError
 from test_workspace_governance import client_account
 from website_test_support import SessionLocal, app
@@ -219,7 +219,7 @@ async def test_codex_startup_failure_does_not_hide_other_agents(tmp_path, monkey
     status = await inspect_connection(get_settings(), "codex", discover_models=False)
     assert not status["available"] and status["status"] == "probe_failed"
     with pytest.raises(OperationError) as failure:
-        await resolve_connection("codex")
+        await resolve_connection("codex", settings=get_settings())
     assert failure.value.code == "probe_failed"
 
 
@@ -234,7 +234,7 @@ async def test_codex_model_discovery_failure_preserves_dialogue_readiness(tmp_pa
     result = await inspect_connection(settings, "codex")
     assert result["available"] and result["status"] == "ready"
     assert result["models"] == []
-    assert await resolve_connection("codex") == str(binary)
+    assert await resolve_connection("codex", settings=get_settings()) == str(binary)
 
 
 async def wait_run(client, root, identity):
@@ -286,7 +286,7 @@ async def test_backend_owned_native_run_and_event_tombstones(configured, agent):
 async def test_cli_defaults_for_active_accounts_and_preserves_owner_boundary():
     admin, _, admin_id, _ = await client_account(admin=True)
     regular, _, user_id, _ = await client_account()
-    from app.console.governance.code_agents import authorized
+    from studio.apps.identity.website_access.code_agents import authorized
 
     async with aclosing(admin), aclosing(regular):
         result = await regular.get("/v1/code-agents")
@@ -565,7 +565,7 @@ async def test_oversized_reply_fails_without_stranding_the_owner(configured):
 
 
 def test_binary_tool_results_are_not_duplicated_into_persistent_events():
-    from app.capabilities.agents.cli.conversation import recorded_result
+    from studio.host.agent_execution.cli.conversation import recorded_result
 
     image = [{"type": "image", "mimeType": "image/png", "data": "A" * (1024 * 1024)}]
     event = recorded_result(image)

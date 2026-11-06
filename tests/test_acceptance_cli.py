@@ -8,13 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from app.capabilities.agents.cli.process import CliError, command, environment, execute, probe
 from studio.apps.visual_workshop.acceptance.execution.task_tools import (
     MediaTools,
     file_digest,
     safe_file,
 )
 from studio.contracts.visual_workshop.visual_agent_report import validate_report
+from studio.host.agent_execution.cli.process import CliError, command, environment, execute, probe
 
 
 def fake_cli(root, body):
@@ -188,7 +188,7 @@ async def test_media_tools_reject_escape_mutation_and_sample_budget(tmp_path, mo
 
 @pytest.mark.asyncio
 async def test_timeout_terminates_native_process(tmp_path, monkeypatch):
-    from app.capabilities.agents.cli import process
+    from studio.host.agent_execution.cli import process
 
     monkeypatch.setattr(process, "EXECUTION_TIMEOUT_SECONDS", 0.05)
     schema = tmp_path / "schema.json"
@@ -206,14 +206,14 @@ async def test_timeout_terminates_native_process(tmp_path, monkeypatch):
 async def test_parent_death_watchdog_stops_executor():
     import subprocess
 
-    from app.capabilities.agents.cli import watchdog
+    from studio.host.agent_execution.cli import watchdog
 
     result = await asyncio.to_thread(
         subprocess.run,
         [
             sys.executable,
             "-c",
-            "from app.capabilities.agents.cli.watchdog import supervise; "
+            "from studio.host.agent_execution.cli.watchdog import supervise; "
             "raise SystemExit(supervise(99999999, "
             "[__import__('sys').executable, '-c', 'import time; time.sleep(60)']))",
         ],

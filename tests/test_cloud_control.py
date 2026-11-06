@@ -898,9 +898,9 @@ async def test_restart_expires_pending_approval_and_preserves_unknown_result():
 
 @pytest.mark.parametrize("vnc_only", [False, True])
 async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tmp_path, vnc_only):
-    from app.console.governance import code_agent_connections
     from studio.assembly.website import cloud_setup as setup
     from studio.config import settings as config
+    from studio.host.agent_execution.cli import connection_configuration as code_agent_connections
     from studio.host.deployment import cloud_setup as host_setup
 
     file = tmp_path / "config.toml"
@@ -912,7 +912,9 @@ async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tm
     )
     monkeypatch.setattr(config, "CONFIG_FILE", file)
     monkeypatch.setattr(setup, "CONFIG_FILE", file)
-    monkeypatch.setattr(code_agent_connections, "CONFIG_FILE", file)
+    from studio.assembly.website import bindings
+
+    monkeypatch.setattr(bindings, "CONFIG_FILE", file)
     project = (tmp_path / "example").resolve()
     project.mkdir()
 

@@ -10,12 +10,12 @@ from pathlib import Path
 
 import pytest
 
-from app.capabilities.agents.cli.catalog import inspect_connection, inspect_executable
-from app.capabilities.agents.cli.isolation import dsh_connection_patches, launch
-from app.capabilities.agents.cli.native import converse
-from app.capabilities.agents.cli.process import execute
-from app.capabilities.agents.cli.transport import CliError
 from studio.config.settings import get_settings
+from studio.host.agent_execution.cli.catalog import inspect_connection, inspect_executable
+from studio.host.agent_execution.cli.isolation import dsh_connection_patches, launch
+from studio.host.agent_execution.cli.native import converse
+from studio.host.agent_execution.cli.process import execute
+from studio.host.agent_execution.cli.transport import CliError
 from test_code_agents import wait_run
 from test_workspace_governance import client_account
 from website_test_support import app
@@ -76,7 +76,7 @@ async def test_opencode_distinguishes_missing_credentials_from_probe_error(
             return 0, b"1.19.4"
         return exit_code, summary.encode()
 
-    monkeypatch.setattr("app.capabilities.agents.cli.catalog._probe_output", output)
+    monkeypatch.setattr("studio.host.agent_execution.cli.catalog._probe_output", output)
     status = await inspect_executable("opencode", native_cli)
     assert status["status"] == expected
 
@@ -198,19 +198,26 @@ def test_harness_imports_connection_rows_and_rejects_dynamic_provider_scripts(tm
 
 
 async def test_native_cancellation_reaps_the_process(native_cli, tmp_path):
-    async def emit(_kind, _payload):
-        pass
+    started = asyncio.get_running_loop().create_future()
+
+    async def emit(kind, payload):
+        if kind == "assistant_delta" and not started.done():
+            started.set_result(int(payload["text"]))
 
     task = asyncio.create_task(
         converse("opencode", native_cli, tmp_path, "", "SLOW_NATIVE", {}, emit)
     )
-    for _ in range(100):
-        if (tmp_path / "native-pid").is_file():
-            break
-        await asyncio.sleep(0.01)
-    pid = int((tmp_path / "native-pid").read_text())
-    task.cancel()
-    await asyncio.gather(task, return_exceptions=True)
+    try:
+        done, _ = await asyncio.wait(
+            {started, task}, timeout=10, return_when=asyncio.FIRST_COMPLETED
+        )
+        if task in done:
+            await task
+        assert started in done, "fixture subprocess did not signal readiness"
+        pid = started.result()
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
     with pytest.raises(ProcessLookupError):
         os.kill(pid, 0)
 
@@ -221,7 +228,7 @@ def test_pi_extension_registers_only_task_tools_and_forwards_results(tmp_path):
     node = shutil.which("node")
     if not node:
         pytest.skip("Node required for packaged CLI resources")
-    source = Path(__file__).parents[1] / "backend/app/capabilities/agents/cli/pi_tools.mjs"
+    source = Path(__file__).parents[1] / "backend/studio/host/agent_execution/cli/pi_tools.mjs"
     config = {
         "mcpServers": {
             "acceptance_task": {
@@ -254,7 +261,7 @@ def test_harness_guard_denies_every_undeclared_tool():
         pytest.skip("Node required for packaged CLI resources")
     import subprocess
 
-    source = Path(__file__).parents[1] / "backend/app/capabilities/agents/cli/dsh_tools.mjs"
+    source = Path(__file__).parents[1] / "backend/studio/host/agent_execution/cli/dsh_tools.mjs"
     script = """const m = await import(process.argv[1]); let guard;
       m.apply({tools:{guard(fn){guard=fn;}}});
       if (guard({name:'mcp__fpl__operations'}) !== undefined) process.exit(1);

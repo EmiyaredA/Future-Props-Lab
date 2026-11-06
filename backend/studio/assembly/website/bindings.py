@@ -3,8 +3,6 @@ from __future__ import annotations
 import asyncio
 from functools import partial
 
-from app.console.governance.code_agent_connections import enable_connection
-from app.console.governance.code_agents import catalog as code_agent_catalog
 from studio.apps.agent_workbench.execution.runner import WorkbenchRuns
 from studio.apps.agent_workbench.execution.transcripts import latest_turn_version
 from studio.apps.agent_workbench.storage.change_events import SqlChangeEvents
@@ -77,6 +75,7 @@ from studio.assembly.website.account_provisioning import create_account
 from studio.assembly.website.annotation_imports import WebsiteCreationInputs
 from studio.assembly.website.annotation_sources import WebsiteAnnotationSources
 from studio.assembly.website.annotation_transcription import WebsiteTranscription
+from studio.assembly.website.code_agent_access import resolve
 from studio.assembly.website.creative import bind_creative
 from studio.assembly.website.desktop import DesktopConnection
 from studio.assembly.website.integrations import integration_bindings
@@ -84,7 +83,9 @@ from studio.assembly.website.media import bind_media
 from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
 from studio.assembly.website.thought_writing import WebsiteWritingModels
 from studio.assembly.website.video_library import ingest_library
-from studio.config import REPO_ROOT
+from studio.config import CONFIG_FILE, REPO_ROOT
+from studio.host.agent_execution.cli.connection_configuration import enable_connection
+from studio.host.agent_execution.cli.connections import catalog as code_agent_catalog
 from studio.host.project_files.video_dependencies import probe_deps
 from studio.host.project_files.video_execution import _run_yt_dlp
 from studio.host.session_collection.access import LocalSourceAccess
@@ -138,16 +139,20 @@ def bind_components(app, settings, database, *, read_cloud_settings):
         )
 
     app.state.motion_video_import = import_motion_video
+    app.state.amadeus_resolve = lambda session, owner, user, agent, *, probe=True: resolve(
+        session, owner, user, agent, "amadeus", settings=read_cloud_settings(), probe=probe
+    )
     app.state.amadeus_actions = ActionExecution(
         partial(
             apply_assistant_timeline_batch, sessions=sessions, asset_reader=LegacyTimelineAssets
         ),
         files_root=settings.runtime_path,
+        resolve_agent=app.state.amadeus_resolve,
     )
     app.state.demo_runtime = DemoRuntime(partial(read_demo_configuration, sessions=sessions))
     app.state.interview_files_root = settings.runtime_path
-    app.state.interview_executor_status = partial(
-        executor_status, sessions=sessions, settings=settings
+    app.state.interview_executor_status = lambda user, owner="", session=None: executor_status(
+        user, owner, session, sessions=sessions, settings=read_cloud_settings()
     )
     app.state.annotation_document_editor = document_editor
     app.state.annotation_project_creator = project_creator
@@ -168,9 +173,11 @@ def bind_components(app, settings, database, *, read_cloud_settings):
     app.state.director_editor = DirectorEditorSessions(sessions)
     app.state.director_storage = DirectorStorage(settings.runtime_path)
     app.state.code_agent_catalog = lambda _request, *, can_enable: code_agent_catalog(
-        can_enable=can_enable
+        settings=read_cloud_settings(), can_enable=can_enable
     )
-    app.state.code_agent_enable = lambda _request, agent_id: enable_connection(agent_id)
+    app.state.code_agent_enable = lambda _request, agent_id: enable_connection(
+        agent_id, config_file=CONFIG_FILE, read_settings=read_cloud_settings
+    )
     app.state.studio_http_auth = partial(
         authenticate_database_request,
         sessions=sessions,
@@ -253,6 +260,7 @@ def bind_components(app, settings, database, *, read_cloud_settings):
     app.state.account_creator = create_account
     app.state.account_storage_check = upgrade_pending
     app.state.code_agent_runs = CodeAgentRuns(
+        resolve_agent=app.state.amadeus_resolve,
         sessions=sessions,
         settings=settings,
         skills=lambda session, owner: app.state.integration_bindings.skills(None, session, owner),

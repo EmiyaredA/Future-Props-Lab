@@ -10,7 +10,6 @@ from typing import Any
 
 from sqlalchemy import select, update
 
-from app.console.governance.code_agents import resolve
 from studio.apps.amadeus.clients.website_operations import call_operation
 from studio.apps.amadeus.storage.files import write_file
 from studio.apps.amadeus.storage.models import AmadeusAction, AmadeusConversation, AmadeusRun
@@ -34,6 +33,7 @@ class ActionExecution:
 
     video: VideoExecutor
     files_root: Path
+    resolve_agent: Callable
     running: dict[str, asyncio.Task] = field(default_factory=dict)
 
     async def close(self):
@@ -93,12 +93,11 @@ async def execute_action(
     if row.run_id:
         source_run = await session.get(AmadeusRun, row.run_id)
         if source_run and source_run.agent_id:
-            await resolve(
+            await execution.resolve_agent(
                 session,
                 principal.owner_user_id,
                 principal.user_id,
                 source_run.agent_id,
-                "amadeus",
                 probe=False,
             )
         active = await session.scalar(

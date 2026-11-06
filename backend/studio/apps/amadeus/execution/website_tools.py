@@ -6,12 +6,11 @@ from pathlib import Path
 
 import httpx
 
-from app.console.governance.code_agents import resolve
 from studio.apps.amadeus.clients.website_operations import call_operation, operation_catalog
-from studio.apps.amadeus.execution.website_runs import Runs
 from studio.apps.amadeus.storage.conversations import Conversations
 from studio.apps.amadeus.storage.files import list_files, read_file_bytes
 from studio.apps.amadeus.storage.questions import Questions
+from studio.apps.amadeus.storage.runs import RunRecords as Runs
 from studio.apps.amadeus.storage.skill_import import read_skill_file
 from studio.contracts.amadeus.conversations import ActionIn, QuestionIn
 from studio.contracts.amadeus.tools import TOOLS as TOOLS
@@ -21,10 +20,11 @@ from studio.runtime.database.ownership import bind_owner
 
 
 class ToolBridge:
-    def __init__(self, app, headers, principal, run, sessions, *, files_root):
+    def __init__(self, app, headers, principal, run, sessions, *, files_root, resolve_agent):
         self.app, self.headers, self.principal = app, headers, principal
         self.run, self.sessions = run, sessions
         self.files_root = files_root
+        self.resolve_agent = resolve_agent
         self.paused = asyncio.Event()
         self.closed = False
 
@@ -50,12 +50,11 @@ class ToolBridge:
         await self.api(f"/v1/amadeus/conversations/{self.run.conversation_id}")
         async with self.sessions() as session:
             bind_owner(session, self.principal.owner_user_id)
-            await resolve(
+            await self.resolve_agent(
                 session,
                 self.run.owner_user_id,
                 self.run.user_id,
                 self.run.agent_id,
-                "amadeus",
                 probe=False,
             )
             row = await Runs(session, self.principal).get(self.run.conversation_id, self.run.id)

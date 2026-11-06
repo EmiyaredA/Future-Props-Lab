@@ -9,8 +9,8 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from sqlalchemy import func, or_, select, update
 
-from app.capabilities.agents.cli.contracts import AgentOut, CatalogOut
 from studio.apps.agent_runtime.storage.service_models import ConnectionJob
+from studio.contracts.agent_runtime.catalog import AgentOut, CatalogOut
 from studio.contracts.agent_runtime.connections import (
     ACCEPTANCE,
     CATALOG,

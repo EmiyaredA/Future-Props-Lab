@@ -8,7 +8,6 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.console.routes.code_agents import router
 from studio.apps.agent_runtime.host import ConnectionHost
 from studio.apps.agent_runtime.review_artifact_sweep import ReviewArtifactSweep
 from studio.apps.agent_runtime.review_artifacts import ReviewArtifacts
@@ -16,6 +15,7 @@ from studio.apps.agent_runtime.review_host import ReviewHost
 from studio.apps.agent_runtime.storage.migrations.registry import MIGRATIONS
 from studio.apps.agent_runtime.storage.service_models import ConnectionJob, VisualReviewJob
 from studio.apps.agent_runtime.transport.acceptance_http import router as acceptance_router
+from studio.apps.agent_runtime.transport.code_agents import router
 from studio.apps.agent_runtime.transport.native_http import router as native_router
 from studio.apps.agent_runtime.transport.review_http import UPLOAD
 from studio.apps.agent_runtime.transport.review_http import router as review_router

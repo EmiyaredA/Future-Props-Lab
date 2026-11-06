@@ -10,14 +10,14 @@ from tempfile import TemporaryDirectory
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app.capabilities.agents.cli.catalog import connection  # noqa: E402
-from app.capabilities.agents.cli.codex_profile import (  # noqa: E402
+from studio.config.settings import get_cloud_settings  # noqa: E402
+from studio.host.agent_execution.cli.catalog import connection  # noqa: E402
+from studio.host.agent_execution.cli.codex_profile import (  # noqa: E402
     AUTH_ARGS,
     profile_environment,
     profile_path,
 )
-from app.capabilities.agents.cli.transport import CliError  # noqa: E402
-from studio.config.settings import get_cloud_settings  # noqa: E402
+from studio.host.agent_execution.cli.transport import CliError  # noqa: E402
 
 
 def main():
