@@ -23,4 +23,4 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/visual-reference-preview-download.test.tsx` 覆盖三类媒体的下载文件与名称、重复点击保护、失败重试、资源释放和参考选择保留。
+- `web/tests/features/visual-reference-preview-download.test.tsx` 覆盖三类媒体的下载文件与名称、重复点击保护、失败重试、资源释放和参考选择保留。

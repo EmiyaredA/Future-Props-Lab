@@ -32,7 +32,7 @@ Status: implemented
 
 ## Verification
 
-- `tests/test_zealman_video.py` 直接断言 HTTP JSON 中三张图片、一段视频、空音频、提示词及所有 U17 参数的固定键和值；覆盖全部槽位、不同输入顺序、空文件名、U06 参数及提交超时不重试。
-- `tests/test_visual_zealman.py` 在隔离数据库中贯通正式任务、素材解析、上传映射、真实适配器和模拟 HTTP 传输，核对图片、音频、视频对应文件及恢复不重复提交。
+- `tests/apps/visual_workshop/test_zealman_video.py` 直接断言 HTTP JSON 中三张图片、一段视频、空音频、提示词及所有 U17 参数的固定键和值；覆盖全部槽位、不同输入顺序、空文件名、U06 参数及提交超时不重试。
+- `tests/apps/visual_workshop/test_visual_zealman.py` 在隔离数据库中贯通正式任务、素材解析、上传映射、真实适配器和模拟 HTTP 传输，核对图片、音频、视频对应文件及恢复不重复提交。
 - 本次只读取上游已有执行历史和公开 API 文档，不提交真实模型任务。
 - 合并运行相关供应商、工坊和架构检查时，67 项通过；唯一失败是 `HomeHeroPet.tsx` 在当前 HEAD 已存在的跨 feature 内部导入，与本次修改无关。修改文件的 Ruff、格式及 Agent Note 检查通过，文档中心受保护路径未变化。

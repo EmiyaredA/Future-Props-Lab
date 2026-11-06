@@ -1,7 +1,7 @@
 import httpx
 import pytest
-from tests.account_fixtures import account_record
 
+from tests.account_fixtures import account_record
 from website_test_support import app
 
 ROOT = "/v1/director-desk/projects"

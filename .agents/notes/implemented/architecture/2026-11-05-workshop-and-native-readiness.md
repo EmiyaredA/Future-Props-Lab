@@ -20,6 +20,6 @@ Status: implemented
 
 ## Verification
 
-`tests/test_service_owner_readiness.py` 覆盖四个服务的正向启动、后台恢复停止、未经认证的 worker、过期联系和发布页面版本。
+`tests/integration/test_service_owner_readiness.py` 覆盖四个服务的正向启动、后台恢复停止、未经认证的 worker、过期联系和发布页面版本。
 
 同一隔离快照的定向回归通过 89 项。真实 Compose 镜像的四个就绪探针均返回各自的浏览器构建版本，页面响应头与探针版本一致。面试助手和工具服务在发送签名的模拟 worker 心跳前均返回 503。

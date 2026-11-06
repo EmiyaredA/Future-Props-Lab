@@ -22,4 +22,4 @@ Status: implemented
 
 ## Verification
 
-运行 `uv run pytest -q tests/test_architecture.py tests/test_audio_annotation.py tests/test_thought_*.py`；`npm run lint`、`npm run contracts:check`、`npm run sdk:check` 零 diff。
+运行 `uv run pytest -q tests/test_architecture.py tests/apps/audio_annotation/test_audio_annotation.py tests/test_thought_*.py`；`npm run lint`、`npm run contracts:check`、`npm run sdk:check` 零 diff。

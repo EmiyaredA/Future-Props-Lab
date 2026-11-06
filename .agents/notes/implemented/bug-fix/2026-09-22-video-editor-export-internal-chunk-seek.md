@@ -26,5 +26,5 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest -q tests/test_media_rendering_cancellation.py tests/test_video_editor_transitions.py`
+- `uv run pytest -q tests/apps/media_rendering/test_media_rendering_cancellation.py tests/apps/video_editor/test_video_editor_transitions.py`
 - `npm run verify-notes`

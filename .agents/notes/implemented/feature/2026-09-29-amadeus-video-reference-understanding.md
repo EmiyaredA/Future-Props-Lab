@@ -22,4 +22,4 @@ Amadeus 通过会话范围的只读工具调用现有 Workspace 视频帧导出�
 
 ## Verification
 
-`uv run pytest tests/test_amadeus_video_reference.py tests/test_amadeus.py tests/test_automation_exports.py::test_video_frames_zip_grid_and_invalid_position`、Amadeus Web 单测、针对性 ESLint/Prettier、`npm run contracts:check` 与 Agent Note 树/格式检查通过。全量 Web 构建仍被仓库缺失的 `vendor/pi/packages/agent/src/harness/env/nodejs.ts` 阻断；全量 `tsc -b` 还报告视频剪辑目录及相关旧测试中的类型错误。
+`uv run pytest tests/apps/amadeus/test_amadeus_video_reference.py tests/test_amadeus.py tests/contracts/test_automation_exports.py::test_video_frames_zip_grid_and_invalid_position`、Amadeus Web 单测、针对性 ESLint/Prettier、`npm run contracts:check` 与 Agent Note 树/格式检查通过。全量 Web 构建仍被仓库缺失的 `vendor/pi/packages/agent/src/harness/env/nodejs.ts` 阻断；全量 `tsc -b` 还报告视频剪辑目录及相关旧测试中的类型错误。

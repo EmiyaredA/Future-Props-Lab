@@ -23,4 +23,4 @@ Status: implemented
 
 ## Verification
 
-`uv run pytest tests/test_video_download.py`；`npm test -- web/tests/video-downloader.test.tsx`；对公开抖音链接做一次真实下载烟测。
+`uv run pytest tests/apps/tools/test_video_download.py`；`npm test -- web/tests/features/video-downloader.test.tsx`；对公开抖音链接做一次真实下载烟测。

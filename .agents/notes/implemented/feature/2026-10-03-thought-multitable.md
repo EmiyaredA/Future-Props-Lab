@@ -28,8 +28,8 @@ Status: implemented
 
 ## Verification
 
-- `tests/test_thought_multitable.py`：批次/CAS、转换与 CSV 原子性、分页排序、类型筛选与分组、跨 100 批次检查点的历史重建及还原、备份/模板/复制重映射和 5,000 条记录/50 字段边界。
-- `tests/test_multitable_history_assets.py`：删除附件字段后历史仍保护素材，完整备份重映射历史附件并可还原下载。
-- `tests/test_multitable_community.py`、`tests/test_multitable_cross_publication.py`：跨空间隔离、跨库嵌入双重授权、当前附件访问及撤回。
+- `tests/apps/thought_workshop/test_thought_multitable.py`：批次/CAS、转换与 CSV 原子性、分页排序、类型筛选与分组、跨 100 批次检查点的历史重建及还原、备份/模板/复制重映射和 5,000 条记录/50 字段边界。
+- `tests/apps/thought_workshop/test_multitable_history_assets.py`：删除附件字段后历史仍保护素材，完整备份重映射历史附件并可还原下载。
+- `tests/apps/thought_workshop/test_multitable_community.py`、`tests/apps/thought_workshop/test_multitable_cross_publication.py`：跨空间隔离、跨库嵌入双重授权、当前附件访问及撤回。
 - Web 组件与浏览器旅程覆盖 typed TSV、草稿冲突/恢复、三种视图、嵌入独立保存及窄屏明暗主题。
 - 相关既有笔记、社区、迁移、架构、契约和 SDK 测试继续作为兼容门禁。SDK 产品引用由既有生成入口随 API 更新，受保护的产品文档变更须与本 Note 分开提交。

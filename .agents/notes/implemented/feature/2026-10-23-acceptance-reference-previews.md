@@ -28,6 +28,6 @@ Status: implemented
 
 ## Verification
 
-- web/tests/visual-acceptance-references.test.tsx 覆盖绑定、替换、重复与上限、只读、悬停时序、焦点恢复、静音播放降级、可见性加载、中止和 URL 回收。
+- web/tests/features/visual-acceptance-references.test.tsx 覆盖绑定、替换、重复与上限、只读、悬停时序、焦点恢复、静音播放降级、可见性加载、中止和 URL 回收。
 - 更新原验收组件测试与视频端到端旅程；web/e2e/visual-acceptance-references.spec.ts 使用隔离数据库和正式 API 验证真实图片／视频、长名称、滚动、明暗主题及 390/768/1600 宽度。
 - 目标 28 项组件测试和两条隔离浏览器旅程通过，浏览器覆盖触屏 tap；Web lint、改动文件 Prettier、官方导入包、Agent Note 和受保护文档检查通过。全量测试与构建中的范围外问题记录于交付说明。

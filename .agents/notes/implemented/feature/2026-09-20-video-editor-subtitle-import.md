@@ -27,7 +27,7 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-subtitle-import.test.tsx`、`web/tests/video-editor-assets.test.tsx`、`web/tests/video-editor-text.test.tsx`：37 项通过。
-- `tests/test_video_editor.py`、`tests/test_video_editor_text.py`：29 项通过，包含 220 条文字 Clip 的单次 `addTrack` 保存/重读和重叠拒绝。
+- `web/tests/features/video-editor-subtitle-import.test.tsx`、`web/tests/features/video-editor-assets.test.tsx`、`web/tests/features/video-editor-text.test.tsx`：37 项通过。
+- `tests/apps/video_editor/test_video_editor.py`、`tests/apps/video_editor/test_video_editor_text.py`：29 项通过，包含 220 条文字 Clip 的单次 `addTrack` 保存/重读和重叠拒绝。
 - 本次新增前端文件的 ESLint 与 Prettier 检查通过；Web contracts check 通过。
 - 项目级 lint、format、build 仍受工作区既有 Amadeus/其他未提交改动和本机 `uv` 缓存权限影响，详见交付说明。

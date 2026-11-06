@@ -40,6 +40,6 @@ Authorization Token、任务提交和轮询。它与已有自建 ZEALMAN 面板�
 
 ## Verification
 
-- `uv run pytest -q tests/test_autodl_video.py tests/test_autodl_migration.py`
+- `uv run pytest -q tests/apps/model_service/test_autodl_video.py tests/apps/model_service/test_autodl_migration.py`
 - `npm run test --workspace web -- tests/autodl-generation.test.tsx tests/seedance-generation.test.tsx`
 - `npm run contracts:check`、`npm run sdk:check`，以及仓库测试、lint、格式与构建门禁。

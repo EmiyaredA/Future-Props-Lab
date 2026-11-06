@@ -25,5 +25,5 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-clipboard.test.ts`：多片段相对粘贴、重叠整批失败。
-- `web/tests/video-editor-timeline.test.tsx`：多选删除、右键不打散并整组复制、多选分割仅切相交项。
+- `web/tests/features/video-editor-clipboard.test.ts`：多片段相对粘贴、重叠整批失败。
+- `web/tests/features/video-editor-timeline.test.tsx`：多选删除、右键不打散并整组复制、多选分割仅切相交项。

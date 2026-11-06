@@ -28,5 +28,5 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-batch-inspector.test.tsx`：固定/相对音量、transform/chroma 脏字段合并、kind 跳过、命名预设与音量同批、混合值与应用反馈。
+- `web/tests/features/video-editor-batch-inspector.test.tsx`：固定/相对音量、transform/chroma 脏字段合并、kind 跳过、命名预设与音量同批、混合值与应用反馈。
 - `npm run verify-notes`

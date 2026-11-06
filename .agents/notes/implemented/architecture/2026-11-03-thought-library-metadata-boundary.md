@@ -31,6 +31,6 @@ Recovery behavior continues through its explicit adapter. Public paths and schem
 
 ## Verification
 
-`tests/test_thought_asset_boundary.py` exercises an actual independently assembled Assets ASGI app and its owned temporary database: metadata owner/digest binding, browser and management-purpose denial, hidden storage details, content revision binding, HTTP export consumer, partial-copy cleanup, preexisting-target preservation, fail-closed missing bindings, actual independent Thought creation with a network-under-writer assertion, and expired snapshots without network refresh.
+`tests/apps/thought_workshop/test_thought_asset_boundary.py` exercises an actual independently assembled Assets ASGI app and its owned temporary database: metadata owner/digest binding, browser and management-purpose denial, hidden storage details, content revision binding, HTTP export consumer, partial-copy cleanup, preexisting-target preservation, fail-closed missing bindings, actual independent Thought creation with a network-under-writer assertion, and expired snapshots without network refresh.
 
 Existing Thought core/storage/directory, attachment/backup, canvas, knowledge/template and multitable-history tests verify the recovery adapter and retained public behavior. The parent integration batch records the final combined check counts.

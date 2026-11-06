@@ -24,4 +24,4 @@ Electron 只允许受信 Studio 页面启动或关闭单只桌宠。独立 `pet.
 
 ## Verification
 
-运行 `UV_CACHE_DIR=.local/desktop-pet/uv-cache uv run --offline pytest -q tests/test_desktop_pet.py tests/test_sqlite_storage.py`，以及 `npm run test --workspace desktop`、Web 类型与路由检查。迁移只在隔离测试数据库验证。
+运行 `UV_CACHE_DIR=.local/desktop-pet/uv-cache uv run --offline pytest -q tests/test_desktop_pet.py tests/runtime/test_sqlite_storage.py`，以及 `npm run test --workspace desktop`、Web 类型与路由检查。迁移只在隔离测试数据库验证。

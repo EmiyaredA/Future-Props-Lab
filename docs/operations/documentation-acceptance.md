@@ -54,10 +54,10 @@
 
 | Web 失败文件                                           | 失败场景                                   |
 | ------------------------------------------------------ | ------------------------------------------ |
-| `web/tests/file-management.test.tsx`                   | 2 项上传调用参数断言与当前实现不一致       |
-| `web/tests/responsive-coverage.test.ts`                | 响应式入口清单缺少已存在的 `pet-chat.html` |
-| `web/tests/title-clear.test.tsx`                       | 视频剪辑测试缺少 `QueryClientProvider`     |
-| `web/tests/video-editor-timeline-transitions.test.tsx` | 查找已被替换的“添加片段之间音频淡化”按钮   |
+| `web/tests/features/file-management.test.tsx`                   | 2 项上传调用参数断言与当前实现不一致       |
+| `web/tests/platform/responsive-coverage.test.ts`                | 响应式入口清单缺少已存在的 `pet-chat.html` |
+| `web/tests/features/title-clear.test.tsx`                       | 视频剪辑测试缺少 `QueryClientProvider`     |
+| `web/tests/features/video-editor-timeline-transitions.test.tsx` | 查找已被替换的“添加片段之间音频淡化”按钮   |
 
 文档保护规则保持原样。`npm run check-docs-center-protected` 会报告本轮用户明确授权的产品文档修改并退出非零；该结果属于保护范围识别，不是本轮申请移除保护的依据。
 

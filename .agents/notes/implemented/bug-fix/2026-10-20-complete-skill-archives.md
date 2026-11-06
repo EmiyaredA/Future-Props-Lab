@@ -25,4 +25,4 @@ Skill ZIP 默认上限为 20 MiB，解压总量和文件数默认仍为 50 MiB �
 
 ## Verification
 
-`tests/test_skill_archive_limits.py` 覆盖 20 MiB 边界、配置覆盖、1018/4000/4001 字符、超过旧大小限制的新建、追加版本和逐文件下载一致性。`tests/test_skill_description_migration.py` 覆盖旧数据、类型、索引、唯一约束、外键、级联删除与重复运行。配置及原有 ZIP 安全测试继续验证其余边界。
+`tests/apps/integrations/test_skill_archive_limits.py` 覆盖 20 MiB 边界、配置覆盖、1018/4000/4001 字符、超过旧大小限制的新建、追加版本和逐文件下载一致性。`tests/apps/integrations/test_skill_description_migration.py` 覆盖旧数据、类型、索引、唯一约束、外键、级联删除与重复运行。配置及原有 ZIP 安全测试继续验证其余边界。

@@ -358,15 +358,15 @@ Visual 助手的对话、消息和操作记录由 `studio/apps/visual_workshop/c
 
 `document-layout/` 拥有普通与社区笔记的排版、卡片、动态目录、代码高亮、提示块和导出；`reading.css` 保存共用阅读首页及排版样式；`useDocumentChrome` 的页面状态通过显式 props 提供顶栏 Portal 宿主和整栏展开偏好。文章大纲从 H1–H6 派生父子关系，在右侧停靠或紧凑弹层中展开；折叠状态按编辑事务映射，不进入正文和数据库。`official/homeDocument.ts` 仅构建导入包首页。卡片保存引用和样式，标题、简介按实时权限解析；`KnowledgeTree` 仅表达父子关系。`official/technicalCatalog.ts` 和 `content/technical/figures/` 保存 31 篇技术文档及版本化图形的来源。写作约定见 `docs/operations/official-knowledge-writing.md`。
 
-`tests/test_unified_official_publications.py` 验证导入、重试、权限、官方筛选与旧链接；`web/tests/official-knowledge.test.tsx` 验证来源，`official-reading.test.tsx` 验证兼容入口，`web/e2e/official-knowledge.spec.ts` 在隔离数据中验证实际导入与发布。
+`tests/apps/thought_workshop/test_unified_official_publications.py` 验证导入、重试、权限、官方筛选与旧链接；`web/tests/features/official-knowledge.test.tsx` 验证来源，`official-reading.test.tsx` 验证兼容入口，`web/e2e/official-knowledge.spec.ts` 在隔离数据中验证实际导入与发布。
 
 `diagrams/` 拥有 CanvasScene 模型、模板、纯操作、React Flow 全屏编辑器、Tiptap 节点、
 Mermaid 共用阅读器及 SVG/PNG 导出。运行期选择和视口不进入正文；场景变更进入现有保存队列与历史。
 `backend/studio/apps/thought_workshop/schemas/canvas.py` 校验画板结构与关系；
 `canvas_export.py` 按同一布局规则输出转义后的静态 SVG，图片由现有导出流程嵌入。
 素材追踪、搜索、Markdown 和备份复用思绪工坊现有正式 API，不增加迁移或 HTTP 路由。
-`web/tests/thought-canvas.test.tsx`、`technical-content.test.ts`、`web/e2e/technical-knowledge.spec.ts`
-及 `tests/test_thought_canvas.py` 检查编辑、内容、只读、可移植性与租户边界。
+`web/tests/features/thought-canvas.test.tsx`、`technical-content.test.ts`、`web/e2e/technical-knowledge.spec.ts`
+及 `tests/apps/thought_workshop/test_thought_canvas.py` 检查编辑、内容、只读、可移植性与租户边界。
 
 ```text
 Future-Props-Lab/
@@ -378,6 +378,14 @@ Future-Props-Lab/
 ├── backend/studio/config/ # 独立 TOML 格式、字段映射与一次性 .env 转换；不导入 app 或数据库
 ├── backend/config.example.toml # 无真实密钥的配置示例；私有 config.toml 不提交、不打包
 ├── backend/studio/host/agent_execution/cli/ # CLI 进程、探测、协议与隔离
+├── tests/
+│   ├── architecture/ # 导入、依赖与目录预算
+│   ├── apps/         # 按后端应用归属组织
+│   ├── contracts/    # 公共契约、SDK 与文档证据检查
+│   ├── runtime/      # 通用机制和存储原语
+│   ├── host/         # 主机进程与部署适配
+│   └── integration/  # 跨应用或完整入口验收
+├── web/tests/        # features、shared、platform 及共用夹具
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -627,7 +635,7 @@ Future-Props-Lab/
   未登记入口或缺少核验依据时失败；组件测试比对实际应用注册表，防止新增应用遗漏指南。
   `rendering/` 移植 Sayflow 的静态文档树、受控组件与阅读样式，支持步骤、卡片、参数、输入输出、
   高亮代码、公式和 Mermaid；通过研究所主题、URL 与 API 操作适配器集成，不执行文章中的 JavaScript。
-  组件契约、所有公开正文编译和渲染回归在 `web/tests/docs-rendering.test.tsx`，纳入 `npm run docs:check`。
+  组件契约、所有公开正文编译和渲染回归在 `web/tests/shared/docs-rendering.test.tsx`，纳入 `npm run docs:check`。
 - `scripts/demo/galgame_runaway/performance_upgrade.py` 只保留兼容入口、CLI 和流程编排；稳定演出规格、素材上传、
   Story 变换/演出块、审计报告与 API/CAS 辅助分别归属同目录 `performance_assets.py`、
   `performance_spec.py`、`performance_transform.py`/`performance_story.py`、`performance_audit.py` 和
@@ -771,7 +779,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 
 视频、Galgame、录音标注与模型测试的布局状态和适配 CSS 留在各自功能目录。Galgame 的独立预演也保留舞台、台词队列和检查器，布局规则由 `editor/fast-preview-compact.css` 拥有。紧凑面板通过 CSS 控制可见性，切换屏幕尺寸不重建业务控制器。思绪工坊侧栏背景随整页延伸，内部导航固定在可用视口。全站不使用根级横向溢出隐藏代替宽度修正。
 
-`web/e2e/responsive-inventory.ts` 维护全部应用路由与独立入口的适配归属；`responsive-site`、`responsive-editors`、`responsive-panels`、`responsive-states` 分别负责入口、编辑工作区、账号/登录/模型子面板及请求状态矩阵，`responsive-forms` 检查表单及嵌套菜单。`responsive-capture.ts` 检查页面宽度和可见弹层边界并保存实页截图。`web/tests/responsive-coverage.test.ts` 对路由联合类型与 HTML 构建入口执行遗漏检查；`viewport-bounds.test.tsx` 验证模拟可见视口收缩时的菜单定位及监听清理。验收记录见 `docs/reference/responsive-verification.md`。
+`web/e2e/responsive-inventory.ts` 维护全部应用路由与独立入口的适配归属；`responsive-site`、`responsive-editors`、`responsive-panels`、`responsive-states` 分别负责入口、编辑工作区、账号/登录/模型子面板及请求状态矩阵，`responsive-forms` 检查表单及嵌套菜单。`responsive-capture.ts` 检查页面宽度和可见弹层边界并保存实页截图。`web/tests/platform/responsive-coverage.test.ts` 对路由联合类型与 HTML 构建入口执行遗漏检查；`viewport-bounds.test.tsx` 验证模拟可见视口收缩时的菜单定位及监听清理。验收记录见 `docs/reference/responsive-verification.md`。
 
 ## 平台治理补充职责
 
@@ -916,7 +924,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 - `backend/studio/apps/media_rendering/use_cases/read_media.py`：账号文件的逐帧提取与派生输出结算；确定性音频裁切与视频取帧实现位于 `studio/apps/media_rendering/local/audio_clip.py`、`video_frames.py`；HTTP 适配在 `studio/apps/media_rendering/transport/website/video_frames.py`。
 - `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
 - `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
-- `sdk/python/src/future_props_lab/canvas_example.py`：独立的笔记信息图 SDK 示例，通过正式 API 创建与导出可编辑画板；不参与既有六工坊文档生成，契约回归由 `tests/test_thought_canvas.py` 覆盖。
+- `sdk/python/src/future_props_lab/canvas_example.py`：独立的笔记信息图 SDK 示例，通过正式 API 创建与导出可编辑画板；不参与既有六工坊文档生成，契约回归由 `tests/apps/thought_workshop/test_thought_canvas.py` 覆盖。
 - `skills/future-props-lab-automation/`：官方自动化 Agent Skill 包（根 `SKILL.md` 名 `future-props-lab-automation`）。叶子 skill 目录名必须等于 frontmatter `name`，可单独或组合安装；每个叶子内联「前置」与最小 `fpl` 示例。校验：`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。只指导通过 `fpl`/SDK 操作产品，不修改本仓库源码；见该处 `README.md`。
 - `.agents/skills/watch/`：仓库级第三方视频分析 Agent Skill，包含中文通用指南、基于固定上游的通用脚本、许可证与固定提交来源记录；仅供 Codex 在本仓库发现，不参与 Future Props Lab 产品构建。应用内 Skills 通过正式 ZIP 导入 API 单独管理。
 - `skills/future-props-lab-automation/skills/thought-workshop/research-to-document/`：产品使用与技术／论文调研 Skill；普通父笔记直接承载报告，子文档用已有多维表格组织资料、比较与验证，正文引用精简嵌入视图。`references/` 拥有记录与存档契约，`assets/` 提供两类成文模板、恢复快照与原生 TableSpec，`scripts/check_project.py` 只读校验引用与状态。正式存档复用思绪工坊 CLI/SDK，不增加专用调研页面、应用内 AI 写作入口或后台调研服务；原型、截图与打包验收产物位于 `.local/research-workbench-preview/`。
@@ -1018,7 +1026,7 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 ## 独立管理服务
 
-`backend/studio/apps/management/` 拥有管理装配、公开协议、自有运维任务/状态 ORM、显式迁移和 worker 接收协议；不导入其他服务 ORM。Identity 拥有管理会话及用途迁移；Models 拥有模板、额度与演示治理，浏览器经独立管理网关访问这些接口。`backend/studio/assembly/host/management*.py` 拥有 Mac 限定 Compose 控制、双 SSH 生命周期和持久执行回执。`scripts/management/` 拥有一键启动及独立 LaunchAgent。`web/src/app/entries/management.tsx` 拥有独立入口与认证装配，`features/accounts/management/` 拥有运行与访问页面；公开类型来自单独管理 OpenAPI。`deploy/compose/management.compose.yaml` 是独立管理部署叠加清单，`deploy/images/management/` 保存最小依赖锁和镜像定义。验证入口为 `tests/test_management_service.py`、`tests/test_management_host.py` 与 `web/playwright.management.config.ts`。详见[管理服务参考](../reference/management-service.md)。
+`backend/studio/apps/management/` 拥有管理装配、公开协议、自有运维任务/状态 ORM、显式迁移和 worker 接收协议；不导入其他服务 ORM。Identity 拥有管理会话及用途迁移；Models 拥有模板、额度与演示治理，浏览器经独立管理网关访问这些接口。`backend/studio/assembly/host/management*.py` 拥有 Mac 限定 Compose 控制、双 SSH 生命周期和持久执行回执。`scripts/management/` 拥有一键启动及独立 LaunchAgent。`web/src/app/entries/management.tsx` 拥有独立入口与认证装配，`features/accounts/management/` 拥有运行与访问页面；公开类型来自单独管理 OpenAPI。`deploy/compose/management.compose.yaml` 是独立管理部署叠加清单，`deploy/images/management/` 保存最小依赖锁和镜像定义。验证入口为 `tests/apps/management/test_management_service.py`、`tests/host/test_management_host.py` 与 `web/playwright.management.config.ts`。详见[管理服务参考](../reference/management-service.md)。
 
 
 ### 应用服务状态
@@ -1122,3 +1130,5 @@ Web 通用 UI 验收放在 `web/tests/shared/`，API、SSE、下载与传输验�
 网站素材、演示、特效和视频剪辑适配器接收当前应用的配置或已构造的存储。特效网站 HTTP 操作从当前请求的应用取得配置，后台导出从其装配获得同一配置。演示、特效和视频剪辑的旧站资源工厂仍由会话适配器键选择，逐用例解耦继续按业务批次推进。
 
 视觉工坊网站的生成、助手和验收适配器接收当前应用的配置。`assistant/stream.py` 把准备对话时选定的同一份配置绑定到 `assistant/tools.py` 的生成查询和提交。网站节点验收显式绑定方案查询与素材存储，连接签名和视频取样使用当前应用配置。独立视觉服务通过原有跨服务端口读取模型和素材能力。架构测试检查整个视觉工坊业务包的配置边界。
+
+根级测试保留受保护产品文档直接引用的证据文件。测试会话、共用夹具和子进程脚本仍由各测试根目录提供。

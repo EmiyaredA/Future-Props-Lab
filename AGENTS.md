@@ -282,8 +282,9 @@
 
 ## 测试、文档与质量门禁
 
-- 后端单元/API/存储测试位于 `tests/`；Web 组件测试位于 `web/tests/`，浏览器旅程位于
-  `web/e2e/`。可自动化验证的行为不得只写成人工说明。
+- 后端测试按 `tests/{architecture,apps,contracts,runtime,host,integration}/` 归类。Web 测试按
+  `web/tests/{features,shared,platform}/` 归类，浏览器旅程归 `web/e2e/`。受保护产品文档直接引用
+  的测试证据保留原路径。可自动化验证的行为应由自动测试覆盖。
 - 架构测试用于守住依赖方向、迁移独立性、路由版本和核心目录；修改架构规则时应同时更新
   `AGENTS.md`、项目结构文档与对应测试，避免出现多个互相矛盾的事实源。
 - HTTP 或 SSE 契约变化必须更新后端 schema/路由、OpenAPI 生成物、Web 消费端、API 参考和

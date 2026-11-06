@@ -23,5 +23,5 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest tests/test_sqlite_storage.py tests/test_catalog_seed.py -q`
+- `uv run pytest tests/runtime/test_sqlite_storage.py tests/integration/test_catalog_seed.py -q`
 - `npm run verify-notes`

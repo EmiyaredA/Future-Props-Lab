@@ -36,7 +36,7 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/canvas-clipboard.test.ts` 验证图复制、参考清理、身份、深拷贝、标题及容量和坐标边界。
-- `web/tests/visual-workshop-canvas-clipboard.test.tsx` 验证所有入口、一次保存与撤销、连续粘贴、坐标转换、焦点、刷新、失败和冲突。
+- `web/tests/features/canvas-clipboard.test.ts` 验证图复制、参考清理、身份、深拷贝、标题及容量和坐标边界。
+- `web/tests/features/visual-workshop-canvas-clipboard.test.tsx` 验证所有入口、一次保存与撤销、连续粘贴、坐标转换、焦点、刷新、失败和冲突。
 - `web/e2e/canvas-clipboard.spec.ts` 在隔离测试环境中验证明暗主题下框选、粘贴、整组拖动、撤销重做及刷新。
 - 相关 Web 回归、lint、格式检查、构建、`npm run verify-notes` 及文档中心保护检查用于验证交付。

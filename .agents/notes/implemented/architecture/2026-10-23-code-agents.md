@@ -28,7 +28,7 @@ Amadeus 自有 Pi 循环与已有 Codex、Claude Code 固定任务分别维护�
 
 ## Verification
 
-`tests/test_code_agents.py` 用两种假 CLI 和隔离数据库验证检测、流式工具、审批与提问、用途授权与 CAS、旧历史、Plan 写入拒绝、取消、过大响应和 SDK stdio。现有 Amadeus、视觉验收、面试准备与迁移回归保持业务契约。`web/e2e/code-agents.spec.ts` 覆盖入口、键盘、授权开关、主题与窄屏；真实 Electron 临时数据烟测覆盖 Plan→审批→项目修改、外部 MCP 读取/编辑与撤销。生产构建、Web 类型与 OpenAPI/SDK 生成检查通过，不进行真实付费调用。
+`tests/apps/agent_runtime/test_code_agents.py` 用两种假 CLI 和隔离数据库验证检测、流式工具、审批与提问、用途授权与 CAS、旧历史、Plan 写入拒绝、取消、过大响应和 SDK stdio。现有 Amadeus、视觉验收、面试准备与迁移回归保持业务契约。`web/e2e/code-agents.spec.ts` 覆盖入口、键盘、授权开关、主题与窄屏；真实 Electron 临时数据烟测覆盖 Plan→审批→项目修改、外部 MCP 读取/编辑与撤销。生产构建、Web 类型与 OpenAPI/SDK 生成检查通过，不进行真实付费调用。
 
 最终定向回归中，Amadeus、验收、面试及迁移共 55 项通过，新增 Code Agent/MCP 测试 12 项通过，Web 导航与交互 49 项通过。SDK 与桌面配对回归 26 项通过，白名单清单测试发现既有清单缺少三个 Skill 文件读取接口，未据此扩大授权范围。
 

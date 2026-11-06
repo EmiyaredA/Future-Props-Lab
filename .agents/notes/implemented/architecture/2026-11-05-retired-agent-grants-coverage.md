@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_website_legacy_snapshot.py` 核对有效旧授权、未知设置、计划外账号、快照覆盖报告及隔离旧站恢复。
+`tests/integration/test_website_legacy_snapshot.py` 核对有效旧授权、未知设置、计划外账号、快照覆盖报告及隔离旧站恢复。

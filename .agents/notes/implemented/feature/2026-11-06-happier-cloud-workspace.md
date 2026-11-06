@@ -20,4 +20,4 @@ Happier 使用独立同站 HTTPS 域名。Relay 自己持久化并能读取会�
 
 ## Verification
 
-`tests/test_happier_cloud.py` 覆盖真实 FPL 测试会话、单次兑换、OIDC PKCE 与注销撤权。前端用例验证切换时保持同一个 iframe。真实 Happier Relay 的隔离联调验证了原生账户建立、Socket.IO 认证与 FPL 注销后的实时连接关闭。完整环境放行步骤见[部署指南](../../../../docs/operations/happier.md)。
+`tests/apps/remote_desktop/test_happier_cloud.py` 覆盖真实 FPL 测试会话、单次兑换、OIDC PKCE 与注销撤权。前端用例验证切换时保持同一个 iframe。真实 Happier Relay 的隔离联调验证了原生账户建立、Socket.IO 认证与 FPL 注销后的实时连接关闭。完整环境放行步骤见[部署指南](../../../../docs/operations/happier.md)。

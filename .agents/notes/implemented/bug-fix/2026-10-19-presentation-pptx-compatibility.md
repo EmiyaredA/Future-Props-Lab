@@ -35,7 +35,7 @@ XSD 校验和 python-pptx 重新加载均不能发现该引用缺失。单页去
 
 ## Verification
 
-- `uv run pytest -q tests/test_presentation_pptx_compatibility.py tests/test_presentation_scene.py tests/test_presentation_media.py tests/test_presentation_workshop.py`
+- `uv run pytest -q tests/apps/presentation_workshop/test_presentation_pptx_compatibility.py tests/apps/presentation_workshop/test_presentation_scene.py tests/apps/presentation_workshop/test_presentation_media.py tests/apps/presentation_workshop/test_presentation_workshop.py`
 - 使用本机 ISO/IEC 29500 PresentationML XSD 只读校验用户导出包：原文件有 17 处连接线
   几何顺序错误，修正后 20 页幻灯片均通过 schema 校验。
 - Keynote 实际导入保留全部素材、备注和原生对象的修复包，确认成功打开并列出全部 20 页。

@@ -24,4 +24,4 @@ Status: implemented
 
 ## Verification
 
-`uv run pytest tests/test_video_download.py`；Web 工具卡片与页面单测；`npm run contracts:generate` 后 `contracts:check`；`npm run verify-notes`。
+`uv run pytest tests/apps/tools/test_video_download.py`；Web 工具卡片与页面单测；`npm run contracts:generate` 后 `contracts:check`；`npm run verify-notes`。

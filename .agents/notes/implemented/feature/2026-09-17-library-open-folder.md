@@ -26,6 +26,6 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest tests/test_project_snapshots.py -k open_folder`
+- `uv run pytest tests/integration/test_project_snapshots.py -k open_folder`
 - `npm run test --workspace web -- file-storage-migration`
 - `npm run contracts:check`、`npm run verify-notes`

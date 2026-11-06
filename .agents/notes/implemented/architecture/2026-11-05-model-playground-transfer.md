@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_model_playground_transfer.py` 验证错误消息关联拒绝、跨账号下载和删除拒绝、附件摘要、重启续跑、重复导入及部分回复恢复。
+`tests/apps/model_service/test_model_playground_transfer.py` 验证错误消息关联拒绝、跨账号下载和删除拒绝、附件摘要、重启续跑、重复导入及部分回复恢复。

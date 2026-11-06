@@ -23,5 +23,5 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-clipboard.test.ts`：字幕粘贴、锁轨换轨、视觉轨重叠、清除 linkGroupId。
+- `web/tests/features/video-editor-clipboard.test.ts`：字幕粘贴、锁轨换轨、视觉轨重叠、清除 linkGroupId。
 - 手动：选字幕 → 复制 → 移播放头到空白处 → 粘贴；重叠处应提示且不提交。

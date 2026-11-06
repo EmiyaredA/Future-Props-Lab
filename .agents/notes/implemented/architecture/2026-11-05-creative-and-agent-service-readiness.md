@@ -20,4 +20,4 @@ Creative 本机就绪、依赖受限和整站切换验收分别有明确证据�
 
 ## Verification
 
-`tests/test_creative_service_storage.py` 核对仅 API、完整装配和启动前后探针。`tests/test_service_status.py` 核对作品认证依赖异常。原生 Agent 与 Amadeus 测试核对工作进程就绪后的响应。
+`tests/apps/creative_workshop/test_creative_service_storage.py` 核对仅 API、完整装配和启动前后探针。`tests/integration/test_service_status.py` 核对作品认证依赖异常。原生 Agent 与 Amadeus 测试核对工作进程就绪后的响应。

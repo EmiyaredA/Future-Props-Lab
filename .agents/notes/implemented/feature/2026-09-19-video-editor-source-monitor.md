@@ -26,4 +26,4 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-source-monitor.test.tsx`：单击进入素材监视器、切回节目、双击仍添加、隐藏节目专用控件；播放不回写 currentTime；片尾播放从 0 重来。
+- `web/tests/features/video-editor-source-monitor.test.tsx`：单击进入素材监视器、切回节目、双击仍添加、隐藏节目专用控件；播放不回写 currentTime；片尾播放从 0 重来。

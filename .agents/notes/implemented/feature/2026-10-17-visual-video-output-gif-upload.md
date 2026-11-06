@@ -26,9 +26,9 @@ Status: implemented
 
 ## Verification
 
-- `tests/test_visual_gif_uploads.py`：真实 GIF 解码、逐帧停留与末帧、单次时长、奇数画布、音轨缺失、图片原文件保留、损坏／超限／缺少工具／超时、转换中并发编辑和进程取消清理。
-- `tests/test_visual_node_outputs.py`：原输出历史、最终选择、分页、CAS 与素材类型保护。
-- `web/tests/visual-output-gif-upload.test.tsx`：GIF 文件选择、传递原文件及保存后的 revision、错误反馈与手动重试、其他类型的选择限制。
+- `tests/apps/visual_workshop/test_visual_gif_uploads.py`：真实 GIF 解码、逐帧停留与末帧、单次时长、奇数画布、音轨缺失、图片原文件保留、损坏／超限／缺少工具／超时、转换中并发编辑和进程取消清理。
+- `tests/apps/visual_workshop/test_visual_node_outputs.py`：原输出历史、最终选择、分页、CAS 与素材类型保护。
+- `web/tests/features/visual-output-gif-upload.test.tsx`：GIF 文件选择、传递原文件及保存后的 revision、错误反馈与手动重试、其他类型的选择限制。
 - `web/e2e/visual-output-gif-upload.spec.ts`：真实隔离服务的明暗主题文件选择、上传、视频时长与播放、刷新后最终版本保留，2 项通过。截图在 `.local/visual-gif-upload/e2e/results/`。
 
 2026-10-17：GIF 专项后端 14 项、原输出 API 18 项、相关 Web 组件 19 项通过。原绿幕 GIF 实测转换后为 1344×768、7.29 秒，完整动作与绿幕保留。根 lint、生产构建、契约生成与 SDK stale-check、官方导入包生成与校验、Note 与文档中心保护检查通过；变更文件格式检查通过。

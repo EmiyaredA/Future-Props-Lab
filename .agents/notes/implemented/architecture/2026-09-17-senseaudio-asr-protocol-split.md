@@ -32,8 +32,8 @@ SenseAudio 云端说话人识别（`/v1/audio/transcriptions`）与 ASR API Pro�
 
 ## Verification
 
-- `tests/test_provider_adapters.py`、`tests/test_model_test_transcription.py`、
-  `tests/test_catalog_seed.py`、`tests/test_sqlite_storage.py`、
-  `tests/test_sqlite_migration_history.py`
+- `tests/integration/test_provider_adapters.py`、`tests/apps/model_service/test_model_test_transcription.py`、
+  `tests/integration/test_catalog_seed.py`、`tests/runtime/test_sqlite_storage.py`、
+  `tests/runtime/test_sqlite_migration_history.py`
 - `npm run contracts:generate` / `contracts:check`
 - `npm run verify-notes`

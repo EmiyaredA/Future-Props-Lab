@@ -26,7 +26,7 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest -q tests/test_visual_replacement_skill.py`：28 项记录、反馈、关口、媒体内容绑定和 ZIP 导入检查通过；以 `FPL_SKILL_BROWSER_CHECK=1` 启用隔离浏览器回归，连同浏览器共 29 项通过。
+- `uv run pytest -q tests/apps/visual_workshop/test_visual_replacement_skill.py`：28 项记录、反馈、关口、媒体内容绑定和 ZIP 导入检查通过；以 `FPL_SKILL_BROWSER_CHECK=1` 启用隔离浏览器回归，连同浏览器共 29 项通过。
 - `uv run python skills/future-props-lab-automation/scripts/validate_skills.py` 验证官方包发现结构。
 - Note 树、格式和归档封印检查使用 `node --import tsx scripts/verify-agent-note-{tree,format}.ts` 及 `scripts/checks/verify-archived-agent-notes.ts` 通过（沙箱内 `tsx` CLI 的 IPC 受限，运行相同检查入口）；`npm run check-docs-center-protected` 通过。
 - 本地隔离预览验证候选筛选、证据定位、意见导出/合并、未导出意见保持、明暗主题、键盘和 390px 窄屏，以及缺失媒体和用户文本按纯文本展示。测试视频仅验证播放器行为；不调用供应商、不读取正式数据库。

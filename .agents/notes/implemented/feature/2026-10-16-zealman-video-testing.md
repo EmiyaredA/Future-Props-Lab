@@ -29,4 +29,4 @@ GenerationTaskDriver 唯一编排状态，提交中断失败且不重提；轮�
 
 参考文件的提交协议后续由 [固定 API 参数修复](../bug-fix/2026-10-17-zealman-reference-input-values.md) 修正；本篇保留接入时的决策背景。
 
-`uv run pytest -q tests/test_zealman_video.py tests/test_zealman_model_test.py tests/test_zealman_migration.py tests/test_zealman_workspace.py`；`npm run test --workspace web -- tests/zealman-model-test.test.tsx`。真实验收经隔离数据中的正式 /v1 任务、视频下载和日志完成。输入与结果保存在已忽略的 `.local/zealman/`。
+`uv run pytest -q tests/apps/visual_workshop/test_zealman_video.py tests/apps/visual_workshop/test_zealman_model_test.py tests/apps/visual_workshop/test_zealman_migration.py tests/apps/visual_workshop/test_zealman_workspace.py`；`npm run test --workspace web -- tests/zealman-model-test.test.tsx`。真实验收经隔离数据中的正式 /v1 任务、视频下载和日志完成。输入与结果保存在已忽略的 `.local/zealman/`。

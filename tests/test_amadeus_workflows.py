@@ -8,8 +8,8 @@ import pytest
 from db.migrations.registry import LATEST_MIGRATION_ID
 from db.migrations.runner import apply_migrations, check_migrations, connect_database
 from studio.apps.amadeus.execution.website_runs import recover_interrupted_amadeus_runs
-from test_code_agents import configured, wait_run  # noqa: F401
-from test_workspace_governance import client_account
+from tests.apps.agent_runtime.test_code_agents import configured, wait_run  # noqa: F401
+from tests.apps.visual_workshop.test_workspace_governance import client_account
 from website_test_support import SessionLocal, app
 
 pytestmark = pytest.mark.real_auth

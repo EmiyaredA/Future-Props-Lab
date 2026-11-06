@@ -24,6 +24,6 @@ Status: implemented
 
 ## Verification
 
-`web/tests/visual-workshop-canvas-persistence.test.tsx` 在 StrictMode 下覆盖同一事件保存与准备、计时器清理、节点和连线连续更新、等待期间的新修改、真实冲突与网络失败。修复前四个核心用例全部失败，修复后通过。相关生成、画布、撤销、连线、剪贴板、助手与看板共 77 项组件测试通过。
+`web/tests/features/visual-workshop-canvas-persistence.test.tsx` 在 StrictMode 下覆盖同一事件保存与准备、计时器清理、节点和连线连续更新、等待期间的新修改、真实冲突与网络失败。修复前四个核心用例全部失败，修复后通过。相关生成、画布、撤销、连线、剪贴板、助手与看板共 77 项组件测试通过。
 
 `web/e2e/visual-workshop-generation-save.spec.ts` 使用临时隔离数据库与正式画布 API，延迟保存并在模拟模型提交时核对服务端 revision 和草稿提示词。看板与画布两个入口验收通过，不调用真实供应商。Web lint、格式检查与生产构建通过；Agent Note 树、格式与归档封印检查通过。

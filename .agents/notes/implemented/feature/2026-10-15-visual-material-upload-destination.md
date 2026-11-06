@@ -25,9 +25,9 @@ Status: implemented
 
 ## Verification
 
-- `tests/test_visual_node_outputs.py`：分类、分组、首版输出及重新读取；非法目标、跨分类分组与旧 revision 不创建文件或节点。
-- `web/tests/visual-workshop-canvas-layout.test.tsx`：分类菜单预选、批量目标传递、revision 串行推进、重新打开后的树归类。
-- `web/tests/visual-workshop-board-management.test.tsx`：顶层入口键盘展开、分类切换清空分组与未分类上传。
+- `tests/apps/visual_workshop/test_visual_node_outputs.py`：分类、分组、首版输出及重新读取；非法目标、跨分类分组与旧 revision 不创建文件或节点。
+- `web/tests/features/visual-workshop-canvas-layout.test.tsx`：分类菜单预选、批量目标传递、revision 串行推进、重新打开后的树归类。
+- `web/tests/features/visual-workshop-board-management.test.tsx`：顶层入口键盘展开、分类切换清空分组与未分类上传。
 - 契约生成及 stale-check、Web lint/构建、Note 与官方导入包检查。
 
 2026-10-15 验证结果：上传／输出 API 18 项通过，相关 Web 组件与画布测试 26 项通过，隔离真实浏览器明暗主题 2 项通过（含 390／768／1600 宽度、文件选择、批量上传和刷新后归类）。截图位于已忽略的 `.local/upload-folders/e2e/results/`，未使用正式运行数据或供应商调用。根 lint、契约／SDK stale-check、官方导入包生成与检查、变更文件格式及 Note 校验通过；Note 校验使用 `node --import tsx scripts/checks/verify-agent-note-tree.ts` 等三个入口，避开沙箱中 CLI IPC 创建限制。

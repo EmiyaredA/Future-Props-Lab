@@ -14,7 +14,6 @@ from types import SimpleNamespace
 import httpx
 import pytest
 from sqlalchemy import select
-from tests.credential_test_support import encrypt_secret
 
 import integration_test_support as integration_dependencies
 from studio.apps.amadeus.execution.website_runs import recover_interrupted_amadeus_runs
@@ -28,6 +27,7 @@ from studio.assembly.website.models import bind_owner
 from studio.contracts.amadeus.conversations import ModelTurnIn
 from studio.host.agent_execution.amadeus_scripts import run_script
 from studio.runtime.database.operation_receipts import OperationError
+from tests.credential_test_support import encrypt_secret
 from website_test_support import SessionLocal, app, settings
 
 

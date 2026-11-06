@@ -27,6 +27,6 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest tests/test_library_folder_archive.py`
+- `uv run pytest tests/integration/test_library_folder_archive.py`
 - `npm run contracts:generate` 后 `npm run contracts:check`
 - `npm run verify-notes`

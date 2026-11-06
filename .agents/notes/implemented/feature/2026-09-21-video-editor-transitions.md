@@ -27,7 +27,7 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest -q tests/test_video_editor_transitions.py tests/test_video_editor.py tests/test_video_editor_trim.py tests/test_video_editor_ripple.py`：39 passed。
+- `uv run pytest -q tests/apps/video_editor/test_video_editor_transitions.py tests/apps/video_editor/test_video_editor.py tests/apps/video_editor/test_video_editor_trim.py tests/apps/video_editor/test_video_editor_ripple.py`：39 passed。
 - `npm run test --workspace web -- tests/video-editor-transitions.test.tsx tests/video-editor-preview-transitions.test.ts tests/video-editor-timeline.test.tsx tests/video-editor-model.test.ts tests/video-editor-trim.test.tsx`：转场面板、预览语义与时间线相关用例通过。
 - `npm run contracts:check`：通过。
 - Python 定向 ruff：通过。

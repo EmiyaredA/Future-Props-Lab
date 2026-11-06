@@ -23,4 +23,4 @@ Status: implemented
 
 ## Verification
 
-`web/tests/thought-editor-recovery-lifecycle.test.tsx` 使用真实 Tiptap 验证延迟查询、恢复与丢弃两类决策后的图形编辑入口、Slash/NodeRange 扩展，以及同一文档成功保存不更换编辑器实例。官方图复制、画板创建与保存重开继续由 `web/e2e/technical-knowledge.spec.ts` 在隔离数据中回归。
+`web/tests/features/thought-editor-recovery-lifecycle.test.tsx` 使用真实 Tiptap 验证延迟查询、恢复与丢弃两类决策后的图形编辑入口、Slash/NodeRange 扩展，以及同一文档成功保存不更换编辑器实例。官方图复制、画板创建与保存重开继续由 `web/e2e/technical-knowledge.spec.ts` 在隔离数据中回归。

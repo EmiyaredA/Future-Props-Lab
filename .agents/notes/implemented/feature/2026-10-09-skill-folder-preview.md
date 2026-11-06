@@ -24,5 +24,5 @@ Status: implemented
 
 ## Verification
 
-- `tests/test_integrations.py::test_skill_version_preview_lists_files_and_rejects_unsafe_paths` 覆盖嵌套文件、文本、图片、SVG、超限文件、路径穿越和符号链接。
-- `web/tests/skill-tags.test.tsx` 覆盖只读用户切换版本，以及打开 `scripts/setup.py`。
+- `tests/apps/integrations/test_integrations.py::test_skill_version_preview_lists_files_and_rejects_unsafe_paths` 覆盖嵌套文件、文本、图片、SVG、超限文件、路径穿越和符号链接。
+- `web/tests/features/skill-tags.test.tsx` 覆盖只读用户切换版本，以及打开 `scripts/setup.py`。

@@ -26,5 +26,5 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/thought-multitable-grid.test.tsx` 覆盖键盘打开菜单、修改字段、名称列不可删除或向左插入、隐藏、升序、筛选入口，以及插入、排序保留和看板占用删除的纯函数。
+- `web/tests/features/thought-multitable-grid.test.tsx` 覆盖键盘打开菜单、修改字段、名称列不可删除或向左插入、隐藏、升序、筛选入口，以及插入、排序保留和看板占用删除的纯函数。
 - 浏览器核对独立多维表格的列头菜单、表头、标签和工具栏。正文嵌入不出现字段菜单。

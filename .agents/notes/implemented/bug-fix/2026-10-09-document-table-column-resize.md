@@ -22,5 +22,5 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/thought-table-resize.test.ts` 覆盖单列变化、缺宽沿用相邻列、写回时保持其他列，以及插入列后的显示宽度。
+- `web/tests/features/thought-table-resize.test.ts` 覆盖单列变化、缺宽沿用相邻列、写回时保持其他列，以及插入列后的显示宽度。
 - 浏览器拖动三列表格：加宽第一列后其余列像素宽度不变，表格总宽增加并在表格区域内滚动；缩窄中间列或最后一列时，未拖动列保持原宽，列宽不低于 60 像素。

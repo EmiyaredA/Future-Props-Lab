@@ -22,4 +22,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_amadeus_history_transfer.py` 使用真实维护监听器验证乱序 ID、循环拒绝、重启续跑、跨账号隔离、原事件序列和首次启动恢复，并覆盖超出 JSON 请求上限的输出文件、空文件、固定 Skill 目录、错误摘要、额外目标文件和重启后的文件回执重放。
+`tests/apps/amadeus/test_amadeus_history_transfer.py` 使用真实维护监听器验证乱序 ID、循环拒绝、重启续跑、跨账号隔离、原事件序列和首次启动恢复，并覆盖超出 JSON 请求上限的输出文件、空文件、固定 Skill 目录、错误摘要、额外目标文件和重启后的文件回执重放。

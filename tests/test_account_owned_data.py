@@ -245,10 +245,9 @@ def test_runtime_storage_has_no_default_account_fallback(tmp_path):
 def test_registered_runner_preserves_history_templates_and_agent_allocations(tmp_path):
     import json
 
-    from tests.migration_fixtures import apply_migrations as apply_legacy
-
     from db.migrations import apply_migrations
     from db.migrations.runner import connect_database
+    from tests.migration_fixtures import apply_migrations as apply_legacy
 
     path = tmp_path / "ownership-upgrade.db"
     apply_legacy(path)

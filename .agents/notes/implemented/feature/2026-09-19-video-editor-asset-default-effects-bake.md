@@ -25,6 +25,6 @@ Status: implemented
 
 ## Verification
 
-- `tests/test_video_editor_asset_defaults.py`：CAS 冲突、默认效果写入、图片 bake 产出新素材且 organization 插入。
-- `web/tests/video-editor-asset-defaults.test.tsx`：上轨注入 chromaKey。
+- `tests/apps/video_editor/test_video_editor_asset_defaults.py`：CAS 冲突、默认效果写入、图片 bake 产出新素材且 organization 插入。
+- `web/tests/features/video-editor-asset-defaults.test.tsx`：上轨注入 chromaKey。
 - `npm run contracts:generate` / `npm run verify-notes`

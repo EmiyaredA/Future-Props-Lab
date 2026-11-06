@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_website_legacy_snapshot.py` 覆盖完成记录归档、失败记录、路径冲突、快照原件变动及隔离环境恢复旧站。
+`tests/integration/test_website_legacy_snapshot.py` 覆盖完成记录归档、失败记录、路径冲突、快照原件变动及隔离环境恢复旧站。

@@ -103,9 +103,9 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
 | `tests/test_architecture.py::test_source_modules_are_split_into_reviewable_files`                            | `web/src/features/visual-workshop/styles/project-library-foundation.css` 为 607 行，超过 600 行限制 |
 | `tests/test_architecture.py::test_test_modules_are_split_into_reviewable_files`                              | `web/tests/visual-workshop-canvas.test.tsx` 为 1418 行，超过 1200 行限制                            |
-| `tests/test_media_workshop_upgrade.py::test_segment_export_creation_is_idempotent_and_preserves_each_config` | 预期快照未包含实际返回的 `playbackRate: null`                                                       |
-| `tests/test_project_snapshots.py::test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members`       | 预期快照未包含实际返回的 `grid_output: null` 与 `grid_size: null`                                   |
-| `web/tests/galgame-workshop-editor-audio-stage.test.tsx` 的多角色舞台编辑用例                                | 10 秒超时；单独复跑也超时                                                                           |
+| `tests/apps/media_rendering/test_media_workshop_upgrade.py::test_segment_export_creation_is_idempotent_and_preserves_each_config` | 预期快照未包含实际返回的 `playbackRate: null`                                                       |
+| `tests/integration/test_project_snapshots.py::test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members`       | 预期快照未包含实际返回的 `grid_output: null` 与 `grid_size: null`                                   |
+| `web/tests/features/galgame-workshop-editor-audio-stage.test.tsx` 的多角色舞台编辑用例                                | 10 秒超时；单独复跑也超时                                                                           |
 
 ## 迁移与浏览器复核
 
@@ -166,8 +166,8 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 
 1. `test_source_modules_are_split_into_reviewable_files`：`web/src/features/visual-workshop/styles/project-library-foundation.css` 为 607 行，上限 600。
 2. `test_test_modules_are_split_into_reviewable_files`：`web/tests/visual-workshop-canvas.test.tsx` 为 1418 行，上限 1200。
-3. `tests/test_media_workshop_upgrade.py::test_segment_export_creation_is_idempotent_and_preserves_each_config`：已有序列化结果多出 `playbackRate: None`，与断言不同。
-4. `tests/test_project_snapshots.py::test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members`：已有序列化结果多出 `grid_output: None` 与 `grid_size: None`，与断言不同。
+3. `tests/apps/media_rendering/test_media_workshop_upgrade.py::test_segment_export_creation_is_idempotent_and_preserves_each_config`：已有序列化结果多出 `playbackRate: None`，与断言不同。
+4. `tests/integration/test_project_snapshots.py::test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members`：已有序列化结果多出 `grid_output: None` 与 `grid_size: None`，与断言不同。
 
 未改动这些模块的生产行为或放宽尺寸基线。工作区原有未提交修改均保留，未执行提交或发布。
 

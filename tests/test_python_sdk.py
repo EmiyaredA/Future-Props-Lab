@@ -229,7 +229,8 @@ async def test_sdk_session_login_reauth_and_workspace_key_isolation():
     from future_props_lab import ApiError
     from future_props_lab.builders import edit_batch, entity_edit
     from future_props_lab.examples import create_deck_async
-    from tests.test_account_system import create_test_account
+
+    from tests.apps.identity.test_account_system import create_test_account
 
     first_account = await create_test_account()
     second_account = await create_test_account()

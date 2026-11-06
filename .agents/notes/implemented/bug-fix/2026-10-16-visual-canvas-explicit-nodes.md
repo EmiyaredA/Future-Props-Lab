@@ -21,4 +21,4 @@ VisualCanvasDocumentPutIn 要求显式提供 nodes。缺失字段在请求校验
 
 ## Verification
 
-tests/test_visual_canvas_replace_safety.py 验证带媒体输出与连线的画板拒绝 metadata-only PUT，且 revision、图和输出历史不变；完整分类更新保留内容，显式空图仍可删除并保留素材。相关视觉工坊、SDK 与契约检查覆盖兼容路径。
+tests/apps/visual_workshop/test_visual_canvas_replace_safety.py 验证带媒体输出与连线的画板拒绝 metadata-only PUT，且 revision、图和输出历史不变；完整分类更新保留内容，显式空图仍可删除并保留素材。相关视觉工坊、SDK 与契约检查覆盖兼容路径。

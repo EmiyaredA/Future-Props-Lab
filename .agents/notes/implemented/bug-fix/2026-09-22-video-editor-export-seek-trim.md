@@ -26,6 +26,6 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest -q tests/test_media_rendering_cancellation.py tests/test_video_editor_transitions.py`
+- `uv run pytest -q tests/apps/media_rendering/test_media_rendering_cancellation.py tests/apps/video_editor/test_video_editor_transitions.py`
 - `npm run verify-notes`
 - 对本项目 `sourceInUs=82099179` 开解码器取首帧，应贴近入点而非约 81.25s 双剪影；重启后端后重新导出验证片头与约 43s / 2min。

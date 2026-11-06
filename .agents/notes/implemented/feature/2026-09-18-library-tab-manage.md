@@ -30,6 +30,6 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/file-management.test.tsx`：`importSource="library"` 可建夹（`projectId` 为 `undefined`）且仍可「导入」。
+- `web/tests/features/file-management.test.tsx`：`importSource="library"` 可建夹（`projectId` 为 `undefined`）且仍可「导入」。
 - `web/e2e/applications-workshop.spec.ts`：点「总文件」可见「添加素材」与可管理空态。
 - `npm run verify-notes`。
