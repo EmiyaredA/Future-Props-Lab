@@ -126,10 +126,11 @@ class Multitable:
             },
         )
 
-    async def validate_asset_refs(self, state):
+    async def validate_asset_refs(self, state, *, assets=None):
         ids = asset_ids(state)
         if ids:
-            await metadata(self.session, self.owner_user_id).describe(ids)
+            port = assets if assets is not None else metadata(self.session, self.owner_user_id)
+            await port.describe(ids)
 
     async def validate_local_refs(self, state, before):
         def notes(s):
@@ -234,10 +235,12 @@ class Multitable:
             await self.validate_asset_refs(after)
         if before_write is not None:
             note_id = n.id
-            await before_write(before, after)
+            assets = await before_write(before, after)
             n = await self.note(note_id)
         if prepared_assets:
-            await self.validate_asset_refs(after)
+            if assets is None:
+                raise ValueError("写入前回调必须提供已准备的素材视图")
+            await self.validate_asset_refs(after, assets=assets)
         n = await self.reserve(n, expected)
         await self.validate_local_refs(after, before)
         await persist(self.session, n.id, before, after)

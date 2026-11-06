@@ -19,7 +19,7 @@ class PreparedCommunityAssets:
         self.owner = prepared.owner
         self.files = {asset.id: LibraryAsset(**asset.model_dump()) for asset in prepared.metadata}
 
-    def for_owner(self, _session, owner):
+    def for_owner(self, owner):
         if owner != self.owner:
             raise missing()
         return self
@@ -93,10 +93,10 @@ async def save_note(
                 or current.article_revision != scope.article_revision
             ):
                 raise missing()
-            session.info["thought_asset_metadata_factory"] = PreparedCommunityAssets(
-                prepared
-            ).for_owner
-            result = await write_note_edit(session, principal, publication_id, note_id, current)
+            assets = PreparedCommunityAssets(prepared).for_owner(current.owner)
+            result = await write_note_edit(
+                session, principal, publication_id, note_id, current, assets=assets
+            )
             await references.record(session, prepared, resource_revision=result.note.revision)
             commit_started = True
             await session.commit()

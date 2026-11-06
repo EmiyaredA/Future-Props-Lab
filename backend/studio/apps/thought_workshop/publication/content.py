@@ -91,9 +91,9 @@ async def authorize_note_edit(session, principal, pub_id, note_id, body):
     return edit
 
 
-async def write_note_edit(session, principal, pub_id, note_id, edit):
+async def write_note_edit(session, principal, pub_id, note_id, edit, *, assets=None):
     bind_source(session, await publication(session, pub_id))
-    value = await Notes(session, edit.owner, principal.user_id).put(
+    value = await Notes(session, edit.owner, principal.user_id, assets=assets).put(
         note_id, edit.body, commit=False
     )
     return CommunityNote(

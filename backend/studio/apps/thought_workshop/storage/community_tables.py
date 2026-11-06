@@ -68,10 +68,8 @@ async def apply_table(
                 change=change,
                 community=scope,
             )
-            session.info["thought_asset_metadata_factory"] = PreparedCommunityAssets(
-                prepared
-            ).for_owner
             await require_actor(identity, assertion, "POST", source_path)
+            return PreparedCommunityAssets(prepared).for_owner(owner)
 
         async def after_write(revision):
             nonlocal commit_started

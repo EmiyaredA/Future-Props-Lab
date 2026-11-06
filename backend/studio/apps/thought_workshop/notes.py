@@ -48,10 +48,18 @@ def note_out(row: ThoughtNote) -> ThoughtNoteOut:
 
 
 class Notes:
-    def __init__(self, session: AsyncSession, owner_user_id: str, author_id: str | None = None):
+    def __init__(
+        self,
+        session: AsyncSession,
+        owner_user_id: str,
+        author_id: str | None = None,
+        *,
+        assets=None,
+    ):
         self.session = session
         self.owner_user_id = owner_user_id
         self.author_id = author_id
+        self.assets = assets
 
     async def get(self, note_id: str) -> ThoughtNote:
         row = await self.session.scalar(
@@ -164,7 +172,11 @@ class Notes:
         images = image_ids(body.document)
         body.schema_version = 3
         if ids:
-            assets = await metadata(self.session, self.owner_user_id).describe(ids)
+            assets = await (
+                self.assets
+                if self.assets is not None
+                else metadata(self.session, self.owner_user_id)
+            ).describe(ids)
             if any(assets[key].media_kind != "image" for key in images):
                 raise ThoughtError("图片引用必须为图片文件")
             for node in attachment_nodes(body.document):

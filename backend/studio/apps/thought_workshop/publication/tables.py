@@ -81,8 +81,9 @@ class TableAccess:
 
         async def before_write(before, after):
             nonlocal pub, role
-            if prepare is not None:
-                await prepare(authorized_source, before, after)
+            assets = (
+                await prepare(authorized_source, before, after) if prepare is not None else None
+            )
             # All remote preparation is complete. Serialize local grants with the mutation.
             await begin_write(self.session)
             _, pub, role, config = await self.access(pub_id, note_id, parent_id, write=True)
@@ -107,6 +108,7 @@ class TableAccess:
                 note.id for note, _, _ in current_rows
             }:
                 raise missing()
+            return assets
 
         result = await use_case.apply(
             note_id,

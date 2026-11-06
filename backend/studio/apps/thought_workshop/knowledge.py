@@ -21,9 +21,17 @@ from studio.runtime.time import utc_now
 
 
 class KnowledgeBases:
-    def __init__(self, session: AsyncSession, owner_user_id: str, author_id: str | None = None):
+    def __init__(
+        self,
+        session: AsyncSession,
+        owner_user_id: str,
+        author_id: str | None = None,
+        *,
+        assets=None,
+    ):
         self.session, self.owner_user_id = session, owner_user_id
         self.author_id = author_id
+        self.assets = assets
 
     async def get(self, project_id: str, *, include_deleted: bool = False) -> ThoughtKnowledgeBase:
         row = await self.session.scalar(
@@ -76,7 +84,9 @@ class KnowledgeBases:
     async def cover(self, asset_id: str | None) -> None:
         if asset_id is None:
             return
-        rows = await metadata(self.session, self.owner_user_id).describe({asset_id})
+        rows = await (
+            self.assets if self.assets is not None else metadata(self.session, self.owner_user_id)
+        ).describe({asset_id})
         if rows[asset_id].media_kind != "image":
             raise ThoughtError("封面图片不存在", 404, "not_found")
 
