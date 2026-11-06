@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from studio.apps.thought_workshop.directory import Directory
 from studio.apps.thought_workshop.duplicate_retention import duplicate_with_references
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.http_bindings import SessionDep
+from studio.apps.thought_workshop.http_bindings import AssetMetadataDep, SessionDep
 from studio.apps.thought_workshop.knowledge import KnowledgeBases
 from studio.apps.thought_workshop.knowledge_retention import (
     create_knowledge_base_with_references,
@@ -115,7 +115,12 @@ async def create_note(
 
 @router.post("/notes/{note_id}/duplicate", response_model=DuplicateOut)
 async def duplicate_document(
-    note_id: str, body: DuplicateIn, session: SessionDep, principal: StudioAuth, request: Request
+    note_id: str,
+    body: DuplicateIn,
+    session: SessionDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
+    request: Request,
 ):
     return await guarded(
         duplicate_with_references(
@@ -124,6 +129,7 @@ async def duplicate_document(
             author_id=principal.user_id,
             note_id=note_id,
             body=body,
+            assets=assets,
             **context(request),
         )
     )
@@ -244,10 +250,16 @@ async def delete_note(
 
 @router.post("/templates", response_model=TemplateOut)
 async def create_template(
-    request: Request, body: TemplateIn, session: SessionDep, owner_user_id: OwnerDep
+    request: Request,
+    body: TemplateIn,
+    session: SessionDep,
+    assets: AssetMetadataDep,
+    owner_user_id: OwnerDep,
 ):
     return await guarded(
-        create_template_with_references(session, owner=owner_user_id, body=body, **context(request))
+        create_template_with_references(
+            session, owner=owner_user_id, body=body, asset_reader=assets, **context(request)
+        )
     )
 
 
@@ -257,6 +269,7 @@ async def apply_template(
     template_id: str,
     body: TemplateApply,
     session: SessionDep,
+    assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await guarded(
@@ -266,6 +279,7 @@ async def apply_template(
             author_id=principal.user_id,
             template_id=template_id,
             body=body,
+            asset_reader=assets,
             **context(request),
         )
     )
@@ -277,11 +291,17 @@ async def put_template(
     template_id: str,
     body: TemplatePut,
     session: SessionDep,
+    assets: AssetMetadataDep,
     owner_user_id: OwnerDep,
 ):
     return await guarded(
         mutate_template_with_references(
-            session, owner=owner_user_id, template_id=template_id, body=body, **context(request)
+            session,
+            owner=owner_user_id,
+            template_id=template_id,
+            body=body,
+            asset_reader=assets,
+            **context(request),
         )
     )
 

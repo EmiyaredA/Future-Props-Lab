@@ -195,6 +195,7 @@ async def preview(
             BindingReads(request, note_id).preview_target,
             note_id,
             body,
+            assets=await request_asset_metadata(request, session, principal),
         )
     except (ExternalError, ThoughtError) as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

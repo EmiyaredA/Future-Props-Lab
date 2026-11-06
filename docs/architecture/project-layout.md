@@ -1115,6 +1115,8 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 
 笔记 Markdown 转换、笔记导出和备份从协议层接收账号绑定的素材读取端口。两套装配共用 `archives/backup.py`，先在只读快照中整理备份，再按登记的素材版本下载并校验大小。网站仍以其部署配置提供备份上限。
 
+思绪的模板创建、更新、应用及文档复制由入口提供账号绑定的素材读取端口。独立服务仍将引用准备与源 CAS 回执关联。知识库导出快照和文章同步预览也接收显式素材端口。
+
 思绪同步的 `synchronization/sync_submit.py` 与 `sync_reconcile.py` 接收显式素材、暂存、授权和传输接口；HTTP 请求字段只由 `sync_binding.py` 提取。`sync_artifacts.py` 只接收已授权素材读取端口并拥有不可变输入副本、摘要校验及清理。兼容网站 `external_sync/runner.py` 的素材读取工厂由网站装配注入，不通过 Session 查找服务。`runtime/tasks/blocking_io.py` 提供阻塞 I/O 完成屏障：重复取消也等待工作线程结束，再将取消传播给负责临时目录的调用方；适配器仍负责限制操作时长与大小。
 
 Models 的 `storage/visual_generation_files.py` 拥有生成任务的账号输入暂存和输出目录、文件标识与符号链接检查；`visual_generation_batches.py` 拥有账号会话内的批次身份／摘要读取。`visual/visual_generation_intake.py`、Runner、Results 与 Retention 分别显式接收自己的依赖，结果读取不加载或调用 Runner，执行不依赖提交组件。预检只接收所需原件客户端及临时上传配置；统一 Driver 继续裁决任务终态，短事务与未知提交保留语义不变。

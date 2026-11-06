@@ -193,7 +193,11 @@ def bind_components(app, settings, database, *, read_cloud_settings):
         None, session, owner
     )
     app.state.article_sync = lambda session, owner, principal: ArticleSync(
-        session, owner, principal, connections=app.state.article_connections(session, owner)
+        session,
+        owner,
+        principal,
+        connections=app.state.article_connections(session, owner),
+        assets=thought_metadata(session, owner),
     )
     app.state.require_native_model_retention = False
     app.state.model_catalog_bindings = CatalogBindings(

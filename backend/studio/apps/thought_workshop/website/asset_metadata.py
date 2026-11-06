@@ -32,6 +32,14 @@ class AssetMetadata(Protocol):
     async def download(self, asset: LibraryAsset, target): ...
 
 
+async def describe_assets(assets: AssetMetadata | None, asset_ids: set[str]):
+    if not asset_ids:
+        return {}
+    if assets is None:
+        raise ThoughtError("素材目录尚未连接", 503, "asset_metadata_unavailable")
+    return await assets.describe(asset_ids)
+
+
 def metadata(session, owner_user_id: str) -> AssetMetadata:
     bound = session.info.get("owner_user_id")
     if bound is not None and bound != owner_user_id:

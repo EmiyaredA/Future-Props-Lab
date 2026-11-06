@@ -10,7 +10,17 @@ from studio.contracts.asset_library.references import PrepareReferenceChange
 
 
 async def duplicate_with_references(
-    session, *, owner, author_id, note_id, body, assertion, source_method, source_path, references
+    session,
+    *,
+    owner,
+    author_id,
+    note_id,
+    body,
+    assertion,
+    source_method,
+    source_path,
+    references,
+    assets,
 ):
     if source_method != "POST" or source_path != f"/v1/thought-workshop/notes/{note_id}/duplicate":
         raise ValueError("文档复制必须绑定原请求")
@@ -38,7 +48,7 @@ async def duplicate_with_references(
     commit_started = False
     try:
         await session.execute(text("BEGIN"))
-        result = await ReusableContent(session, owner, author_id).duplicate(
+        result = await ReusableContent(session, owner, author_id, assets=assets).duplicate(
             note_id, body, prepare=prepare, commit=False
         )
         notes = Notes(session, owner)

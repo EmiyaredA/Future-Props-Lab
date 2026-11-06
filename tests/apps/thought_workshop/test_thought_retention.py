@@ -355,6 +355,7 @@ async def test_template_creation_commits_its_initial_asset_pins(instance):
             source_method="POST",
             source_path="/v1/thought-workshop/templates",
             references=service,
+            asset_reader=Metadata(),
         )
         assert result.revision == 0
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -395,6 +396,7 @@ async def test_template_creation_rolls_back_if_source_write_fails(instance, monk
                 source_method="POST",
                 source_path="/v1/thought-workshop/templates",
                 references=service,
+                asset_reader=None,
             )
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
         assert not list(await session.scalars(select(ThoughtTemplate)))
@@ -437,6 +439,7 @@ async def test_template_update_and_delete_record_exact_asset_pins(instance):
             source_path="/v1/thought-workshop/templates/template",
             references=service,
             body=body,
+            asset_reader=Metadata(),
         )
         assert result.name == "After" and result.revision == 1
     delivery = ThoughtReferenceDelivery(db.sessions, remote)
@@ -455,6 +458,7 @@ async def test_template_update_and_delete_record_exact_asset_pins(instance):
             source_path="/v1/thought-workshop/templates/template",
             references=service,
             expected_revision=1,
+            asset_reader=Metadata(),
         )
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
         assert await session.get(ThoughtTemplate, "template") is None
@@ -830,6 +834,7 @@ async def test_template_apply_aborts_when_template_changes_after_prepare(instanc
                 source_method="POST",
                 source_path="/v1/thought-workshop/templates/template/apply",
                 references=service,
+                asset_reader=None,
             )
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
         assert not list(await session.scalars(select(ThoughtNote)))
@@ -880,6 +885,7 @@ async def test_template_apply_preserves_committed_result_after_lost_ack(instance
                 source_method="POST",
                 source_path="/v1/thought-workshop/templates/template/apply",
                 references=service,
+                asset_reader=None,
             )
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
         notes = list(await session.scalars(select(ThoughtNote)))

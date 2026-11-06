@@ -12,13 +12,9 @@ from studio.apps.thought_workshop.multitable.content import project
 from studio.apps.thought_workshop.notes import Notes, note_out
 from studio.apps.thought_workshop.schemas.conversion import ThoughtMarkdownOut
 from studio.apps.thought_workshop.schemas.document import file_ids
-from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata, metadata
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.tasks.blocking_io import run_blocking_io
-
-
-async def resolve_assets(session, owner_user_id, ids):
-    return await metadata(session, owner_user_id).describe(set(ids)) if ids else {}
 
 
 async def convert(body, *, assets: AssetMetadata):

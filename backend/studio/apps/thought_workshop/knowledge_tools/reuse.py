@@ -5,7 +5,6 @@ from pathlib import Path
 
 from sqlalchemy import delete, select, update
 
-from studio.apps.thought_workshop.content_exports import resolve_assets
 from studio.apps.thought_workshop.directory import Directory
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.history import History
@@ -38,6 +37,7 @@ from studio.apps.thought_workshop.notes import Notes, note_out
 from studio.apps.thought_workshop.schemas.document import attachment_nodes, file_ids, image_ids
 from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteIn
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata, describe_assets
 from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
@@ -45,8 +45,11 @@ from studio.runtime.time import utc_now
 
 
 class ReusableContent:
-    def __init__(self, session, owner_user_id, author_id=None):
+    def __init__(
+        self, session, owner_user_id, author_id=None, *, assets: AssetMetadata | None = None
+    ):
         self.session, self.owner_user_id, self.author_id = session, owner_user_id, author_id
+        self.assets = assets
 
     async def template(self, id):
         row = await self.session.scalar(
@@ -91,7 +94,7 @@ class ReusableContent:
                     ],
                 },
             )
-        assets = await resolve_assets(self.session, self.owner_user_id, ids)
+        assets = await describe_assets(self.assets, ids)
         if any(assets[id].media_kind != "image" for id in image_ids(body.document)):
             raise ThoughtError("画板与图片必须引用图片素材")
         for node in attachment_nodes(body.document):
@@ -172,7 +175,7 @@ class ReusableContent:
         ids = file_ids(template.document)
         if template.multitable:
             ids |= asset_ids(Snapshot.model_validate(template.multitable))
-        await resolve_assets(self.session, self.owner_user_id, ids)
+        await describe_assets(self.assets, ids)
         guarded = await self.session.execute(
             update(ThoughtTemplate)
             .where(
@@ -187,7 +190,9 @@ class ReusableContent:
         directory = Directory(self.session, self.owner_user_id, self.author_id)
         await directory.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
         await directory.parent(body.knowledge_base_id, body.parent_id)
-        row = await Notes(self.session, self.owner_user_id, self.author_id).create(
+        row = await Notes(
+            self.session, self.owner_user_id, self.author_id, assets=self.assets
+        ).create(
             ThoughtNoteIn(
                 knowledge_base_id=body.knowledge_base_id,
                 parent_id=body.parent_id,
@@ -236,7 +241,7 @@ class ReusableContent:
         return note_out(row)
 
     async def copy_source(self, id, subtree):
-        notes = Notes(self.session, self.owner_user_id, self.author_id)
+        notes = Notes(self.session, self.owner_user_id, self.author_id, assets=self.assets)
         root = await notes.get(id)
         if root.deleted_at or root.is_home:
             raise ThoughtError("首页或回收站文档不能复制")
@@ -308,7 +313,7 @@ class ReusableContent:
         if prepare is not None:
             await self.session.rollback()
             await prepare(pins)
-        await resolve_assets(self.session, self.owner_user_id, set().union(*pins.values()))
+        await describe_assets(self.assets, set().union(*pins.values()))
         guard = await self.session.execute(
             update(ThoughtKnowledgeBase)
             .where(
@@ -343,7 +348,9 @@ class ReusableContent:
         position = max((n.position for n in siblings), default=-1) + 1
         created = []
         for note_id, (candidate, original_position) in copies.items():
-            new = await Notes(self.session, self.owner_user_id, self.author_id).create(
+            new = await Notes(
+                self.session, self.owner_user_id, self.author_id, assets=self.assets
+            ).create(
                 candidate,
                 commit=False,
                 importing=True,
