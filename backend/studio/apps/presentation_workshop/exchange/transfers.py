@@ -137,12 +137,11 @@ def remap_document(document, identities):
 
 
 async def import_presentation(
-    projects: Presentations, parsed: ParsedPresentation, allow_lossy: bool
+    projects: Presentations, parsed: ParsedPresentation, allow_lossy: bool, *, run
 ):
     if parsed.issues and not allow_lossy:
         raise PresentationError("请先预览并确认转换差异", 422, "conversion_confirmation_required")
     document = import_document(parsed)
     used = asset_ids(document)
     files = {identity: file for identity, file in parsed.assets.items() if identity in used}
-    run = projects.session.info["presentation_import"]
     return await run(projects, parsed.title, document, files, parsed.source_sha256)

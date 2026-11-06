@@ -173,7 +173,7 @@ backend/
 
 `settings.py` 只接受存储路径与三项文件限制，不加载 `.env` 或加密密钥。项目验证通过绑定原请求的 `assets.visual-project.read` 委托，只能从五个已登记文件操作读取 Visual 项目；不会传递原 Cookie 或完整客户端凭据。`application.py` 装配 21 个既有公开操作和私有引用协议，拥有文件清理生命周期；`__main__.py` 在加载 ORM 前解析最小配置、验证目录、取得独占锁并检查显式迁移。公开协议哈希与聚合契约一致。镜像与独立 `/files` 页面已经接通，完整容器验收和业务引用调用方仍是正式切换门禁。
 
-`backend/studio/apps/presentation_workshop/` 装配独立演示文稿项目 API、迁移和持久引用结果。共享文稿用例在 `studio/apps/presentation_workshop/`，兼容装配注入原文件库，独立装配以 `studio/contracts/presentation_workshop/presentation_assets.py` 的签名契约向 Assets 读取素材描述和指定版本的 SVG。项目 CAS、编辑回执与素材引用结果在文稿服务的一次事务内提交。
+`backend/studio/apps/presentation_workshop/` 装配独立演示文稿项目 API、迁移和持久引用结果。共享文稿用例在 `studio/apps/presentation_workshop/`，兼容装配注入原文件库，独立装配以 `studio/contracts/presentation_workshop/presentation_assets.py` 的签名契约向 Assets 读取素材描述和指定版本的 SVG。项目 CAS、编辑回执与素材引用结果在文稿服务的一次事务内提交。 两套装配为每个请求显式提供素材读取、留存和导入适配，项目与模板共用同一事务上下文。
 
 `backend/studio/apps/motion_compositor/` 装配独立特效项目、文稿及编辑批次。业务规则仍在 `studio/apps/motion_compositor/`。独立编辑通过 `studio/contracts/motion_compositor/motion_assets.py` 的签名委托读取当前项目文件描述，Assets 单独持有文件。旧站通过显式文件布局端口保持兼容。
 

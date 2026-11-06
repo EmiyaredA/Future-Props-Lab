@@ -50,6 +50,7 @@ from studio.apps.portal.storage.documents import InstalledDocuments
 from studio.apps.portal.use_cases.documents import DeveloperDocuments
 from studio.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
 from studio.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
+from studio.apps.presentation_workshop.projects import Presentations
 from studio.apps.remote_desktop.storage.preferences import PreferenceRecords
 from studio.apps.remote_desktop.use_cases.preferences import DesktopPreferences
 from studio.apps.thought_workshop.external_sync.use_cases import ArticleSync
@@ -191,19 +192,24 @@ def bind_components(app, settings, database):
         return LegacyAssetMetadata(session, owner, storage=AssetStorage(settings))
 
     app.state.article_assets = thought_metadata
+    presentation_storage = AssetStorage(settings)
+    app.state.presentation_projects = lambda _request, session, owner: Presentations(
+        session,
+        owner,
+        asset_access=LegacyProjectAssets(session, owner, storage=presentation_storage),
+        retention=None,
+    )
+    import_presentation = partial(import_legacy_presentation, settings=settings)
+    app.state.presentation_importer = lambda _request: import_presentation
     sessions.configure(
         info={
             **sessions.kw.get("info", {}),
             "thought_asset_metadata_factory": thought_metadata,
-            "presentation_project_assets": partial(
-                LegacyProjectAssets, storage=AssetStorage(settings)
-            ),
             "motion_project_resources": partial(
                 LegacyProjectResources, storage=AssetStorage(settings)
             ),
             "video_project_layouts": partial(LegacyVideoLayouts, storage=AssetStorage(settings)),
             "video_timeline_assets": LegacyTimelineAssets,
-            "presentation_import": partial(import_legacy_presentation, settings=settings),
         }
     )
 
