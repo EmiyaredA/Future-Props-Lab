@@ -63,7 +63,7 @@ for (const width of [1440, 390]) {
       for (const [path, title, api] of pages) {
         const data = page.waitForResponse(
           (response) =>
-            new URL(response.url()).pathname === api &&
+            new URL(response.url()).pathname === `/management${api}` &&
             response.request().method() === "GET",
         );
         await page.goto(`/management/${path}`);
@@ -152,13 +152,18 @@ test("创建邀请码后注册登录，普通用户只获得业务权限", async
       }),
     );
     expect(stored).not.toContain(code);
-    const adminLogin = await guest.request.post(management + "/v1/auth/login", {
-      headers: { Origin: management },
-      data: { username: guestName, password: guestPassword },
-    });
+    const adminLogin = await guest.request.post(
+      management + "/management/v1/auth/login",
+      {
+        headers: { Origin: management },
+        data: { username: guestName, password: guestPassword },
+      },
+    );
     expect(adminLogin.status()).toBe(401);
     expect(
-      (await guest.request.get(management + "/v1/platform/accounts")).status(),
+      (
+        await guest.request.get(management + "/management/v1/platform/accounts")
+      ).status(),
     ).toBe(401);
   } finally {
     await guest.close();
