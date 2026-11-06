@@ -32,10 +32,12 @@ async def test_native_synthesis_consumer_distinguishes_unknown_and_confirmed_out
         state.status = "failed"
         state.failures.append(message)
 
+    readiness_port = object()
     runner = InferenceRunner(
         None,
         local_runtime=object(),
         settings=settings,
+        readiness=readiness_port,
         decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
     )
     runner.store = SimpleNamespace(claim=claim, fail=fail)
@@ -45,7 +47,8 @@ async def test_native_synthesis_consumer_distinguishes_unknown_and_confirmed_out
 
     runner.inputs = inputs
 
-    async def synthesize(_runtime, _sessions, _task, _source, output):
+    async def synthesize(_runtime, _sessions, _task, _source, output, *, readiness):
+        assert readiness is readiness_port
         state.output = output
         if outcome == "unknown_native":
             raise NativeSubmissionUncertain("synthetic receipt pending")
