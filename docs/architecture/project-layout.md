@@ -8,7 +8,6 @@
 
 ```text
 backend/
-├── app/                          # Agent CLI 与连接治理兼容实现
 └── studio/
     ├── apps/
     │   ├── agent_workbench/
@@ -64,7 +63,7 @@ backend/
 - `runtime/database/` 拥有数据库连接、迁移执行、通用 ORM 原语和迁移传输适配；`http/` 拥有身份断言、错误映射、请求限制及静态资源适配；`tasks/` 拥有轮询和租约队列机制；`files/` 与 `messaging/` 拥有受限文件和签名载荷机制。业务状态裁决仍由应用负责。
 - 所属应用的 `clients/` 可发布明确的跨进程客户端。镜像闭包只允许 `deployment/images.py` 显式登记的客户端模块及无副作用父包，继续逐个检查其依赖，不能因此带入该应用的存储或内部用例。
 - `host/` 负责 Mac 本机动作，`assembly/host/` 构造主机运行环境；服务镜像禁止包含任何主机代码。普通业务不能通过客户端协议获得任意主机路径或执行权限。
-- `config/` 拥有配置格式与转换，实际持久配置仍为 `backend/config.toml`。`deployment/` 拥有镜像源码闭包、路由/数据表归属清单与网关构建。打包只登记 `app`、`studio` 和 `db`，不保留旧命名空间转发包。
+- `config/` 拥有配置格式与转换，实际持久配置仍为 `backend/config.toml`。`deployment/` 拥有镜像源码闭包、路由/数据表归属清单与网关构建。Python 打包登记 `studio` 和 `db`，历史迁移保留原注册链。
 
 音频标注编辑数据流为 HTTP 请求 → 账号范围依赖装配 → `EditDocument` → 文档快照与纯规则 → `DocumentEdits.commit` → 同事务 CAS/回执 → 已提交响应。相同请求返回原回执，复用请求 ID 更改输入返回冲突，并发失败复查回执，取消回滚。素材、转录和暂存目录由入口显式注入，不经 Session 信息字典发现业务依赖。
 
@@ -105,6 +104,70 @@ backend/
 | `fpl_video` | `studio.apps.video_editor` |
 | `fpl_visual` | `studio.apps.visual_workshop` |
 | `fpl_host` | `studio.host` |
+
+Web、验收与部署目录按以下归属组织。
+
+```text
+web/
+├── src/
+│   ├── app/
+│   │   ├── entries/
+│   │   ├── layout/
+│   │   └── routing/
+│   ├── docs/
+│   ├── features/
+│   ├── generated/
+│   ├── platform/
+│   └── shared/
+├── public/
+├── tests/
+│   ├── features/
+│   ├── helpers/
+│   ├── platform/
+│   ├── shared/
+│   └── support/
+└── e2e/
+tests/
+├── apps/
+├── architecture/
+├── contracts/
+├── fixtures/
+├── host/
+├── integration/
+└── runtime/
+deploy/
+├── compose/
+├── contracts/
+└── images/
+db/
+└── migrations/
+    └── versions/
+scripts/
+├── checks/
+├── contracts/
+├── demo/
+├── management/
+└── website/
+sdk/
+└── python/
+    └── src/
+docs/
+├── architecture/
+├── assets/
+├── operations/
+└── reference/
+```
+
+测试夹具、跨应用支持模块和受产品文档引用的验收文件保留各自的原路径。
+`.runtime/` 保存正式单机数据，`.local/` 保存隔离测试和构建产物。
+
+| 状态 | 归属与流动 |
+| --- | --- |
+| 选中项、弹窗、焦点 | 页面组件持有。浏览器导航或页面卸载清理临时监听。 |
+| 编辑草稿与已提交资源 | 功能控制器持有草稿。账号隔离的查询键保存服务端快照，CAS 冲突交给页面展示。 |
+| 会话、项目、文档与引用 | 所属应用负责访问规则和事务。存储提交 revision 与回执，已授权素材以描述或受控内容交付。 |
+| 任务、审批、取消与结算 | 所属用例裁决，执行器提交带任务、尝试和租约的回执。未知结果保留原尝试供核对。 |
+| 事件游标与短期授权 | SSE 事件流维护版本，断线按游标恢复或重读快照。Identity 复核短期授权，执行端持有本次取消句柄。 |
 
 这是 Future Props Lab 目录职责的唯一完整索引。新增、删除目录或改变目录职责时更新本文件；
 各模块文档只补充局部使用方法，不另行定义一套架构。
@@ -429,7 +492,7 @@ Future-Props-Lab/
 
 ## 目录与依赖边界
 
-- `studio/config/` 只拥有配置格式与文件转换。`runtime/config.py` 将 TOML 和进程环境映射到 Settings；
+- `studio/config/` 只拥有配置格式与文件转换。`studio/config/settings.py` 将 TOML 和进程环境映射到 Settings；
   `db/migrations/runner.py` 使用同一格式解析数据库路径，不依赖运行时 `app`。
   `scripts/migrate_config.py` 仅转换配置，不访问数据库；网站启动器在数据库初始化前读取 TOML，历史 .env 转换须由运维显式执行。
 
@@ -465,7 +528,7 @@ Future-Props-Lab/
   `studio/apps/model_service/catalog/`、`studio/apps/model_service/playground/`、`studio/apps/model_service/call_logs/` 等所属能力负责。
 - `studio/assembly/website/account_provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、审计事件与账号模型目录在同一事务内提交或回滚。`studio/apps/identity/credentials/operations.py`
   不依赖模型目录实现。
-- `capabilities/identity/permissions.py` 拥有固定角色与密钥范围交集，`capabilities/identity/route_permissions.py` 显式登记业务操作。
+- `studio/contracts/identity/permissions.py` 拥有固定角色与密钥范围交集，`studio/contracts/identity/route_permissions.py` 显式登记业务操作。
   `governance_transactions.py` 在短写事务中重验操作者并执行 CAS；`management.py` 拥有平台身份与账号状态授权，`errors.py` 和 `error_views.py` 定义领域错误与安全快照。
   `studio/apps/identity/transport/website/account_management.py` 只适配管理查询、创建和审计协议。
 - `web/src/features/accounts/` 拥有管理中台、个人资料、安全与密钥。`AccountMenu` 提供账号入口，
