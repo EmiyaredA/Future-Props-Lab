@@ -541,15 +541,22 @@ async def test_sandboxed_preset_can_read_project_but_cannot_read_private_paths(t
 
     if not available():
         pytest.skip("macOS sandbox required")
-    root = tmp_path.resolve()
+    root = tmp_path.resolve() / ".projects" / ("project-" + "a" * 160)
+    root.mkdir(parents=True)
     (root / "allowed.txt").write_text("sample")
     (root / ".env").write_text("private fixture")
+    (root / ".hidden").mkdir()
+    (root / ".hidden" / "nested.txt").write_text("private fixture")
+    (root / "certificate.PEM").write_text("private fixture")
     good = await run_command(
         str(root), CloudCommand(label="read", argv=["/bin/cat", "allowed.txt"])
     )
     assert good == {"exit_code": 0, "output": "sample"}
-    denied = await run_command(str(root), CloudCommand(label="read", argv=["/bin/cat", ".env"]))
-    assert denied["exit_code"] != 0 and "private fixture" not in denied["output"]
+    for private in (".env", ".hidden/nested.txt", "certificate.PEM"):
+        denied = await run_command(
+            str(root), CloudCommand(label="read", argv=["/bin/cat", private])
+        )
+        assert denied["exit_code"] != 0 and "private fixture" not in denied["output"]
 
 
 @pytest.mark.parametrize("vnc_only", [False, True])

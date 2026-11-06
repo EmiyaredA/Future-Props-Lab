@@ -58,7 +58,12 @@ def profile(root, temporary, executables, runtime_roots):
 
     private = "|".join(literal_pattern(name) for name in sorted(PRIVATE_NAMES))
     suffix = "|".join(literal_pattern(ext) for ext in PRIVATE_SUFFIXES)
-    pattern = f"^{literal_pattern(root)}/(.*/)?([.][^/]*|{private}|[^/]*({suffix}))(/|$)"
+    # Scope the filter with subpath and skip the project's ancestors in the regex.
+    # Expanding an absolute path into case pairs can exceed Seatbelt's string limit.
+    ancestors = "/[^/]+" * (len(Path(root).parts) - 1)
+    pattern = f"^{ancestors}/(.*/)?([.][^/]*|{private}|[^/]*({suffix}))(/|$)"
+    project = json.dumps(root, ensure_ascii=False)
+    private_paths = json.dumps(pattern, ensure_ascii=False)
     writable = json.dumps(temporary, ensure_ascii=False)
     return "\n".join(
         (
@@ -70,7 +75,7 @@ def profile(root, temporary, executables, runtime_roots):
             '(allow file-read-data (literal "/"))',
             f"(allow file-read-metadata {parents})",
             f'(allow file-read* {reads} (literal "/dev/null"))',
-            f"(deny file-read* (regex {json.dumps(pattern, ensure_ascii=False)}))",
+            f"(deny file-read* (require-all (subpath {project}) (regex {private_paths})))",
             f'(allow file-write* (subpath {writable}) (literal "/dev/null"))',
             f"(allow process-exec {allowed_exec})",
         )
