@@ -172,12 +172,14 @@ async def test_import_rolls_back_records_and_staged_files(monkeypatch, asset_kin
         staged.append(result[1])
         return result
 
-    async def fail_second(self, body, *, commit=True, importing=False):
+    async def fail_second(self, body, *, commit=True, importing=False, note_id=None):
         nonlocal created
         created += 1
         if created == 2:
             raise ThoughtError("模拟提交阶段失败")
-        return await original_create(self, body, commit=commit, importing=importing)
+        return await original_create(
+            self, body, commit=commit, importing=importing, note_id=note_id
+        )
 
     monkeypatch.setattr(AssetLibrary, "stage_local_copy", stage)
     monkeypatch.setattr(Notes, "create", fail_second)
@@ -218,6 +220,7 @@ async def test_import_rolls_back_records_and_staged_files(monkeypatch, asset_kin
         assert result.status_code == 422, result.text
         assert len(await all_notes(client)) == before
         assert (await client.get(ROOT + "/knowledge-bases")).json() == books
+        assert created == 2
         assert staged and all(not path.exists() for path in staged)
 
 

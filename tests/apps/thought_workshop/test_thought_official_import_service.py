@@ -1,14 +1,17 @@
 """An independent official import persists notes, projections and replay receipts."""
 
+import asyncio
 from uuid import uuid4
 
 import httpx
+import pytest
 from sqlalchemy import func, select
 
 from studio.apps.asset_library.clients.retention import RetentionClient
 from studio.apps.asset_library.storage.service_models import AssetReferenceSet
 from studio.apps.identity.accounts import create_account
 from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.thought_workshop.official_projections import OfficialProjections
 from studio.apps.thought_workshop.retention import ThoughtReferenceDelivery
 from studio.assembly.independent.thought_workshop.application import create_app
 from studio.contracts.identity.claims import HEADER
@@ -116,3 +119,32 @@ async def test_official_import_replays_and_delivers_empty_projections(scenario):
         async with case.assets.state.database.sessions(info={"owner_user_id": admin_id}) as session:
             count = await session.scalar(select(func.count()).select_from(AssetReferenceSet))
             assert count == info["library_count"] * 2 + info["article_count"]
+
+
+async def test_failed_prepare_preserves_successful_batch_entries_for_abort():
+    prepared_second = asyncio.Event()
+    aborted = []
+
+    class References:
+        async def prepare(self, *, change, **_kwargs):
+            if change.resource_id == "failure":
+                await prepared_second.wait()
+                raise ValueError("preparation failed")
+            prepared_second.set()
+            return change.resource_id
+
+        async def abort_after_rollback(self, _session, reference):
+            aborted.append(reference)
+
+    projections = OfficialProjections(
+        owner="test",
+        identity=None,
+        assertion="synthetic",
+        source_method="POST",
+        source_path="/official-import",
+        references=References(),
+    )
+    with pytest.raises(ValueError, match="preparation failed"):
+        await projections.prepare({("note", "failure"): set(), ("note", "prepared"): set()})
+    await projections.abort(None)
+    assert aborted == ["prepared"]

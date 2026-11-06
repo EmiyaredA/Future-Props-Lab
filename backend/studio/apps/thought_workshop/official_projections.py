@@ -1,5 +1,7 @@
 """Reserve empty Assets projections for the shipped, attachment-free package."""
 
+import asyncio
+from itertools import islice
 from uuid import uuid4
 
 from studio.apps.thought_workshop.errors import ThoughtError
@@ -20,20 +22,35 @@ class OfficialProjections:
         self.prepared = {}
 
     async def prepare(self, pins_by_resource):
-        for (kind, resource_id), pins in pins_by_resource.items():
-            if pins:
-                raise ThoughtError("官方文档包含未提供的附件")
-            self.prepared[kind, resource_id] = await self.references.prepare(
-                owner=self.owner,
-                **self.source,
-                change=PrepareReferenceChange(
-                    request_id=uuid4().hex,
-                    resource_kind=kind,
-                    resource_id=resource_id,
-                    expected_resource_revision=-1,
-                    asset_ids=[],
-                ),
+        if any(pins_by_resource.values()):
+            raise ThoughtError("官方文档包含未提供的附件")
+
+        # Each preparation owns its short storage transactions. Bound the overlap
+        # so network latency does not serialize across the entire package.
+        pending = iter(pins_by_resource)
+        while batch := tuple(islice(pending, 4)):
+            outcomes = await asyncio.gather(
+                *(self._prepare_one(kind, resource_id) for kind, resource_id in batch),
+                return_exceptions=True,
             )
+            # Record every successful preparation before propagating a failure.
+            # The caller can then abort those exact preparations after rollback.
+            for result in outcomes:
+                if isinstance(result, BaseException):
+                    raise result
+
+    async def _prepare_one(self, kind, resource_id):
+        self.prepared[kind, resource_id] = await self.references.prepare(
+            owner=self.owner,
+            **self.source,
+            change=PrepareReferenceChange(
+                request_id=uuid4().hex,
+                resource_kind=kind,
+                resource_id=resource_id,
+                expected_resource_revision=-1,
+                asset_ids=[],
+            ),
+        )
 
     async def require_active(self):
         current = await self.identity.status(
