@@ -639,3 +639,9 @@ def test_thumbnail_decoding_has_no_global_capacity_or_duplicated_implementation(
     assert "Semaphore" not in assets
     assert not (STUDIO / "apps/identity/profile_images.py").exists()
     assert "get_settings" not in (STUDIO / "apps/identity/profile.py").read_text()
+
+
+def test_thought_asset_readers_are_never_bound_to_database_sessions():
+    for base in (STUDIO / "apps/thought_workshop", STUDIO / "assembly"):
+        for path in base.rglob("*.py"):
+            assert '"thought_asset_metadata_factory"' not in path.read_text(), path

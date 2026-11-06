@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.thought_workshop.attachments import upload_attachment
 from studio.apps.thought_workshop.directory import Directory
-from studio.apps.thought_workshop.http_bindings import SessionDep
+from studio.apps.thought_workshop.http_bindings import AssetMetadataDep, SessionDep
 from studio.apps.thought_workshop.knowledge import KnowledgeBases
 from studio.apps.thought_workshop.link_preview import preview_link
 from studio.apps.thought_workshop.notes import Notes, ThoughtError, note_out
@@ -92,9 +92,13 @@ async def list_notes(
 
 
 @router.post("/notes", response_model=ThoughtNoteOut)
-async def create_note(body: ThoughtNoteCreate, session: SessionDep, principal: StudioAuth):
+async def create_note(
+    body: ThoughtNoteCreate, session: SessionDep, assets: AssetMetadataDep, principal: StudioAuth
+):
     return await call(
-        Directory(session, principal.owner_user_id, principal.user_id).create_content(body)
+        Directory(
+            session, principal.owner_user_id, principal.user_id, assets=assets
+        ).create_content(body)
     )
 
 
@@ -104,16 +108,30 @@ async def get_note(note_id: str, session: SessionDep, owner_user_id: OwnerDep):
 
 
 @router.put("/notes/{note_id}", response_model=ThoughtNoteOut)
-async def put_note(note_id: str, body: ThoughtNotePut, session: SessionDep, principal: StudioAuth):
-    return await call(Notes(session, principal.owner_user_id, principal.user_id).put(note_id, body))
+async def put_note(
+    note_id: str,
+    body: ThoughtNotePut,
+    session: SessionDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
+):
+    return await call(
+        Notes(session, principal.owner_user_id, principal.user_id, assets=assets).put(note_id, body)
+    )
 
 
 @router.post("/notes/{note_id}/operations", response_model=ThoughtNoteOut)
 async def apply_note_operations(
-    note_id: str, body: ThoughtOperationsIn, session: SessionDep, principal: StudioAuth
+    note_id: str,
+    body: ThoughtOperationsIn,
+    session: SessionDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
 ):
     return await call(
-        thought_operations(session, principal.owner_user_id, note_id, body, principal.user_id)
+        thought_operations(
+            session, principal.owner_user_id, note_id, body, principal.user_id, assets=assets
+        )
     )
 
 
@@ -141,10 +159,11 @@ async def restore_note_history(
     history_id: str,
     body: ThoughtRevisionIn,
     session: SessionDep,
+    assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await call(
-        Notes(session, principal.owner_user_id, principal.user_id).restore_history(
+        Notes(session, principal.owner_user_id, principal.user_id, assets=assets).restore_history(
             note_id, history_id, body.expected_revision
         )
     )
@@ -211,6 +230,7 @@ async def upload_image(
 async def imports(
     request: Request,
     session: SessionDep,
+    assets: AssetMetadataDep,
     principal: StudioAuth,
     upload: UploadFile = File(),
     knowledge_base_id: str | None = None,
@@ -218,7 +238,7 @@ async def imports(
 ):
     return await call(
         import_backup(
-            Notes(session, principal.owner_user_id, principal.user_id),
+            Notes(session, principal.owner_user_id, principal.user_id, assets=assets),
             request.app.state.settings,
             upload,
             knowledge_base_id,
@@ -256,9 +276,13 @@ async def knowledge_bases(
 
 
 @router.post("/knowledge-bases", response_model=KnowledgeBaseOut)
-async def create_knowledge_base(body: KnowledgeBaseIn, session: SessionDep, principal: StudioAuth):
+async def create_knowledge_base(
+    body: KnowledgeBaseIn, session: SessionDep, assets: AssetMetadataDep, principal: StudioAuth
+):
     return await call(
-        KnowledgeBases(session, principal.owner_user_id, principal.user_id).create(body)
+        KnowledgeBases(session, principal.owner_user_id, principal.user_id, assets=assets).create(
+            body
+        )
     )
 
 
@@ -270,9 +294,13 @@ async def knowledge_base(project_id: str, session: SessionDep, owner_user_id: Ow
 
 @router.put("/knowledge-bases/{project_id}", response_model=KnowledgeBaseOut)
 async def update_knowledge_base(
-    project_id: str, body: KnowledgeBasePut, session: SessionDep, owner_user_id: OwnerDep
+    project_id: str,
+    body: KnowledgeBasePut,
+    session: SessionDep,
+    assets: AssetMetadataDep,
+    owner_user_id: OwnerDep,
 ):
-    return await call(KnowledgeBases(session, owner_user_id).put(project_id, body))
+    return await call(KnowledgeBases(session, owner_user_id, assets=assets).put(project_id, body))
 
 
 @router.delete("/knowledge-bases/{project_id}", response_model=KnowledgeBaseOut)
@@ -303,10 +331,16 @@ async def directory(project_id: str, session: SessionDep, owner_user_id: OwnerDe
 
 @router.post("/knowledge-bases/{project_id}/documents", response_model=ThoughtNoteOut)
 async def create_document(
-    project_id: str, body: KnowledgeNoteCreate, session: SessionDep, principal: StudioAuth
+    project_id: str,
+    body: KnowledgeNoteCreate,
+    session: SessionDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
 ):
     return await call(
-        Directory(session, principal.owner_user_id, principal.user_id).create_note(project_id, body)
+        Directory(session, principal.owner_user_id, principal.user_id, assets=assets).create_note(
+            project_id, body
+        )
     )
 
 

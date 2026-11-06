@@ -100,20 +100,15 @@ def explicit_thought_identity_adapter():
     if "website_test_support" not in sys.modules:
         yield
         return
-    from studio.apps.asset_library.storage.file_paths import AssetStorage
     from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
-    from website_test_support import SessionLocal, app
+    from website_test_support import SessionLocal
 
     previous = dict(SessionLocal.kw.get("info") or {})
-    from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 
     SessionLocal.configure(
         info={
             **previous,
             "thought_directory_factory": LegacyAccountDirectory,
-            "thought_asset_metadata_factory": lambda session, owner: LegacyAssetMetadata(
-                session, owner, storage=AssetStorage(app.state.settings)
-            ),
         }
     )
     try:

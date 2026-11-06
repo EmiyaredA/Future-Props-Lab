@@ -183,7 +183,6 @@ async def test_real_note_save_commits_history_and_retention_as_one_outcome(insta
             }
 
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
-        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
         original_prepare = remote.prepare
 
         async def prepare_without_write_lock(*, authority, change):
@@ -205,6 +204,7 @@ async def test_real_note_save_commits_history_and_retention_as_one_outcome(insta
             source_method="PUT",
             source_path="/v1/thought-workshop/notes/note-a",
             references=service,
+            assets=Metadata(),
         )
         assert result.revision == 1
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -346,7 +346,6 @@ async def test_template_creation_commits_its_initial_asset_pins(instance):
         document={"type": "doc", "content": [{"type": "image", "attrs": {"assetId": "new"}}]},
     )
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
-        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
         result = await create_template_with_references(
             session,
             owner="alpha",
@@ -428,7 +427,6 @@ async def test_template_update_and_delete_record_exact_asset_pins(instance):
             }
 
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
-        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
         body = TemplatePut(name="After", document=replacement, expected_revision=0)
         result = await mutate_template_with_references(
             session,
@@ -571,14 +569,15 @@ async def test_note_operations_commit_receipt_and_pins_together_and_replay(insta
         references=service,
     )
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
-        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
-        result = await apply_operations_with_references(session, **args)
+        result = await apply_operations_with_references(session, assets=Metadata(), **args)
         assert result.revision == 1
-        replay = await apply_operations_with_references(session, **args)
+        replay = await apply_operations_with_references(session, assets=Metadata(), **args)
         assert replay == result and len(remote.prepared) == 1
         with pytest.raises(OperationError):
             await apply_operations_with_references(
-                session, **{**args, "body": body.model_copy(update={"expected_revision": 1})}
+                session,
+                assets=Metadata(),
+                **{**args, "body": body.model_copy(update={"expected_revision": 1})},
             )
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
         note = await session.get(ThoughtNote, "note-a")
@@ -630,7 +629,6 @@ async def test_history_restore_keeps_old_and_current_files_and_records_restore(i
             }
 
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
-        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
         await save_note_with_references(
             session,
             owner="alpha",
@@ -643,6 +641,7 @@ async def test_history_restore_keeps_old_and_current_files_and_records_restore(i
             source_method="PUT",
             source_path="/v1/thought-workshop/notes/note-a",
             references=service,
+            assets=Metadata(),
         )
         result = await restore_history_with_references(
             session,
@@ -655,6 +654,7 @@ async def test_history_restore_keeps_old_and_current_files_and_records_restore(i
             source_method="POST",
             source_path=f"/v1/thought-workshop/notes/note-a/history/{history_id}/restore",
             references=service,
+            assets=Metadata(),
         )
         assert result.revision == 2 and result.document == old
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -719,8 +719,8 @@ async def test_multitable_updates_and_restore_keep_historical_attachments(instan
 
     prefix = "/v1/thought-workshop/notes/note-a/multitable"
     async with db.sessions(info={"owner_user_id": "alpha"}) as session:
-        session.info["thought_asset_metadata_factory"] = lambda _session, _owner: Metadata()
         common = dict(
+            assets=Metadata(),
             owner="alpha",
             author_id=None,
             note_id="note-a",

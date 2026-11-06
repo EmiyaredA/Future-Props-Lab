@@ -19,13 +19,14 @@ async def create_knowledge_base_with_references(
     source_method,
     source_path,
     references,
+    assets=None,
 ):
     if source_method != "POST" or source_path != "/v1/thought-workshop/knowledge-bases":
         raise ValueError("新建知识库必须绑定原请求")
     if session.info.get("owner_user_id") != owner:
         raise ValueError("新建知识库缺少账号上下文")
 
-    bases = KnowledgeBases(session, owner, author_id)
+    bases = KnowledgeBases(session, owner, author_id, assets=assets)
     await bases.cover(body.cover_asset_id)
     project_id, home_note_id = new_id(), new_id()
     await session.rollback()
@@ -89,6 +90,7 @@ async def update_knowledge_base_with_references(
     source_method,
     source_path,
     references,
+    assets=None,
 ):
     if (
         source_method != "PUT"
@@ -98,7 +100,7 @@ async def update_knowledge_base_with_references(
     if session.info.get("owner_user_id") != owner:
         raise ValueError("更新知识库缺少账号上下文")
 
-    bases = KnowledgeBases(session, owner)
+    bases = KnowledgeBases(session, owner, assets=assets)
     current = await bases.get(project_id)
     expected = body.expected_revision
     if current.revision != expected:

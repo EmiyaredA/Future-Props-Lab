@@ -24,6 +24,7 @@ async def mutate_table_with_references(
     body=None,
     history_revision=None,
     table_id=None,
+    assets=None,
 ):
     prefix = f"/v1/thought-workshop/notes/{note_id}/multitable"
     if body is not None and history_revision is None and table_id is None:
@@ -70,7 +71,7 @@ async def mutate_table_with_references(
         await references.record(session, prepared, resource_revision=revision)
         commit_started = True
 
-    table = Multitable(session, owner, author_id)
+    table = Multitable(session, owner, author_id, assets=assets)
     try:
         if body is not None and table_id is not None:
             return await import_csv(

@@ -74,6 +74,7 @@ async def create_knowledge_base(
     request: Request,
     body: KnowledgeBaseIn,
     session: SessionDep,
+    assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await guarded(
@@ -82,6 +83,7 @@ async def create_knowledge_base(
             owner=principal.user_id,
             author_id=principal.user_id,
             body=body,
+            assets=assets,
             **context(request),
         )
     )
@@ -100,7 +102,11 @@ async def guarded(operation):
 
 @router.post("/notes", response_model=ThoughtNoteOut)
 async def create_note(
-    request: Request, body: ThoughtNoteCreate, session: SessionDep, principal: StudioAuth
+    request: Request,
+    body: ThoughtNoteCreate,
+    session: SessionDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
 ):
     return await guarded(
         create_note_with_references(
@@ -108,6 +114,7 @@ async def create_note(
             owner=principal.user_id,
             author_id=principal.user_id,
             body=body,
+            assets=assets,
             **context(request),
         )
     )
@@ -141,6 +148,7 @@ async def create_document(
     project_id: str,
     body: KnowledgeNoteCreate,
     session: SessionDep,
+    assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await guarded(
@@ -150,6 +158,7 @@ async def create_document(
             author_id=principal.user_id,
             project_id=project_id,
             body=body,
+            assets=assets,
             **context(request),
         )
     )
@@ -157,7 +166,12 @@ async def create_document(
 
 @router.put("/notes/{note_id}", response_model=ThoughtNoteOut)
 async def put_note(
-    request: Request, note_id: str, body: ThoughtNotePut, session: SessionDep, principal: StudioAuth
+    request: Request,
+    note_id: str,
+    body: ThoughtNotePut,
+    session: SessionDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
 ):
     return await guarded(
         save_note_with_references(
@@ -166,6 +180,7 @@ async def put_note(
             author_id=principal.user_id,
             note_id=note_id,
             body=body,
+            assets=assets,
             **context(request),
         )
     )
@@ -177,6 +192,7 @@ async def apply_note_operations(
     note_id: str,
     body: ThoughtOperationsIn,
     session: SessionDep,
+    assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await guarded(
@@ -186,6 +202,7 @@ async def apply_note_operations(
             author_id=principal.user_id,
             note_id=note_id,
             body=body,
+            assets=assets,
             **context(request),
         )
     )
@@ -198,6 +215,7 @@ async def restore_note_history(
     history_id: str,
     body: ThoughtRevisionIn,
     session: SessionDep,
+    assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await guarded(
@@ -208,6 +226,7 @@ async def restore_note_history(
             note_id=note_id,
             history_id=history_id,
             expected_revision=body.expected_revision,
+            assets=assets,
             **context(request),
         )
     )
@@ -334,7 +353,12 @@ async def delete_template(
     tags=["thought-multitable"],
 )
 async def table_operations(
-    request: Request, note_id: str, body: BatchIn, session: SessionDep, principal: StudioAuth
+    request: Request,
+    note_id: str,
+    body: BatchIn,
+    session: SessionDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
 ):
     return await guarded(
         mutate_table_with_references(
@@ -344,6 +368,7 @@ async def table_operations(
             note_id=note_id,
             expected_revision=body.expected_revision,
             body=body,
+            assets=assets,
             **context(request),
         )
     )
@@ -362,6 +387,7 @@ async def table_restore(
     revision: int,
     body: RestoreIn,
     session: SessionDep,
+    assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await guarded(
@@ -372,6 +398,7 @@ async def table_restore(
             note_id=note_id,
             expected_revision=body.expected_revision,
             history_revision=revision,
+            assets=assets,
             **context(request),
         )
     )
@@ -390,6 +417,7 @@ async def table_csv_import(
     table_id: str,
     body: CsvIn,
     session: SessionDep,
+    assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await guarded(
@@ -401,6 +429,7 @@ async def table_csv_import(
             table_id=table_id,
             expected_revision=body.expected_revision,
             body=body,
+            assets=assets,
             **context(request),
         )
     )
@@ -428,11 +457,17 @@ async def update_knowledge_base(
     project_id: str,
     body: KnowledgeBasePut,
     session: SessionDep,
+    assets: AssetMetadataDep,
     owner_user_id: OwnerDep,
 ):
     return await guarded(
         update_knowledge_base_with_references(
-            session, owner=owner_user_id, project_id=project_id, body=body, **context(request)
+            session,
+            owner=owner_user_id,
+            project_id=project_id,
+            body=body,
+            assets=assets,
+            **context(request),
         )
     )
 

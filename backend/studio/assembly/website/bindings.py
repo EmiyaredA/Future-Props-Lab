@@ -227,6 +227,7 @@ def bind_components(app, settings, database, *, read_cloud_settings):
         return LegacyAssetMetadata(session, owner, storage=AssetStorage(settings))
 
     app.state.article_assets = thought_metadata
+    app.state.thought_source_assets = thought_metadata
     app.state.thought_assets = AssetMetadataBindings(
         for_request=lambda _request, session, principal: thought_metadata(
             session, principal.user_id
@@ -249,13 +250,6 @@ def bind_components(app, settings, database, *, read_cloud_settings):
     )
     import_presentation = partial(import_legacy_presentation, settings=settings)
     app.state.presentation_importer = lambda _request: import_presentation
-    sessions.configure(
-        info={
-            **sessions.kw.get("info", {}),
-            "thought_asset_metadata_factory": thought_metadata,
-        }
-    )
-
     app.state.thought_directory = DirectoryBindings(
         for_request=lambda _request, session, _principal: LegacyAccountDirectory(session)
     )

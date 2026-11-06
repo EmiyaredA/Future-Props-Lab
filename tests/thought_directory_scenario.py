@@ -24,6 +24,7 @@ from studio.apps.thought_workshop.transport.website.community_tables import (
     router as community_tables_router,
 )
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadataBindings
 from studio.assembly.independent.identity.application import create_app
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.account_directory import DirectoryQuery
@@ -81,6 +82,9 @@ class IdentityTransport(httpx.AsyncBaseTransport):
 transport = IdentityTransport()
 thought = FastAPI()
 thought.state.database = database
+# This scenario exercises Identity and never creates an asset reference.
+thought.state.thought_assets = AssetMetadataBindings(for_request=lambda *_: None)
+thought.state.thought_source_assets = lambda *_: None
 thought.state.thought_directory = DirectoryBindings(
     for_request=lambda request, _session, principal: HttpAccountDirectory(
         principal=principal,

@@ -22,6 +22,7 @@ async def save_note_with_references(
     source_method,
     source_path,
     references,
+    assets=None,
     _restoring=False,
 ):
     """Prepare exact current/history pins, save the note, and record the outcome atomically.
@@ -42,7 +43,7 @@ async def save_note_with_references(
         raise ValueError("笔记引用修改必须绑定原笔记保存请求")
     if session.info.get("owner_user_id") != owner:
         raise ValueError("笔记引用修改缺少账号上下文")
-    notes = Notes(session, owner, author_id)
+    notes = Notes(session, owner, author_id, assets=assets)
     current = await notes.get(note_id)
     if current.revision != body.expected_revision:
         await notes.conflict(note_id, body.expected_revision)
@@ -140,7 +141,17 @@ async def purge_note_with_references(
 
 
 async def apply_operations_with_references(
-    session, *, owner, author_id, note_id, body, assertion, source_method, source_path, references
+    session,
+    *,
+    owner,
+    author_id,
+    note_id,
+    body,
+    assertion,
+    source_method,
+    source_path,
+    references,
+    assets=None,
 ):
     """Persist the operation receipt and reference decision in the same note transaction."""
     from studio.apps.thought_workshop.notes import note_out
@@ -153,7 +164,7 @@ async def apply_operations_with_references(
         raise ValueError("笔记操作必须绑定原笔记请求")
     if session.info.get("owner_user_id") != owner:
         raise ValueError("笔记引用修改缺少账号上下文")
-    notes = Notes(session, owner, author_id)
+    notes = Notes(session, owner, author_id, assets=assets)
     current = note_out(await notes.get(note_id))
     key = dict(owner_user_id=owner, kind="thought", resource_id=note_id, body=body)
     saved = await replay(session, **key)
@@ -213,6 +224,7 @@ async def restore_history_with_references(
     source_method,
     source_path,
     references,
+    assets=None,
 ):
     from studio.apps.thought_workshop.history import CONTENT_FIELDS, History
     from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteIn, ThoughtNotePut
@@ -223,7 +235,7 @@ async def restore_history_with_references(
         raise ValueError("历史恢复必须绑定原笔记请求")
     if session.info.get("owner_user_id") != owner:
         raise ValueError("笔记引用修改缺少账号上下文")
-    current = await Notes(session, owner, author_id).get(note_id)
+    current = await Notes(session, owner, author_id, assets=assets).get(note_id)
     selected = await History(session).get(note_id, history_id)
     body = ThoughtNotePut(
         **{
@@ -244,5 +256,6 @@ async def restore_history_with_references(
         source_method=source_method,
         source_path=source_path,
         references=references,
+        assets=assets,
         _restoring=True,
     )

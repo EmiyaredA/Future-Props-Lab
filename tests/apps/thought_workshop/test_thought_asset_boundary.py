@@ -14,7 +14,7 @@ from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
 from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.thought_workshop.asset_metadata import HttpAssetMetadata
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset, metadata
+from studio.apps.thought_workshop.website.asset_metadata import LibraryAsset, describe_assets
 from studio.assembly.independent.asset_library.application import create_app
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import Actor, issue_context
@@ -231,13 +231,10 @@ async def test_real_assets_http_is_consumed_without_storage_paths(instance, tmp_
     assert target.read_bytes() == b"private note attachment"
 
 
-async def test_unbound_or_mismatched_session_never_falls_back_to_assets_database():
-    from types import SimpleNamespace
-
+async def test_missing_asset_reader_rejects_references_without_database_fallback():
+    assert await describe_assets(None, set()) == {}
     with pytest.raises(ThoughtError, match="尚未连接"):
-        metadata(SimpleNamespace(info={"owner_user_id": "alpha"}), "alpha")
-    with pytest.raises(ThoughtError, match="不匹配"):
-        metadata(SimpleNamespace(info={"owner_user_id": "alpha"}), "beta")
+        await describe_assets(None, {"asset-a"})
 
 
 async def test_interrupted_download_removes_only_its_partial_file(tmp_path):
@@ -317,12 +314,7 @@ async def test_creation_prefetches_before_writer_reservation(instance, tmp_path)
         transport=Transport(),
     )
     try:
-        async with database.sessions(
-            info={
-                "owner_user_id": "alpha",
-                "thought_asset_metadata_factory": lambda _session, _owner: port,
-            }
-        ) as session:
+        async with database.sessions(info={"owner_user_id": "alpha"}) as session:
             knowledge = await KnowledgeBases(session, "alpha").create(KnowledgeBaseIn(title="test"))
             wrote = False
             body = ThoughtNoteCreate(
@@ -343,7 +335,7 @@ async def test_creation_prefetches_before_writer_reservation(instance, tmp_path)
                     ],
                 },
             )
-            result = await Directory(session, "alpha").create_content(body)
+            result = await Directory(session, "alpha", assets=port).create_content(body)
             assert result.document["content"][0]["attrs"]["filename"] == "note.txt"
             assert network == 2 and wrote
     finally:

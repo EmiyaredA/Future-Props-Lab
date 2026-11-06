@@ -30,13 +30,14 @@ from studio.apps.thought_workshop.multitable.validation import (
 from studio.apps.thought_workshop.notes import Notes
 from studio.apps.thought_workshop.publication.lifecycle import touch_note
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
-from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.apps.thought_workshop.website.asset_metadata import describe_assets
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 
 
 class Multitable:
-    def __init__(self, session, owner_user_id, author_id=None):
+    def __init__(self, session, owner_user_id, author_id=None, *, assets=None):
+        self.assets = assets
         self.session, self.owner_user_id, self.author_id = session, owner_user_id, author_id
 
     async def note(self, note_id):
@@ -127,10 +128,8 @@ class Multitable:
         )
 
     async def validate_asset_refs(self, state, *, assets=None):
-        ids = asset_ids(state)
-        if ids:
-            port = assets if assets is not None else metadata(self.session, self.owner_user_id)
-            await port.describe(ids)
+        reader = self.assets if assets is None else assets
+        await describe_assets(reader, asset_ids(state))
 
     async def validate_local_refs(self, state, before):
         def notes(s):

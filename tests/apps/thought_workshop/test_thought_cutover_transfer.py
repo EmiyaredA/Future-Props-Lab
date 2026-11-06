@@ -715,11 +715,13 @@ def test_document_relay_resume_and_verify(tmp_path, sealed_thought):
             async with database.sessions(info={"owner_user_id": str(owner)}) as db:
                 request, expected = fixture["operation_receipts"][0]
                 body = ThoughtOperationsIn.model_validate(request)
-                recorded = await apply_operations(db, str(owner), fixture["note_id"], body)
+                recorded = await apply_operations(
+                    db, str(owner), fixture["note_id"], body, assets=None
+                )
                 assert recorded.model_dump(mode="json") == expected
                 changed = body.model_copy(update={"expected_revision": body.expected_revision + 1})
                 with pytest.raises(OperationError) as conflict:
-                    await apply_operations(db, str(owner), fixture["note_id"], changed)
+                    await apply_operations(db, str(owner), fixture["note_id"], changed, assets=None)
                 assert conflict.value.code == "idempotency_conflict"
         finally:
             await database.close()

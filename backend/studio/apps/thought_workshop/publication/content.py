@@ -103,10 +103,12 @@ async def write_note_edit(session, principal, pub_id, note_id, edit, *, assets=N
     )
 
 
-async def save_note(session, principal, pub_id, note_id, body):
+async def save_note(session, principal, pub_id, note_id, body, *, source_assets):
     await begin_write(session)
     edit = await authorize_note_edit(session, principal, pub_id, note_id, body)
-    result = await write_note_edit(session, principal, pub_id, note_id, edit)
+    result = await write_note_edit(
+        session, principal, pub_id, note_id, edit, assets=source_assets(session, edit.owner)
+    )
     await session.commit()
     return result
 

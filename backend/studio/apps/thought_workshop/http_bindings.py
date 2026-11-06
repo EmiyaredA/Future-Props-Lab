@@ -25,17 +25,6 @@ async def bind_ports(request, session, principal):
         await directory.profiles(ids=(principal.user_id,))
     except ThoughtError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
-    if "thought_asset_metadata_factory" not in session.info and isinstance(
-        getattr(request.app.state, "thought_assets", None), AssetMetadataBindings
-    ):
-        asset_port = await request_asset_metadata(request, session, principal)
-
-        def asset_metadata_for_owner(_session, owner):
-            if owner != principal.user_id:
-                raise ThoughtError("素材账号上下文不匹配", 403, "asset_context_mismatch")
-            return asset_port
-
-        session.info["thought_asset_metadata_factory"] = asset_metadata_for_owner
     session.info["thought_directory"] = directory
     return session
 

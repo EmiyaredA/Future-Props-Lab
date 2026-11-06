@@ -21,10 +21,10 @@ class Community:
         self.sessions = source_sessions(request_session)
         self.principal = principal
 
-    async def run(self, operation, *args):
+    async def run(self, operation, *args, **kwargs):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
-            return await operation(session, self.principal, *args)
+            return await operation(session, self.principal, *args, **kwargs)
 
     async def list(self, query="", mine=False, favorites=False, offset=0, limit=24, official=None):
         return await self.run(catalog.listing, query, mine, favorites, offset, limit, official)
@@ -35,8 +35,8 @@ class Community:
     async def get_note(self, id, note):
         return await self.run(content.get_note, id, note)
 
-    async def save_note(self, id, note, body):
-        return await self.run(content.save_note, id, note, body)
+    async def save_note(self, id, note, body, *, source_assets):
+        return await self.run(content.save_note, id, note, body, source_assets=source_assets)
 
     async def config(self, library):
         return await self.run(mutations.config, library)

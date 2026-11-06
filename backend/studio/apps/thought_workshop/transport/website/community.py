@@ -76,13 +76,18 @@ async def note(publication_id: str, note_id: str, session: SessionDep, principal
 
 @router.put("/publications/{publication_id}/notes/{note_id}", response_model=CommunityNote)
 async def save(
+    request: Request,
     publication_id: str,
     note_id: str,
     body: CommunityNotePut,
     session: SessionDep,
     principal: PublicStudioAuth,
 ):
-    return await call(Community(session, principal).save_note(publication_id, note_id, body))
+    return await call(
+        Community(session, principal).save_note(
+            publication_id, note_id, body, source_assets=request.app.state.thought_source_assets
+        )
+    )
 
 
 @router.get("/publications/{publication_id}/permissions", response_model=list[ArticleConfig])

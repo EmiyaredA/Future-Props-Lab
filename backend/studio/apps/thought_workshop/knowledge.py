@@ -15,7 +15,7 @@ from studio.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBasePut,
 )
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
-from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.apps.thought_workshop.website.asset_metadata import describe_assets
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 
@@ -84,9 +84,7 @@ class KnowledgeBases:
     async def cover(self, asset_id: str | None) -> None:
         if asset_id is None:
             return
-        rows = await (
-            self.assets if self.assets is not None else metadata(self.session, self.owner_user_id)
-        ).describe({asset_id})
+        rows = await describe_assets(self.assets, {asset_id})
         if rows[asset_id].media_kind != "image":
             raise ThoughtError("封面图片不存在", 404, "not_found")
 

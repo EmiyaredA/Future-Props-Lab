@@ -33,7 +33,7 @@ from studio.apps.thought_workshop.storage.models import (
     ThoughtNote,
     ThoughtNoteAsset,
 )
-from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.apps.thought_workshop.website.asset_metadata import describe_assets
 from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.runtime.database.operation_receipts import forget
 from studio.runtime.revisions import RevisionConflictError
@@ -172,11 +172,7 @@ class Notes:
         images = image_ids(body.document)
         body.schema_version = 3
         if ids:
-            assets = await (
-                self.assets
-                if self.assets is not None
-                else metadata(self.session, self.owner_user_id)
-            ).describe(ids)
+            assets = await describe_assets(self.assets, ids)
             if any(assets[key].media_kind != "image" for key in images):
                 raise ThoughtError("图片引用必须为图片文件")
             for node in attachment_nodes(body.document):

@@ -1,6 +1,6 @@
 """Browser Session only; target grants are checked separately from parent grants."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
@@ -77,6 +77,7 @@ async def records(
 
 @router.post("/operations", response_model=BatchOut)
 async def operations(
+    request: Request,
     publication_id: str,
     note_id: str,
     body: BatchIn,
@@ -85,5 +86,11 @@ async def operations(
     parent_note_id: str | None = None,
 ):
     return await call(
-        CommunityTables(session, principal).apply(publication_id, note_id, body, parent_note_id)
+        CommunityTables(session, principal).apply(
+            publication_id,
+            note_id,
+            body,
+            parent_note_id,
+            source_assets=request.app.state.thought_source_assets,
+        )
     )
