@@ -37,7 +37,7 @@ from studio.contracts.model_service.schemas.model_service import ProviderIn
 from studio.contracts.model_service.schemas.model_test import ModelTestVideoGenerationIn
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.secrets import SecretCipher
-from website_test_support import SessionLocal
+from website_test_support import SessionLocal, app
 
 V20 = "doubao-seedance-2-0-260128"
 V25 = "doubao-seedance-2-5-260628"
@@ -352,7 +352,7 @@ async def test_workshop_and_model_test_options_and_admission_use_version_capabil
         session.add(model)
         await session.commit()
         pid, mid = project.id, model.id
-        generation = VisualGeneration(session)
+        generation = VisualGeneration(session, app.state.settings)
         options = await generation.options()
         assert next(m for m in options.models if m.id == mid).video_capabilities.duration_max == 30
         test = ModelTestGeneration(session, "test-user", settings=get_settings())

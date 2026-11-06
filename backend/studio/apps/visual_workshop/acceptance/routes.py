@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from studio.apps.model_service.catalog.visual import acceptance_models
 from studio.apps.visual_workshop.acceptance.http_errors import errors
@@ -28,6 +28,7 @@ async def list_acceptance_models(project_id: str, session: SessionDep, owner_use
     "/projects/{project_id}/acceptance/runs/{run_id}/samples", response_model=AcceptanceRunOut
 )
 async def sample_acceptance_video(
+    request: Request,
     project_id: str,
     run_id: str,
     body: AcceptanceSampleIn,
@@ -35,7 +36,9 @@ async def sample_acceptance_video(
     owner_user_id: OwnerDep,
 ):
     with errors():
-        return await Reviews(session, owner_user_id).sample(project_id, run_id, body)
+        return await Reviews(session, owner_user_id).sample(
+            project_id, run_id, body, settings=request.app.state.settings
+        )
 
 
 @router.put(

@@ -8,12 +8,12 @@ from studio.apps.visual_workshop.acceptance.context_values import (
     resolve_context as resolve_with_assets,
 )
 from studio.apps.visual_workshop.acceptance.project_access import AcceptanceError
-from studio.config.settings import get_settings
 
 
-async def resolve_context(session, owner_user_id, project_id, node_id, scheme_id, output_id=None):
+async def resolve_context(
+    session, owner_user_id, project_id, node_id, scheme_id, output_id=None, *, storage: AssetStorage
+):
     async def load_assets(identities):
-        storage = AssetStorage(get_settings())
         result = {}
         for identity in sorted(identities):
             try:

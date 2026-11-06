@@ -216,12 +216,12 @@ async def _list_assets(
 
 
 async def _list_generation_options(
-    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions
+    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions, settings
 ) -> Observation:
     del arguments
     async with sessions() as session:
         bind_owner(session.sync_session, _scope_owner(context))
-        options = await VisualGeneration(session).options()
+        options = await VisualGeneration(session, settings).options()
     data = options.model_dump(mode="json")
     return Observation(
         context.tool_call_id,
@@ -313,7 +313,7 @@ async def _apply_canvas_changes(
 
 
 async def _start_generation_on_canvas(
-    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions, admission=None
+    arguments: dict[str, Any], context: ToolExecutionContext, *, sessions, settings, admission=None
 ) -> Observation:
     project_id = str(context.scope["project_id"])
     task_payload = dict(arguments.get("task") or {})
@@ -344,7 +344,7 @@ async def _start_generation_on_canvas(
                     canvas_node_id=existing.id, expected_canvas_revision=current.revision
                 )
             body = _generation_input.validate_python(task_payload)
-            task = await VisualGeneration(session).prepare_create(project_id, body)
+            task = await VisualGeneration(session, settings).prepare_create(project_id, body)
             if existing:
                 node = {**existing.model_dump(mode="json"), "generation_task_id": task.id}
             else:
@@ -409,15 +409,17 @@ async def _start_generation_on_canvas(
     )
 
 
-def tool_handlers(sessions, admission):
+def tool_handlers(sessions, admission, *, settings):
     return {
         "read_canvas": partial(_read_canvas, sessions=sessions),
         "list_project_assets": partial(_list_assets, sessions=sessions),
-        "list_generation_options": partial(_list_generation_options, sessions=sessions),
+        "list_generation_options": partial(
+            _list_generation_options, sessions=sessions, settings=settings
+        ),
         "inspect_generation_task": partial(_inspect_generation_task, sessions=sessions),
         "apply_canvas_changes": partial(_apply_canvas_changes, sessions=sessions),
         "start_generation_on_canvas": partial(
-            _start_generation_on_canvas, sessions=sessions, admission=admission
+            _start_generation_on_canvas, sessions=sessions, admission=admission, settings=settings
         ),
     }
 
@@ -425,12 +427,13 @@ def tool_handlers(sessions, admission):
 def visual_agent_tools(
     *,
     sessions,
+    settings,
     image_model_id: str | None = None,
     video_model_id: str | None = None,
     admission=None,
 ) -> tuple[ToolBinding, ...]:
     return bind_tools(
-        tool_handlers(sessions, admission),
+        tool_handlers(sessions, admission, settings=settings),
         image_model_id=image_model_id,
         video_model_id=video_model_id,
     )
@@ -439,6 +442,7 @@ def visual_agent_tools(
 def build_visual_agent_definition(
     *,
     sessions,
+    settings,
     owner_user_id: str,
     project_id: str,
     model: str,
@@ -451,7 +455,7 @@ def build_visual_agent_definition(
 ) -> AgentDefinition:
     return build_definition(
         context_source=lambda: visual_context_source(owner_user_id, project_id, sessions=sessions),
-        handlers=tool_handlers(sessions, admission),
+        handlers=tool_handlers(sessions, admission, settings=settings),
         model=model,
         tools_enabled=tools_enabled,
         image_model_id=image_model_id,

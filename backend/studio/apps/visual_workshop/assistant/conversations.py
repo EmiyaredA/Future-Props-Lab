@@ -39,7 +39,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,
 )
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import iso_utc, utc_now
 
@@ -86,9 +86,9 @@ class PreparedAssistantGeneration:
 
 
 class VisualAssistantConversations(VisualAssistantAttachmentMixin):
-    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings) -> None:
         self.session = session
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
 
     async def _project(self, project_id: str) -> VisualWorkshopProject:

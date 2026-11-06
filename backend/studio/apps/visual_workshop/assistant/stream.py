@@ -156,6 +156,7 @@ async def assistant_events(
     prepared: PreparedAssistantGeneration,
     *,
     sessions,
+    settings,
     admission=None,
     transport_resolver,
     decrypt: Callable[[str], str],
@@ -176,6 +177,7 @@ async def assistant_events(
         video_model_slug=prepared.video_model_slug,
         admission=admission,
         sessions=sessions,
+        settings=settings,
     )
     adapter = build_model_adapter(prepared, key, transport_resolver=transport_resolver)
     harness = ReactiveToolLoop(

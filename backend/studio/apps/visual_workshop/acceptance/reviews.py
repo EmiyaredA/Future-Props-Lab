@@ -5,11 +5,10 @@ from studio.apps.visual_workshop.acceptance.review_records import ReviewRecords
 from studio.apps.visual_workshop.acceptance.runs import run_out
 from studio.apps.visual_workshop.acceptance.sample_values import positions
 from studio.apps.visual_workshop.canvas import VisualCanvasDocuments
-from studio.config.settings import get_settings
 
 
 class Reviews(ReviewRecords):
-    async def sample(self, project_id, run_id, body):
+    async def sample(self, project_id, run_id, body, *, settings):
 
         row = await self.row(project_id, run_id)
         if row.scheme_id == "legacy" or row.decision == "historical":
@@ -25,7 +24,7 @@ class Reviews(ReviewRecords):
         # Decode before claiming the review revision, avoiding a long writer transaction.
         evidence, paths = await extract_evidence(
             self.session,
-            get_settings(),
+            settings,
             row,
             row.snapshot["output"]["asset_id"],
             positions(row.snapshot["metadata"]["duration_ms"], body.start_ms, body.end_ms),

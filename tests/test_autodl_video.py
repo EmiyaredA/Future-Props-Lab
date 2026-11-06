@@ -36,7 +36,7 @@ from studio.contracts.model_service.schemas.model_inference import InferenceTask
 from studio.contracts.model_service.schemas.model_service import ProviderIn
 from studio.contracts.model_service.schemas.model_test import ModelTestVideoGenerationIn
 from studio.runtime.secrets import SecretCipher
-from website_test_support import SessionLocal
+from website_test_support import SessionLocal, app
 
 
 def request(model):
@@ -362,7 +362,7 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
                     inference_ids,
                 )
         await session.commit()
-        visual = VisualGeneration(session)
+        visual = VisualGeneration(session, app.state.settings)
         test = ModelTestGeneration(session, "test-user", settings=get_settings())
         for option in ((await visual.options()).models, (await test.options()).items):
             selected = next(item for item in option if item.id == model.id)

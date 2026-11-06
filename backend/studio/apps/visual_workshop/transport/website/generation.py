@@ -19,8 +19,8 @@ router = APIRouter(prefix="/visual-workshop", tags=["visual-generation"])
 
 
 @router.get("/generation-options", response_model=GenerationOptionsOut)
-async def generation_options(session: SessionDep) -> GenerationOptionsOut:
-    return await VisualGeneration(session).options()
+async def generation_options(request: Request, session: SessionDep) -> GenerationOptionsOut:
+    return await VisualGeneration(session, request.app.state.settings).options()
 
 
 @router.post(
@@ -34,7 +34,7 @@ async def create_generation_task(
     body: GenerationTaskCreateIn,
 ) -> GenerationTaskOut:
     try:
-        result = await VisualGeneration(session).create(
+        result = await VisualGeneration(session, request.app.state.settings).create(
             project_id, body, admission=task_admission(request, session, "visual")
         )
         return result
@@ -53,7 +53,7 @@ async def create_generation_batch(
     body: ImageGenerationBatchCreateIn,
 ) -> GenerationBatchOut:
     try:
-        result = await VisualGeneration(session).create_batch(
+        result = await VisualGeneration(session, request.app.state.settings).create_batch(
             project_id, body, admission=task_admission(request, session, "visual")
         )
         return result
@@ -66,12 +66,15 @@ async def create_generation_batch(
     response_model=GenerationBatchOut,
 )
 async def create_image_composition(
+    request: Request,
     session: SessionDep,
     project_id: str,
     body: ImageCompositionCreateIn,
 ) -> GenerationBatchOut:
     try:
-        return await VisualGeneration(session).create_composition(project_id, body)
+        return await VisualGeneration(session, request.app.state.settings).create_composition(
+            project_id, body
+        )
     except GenerationError as exc:
         raise generation_error(exc) from None
 
@@ -80,8 +83,12 @@ async def create_image_composition(
     "/generation-batches/{batch_id}/retry-composition",
     response_model=GenerationBatchOut,
 )
-async def retry_image_composition(session: SessionDep, batch_id: str) -> GenerationBatchOut:
+async def retry_image_composition(
+    request: Request, session: SessionDep, batch_id: str
+) -> GenerationBatchOut:
     try:
-        return await VisualGeneration(session).retry_composition(batch_id)
+        return await VisualGeneration(session, request.app.state.settings).retry_composition(
+            batch_id
+        )
     except GenerationError as exc:
         raise generation_error(exc) from None

@@ -32,6 +32,7 @@ def test_interview_file_scope_is_explicit():
         "motion_compositor",
         "presentation_workshop",
         "video_editor",
+        "visual_workshop",
     ],
 )
 def test_migrated_apps_never_select_process_global_configuration(application):

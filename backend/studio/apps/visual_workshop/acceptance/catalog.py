@@ -8,7 +8,6 @@ from app.console.governance.code_agents import authorized
 from studio.apps.model_service.catalog.visual import fixed_acceptance_model as fixed_model
 from studio.apps.model_service.providers.visual_review import fixed_connection_signature
 from studio.apps.visual_workshop.acceptance.schemes import SCHEMES, catalog_out, scheme_out
-from studio.config.settings import get_settings
 
 
 def cli_configuration(settings, scheme_id):
@@ -19,10 +18,7 @@ def cli_configuration(settings, scheme_id):
     return agent_id, path, set(filter(None, users.split(os.pathsep)))
 
 
-async def scheme_status(
-    session, owner_user_id, user_id, identity, *, check_cli=True, settings=None
-):
-    settings = settings or get_settings()
+async def scheme_status(session, owner_user_id, user_id, identity, *, settings, check_cli=True):
     title, kind = SCHEMES[identity]
     label, slug, provider_kind = title, "", ""
     if kind == "model_api":
@@ -47,9 +43,12 @@ async def scheme_status(
     )
 
 
-async def catalog(session, owner_user_id, user_id):
+async def catalog(session, owner_user_id, user_id, *, settings):
     return catalog_out(
-        [await scheme_status(session, owner_user_id, user_id, key) for key in SCHEMES]
+        [
+            await scheme_status(session, owner_user_id, user_id, key, settings=settings)
+            for key in SCHEMES
+        ]
     )
 
 

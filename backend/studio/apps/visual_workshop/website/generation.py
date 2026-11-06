@@ -47,7 +47,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualGenerationTask,
 )
 from studio.apps.visual_workshop.website.composition import create_composition, retry_composition
-from studio.config.settings import Settings, get_settings
+from studio.config.settings import Settings
 from studio.contracts.asset_library.file_types import REFERENCE_IMAGE_MIME_TYPES
 from studio.contracts.model_service.schemas.visual_catalog import GenerationOptionsOut
 from studio.runtime.tasks.task_admission import TaskAdmission
@@ -68,9 +68,9 @@ REFERENCE_MIME_TYPES = {
 
 
 class VisualGeneration(GenerationRecords):
-    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings) -> None:
         super().__init__(session)
-        self.settings = settings or get_settings()
+        self.settings = settings
         self.storage = AssetStorage(self.settings)
 
     async def options(self) -> GenerationOptionsOut:

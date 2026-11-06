@@ -373,7 +373,7 @@ async def test_generated_grid_placeholders_avoid_existing_cards_and_preserve_tas
             session.add_all(tasks)
             await session.flush()
             await attach_grid_nodes(
-                VisualGeneration(session),
+                VisualGeneration(session, app.state.settings),
                 project_id=project,
                 node_id="root",
                 expected_revision=canvas["revision"],

@@ -15,8 +15,6 @@ from studio.apps.model_service.storage.models.model_service import ModelEntry, M
 from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
-from studio.config.settings import get_settings
-from studio.config.settings import get_settings as isolated_settings
 from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal, app
 
@@ -64,8 +62,8 @@ async def configured_model(monkeypatch):
         session.add(model)
         await session.commit()
         identity = model.id
-    monkeypatch.setattr(get_settings(), "fpl_acceptance_model_owner_user_id", "test-user")
-    monkeypatch.setattr(get_settings(), "fpl_acceptance_model_id", identity)
+    monkeypatch.setattr(app.state.settings, "fpl_acceptance_model_owner_user_id", "test-user")
+    monkeypatch.setattr(app.state.settings, "fpl_acceptance_model_id", identity)
     return identity
 
 
@@ -224,8 +222,8 @@ async def process(client, base, run, **kwargs):
     await AcceptanceRunner(
         **kwargs,
         session_factory=SessionLocal,
-        settings=get_settings(),
-        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        settings=app.state.settings,
+        decrypt=SecretCipher(app.state.settings.fpl_secrets_key).decrypt,
     ).process(run["id"])
     return (await client.get(f"{base}/acceptance/runs/{run['id']}")).json()
 
@@ -482,8 +480,8 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
     await AcceptanceRunner(
         transport=api_transport(),
         session_factory=SessionLocal,
-        settings=get_settings(),
-        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        settings=app.state.settings,
+        decrypt=SecretCipher(app.state.settings.fpl_secrets_key).decrypt,
     ).process(queued["id"])
     assert (await client.get(f"{base}/acceptance/runs/{queued['id']}")).json()[
         "status"
@@ -491,8 +489,8 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
     interrupted = await start(client, base, "interrupted")
     await AcceptanceRunner(
         session_factory=SessionLocal,
-        settings=get_settings(),
-        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+        settings=app.state.settings,
+        decrypt=SecretCipher(app.state.settings.fpl_secrets_key).decrypt,
     ).recover()
     assert (await client.get(f"{base}/acceptance/runs/{interrupted['id']}")).json()[
         "status"
@@ -502,9 +500,9 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
 
     async with SessionLocal() as session:
         with pytest.raises(AcceptanceError) as failure:
-            await NodeAcceptance(session, "other-workspace", "other-user").get(
-                base.split("/")[-1], "shot"
-            )
+            await NodeAcceptance(
+                session, "other-workspace", "other-user", settings=app.state.settings
+            ).get(base.split("/")[-1], "shot")
         assert failure.value.status == 404
 
 
@@ -522,8 +520,8 @@ async def test_agent_task_report_and_scoped_media_with_fake_executor(
     monkeypatch.setattr(agents, "probe", available)
     monkeypatch.setattr("studio.apps.visual_workshop.acceptance.catalog.probe", available)
     prefix = "codex" if kind == "codex" else "claude"
-    monkeypatch.setattr(get_settings(), f"fpl_acceptance_{prefix}_executable", "/fake/agent")
-    monkeypatch.setattr(get_settings(), f"fpl_acceptance_{prefix}_user_ids", "test-user")
+    monkeypatch.setattr(app.state.settings, f"fpl_acceptance_{prefix}_executable", "/fake/agent")
+    monkeypatch.setattr(app.state.settings, f"fpl_acceptance_{prefix}_user_ids", "test-user")
     _, base, *_ = await setup(client, video)
     await select_scheme(client, base, kind)
     roots = []
@@ -596,7 +594,7 @@ async def test_concurrent_retry_freezes_one_run_and_unreadable_references_are_ac
 
     async with SessionLocal() as session:
         source = await session.get(VisualAsset, value["inputs"][0]["asset_id"])
-        path = AssetStorage(get_settings()).path_for(source)
+        path = AssetStorage(app.state.settings).path_for(source)
     backup = path.with_suffix(".unavailable")
     path.rename(backup)
     try:
@@ -629,3 +627,104 @@ async def test_queued_execution_revalidates_actor_and_frozen_connection(client, 
         await session.commit()
     failed = await process(client, base, run, transport=api_transport())
     assert failed["status"] == "failed" and "连接已变化" in failed["error_message"]
+
+
+async def add_isolated_model(client, kind, slug, capabilities):
+    catalog = await client.get("/v1/model-providers")
+    assert catalog.status_code == 200, catalog.text
+    provider = await client.post(
+        "/v1/model-providers",
+        json={
+            "expected_catalog_revision": catalog.json()["revision"],
+            "name": f"Isolation fixture {kind}",
+            "kind": kind,
+            "base_url": "https://provider.example.test/v1",
+            "api_key": "synthetic-test-credential",
+        },
+    )
+    assert provider.is_success, provider.text
+    created = provider.json()
+    model = await client.post(
+        f"/v1/model-providers/{created['provider']['id']}/models",
+        json={
+            "expected_catalog_revision": created["revision"],
+            "slug": slug,
+            "capabilities": capabilities,
+        },
+    )
+    assert model.is_success, model.text
+    return model.json()["model"]["id"]
+
+
+@pytest.mark.real_auth
+async def test_visual_configuration_is_owned_by_each_website(tmp_path, video):
+    from contextlib import AsyncExitStack
+
+    from tests.test_account_system import login_and_change_password, unsafe_headers
+
+    from db.migrations.runner import apply_migrations
+    from studio.assembly.website.account_provisioning import create_account
+    from studio.assembly.website.application import create_app
+
+    async with AsyncExitStack() as stack:
+        sites = []
+        for index in range(2):
+            settings = app.state.settings.model_copy(
+                update={
+                    "fpl_database_path": str(tmp_path / str(index) / "website.db"),
+                    "fpl_temp_media_upload_url": "https://upload.example.test"
+                    if index == 0
+                    else "",
+                    "fpl_acceptance_model_owner_user_id": "",
+                    "fpl_acceptance_model_id": "",
+                }
+            )
+            apply_migrations(settings.database_path)
+            website = create_app(settings)
+            stack.push_async_callback(website.state.database.engine.dispose)
+            async with website.state.database.sessions() as session:
+                user, password = await create_account(
+                    session, username="visual-admin", display_name="Visual", is_platform_admin=True
+                )
+                owner = user.id
+            client = await stack.enter_async_context(
+                httpx.AsyncClient(
+                    transport=httpx.ASGITransport(app=website), base_url="http://test"
+                )
+            )
+            await login_and_change_password(client, "visual-admin", password)
+            client.headers.update(unsafe_headers(client))
+            generation = await add_isolated_model(
+                client, "volcengine_video", "doubao-seedance-2-5-260628", ["video_generation"]
+            )
+            review = await add_isolated_model(
+                client, "openai", "fixture-vision", ["chat", "vision"]
+            )
+            settings.fpl_acceptance_model_owner_user_id = owner
+            settings.fpl_acceptance_model_id = review if index == 0 else ""
+            _, base, image, _ = await setup(client, video)
+            await select_scheme(client, base)
+            sites.append((client, settings, owner, generation, base, image))
+
+        for index, (client, settings, owner, generation, base, image) in enumerate(sites):
+            options = await client.get("/v1/visual-workshop/generation-options")
+            assert options.status_code == 200, options.text
+            model = next(item for item in options.json()["models"] if item["id"] == generation)
+            assert model["video_capabilities"]["reference_video_upload_configured"] is (index == 0)
+            catalog = await client.get("/v1/visual-workshop/acceptance/catalog")
+            assert catalog.status_code == 200, catalog.text
+            scheme = next(
+                item
+                for item in catalog.json()["items"][0]["schemes"]
+                if item["id"] == "motion-transfer:api"
+            )
+            assert scheme["available"] is (index == 0)
+            result = await context(client, base)
+            assert image in {item["asset_id"] for item in result["inputs"]}
+            assert not any("无法读取" in issue for issue in result["issues"])
+            assert any(path.is_file() for path in settings.account_path(owner).rglob("*"))
+
+        first_client, _, _, _, first_base, _ = sites[0]
+        second_client, _, _, _, second_base, _ = sites[1]
+        assert (await first_client.get(f"{second_base}/nodes/shot/acceptance")).status_code == 404
+        assert (await second_client.get(f"{first_base}/nodes/shot/acceptance")).status_code == 404

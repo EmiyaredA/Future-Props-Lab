@@ -1,9 +1,11 @@
 """Node selection, provenance-fenced submission and project result aggregation."""
 
 from copy import deepcopy
+from functools import partial
 
 from sqlalchemy import func, select, update
 
+from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.visual_workshop.acceptance.catalog import (
     connection_signature,
     fixed_model,
@@ -20,19 +22,19 @@ from studio.apps.visual_workshop.acceptance.project_access import AcceptanceErro
 from studio.apps.visual_workshop.acceptance.runs import Runs, run_out
 from studio.apps.visual_workshop.acceptance.schemes import SCHEMES
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument
-from studio.config.settings import get_settings
 from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 
 
 class NodeAcceptance(NodeAcceptanceRecords):
-    def __init__(self, session, owner_user_id, user_id):
+    def __init__(self, session, owner_user_id, user_id, *, settings):
+        self.settings = settings
         super().__init__(
             session,
             owner_user_id,
             user_id,
-            resolve_context=resolve_context,
-            scheme_status=scheme_status,
+            resolve_context=partial(resolve_context, storage=AssetStorage(settings)),
+            scheme_status=partial(scheme_status, settings=settings),
         )
 
     async def start(self, project_id, node_id, body, admission=None):
@@ -52,7 +54,7 @@ class NodeAcceptance(NodeAcceptanceRecords):
         binding = await self.binding(project_id, node_id)
         if not binding or binding.scheme_id not in SCHEMES:
             raise AcceptanceError("请先选择验收方案")
-        status = await scheme_status(
+        status = await self.scheme_status(
             self.session, self.owner_user_id, self.user_id, binding.scheme_id
         )
         if not status.available:
@@ -83,7 +85,7 @@ class NodeAcceptance(NodeAcceptanceRecords):
             )
         if canvas.revision != body.expected_canvas_revision:
             raise AcceptanceError("节点资料已变化，请重新读取后验收", "context_changed", 409)
-        canvas, node, output, inputs, specs, issues, snapshot = await resolve_context(
+        canvas, node, output, inputs, specs, issues, snapshot = await self.resolve_context(
             self.session, self.owner_user_id, project_id, node_id, binding.scheme_id, body.output_id
         )
         if snapshot["context_fingerprint"] != body.context_fingerprint:
@@ -97,7 +99,7 @@ class NodeAcceptance(NodeAcceptanceRecords):
             if previous.node_id != node_id or previous.output_id == output.id:
                 raise AcceptanceError("复验应选择同一节点的另一个输出版本")
         pair = (
-            await fixed_model(self.session, self.owner_user_id, get_settings())
+            await fixed_model(self.session, self.owner_user_id, self.settings)
             if status.kind == "model_api"
             else None
         )
@@ -108,7 +110,7 @@ class NodeAcceptance(NodeAcceptanceRecords):
             "user_id": self.user_id,
             "connection_label": status.connection_label,
             "model_id": pair[0].id if pair else None,
-            "connection_signature": connection_signature(binding.scheme_id, get_settings(), pair),
+            "connection_signature": connection_signature(binding.scheme_id, self.settings, pair),
         }
         # Freeze this run definition without publishing a project-wide active standard.
         number = (

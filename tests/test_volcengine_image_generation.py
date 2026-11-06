@@ -15,7 +15,7 @@ from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, Vis
 from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
 from studio.assembly.website.models import bind_owner
 from studio.contracts.model_service.generation_tasks import ImageGenerationTaskCreateIn
-from website_test_support import SessionLocal
+from website_test_support import SessionLocal, app
 
 
 @pytest.mark.asyncio
@@ -138,7 +138,7 @@ async def test_server_validates_multi_image_order_count_format_and_submission_sn
             path = storage.path_for(asset)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b"\x89PNG\r\n\x1a\nfixture")
-        generation = VisualGeneration(session)
+        generation = VisualGeneration(session, app.state.settings)
         row = await generation.prepare_create(
             project_id,
             ImageGenerationTaskCreateIn(

@@ -46,51 +46,64 @@ def _translate(exc: Exception) -> HTTPException:
 
 @router.get("", response_model=VisualAssistantConversationListOut)
 async def list_conversations(
-    session: SessionDep, project_id: str
+    request: Request, session: SessionDep, project_id: str
 ) -> VisualAssistantConversationListOut:
     try:
-        return await VisualAssistantConversations(session).list(project_id)
+        return await VisualAssistantConversations(session, request.app.state.settings).list(
+            project_id
+        )
     except AssistantNotFoundError as exc:
         raise _translate(exc) from None
 
 
 @router.post("", response_model=VisualAssistantConversationOut)
 async def create_conversation(
-    session: SessionDep, project_id: str
+    request: Request, session: SessionDep, project_id: str
 ) -> VisualAssistantConversationOut:
     try:
-        return await VisualAssistantConversations(session).create(project_id)
+        return await VisualAssistantConversations(session, request.app.state.settings).create(
+            project_id
+        )
     except (AssistantNotFoundError, AssistantModelUnavailableError) as exc:
         raise _translate(exc) from None
 
 
 @router.get("/models", response_model=VisualAssistantModelOptionListOut)
-async def list_models(session: SessionDep, project_id: str) -> VisualAssistantModelOptionListOut:
+async def list_models(
+    request: Request, session: SessionDep, project_id: str
+) -> VisualAssistantModelOptionListOut:
     try:
-        return await VisualAssistantConversations(session).model_options(project_id)
+        return await VisualAssistantConversations(
+            session, request.app.state.settings
+        ).model_options(project_id)
     except AssistantNotFoundError as exc:
         raise _translate(exc) from None
 
 
 @router.get("/{conversation_id}", response_model=VisualAssistantConversationOut)
 async def get_conversation(
-    session: SessionDep, project_id: str, conversation_id: str
+    request: Request, session: SessionDep, project_id: str, conversation_id: str
 ) -> VisualAssistantConversationOut:
     try:
-        return await VisualAssistantConversations(session).get(project_id, conversation_id)
+        return await VisualAssistantConversations(session, request.app.state.settings).get(
+            project_id, conversation_id
+        )
     except AssistantNotFoundError as exc:
         raise _translate(exc) from None
 
 
 @router.patch("/{conversation_id}", response_model=VisualAssistantConversationOut)
 async def patch_conversation(
+    request: Request,
     session: SessionDep,
     project_id: str,
     conversation_id: str,
     body: VisualAssistantConversationPatchIn,
 ) -> VisualAssistantConversationOut:
     try:
-        return await VisualAssistantConversations(session).patch(project_id, conversation_id, body)
+        return await VisualAssistantConversations(session, request.app.state.settings).patch(
+            project_id, conversation_id, body
+        )
     except (
         AssistantNotFoundError,
         AssistantBusyError,
@@ -101,13 +114,14 @@ async def patch_conversation(
 
 @router.delete("/{conversation_id}")
 async def delete_conversation(
+    request: Request,
     session: SessionDep,
     project_id: str,
     conversation_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await VisualAssistantConversations(session).delete(
+        await VisualAssistantConversations(session, request.app.state.settings).delete(
             project_id, conversation_id, expected_revision
         )
     except (AssistantNotFoundError, AssistantBusyError) as exc:
@@ -124,10 +138,11 @@ async def stream_message(
     conversation_id: str,
     body: VisualAssistantSendIn,
 ) -> StreamingResponse:
+    settings = request.app.state.settings
     admission = spawned_task_admission(request, principal, "visual")
     try:
         credential = await snapshot_from_principal(session, principal)
-        prepared = await VisualAssistantConversations(session).prepare_send(
+        prepared = await VisualAssistantConversations(session, settings).prepare_send(
             project_id,
             conversation_id,
             body.expected_revision,
@@ -147,6 +162,7 @@ async def stream_message(
     return StreamingResponse(
         assistant_events(
             prepared,
+            settings=settings,
             admission=admission,
             sessions=request.app.state.database.sessions,
             transport_resolver=request.app.state.model_provider_transports.resolve,
@@ -172,7 +188,9 @@ async def resolve_approval(
     body: VisualAssistantApprovalIn,
 ) -> VisualAssistantApprovalOut:
     try:
-        await VisualAssistantConversations(session).get(project_id, conversation_id)
+        await VisualAssistantConversations(session, request.app.state.settings).get(
+            project_id, conversation_id
+        )
         await request.app.state.assistant_approvals.resolve(
             run_id=run_id,
             approval_id=approval_id,
