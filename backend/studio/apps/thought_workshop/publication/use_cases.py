@@ -55,7 +55,6 @@ class Community:
             await session.execute(text("BEGIN"))
             pub = await publication(session, id, active=False)
             await require_source_manager(
-                session,
                 self.principal,
                 pub.owner_user_id,
                 accounts=self.accounts.for_session(session),

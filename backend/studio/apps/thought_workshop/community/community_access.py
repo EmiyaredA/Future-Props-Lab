@@ -48,7 +48,7 @@ async def published_asset(
     """
     if session.info.get("owner_user_id") is not None:
         raise ValueError("社区授权必须从未绑定账号的发布目录会话开始")
-    principal = await current_actor(session, principal, accounts=accounts)
+    principal = await current_actor(principal, accounts=accounts)
     if principal.auth_kind != "session":
         raise missing()
     pub = await publication(session, publication_id)

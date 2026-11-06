@@ -92,26 +92,3 @@ async def authenticated_business_routes(request: pytest.FixtureRequest, monkeypa
 
 def pytest_sessionfinish() -> None:
     shutil.rmtree(TEST_RUNTIME_DIR, ignore_errors=True)
-
-
-@pytest.fixture(autouse=True)
-def explicit_thought_identity_adapter():
-    """Direct legacy storage tests opt into the same explicit local Identity port."""
-    if "website_test_support" not in sys.modules:
-        yield
-        return
-    from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
-    from website_test_support import SessionLocal
-
-    previous = dict(SessionLocal.kw.get("info") or {})
-
-    SessionLocal.configure(
-        info={
-            **previous,
-            "thought_directory_factory": LegacyAccountDirectory,
-        }
-    )
-    try:
-        yield
-    finally:
-        SessionLocal.configure(info=previous)

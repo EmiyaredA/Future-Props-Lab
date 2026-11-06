@@ -28,10 +28,11 @@ class KnowledgeBases:
         author_id: str | None = None,
         *,
         assets=None,
+        accounts=None,
     ):
         self.session, self.owner_user_id = session, owner_user_id
         self.author_id = author_id
-        self.assets = assets
+        self.assets, self.accounts = assets, accounts
 
     async def get(self, project_id: str, *, include_deleted: bool = False) -> ThoughtKnowledgeBase:
         row = await self.session.scalar(
@@ -136,7 +137,7 @@ class KnowledgeBases:
         self.session.add(home)
         await self.session.flush()
         row.home_note_id = home.id
-        await History(self.session).append(home, self.author_id, "create")
+        await History(self.session, accounts=self.accounts).append(home, self.author_id, "create")
         if commit:
             await self.session.commit()
         return await self.output(await self.get(row.id))

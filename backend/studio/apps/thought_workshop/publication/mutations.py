@@ -36,7 +36,7 @@ async def begin_write(session):
 
 async def config(session, principal, library_id, owner_user_id=None, *, accounts):
     owner_user_id = owner_user_id or principal.owner_user_id
-    await require_source_manager(session, principal, owner_user_id, accounts=accounts)
+    await require_source_manager(principal, owner_user_id, accounts=accounts)
     await KnowledgeBases(session, owner_user_id).get(library_id)
     pub = await session.scalar(
         select(Publication).where(
@@ -96,7 +96,7 @@ async def settings(session, principal, pub_id, note_ids, *, accounts):
     return result
 
 
-async def resolve_member_settings(session, settings, *, accounts):
+async def resolve_member_settings(settings, *, accounts):
     normalized = set()
     for setting in settings:
         names = [member.username.strip().casefold() for member in setting.members]
@@ -106,10 +106,7 @@ async def resolve_member_settings(session, settings, *, accounts):
             normalized.update(normalize_username(member.username) for member in setting.members)
         except ValueError:
             raise ThoughtError("成员账号不存在或不可用", 422, "member_not_found") from None
-    users = {
-        user.username.lower(): user
-        for user in await profiles(session, usernames=normalized, accounts=accounts)
-    }
+    users = {user.username.lower(): user for user in await profiles(accounts, usernames=normalized)}
     result = {}
     for setting in settings:
         members = []
@@ -155,12 +152,12 @@ async def publish(
 ):
     owner_user_id = owner_user_id or principal.owner_user_id
     # Account lookup is completed before the source writer lock is acquired.
-    await require_source_manager(session, principal, owner_user_id, accounts=accounts)
+    await require_source_manager(principal, owner_user_id, accounts=accounts)
     await KnowledgeBases(session, owner_user_id).get(library_id)
-    member_users = await resolve_member_settings(session, body.articles, accounts=accounts)
+    member_users = await resolve_member_settings(body.articles, accounts=accounts)
     await begin_write(session)
-    principal = await current_actor(session, principal, accounts=accounts)
-    await require_source_manager(session, principal, owner_user_id, accounts=accounts)
+    principal = await current_actor(principal, accounts=accounts)
+    await require_source_manager(principal, owner_user_id, accounts=accounts)
     source = await KnowledgeBases(session, owner_user_id).get(library_id)
     pub = await session.scalar(
         select(Publication).where(
@@ -245,7 +242,7 @@ async def permissions(session, principal, pub_id, body, *, accounts):
             inactive=True,
             accounts=accounts,
         )
-    member_users = await resolve_member_settings(session, body.articles, accounts=accounts)
+    member_users = await resolve_member_settings(body.articles, accounts=accounts)
     await begin_write(session)
     pub = await publication(session, pub_id)
     if len({a.note_id for a in body.articles}) != len(body.articles):

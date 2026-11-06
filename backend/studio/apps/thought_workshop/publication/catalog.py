@@ -27,11 +27,11 @@ from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, Th
 from studio.apps.thought_workshop.website.account_directory import author as find_author
 
 
-async def visible(session, principal, pub, query="", include_content=False, *, accounts=None):
+async def visible(session, principal, pub, query="", include_content=False, *, accounts):
     manager = principal.user_id == pub.publisher_id or await manages_source(
-        session, principal, pub.owner_user_id, accounts=accounts
+        principal, pub.owner_user_id, accounts=accounts
     )
-    original_role = await source_role(session, principal, pub.owner_user_id, accounts=accounts)
+    original_role = await source_role(principal, pub.owner_user_id, accounts=accounts)
     statement = (
         select(ThoughtNote, PublishedArticle, ArticleMember.role)
         .join(
@@ -90,7 +90,7 @@ async def visible(session, principal, pub, query="", include_content=False, *, a
 async def output(session, principal, pub, rows=None, manager=None, *, accounts):
     if rows is None:
         rows, manager = await visible(session, principal, pub, accounts=accounts)
-    author = await find_author(session, pub.publisher_id, accounts=accounts)
+    author = await find_author(accounts, pub.publisher_id)
     favorite = await session.get(CommunityFavorite, (principal.user_id, "community/" + pub.id))
     if not favorite:
         favorite = (
@@ -254,7 +254,7 @@ async def listing(
     result = []
     for pub in pubs:
         manager = principal.user_id == pub.publisher_id or await manages_source(
-            session, principal, pub.owner_user_id, accounts=accounts
+            principal, pub.owner_user_id, accounts=accounts
         )
         if mine and not (manager or pub.publisher_id == principal.user_id):
             continue

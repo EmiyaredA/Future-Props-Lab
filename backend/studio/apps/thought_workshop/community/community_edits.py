@@ -101,7 +101,13 @@ async def save_note(
                 raise missing()
             assets = PreparedCommunityAssets(prepared).for_owner(current.owner)
             result = await write_note_edit(
-                session, principal, publication_id, note_id, current, assets=assets
+                session,
+                principal,
+                publication_id,
+                note_id,
+                current,
+                accounts=accounts,
+                assets=assets,
             )
             await references.record(session, prepared, resource_revision=result.note.revision)
             commit_started = True

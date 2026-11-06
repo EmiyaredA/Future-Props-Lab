@@ -23,6 +23,7 @@ async def mutate_template_with_references(
     body=None,
     expected_revision=None,
     asset_reader: AssetMetadata | None = None,
+    accounts=None,
 ):
     if source_method not in {"PUT", "DELETE"} or source_path != (
         f"/v1/thought-workshop/templates/{template_id}"
@@ -35,7 +36,7 @@ async def mutate_template_with_references(
     expected = body.expected_revision if body is not None else expected_revision
     if type(expected) is not int or expected < 0:
         raise ValueError("模板版本无效")
-    content = ReusableContent(session, owner, assets=asset_reader)
+    content = ReusableContent(session, owner, assets=asset_reader, accounts=accounts)
     current = await content.template(template_id)
     if current.revision != expected:
         await content.template_conflict(template_id, expected)
@@ -76,13 +77,22 @@ async def mutate_template_with_references(
 
 
 async def create_template_with_references(
-    session, *, owner, body, assertion, source_method, source_path, references, asset_reader
+    session,
+    *,
+    owner,
+    body,
+    assertion,
+    source_method,
+    source_path,
+    references,
+    asset_reader,
+    accounts=None,
 ):
     if source_method != "POST" or source_path != "/v1/thought-workshop/templates":
         raise ValueError("模板创建必须绑定原请求")
     if session.info.get("owner_user_id") != owner:
         raise ValueError("模板创建缺少账号上下文")
-    content = ReusableContent(session, owner, assets=asset_reader)
+    content = ReusableContent(session, owner, assets=asset_reader, accounts=accounts)
     assets = await content.validate_template(body)
     template_id = new_id()
     await session.rollback()
@@ -126,6 +136,7 @@ async def apply_template_with_references(
     source_path,
     references,
     asset_reader,
+    accounts=None,
 ):
     if (
         source_method != "POST"
@@ -134,7 +145,7 @@ async def apply_template_with_references(
         raise ValueError("应用模板必须绑定原请求")
     if session.info.get("owner_user_id") != owner:
         raise ValueError("应用模板缺少账号上下文")
-    content = ReusableContent(session, owner, author_id, assets=asset_reader)
+    content = ReusableContent(session, owner, author_id, assets=asset_reader, accounts=accounts)
     template = await content.template(template_id)
     if template.revision != body.expected_revision:
         await content.template_conflict(template_id, body.expected_revision)

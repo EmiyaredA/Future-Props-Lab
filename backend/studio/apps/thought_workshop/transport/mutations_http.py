@@ -5,7 +5,11 @@ from fastapi import APIRouter, HTTPException, Query, Request, Response
 from studio.apps.thought_workshop.directory import Directory
 from studio.apps.thought_workshop.duplicate_retention import duplicate_with_references
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.http_bindings import AssetMetadataDep, SessionDep
+from studio.apps.thought_workshop.http_bindings import (
+    AccountDirectoryDep,
+    AssetMetadataDep,
+    SessionDep,
+)
 from studio.apps.thought_workshop.knowledge import KnowledgeBases
 from studio.apps.thought_workshop.knowledge_retention import (
     create_knowledge_base_with_references,
@@ -74,6 +78,7 @@ async def create_knowledge_base(
     request: Request,
     body: KnowledgeBaseIn,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -84,6 +89,7 @@ async def create_knowledge_base(
             author_id=principal.user_id,
             body=body,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -105,6 +111,7 @@ async def create_note(
     request: Request,
     body: ThoughtNoteCreate,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -115,6 +122,7 @@ async def create_note(
             author_id=principal.user_id,
             body=body,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -125,6 +133,7 @@ async def duplicate_document(
     note_id: str,
     body: DuplicateIn,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
     request: Request,
@@ -137,6 +146,7 @@ async def duplicate_document(
             note_id=note_id,
             body=body,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -148,6 +158,7 @@ async def create_document(
     project_id: str,
     body: KnowledgeNoteCreate,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -159,6 +170,7 @@ async def create_document(
             project_id=project_id,
             body=body,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -170,6 +182,7 @@ async def put_note(
     note_id: str,
     body: ThoughtNotePut,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -181,6 +194,7 @@ async def put_note(
             note_id=note_id,
             body=body,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -192,6 +206,7 @@ async def apply_note_operations(
     note_id: str,
     body: ThoughtOperationsIn,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -203,6 +218,7 @@ async def apply_note_operations(
             note_id=note_id,
             body=body,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -215,6 +231,7 @@ async def restore_note_history(
     history_id: str,
     body: ThoughtRevisionIn,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -227,6 +244,7 @@ async def restore_note_history(
             history_id=history_id,
             expected_revision=body.expected_revision,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -272,12 +290,18 @@ async def create_template(
     request: Request,
     body: TemplateIn,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     owner_user_id: OwnerDep,
 ):
     return await guarded(
         create_template_with_references(
-            session, owner=owner_user_id, body=body, asset_reader=assets, **context(request)
+            session,
+            owner=owner_user_id,
+            body=body,
+            asset_reader=assets,
+            accounts=accounts,
+            **context(request),
         )
     )
 
@@ -288,6 +312,7 @@ async def apply_template(
     template_id: str,
     body: TemplateApply,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -299,6 +324,7 @@ async def apply_template(
             template_id=template_id,
             body=body,
             asset_reader=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -310,6 +336,7 @@ async def put_template(
     template_id: str,
     body: TemplatePut,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     owner_user_id: OwnerDep,
 ):
@@ -320,6 +347,7 @@ async def put_template(
             template_id=template_id,
             body=body,
             asset_reader=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -357,6 +385,7 @@ async def table_operations(
     note_id: str,
     body: BatchIn,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -369,6 +398,7 @@ async def table_operations(
             expected_revision=body.expected_revision,
             body=body,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -387,6 +417,7 @@ async def table_restore(
     revision: int,
     body: RestoreIn,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -399,6 +430,7 @@ async def table_restore(
             expected_revision=body.expected_revision,
             history_revision=revision,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -417,6 +449,7 @@ async def table_csv_import(
     table_id: str,
     body: CsvIn,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
@@ -430,6 +463,7 @@ async def table_csv_import(
             expected_revision=body.expected_revision,
             body=body,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )
@@ -457,6 +491,7 @@ async def update_knowledge_base(
     project_id: str,
     body: KnowledgeBasePut,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     owner_user_id: OwnerDep,
 ):
@@ -467,6 +502,7 @@ async def update_knowledge_base(
             project_id=project_id,
             body=body,
             assets=assets,
+            accounts=accounts,
             **context(request),
         )
     )

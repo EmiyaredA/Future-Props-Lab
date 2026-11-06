@@ -75,7 +75,11 @@ class Directory(KnowledgeBases):
         await self.parent(project_id, body.parent_id)
         siblings = await self.siblings(project_id, body.parent_id)
         row = await Notes(
-            self.session, self.owner_user_id, self.author_id, assets=self.assets
+            self.session,
+            self.owner_user_id,
+            self.author_id,
+            assets=self.assets,
+            accounts=self.accounts,
         ).create(
             ThoughtNoteIn(
                 knowledge_base_id=project_id,
@@ -93,7 +97,13 @@ class Directory(KnowledgeBases):
 
     async def create_content(self, body: ThoughtNoteCreate, *, note_id=None, commit=True):
         candidate = ThoughtNoteIn(**body.model_dump(exclude={"expected_knowledge_revision"}))
-        notes = Notes(self.session, self.owner_user_id, self.author_id, assets=self.assets)
+        notes = Notes(
+            self.session,
+            self.owner_user_id,
+            self.author_id,
+            assets=self.assets,
+            accounts=self.accounts,
+        )
         # Cross-service metadata is fetched before the project writer reservation.
         await notes.validate_refs(candidate)
         await self.reserve(body.knowledge_base_id, body.expected_knowledge_revision)

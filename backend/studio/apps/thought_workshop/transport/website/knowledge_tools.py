@@ -1,6 +1,10 @@
 from fastapi import APIRouter, Query
 
-from studio.apps.thought_workshop.http_bindings import AssetMetadataDep, SessionDep
+from studio.apps.thought_workshop.http_bindings import (
+    AccountDirectoryDep,
+    AssetMetadataDep,
+    SessionDep,
+)
 from studio.apps.thought_workshop.knowledge_tools.http import call
 from studio.apps.thought_workshop.knowledge_tools.http import router as local_router
 from studio.apps.thought_workshop.knowledge_tools.reuse import ReusableContent
@@ -25,10 +29,16 @@ async def templates(session: SessionDep, owner_user_id: OwnerDep):
 
 @router.post("/templates", response_model=TemplateOut)
 async def create_template(
-    body: TemplateIn, session: SessionDep, assets: AssetMetadataDep, principal: StudioAuth
+    body: TemplateIn,
+    session: SessionDep,
+    accounts: AccountDirectoryDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
 ):
     return await call(
-        ReusableContent(session, principal.owner_user_id, assets=assets).create_template(body)
+        ReusableContent(
+            session, principal.owner_user_id, assets=assets, accounts=accounts
+        ).create_template(body)
     )
 
 
@@ -37,11 +47,14 @@ async def put_template(
     template_id: str,
     body: TemplatePut,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     owner_user_id: OwnerDep,
 ):
     return await call(
-        ReusableContent(session, owner_user_id, assets=assets).update_template(template_id, body)
+        ReusableContent(session, owner_user_id, assets=assets, accounts=accounts).update_template(
+            template_id, body
+        )
     )
 
 
@@ -62,12 +75,13 @@ async def apply_template(
     template_id: str,
     body: TemplateApply,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await call(
         ReusableContent(
-            session, principal.owner_user_id, principal.user_id, assets=assets
+            session, principal.owner_user_id, principal.user_id, assets=assets, accounts=accounts
         ).apply_template(template_id, body)
     )
 
@@ -77,12 +91,13 @@ async def duplicate_document(
     note_id: str,
     body: DuplicateIn,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     assets: AssetMetadataDep,
     principal: StudioAuth,
 ):
     return await call(
         ReusableContent(
-            session, principal.owner_user_id, principal.user_id, assets=assets
+            session, principal.owner_user_id, principal.user_id, assets=assets, accounts=accounts
         ).duplicate(note_id, body)
     )
 

@@ -46,10 +46,16 @@ from studio.runtime.time import utc_now
 
 class ReusableContent:
     def __init__(
-        self, session, owner_user_id, author_id=None, *, assets: AssetMetadata | None = None
+        self,
+        session,
+        owner_user_id,
+        author_id=None,
+        *,
+        assets: AssetMetadata | None = None,
+        accounts=None,
     ):
         self.session, self.owner_user_id, self.author_id = session, owner_user_id, author_id
-        self.assets = assets
+        self.assets, self.accounts = assets, accounts
 
     async def template(self, id):
         row = await self.session.scalar(
@@ -191,7 +197,11 @@ class ReusableContent:
         await directory.reserve(body.knowledge_base_id, body.expected_knowledge_revision)
         await directory.parent(body.knowledge_base_id, body.parent_id)
         row = await Notes(
-            self.session, self.owner_user_id, self.author_id, assets=self.assets
+            self.session,
+            self.owner_user_id,
+            self.author_id,
+            assets=self.assets,
+            accounts=self.accounts,
         ).create(
             ThoughtNoteIn(
                 knowledge_base_id=body.knowledge_base_id,
@@ -235,13 +245,19 @@ class ReusableContent:
             )
             + 1
         )
-        await History(self.session).append(row, self.author_id, "create")
+        await History(self.session, accounts=self.accounts).append(row, self.author_id, "create")
         if commit:
             await self.session.commit()
         return note_out(row)
 
     async def copy_source(self, id, subtree):
-        notes = Notes(self.session, self.owner_user_id, self.author_id, assets=self.assets)
+        notes = Notes(
+            self.session,
+            self.owner_user_id,
+            self.author_id,
+            assets=self.assets,
+            accounts=self.accounts,
+        )
         root = await notes.get(id)
         if root.deleted_at or root.is_home:
             raise ThoughtError("首页或回收站文档不能复制")
@@ -349,7 +365,11 @@ class ReusableContent:
         created = []
         for note_id, (candidate, original_position) in copies.items():
             new = await Notes(
-                self.session, self.owner_user_id, self.author_id, assets=self.assets
+                self.session,
+                self.owner_user_id,
+                self.author_id,
+                assets=self.assets,
+                accounts=self.accounts,
             ).create(
                 candidate,
                 commit=False,
@@ -357,7 +377,9 @@ class ReusableContent:
                 note_id=mapping[note_id],
             )
             new.position = position if note_id == id else original_position
-            await History(self.session).append(new, self.author_id, "create")
+            await History(self.session, accounts=self.accounts).append(
+                new, self.author_id, "create"
+            )
             created.append(new.id)
         asset_mapping = {asset: asset for ids in table_assets.values() for asset in ids}
         # Retain references to documents outside the copied subtree in this account.

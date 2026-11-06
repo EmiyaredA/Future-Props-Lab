@@ -93,11 +93,11 @@ async def authorize_note_edit(session, principal, pub_id, note_id, body, *, acco
     return edit
 
 
-async def write_note_edit(session, principal, pub_id, note_id, edit, *, assets=None):
+async def write_note_edit(session, principal, pub_id, note_id, edit, *, accounts, assets=None):
     bind_source(session, await publication(session, pub_id))
-    value = await Notes(session, edit.owner, principal.user_id, assets=assets).put(
-        note_id, edit.body, commit=False
-    )
+    value = await Notes(
+        session, edit.owner, principal.user_id, assets=assets, accounts=accounts
+    ).put(note_id, edit.body, commit=False)
     return CommunityNote(
         note=edit.project(value),
         **capabilities(edit.role),
@@ -109,7 +109,13 @@ async def save_note(session, principal, pub_id, note_id, body, *, accounts, sour
     await begin_write(session)
     edit = await authorize_note_edit(session, principal, pub_id, note_id, body, accounts=accounts)
     result = await write_note_edit(
-        session, principal, pub_id, note_id, edit, assets=source_assets(session, edit.owner)
+        session,
+        principal,
+        pub_id,
+        note_id,
+        edit,
+        accounts=accounts,
+        assets=source_assets(session, edit.owner),
     )
     await session.commit()
     return result

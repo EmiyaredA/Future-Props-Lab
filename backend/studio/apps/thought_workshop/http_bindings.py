@@ -62,13 +62,11 @@ async def thought_assets(request: Request, session: BaseSessionDep, principal: S
 AssetMetadataDep = Annotated[AssetMetadata, Depends(thought_assets)]
 
 
-async def thought_session(session: BaseSessionDep, accounts: AccountDirectoryDep):
-    session.info["thought_directory"] = accounts
+async def thought_session(session: BaseSessionDep, _accounts: AccountDirectoryDep):
     return session
 
 
-async def community_session(session: BaseSessionDep, accounts: CommunityDirectoryDep):
-    session.info["thought_directory"] = accounts
+async def community_session(session: BaseSessionDep, _accounts: CommunityDirectoryDep):
     return session
 
 

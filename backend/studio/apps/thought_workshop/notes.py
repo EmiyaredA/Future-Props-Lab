@@ -55,11 +55,12 @@ class Notes:
         author_id: str | None = None,
         *,
         assets=None,
+        accounts=None,
     ):
         self.session = session
         self.owner_user_id = owner_user_id
         self.author_id = author_id
-        self.assets = assets
+        self.assets, self.accounts = assets, accounts
 
     async def get(self, note_id: str) -> ThoughtNote:
         row = await self.session.scalar(
@@ -220,7 +221,9 @@ class Notes:
         await self.references(row.id, ids)
         await index_references(self.session, row.id, row.document)
         if not importing:
-            await History(self.session).append(row, self.author_id, "create")
+            await History(self.session, accounts=self.accounts).append(
+                row, self.author_id, "create"
+            )
         if commit:
             await self.session.commit()
             await self.session.refresh(row)
@@ -267,7 +270,7 @@ class Notes:
         await self.references(note_id, ids)
         await index_references(self.session, note_id, body.document)
         if content_changed or restoring:
-            await History(self.session).append(
+            await History(self.session, accounts=self.accounts).append(
                 await self.get(note_id), self.author_id, "restore" if restoring else "edit"
             )
         await self.session.execute(

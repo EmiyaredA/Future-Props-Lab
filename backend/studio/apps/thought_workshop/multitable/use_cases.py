@@ -36,8 +36,8 @@ from studio.runtime.time import utc_now
 
 
 class Multitable:
-    def __init__(self, session, owner_user_id, author_id=None, *, assets=None):
-        self.assets = assets
+    def __init__(self, session, owner_user_id, author_id=None, *, assets=None, accounts=None):
+        self.assets, self.accounts = assets, accounts
         self.session, self.owner_user_id, self.author_id = session, owner_user_id, author_id
 
     async def note(self, note_id):
@@ -67,7 +67,7 @@ class Multitable:
 
     async def records(self, note_id, table_id, query):
         table, revision = await self.table(note_id, table_id)
-        return await queries.records(self.session, table, query, revision, self.owner_user_id)
+        return await queries.records(self.session, table, query, revision, accounts=self.accounts)
 
     async def conversion(self, note_id, body):
         before = await snapshot(self.session, (await self.note(note_id)).id)
@@ -210,7 +210,7 @@ class Multitable:
         introduced = collect(after) - collect(before)
         if not introduced:
             return
-        members = await active_members(self.session, introduced)
+        members = await active_members(self.accounts, introduced)
         if introduced - members.keys():
             raise ThoughtError("只能选择当前账号的成员", 422, "invalid_member")
 

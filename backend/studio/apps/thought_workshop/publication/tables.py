@@ -55,7 +55,11 @@ class TableAccess:
             source_assets(self.session, pub.owner_user_id) if source_assets is not None else None
         )
         use_case = Multitable(
-            self.session, pub.owner_user_id, self.principal.user_id, assets=assets
+            self.session,
+            pub.owner_user_id,
+            self.principal.user_id,
+            assets=assets,
+            accounts=self.accounts,
         )
         await use_case.note(note.id)
         return use_case, pub, role, config
