@@ -10,6 +10,7 @@ from studio.assembly.website import public_access as runtime
 @pytest.mark.asyncio
 async def test_failed_public_probe_preserves_established_ssh_tunnel(monkeypatch, tmp_path):
     settings = SimpleNamespace(
+        fpl_happier_origin="",
         fpl_remote_web_origin="https://studio.example.test",
         fpl_remote_web_port=28081,
         fpl_remote_web_ssh_host="gateway.example.test",
