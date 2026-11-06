@@ -138,6 +138,25 @@ test("文字快捷键复制粘贴追加内容，支持撤销重做并保存", as
   ).toBeVisible();
 });
 
+test("粘贴使用尚未触发选区事件的当前光标", async ({ page }) => {
+  await open(page);
+  const canvas = page.getByRole("group", { name: "幻灯片画布" });
+  await canvas.getByText("让想法，被看见", { exact: true }).dblclick();
+  const text = page.getByRole("textbox", { name: "编辑幻灯片文字" });
+  await expect(text).toBeFocused();
+  await text.press("ControlOrMeta+a");
+  await text.evaluate((editor) => {
+    const selection = window.getSelection()!;
+    selection.collapseToEnd();
+    const clipboardData = new DataTransfer();
+    clipboardData.setData("text/plain", "，也被记住");
+    editor.dispatchEvent(
+      new ClipboardEvent("paste", { bubbles: true, clipboardData }),
+    );
+  });
+  await expect(text).toHaveText("让想法，被看见，也被记住");
+});
+
 test("拖拽中的首次撤销只取消预览，页面删除撤销定位到恢复页面", async ({
   page,
 }) => {

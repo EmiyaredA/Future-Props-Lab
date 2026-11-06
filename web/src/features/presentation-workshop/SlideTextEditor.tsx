@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { EditorContent, useEditor, type Editor } from "@tiptap/react";
+import { TextSelection } from "@tiptap/pm/state";
 import { ParagraphStyle, ScriptMark } from "./editor/textExtensions";
 import Highlight from "@tiptap/extension-highlight";
 import StarterKit from "@tiptap/starter-kit";
@@ -78,9 +79,32 @@ export function SlideTextEditor({
           if (!event.clipboardData) return false;
           event.preventDefault();
           const text = event.clipboardData.getData("text/plain");
+          if (!text) return true;
+
+          // A paste shortcut can arrive before the browser's selectionchange event.
+          const selection = view.dom.ownerDocument.getSelection();
+          if (
+            selection?.anchorNode &&
+            selection.focusNode &&
+            view.dom.contains(selection.anchorNode) &&
+            view.dom.contains(selection.focusNode)
+          ) {
+            const { doc, tr } = view.state;
+            const current = TextSelection.between(
+              doc.resolve(
+                view.posAtDOM(selection.anchorNode, selection.anchorOffset),
+              ),
+              doc.resolve(
+                view.posAtDOM(selection.focusNode, selection.focusOffset),
+              ),
+            );
+            if (!current.eq(view.state.selection)) {
+              view.dispatch(tr.setSelection(current));
+            }
+          }
           // Choose the plain-text parser before ProseMirror prefers HTML.
           // Clearing HTML later would paste an empty slice over the selection.
-          if (text) view.pasteText(text, event);
+          view.pasteText(text, event);
           return true;
         },
         compositionstart: () => {
