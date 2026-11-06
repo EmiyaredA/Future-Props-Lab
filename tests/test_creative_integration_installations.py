@@ -520,7 +520,8 @@ async def test_private_http_fails_closed_and_binds_verified_batch(installation):
     app.add_middleware(CreativeRequestLimit, maximum=1024 * 1024)
     app.state.creative_installations = installation.use
     transport = httpx.ASGITransport(app=app)
-    value = batch([tool(), skill_part(zip_bytes())])
+    data = zip_bytes()
+    value = batch([tool(), skill_part(data)])
     path = "/_internal/v1/creative-integrations/"
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         blocked = await client.post(path + "preview", json=value.model_dump(mode="json"))
@@ -551,7 +552,6 @@ async def test_private_http_fails_closed_and_binds_verified_batch(installation):
         app.state.creative_authorization = TestAuthority()
         result = await client.post(path + "preview", json=value.model_dump(mode="json"))
         assert result.status_code == 200 and result.json()["installable"]
-        data = zip_bytes()
         result = await client.post(
             path + "install",
             data={"batch": value.model_dump_json()},

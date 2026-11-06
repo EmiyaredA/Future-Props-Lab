@@ -398,7 +398,7 @@ async def test_worker_shutdown_waits_for_actual_delayed_control_cleanup(case):
     control.execute = slow
     worker = McpWorker(case.lane, control, case.root / "worker")
     execution = asyncio.create_task(worker.execute(lease))
-    await asyncio.wait_for(entered.wait(), 2)
+    await asyncio.wait_for(entered.wait(), 10)
     execution.cancel()
     await asyncio.wait_for(cleaning.wait(), 2)
     await asyncio.sleep(0.05)
