@@ -22,6 +22,8 @@ async def import_motion_export(
     source: Path,
     *,
     settings: Settings,
+    layouts,
+    assets,
     filename: str,
     duration_us: int,
     target_project_id: str | None,
@@ -35,7 +37,7 @@ async def import_motion_export(
         project_id = target_project_id
     else:
         created = await projects.create(
-            VideoEditorProjectCreateIn(title=new_project_title or "特效镜头")
+            VideoEditorProjectCreateIn(title=new_project_title or "特效镜头"), layouts=layouts
         )
         project_id = created.id
     staged: Path | None = None
@@ -79,6 +81,7 @@ async def import_motion_export(
                     "operations": operations,
                 }
             ),
+            assets=assets,
         )
         return project_id, asset.id
     except Exception:
@@ -86,5 +89,5 @@ async def import_motion_export(
         if staged is not None:
             staged.unlink(missing_ok=True)
         if created is not None:
-            await projects.delete(created.id, created.revision)
+            await projects.delete(created.id, created.revision, layouts=layouts)
         raise

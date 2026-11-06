@@ -23,5 +23,5 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest tests/test_visual_workshop.py::test_file_upload_accepts_mkv_despite_browser_mime_mislabels tests/test_visual_workshop.py::test_file_management_rejects_invalid_content_and_scope -q`
+- `uv run pytest tests/apps/visual_workshop/test_visual_workshop.py::test_file_upload_accepts_mkv_despite_browser_mime_mislabels tests/apps/visual_workshop/test_visual_workshop.py::test_file_management_rejects_invalid_content_and_scope -q`
 - 桌面开发下用真实 `.mkv`（即使浏览器申报 `video/mp4`）上传到视频编辑器素材库应成功。

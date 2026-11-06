@@ -13,13 +13,6 @@ from cryptography.fernet import Fernet
 from fastapi import HTTPException
 from pydantic import TypeAdapter
 
-from app.capabilities.agents.cli.catalog import (
-    DEFINITIONS,
-    connection,
-    execution_signature,
-    inspect_connection,
-)
-from app.capabilities.agents.cli.dialogue import run_dialogue
 from studio.apps.agent_workbench.execution import project_files, projects
 from studio.apps.agent_workbench.execution.project_paths import validate_project_root
 from studio.apps.agent_workbench.execution.schemas import (
@@ -46,6 +39,13 @@ from studio.contracts.agent_workbench.execution import (
 )
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.integrations.integration_intents import digest
+from studio.host.agent_execution.cli.catalog import (
+    DEFINITIONS,
+    connection,
+    execution_signature,
+    inspect_connection,
+)
+from studio.host.agent_execution.cli.dialogue import run_dialogue
 from studio.host.receipts import ReceiptStore
 from studio.host.transport import LeaseEnded, NativeTransport, ProtocolConflict
 from studio.host.workbench_turn import MacTurn

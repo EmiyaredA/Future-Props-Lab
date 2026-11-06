@@ -425,13 +425,17 @@ async def download_segment_export(
 
 @router.post("/projects/{project_id}/clip-merges", response_model=VideoEditorTaskOut)
 async def create_clip_merge(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     body: VideoEditorClipMergeCreateIn,
 ) -> VideoEditorTaskOut:
     try:
-        return await VideoEditorClipMerges(session, owner_user_id).create(project_id, body)
+        assets = request.app.state.video_assets(request, session, owner_user_id)
+        return await VideoEditorClipMerges(session, owner_user_id).create(
+            project_id, body, assets=assets
+        )
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 

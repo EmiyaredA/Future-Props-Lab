@@ -3,14 +3,13 @@
 import asyncio
 import time
 
-from app.capabilities.agents.cli.dialogue import run_dialogue
-from app.console.governance.code_agents import resolve
-from studio.apps.amadeus.execution.website_runs import Runs
 from studio.apps.amadeus.execution.website_tools import TOOLS, ToolBridge
 from studio.apps.amadeus.rules.dialogue_prompt import dialogue_prompt
 from studio.apps.amadeus.storage.files import work_root
+from studio.apps.amadeus.storage.runs import RunRecords as Runs
 from studio.apps.amadeus.storage.skill_import import load_skill
 from studio.contracts.amadeus.conversations import RunEventIn, RunOut
+from studio.host.agent_execution.cli.dialogue import run_dialogue
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.ids import new_id
 
@@ -21,8 +20,9 @@ class OwnedRun(RunOut):
 
 
 class CodeAgentRuns:
-    def __init__(self, sessions, settings, *, skills):
+    def __init__(self, sessions, settings, *, skills, resolve_agent):
         self.skills = skills
+        self.resolve_agent = resolve_agent
         self.settings = settings
         self.sessions, self.tasks = sessions, {}
 
@@ -59,12 +59,11 @@ class CodeAgentRuns:
             async with self.sessions() as session:
                 bind_owner(session, run.owner_user_id)
                 if check_authority:
-                    await resolve(
+                    await self.resolve_agent(
                         session,
                         run.owner_user_id,
                         run.user_id,
                         run.agent_id,
-                        "amadeus",
                         probe=False,
                     )
                 current = await Runs(session, principal).get(run.conversation_id, run.id)
@@ -94,7 +93,13 @@ class CodeAgentRuns:
                     await persist(kind, payload)
 
         bridge = ToolBridge(
-            app, headers, principal, run, self.sessions, files_root=self.settings.runtime_path
+            app,
+            headers,
+            principal,
+            run,
+            self.sessions,
+            files_root=self.settings.runtime_path,
+            resolve_agent=self.resolve_agent,
         )
         transport = None
         paused = None
@@ -102,8 +107,8 @@ class CodeAgentRuns:
         try:
             async with self.sessions() as session:
                 bind_owner(session, run.owner_user_id)
-                path = await resolve(
-                    session, run.owner_user_id, run.user_id, run.agent_id, "amadeus"
+                path = await self.resolve_agent(
+                    session, run.owner_user_id, run.user_id, run.agent_id
                 )
                 if path != run.execution_config.get("executable"):
                     raise ValueError("Agent 连接已变更，请手动新建运行")

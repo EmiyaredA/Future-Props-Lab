@@ -25,6 +25,6 @@ Status: implemented
 
 PPTX 仅在每组首段写入 `startAt=1`，后续项使用自动递增，避免将各项数字钉死；遵循 [DrawingML 自动编号契约](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.drawing.autonumberedbullet)。
 
-- `tests/test_presentation_lists.py`：临时库迁移、幂等、API 保存与 CAS、原生 PPTX 编号和重启。
-- `web/tests/presentation-lists.test.tsx`：编辑转换、显示编号、混合选择、权限与锁定、段落选区及回车行为。
+- `tests/apps/presentation_workshop/test_presentation_lists.py`：临时库迁移、幂等、API 保存与 CAS、原生 PPTX 编号和重启。
+- `web/tests/features/presentation-lists.test.tsx`：编辑转换、显示编号、混合选择、权限与锁定、段落选区及回车行为。
 - 契约生成与 stale-check、演示工坊回归、格式与 lint、Web 构建和官方导入包校验。

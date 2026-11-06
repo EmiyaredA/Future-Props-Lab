@@ -23,8 +23,8 @@ class SeedImportInput(BaseModel):
     package_version: str = Field(min_length=64, max_length=64)
 
 
-async def import_source(session, principal, body, *, projections=None):
-    principal = await current_actor(session, principal)
+async def import_source(session, principal, body, *, accounts, projections=None):
+    principal = await current_actor(principal, accounts=accounts)
     require_admin(principal)
     # Completed requests replay even after an application upgrade changes the seed.
     key = (principal.owner_user_id, principal.user_id, body.request_id)
@@ -51,14 +51,14 @@ async def import_source(session, principal, body, *, projections=None):
             await projections.require_active()
         await begin_write(session)
         if projections is None:
-            require_admin(await current_actor(session, principal))
+            require_admin(await current_actor(principal, accounts=accounts))
         current = await session.get(OfficialImportReceipt, key)
         if current:
             if current.package_version != version:
                 raise ThoughtError("导入请求已用于其他版本", 409, "import_conflict")
             return ThoughtImportOut.model_validate(current.result)
         result, notes, _ = await persist_archive(
-            Notes(session, principal.owner_user_id, principal.user_id),
+            Notes(session, principal.owner_user_id, principal.user_id, accounts=accounts),
             payload,
             parsed,
             {},

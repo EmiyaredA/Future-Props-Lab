@@ -20,6 +20,6 @@ Status: implemented
 
 ## Verification
 
-`tests/test_model_governance_transfer.py` 覆盖迁移运行分区、Unicode 请求标识分页、原错误回执及重启重放。`tests/test_native_models.py` 验证中断恢复、持久任务保留及旧错误回执重放。
+`tests/apps/model_service/test_model_governance_transfer.py` 覆盖迁移运行分区、Unicode 请求标识分页、原错误回执及重启重放。`tests/apps/model_service/test_native_models.py` 验证中断恢复、持久任务保留及旧错误回执重放。
 
 在隔离模型副本用 Apple Silicon 实际合成 Qwen3 TTS 0.6B。核对权重及结果摘要，得到 24 kHz、2.16 秒 WAV。该演练直接运行 Mac 执行端，授权传输由协议回归覆盖。

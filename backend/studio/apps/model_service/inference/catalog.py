@@ -56,7 +56,7 @@ def modalities(model, provider):
     return result
 
 
-async def get_model(session, owner_user_id, model_id, kind):
+async def get_model(session, owner_user_id, model_id, kind, *, readiness=None):
     row = (
         await session.execute(
             select(ModelEntry, ModelProvider)
@@ -77,7 +77,7 @@ async def get_model(session, owner_user_id, model_id, kind):
     if not model.enabled or not provider.enabled or not credential_ready(provider):
         raise OperationError("模型未启用或缺少凭证", "model_unavailable", 409)
     if provider.kind == "local_qwen_tts":
-        await require_ready(session, model.slug)
+        await require_ready(session, model.slug, readiness=readiness)
     if kind not in modalities(model, provider):
         raise OperationError("模型不支持所选调用方式", "unsupported_modality")
     if provider.kind == "volcengine_image" and model.slug != SEEDREAM_MODEL:
@@ -85,7 +85,7 @@ async def get_model(session, owner_user_id, model_id, kind):
     return model, provider
 
 
-async def options(session, owner_user_id, *, upload_configured: bool):
+async def options(session, owner_user_id, *, upload_configured: bool, readiness=None):
     rows = (
         await session.execute(
             select(ModelEntry, ModelProvider)
@@ -108,7 +108,7 @@ async def options(session, owner_user_id, *, upload_configured: bool):
             continue
         if provider.kind == "local_qwen_tts":
             try:
-                await require_ready(session, model.slug)
+                await require_ready(session, model.slug, readiness=readiness)
             except OperationError:
                 continue
         parameters = {}

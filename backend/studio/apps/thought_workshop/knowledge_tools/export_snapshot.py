@@ -1,15 +1,15 @@
 from sqlalchemy import select, text
 
-from studio.apps.thought_workshop.content_exports import resolve_assets
 from studio.apps.thought_workshop.knowledge import KnowledgeBases
 from studio.apps.thought_workshop.knowledge_tools.schemas import LibraryExportSnapshot
 from studio.apps.thought_workshop.multitable.content import project as project_content
 from studio.apps.thought_workshop.notes import note_out
 from studio.apps.thought_workshop.schemas.document import file_ids
 from studio.apps.thought_workshop.storage.models import ThoughtNote
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata
 
 
-async def export_snapshot(session, owner_user_id, project_id):
+async def export_snapshot(session, owner_user_id, project_id, *, assets: AssetMetadata):
     # sqlite3's legacy mode does not begin a transaction for SELECT. Start an
     # explicit read snapshot so metadata, documents and assets share one view.
     await session.rollback()
@@ -31,7 +31,8 @@ async def export_snapshot(session, owner_user_id, project_id):
     ids = {asset for row in rows for asset in file_ids(row.document)}
     if project.cover_asset_id:
         ids.add(project.cover_asset_id)
-    await resolve_assets(session, owner_user_id, ids)
+    if ids:
+        await assets.describe(ids)
     value = LibraryExportSnapshot(
         knowledge_base=output.model_dump(mode="json"),
         documents=[

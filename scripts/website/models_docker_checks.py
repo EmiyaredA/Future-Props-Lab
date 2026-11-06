@@ -173,8 +173,7 @@ def verify_models(
                 assert error.rcvd and error.rcvd.code == 4403
 
     stable = {
-        name: started(name)
-        for name in ("identity", "gateway", "assets", "rendering", "management")
+        name: started(name) for name in ("identity", "gateway", "assets", "rendering", "management")
     }
     compose("up", "--detach", "--no-deps", "--force-recreate", "models")
     assert (

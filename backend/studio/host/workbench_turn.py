@@ -4,11 +4,11 @@ import asyncio
 import json
 from uuid import uuid4
 
-from app.capabilities.agents.cli.instructions import LiveInstructions
 from studio.apps.agent_workbench.execution.project_tools import ProjectTools
 from studio.contracts.agent_workbench.activity import fields
 from studio.contracts.agent_workbench.execution import TurnScope
 from studio.contracts.agent_workbench.native import NativeOutcome
+from studio.host.agent_execution.cli.instructions import LiveInstructions
 from studio.runtime.tasks.native_queue import digest
 
 from .transport import LeaseEnded, ProtocolConflict

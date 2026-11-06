@@ -22,5 +22,5 @@ Status: implemented
 
 ## Verification
 
-运行 `tests/test_tenant_context.py`、跨 Workspace 文件/日志和项目存储测试。
+运行 `tests/integration/test_tenant_context.py`、跨 Workspace 文件/日志和项目存储测试。
 

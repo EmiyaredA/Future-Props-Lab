@@ -1,6 +1,6 @@
 """Publish the timeline editing operation in both site assemblies."""
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
@@ -17,13 +17,17 @@ router = APIRouter()
 
 @router.post("/projects/{project_id}/timeline/operations", response_model=VideoEditorTimelineOut)
 async def apply_timeline_operations(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     body: VideoEditorTimelineBatchIn,
 ) -> VideoEditorTimelineOut:
     try:
-        return await VideoEditorTimelines(session, owner_user_id).apply(project_id, body)
+        assets = request.app.state.video_assets(request, session, owner_user_id)
+        return await VideoEditorTimelines(session, owner_user_id).apply(
+            project_id, body, assets=assets
+        )
     except (
         VideoEditorNotFoundError,
         VideoEditorValidationError,

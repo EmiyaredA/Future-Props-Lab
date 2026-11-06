@@ -30,9 +30,9 @@ DocumentAccess 显式提供引用和可见目录适配，NavigationScope 显式�
 
 ## Verification
 
-- tests/test_document_navigation.py：白名单、安全标识、卡片组子节点、引用映射、真实 Session 下的历史、搜索、备份导入和反向引用。
-- tests/test_knowledge_community.py：新块保存、逐篇授权、隐藏引用、过滤导出和同一原正文。
-- web/tests/document-navigation.test.tsx：首页模板插入、HTML 粘贴、不可访问目标、动态目录导出和父子树只读操作。
+- tests/apps/thought_workshop/test_document_navigation.py：白名单、安全标识、卡片组子节点、引用映射、真实 Session 下的历史、搜索、备份导入和反向引用。
+- tests/apps/thought_workshop/test_knowledge_community.py：新块保存、逐篇授权、隐藏引用、过滤导出和同一原正文。
+- web/tests/features/document-navigation.test.tsx：首页模板插入、HTML 粘贴、不可访问目标、动态目录导出和父子树只读操作。
 - web/e2e/document-layout.spec.ts：实际编辑器创建首页、选择卡片、排序、保存刷新、发布及跨账号可见性；390/768/1600 宽度与明暗主题的实际预览。
 - 官方阅读、技术图形和社区旅程：全部 93 篇断外网加载、旧 URL、阅读位置、个人图形副本与图形视口。
 - 全量后端与 Web 测试、构建、相关 lint 和格式分别验证；全仓检查的桌宠格式与 SDK 文档过期问题按范围外结果报告，保护文档中心不改写。

@@ -23,4 +23,4 @@ Thought 重建正文、历史、模板素材关联与文档引用索引，并核
 
 ## Verification
 
-`tests/test_thought_cutover_transfer.py` 经兼容站正式 API 建立样本，封存后验证旧站恢复、两个独立回环进程中的中断续跑、关系摘要及四类素材投影。演练核对表格删除后保留的附件、文档和表格历史、读者授权以及错误 SHA256 与跨账号引用的拒绝。
+`tests/apps/thought_workshop/test_thought_cutover_transfer.py` 经兼容站正式 API 建立样本，封存后验证旧站恢复、两个独立回环进程中的中断续跑、关系摘要及四类素材投影。演练核对表格删除后保留的附件、文档和表格历史、读者授权以及错误 SHA256 与跨账号引用的拒绝。

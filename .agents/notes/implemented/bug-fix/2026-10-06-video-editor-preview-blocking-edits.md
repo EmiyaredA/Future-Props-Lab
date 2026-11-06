@@ -25,7 +25,7 @@ Status: implemented
 
 ## Verification
 
-- 新增 `tests/test_video_editor_preview_concurrency.py`：通过正式 API 挂起精确帧或文字渲染，确认分割返回成功且 revision 递增时渲染仍未结束；修复前两个分支均因事件循环阻塞失败。
+- 新增 `tests/apps/video_editor/test_video_editor_preview_concurrency.py`：通过正式 API 挂起精确帧或文字渲染，确认分割返回成功且 revision 递增时渲染仍未结束；修复前两个分支均因事件循环阻塞失败。
 - 同一精确帧并发发布验证独立临时文件、完整缓存结果、临时文件清理与缓存命中。
 - 分别在解码失败时保留和移除工程目录，核对错误类型及目录状态。
 - 运行视频编辑器后端回归、架构检查与前端分割／保存队列回归；无真实供应商调用，无持久数据库写入。

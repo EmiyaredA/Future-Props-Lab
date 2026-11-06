@@ -1,0 +1,70 @@
+# Selected with deploy/compose/compose.yaml only when an independent Integrations release is configured.
+services:
+  integrations:
+    cap_drop:
+    - ALL
+    cpus: 2
+    healthcheck:
+      interval: 15s
+      retries: 3
+      start_period: 10s
+      test:
+      - CMD
+      - python
+      - -c
+      - import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/ready',
+        timeout=2)
+      timeout: 3s
+    image: ${FPL_INTEGRATIONS_IMAGE:?Build and select a Integrations release}
+    init: true
+    mem_limit: 1536m
+    networks:
+    - private
+    - egress
+    read_only: true
+    restart: unless-stopped
+    security_opt:
+    - no-new-privileges:true
+    stop_grace_period: 60s
+    tmpfs:
+    - /tmp:mode=1777,size=32m
+    user: ${FPL_SERVICE_UID}:${FPL_SERVICE_GID}
+    volumes:
+    - bind:
+        create_host_path: false
+      source: ${FPL_INTEGRATIONS_STATE:?Select isolated or formally migrated Integrations data}
+      target: /state
+      type: bind
+    - bind:
+        create_host_path: false
+      read_only: true
+      source: ${FPL_INTEGRATIONS_CONFIG:?Select minimal read-only Integrations TOML}
+      target: /run/fpl/config.toml
+      type: bind
+    - bind:
+        create_host_path: false
+      read_only: true
+      source: ${FPL_IDENTITY_PUBLIC_KEY:?Select Identity public key}
+      target: /run/fpl/identity-public.pem
+      type: bind
+    - bind:
+        create_host_path: false
+      read_only: true
+      source: ${FPL_INTEGRATIONS_IDENTITY_CLIENT:?Select protected Integrations connection}
+      target: /run/fpl/identity-client.json
+      type: bind
+    - type: bind
+      source: ${FPL_INTEGRATIONS_NATIVE_INGRESS:?Select Integrations native ingress proof}
+      target: /run/fpl/native-ingress
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ${FPL_INTEGRATIONS_WORKERS:?Select Integrations native worker credentials}
+      target: /run/fpl/workers.json
+      read_only: true
+      bind:
+        create_host_path: false
+networks:
+  egress:
+    driver: bridge

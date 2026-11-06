@@ -3,7 +3,11 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.http_bindings import SessionDep
+from studio.apps.thought_workshop.http_bindings import (
+    AccountDirectoryDep,
+    AssetMetadataDep,
+    SessionDep,
+)
 from studio.apps.thought_workshop.multitable.csv_exchange import import_csv
 from studio.apps.thought_workshop.multitable.query_http import router as query_router
 from studio.apps.thought_workshop.multitable.schemas import (
@@ -41,25 +45,56 @@ async def structure(note_id: str, session: SessionDep, principal: StudioAuth):
 
 @router.post("/tables/{table_id}/query", response_model=RecordPage)
 async def records(
-    note_id: str, table_id: str, body: QueryIn, session: SessionDep, owner_user_id: OwnerDep
+    note_id: str,
+    table_id: str,
+    body: QueryIn,
+    session: SessionDep,
+    accounts: AccountDirectoryDep,
+    owner_user_id: OwnerDep,
 ):
-    return await call(Multitable(session, owner_user_id).records(note_id, table_id, body))
+    return await call(
+        Multitable(session, owner_user_id, accounts=accounts).records(note_id, table_id, body)
+    )
 
 
 @router.post("/operations", response_model=BatchOut)
-async def operations(note_id: str, body: BatchIn, session: SessionDep, principal: StudioAuth):
+async def operations(
+    note_id: str,
+    body: BatchIn,
+    session: SessionDep,
+    accounts: AccountDirectoryDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
+):
     return await call(
-        Multitable(session, principal.owner_user_id, principal.user_id).apply(note_id, body)
+        Multitable(
+            session, principal.owner_user_id, principal.user_id, assets=assets, accounts=accounts
+        ).apply(note_id, body)
     )
 
 
 @router.post("/tables/{table_id}/csv-import", response_model=BatchOut)
 async def csv_import(
-    note_id: str, table_id: str, body: CsvIn, session: SessionDep, principal: StudioAuth
+    note_id: str,
+    table_id: str,
+    body: CsvIn,
+    session: SessionDep,
+    accounts: AccountDirectoryDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
 ):
     return await call(
         import_csv(
-            Multitable(session, principal.owner_user_id, principal.user_id), note_id, table_id, body
+            Multitable(
+                session,
+                principal.owner_user_id,
+                principal.user_id,
+                assets=assets,
+                accounts=accounts,
+            ),
+            note_id,
+            table_id,
+            body,
         )
     )
 
@@ -81,12 +116,18 @@ async def detail(note_id: str, revision: int, session: SessionDep, owner_user_id
 
 @router.post("/history/{revision}/restore", response_model=BatchOut)
 async def restore(
-    note_id: str, revision: int, body: RestoreIn, session: SessionDep, principal: StudioAuth
+    note_id: str,
+    revision: int,
+    body: RestoreIn,
+    session: SessionDep,
+    accounts: AccountDirectoryDep,
+    assets: AssetMetadataDep,
+    principal: StudioAuth,
 ):
     return await call(
-        Multitable(session, principal.owner_user_id, principal.user_id).restore(
-            note_id, revision, body.expected_revision
-        )
+        Multitable(
+            session, principal.owner_user_id, principal.user_id, assets=assets, accounts=accounts
+        ).restore(note_id, revision, body.expected_revision)
     )
 
 

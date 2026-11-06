@@ -28,7 +28,7 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/thought-multitable-ui.test.tsx`：个人布局与响应式独立、视图键盘导航、菜单权限、配置草稿、列宽一次提交／取消及抽屉回焦。
+- `web/tests/features/thought-multitable-ui.test.tsx`：个人布局与响应式独立、视图键盘导航、菜单权限、配置草稿、列宽一次提交／取消及抽屉回焦。
 - 现有单元格组件与草稿回归继续验证父组件刷新不重建编辑器、TSV 原子性和失败操作保留。
 - 多维表格浏览器旅程验证三视图、CSV、备份、正文独立编辑、断网及冲突，并覆盖列宽刷新恢复与 1600／1024／768／390px 明暗主题。
 - 三条 E2E 已通过，包含 5,000 条记录、50 字段的分页与虚拟化；实际截图保存在 `.local/multitable-ui/screenshots/`。

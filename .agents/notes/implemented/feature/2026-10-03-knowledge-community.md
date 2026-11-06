@@ -33,8 +33,8 @@ Web 的 DocumentAccess 显式适配保存、上传、素材、引用、剪贴板
 
 ## Verification
 
-- `tests/test_knowledge_community.py`：真实 Session、三个账号、跨空间逐篇角色、过滤目录/导出/反向引用、素材猜测、上传、CAS、撤销、批量原子性和回收站联动。
-- `web/tests/knowledge-community.test.tsx`：默认不发布、批量 revision、冲突保留、授权失效与草稿隔离。
+- `tests/apps/thought_workshop/test_knowledge_community.py`：真实 Session、三个账号、跨空间逐篇角色、过滤目录/导出/反向引用、素材猜测、上传、CAS、撤销、批量原子性和回收站联动。
+- `web/tests/features/knowledge-community.test.tsx`：默认不发布、批量 revision、冲突保留、授权失效与草稿隔离。
 - `web/e2e/knowledge-community.spec.ts`：发布、收藏、授权、编辑同一正文、导出、撤回和草稿保留；390/768/1600 宽度与明暗主题的实际交互预览。
 - 官方、技术文档、图形复制和视口、阅读位置、IndexedDB 恢复与整库 HTML 回归；93 篇文章的断网加载已验收。
 - 全量后端、Web、lint、格式、构建、契约、Note 和保护路径检查分别记录结果；真实供应商调用不属于此变更。

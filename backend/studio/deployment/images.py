@@ -106,19 +106,18 @@ ENTRY_POINTS = {
     "gateway": "studio.assembly.independent.gateway.cli",
     "portal": "studio.assembly.independent.portal.cli",
 }
-PROJECT_PACKAGES = ("app", "studio")
+PROJECT_PACKAGES = ("studio",)
 
 FORBIDDEN_IDENTITY = (
     "studio.runtime.database.website",
     "studio.assembly.website.application",
     "studio.assembly.website.routes",
     "studio.assembly.website.models",
-    "app.apps",
     "studio.apps.model_service",
     "studio.apps.asset_library",
-    "app.capabilities.agents",
     "studio.assembly.website.account_provisioning",
 )
+
 
 def module_file(root, name):
     path = root / "backend" / name.replace(".", "/")
@@ -168,9 +167,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.website.models",
                     "studio.assembly.http_dependencies",
-                    "app.apps",
                     "studio.apps.model_service",
-                    "app.console.models",
                     "studio.apps.identity",
                     "studio.host",
                 )
@@ -195,9 +192,7 @@ def source_closure(root: Path, service):
                         "studio.assembly.website.routes",
                         "studio.assembly.website.models",
                         "studio.assembly.http_dependencies",
-                        "app.apps",
                         "studio.apps.model_service",
-                        "app.console.models",
                         "studio.apps.identity",
                         "studio.host",
                         "studio.apps.asset_library.storage.website_files",
@@ -215,9 +210,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.website.models",
                     "studio.assembly.http_dependencies",
-                    "app.apps",
                     "studio.apps.model_service",
-                    "app.console.models",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.website_files",
                     "studio.apps.asset_library.storage.uploads",
@@ -234,9 +227,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.website.models",
                     "studio.assembly.http_dependencies",
-                    "app.apps",
                     "studio.apps.model_service",
-                    "app.console.models",
                     "studio.apps.asset_library",
                     "studio.host",
                 )
@@ -249,9 +240,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.models",
                     "studio.assembly.website.routes",
                     "studio.assembly.http_dependencies",
-                    "app.apps",
                     "studio.apps.model_service",
-                    "app.console.models",
                     "studio.apps.identity",
                     "studio.apps.agent_workbench",
                     "studio.apps.asset_library",
@@ -266,9 +255,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
-                    "app.apps",
                     "studio.apps.model_service",
-                    "app.console",
                     "studio.apps.model_service.demonstration.website_storage",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.website_files",
@@ -288,9 +275,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
-                    "app.apps",
                     "studio.apps.model_service",
-                    "app.console.models",
                     "studio.apps.integrations.storage.models",
                     "studio.apps.identity",
                     "studio.apps.integrations",
@@ -307,7 +292,6 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
-                    "app.console.models",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.uploads",
                     "studio.apps.asset_library.storage.file_paths",
@@ -328,9 +312,6 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
-                    "app.apps",
-                    "app.console.governance",
-                    "app.console.models",
                     "studio.apps.model_service.demonstration.website_storage",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.website_files",
@@ -348,9 +329,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
-                    "app.apps",
                     "studio.apps.model_service",
-                    "app.console",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.file_paths",
                     "studio.apps.asset_library",
@@ -369,11 +348,7 @@ def source_closure(root: Path, service):
                 }
                 or name.startswith(
                     (
-                        "app.apps.",
                         "studio.apps.model_service",
-                        "app.console.governance",
-                        "app.console.models",
-                        "app.capabilities.agents.cli.catalog",
                         "studio.apps.identity",
                         "studio.host",
                     )
@@ -389,10 +364,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.http_dependencies",
                     "studio.runtime.database.website",
                 }
-                or name.startswith(
-                    ("app.apps.", "studio.apps.integrations.", "studio.apps.model_service.")
-                )
-                or name.startswith("app.console.governance.")
+                or name.startswith(("studio.apps.integrations.", "studio.apps.model_service."))
             ):
                 raise ValueError(f"Amadeus 镜像包含越界依赖：{name}")
             if service == "remote" and (
@@ -405,8 +377,6 @@ def source_closure(root: Path, service):
                 }
                 or name.startswith(
                     (
-                        "app.apps.",
-                        "app.console.models",
                         "studio.apps.model_service",
                         "studio.apps.identity",
                     )
@@ -428,16 +398,11 @@ def source_closure(root: Path, service):
                 }
                 or name.startswith(
                     (
-                        "app.console",
                         "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
                     )
-                )
-                or (
-                    name.startswith("app.apps.")
-                    and not name.startswith("studio.apps.motion_compositor")
                 )
                 or name
                 in {
@@ -457,15 +422,11 @@ def source_closure(root: Path, service):
                 }
                 or name.startswith(
                     (
-                        "app.console",
                         "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
                     )
-                )
-                or (
-                    name.startswith("app.apps.") and not name.startswith("studio.apps.video_editor")
                 )
                 or name
                 in {
@@ -485,16 +446,11 @@ def source_closure(root: Path, service):
                 }
                 or name.startswith(
                     (
-                        "app.console",
                         "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
                     )
-                )
-                or (
-                    name.startswith("app.apps.")
-                    and not name.startswith("studio.apps.presentation_workshop")
                 )
                 or name
                 in {
@@ -514,14 +470,12 @@ def source_closure(root: Path, service):
                 }
                 or name.startswith(
                     (
-                        "app.console",
                         "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
                     )
                 )
-                or name.startswith("app.apps.")
                 or name
                 in {
                     "studio.apps.asset_library.storage.models",
@@ -539,16 +493,11 @@ def source_closure(root: Path, service):
                 }
                 or name.startswith(
                     (
-                        "app.console",
                         "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
                     )
-                )
-                or (
-                    name.startswith("app.apps.")
-                    and not name.startswith("studio.apps.interview_assistant")
                 )
                 or name
                 in {
@@ -567,16 +516,11 @@ def source_closure(root: Path, service):
                 }
                 or name.startswith(
                     (
-                        "app.console",
                         "studio.apps.model_service",
                         "studio.apps.asset_library",
                         "studio.apps.identity",
                         "studio.host",
                     )
-                )
-                or (
-                    name.startswith("app.apps.")
-                    and not name.startswith("studio.apps.director_desk")
                 )
             ):
                 raise ValueError(f"Director 镜像包含越界依赖：{name}")
@@ -587,10 +531,8 @@ def source_closure(root: Path, service):
                     "studio.assembly.website.routes",
                     "studio.assembly.website.models",
                     "studio.runtime.database.website",
-                    f"app.apps.{other}_workshop",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.file_paths",
-                    "app.console",
                     "studio.apps.asset_library",
                     "studio.apps.creative_workshop",
                     "studio.apps.identity",

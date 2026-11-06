@@ -172,16 +172,18 @@ def exercise(
         "compose",
         "--env-file",
         "/dev/null",
+        "--project-directory",
+        str(ROOT / "deploy"),
         "--project-name",
         project,
         "--file",
-        str(ROOT / "deploy/compose.yaml"),
+        str(ROOT / "deploy/compose/compose.yaml"),
         "--file",
         str(root / "protocol-fixture.yaml"),
     ]
 
     if thought_image:
-        prefix.extend(["--file", str(ROOT / "deploy/thought.compose.yaml")])
+        prefix.extend(["--file", str(ROOT / "deploy/compose/thought.compose.yaml")])
 
     def compose(*args, input_text=None, checked=True):
         result = subprocess.run(

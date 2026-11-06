@@ -34,7 +34,7 @@ Web：空接缝显示可点「+」、接缝标记可右键编辑/删除；片段
 
 ## Verification
 
-- `uv run pytest -q tests/test_video_editor_transitions.py`
+- `uv run pytest -q tests/apps/video_editor/test_video_editor_transitions.py`
 - `npm run test --workspace web -- tests/video-editor-transitions.test.tsx tests/video-editor-preview-transitions.test.ts`
 - `npm run contracts:check`
 - `npm run verify-notes`

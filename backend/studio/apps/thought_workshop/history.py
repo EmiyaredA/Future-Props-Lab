@@ -31,11 +31,11 @@ def snapshot(row: ThoughtNoteHistory) -> ThoughtHistorySnapshot:
 
 
 class History:
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    def __init__(self, session: AsyncSession, *, accounts=None):
+        self.session, self.accounts = session, accounts
 
     async def append(self, note: ThoughtNote, author_id: str | None, source: str):
-        author = await find_author(self.session, author_id)
+        author = await find_author(self.accounts, author_id)
         row = ThoughtNoteHistory(
             note_id=note.id,
             revision=note.revision,

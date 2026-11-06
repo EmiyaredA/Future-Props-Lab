@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_thought_cutover_transfer.py` 通过实际旧站 HTTP 创建社区编辑者、收藏、附件和官方导入回执，再验收迁入、旧站恢复、账号隔离和文件摘要。
+`tests/apps/thought_workshop/test_thought_cutover_transfer.py` 通过实际旧站 HTTP 创建社区编辑者、收藏、附件和官方导入回执，再验收迁入、旧站恢复、账号隔离和文件摘要。

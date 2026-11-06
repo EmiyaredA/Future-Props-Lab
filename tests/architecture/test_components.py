@@ -28,6 +28,8 @@ def test_interview_file_scope_is_explicit():
     [
         "asset_library",
         "galgame_workshop",
+        "identity",
+        "interview_assistant",
         "model_service",
         "motion_compositor",
         "presentation_workshop",
@@ -57,6 +59,30 @@ def test_migrated_apps_never_select_process_global_configuration(application):
             }:
                 violations.append(str(path.relative_to(ROOT)))
     assert not violations, violations
+
+
+@pytest.mark.parametrize(
+    ("application", "keys"),
+    [
+        (
+            "presentation_workshop",
+            {"presentation_project_assets", "presentation_retention", "presentation_import"},
+        ),
+        ("motion_compositor", {"motion_project_resources"}),
+        ("video_editor", {"video_project_layouts", "video_timeline_assets"}),
+        ("model_service", {"native_model_readiness"}),
+    ],
+)
+def test_migrated_components_receive_request_ports(application, keys):
+    locations = [
+        *(STUDIO / "apps" / application).rglob("*.py"),
+        STUDIO / "assembly/website/bindings.py",
+        STUDIO / "assembly/independent" / application / "application.py",
+    ]
+    for path in locations:
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            assert not (isinstance(node, ast.Constant) and node.value in keys), path
 
 
 def imports(path, *, include_types=True):
@@ -92,6 +118,17 @@ def imports(path, *, include_types=True):
                 location = ROOT / "backend" / candidate.replace(".", "/")
                 if location.with_suffix(".py").is_file() or (location / "__init__.py").is_file():
                     yield candidate
+
+
+def test_studio_no_longer_loads_the_legacy_backend_namespace():
+    assert not list((ROOT / "backend/app").rglob("*.py"))
+    violations = [
+        (str(path.relative_to(ROOT)), module)
+        for path in STUDIO.rglob("*.py")
+        for module in imports(path)
+        if module == "app" or module.startswith("app.")
+    ]
+    assert not violations, violations
 
 
 def test_studio_pure_components_do_not_load_adapters():
@@ -602,3 +639,38 @@ def test_thumbnail_decoding_has_no_global_capacity_or_duplicated_implementation(
     assert "Semaphore" not in assets
     assert not (STUDIO / "apps/identity/profile_images.py").exists()
     assert "get_settings" not in (STUDIO / "apps/identity/profile.py").read_text()
+
+
+def test_thought_components_are_never_bound_to_database_sessions():
+    for base in (STUDIO / "apps/thought_workshop", STUDIO / "assembly"):
+        for path in base.rglob("*.py"):
+            source = path.read_text()
+            assert '"thought_asset_metadata_factory"' not in source, path
+            assert '"thought_directory_factory"' not in source, path
+            assert 'session.info["thought_directory"]' not in source, path
+            assert 'session.info.get("thought_directory")' not in source, path
+
+
+def test_apps_reserve_database_session_context_for_storage_ownership():
+    session_names = {"session", "db", "source_session", "target_session"}
+    storage_keys = {"owner_user_id", "allow_system_reads"}
+    for path in (STUDIO / "apps").rglob("*.py"):
+        for node in ast.walk(ast.parse(path.read_text())):
+            if isinstance(node, ast.Subscript):
+                info, key = node.value, node.slice
+            elif (
+                isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr in {"get", "pop", "setdefault"}
+                and node.args
+            ):
+                info, key = node.func.value, node.args[0]
+            else:
+                continue
+            if not isinstance(info, ast.Attribute) or info.attr != "info":
+                continue
+            if getattr(info.value, "id", getattr(info.value, "attr", None)) in session_names:
+                assert isinstance(key, ast.Constant) and key.value in storage_keys, (
+                    path,
+                    node.lineno,
+                )

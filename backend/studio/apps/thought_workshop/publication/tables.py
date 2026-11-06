@@ -19,13 +19,15 @@ from studio.apps.thought_workshop.storage.models import ThoughtNote
 
 
 class TableAccess:
-    def __init__(self, session, principal):
-        self.session, self.principal = session, principal
+    def __init__(self, session, principal, *, accounts):
+        self.session, self.principal, self.accounts = session, principal, accounts
 
-    async def access(self, pub_id, note_id, parent_id=None, *, write=False):
+    async def access(self, pub_id, note_id, parent_id=None, *, write=False, source_assets=None):
         pub = await publication(self.session, pub_id)
         if parent_id:
-            _, parent, _ = await article(self.session, self.principal, pub, parent_id)
+            _, parent, _ = await article(
+                self.session, self.principal, pub, parent_id, accounts=self.accounts
+            )
             if note_id not in reference_ids(parent.document):
                 raise missing()
             target = await self.session.scalar(
@@ -41,10 +43,24 @@ class TableAccess:
                 raise missing()
             pub = await publication(self.session, target.id)
         config, note, role = await article(
-            self.session, self.principal, pub, note_id, level="edit" if write else "read"
+            self.session,
+            self.principal,
+            pub,
+            note_id,
+            level="edit" if write else "read",
+            accounts=self.accounts,
         )
         bind_source(self.session, pub)
-        use_case = Multitable(self.session, pub.owner_user_id, self.principal.user_id)
+        assets = (
+            source_assets(self.session, pub.owner_user_id) if source_assets is not None else None
+        )
+        use_case = Multitable(
+            self.session,
+            pub.owner_user_id,
+            self.principal.user_id,
+            assets=assets,
+            accounts=self.accounts,
+        )
         await use_case.note(note.id)
         return use_case, pub, role, config
 
@@ -72,17 +88,30 @@ class TableAccess:
             )
         )
 
-    async def apply(self, pub_id, note_id, body, parent_id, *, prepare=None, after_write=None):
-        use_case, pub, role, config = await self.access(pub_id, note_id, parent_id, write=True)
+    async def apply(
+        self,
+        pub_id,
+        note_id,
+        body,
+        parent_id,
+        *,
+        prepare=None,
+        after_write=None,
+        source_assets=None,
+    ):
+        use_case, pub, role, config = await self.access(
+            pub_id, note_id, parent_id, write=True, source_assets=source_assets
+        )
         authorized_source = pub.id, pub.owner_user_id, pub.revision, config.revision
         current = await snapshot(self.session, note_id)
         allowed_assets = await self.allowed_assets(note_id, current)
-        rows, _ = await visible(self.session, self.principal, pub)
+        rows, _ = await visible(self.session, self.principal, pub, accounts=self.accounts)
 
         async def before_write(before, after):
             nonlocal pub, role
-            if prepare is not None:
-                await prepare(authorized_source, before, after)
+            assets = (
+                await prepare(authorized_source, before, after) if prepare is not None else None
+            )
             # All remote preparation is complete. Serialize local grants with the mutation.
             await begin_write(self.session)
             _, pub, role, config = await self.access(pub_id, note_id, parent_id, write=True)
@@ -91,7 +120,9 @@ class TableAccess:
                 or not asset_ids(after) <= await self.allowed_assets(note_id, before)
             ):
                 raise missing()
-            current_rows, _ = await visible(self.session, self.principal, pub)
+            current_rows, _ = await visible(
+                self.session, self.principal, pub, accounts=self.accounts
+            )
 
             def note_refs(state):
                 return {
@@ -107,6 +138,7 @@ class TableAccess:
                 note.id for note, _, _ in current_rows
             }:
                 raise missing()
+            return assets
 
         result = await use_case.apply(
             note_id,
@@ -127,14 +159,17 @@ class TableAccess:
 class CommunityTables:
     """Each browser operation binds the source only inside its own session."""
 
-    def __init__(self, request_session, principal):
+    def __init__(self, request_session, principal, *, accounts):
         self.sessions = source_sessions(request_session)
-        self.principal = principal
+        self.principal, self.accounts = principal, accounts
 
-    async def run(self, method, *args):
+    async def run(self, method, *args, **kwargs):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
-            return await getattr(TableAccess(session, self.principal), method)(*args)
+            return await getattr(
+                TableAccess(session, self.principal, accounts=self.accounts.for_session(session)),
+                method,
+            )(*args, **kwargs)
 
     async def structure(self, *args):
         return await self.run("structure", *args)
@@ -145,5 +180,5 @@ class CommunityTables:
     async def conversion(self, *args):
         return await self.run("conversion", *args)
 
-    async def apply(self, *args):
-        return await self.run("apply", *args)
+    async def apply(self, *args, source_assets):
+        return await self.run("apply", *args, source_assets=source_assets)

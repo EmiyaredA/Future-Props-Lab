@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 
 from studio.apps.thought_workshop.archives.archive_import import import_archive
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.http_bindings import SessionDep
+from studio.apps.thought_workshop.http_bindings import AccountDirectoryDep, SessionDep
 from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut
 from studio.assembly.http_dependencies import StudioAuth
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
@@ -16,6 +16,7 @@ router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
 async def imports(
     request: Request,
     session: SessionDep,
+    accounts: AccountDirectoryDep,
     principal: StudioAuth,
     upload: UploadFile = File(),
     knowledge_base_id: str | None = None,
@@ -29,6 +30,7 @@ async def imports(
         return await import_archive(
             session,
             owner=principal.user_id,
+            accounts=accounts,
             upload=upload,
             request_key=request.headers.get("idempotency-key"),
             knowledge_base_id=knowledge_base_id,

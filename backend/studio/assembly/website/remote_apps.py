@@ -22,7 +22,6 @@ from studio.assembly.http_dependencies import (
     resolve_studio_websocket_principal,
 )
 from studio.config import CONFIG_FILE
-from studio.config.settings import get_cloud_settings
 from studio.contracts.remote_desktop.apps import (
     InstalledRemoteApps,
     RemoteAppCatalog,
@@ -50,24 +49,24 @@ def allowed_ids(settings):
 
 
 class RemoteApps(AppSessions):
-    def __init__(self, *, sessions, preferences):
+    def __init__(self, *, sessions, preferences, read_cloud_settings):
         super().__init__()
         self._sessions = sessions
         self._preferences = preferences
+        self._read_cloud_settings = read_cloud_settings
         self.capture = asyncio.Lock()
 
     async def access(self, principal, local, app):
-        settings = get_cloud_settings()
+        settings = self._read_cloud_settings()
         if not settings.fpl_cloud_control_apps_enabled or app not in allowed_ids(settings):
             return None
         async with self._sessions() as db:
-            if not await desktop_authorized(db, principal, local=local):
+            if not await desktop_authorized(db, principal, local=local, settings=settings):
                 return None
         return (await self._preferences.read(owner=principal.user_id)).idle_minutes
 
 
-def settings_for(principal, local):
-    settings = get_cloud_settings()
+def settings_for(principal, local, settings):
     require_enabled(principal, local=local, desktop=True, settings=settings)
     if not settings.fpl_cloud_control_apps_enabled:
         raise HTTPException(404, "远程应用尚未启用")
@@ -88,8 +87,8 @@ def no_store(response):
 @router.get("", response_model=RemoteAppCatalog)
 async def list_apps(request: Request, response: Response, db: SessionDep, principal: StudioAuth):
     local = local_request(request)
-    settings = settings_for(principal, local)
-    if not await desktop_authorized(db, principal, local=local):
+    settings = settings_for(principal, local, request.app.state.read_cloud_settings())
+    if not await desktop_authorized(db, principal, local=local, settings=settings):
         raise HTTPException(403, "请先验证云控访问权限")
     await db.rollback()
     no_store(response)
@@ -104,7 +103,7 @@ async def list_apps(request: Request, response: Response, db: SessionDep, princi
 async def installed(request: Request, response: Response, principal: StudioAuth):
     require_local_browser(request, principal)
     raw = config_bytes(CONFIG_FILE)
-    settings = settings_for(principal, True)
+    settings = settings_for(principal, True, request.app.state.read_cloud_settings())
     apps = await catalog(settings)
     if config_bytes(CONFIG_FILE) != raw:
         raise HTTPException(409, "配置已变更，请刷新应用列表")
@@ -121,7 +120,7 @@ async def save_apps(
     principal: StudioAuth,
 ):
     require_local_browser(request, principal)
-    settings = settings_for(principal, True)
+    settings = settings_for(principal, True, request.app.state.read_cloud_settings())
     if not await recently_reauthenticated(db, principal):
         raise HTTPException(
             403, {"code": "reauthentication_required", "message": "请重新验证管理员密码"}
@@ -158,8 +157,8 @@ async def connect(
     principal: StudioAuth,
 ):
     local = local_request(request)
-    settings = settings_for(principal, local)
-    if not await desktop_authorized(db, principal, local=local):
+    settings = settings_for(principal, local, request.app.state.read_cloud_settings())
+    if not await desktop_authorized(db, principal, local=local, settings=settings):
         raise HTTPException(403, "请先验证云控访问权限")
     if body.app_id not in allowed_ids(settings):
         raise HTTPException(404, "应用不可用")
@@ -178,7 +177,7 @@ async def connect(
 @router.websocket("/socket")
 async def app_socket(socket: WebSocket):
     local = local_request(socket)
-    settings = get_cloud_settings()
+    settings = socket.app.state.read_cloud_settings()
     origins = (
         {"http://127.0.0.1:3000", f"http://127.0.0.1:{settings.fpl_website_port}"}
         if local
@@ -190,7 +189,7 @@ async def app_socket(socket: WebSocket):
         return
     try:
         principal = await resolve_studio_websocket_principal(socket, "cloud-control.access")
-        settings_for(principal, local)
+        settings_for(principal, local, settings)
     except HTTPException:
         await socket.close(4403)
         return
@@ -213,7 +212,7 @@ async def app_socket(socket: WebSocket):
             if await service.access(principal, local, ticket.app) is None:
                 await socket.close(4403, "应用授权已失效")
                 return
-            settings = get_cloud_settings()
+            settings = socket.app.state.read_cloud_settings()
             async with run_host(
                 settings.fpl_cloud_control_apps_host, "session", ticket.app
             ) as process:

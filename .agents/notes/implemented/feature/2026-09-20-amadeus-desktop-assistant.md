@@ -28,4 +28,4 @@ Amadeus 是独立的 Electron 单例窗口，关闭时隐藏。窗口中的 Web 
 
 ## Verification
 
-`tests/test_amadeus.py` 验证会话归属、引用快照、CAS、审批摘要、一次性执行、运行中切换会话的固定归属、停止尾部结算、部分回复与启动恢复、视频时间线版本冲突、文件逃逸、Skill 文件边界、模型调用日志、能力调用、外部操作取消和脚本输出流；沙箱用例同时运行开发态和冻结后的运行器，并检查超时终止。`tests/test_sqlite_migration_history.py` 在临时数据库验证迁移。运行 `npm run build:amadeus-pi`、`npm run contracts:check` 和 `npm run verify-notes`。完整桌面构建和隔离桌面烟测若被当前工作树中的独立失败阻断，需在交付记录中单独列明，不能写成已通过。
+`tests/test_amadeus.py` 验证会话归属、引用快照、CAS、审批摘要、一次性执行、运行中切换会话的固定归属、停止尾部结算、部分回复与启动恢复、视频时间线版本冲突、文件逃逸、Skill 文件边界、模型调用日志、能力调用、外部操作取消和脚本输出流；沙箱用例同时运行开发态和冻结后的运行器，并检查超时终止。`tests/runtime/test_sqlite_migration_history.py` 在临时数据库验证迁移。运行 `npm run build:amadeus-pi`、`npm run contracts:check` 和 `npm run verify-notes`。完整桌面构建和隔离桌面烟测若被当前工作树中的独立失败阻断，需在交付记录中单独列明，不能写成已通过。

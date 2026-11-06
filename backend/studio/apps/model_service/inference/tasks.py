@@ -44,13 +44,21 @@ def task_out(row):
 
 class InferenceTasks:
     def __init__(
-        self, session, owner_user_id, *, settings, library_outputs=None, native_retention=None
+        self,
+        session,
+        owner_user_id,
+        *,
+        settings,
+        library_outputs=None,
+        native_retention=None,
+        require_native_retention=False,
     ):
         self.session, self.owner_user_id = session, owner_user_id
         self.settings = settings
         self.storage = InferenceStorage(settings)
         self.library_outputs = library_outputs
         self.native_retention = native_retention
+        self.require_native_retention = require_native_retention
 
     async def row(self, task_id):
         row = await self.session.scalar(
@@ -86,12 +94,14 @@ class InferenceTasks:
         row = await replay_task(self.session, self.owner_user_id, body)
         return task_out(row) if row else None
 
-    async def create(self, body, admission=None, credential: CredentialSnapshot | None = None):
+    async def create(
+        self, body, admission=None, credential: CredentialSnapshot | None = None, *, readiness=None
+    ):
         prior = await self.replay(body)
         if prior:
             return prior
         model, provider = await get_model(
-            self.session, self.owner_user_id, body.model_id, body.kind
+            self.session, self.owner_user_id, body.model_id, body.kind, readiness=readiness
         )
         assets = [
             await InferenceAssets(self.session, self.owner_user_id, settings=self.settings).get(
@@ -220,7 +230,7 @@ class InferenceTasks:
         row = await self.row(task_id)
         if not confirmed_terminal(row):
             raise OperationError("任务尚未确认结算，不能删除", "task_busy", 409)
-        if self.session.info.get("service_id") == "models" and self.native_retention is None:
+        if self.require_native_retention and self.native_retention is None:
             raise OperationError("原生结果清理接口未装配", "native_retention_unavailable", 503)
         paths = (
             [self.storage.root(self.owner_user_id) / "outputs" / row.result_storage_key]

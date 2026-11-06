@@ -65,10 +65,10 @@ def summary_slide(row):
 
 
 class Presentations:
-    def __init__(self, session: AsyncSession, owner_user_id: str):
+    def __init__(self, session: AsyncSession, owner_user_id: str, *, asset_access, retention):
         self.session, self.owner_user_id = session, owner_user_id
-        self.asset_access = session.info["presentation_project_assets"](session, owner_user_id)
-        self.retention = session.info.get("presentation_retention")
+        self.asset_access = asset_access
+        self.retention = retention
 
     async def row(self, project_id: str) -> PresentationProject:
         return await load_owned_project(

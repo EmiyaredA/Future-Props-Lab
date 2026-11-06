@@ -23,4 +23,4 @@ Status: implemented
 
 ## Verification
 
-运行 `uv run pytest -q tests/test_architecture.py tests/test_video_editor*.py tests/test_visual_*.py tests/test_media_workshop_upgrade.py`；`npm run contracts:check` 与 `npm run sdk:check` 零 diff。
+运行 `uv run pytest -q tests/test_architecture.py tests/test_video_editor*.py tests/test_visual_*.py tests/apps/media_rendering/test_media_workshop_upgrade.py`；`npm run contracts:check` 与 `npm run sdk:check` 零 diff。

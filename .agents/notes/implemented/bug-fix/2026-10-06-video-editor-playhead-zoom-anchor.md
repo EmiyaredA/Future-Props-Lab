@@ -25,7 +25,7 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-timeline-scale.test.ts` 验证连续放大缩小、微秒坐标和起点限制。
+- `web/tests/features/video-editor-timeline-scale.test.ts` 验证连续放大缩小、微秒坐标和起点限制。
 - `web/e2e/video-editor-layout.spec.ts` 验证真实滚动容器中的滑杆与键盘调整、边界回传、适配宽度和刷新恢复。
 - 缩放、时间线、布局与偏好相关的 43 项单元/组件测试及新增 Chromium 浏览器回归通过；Web lint、格式检查和生产构建通过。
 - 官方主要操作流程同步描述可验证的缩放行为。全量导入包生成被并行修改的 `technical/figures/video-editor.json` 阻止：新增三条连线缺少必填 `label`，CanvasScene 校验拒绝；不覆盖该并行改动，导入包尚未更新。

@@ -14,7 +14,6 @@ from starlette.background import BackgroundTask
 from studio.apps.motion_compositor.projects import (
     MotionInvalid,
     MotionNotFound,
-    MotionProjects,
     MotionUnavailable,
 )
 from studio.apps.motion_compositor.schemas import (
@@ -23,8 +22,8 @@ from studio.apps.motion_compositor.schemas import (
     AssetOut,
     ImportSourceListOut,
 )
+from studio.apps.motion_compositor.transport.dependencies import MotionDep
 from studio.apps.motion_compositor.transport.website.errors import _error
-from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.motion_compositor.motion_assets import (
     PREFIX,
@@ -74,24 +73,22 @@ async def import_sources(request: Request) -> ImportSourceListOut:
 
 
 @router.get("/projects/{project_id}/assets", response_model=AssetListOut)
-async def list_assets(
-    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str
-) -> AssetListOut:
+async def list_assets(request: Request, projects: MotionDep, project_id: str) -> AssetListOut:
     try:
-        await MotionProjects(session, owner_user_id).row(project_id)
+        await projects.row(project_id)
     except MotionNotFound as exc:
         raise _error(exc) from None
-    await session.rollback()
+    await projects.session.rollback()
     return await read_json(request, f"{PREFIX}/{project_id}/files", AssetListOut)
 
 
 @router.get("/projects/{project_id}/assets/{asset_id}/file")
 async def asset_file(
-    request: Request, session: SessionDep, owner_user_id: OwnerDep, project_id: str, asset_id: str
+    request: Request, projects: MotionDep, project_id: str, asset_id: str
 ) -> StreamingResponse:
     try:
-        await MotionProjects(session, owner_user_id).row(project_id)
-        await session.rollback()
+        await projects.row(project_id)
+        await projects.session.rollback()
         path = f"{PREFIX}/{project_id}/files/{asset_id}"
         client, headers = await authorization(request, path)
         for key in ("range", "if-range"):
@@ -160,14 +157,13 @@ async def write_json(request, path, model, *, headers=None, **body):
 @router.post("/projects/{project_id}/assets", response_model=AssetOut)
 async def upload_asset(
     request: Request,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
+    projects: MotionDep,
     project_id: str,
     file: Annotated[UploadFile, File()],
 ) -> AssetOut:
     try:
-        await MotionProjects(session, owner_user_id).row(project_id)
-        await session.rollback()
+        await projects.row(project_id)
+        await projects.session.rollback()
         digest, size = hashlib.sha256(), 0
         while chunk := await file.read(1024 * 1024):
             digest.update(chunk)
@@ -205,14 +201,13 @@ async def upload_asset(
 @router.post("/projects/{project_id}/assets/import", response_model=AssetListOut)
 async def import_assets(
     request: Request,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
+    projects: MotionDep,
     project_id: str,
     body: AssetImportIn,
 ) -> AssetListOut:
     try:
-        await MotionProjects(session, owner_user_id).row(project_id)
-        await session.rollback()
+        await projects.row(project_id)
+        await projects.session.rollback()
         try:
             query = MotionCopyQuery(asset_ids=body.asset_ids)
         except ValueError:

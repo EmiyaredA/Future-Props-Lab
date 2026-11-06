@@ -24,4 +24,4 @@ Status: implemented
 
 ## Verification
 
-确定性验证覆盖 tests/test_seedance_video.py、tests/test_seedance_migration.py 和 web/tests/seedance-generation.test.tsx；回归共享任务驱动、SenseAudio、ZEALMAN 与独立推理。执行契约生成、SDK 检查、相关架构测试、格式、lint、构建、官方知识库种子和 Agent Note 检查。真实供应商调用未执行。
+确定性验证覆盖 tests/apps/model_service/test_seedance_video.py、tests/apps/model_service/test_seedance_migration.py 和 web/tests/features/seedance-generation.test.tsx；回归共享任务驱动、SenseAudio、ZEALMAN 与独立推理。执行契约生成、SDK 检查、相关架构测试、格式、lint、构建、官方知识库种子和 Agent Note 检查。真实供应商调用未执行。

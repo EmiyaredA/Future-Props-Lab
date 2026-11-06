@@ -24,6 +24,6 @@ SenseAudio 官方模型列表持续更新，仓库默认目录仍保留已下架
 
 ## Verification
 
-- `uv run pytest tests/test_catalog_seed.py tests/test_sqlite_storage.py -q`
+- `uv run pytest tests/integration/test_catalog_seed.py tests/runtime/test_sqlite_storage.py -q`
 - `npm run db:migrate:check`
 - `npm run verify-notes`

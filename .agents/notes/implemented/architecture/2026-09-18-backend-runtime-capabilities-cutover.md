@@ -28,4 +28,4 @@ Status: implemented
 
 ## Verification
 
-运行 `uv run pytest -q tests/test_architecture.py tests/test_tenant_context.py tests/test_account_system.py`；收口 `npm run contracts:check` 与 `npm run sdk:check` 必须零 diff。
+运行 `uv run pytest -q tests/test_architecture.py tests/integration/test_tenant_context.py tests/apps/identity/test_account_system.py`；收口 `npm run contracts:check` 与 `npm run sdk:check` 必须零 diff。

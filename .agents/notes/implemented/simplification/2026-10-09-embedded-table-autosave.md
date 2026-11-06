@@ -22,5 +22,5 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/thought-multitable.test.tsx` 在新增记录后的待保存窗口检查嵌入块没有「保存」按钮，独立表格页的标题旁仍保留该按钮；同文件其余 5 项通过。
+- `web/tests/features/thought-multitable.test.tsx` 在新增记录后的待保存窗口检查嵌入块没有「保存」按钮，独立表格页的标题旁仍保留该按钮；同文件其余 5 项通过。
 - 使用指南写明单元格修改后约一秒自动保存，嵌入块不另放保存按钮。当时打开的文档页所在服务已不在监听，没有在那篇笔记里再点一次单元格。

@@ -11,18 +11,6 @@ from studio.contracts.gateway.catalog import SERVICES, service_by_id
 from studio.contracts.gateway.routing import SOCKET_OPERATIONS, Operation, RouteCatalog
 from studio.contracts.management.setting_owners import KEY_OWNERS, PREFIX_OWNERS
 
-APP_OWNERS = {
-    "agent_workbench": "agents",
-    "audio_annotation": "annotation",
-    "director_desk": "director",
-    "galgame_workshop": "galgame",
-    "interview_assistant": "interview",
-    "motion_compositor": "motion",
-    "presentation_workshop": "presentation",
-    "thought_workshop": "thought",
-    "video_editor": "video",
-    "visual_workshop": "visual",
-}
 API_OWNERS = {
     "management": "management",
     "account": "identity",
@@ -150,9 +138,6 @@ def table_owner(module, table):
         return "gateway"
     if module.startswith("studio.apps.agent_workbench."):
         return "agents"
-    parts = module.split(".")
-    if module.startswith("app.apps."):
-        return APP_OWNERS[parts[2]]
     if module.startswith("studio.apps.asset_library"):
         return "assets"
     if module.startswith("studio.apps.model_service."):

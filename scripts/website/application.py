@@ -78,7 +78,7 @@ async def authenticate_browser(scope, receive, *, sessions):
 
 def create_app():
     from db.migrations import check_migrations
-    from studio.config.settings import get_settings
+    from studio.config.settings import get_cloud_settings, get_settings
 
     settings = get_settings()
     # Every reload checks before constructing storage or running the website lifespan.
@@ -91,7 +91,7 @@ def create_app():
     from studio.contracts.gateway.automation_policy import automation_allowed
     from studio.contracts.gateway.web_access import AccessError
 
-    app = create_backend_app(settings)
+    app = create_backend_app(settings, read_cloud_settings=get_cloud_settings)
     from studio.runtime.http.website import CurrentWebsite, attach_website
 
     web_root = Path(settings.fpl_website_web_root).expanduser()

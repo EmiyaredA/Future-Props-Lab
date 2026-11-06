@@ -29,6 +29,6 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/visual-workshop-canvas-assistant.test.tsx`：三 Tab 切换文案。
+- `web/tests/features/visual-workshop-canvas-assistant.test.tsx`：三 Tab 切换文案。
 - `web/e2e/applications-workshop.spec.ts`：点「总文件」可见「添加素材」与公共库空态；素材页可见「跨项目」「总文件」。
 - `npm run verify-notes`。

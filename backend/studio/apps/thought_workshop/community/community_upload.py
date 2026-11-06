@@ -24,7 +24,6 @@ from studio.apps.thought_workshop.publication.mutations import begin_write
 from studio.apps.thought_workshop.publication.sessions import source_sessions
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
 from studio.apps.thought_workshop.storage.community_upload_records import ThoughtCommunityUpload
-from studio.apps.thought_workshop.website.account_directory import directory
 from studio.contracts.thought_workshop.community_uploads import CommunityUploadScope, public_path
 from studio.contracts.thought_workshop.thought_uploads import ThoughtUploadDescription
 from studio.runtime.files.content_types import normalize_content_type
@@ -56,9 +55,9 @@ async def describe(upload, maximum_bytes):
         raise ThoughtError("上传文件信息无效", 422, "invalid_upload") from None
 
 
-async def article_grant(session, principal, publication_id, note_id):
+async def article_grant(session, principal, publication_id, note_id, *, accounts):
     pub = await publication(session, publication_id)
-    config, _, _ = await article(session, principal, pub, note_id, level="edit")
+    config, _, _ = await article(session, principal, pub, note_id, level="edit", accounts=accounts)
     return pub, config.revision
 
 
@@ -66,9 +65,13 @@ def fingerprint(*fields):
     return hashlib.sha256(json.dumps(fields, separators=(",", ":")).encode()).hexdigest()
 
 
-async def reserve_upload(session, principal, publication_id, note_id, description, request_key):
+async def reserve_upload(
+    session, principal, publication_id, note_id, description, request_key, *, accounts
+):
     await begin_write(session)
-    pub, article_revision = await article_grant(session, principal, publication_id, note_id)
+    pub, article_revision = await article_grant(
+        session, principal, publication_id, note_id, accounts=accounts
+    )
     bind_source(session, pub)
     request_sha256 = fingerprint(
         principal.user_id, publication_id, note_id, description.fingerprint
@@ -127,10 +130,10 @@ async def reserve_upload(session, principal, publication_id, note_id, descriptio
     return scope, None
 
 
-async def record_upload(session, principal, scope, result, manifest_sha256):
+async def record_upload(session, principal, scope, result, manifest_sha256, *, accounts):
     await begin_write(session)
     pub, article_revision = await article_grant(
-        session, principal, scope.publication_id, scope.note_id
+        session, principal, scope.publication_id, scope.note_id, accounts=accounts
     )
     if (pub.owner_user_id, pub.revision, article_revision) != (
         scope.owner_id,
@@ -158,6 +161,7 @@ async def upload_attachment(
     upload,
     *,
     request_key,
+    accounts,
     maximum_bytes,
     delivery,
     identity,
@@ -169,14 +173,20 @@ async def upload_attachment(
         if request_key is not None and not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", request_key):
             raise ThoughtError("上传请求标识无效")
         async with source_sessions(request_session)() as session:
-            await article_grant(session, principal, publication_id, note_id)
+            accounts = accounts.for_session(session)
+            await article_grant(session, principal, publication_id, note_id, accounts=accounts)
             await session.rollback()
             description = await describe(upload, maximum_bytes)
-            account_directory = directory(session)
-            if isinstance(account_directory, HttpAccountDirectory):
-                await account_directory.refresh()
+            if isinstance(accounts, HttpAccountDirectory):
+                await accounts.refresh()
             scope, prior = await reserve_upload(
-                session, principal, publication_id, note_id, description, request_key
+                session,
+                principal,
+                publication_id,
+                note_id,
+                description,
+                request_key,
+                accounts=accounts,
             )
             if prior in {"commit", "published"}:
                 return await delivery.deliver(scope.owner_id, scope.batch_id)
@@ -191,15 +201,17 @@ async def upload_attachment(
                 await require_actor(
                     identity, assertion, "POST", public_path(publication_id, note_id)
                 )
-                if isinstance(account_directory, HttpAccountDirectory):
-                    await account_directory.refresh()
+                if isinstance(accounts, HttpAccountDirectory):
+                    await accounts.refresh()
                 result = ThoughtAttachmentOut(
                     asset_id=asset.id,
                     filename=asset.original_filename,
                     mime_type=asset.mime_type,
                     byte_size=asset.byte_size,
                 )
-                await record_upload(session, principal, scope, result, manifest_sha256)
+                await record_upload(
+                    session, principal, scope, result, manifest_sha256, accounts=accounts
+                )
                 commit_started = True
                 await session.commit()
             except BaseException as error:

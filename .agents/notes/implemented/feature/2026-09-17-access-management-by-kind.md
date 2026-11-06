@@ -24,5 +24,5 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/model-catalog-editor.test.tsx`：按 kind 分组、筛选与新建连接 `supplier_id: null`。
+- `web/tests/features/model-catalog-editor.test.tsx`：按 kind 分组、筛选与新建连接 `supplier_id: null`。
 - `npm run verify-notes`。

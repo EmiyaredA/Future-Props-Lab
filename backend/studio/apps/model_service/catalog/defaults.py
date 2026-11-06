@@ -6,8 +6,10 @@ from studio.apps.model_service.catalog.service import ModelCatalogService
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 
 
-async def update_defaults(session, owner_user_id, body, *, defaults_store, cipher):
-    catalog = ModelCatalogService(session, defaults_store=defaults_store, cipher=cipher)
+async def update_defaults(session, owner_user_id, body, *, defaults_store, cipher, readiness=None):
+    catalog = ModelCatalogService(
+        session, defaults_store=defaults_store, cipher=cipher, readiness=readiness
+    )
     if catalog._owner_user_id() != owner_user_id:
         raise ValueError("默认模型归属与账号上下文不匹配")
     await catalog.advance_revision(body.expected_revision)

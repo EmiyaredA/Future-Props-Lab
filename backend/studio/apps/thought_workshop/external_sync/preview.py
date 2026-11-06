@@ -4,7 +4,6 @@ import httpx
 from sqlalchemy import text
 
 from studio.apps.integrations.clients.document_blocks import feishu_tree
-from studio.apps.thought_workshop.content_exports import resolve_assets
 from studio.apps.thought_workshop.external_sync.content import (
     TABLE_SNAPSHOT,
     has_multitable_view,
@@ -13,6 +12,7 @@ from studio.apps.thought_workshop.external_sync.content import (
 from studio.apps.thought_workshop.external_sync.models import ArticleSyncAsset, ArticleSyncTask
 from studio.apps.thought_workshop.external_sync.schemas import ArticleSyncPreview, SnapshotBlock
 from studio.apps.thought_workshop.multitable.content import project as project_tables
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata
 from studio.contracts.integrations.external_documents import ExternalError
 
 
@@ -24,7 +24,7 @@ def actor_snapshot(principal):
     }
 
 
-async def preview_note(records, read_target, note_id, body):
+async def preview_note(records, read_target, note_id, body, *, assets: AssetMetadata):
     session, owner = records.session, records.owner_user_id
     await session.execute(text("BEGIN"))
     note = await records.note(note_id)
@@ -56,8 +56,9 @@ async def preview_note(records, read_target, note_id, body):
     )
     document_id, previous = binding.document_id, binding.last_fingerprint
     await session.rollback()
-    assets = await resolve_assets(session, owner, set(content["asset_ids"]))
-    for asset in assets.values():
+    asset_ids = set(content["asset_ids"])
+    entries = await assets.describe(asset_ids) if asset_ids else {}
+    for asset in entries.values():
         if asset.byte_size > 20 * 1024 * 1024 or asset.mime_type not in {
             "image/png",
             "image/jpeg",

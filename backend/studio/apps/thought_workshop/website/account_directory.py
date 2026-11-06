@@ -19,23 +19,15 @@ class DirectoryBindings:
     for_request: Callable
 
 
-def directory(session) -> AccountDirectory:
-    value = session.info.get("thought_directory")
-    if value is None:
-        factory = session.info.get("thought_directory_factory")
-        if factory is None:
-            raise ThoughtError("账号目录尚未连接", 503, "account_directory_unavailable")
-        value = factory(session)
-    return value.for_session(session)
-
-
-async def profiles(session, *, ids=(), usernames=()):
+async def profiles(accounts: AccountDirectory | None, *, ids=(), usernames=()):
     if not ids and not usernames:
         return []
-    return await directory(session).profiles(ids=ids, usernames=usernames)
+    if accounts is None:
+        raise ThoughtError("账号目录尚未连接", 503, "account_directory_unavailable")
+    return await accounts.profiles(ids=ids, usernames=usernames)
 
 
-async def author(session, user_id):
+async def author(accounts: AccountDirectory | None, user_id):
     if not user_id:
         return None
-    return next(iter(await profiles(session, ids=(user_id,))), None)
+    return next(iter(await profiles(accounts, ids=(user_id,))), None)

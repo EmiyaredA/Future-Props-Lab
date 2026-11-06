@@ -186,7 +186,7 @@ def test_realtime_protocol_audio_mute_interrupt_and_close(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_every_named_operation_reaches_declared_http_route():
-    from scripts.generate_sdk import identifier
+    from scripts.contracts.generate_sdk import identifier
 
     root = Path(__file__).resolve().parents[1]
     mapping = json.loads((root / "sdk/python/operations.json").read_text())
@@ -229,7 +229,8 @@ async def test_sdk_session_login_reauth_and_workspace_key_isolation():
     from future_props_lab import ApiError
     from future_props_lab.builders import edit_batch, entity_edit
     from future_props_lab.examples import create_deck_async
-    from tests.test_account_system import create_test_account
+
+    from tests.apps.identity.test_account_system import create_test_account
 
     first_account = await create_test_account()
     second_account = await create_test_account()

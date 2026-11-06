@@ -9,7 +9,6 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.requests import HTTPConnection
 
 from studio.apps.asset_library.clients.archive_transfer import (
     ArchiveTransport,
@@ -286,19 +285,15 @@ def create_app(
         run_worker=run_worker,
     )
 
-    async def request_session(connection: HTTPConnection):
-        def project_layouts(session, owner):
-            return ProjectLayouts(connection, session, owner, app)
+    app.state.video_layouts = lambda request, session, owner: ProjectLayouts(
+        request, session, owner, app
+    )
+    app.state.video_assets = lambda request, session, owner: TimelineMedia(
+        request, session, owner, capabilities
+    )
 
-        def timeline_assets(session, owner):
-            return TimelineMedia(connection, session, owner, capabilities)
-
-        async with database.sessions(
-            info={
-                "video_project_layouts": project_layouts,
-                "video_timeline_assets": timeline_assets,
-            }
-        ) as session:
+    async def request_session():
+        async with database.sessions() as session:
             yield session
 
     app.dependency_overrides[db_session] = request_session

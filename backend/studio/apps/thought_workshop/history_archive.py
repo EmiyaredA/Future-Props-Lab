@@ -45,7 +45,7 @@ def validate_history(payload: dict) -> None:
 
 
 async def import_history(notes, payload, inserted, note_mapping, asset_mapping, remap):
-    history = History(notes.session)
+    history = History(notes.session, accounts=notes.accounts)
     history_mapping = {}
     for record in sorted(payload.get("history", []), key=lambda item: item["revision"]):
         if record["note_id"] not in inserted:

@@ -70,4 +70,4 @@ stateDiagram-v2
 
 1. `db/migrations/registry.py`
 2. `db/migrations/runner.py`
-3. `tests/test_sqlite_migration_history.py`
+3. `tests/runtime/test_sqlite_migration_history.py`

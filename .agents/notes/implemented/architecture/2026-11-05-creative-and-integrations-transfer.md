@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-使用 `tests/test_creative_catalog_transfer.py` 和 `tests/test_integrations_catalog_transfer.py` 的隔离回归验证原件、归属、断点恢复、重复回执、源已删除与目标漏导，以及 stdio 配置回执丢失后的恢复。
+使用 `tests/apps/creative_workshop/test_creative_catalog_transfer.py` 和 `tests/apps/integrations/test_integrations_catalog_transfer.py` 的隔离回归验证原件、归属、断点恢复、重复回执、源已删除与目标漏导，以及 stdio 配置回执丢失后的恢复。

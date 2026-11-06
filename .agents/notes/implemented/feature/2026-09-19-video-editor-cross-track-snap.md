@@ -25,6 +25,6 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-model.test.ts`：跨轨左右边吸附与关吸附回退帧网格。
-- `web/tests/video-editor-alignment.test.tsx`：跨轨匹配时 `guideUs` 为他轨边。
+- `web/tests/features/video-editor-model.test.ts`：跨轨左右边吸附与关吸附回退帧网格。
+- `web/tests/features/video-editor-alignment.test.tsx`：跨轨匹配时 `guideUs` 为他轨边。
 - 手动：开「吸附」，拖某轨片段靠近另一轨起止边，应出现绿线并对齐。

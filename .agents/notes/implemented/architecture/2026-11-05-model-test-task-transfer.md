@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_model_playground_transfer.py` 覆盖生成引用缺失、共享目录文件清单、超过 JSON 上限的生成结果、重复导入和中断任务恢复。
+`tests/apps/model_service/test_model_playground_transfer.py` 覆盖生成引用缺失、共享目录文件清单、超过 JSON 上限的生成结果、重复导入和中断任务恢复。

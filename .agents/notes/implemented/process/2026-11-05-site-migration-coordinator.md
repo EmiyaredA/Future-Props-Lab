@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_site_migration.py` 校验端点清单、来源缺口阻断、中断续跑、摘要变化和最终计数。用同一封存快照运行 37 个真实隔离维护入口，覆盖 20 步传输、故意断开 Integrations、重跑和完整重放，再启动旧站恢复目录验证历史。
+`tests/integration/test_site_migration.py` 校验端点清单、来源缺口阻断、中断续跑、摘要变化和最终计数。用同一封存快照运行 37 个真实隔离维护入口，覆盖 20 步传输、故意断开 Integrations、重跑和完整重放，再启动旧站恢复目录验证历史。

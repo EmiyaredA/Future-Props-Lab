@@ -113,12 +113,11 @@ class VideoEditorProjects:
     async def get(self, project_id: str) -> VideoEditorProjectOut:
         return project_out(await self.row(project_id))
 
-    async def create(self, body: VideoEditorProjectCreateIn) -> VideoEditorProjectOut:
+    async def create(self, body: VideoEditorProjectCreateIn, *, layouts) -> VideoEditorProjectOut:
         row = VideoEditorProject(
             id=new_id(), owner_user_id=self.owner_user_id, title=body.title, status="draft"
         )
-        resources = self.session.info["video_project_layouts"](self.session, self.owner_user_id)
-        async with resources.create_layout(row.id):
+        async with layouts.create_layout(row.id):
             await self.add_project(row)
         await self.session.refresh(row)
         return project_out(row)
@@ -152,10 +151,9 @@ class VideoEditorProjects:
         await self.session.commit()
         return await self.get(project_id)
 
-    async def delete(self, project_id: str, expected_revision: int) -> None:
+    async def delete(self, project_id: str, expected_revision: int, *, layouts) -> None:
         await self.row(project_id)
-        resources = self.session.info["video_project_layouts"](self.session, self.owner_user_id)
-        async with resources.delete_layout(project_id, expected_revision):
+        async with layouts.delete_layout(project_id, expected_revision):
             await delete_revisioned_project(
                 self.session,
                 VideoEditorProject,

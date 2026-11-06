@@ -45,7 +45,7 @@ Status: implemented
   11 个输出版本保留且仍可播放；动作迁移在供应商处理阶段返回失败，没有结果地址，未重新提交。
 - 成功的 11 项均接受 1 秒、480p、16:9 请求，实际输出 864×480、1.625 秒；
   供应商时长偏差保留在逐项报告。动作迁移失败只有通用错误，不据此推断最短输入时长。
-- `uv run --no-sync pytest -q tests/test_autodl_video.py tests/test_visual_generation_runner.py tests/test_generation_task_driver.py`：61 项通过。
+- `uv run --no-sync pytest -q tests/apps/model_service/test_autodl_video.py tests/apps/visual_workshop/test_visual_generation_runner.py tests/integration/test_generation_task_driver.py`：61 项通过。
 - Note 树、格式与归档封印检查均通过。沙箱禁止 `tsx` CLI 的 IPC 监听时，使用
   `node --import tsx` 执行相同三个检查脚本。
 - 12 工作流的逐项实测状态、任务 ID、参数、耗时和成片见 `.local/autodl-e2e/report.html`；

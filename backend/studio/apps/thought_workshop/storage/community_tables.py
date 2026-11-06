@@ -25,6 +25,7 @@ async def apply_table(
     body,
     parent_note_id,
     *,
+    accounts,
     references,
     identity,
     assertion,
@@ -68,10 +69,8 @@ async def apply_table(
                 change=change,
                 community=scope,
             )
-            session.info["thought_asset_metadata_factory"] = PreparedCommunityAssets(
-                prepared
-            ).for_owner
             await require_actor(identity, assertion, "POST", source_path)
+            return PreparedCommunityAssets(prepared).for_owner(owner)
 
         async def after_write(revision):
             nonlocal commit_started
@@ -80,7 +79,9 @@ async def apply_table(
 
         try:
             await session.execute(text("BEGIN"))
-            return await TableAccess(session, principal).apply(
+            return await TableAccess(
+                session, principal, accounts=accounts.for_session(session)
+            ).apply(
                 publication_id,
                 note_id,
                 body,

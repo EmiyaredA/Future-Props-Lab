@@ -23,7 +23,7 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest tests/test_sqlite_migration_history.py tests/test_call_log_credential.py -q`
+- `uv run pytest tests/runtime/test_sqlite_migration_history.py tests/integration/test_call_log_credential.py -q`
 - `npm run contracts:check`
 - `npm run test --workspace web -- --run tests/call-logs.test.tsx`
 - `npm run verify-notes`

@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Request
 
+from studio.apps.thought_workshop.http_bindings import CommunityDirectoryDep
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
 from studio.apps.thought_workshop.official_projections import OfficialProjections
 from studio.apps.thought_workshop.publication.imports import SeedImportInput, import_source
@@ -16,12 +17,18 @@ router = APIRouter(prefix="/thought-workshop/community", tags=["knowledge-commun
 
 @router.post("/official-import", response_model=ThoughtImportOut)
 async def import_official(
-    body: SeedImportInput, session: SessionDep, principal: PublicStudioAuth, request: Request
+    body: SeedImportInput,
+    session: SessionDep,
+    accounts: CommunityDirectoryDep,
+    principal: PublicStudioAuth,
+    request: Request,
 ):
     projections = OfficialProjections(
         owner=principal.user_id, identity=request.app.state.identity, **context(request)
     )
-    return await guarded(import_source(session, principal, body, projections=projections))
+    return await guarded(
+        import_source(session, principal, body, accounts=accounts, projections=projections)
+    )
 
 
 @router.put("/libraries/{library_id}/publication", response_model=PublicationConfig)
@@ -29,11 +36,14 @@ async def publish(
     library_id: str,
     body: PublishInput,
     session: SessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     request: Request,
 ):
     return await guarded(
-        publish_with_references(session, principal, body, library_id=library_id, **context(request))
+        publish_with_references(
+            session, principal, body, library_id=library_id, accounts=accounts, **context(request)
+        )
     )
 
 
@@ -42,11 +52,17 @@ async def manage(
     publication_id: str,
     body: PublishInput,
     session: SessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     request: Request,
 ):
     return await guarded(
         publish_with_references(
-            session, principal, body, publication_id=publication_id, **context(request)
+            session,
+            principal,
+            body,
+            publication_id=publication_id,
+            accounts=accounts,
+            **context(request),
         )
     )

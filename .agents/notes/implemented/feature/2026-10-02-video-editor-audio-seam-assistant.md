@@ -26,5 +26,5 @@ Status: implemented
 
 ## Verification
 
-- `tests/test_video_editor_audio_seams.py` 验证重复乐句候选、间距、时间线应用与撤销、无效片段和正式 API revision。
-- `web/tests/video-editor-audio-seam.test.tsx` 验证源波形映射、候选点选择和提交前只读。
+- `tests/apps/video_editor/test_video_editor_audio_seams.py` 验证重复乐句候选、间距、时间线应用与撤销、无效片段和正式 API revision。
+- `web/tests/features/video-editor-audio-seam.test.tsx` 验证源波形映射、候选点选择和提交前只读。

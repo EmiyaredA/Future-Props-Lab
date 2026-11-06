@@ -8,9 +8,9 @@ from starlette.background import BackgroundTask
 from studio.apps.motion_compositor.exports import Exports, export_out
 from studio.apps.motion_compositor.projects import MotionInvalid, MotionNotFound, MotionUnavailable
 from studio.apps.motion_compositor.schemas import ExportCreateIn, ExportListOut, ExportOut
+from studio.apps.motion_compositor.transport.dependencies import MotionDep
 from studio.apps.motion_compositor.transport.file_routes import FORWARDED_RESPONSE
 from studio.apps.motion_compositor.transport.website.errors import _error
-from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 router = APIRouter()
@@ -20,15 +20,14 @@ PATH = "/projects/{project_id}/exports"
 @router.post(PATH, response_model=ExportOut)
 async def create_export(
     request: Request,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
+    projects: MotionDep,
     project_id: str,
     body: ExportCreateIn,
 ) -> ExportOut:
     if request.app.state.motion_export_delivery is None:
         raise _error(MotionUnavailable("导出执行服务暂不可用"))
     try:
-        return await Exports(session, owner_user_id).create(request, project_id, body)
+        return await Exports(projects).create(request, project_id, body)
     except (MotionNotFound, MotionInvalid, MotionUnavailable) as exc:
         raise _error(exc) from None
     except (CapabilityDenied, CapabilityUnavailable):
@@ -36,37 +35,33 @@ async def create_export(
 
 
 @router.get(PATH, response_model=ExportListOut)
-async def list_exports(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str
-) -> ExportListOut:
+async def list_exports(projects: MotionDep, project_id: str) -> ExportListOut:
     try:
-        return await Exports(session, owner_user_id).list(project_id)
+        return await Exports(projects).list(project_id)
     except MotionNotFound as exc:
         raise _error(exc) from None
 
 
 @router.get(PATH + "/{task_id}", response_model=ExportOut)
 async def get_export(
-    session: SessionDep,
-    owner_user_id: OwnerDep,
+    projects: MotionDep,
     project_id: str,
     task_id: str,
 ) -> ExportOut:
     try:
-        return export_out(await Exports(session, owner_user_id).task(project_id, task_id))
+        return export_out(await Exports(projects).task(project_id, task_id))
     except MotionNotFound as exc:
         raise _error(exc) from None
 
 
 @router.post(PATH + "/{task_id}/cancel", response_model=ExportOut)
 async def cancel_export(
-    session: SessionDep,
-    owner_user_id: OwnerDep,
+    projects: MotionDep,
     project_id: str,
     task_id: str,
 ) -> ExportOut:
     try:
-        return await Exports(session, owner_user_id).cancel(project_id, task_id)
+        return await Exports(projects).cancel(project_id, task_id)
     except MotionNotFound as exc:
         raise _error(exc) from None
 
@@ -74,14 +69,13 @@ async def cancel_export(
 @router.get(PATH + "/{task_id}/download/{format_name}")
 async def download_export(
     request: Request,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
+    projects: MotionDep,
     project_id: str,
     task_id: str,
     format_name: str,
 ) -> StreamingResponse:
     try:
-        binding = await Exports(session, owner_user_id).output(project_id, task_id, format_name)
+        binding = await Exports(projects).output(project_id, task_id, format_name)
     except MotionNotFound as exc:
         raise _error(exc) from None
     delivery = request.app.state.motion_export_delivery

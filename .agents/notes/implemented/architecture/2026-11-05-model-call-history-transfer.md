@@ -20,4 +20,4 @@ Models 在隔离维护监听器上按账号与日志 ID 分页，每页一条。
 
 ## Verification
 
-`tests/test_model_call_log_transfer.py` 通过隔离监听器验证账号、超过旧维护请求上限的历史响应、错误摘要及重启后重放。
+`tests/apps/model_service/test_model_call_log_transfer.py` 通过隔离监听器验证账号、超过旧维护请求上限的历史响应、错误摘要及重启后重放。

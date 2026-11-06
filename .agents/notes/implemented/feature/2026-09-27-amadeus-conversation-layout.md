@@ -25,4 +25,4 @@ Amadeus 的左侧栏上下放置当前上下文和对话历史，两块卡片在
 
 ## Verification
 
-`web/tests/amadeus-context-panel.test.tsx` 和 `web/tests/amadeus-layout.test.tsx` 覆盖卡片默认及独立开合、多窗口摘要与舞台默认状态。`desktop/tests/amadeus-window-geometry.test.cjs` 覆盖首次宽度、保存尺寸恢复和舞台基础宽度。`npm run test:desktop:amadeus` 在临时数据目录验证热重载收起舞台、历史切换和 400/520/900px 布局。另运行 Web 测试、lint、格式、构建及 `npm run verify-notes`。
+`web/tests/features/amadeus-context-panel.test.tsx` 和 `web/tests/features/amadeus-layout.test.tsx` 覆盖卡片默认及独立开合、多窗口摘要与舞台默认状态。`desktop/tests/amadeus-window-geometry.test.cjs` 覆盖首次宽度、保存尺寸恢复和舞台基础宽度。`npm run test:desktop:amadeus` 在临时数据目录验证热重载收起舞台、历史切换和 400/520/900px 布局。另运行 Web 测试、lint、格式、构建及 `npm run verify-notes`。

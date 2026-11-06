@@ -50,6 +50,15 @@ FEATURE_FILES = (
 )
 
 
+def repository_manifest(root: Path, selected: Path) -> tuple[Path, Path | None]:
+    """Resolve the relocated manifest while preserving the original relative path base."""
+    deploy = root / "deploy"
+    manifest = deploy / "compose" / "compose.yaml"
+    if selected == deploy / "compose.yaml" and not (selected.exists() or selected.is_symlink()):
+        selected = manifest
+    return selected, deploy if selected == manifest else None
+
+
 def resolve_files(base: Path, environment: dict[str, str]) -> tuple[Path, ...]:
     selected = [base]
 

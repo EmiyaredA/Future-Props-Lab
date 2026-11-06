@@ -58,4 +58,4 @@ Python SDK 资源为 `client.interview`，方法和类型由 OpenAPI 生成。�
 
 ## 验证
 
-`tests/test_interview_preparation.py` 使用临时数据库测试任务和文件边界；Web 组件与浏览器测试使用确定性资料。显式设置 `FPL_INTERVIEW_LIVE_TEST=1` 后运行 `tests/test_interview_live.py`，仅用虚构 DOCX 和临时数据库执行真实联网验收，普通 CI 不调用真实 Codex。
+`tests/apps/interview_assistant/test_interview_preparation.py` 使用临时数据库测试任务和文件边界；Web 组件与浏览器测试使用确定性资料。显式设置 `FPL_INTERVIEW_LIVE_TEST=1` 后运行 `tests/apps/interview_assistant/test_interview_live.py`，仅用虚构 DOCX 和临时数据库执行真实联网验收，普通 CI 不调用真实 Codex。

@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_annotation_transfer.py` 从隔离旧站创建项目、编辑、改名并写入波形。测试恢复旧站，并在实际维护监听器验证重启续跑、重复回执、错误账号和错误素材类型拒绝，以及音频 SHA256。
+`tests/apps/audio_annotation/test_annotation_transfer.py` 从隔离旧站创建项目、编辑、改名并写入波形。测试恢复旧站，并在实际维护监听器验证重启续跑、重复回执、错误账号和错误素材类型拒绝，以及音频 SHA256。

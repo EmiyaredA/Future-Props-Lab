@@ -18,10 +18,10 @@ def person_ids(value):
     return set()
 
 
-async def active_members(session, ids):
+async def active_members(accounts, ids):
     if not ids:
         return {}
-    rows = await profiles(session, ids=ids)
+    rows = await profiles(accounts, ids=ids)
     return {row.id: row.display_name.strip() or row.username for row in rows if row.active}
 
 
@@ -103,7 +103,7 @@ def statement(table, query):
     return select(DataRecord).where(*predicates).order_by(*order), predicates, config
 
 
-async def records(session, table, query, revision, owner_user_id=None):
+async def records(session, table, query, revision, *, accounts=None):
     stmt, predicates, config = statement(table, query)
     total = await session.scalar(select(func.count()).select_from(DataRecord).where(*predicates))
     rows = list(await session.scalars(stmt.offset(query.offset).limit(query.limit)))
@@ -125,7 +125,7 @@ async def records(session, table, query, revision, owner_user_id=None):
             continue
         for item in items:
             referenced |= person_ids(item.values.get(field.id))
-    people = await active_members(session, referenced) if owner_user_id else {}
+    people = await active_members(accounts, referenced)
     return RecordPage(
         revision=revision,
         items=items,

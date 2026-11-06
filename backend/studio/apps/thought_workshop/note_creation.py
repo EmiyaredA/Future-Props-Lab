@@ -20,6 +20,8 @@ async def create_note_with_references(
     source_path,
     references,
     project_id=None,
+    assets=None,
+    accounts=None,
 ):
     if source_method != "POST" or source_path != (
         f"/v1/thought-workshop/knowledge-bases/{project_id}/documents"
@@ -29,14 +31,16 @@ async def create_note_with_references(
         raise ValueError("新建文档必须绑定原请求")
     if session.info.get("owner_user_id") != owner:
         raise ValueError("新建文档缺少账号上下文")
-    directory = Directory(session, owner, author_id)
+    directory = Directory(session, owner, author_id, assets=assets, accounts=accounts)
     if project_id is None:
         candidate = ThoughtNoteIn(**body.model_dump(exclude={"expected_knowledge_revision"}))
     else:
         candidate = ThoughtNoteIn(
             knowledge_base_id=project_id, parent_id=body.parent_id, title=body.title, kind=body.kind
         )
-    pins = await Notes(session, owner, author_id).validate_refs(candidate)
+    pins = await Notes(session, owner, author_id, assets=assets, accounts=accounts).validate_refs(
+        candidate
+    )
     note_id = new_id()
     await session.rollback()
     change = PrepareReferenceChange(

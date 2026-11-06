@@ -34,7 +34,7 @@ class VideoEditorClipMerges:
         return row
 
     async def create(
-        self, project_id: str, body: VideoEditorClipMergeCreateIn
+        self, project_id: str, body: VideoEditorClipMergeCreateIn, *, assets
     ) -> VideoEditorTaskOut:
         await VideoEditorProjects(self.session, self.owner_user_id).row(project_id)
         payload = body.model_dump(mode="json", by_alias=True)
@@ -44,7 +44,6 @@ class VideoEditorClipMerges:
         timeline = await self._timeline(project_id, body.expected_revision)
         document = timeline.document
         source = selection(document, body.clip_ids)
-        assets = self.session.info["video_timeline_assets"](self.session, self.owner_user_id)
         source_assets = await fingerprints(assets, project_id, source)
         if self.dispatch is not None:
             await assets.guard_write(project_id)

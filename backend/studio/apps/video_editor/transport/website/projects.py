@@ -1,6 +1,6 @@
 """Public Video project metadata and timeline reads."""
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Request
 
 from studio.apps.video_editor.errors import (
     VideoEditorNotFoundError,
@@ -29,10 +29,11 @@ async def list_projects(session: SessionDep, owner_user_id: OwnerDep) -> VideoEd
 
 @router.post("/projects", response_model=VideoEditorProjectOut)
 async def create_project(
-    session: SessionDep, owner_user_id: OwnerDep, body: VideoEditorProjectCreateIn
+    request: Request, session: SessionDep, owner_user_id: OwnerDep, body: VideoEditorProjectCreateIn
 ) -> VideoEditorProjectOut:
     try:
-        return await VideoEditorProjects(session, owner_user_id).create(body)
+        layouts = request.app.state.video_layouts(request, session, owner_user_id)
+        return await VideoEditorProjects(session, owner_user_id).create(body, layouts=layouts)
     except (
         VideoEditorNotFoundError,
         VideoEditorUnavailableError,
@@ -76,13 +77,17 @@ async def get_timeline(
 
 @router.delete("/projects/{project_id}")
 async def delete_project(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     project_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await VideoEditorProjects(session, owner_user_id).delete(project_id, expected_revision)
+        layouts = request.app.state.video_layouts(request, session, owner_user_id)
+        await VideoEditorProjects(session, owner_user_id).delete(
+            project_id, expected_revision, layouts=layouts
+        )
     except (
         VideoEditorNotFoundError,
         VideoEditorUnavailableError,

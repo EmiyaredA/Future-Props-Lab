@@ -30,13 +30,14 @@ from studio.apps.thought_workshop.multitable.validation import (
 from studio.apps.thought_workshop.notes import Notes
 from studio.apps.thought_workshop.publication.lifecycle import touch_note
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
-from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.apps.thought_workshop.website.asset_metadata import describe_assets
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 
 
 class Multitable:
-    def __init__(self, session, owner_user_id, author_id=None):
+    def __init__(self, session, owner_user_id, author_id=None, *, assets=None, accounts=None):
+        self.assets, self.accounts = assets, accounts
         self.session, self.owner_user_id, self.author_id = session, owner_user_id, author_id
 
     async def note(self, note_id):
@@ -66,7 +67,7 @@ class Multitable:
 
     async def records(self, note_id, table_id, query):
         table, revision = await self.table(note_id, table_id)
-        return await queries.records(self.session, table, query, revision, self.owner_user_id)
+        return await queries.records(self.session, table, query, revision, accounts=self.accounts)
 
     async def conversion(self, note_id, body):
         before = await snapshot(self.session, (await self.note(note_id)).id)
@@ -126,10 +127,9 @@ class Multitable:
             },
         )
 
-    async def validate_asset_refs(self, state):
-        ids = asset_ids(state)
-        if ids:
-            await metadata(self.session, self.owner_user_id).describe(ids)
+    async def validate_asset_refs(self, state, *, assets=None):
+        reader = self.assets if assets is None else assets
+        await describe_assets(reader, asset_ids(state))
 
     async def validate_local_refs(self, state, before):
         def notes(s):
@@ -210,7 +210,7 @@ class Multitable:
         introduced = collect(after) - collect(before)
         if not introduced:
             return
-        members = await active_members(self.session, introduced)
+        members = await active_members(self.accounts, introduced)
         if introduced - members.keys():
             raise ThoughtError("只能选择当前账号的成员", 422, "invalid_member")
 
@@ -234,10 +234,12 @@ class Multitable:
             await self.validate_asset_refs(after)
         if before_write is not None:
             note_id = n.id
-            await before_write(before, after)
+            assets = await before_write(before, after)
             n = await self.note(note_id)
         if prepared_assets:
-            await self.validate_asset_refs(after)
+            if assets is None:
+                raise ValueError("写入前回调必须提供已准备的素材视图")
+            await self.validate_asset_refs(after, assets=assets)
         n = await self.reserve(n, expected)
         await self.validate_local_refs(after, before)
         await persist(self.session, n.id, before, after)

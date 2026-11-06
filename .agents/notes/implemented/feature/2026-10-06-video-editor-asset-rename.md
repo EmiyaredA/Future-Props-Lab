@@ -25,8 +25,8 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-assets.test.tsx`：整理菜单入口、修剪名称、缓存刷新、失败保留、取消与保存期间禁止重复提交、冲突和只读。
-- `tests/test_video_editor_asset_rename.py`：持久读取、同事务 CAS、默认效果保留、输入校验、工程与 Workspace 隔离、文件读取与时间轴保持。
+- `web/tests/features/video-editor-assets.test.tsx`：整理菜单入口、修剪名称、缓存刷新、失败保留、取消与保存期间禁止重复提交、冲突和只读。
+- `tests/apps/video_editor/test_video_editor_asset_rename.py`：持久读取、同事务 CAS、默认效果保留、输入校验、工程与 Workspace 隔离、文件读取与时间轴保持。
 - OpenAPI／SDK stale-check、定向 lint／format、Web build、Agent Note 与文档中心保护检查。
 
 ## Follow-up

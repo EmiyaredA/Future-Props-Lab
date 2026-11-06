@@ -78,6 +78,10 @@ test("名称、备注、属性统一撤销重做，保存保留历史，重开�
   await expect(
     page.getByRole("button", { name: "重做", exact: true }),
   ).toBeDisabled();
+  await expect(
+    page.getByRole("button", { name: "幻灯片 2", exact: true }),
+  ).toHaveAttribute("aria-current", "true");
+  await page.getByRole("button", { name: "幻灯片 1", exact: true }).click();
   await page.getByRole("button", { name: /演示者备注/ }).click();
   await expect(notes).toHaveValue("第一页备注");
   await page.getByRole("button", { name: "幻灯片 2", exact: true }).click();

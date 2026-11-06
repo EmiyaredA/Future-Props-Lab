@@ -22,4 +22,4 @@ Amadeus 将当前窗口数量放在一行摘要中，展开后又将路径、保
 
 ## Verification
 
-`web/tests/amadeus-context-panel.test.tsx` 覆盖密度切换、活动窗口优先、分组和实时更新；`npm run test:desktop:amadeus` 使用临时数据验证桌面链路。另运行 Web 测试、lint、格式检查和构建。
+`web/tests/features/amadeus-context-panel.test.tsx` 覆盖密度切换、活动窗口优先、分组和实时更新；`npm run test:desktop:amadeus` 使用临时数据验证桌面链路。另运行 Web 测试、lint、格式检查和构建。

@@ -61,14 +61,13 @@ class CommunityEvidenceVerifier:
         )
         directory = self.directory_factory(principal, source)
         try:
-            async with self.database.sessions(
-                info={"allow_system_reads": True, "thought_directory": directory}
-            ) as session:
+            async with self.database.sessions(info={"allow_system_reads": True}) as session:
                 actual = await published_asset(
                     session,
                     principal,
                     source.evidence.publication_id,
                     source.evidence.asset_id,
+                    accounts=directory.for_session(session),
                     note_id=source.evidence.note_id,
                     cover=source.evidence.cover,
                     allow_draft=source.evidence.note_id is not None,

@@ -46,4 +46,4 @@ Codex 要求 0.163.0 或更新版本，Claude Code 要求 2.1.259 或更新版�
 
 ## 验证
 
-`tests/test_visual_acceptance.py` 使用临时 SQLite、合成媒体及假模型／Agent 验证业务闭环；`tests/test_acceptance_cli.py` 用假可执行文件验证不同事件、取消、环境隔离、结构化结果和媒体边界。浏览器测试使用真实隔离项目、素材与方案绑定，仅模拟外部执行及审阅响应，避免真实付费调用。真实 CLI 登录和供应商凭据不属于这些确定性测试的证明范围。
+`tests/apps/visual_workshop/test_visual_acceptance.py` 使用临时 SQLite、合成媒体及假模型／Agent 验证业务闭环；`tests/host/test_acceptance_cli.py` 用假可执行文件验证不同事件、取消、环境隔离、结构化结果和媒体边界。浏览器测试使用真实隔离项目、素材与方案绑定，仅模拟外部执行及审阅响应，避免真实付费调用。真实 CLI 登录和供应商凭据不属于这些确定性测试的证明范围。

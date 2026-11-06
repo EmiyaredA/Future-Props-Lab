@@ -9,7 +9,7 @@ from studio.apps.thought_workshop.publication.models import (
     PublishedArticle,
 )
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
-from studio.apps.thought_workshop.website.account_directory import directory, profiles
+from studio.apps.thought_workshop.website.account_directory import profiles
 from studio.runtime.database.ownership import bind_owner
 
 
@@ -17,21 +17,21 @@ def missing():
     return ThoughtError("内容不存在或不可访问", 404, "not_found")
 
 
-async def current_actor(session, principal):
-    return await directory(session).current(principal)
+async def current_actor(principal, *, accounts):
+    return await accounts.current(principal)
 
 
-async def manages_source(session, principal, owner_user_id):
-    principal = await current_actor(session, principal)
+async def manages_source(principal, owner_user_id, *, accounts):
+    principal = await current_actor(principal, accounts=accounts)
     return principal.user_id == owner_user_id
 
 
-async def source_role(session, principal, owner_user_id):
-    return "manage" if await manages_source(session, principal, owner_user_id) else None
+async def source_role(principal, owner_user_id, *, accounts):
+    return "manage" if await manages_source(principal, owner_user_id, accounts=accounts) else None
 
 
-async def require_source_manager(session, principal, owner_user_id):
-    if not await manages_source(session, principal, owner_user_id):
+async def require_source_manager(principal, owner_user_id, *, accounts):
+    if not await manages_source(principal, owner_user_id, accounts=accounts):
         raise missing()
 
 
@@ -75,8 +75,8 @@ def can_certify(principal):
     return principal.platform_role in {"admin"}
 
 
-async def article(session, principal, pub, note_id, *, level="read", inactive=False):
-    principal = await current_actor(session, principal)
+async def article(session, principal, pub, note_id, *, level="read", inactive=False, accounts):
+    principal = await current_actor(principal, accounts=accounts)
     config = await session.get(PublishedArticle, (pub.id, note_id))
     note = await session.scalar(
         select(ThoughtNote).where(
@@ -88,7 +88,7 @@ async def article(session, principal, pub, note_id, *, level="read", inactive=Fa
     )
     if config is None or note is None or (not inactive and not config.active):
         raise missing()
-    original_role = await source_role(session, principal, pub.owner_user_id)
+    original_role = await source_role(principal, pub.owner_user_id, accounts=accounts)
     member = await session.get(ArticleMember, (pub.id, note_id, principal.user_id))
     role = effective_role(
         pub, principal, original_role, member.role if member else None, config.visibility
@@ -101,7 +101,7 @@ async def article(session, principal, pub, note_id, *, level="read", inactive=Fa
     return config, note, role
 
 
-async def members(session, pub_id, note_id):
+async def members(session, pub_id, note_id, *, accounts):
     rows = list(
         await session.scalars(
             select(ArticleMember).where(
@@ -110,7 +110,7 @@ async def members(session, pub_id, note_id):
             )
         )
     )
-    users = {user.id: user for user in await profiles(session, ids={row.user_id for row in rows})}
+    users = {user.id: user for user in await profiles(accounts, ids={row.user_id for row in rows})}
     return [
         dict(
             username=users[row.user_id].username,

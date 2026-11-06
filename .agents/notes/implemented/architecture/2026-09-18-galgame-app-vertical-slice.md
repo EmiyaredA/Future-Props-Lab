@@ -23,4 +23,4 @@ Status: implemented
 
 ## Verification
 
-运行 `uv run pytest -q tests/test_architecture.py tests/test_galgame*.py tests/test_media_workshop_upgrade.py tests/test_project_snapshots.py tests/test_project_storage_layout.py`；`npm run contracts:check` 与 `npm run sdk:check` 零 diff；`npm run verify-notes` 通过。
+运行 `uv run pytest -q tests/test_architecture.py tests/test_galgame*.py tests/apps/media_rendering/test_media_workshop_upgrade.py tests/integration/test_project_snapshots.py tests/integration/test_project_storage_layout.py`；`npm run contracts:check` 与 `npm run sdk:check` 零 diff；`npm run verify-notes` 通过。

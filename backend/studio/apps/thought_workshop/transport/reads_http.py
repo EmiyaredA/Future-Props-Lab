@@ -5,7 +5,7 @@ from typing import Literal
 from fastapi import APIRouter, Query
 
 from studio.apps.thought_workshop.directory import Directory
-from studio.apps.thought_workshop.http_bindings import SessionDep
+from studio.apps.thought_workshop.http_bindings import AccountDirectoryDep, SessionDep
 from studio.apps.thought_workshop.knowledge import KnowledgeBases
 from studio.apps.thought_workshop.knowledge_tools.reuse import ReusableContent
 from studio.apps.thought_workshop.knowledge_tools.schemas import TemplateOut
@@ -133,9 +133,16 @@ async def table_structure(note_id: str, session: SessionDep, principal: StudioAu
     tags=["thought-multitable"],
 )
 async def table_records(
-    note_id: str, table_id: str, body: QueryIn, session: SessionDep, owner_user_id: OwnerDep
+    note_id: str,
+    table_id: str,
+    body: QueryIn,
+    session: SessionDep,
+    accounts: AccountDirectoryDep,
+    owner_user_id: OwnerDep,
 ):
-    return await guarded(Multitable(session, owner_user_id).records(note_id, table_id, body))
+    return await guarded(
+        Multitable(session, owner_user_id, accounts=accounts).records(note_id, table_id, body)
+    )
 
 
 @router.get(

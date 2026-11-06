@@ -3,8 +3,6 @@ from __future__ import annotations
 import asyncio
 from functools import partial
 
-from app.console.governance.code_agent_connections import enable_connection
-from app.console.governance.code_agents import catalog as code_agent_catalog
 from studio.apps.amadeus.execution.website_actions import ActionExecution
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
 from studio.apps.asset_library.storage.file_paths import AssetStorage
@@ -39,21 +37,26 @@ from studio.apps.model_service.playground.legacy_generation_references import (
 from studio.apps.model_service.transcription.annotation import AnnotationTranscription
 from studio.apps.model_service.transport.provider_bindings import ProviderTransports
 from studio.apps.motion_compositor.legacy_project_resources import LegacyProjectResources
+from studio.apps.motion_compositor.projects import MotionProjects
 from studio.apps.portal.storage.documents import InstalledDocuments
 from studio.apps.portal.use_cases.documents import DeveloperDocuments
 from studio.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
 from studio.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
+from studio.apps.presentation_workshop.projects import Presentations
 from studio.apps.remote_desktop.storage.preferences import PreferenceRecords
 from studio.apps.remote_desktop.use_cases.preferences import DesktopPreferences
+from studio.apps.thought_workshop.archives.backup import BackupLimits
 from studio.apps.thought_workshop.external_sync.use_cases import ArticleSync
 from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
 from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadataBindings
 from studio.apps.thought_workshop.writing import WritingBindings
 from studio.apps.tools.storage.navigation import NavigationRecords
 from studio.apps.tools.use_cases.navigation import ToolNavigation
 from studio.apps.tools.video_downloads.local_jobs import VideoDownloads
 from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
+from studio.apps.video_editor.handoffs.motion_handoff import import_motion_export
 from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.assembly.annotation import (
@@ -67,6 +70,7 @@ from studio.assembly.website.account_provisioning import create_account
 from studio.assembly.website.annotation_imports import WebsiteCreationInputs
 from studio.assembly.website.annotation_sources import WebsiteAnnotationSources
 from studio.assembly.website.annotation_transcription import WebsiteTranscription
+from studio.assembly.website.code_agent_access import resolve
 from studio.assembly.website.creative import bind_creative
 from studio.assembly.website.desktop import DesktopConnection
 from studio.assembly.website.integrations import integration_bindings
@@ -75,8 +79,9 @@ from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT
 from studio.assembly.website.remote_apps import RemoteApps
 from studio.assembly.website.thought_writing import WebsiteWritingModels
 from studio.assembly.website.video_library import ingest_library
-from studio.config import REPO_ROOT
-from studio.config.settings import get_cloud_settings
+from studio.config import CONFIG_FILE, REPO_ROOT
+from studio.host.agent_execution.cli.connection_configuration import enable_connection
+from studio.host.agent_execution.cli.connections import catalog as code_agent_catalog
 from studio.host.project_files.video_dependencies import probe_deps
 from studio.host.project_files.video_execution import _run_yt_dlp
 from studio.runtime.files.raster import RasterPreviews
@@ -86,7 +91,7 @@ from studio.runtime.tasks.reactive_tools.approval import ApprovalBroker
 from studio.runtime.time import utc_now
 
 
-def bind_components(app, settings, database):
+def bind_components(app, settings, database, *, read_cloud_settings):
     app.state.raster_previews = RasterPreviews(capacity=2)
     app.state.avatar_previews = RasterPreviews(capacity=1)
     bind_creative(app, settings)
@@ -95,7 +100,7 @@ def bind_components(app, settings, database):
     app.state.management_api_key_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.assistant_approvals = ApprovalBroker()
     app.state.cloud_unlocks = CloudUnlockRecords(
-        database.sessions, clock=utc_now, settings_reader=get_cloud_settings
+        database.sessions, clock=utc_now, settings_reader=read_cloud_settings
     )
     app.state.model_template_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.model_decrypt = app.state.model_template_cipher.decrypt
@@ -113,13 +118,36 @@ def bind_components(app, settings, database):
         ingest=partial(ingest_library, sessions=sessions, settings=settings),
         probe=probe_deps,
     )
+    video_layouts = partial(LegacyVideoLayouts, storage=AssetStorage(settings))
+    app.state.video_layouts = lambda _request, session, owner: video_layouts(session, owner)
+    app.state.video_assets = lambda _request, session, owner: LegacyTimelineAssets(session, owner)
+
+    async def import_motion_video(session, owner, source, **details):
+        return await import_motion_export(
+            session,
+            owner,
+            source,
+            settings=settings,
+            layouts=video_layouts(session, owner),
+            assets=LegacyTimelineAssets(session, owner),
+            **details,
+        )
+
+    app.state.motion_video_import = import_motion_video
+    app.state.amadeus_resolve = lambda session, owner, user, agent, *, probe=True: resolve(
+        session, owner, user, agent, "amadeus", settings=read_cloud_settings(), probe=probe
+    )
     app.state.amadeus_actions = ActionExecution(
-        partial(apply_assistant_timeline_batch, sessions=sessions), files_root=settings.runtime_path
+        partial(
+            apply_assistant_timeline_batch, sessions=sessions, asset_reader=LegacyTimelineAssets
+        ),
+        files_root=settings.runtime_path,
+        resolve_agent=app.state.amadeus_resolve,
     )
     app.state.demo_runtime = DemoRuntime(partial(read_demo_configuration, sessions=sessions))
     app.state.interview_files_root = settings.runtime_path
-    app.state.interview_executor_status = partial(
-        executor_status, sessions=sessions, settings=settings
+    app.state.interview_executor_status = lambda user, owner="", session=None: executor_status(
+        user, owner, session, sessions=sessions, settings=read_cloud_settings()
     )
     app.state.annotation_document_editor = document_editor
     app.state.annotation_project_creator = project_creator
@@ -140,9 +168,11 @@ def bind_components(app, settings, database):
     app.state.director_editor = DirectorEditorSessions(sessions)
     app.state.director_storage = DirectorStorage(settings.runtime_path)
     app.state.code_agent_catalog = lambda _request, *, can_enable: code_agent_catalog(
-        can_enable=can_enable
+        settings=read_cloud_settings(), can_enable=can_enable
     )
-    app.state.code_agent_enable = lambda _request, agent_id: enable_connection(agent_id)
+    app.state.code_agent_enable = lambda _request, agent_id: enable_connection(
+        agent_id, config_file=CONFIG_FILE, read_settings=read_cloud_settings
+    )
     app.state.studio_http_auth = partial(
         authenticate_database_request,
         sessions=sessions,
@@ -156,8 +186,13 @@ def bind_components(app, settings, database):
         None, session, owner
     )
     app.state.article_sync = lambda session, owner, principal: ArticleSync(
-        session, owner, principal, connections=app.state.article_connections(session, owner)
+        session,
+        owner,
+        principal,
+        connections=app.state.article_connections(session, owner),
+        assets=thought_metadata(session, owner),
     )
+    app.state.require_native_model_retention = False
     app.state.model_catalog_bindings = CatalogBindings(
         defaults=LegacyCatalogDefaults,
         task_usage=LegacyCatalogTaskUsage,
@@ -185,22 +220,29 @@ def bind_components(app, settings, database):
         return LegacyAssetMetadata(session, owner, storage=AssetStorage(settings))
 
     app.state.article_assets = thought_metadata
-    sessions.configure(
-        info={
-            **sessions.kw.get("info", {}),
-            "thought_asset_metadata_factory": thought_metadata,
-            "presentation_project_assets": partial(
-                LegacyProjectAssets, storage=AssetStorage(settings)
-            ),
-            "motion_project_resources": partial(
-                LegacyProjectResources, storage=AssetStorage(settings)
-            ),
-            "video_project_layouts": partial(LegacyVideoLayouts, storage=AssetStorage(settings)),
-            "video_timeline_assets": LegacyTimelineAssets,
-            "presentation_import": partial(import_legacy_presentation, settings=settings),
-        }
+    app.state.thought_source_assets = thought_metadata
+    app.state.thought_assets = AssetMetadataBindings(
+        for_request=lambda _request, session, principal: thought_metadata(
+            session, principal.user_id
+        )
     )
-
+    app.state.thought_backup_limits = BackupLimits(
+        maximum_files=settings.fpl_project_snapshot_max_files,
+        maximum_bytes=settings.fpl_project_snapshot_max_bytes,
+    )
+    motion_storage = AssetStorage(settings)
+    app.state.motion_projects = lambda _request, session, owner: MotionProjects(
+        session, owner, resources=LegacyProjectResources(session, owner, storage=motion_storage)
+    )
+    presentation_storage = AssetStorage(settings)
+    app.state.presentation_projects = lambda _request, session, owner: Presentations(
+        session,
+        owner,
+        asset_access=LegacyProjectAssets(session, owner, storage=presentation_storage),
+        retention=None,
+    )
+    import_presentation = partial(import_legacy_presentation, settings=settings)
+    app.state.presentation_importer = lambda _request: import_presentation
     app.state.thought_directory = DirectoryBindings(
         for_request=lambda _request, session, _principal: LegacyAccountDirectory(session)
     )
@@ -215,15 +257,20 @@ def bind_components(app, settings, database):
     app.state.account_creator = create_account
     app.state.account_storage_check = upgrade_pending
     app.state.code_agent_runs = CodeAgentRuns(
+        resolve_agent=app.state.amadeus_resolve,
         sessions=sessions,
         settings=settings,
         skills=lambda session, owner: app.state.integration_bindings.skills(None, session, owner),
     )
     app.state.desktop_preferences = DesktopPreferences(PreferenceRecords(sessions))
-    app.state.remote_apps = RemoteApps(sessions=sessions, preferences=app.state.desktop_preferences)
+    app.state.remote_apps = RemoteApps(
+        sessions=sessions,
+        preferences=app.state.desktop_preferences,
+        read_cloud_settings=read_cloud_settings,
+    )
     app.state.cloud_desktop = DesktopConnection(
         sessions=sessions,
-        settings_reader=get_cloud_settings,
+        settings_reader=read_cloud_settings,
         attempts=app.state.auth_attempts,
         preferences=app.state.desktop_preferences,
     )

@@ -24,4 +24,4 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/visual-reference-drop.test.tsx` 覆盖添加成功、重复、满额、错误类型、缺失、跨项目、无效载荷、自身素材和禁用框的提示文案，并继续核对草稿未被错误修改。
+- `web/tests/features/visual-reference-drop.test.tsx` 覆盖添加成功、重复、满额、错误类型、缺失、跨项目、无效载荷、自身素材和禁用框的提示文案，并继续核对草稿未被错误修改。

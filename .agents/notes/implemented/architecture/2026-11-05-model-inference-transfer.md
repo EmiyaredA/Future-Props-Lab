@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_model_call_log_transfer.py` 验证隔离监听器上跨账号拒绝、原件摘要错误拒绝、先传一份文件后重启续跑、超过维护 JSON 上限的结果文件及未知提交恢复。
+`tests/apps/model_service/test_model_call_log_transfer.py` 验证隔离监听器上跨账号拒绝、原件摘要错误拒绝、先传一份文件后重启续跑、超过维护 JSON 上限的结果文件及未知提交恢复。

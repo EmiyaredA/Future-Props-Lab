@@ -25,4 +25,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_thought_table_people.py` 覆盖成员、离开成员、非法编组、version 9 导出和缺省字段的 version 8 读取。前端组件测试覆盖填色入口、选项色块、离开成员显示和编组菜单。
+`tests/apps/thought_workshop/test_thought_table_people.py` 覆盖成员、离开成员、非法编组、version 9 导出和缺省字段的 version 8 读取。前端组件测试覆盖填色入口、选项色块、离开成员显示和编组菜单。

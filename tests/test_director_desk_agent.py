@@ -3,12 +3,12 @@ from uuid import uuid4
 
 import httpx
 import pytest
-from tests.account_fixtures import account_record
 
 from studio.assembly.http_dependencies import SessionDep, require_studio_auth
 from studio.assembly.website.models import bind_owner
 from studio.contracts.gateway.automation_policy import MANIFEST
 from studio.contracts.identity.principal import StudioPrincipal
+from tests.account_fixtures import account_record
 from website_test_support import app
 
 ROOT = "/v1/director-desk/projects"

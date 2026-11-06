@@ -33,7 +33,7 @@ from studio.apps.thought_workshop.storage.models import (
     ThoughtNote,
     ThoughtNoteAsset,
 )
-from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.apps.thought_workshop.website.asset_metadata import describe_assets
 from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.runtime.database.operation_receipts import forget
 from studio.runtime.revisions import RevisionConflictError
@@ -48,10 +48,19 @@ def note_out(row: ThoughtNote) -> ThoughtNoteOut:
 
 
 class Notes:
-    def __init__(self, session: AsyncSession, owner_user_id: str, author_id: str | None = None):
+    def __init__(
+        self,
+        session: AsyncSession,
+        owner_user_id: str,
+        author_id: str | None = None,
+        *,
+        assets=None,
+        accounts=None,
+    ):
         self.session = session
         self.owner_user_id = owner_user_id
         self.author_id = author_id
+        self.assets, self.accounts = assets, accounts
 
     async def get(self, note_id: str) -> ThoughtNote:
         row = await self.session.scalar(
@@ -164,7 +173,7 @@ class Notes:
         images = image_ids(body.document)
         body.schema_version = 3
         if ids:
-            assets = await metadata(self.session, self.owner_user_id).describe(ids)
+            assets = await describe_assets(self.assets, ids)
             if any(assets[key].media_kind != "image" for key in images):
                 raise ThoughtError("图片引用必须为图片文件")
             for node in attachment_nodes(body.document):
@@ -212,7 +221,9 @@ class Notes:
         await self.references(row.id, ids)
         await index_references(self.session, row.id, row.document)
         if not importing:
-            await History(self.session).append(row, self.author_id, "create")
+            await History(self.session, accounts=self.accounts).append(
+                row, self.author_id, "create"
+            )
         if commit:
             await self.session.commit()
             await self.session.refresh(row)
@@ -259,7 +270,7 @@ class Notes:
         await self.references(note_id, ids)
         await index_references(self.session, note_id, body.document)
         if content_changed or restoring:
-            await History(self.session).append(
+            await History(self.session, accounts=self.accounts).append(
                 await self.get(note_id), self.author_id, "restore" if restoring else "edit"
             )
         await self.session.execute(

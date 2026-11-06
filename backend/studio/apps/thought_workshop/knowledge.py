@@ -15,15 +15,24 @@ from studio.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBasePut,
 )
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, ThoughtNote
-from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.apps.thought_workshop.website.asset_metadata import describe_assets
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 
 
 class KnowledgeBases:
-    def __init__(self, session: AsyncSession, owner_user_id: str, author_id: str | None = None):
+    def __init__(
+        self,
+        session: AsyncSession,
+        owner_user_id: str,
+        author_id: str | None = None,
+        *,
+        assets=None,
+        accounts=None,
+    ):
         self.session, self.owner_user_id = session, owner_user_id
         self.author_id = author_id
+        self.assets, self.accounts = assets, accounts
 
     async def get(self, project_id: str, *, include_deleted: bool = False) -> ThoughtKnowledgeBase:
         row = await self.session.scalar(
@@ -76,7 +85,7 @@ class KnowledgeBases:
     async def cover(self, asset_id: str | None) -> None:
         if asset_id is None:
             return
-        rows = await metadata(self.session, self.owner_user_id).describe({asset_id})
+        rows = await describe_assets(self.assets, {asset_id})
         if rows[asset_id].media_kind != "image":
             raise ThoughtError("封面图片不存在", 404, "not_found")
 
@@ -128,7 +137,7 @@ class KnowledgeBases:
         self.session.add(home)
         await self.session.flush()
         row.home_note_id = home.id
-        await History(self.session).append(home, self.author_id, "create")
+        await History(self.session, accounts=self.accounts).append(home, self.author_id, "create")
         if commit:
             await self.session.commit()
         return await self.output(await self.get(row.id))

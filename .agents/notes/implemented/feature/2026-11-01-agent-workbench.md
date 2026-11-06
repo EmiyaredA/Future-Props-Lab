@@ -30,4 +30,4 @@ APP／CLI 来自原生证据，无依据时保留未知；同一原生身份在�
 
 ## Verification
 
-`tests/test_agent_workbench.py` 在独立 FPL 数据库和合成原生来源上验证历史、增量、轮转、压缩帧、Pi 分支、只读 SQLite／HTTP、账号、CAS、附件及 SSE 失效。`web/tests/agent-workbench.test.tsx` 验证筛选、授权和暂停恢复。`web/e2e/agent-workbench.spec.ts` 在独立账号和数据库上验证四种宽度、明暗主题、滚动位置与来源交互。其余契约、架构及构建检查按仓库入口执行；真机矩阵和压力测试的实际执行范围记录在本地验收报告，未执行的项目不计为通过。
+`tests/apps/agent_workbench/test_agent_workbench.py` 在独立 FPL 数据库和合成原生来源上验证历史、增量、轮转、压缩帧、Pi 分支、只读 SQLite／HTTP、账号、CAS、附件及 SSE 失效。`web/tests/features/agent-workbench.test.tsx` 验证筛选、授权和暂停恢复。`web/e2e/agent-workbench.spec.ts` 在独立账号和数据库上验证四种宽度、明暗主题、滚动位置与来源交互。其余契约、架构及构建检查按仓库入口执行；真机矩阵和压力测试的实际执行范围记录在本地验收报告，未执行的项目不计为通过。

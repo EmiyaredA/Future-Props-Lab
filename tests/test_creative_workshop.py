@@ -7,7 +7,6 @@ import zipfile
 import pytest
 from fastapi import UploadFile
 from sqlalchemy import select
-from tests.account_fixtures import account_record
 
 from studio.apps.creative_workshop.storage.catalog_files import resolve_file
 from studio.apps.creative_workshop.storage.models import CreativeItem, CreativeRelease
@@ -29,6 +28,7 @@ from studio.contracts.creative_workshop.catalog import (
 from studio.contracts.creative_workshop.errors import CreativeError, CreativeFileError
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.secrets import SecretCipher
+from tests.account_fixtures import account_record
 from website_test_support import SessionLocal, settings
 from website_test_support import settings as isolated_settings
 

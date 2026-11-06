@@ -1,5 +1,7 @@
 """Model definitions and explicit deployment readiness; no host probes in containers."""
 
+from typing import Protocol
+
 from studio.apps.model_service.storage.models.local_models import LocalModelInstallation
 from studio.config.local_models import HERE as HERE
 from studio.config.local_models import LANGUAGES as LANGUAGES
@@ -10,20 +12,23 @@ from studio.config.local_models import manifest as manifest
 from studio.runtime.database.operation_receipts import OperationError
 
 
-async def host_compatible(session):
-    adapter = session.info.get("native_model_readiness")
-    if adapter is not None:
-        return await adapter.host_compatible(session)
-    return False if session.info.get("service_id") == "models" else compatible()
+class ModelReadiness(Protocol):
+    """Read current worker readiness using the caller's account-scoped store."""
+
+    async def host_compatible(self, session) -> bool: ...
+    async def require_ready(self, session, model_id: str): ...
 
 
-async def require_ready(session, model_id):
+async def host_compatible(session, *, readiness: ModelReadiness | None = None):
+    if readiness is not None:
+        return await readiness.host_compatible(session)
+    return compatible()
+
+
+async def require_ready(session, model_id, *, readiness: ModelReadiness | None = None):
     definition(model_id)
-    adapter = session.info.get("native_model_readiness")
-    if adapter is not None:
-        return await adapter.require_ready(session, model_id)
-    if session.info.get("service_id") == "models":
-        raise OperationError("原生模型状态尚未绑定", "native_model_worker_unavailable", 503)
+    if readiness is not None:
+        return await readiness.require_ready(session, model_id)
     if not compatible():
         raise OperationError("本地语音需要受支持的 Apple Silicon Mac", "unsupported_platform", 409)
     row = await session.get(LocalModelInstallation, model_id, populate_existing=True)

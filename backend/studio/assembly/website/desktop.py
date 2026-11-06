@@ -8,26 +8,20 @@ from sqlalchemy.exc import TimeoutError as PoolTimeout
 
 from studio.apps.identity.storage.cloud_access import desktop_authorized
 from studio.apps.remote_desktop.transport import guacamole as desktop_bridge
-from studio.config.settings import get_cloud_settings
 
 
-async def _access(principal, local, _context=None, *, sessions, preferences):
+async def _access(principal, local, _context=None, *, sessions, preferences, read_cloud_settings):
     try:
-        if get_cloud_settings().fpl_cloud_control_apps_enabled:
+        settings = read_cloud_settings()
+        if settings.fpl_cloud_control_apps_enabled:
             return None
         async with sessions() as db:
-            if not await desktop_authorized(db, principal, local=local):
+            # Active connections must observe policy revocation on the next check.
+            if not await desktop_authorized(db, principal, local=local, settings=settings):
                 return None
         return (await preferences.read(owner=principal.user_id)).idle_minutes
     except (OperationalError, PoolTimeout) as error:
         raise desktop_bridge.DesktopAccessUnavailable from error
-
-
-async def watch_access(principal, local, inputs, changed, *, sessions, preferences):
-    async def check():
-        return await _access(principal, local, sessions=sessions, preferences=preferences)
-
-    return await desktop_bridge.watch_access(inputs, changed, check)
 
 
 async def _dial(settings):
@@ -38,7 +32,12 @@ class DesktopConnection(desktop_bridge.DesktopConnection):
     def __init__(self, *, sessions, settings_reader, attempts, preferences):
         super().__init__(
             settings=settings_reader,
-            access=partial(_access, sessions=sessions, preferences=preferences),
+            access=partial(
+                _access,
+                sessions=sessions,
+                preferences=preferences,
+                read_cloud_settings=settings_reader,
+            ),
             connect_upstream=_dial,
             attempts=attempts,
         )

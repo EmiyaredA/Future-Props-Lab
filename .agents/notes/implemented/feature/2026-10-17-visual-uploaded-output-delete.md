@@ -26,8 +26,8 @@ NodeOutputs 在 Workspace 和节点范围内检查输出及固定引用，再竞
 
 ## Verification
 
-- `tests/test_visual_node_outputs.py`：图片、视频、音频最终版删除、恢复／清空、刷新、编号递增、原文件保留、固定引用、CAS、Workspace 和节点隔离、生成来源保护。
-- `web/tests/visual-output-delete.test.tsx`：独立删除入口、确认与取消、保存 revision、请求中禁用、清理预览、失败保留状态及原历史删除流程。
+- `tests/apps/visual_workshop/test_visual_node_outputs.py`：图片、视频、音频最终版删除、恢复／清空、刷新、编号递增、原文件保留、固定引用、CAS、Workspace 和节点隔离、生成来源保护。
+- `web/tests/features/visual-output-delete.test.tsx`：独立删除入口、确认与取消、保存 revision、请求中禁用、清理预览、失败保留状态及原历史删除流程。
 - `web/e2e/visual-output-delete.spec.ts`：隔离服务的明暗主题及窄屏删除、恢复最终版、刷新和删空输出。
 
 2026-10-17：输出 API 专项 23 项与画布替换安全 1 项通过；扩展后端、迁移、SDK 与架构检查 102 项通过。相关 Web 回归 35 项通过，随后新增「删除其他版本保留历史预览」用例，删除组件专项共 7 项通过。隔离 Chrome 明暗主题 × 1600/390 宽度 4 项通过，截图在 `.local/visual-output-delete/results/`；窄屏可见操作截图在 `.local/visual-output-delete/mobile-results/`。

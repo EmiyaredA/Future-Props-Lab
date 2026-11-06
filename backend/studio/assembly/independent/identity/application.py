@@ -109,6 +109,7 @@ def create_app(
     management_gateway_token=None,
     management_local_origin="http://127.0.0.1:9002",
     management_public_origin="",
+    read_cloud_settings=get_cloud_settings,
 ):
     settings = get_settings()
     database = Database("identity", state_root, models=MODELS, account_models=())
@@ -132,6 +133,7 @@ def create_app(
         openapi_url=None,
     )
     app.state.settings = settings
+    app.state.read_cloud_settings = read_cloud_settings
     app.state.avatar_previews = RasterPreviews(capacity=1)
     app.state.service_id = "identity"
     app.state.database = database
@@ -139,7 +141,7 @@ def create_app(
     app.state.invitation_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.management_api_key_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.cloud_unlocks = CloudUnlockRecords(
-        database.sessions, clock=utc_now, settings_reader=get_cloud_settings
+        database.sessions, clock=utc_now, settings_reader=read_cloud_settings
     )
     app.state.integration_intents = IntegrationIntents(
         database, private_key.public_key(), catalog, private_key=private_key, key_id=key_id
@@ -224,7 +226,7 @@ def create_app(
     async def ready():
         check(database.path, "identity", MIGRATIONS)
         try:
-            get_cloud_settings()
+            read_cloud_settings()
         except ConfigurationError:
             raise HTTPException(503, "identity_cloud_projection_unavailable") from None
         async with database.sessions() as session:

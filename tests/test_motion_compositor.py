@@ -5,6 +5,7 @@ import json
 import subprocess
 import tempfile
 import zipfile
+from functools import partial
 from pathlib import Path
 
 import httpx
@@ -13,7 +14,7 @@ from PIL import Image
 from sqlalchemy import select
 
 from studio.apps.media_rendering.local.motion_frames import MotionFrameRenderer
-from studio.apps.motion_compositor.projects import MotionNotFound, MotionProjects
+from studio.apps.motion_compositor.projects import MotionNotFound
 from studio.apps.motion_compositor.runner import MotionExportRunner
 from studio.apps.motion_compositor.storage.models import MotionTask
 from studio.apps.video_editor.runner import VideoEditorRunner
@@ -34,7 +35,7 @@ async def test_motion_project_cas_isolation_and_multiformat_export() -> None:
         base = f"/v1/motion-compositor/projects/{project_id}"
         async with SessionLocal() as session:
             with pytest.raises(MotionNotFound):
-                await MotionProjects(session, "other-workspace").get(project_id)
+                await app.state.motion_projects(None, session, "other-workspace").get(project_id)
 
         upload = Image.new("RGBA", (32, 32), (240, 40, 60, 255))
         buffer = io.BytesIO()
@@ -118,7 +119,9 @@ async def test_motion_project_cas_isolation_and_multiformat_export() -> None:
         assert export.status_code == 200, export.text
         task_id = export.json()["id"]
         await MotionExportRunner(
-            session_factory=SessionLocal, settings=get_settings()
+            session_factory=SessionLocal,
+            settings=get_settings(),
+            projects=partial(app.state.motion_projects, None),
         ).process_once()
         task = (await client.get(f"{base}/exports/{task_id}")).json()
         assert task["status"] == "completed", task
@@ -337,7 +340,11 @@ async def test_motion_export_recovers_interrupted_task() -> None:
             task.status = "running"
             task.progress = 75
             await session.commit()
-        await MotionExportRunner(session_factory=SessionLocal, settings=get_settings()).recover()
+        await MotionExportRunner(
+            session_factory=SessionLocal,
+            settings=get_settings(),
+            projects=partial(app.state.motion_projects, None),
+        ).recover()
         recovered = (await client.get(f"{base}/exports/{task_id}")).json()
         assert recovered["status"] == "queued"
         assert recovered["progress"] == 0

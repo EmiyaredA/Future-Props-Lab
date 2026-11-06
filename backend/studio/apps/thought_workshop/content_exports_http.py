@@ -9,7 +9,7 @@ from starlette.background import BackgroundTask
 
 from studio.apps.thought_workshop.content_exports import convert, export_note
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.http_bindings import SessionDep
+from studio.apps.thought_workshop.http_bindings import AssetMetadataDep, SessionDep
 from studio.apps.thought_workshop.schemas.conversion import ThoughtMarkdownIn, ThoughtMarkdownOut
 from studio.assembly.http_dependencies import OwnerDep
 
@@ -24,8 +24,8 @@ async def call(operation):
 
 
 @router.post("/markdown/convert", response_model=ThoughtMarkdownOut)
-async def convert_markdown(body: ThoughtMarkdownIn, session: SessionDep, owner_user_id: OwnerDep):
-    return await call(convert(session, owner_user_id, body))
+async def convert_markdown(body: ThoughtMarkdownIn, _session: SessionDep, assets: AssetMetadataDep):
+    return await call(convert(body, assets=assets))
 
 
 @router.get(
@@ -42,11 +42,14 @@ async def convert_markdown(body: ThoughtMarkdownIn, session: SessionDep, owner_u
 async def export_note_content(
     session: SessionDep,
     owner_user_id: OwnerDep,
+    assets: AssetMetadataDep,
     note_id: str,
     expected_revision: int = Query(ge=0),
     format: Literal["md", "html"] = "md",
 ):
-    path = await call(export_note(session, owner_user_id, note_id, expected_revision, format))
+    path = await call(
+        export_note(session, owner_user_id, note_id, expected_revision, format, assets=assets)
+    )
     return FileResponse(
         path,
         filename=path.name,

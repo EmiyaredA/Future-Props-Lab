@@ -34,6 +34,6 @@ Amadeus 使用固定源码快照的 `pi-agent-core` 作为 Web Worker 内的对�
 
 ## Verification
 
-`tests/test_amadeus.py` 使用隔离数据覆盖单活动运行、事件幂等、部分回复落盘、停止尾部结算、过期审批、启动恢复、未知结果、引用快照、CAS、只读权限、文件边界、Skill 固定版本和模型调用日志。`tests/test_sqlite_migration_history.py` 在临时数据库验证新增迁移。Pi 快照通过 `npm run build:amadeus-pi` 构建；OpenAPI、Web 类型、Python SDK 与接口文档由正式生成流程同步。
+`tests/test_amadeus.py` 使用隔离数据覆盖单活动运行、事件幂等、部分回复落盘、停止尾部结算、过期审批、启动恢复、未知结果、引用快照、CAS、只读权限、文件边界、Skill 固定版本和模型调用日志。`tests/runtime/test_sqlite_migration_history.py` 在临时数据库验证新增迁移。Pi 快照通过 `npm run build:amadeus-pi` 构建；OpenAPI、Web 类型、Python SDK 与接口文档由正式生成流程同步。
 
 完整桌面构建与真实 Electron 烟测仍受当前工作树中独立的视频剪辑器类型错误阻塞；该失败不作为 Pi 与其他候选的性能结论。

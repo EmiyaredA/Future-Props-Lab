@@ -1,18 +1,6 @@
-"""Bind Amadeus run records to the compatibility site's connection registry."""
+"""Recover compatibility website run records after a restart."""
 
-from app.console.governance.code_agents import resolve
 from studio.apps.amadeus.storage.recovery import recover_runs
-from studio.apps.amadeus.storage.runs import RunRecords
-
-
-class Runs(RunRecords):
-    def __init__(self, session, principal):
-        async def connection(agent_id):
-            return await resolve(
-                session, principal.owner_user_id, principal.user_id, agent_id, "amadeus"
-            )
-
-        super().__init__(session, principal, resolve_agent=connection)
 
 
 async def recover_interrupted_amadeus_runs(*, sessions) -> None:

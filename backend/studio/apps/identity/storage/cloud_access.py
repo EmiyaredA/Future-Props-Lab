@@ -9,22 +9,12 @@ from sqlalchemy import select
 
 from studio.apps.identity.storage.models.accounts import AuthSession, User
 from studio.apps.identity.storage.models.cloud import CloudUnlock
-from studio.config.settings import get_cloud_settings
 from studio.contracts.identity.authentication import REAUTH_MINUTES
 from studio.contracts.identity.cloud_authority import TICKET_SECONDS as TICKET_SECONDS
 from studio.runtime.time import utc_now
 
 
-def allowed(principal, *, local, desktop=False, settings=None):
-    return _allowed(
-        settings if settings is not None else get_cloud_settings(),
-        principal,
-        local=local,
-        desktop=desktop,
-    )
-
-
-def _allowed(settings, principal, *, local, desktop):
+def allowed(principal, *, local, settings, desktop=False):
     return (
         settings.fpl_cloud_control_enabled
         and (
@@ -40,7 +30,7 @@ def _allowed(settings, principal, *, local, desktop):
     )
 
 
-def require_enabled(principal, *, local, desktop=False, settings=None):
+def require_enabled(principal, *, local, settings, desktop=False):
     if not allowed(principal, local=local, desktop=desktop, settings=settings):
         raise HTTPException(403, "该账号或入口未启用云控操作")
 
@@ -63,9 +53,8 @@ def session_query(principal, *, now=None):
     )
 
 
-async def desktop_authorized(db, principal, *, local):
-    settings = get_cloud_settings()
-    if not _allowed(settings, principal, local=local, desktop=True):
+async def desktop_authorized(db, principal, *, local, settings):
+    if not allowed(principal, local=local, desktop=True, settings=settings):
         return False
     query = session_query(principal)
     if not local:
@@ -86,8 +75,8 @@ async def recently_reauthenticated(db, principal):
     return bool(await db.scalar(query))
 
 
-async def unlock_expiry(db, principal, *, local, settings=None):
-    if not _allowed(settings or get_cloud_settings(), principal, local=local, desktop=False):
+async def unlock_expiry(db, principal, *, local, settings):
+    if not allowed(principal, local=local, settings=settings):
         return 0
     sessions = session_query(principal).where(
         AuthSession.reauthenticated_at > AuthSession.created_at
@@ -101,6 +90,6 @@ async def unlock_expiry(db, principal, *, local, settings=None):
     return row if row and row > time.time() else 0
 
 
-async def require_unlocked(db, principal, *, local, settings=None):
+async def require_unlocked(db, principal, *, local, settings):
     if not await unlock_expiry(db, principal, local=local, settings=settings):
         raise HTTPException(403, "请先验证管理员密码")

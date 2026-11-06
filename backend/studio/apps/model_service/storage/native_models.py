@@ -69,12 +69,6 @@ class NativeModelBroker(PollingTaskRunner):
         self.retention = NativeResultRetention(database, self.artifact)
         self.inference = None
         self.waiting = {}
-        database.sessions.configure(
-            info={
-                **database.sessions.kw["info"],
-                "native_model_readiness": self,
-            }
-        )
 
     @contextmanager
     def foreground_synthesis(self, task_id):

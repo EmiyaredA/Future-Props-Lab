@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from studio.apps.model_service.catalog.defaults import update_defaults
 from studio.apps.model_service.catalog.http_bindings import CatalogDep, CipherDep, DefaultsDep
@@ -132,6 +132,7 @@ async def delete_model(
 
 @router.put("/model-catalog/defaults", response_model=ModelCatalogOut)
 async def defaults(
+    request: Request,
     session: SessionDep,
     owner_user_id: OwnerDep,
     body: ModelDefaultsIn,
@@ -140,7 +141,12 @@ async def defaults(
 ):
     try:
         return await update_defaults(
-            session, owner_user_id, body, defaults_store=defaults_store, cipher=cipher
+            session,
+            owner_user_id,
+            body,
+            defaults_store=defaults_store,
+            cipher=cipher,
+            readiness=request.app.state.model_catalog_bindings.readiness,
         )
     except ValueError as exc:
         raise HTTPException(422, {"code": "invalid_default_model", "message": str(exc)}) from None

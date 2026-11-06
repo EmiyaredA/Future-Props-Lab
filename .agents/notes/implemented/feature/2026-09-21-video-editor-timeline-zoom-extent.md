@@ -28,5 +28,5 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-timeline-scale.test.ts`：fit / 动态下限 / clamp。
+- `web/tests/features/video-editor-timeline-scale.test.ts`：fit / 动态下限 / clamp。
 - 手动：放入长于视窗的片段，拖缩放滑块到最左或点「适配宽度」，整段有效内容应落入视窗且不再强制停在 10px/s。

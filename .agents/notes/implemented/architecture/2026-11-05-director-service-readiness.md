@@ -20,4 +20,4 @@ Gateway 能识别导演台实际运行状态。全站切换仍以同版本的完
 
 ## Verification
 
-`tests/test_independent_director.py` 覆盖未启动、仅 API、恢复后发布版本、损坏程序拒绝和恢复后的项目文件读回。
+`tests/integration/test_independent_director.py` 覆盖未启动、仅 API、恢复后发布版本、损坏程序拒绝和恢复后的项目文件读回。

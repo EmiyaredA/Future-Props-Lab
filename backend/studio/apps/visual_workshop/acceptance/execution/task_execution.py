@@ -5,10 +5,10 @@ import json
 import sys
 from pathlib import Path
 
-from app.capabilities.agents.cli.process import execute
 from studio.apps.visual_workshop.acceptance.execution.task_tools import file_digest, safe_file
 from studio.config.settings import REPO_ROOT
 from studio.contracts.visual_workshop.visual_agent_report import validate_report
+from studio.host.agent_execution.cli.process import execute
 
 PROMPT = (
     "你是动作迁移验收助手。只完成本任务，严格按输出 Schema 返回中文报告。"

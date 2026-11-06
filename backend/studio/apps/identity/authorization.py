@@ -114,7 +114,7 @@ async def authorize(request: Request):
         if socket is not None and is_desktop_upgrade(service, method, path):
             desktop_ticket = desktop_ticket_digest(request.cookies.get(DESKTOP_COOKIE, ""))
             if desktop_ticket is None or not await desktop_authorized(
-                session, principal, local=local
+                session, principal, local=local, settings=request.app.state.read_cloud_settings()
             ):
                 raise HTTPException(403, "desktop_authorization_required")
         client_ip = None

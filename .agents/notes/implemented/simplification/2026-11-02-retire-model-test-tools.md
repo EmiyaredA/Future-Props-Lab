@@ -28,8 +28,8 @@ Status: implemented
 
 ## Verification
 
-- `tests/test_retired_model_test_tools.py` 验证多账号含数据升级、全新安装、重复迁移、数据保留、外键完整性、旧 API 404 与 OpenAPI 字段删除。
-- `tests/test_model_test_recovery.py` 验证跨账号取消未完成回复、保留部分内容、每会话 revision 仅更新一次及重复恢复。
+- `tests/integration/test_retired_model_test_tools.py` 验证多账号含数据升级、全新安装、重复迁移、数据保留、外键完整性、旧 API 404 与 OpenAPI 字段删除。
+- `tests/apps/model_service/test_model_test_recovery.py` 验证跨账号取消未完成回复、保留部分内容、每会话 revision 仅更新一次及重复恢复。
 - 普通文字测试、实时语音与权限撤销、SDK、导航和响应式用例覆盖保留能力；历史迁移测试继续验证原有版本。
 - 后端专项 28 项和 Web 首页、导航、历史、语音、文档专项 58 项通过；契约、SDK、官方知识导入包、lint、格式、构建及 Agent Note 校验通过。
 - 后端完整测试 1764 项通过、6 项跳过；初始失败的文档版本校验与沙箱监听/CLI 用例在修复或允许本地进程权限后复测，7 项全部通过。Web 完整测试 1804 项通过，8 项初始失败均位于未改动的 Galgame 文件；三个文件串行复测的 19 项全部通过。

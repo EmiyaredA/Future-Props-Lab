@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "a044995980ac67052e72417f5dde8b03ee57dd4ba70aae2d4ebaf00dd08420bd",
+  "openapi_sha256": "19dbe90dc54b573ca0caf99d9df2b5cacb8332ac1fe48edcb32c60c0f2b6ca0a",
   "operations": [
     {
       "service": "identity",

@@ -23,5 +23,5 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-assets.test.tsx` 从直接按钮进入所有改名保存、失败、取消和冲突用例，验证无需打开整理菜单与只读禁用。
+- `web/tests/features/video-editor-assets.test.tsx` 从直接按钮进入所有改名保存、失败、取消和冲突用例，验证无需打开整理菜单与只读禁用。
 - Web 定向 lint、格式检查、构建；官方指南与导入包保持一致。

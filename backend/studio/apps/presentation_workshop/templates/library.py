@@ -45,10 +45,10 @@ def template_document(definition, name="模板预览"):
 
 
 class TemplateLibrary:
-    def __init__(self, session, owner_user_id):
-        self.session, self.owner_user_id = session, owner_user_id
-        self.projects = Presentations(session, owner_user_id)
-        self.retention = session.info.get("presentation_retention")
+    def __init__(self, projects: Presentations):
+        self.projects = projects
+        self.session, self.owner_user_id = projects.session, projects.owner_user_id
+        self.retention = projects.retention
 
     def kinds(self, kind):
         if kind == "templates":

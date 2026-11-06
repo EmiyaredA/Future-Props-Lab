@@ -312,6 +312,10 @@ test("透明框允许点击内部文字，边线仍可独立选中", async ({ pa
   await page.reload();
   await object(page, "title").click();
   await expect(page.getByLabel("字体", { exact: true })).toBeVisible();
-  await object(page, "transparent").click({ position: { x: 50, y: 1 } });
+  const frame = object(page, "transparent");
+  const bounds = await frame.boundingBox();
+  expect(bounds).not.toBeNull();
+  // Use the lower border so the floating text toolbar stays clear of the hit target.
+  await frame.click({ position: { x: 50, y: Math.floor(bounds!.height) - 1 } });
   await expect(page.getByLabel("描边颜色", { exact: true })).toBeVisible();
 });

@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_creative_installation_outbox.py` 验证首调直接提交、响应丢失后的恢复只读回执，以及回执查询失败禁止重新提交。Creative 定向测试和服务边界检查合计 125 项通过。分段基线见固定候选 `e25a2e0e` 的隔离 Compose 项目 `full-compose-3i8sodh_`。
+`tests/apps/creative_workshop/test_creative_installation_outbox.py` 验证首调直接提交、响应丢失后的恢复只读回执，以及回执查询失败禁止重新提交。Creative 定向测试和服务边界检查合计 125 项通过。分段基线见固定候选 `e25a2e0e` 的隔离 Compose 项目 `full-compose-3i8sodh_`。

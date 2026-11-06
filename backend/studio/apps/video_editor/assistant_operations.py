@@ -12,7 +12,13 @@ from studio.runtime.database.ownership import bind_owner
 
 
 async def apply_assistant_timeline_batch(
-    owner_user_id: str, action_id: str, project_id: str, arguments: dict[str, Any], *, sessions
+    owner_user_id: str,
+    action_id: str,
+    project_id: str,
+    arguments: dict[str, Any],
+    *,
+    sessions,
+    asset_reader,
 ) -> dict[str, Any]:
     body = VideoEditorTimelineBatchIn.model_validate(
         {
@@ -24,7 +30,9 @@ async def apply_assistant_timeline_batch(
     try:
         async with sessions() as session:
             bind_owner(session, owner_user_id)
-            outcome = await VideoEditorTimelines(session, owner_user_id).apply(project_id, body)
+            outcome = await VideoEditorTimelines(session, owner_user_id).apply(
+                project_id, body, assets=asset_reader(session, owner_user_id)
+            )
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise OperationError(str(exc), getattr(exc, "code", "execution_failed"), 422) from exc
     return {

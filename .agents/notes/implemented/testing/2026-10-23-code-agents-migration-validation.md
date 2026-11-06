@@ -25,5 +25,5 @@ Status: implemented
 
 ## Verification
 
-- `uv run pytest tests/test_code_agents_migration.py tests/test_sqlite_migration_history.py tests/test_desktop_development.py -q`：11 passed。
-- `uv run ruff check tests/test_code_agents_migration.py tests/test_sqlite_migration_history.py`：通过。
+- `uv run pytest tests/apps/agent_runtime/test_code_agents_migration.py tests/runtime/test_sqlite_migration_history.py tests/test_desktop_development.py -q`：11 passed。
+- `uv run ruff check tests/apps/agent_runtime/test_code_agents_migration.py tests/runtime/test_sqlite_migration_history.py`：通过。

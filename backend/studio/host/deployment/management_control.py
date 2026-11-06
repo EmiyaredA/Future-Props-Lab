@@ -36,6 +36,7 @@ class DeploymentControl:
         services,
         environment,
         tunnels,
+        project_directory=None,
         runner=subprocess.run,
         clock=time.monotonic,
     ):
@@ -52,7 +53,12 @@ class DeploymentControl:
             for key, value in environment.items()
         ):
             raise ValueError("Compose 环境配置无效")
+        self.project_directory = (
+            Path(project_directory).resolve() if project_directory else self.compose_file.parent
+        )
         self.prefix = ["docker", "compose", "--env-file", "/dev/null"]
+        if project_directory:
+            self.prefix.extend(["--project-directory", str(self.project_directory)])
         for path in resolve_files(self.compose_file, environment):
             self.prefix.extend(["--file", str(path)])
         self.prefix.extend(["--project-name", project_name])
@@ -188,7 +194,7 @@ class DeploymentControl:
                     raise ValueError("请先确认并强制停止未退出的业务服务")
                 if action in {"start", "restart"} and "creative" in self.services:
                     await asyncio.to_thread(
-                        check_creative_gateway_credentials, self.env, self.compose_file.parent
+                        check_creative_gateway_credentials, self.env, self.project_directory
                     )
                 if action in {"stop", "restart"}:
                     await self.stop()

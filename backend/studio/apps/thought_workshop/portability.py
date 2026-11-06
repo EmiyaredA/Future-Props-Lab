@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import shutil
 import tempfile
 import zipfile
@@ -11,72 +10,15 @@ from pathlib import Path
 from uuid import uuid4
 
 from pydantic import ValidationError
-from sqlalchemy import select
 
-from studio.apps.asset_library.storage.file_paths import AssetStorage
-from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.thought_workshop.archive_files import extract_archive, stage_archive
-from studio.apps.thought_workshop.backup_manifest import collect_backup
 from studio.apps.thought_workshop.notes import Notes, ThoughtError
 from studio.apps.thought_workshop.schemas.workshop import ThoughtImportOut
 from studio.apps.thought_workshop.website.archive_import import allocate_ids, persist_archive
 from studio.config.settings import Settings
 from studio.contracts.asset_library.file_types import ATTACHMENT_EXTENSIONS
 from studio.contracts.asset_library.incoming import IncomingFile
-
-
-async def export_backup(
-    notes: Notes, settings: Settings, knowledge_base_id: str | None = None
-) -> Path:
-    payload, ids = await collect_backup(notes, knowledge_base_id)
-    assets = (
-        (
-            await notes.session.scalars(
-                select(VisualAsset).where(
-                    VisualAsset.id.in_(ids),
-                    VisualAsset.owner_user_id == notes.owner_user_id,
-                )
-            )
-        ).all()
-        if ids
-        else []
-    )
-    if {r.id for r in assets} != ids:
-        raise ThoughtError("备份引用的文件不存在")
-    storage = AssetStorage(settings)
-    sources = [(r.id, storage.path_for(r), r.original_filename, r.mime_type) for r in assets]
-    payload["assets"] = [
-        {"id": rid, "path": f"assets/{rid}", "filename": name, "content_type": mime}
-        for rid, _, name, mime in sources
-    ]
-    await notes.session.rollback()
-
-    def write():
-        root = Path(tempfile.mkdtemp(prefix="thought-export-"))
-        target = root / "thought-workshop.zip"
-        try:
-            data = json.dumps(payload, ensure_ascii=False).encode()
-            if (
-                len(data) > 32 * 1024 * 1024
-                or len(sources) + 1 > settings.fpl_project_snapshot_max_files
-            ):
-                raise ThoughtError("笔记集合超过备份上限", 413)
-            if (
-                len(data) + sum(path.stat().st_size for _, path, _, _ in sources)
-                > settings.fpl_project_snapshot_max_bytes
-            ):
-                raise ThoughtError("备份超过大小限制", 413)
-            with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED) as archive:
-                archive.writestr("manifest.json", data)
-                for rid, path, _, _ in sources:
-                    archive.write(path, f"assets/{rid}")
-            return target
-        except BaseException:
-            shutil.rmtree(root, ignore_errors=True)
-            raise
-
-    return await asyncio.to_thread(write)
 
 
 async def import_backup(

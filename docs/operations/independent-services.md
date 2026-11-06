@@ -24,7 +24,7 @@ npm run services:build -- portal --build --web-release .local/service-web/portal
 
 每个登记服务使用各自的独立镜像入口。带网页的服务先构建对应的前端发布目录，再传入 `--web-release` 生成镜像。Gateway 包含 Caddy 与独立控制面，互相监督并持有自己的数据锁。构建器计算可审计的源码与依赖闭包。镜像仅打包所需的代码、依赖、程序资源和契约，版本由实际输入内容决定。
 
-`deploy/compose.yaml` 装配 Identity、Portal、Assets、Rendering 和 Gateway。管理启动器按照部署配置和 `studio.host.deployment.compose_selection` 选择并检查其他服务及所需的叠加清单。启动只使用已构建镜像。数据库初始化通过所属镜像显式执行 `migrate`，已有数据库迁移历史不符时启动失败。`create-admin` 接受标准输入 JSON，仅用于没有账号的新安装。已有正式账号通过受控导入保留。
+`deploy/compose/compose.yaml` 装配 Identity、Portal、Assets、Rendering 和 Gateway。管理启动器按照部署配置和 `studio.host.deployment.compose_selection` 选择并检查其他服务及所需的叠加清单。启动只使用已构建镜像。数据库初始化通过所属镜像显式执行 `migrate`，已有数据库迁移历史不符时启动失败。`create-admin` 接受标准输入 JSON，仅用于没有账号的新安装。已有正式账号通过受控导入保留。
 
 ## Docker 隔离验收
 
@@ -220,7 +220,7 @@ Creative 的 `/ready` 要求持锁启动检查完成，安装及 stdio 路由齐
 单服务隔离 Compose 用 `fpl/creative:d67d6a41f02c394166f6` 显式初始化独立卷，探针和页面返回同一发布版本 `c7961c03ee5fa530b54c`。
 
 
-Visual 与 Galgame 的认证和公开项目目录可用安装后的进程验收。分别构建镜像，并在合成账号和独立卷的环境中加载 `deploy/project-owners.compose.yaml`，与 Creative、Integrations 和基础清单一起启动。
+Visual 与 Galgame 的认证和公开项目目录可用安装后的进程验收。分别构建镜像，并在合成账号和独立卷的环境中加载 `deploy/compose/project-owners.compose.yaml`，与 Creative、Integrations 和基础清单一起启动。
 
 ```sh
 npm run services:build -- visual --build
@@ -246,11 +246,11 @@ Galgame 的新项目创建和公开 Story 保存需要同一私网中的 Identit
 
 ### Tools 导航状态
 
-`npm run services:build -- tools --build` 构建 Tools 镜像。`deploy/tools.compose.yaml` 使用独立的 `FPL_TOOLS_STATE` 与只读 Identity 公钥。隔离运行 `fpl-tools-owner-8f178e9894` 经 Gateway 验证了收藏、使用计数及容器重启后的持久化。历史迁移及正式编排仍纳入 Tools 完整就绪门禁。
+`npm run services:build -- tools --build` 构建 Tools 镜像。`deploy/compose/tools.compose.yaml` 使用独立的 `FPL_TOOLS_STATE` 与只读 Identity 公钥。隔离运行 `fpl-tools-owner-8f178e9894` 经 Gateway 验证了收藏、使用计数及容器重启后的持久化。历史迁移及正式编排仍纳入 Tools 完整就绪门禁。
 
 构建浏览器程序可运行 `npm run services:build:web -- tools`，再把返回目录作为 `--web-release` 传给镜像构建。隔离运行 `fpl-tools-browser-71a1b5d024` 验证了 Chromium 登录态收藏、工具目录手机宽度、两条深链接及旧程序版本写入拒绝，也检查了公网监听的页面与未登录 API 响应。
 
-本机文件库打开可额外加载 `deploy/tools-native.compose.yaml`。隔离环境为 Tools、Identity 与原生入口分别设置用途限定凭据，Gateway 的独立回环监听登记 Tools 原生通道。Mac worker 由 `uv run python -m studio.host.project_files.tools_worker` 启动，使用明确指定的回环桥接地址、独占凭据文件、Assets 状态根目录和自有回执目录。容器只接收任务与回执。公网及 Management API Key 无权打开本机目录。
+本机文件库打开可额外加载 `deploy/compose/tools-native.compose.yaml`。隔离环境为 Tools、Identity 与原生入口分别设置用途限定凭据，Gateway 的独立回环监听登记 Tools 原生通道。Mac worker 由 `uv run python -m studio.host.project_files.tools_worker` 启动，使用明确指定的回环桥接地址、独占凭据文件、Assets 状态根目录和自有回执目录。容器只接收任务与回执。公网及 Management API Key 无权打开本机目录。
 
 隔离运行 `fpl-tools-native-245d307d35` 通过真实回环入口、签名账号会话和 Mac worker 逻辑完成目录请求。测试适配器记录了唯一的 Finder 启动参数，验证路径归属并拒绝浏览器访问原生入口。自动化用例另验证回执丢失后的恢复、过期未领取任务和公网管理员限制。
 
@@ -309,7 +309,7 @@ Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账�
 
 ### Director 独立运行
 
-先运行 `npm run services:build:web -- director`，把返回目录作为 `--web-release` 传给 `npm run services:build -- director --build`。叠加 `deploy/director.compose.yaml` 并配置 `FPL_DIRECTOR_IMAGE`、`FPL_DIRECTOR_STATE` 和 Identity 公钥。在隔离空卷上显式运行 `director migrate` 后启动。Director 自己持有项目、动作库、文件和编辑器会话。服务重启后，浏览器重新建立编辑会话。
+先运行 `npm run services:build:web -- director`，把返回目录作为 `--web-release` 传给 `npm run services:build -- director --build`。叠加 `deploy/compose/director.compose.yaml` 并配置 `FPL_DIRECTOR_IMAGE`、`FPL_DIRECTOR_STATE` 和 Identity 公钥。在隔离空卷上显式运行 `director migrate` 后启动。Director 自己持有项目、动作库、文件和编辑器会话。服务重启后，浏览器重新建立编辑会话。
 
 三容器验收 `fpl-director-browser-65f3dcb78d` 验证了 390px 项目列表、WebGL 编辑器深链接和初始化保存、旧程序版本写入拒绝、回环公网监听的匿名保护，以及 Director 容器重启后原文件读回。浏览器版本为 `c6ba2149dd0e285ed7bc`，镜像为 `fpl/director:f4c0e8bde89255b83a46`。当前 `/ready` 复核数据库和持锁启动恢复，并要求挂载与公开契约匹配的浏览器发布。导演台项目和动作文件的正式迁移仍纳入整站切换门禁。
 
@@ -369,7 +369,7 @@ uv run python -m scripts.website.migrate_director --plan "$plan" \
 
 ### Agent Runtime 独立连接目录
 
-运行 `npm run services:build:web -- agent-runtime`，用返回的 `--web-release` 构建 Agent Runtime 镜像。叠加 `deploy/agent-runtime.compose.yaml` 并配置自有状态目录、Identity 公钥和私有原生配置。Gateway 的回环原生入口使用单独 Agent Runtime 通道凭据，Identity 登记不同的服务凭据。容器只持有原生任务及回执。
+运行 `npm run services:build:web -- agent-runtime`，用返回的 `--web-release` 构建 Agent Runtime 镜像。叠加 `deploy/compose/agent-runtime.compose.yaml` 并配置自有状态目录、Identity 公钥和私有原生配置。Gateway 的回环原生入口使用单独 Agent Runtime 通道凭据，Identity 登记不同的服务凭据。容器只持有原生任务及回执。
 
 Mac worker 从 `uv run python -m studio.host.agent_execution.agent_connections_worker` 启动，显式传入专用回环 `--bridge`、当前用户独占的 `--worker-token`、`--state-root` 及部署 `--config`。编程智能体目录、重新检测和启用沿用发布契约。本机管理员近期密码验证后可启用已安装及已登录的连接。写入前再次检查原会话，回执丢失后重放原结果。公开访问看不到可执行文件路径，也不能启用 CLI。项目和对话的原生执行能力仍是正式就绪门禁。
 
@@ -377,7 +377,7 @@ Mac worker 从 `uv run python -m studio.host.agent_execution.agent_connections_w
 
 ### Amadeus 记录服务
 
-运行 `npm run services:build -- amadeus --build` 并加载 `deploy/amadeus.compose.yaml`，为 Amadeus 提供独立状态目录、Identity 公钥和专属凭据。先显式执行服务迁移至 0002。三容器隔离运行 `fpl-amadeus-records-df66597c64` 验证网关账号鉴权、会话修订、旧模型协议的 410 响应和重启后的记录读回。当前装配包含全部 34 项公开操作，含分块导入、账号文件清单、按摘要保存、原件下载和登记业务操作的目录与读取。跨服务读取沿用同版本自动化白名单，并经 Identity 获取精确到目标方法和路径的身份凭据。Skill 通过同账号已启用版本的精确授权获取，校验 ZIP 摘要和文件清单后原子固定在对话目录。加载 `deploy/amadeus-native.compose.yaml` 并在网关登记 `amadeus` 回环通道后，Mac 运行 `uv run python -m studio.host.agent_execution.amadeus_worker`，指定 `--bridge`、`--worker-token`、`--amadeus-root` 与独立 `--state-root`。浏览器 Finder 操作要求本机 Session 和实时复核。四容器隔离运行 `fpl-amadeus-native-6443e4d049` 已通过 Skill 固定版本、原生租约和重启验收。已批准的工作文件写入和脚本文件保存使用同一 CAS 领取与持久结算。登记跨服务动作使用绑定查询与正文摘要的 Identity 授权，未确认写入保留 unknown。外部工具经 Identity 的精确 Intent 和 Integrations 0010 持久回执执行，视频批次仍用 Video CAS。脚本由原生 worker 在账户会话沙箱执行并输出 NDJSON。隔离四容器 `fpl-amadeus-actions-ef92aa1d1c` 已验证真实 Mac 脚本 stdout 和结算。CLI 对话需要为同一 worker 传入 `--agent-config` 与 `--agent-state-root`，仅使用已登记的 CLI 连接及专用档案。就绪校验要求对话 worker；五容器隔离运行 `fpl-amadeus-dialogue-2a20d293a5` 验证实际 Mac App Server 子进程、受限工具、重启和 Portal 中 1440、768、390 像素的 Chromium 历史读回。
+运行 `npm run services:build -- amadeus --build` 并加载 `deploy/compose/amadeus.compose.yaml`，为 Amadeus 提供独立状态目录、Identity 公钥和专属凭据。先显式执行服务迁移至 0002。三容器隔离运行 `fpl-amadeus-records-df66597c64` 验证网关账号鉴权、会话修订、旧模型协议的 410 响应和重启后的记录读回。当前装配包含全部 34 项公开操作，含分块导入、账号文件清单、按摘要保存、原件下载和登记业务操作的目录与读取。跨服务读取沿用同版本自动化白名单，并经 Identity 获取精确到目标方法和路径的身份凭据。Skill 通过同账号已启用版本的精确授权获取，校验 ZIP 摘要和文件清单后原子固定在对话目录。加载 `deploy/compose/amadeus-native.compose.yaml` 并在网关登记 `amadeus` 回环通道后，Mac 运行 `uv run python -m studio.host.agent_execution.amadeus_worker`，指定 `--bridge`、`--worker-token`、`--amadeus-root` 与独立 `--state-root`。浏览器 Finder 操作要求本机 Session 和实时复核。四容器隔离运行 `fpl-amadeus-native-6443e4d049` 已通过 Skill 固定版本、原生租约和重启验收。已批准的工作文件写入和脚本文件保存使用同一 CAS 领取与持久结算。登记跨服务动作使用绑定查询与正文摘要的 Identity 授权，未确认写入保留 unknown。外部工具经 Identity 的精确 Intent 和 Integrations 0010 持久回执执行，视频批次仍用 Video CAS。脚本由原生 worker 在账户会话沙箱执行并输出 NDJSON。隔离四容器 `fpl-amadeus-actions-ef92aa1d1c` 已验证真实 Mac 脚本 stdout 和结算。CLI 对话需要为同一 worker 传入 `--agent-config` 与 `--agent-state-root`，仅使用已登记的 CLI 连接及专用档案。就绪校验要求对话 worker；五容器隔离运行 `fpl-amadeus-dialogue-2a20d293a5` 验证实际 Mac App Server 子进程、受限工具、重启和 Portal 中 1440、768、390 像素的 Chromium 历史读回。
 
 ### 旧站快照及恢复目录演练
 
@@ -421,9 +421,9 @@ uv run python -m scripts.website.migrate_site \
 
 ### Remote 桌面连接
 
-运行 `npm run services:build -- remote --build` 并加载 `deploy/remote.compose.yaml`，为 Remote 指定专用卷、Identity 公钥、服务凭据和只读传输配置。网关只把签名上下文转交 Remote。连接票据仅能使用一次，绑定账号、会话和可信入口。撤销会话或关闭对应的云控授权会阻止旧连接继续传输。
+运行 `npm run services:build -- remote --build` 并加载 `deploy/compose/remote.compose.yaml`，为 Remote 指定专用卷、Identity 公钥、服务凭据和只读传输配置。网关只把签名上下文转交 Remote。连接票据仅能使用一次，绑定账号、会话和可信入口。撤销会话或关闭对应的云控授权会阻止旧连接继续传输。
 
-Remote 设置需要 0003 迁移及 `deploy/remote-settings.compose.yaml`。用独立原生凭据注册 Gateway 的 `remote` 回环通道。启动 Mac worker 时显式提供专用状态目录、原生 worker 凭据、权威部署 TOML 和预先创建的投影根目录。
+Remote 设置需要 0003 迁移及 `deploy/compose/remote-settings.compose.yaml`。用独立原生凭据注册 Gateway 的 `remote` 回环通道。启动 Mac worker 时显式提供专用状态目录、原生 worker 凭据、权威部署 TOML 和预先创建的投影根目录。
 
 ```sh
 uv run python -m studio.host.deployment.cloud_setup_worker \
@@ -434,7 +434,7 @@ uv run python -m studio.host.deployment.cloud_setup_worker \
 
 worker 将根目录下的 `identity`、`remote`、`committed` 分别供 Compose 挂载。只读投影与原配置写入均由 Mac 协调。Remote 就绪需要可读的已提交版本和在轮询的 worker。隔离测试使用合成 Guacamole 对端及隔离账号。正式 Mac 屏幕共享和数据验收由整站切换门禁核验。
 
-Guacamole 伴随进程使用 `deploy/remote-guacd.compose.yaml`。将已验收且已导入本机的带 Mac 认证适配镜像摘要指定为 `FPL_GUACD_IMAGE`。该进程仅在私网接受 Remote 请求，VNC 目标仍由部署配置预设。Remote 就绪检查同时探测实际 Guacamole TCP 对端。
+Guacamole 伴随进程使用 `deploy/compose/remote-guacd.compose.yaml`。将已验收且已导入本机的带 Mac 认证适配镜像摘要指定为 `FPL_GUACD_IMAGE`。该进程仅在私网接受 Remote 请求，VNC 目标仍由部署配置预设。Remote 就绪检查同时探测实际 Guacamole TCP 对端。
 
 隔离运行 `fpl-remote-native-0b53131db1` 使用真实 Guacamole 与受密码保护的 RFB 夹具，经 Chromium 验证云控设置、画面传输、390px 页面及 Remote／Identity 重启后的设置读回。验收镜像为 `mac-browser-remote-guacd@sha256:a7445df8bcabb9f3d19164f71baac96b0e859cdd36b1bc8f3a62df64a63c87aa`。
 
@@ -456,11 +456,11 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 ### Interview 独立运行
 
-运行 `npm run services:build:web -- interview`，将产物目录通过 `--web-release` 传给 Interview 镜像构建。叠加 `deploy/interview.compose.yaml`，配置独立状态目录和 Identity 公钥。显式运行 `interview migrate` 后启动。Gateway 使用已登记的 `/apps/interview-assistant` 页面和 12 项发布 API。场次、原始材料、请求回执和准备历史由 Interview 持有。进程启动时把未完成的旧任务标记为中断，用户可重新提交。
+运行 `npm run services:build:web -- interview`，将产物目录通过 `--web-release` 传给 Interview 镜像构建。叠加 `deploy/compose/interview.compose.yaml`，配置独立状态目录和 Identity 公钥。显式运行 `interview migrate` 后启动。Gateway 使用已登记的 `/apps/interview-assistant` 页面和 12 项发布 API。场次、原始材料、请求回执和准备历史由 Interview 持有。进程启动时把未完成的旧任务标记为中断，用户可重新提交。
 
 隔离运行 `fpl-interview-browser-11cf956d81` 通过 Gateway、Identity 和 Interview 验证登录、材料上传下载、旧浏览器版本拒绝、回环公网入口、容器重启和 390/768/1440px Chromium 界面。浏览器版本为 `3c3351e4400104946723`，Interview 镜像为 `fpl/interview:2f0792d1f1351f07fbc6`。历史数据迁移和真实 Codex 连接仍由正式就绪门禁跟踪。
 
-启用执行时叠加 `deploy/interview-native.compose.yaml`。为 Gateway 的 Interview 原生回环入口、Identity 用途限定访问和每个 Mac worker 分别生成凭据。容器读取专用的 `FPL_INTERVIEW_NATIVE_OPTIONS`。Mac worker 用 `uv run python -m studio.host.agent_execution.interview_worker` 启动，参数为 `--bridge`、`--worker-token`、`--state-root` 和 `--config`。回环地址须包含 `/interview`，凭据和配置须由当前用户独占。
+启用执行时叠加 `deploy/compose/interview-native.compose.yaml`。为 Gateway 的 Interview 原生回环入口、Identity 用途限定访问和每个 Mac worker 分别生成凭据。容器读取专用的 `FPL_INTERVIEW_NATIVE_OPTIONS`。Mac worker 用 `uv run python -m studio.host.agent_execution.interview_worker` 启动，参数为 `--bridge`、`--worker-token`、`--state-root` 和 `--config`。回环地址须包含 `/interview`，凭据和配置须由当前用户独占。
 
 任务只向 worker 交付对应场次的冻结输入和原件。运行时复核账号权限并持续检查租约。重复回执复用已入库的交付。重启、超时、权限撤销和输入版本变化会终止旧任务或阻止其发布。真实供应商凭据和任务材料保持在隔离执行边界内。
 
@@ -471,7 +471,7 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 音频标注由原业务请求向 Identity 换取专用素材读取授权。项目列表只授权元数据。创建、导入和片段读取可访问当前账号、已核对修订的原件。项目创建时 Assets 为一份音频准备引用，准备和提交后的引用均阻止文件删除。只有绑定同一项目的删除请求可以释放引用。定向测试使用真实 Identity 和 Assets 验证跨账号、修改查询、版本冲突及删除保护。音频标注独立项目和浏览器入口已装配。正式历史数据仍在切换门禁内。
 
-音频标注使用 `deploy/annotation.compose.yaml`，指定独立状态卷、Identity 公钥和用途限定服务凭据。运行 `npm run services:build:web -- annotation`，把同版本浏览器产物通过 `--web-release` 交给镜像构建。显式运行 `annotation migrate` 后启动。
+音频标注使用 `deploy/compose/annotation.compose.yaml`，指定独立状态卷、Identity 公钥和用途限定服务凭据。运行 `npm run services:build:web -- annotation`，把同版本浏览器产物通过 `--web-release` 交给镜像构建。显式运行 `annotation migrate` 后启动。
 
 录音标注的 `/ready` 依赖匹配的浏览器发布、数据库可读和素材引用恢复执行器。演示工坊还要求归档对等凭据及导入恢复执行器。面试助手与工具服务要求有效的原生桥接配置和近期通过认证的 worker 联系。工具服务在成功领取请求或任务心跳后更新时间，超过 45 秒未联系即转为未就绪。站点历史迁移与全链路验收由整站切换门禁跟踪。
 
@@ -484,7 +484,7 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 ### Presentation 文稿边界
 
-独立镜像装配文稿列表、新建、读取、CAS 保存、删除和编辑批次六项发布操作。叠加 `deploy/presentation.compose.yaml`，提供独立状态目录、Identity 公钥和 Presentation 服务凭据，显式执行 `presentation migrate` 后启动。启动比对已装配的公开操作及其 schema。
+独立镜像装配文稿列表、新建、读取、CAS 保存、删除和编辑批次六项发布操作。叠加 `deploy/compose/presentation.compose.yaml`，提供独立状态目录、Identity 公钥和 Presentation 服务凭据，显式执行 `presentation migrate` 后启动。启动比对已装配的公开操作及其 schema。
 
 编辑时 Identity 对素材查询摘要和指定版本的 SVG 原件签发限定授权。Assets 只允许访问同一账号的普通文件库。素材先由 Assets 准备保留，文稿及结果在同一事务提交，后台使用持久回执交付确认。隔离运行证据按文稿、模板、导入导出、浏览器和历史迁移分别记录。
 
@@ -510,7 +510,7 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 ### Motion 文稿边界
 
-特效制作工坊独立镜像承接项目列表、新建、读取、重命名、文稿和编辑批次六项操作。使用 `deploy/motion.compose.yaml`、专属状态目录和 Identity 凭据，显式执行 `motion migrate` 后启动。编辑素材只能通过签名请求读取同一账号、同一特效项目下的文件描述，文稿修订和编辑回执同事务提交。项目删除、文件、渲染和视频交接继续由生产就绪门禁跟踪。
+特效制作工坊独立镜像承接项目列表、新建、读取、重命名、文稿和编辑批次六项操作。使用 `deploy/compose/motion.compose.yaml`、专属状态目录和 Identity 凭据，显式执行 `motion migrate` 后启动。编辑素材只能通过签名请求读取同一账号、同一特效项目下的文件描述，文稿修订和编辑回执同事务提交。项目删除、文件、渲染和视频交接继续由生产就绪门禁跟踪。
 
 隔离运行 `fpl-motion-api-4ff09339f8` 使用镜像 `fpl/motion:5a541d36b4ec4d87ff3c`，经四容器 Gateway 验证旧修订拒绝、原回执重放、非本项目素材拒绝和回环公网认证。
 
@@ -524,11 +524,11 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 特效工程包导入导出保留原 ZIP 清单。导出逐项核对文件版本和字节，生成后复查账号权限。导入由 `FPL_MOTION_ARCHIVE_KEY` 绑定 Motion 和 Assets 的专用归档通道。素材私有暂存，收到源决议才发布。Motion 在收到确认后一起写入项目、文稿和导入编辑回执。隔离运行 `fpl-motion-archive-e85ef214a3` 验证了 PNG、MP4 归档、文件 ID 重映射、原始和导入项目的精确帧逐字节相同，以及 Chromium 保存。
 
-五项导出操作通过 Motion 的持久投递连接 Rendering。部署叠加 `deploy/motion.compose.yaml` 时，将独立的 `FPL_MOTION_EXPORT_KEY` 只读挂载到两者，分别运行 `motion migrate` 和 `rendering migrate`。Rendering 持有冻结输入和成片。Motion 依据原请求 ID 返回同一任务，项目删除后继续送达远端清理。五容器隔离运行 `fpl-motion-exports-dd5ac218be` 验证任务提交后的双服务重启、MP4、ProRes 4444、透明 PNG 序列、精确帧字节一致和 206 下载，也复跑 Chromium 编辑及工程包。定向测试注入丢失提交回执和渲染中断，覆盖账号隔离、取消和授权撤销。历史任务及视频剪辑交接仍由切换门禁跟踪。
+五项导出操作通过 Motion 的持久投递连接 Rendering。部署叠加 `deploy/compose/motion.compose.yaml` 时，将独立的 `FPL_MOTION_EXPORT_KEY` 只读挂载到两者，分别运行 `motion migrate` 和 `rendering migrate`。Rendering 持有冻结输入和成片。Motion 依据原请求 ID 返回同一任务，项目删除后继续送达远端清理。五容器隔离运行 `fpl-motion-exports-dd5ac218be` 验证任务提交后的双服务重启、MP4、ProRes 4444、透明 PNG 序列、精确帧字节一致和 206 下载，也复跑 Chromium 编辑及工程包。定向测试注入丢失提交回执和渲染中断，覆盖账号隔离、取消和授权撤销。历史任务及视频剪辑交接仍由切换门禁跟踪。
 
 ### 视频剪辑项目
 
-使用 `deploy/video.compose.yaml`、`FPL_VIDEO_STATE` 和 Identity 公钥，显式运行 `video migrate` 后启动。独立镜像 `fpl/video:7814b83e8fce9b4dda89` 在三容器隔离运行 `fpl-video-api-aabb86662d` 经 Gateway 验证项目创建、默认时间轴、修订冲突、重启后记录和回环公网鉴权。此批装配五项读写操作。时间轴编辑、素材、任务、剪辑交接、浏览器和历史迁移继续由就绪门禁跟踪。
+使用 `deploy/compose/video.compose.yaml`、`FPL_VIDEO_STATE` 和 Identity 公钥，显式运行 `video migrate` 后启动。独立镜像 `fpl/video:7814b83e8fce9b4dda89` 在三容器隔离运行 `fpl-video-api-aabb86662d` 经 Gateway 验证项目创建、默认时间轴、修订冲突、重启后记录和回环公网鉴权。此批装配五项读写操作。时间轴编辑、素材、任务、剪辑交接、浏览器和历史迁移继续由就绪门禁跟踪。
 
 时间轴操作现由独立 Video Editor 处理。部署时额外配置只读 `FPL_VIDEO_IDENTITY_TOKEN`，并在 Identity 登记 Video 的专用服务凭据。Video 在提交时间轴 CAS 前，通过签名范围向 Assets 查验确切项目和文件 ID 集合，再使用自有媒体状态验证轨道、类型和源区间。四容器运行 `fpl-video-timeline-8ba3d11c5c` 使用 `fpl/video:772d4c348dcb0eeb1152`，验证素材范围拒绝、保存、重放、过期修订和重启。
 
@@ -536,7 +536,7 @@ uv run python -m scripts.website.migrate_remote_preferences --plan "$plan" \
 
 剪辑素材目录、原件上传与复制接入独立 Assets。Video 先持久登记请求，再通过绑定原件摘要或源文件集合的授权调用 Assets。Assets 同时提交原件和回执。Video 收到回执后登记素材元数据和一项处理任务，未知结果可在重启后按原路径查询。四容器运行 `fpl-video-files-8e4daa17a5` 使用 `fpl/video:39e5742f198c9f5aafcd`，验证上传、复制、时间轴引用、重启和删除后保留账号库原件。剪辑代理、音频波形和导出处理仍由就绪门禁跟踪。
 
-剪辑代理、缩略图和波形由 Rendering 生成并持有。启用 `deploy/video.compose.yaml` 时，`FPL_VIDEO_MEDIA_KEY` 只挂载给 Video 和 Rendering，`FPL_VIDEO_ORIGINALS_KEY` 只挂载给 Rendering 和 Assets，两者使用独立凭据。部署时显式运行三者的迁移。Video 从同一任务回执恢复处理状态。预览派生文件经原有 URL 鉴权并支持 206 读取。五容器验收 `fpl-video-derivatives-6c8723c94b` 验证图片、音频、重启、重新生成和删除。隔离故障测试验证丢失入队响应后恢复原任务和跨账号拒绝。
+剪辑代理、缩略图和波形由 Rendering 生成并持有。启用 `deploy/compose/video.compose.yaml` 时，`FPL_VIDEO_MEDIA_KEY` 只挂载给 Video 和 Rendering，`FPL_VIDEO_ORIGINALS_KEY` 只挂载给 Rendering 和 Assets，两者使用独立凭据。部署时显式运行三者的迁移。Video 从同一任务回执恢复处理状态。预览派生文件经原有 URL 鉴权并支持 206 读取。五容器验收 `fpl-video-derivatives-6c8723c94b` 验证图片、音频、重启、重新生成和删除。隔离故障测试验证丢失入队响应后恢复原任务和跨账号拒绝。
 
 运行 `npm run services:build:web -- video`，把返回的目录交给 `npm run services:build -- video --build --web-release`。独立程序包含原项目列表、任务列表和剪辑深链接。剪辑任务查询使用账号及项目归属，继续按渲染、分段和合并分类。五容器 Chromium 验收 `fpl-video-browser-99dadd330d` 使用浏览器版本 `656cd6bec9d069f15fc5`，验证 390/768/1440px、真实文字片段保存、任务页、回环公网入口和过期程序版本拒绝。渲染任务创建、工程包、成片交接和历史迁移继续由就绪门禁跟踪。
 
@@ -550,7 +550,7 @@ Motion 的 MP4 与 ProRes 4444 可交接到同账号的现有或新建剪辑项�
 
 视频剪辑工程包沿用 `future-props-project-snapshot` 清单和项目 JSON。导出只包含项目原件及时间轴仍引用的成片，Assets 按原件修订传输。部署需将独立 `FPL_VIDEO_ARCHIVE_KEY` 只读挂载到 Video 和 Assets。导入核对 ZIP 与各原件摘要，Assets 确认后才发布副本并重映射时间轴。五容器 Chromium 运行 `fpl-video-snapshot-3f7566d8c1` 验证包内摘要和导入前后精确帧一致，隔离故障测试验证确认丢失时仅发布一次。
 
-打开剪辑项目文件夹使用 Tools 原生回环入口，需同时加载 `deploy/tools.compose.yaml` 和 `deploy/tools-native.compose.yaml`，并将 Mac worker 指向同一 Assets 状态根目录。Video 先核验账号项目，Assets 只创建该项目的固定目录，再由 Tools 下发限时打开任务。五容器隔离运行 `fpl-video-reveal-860cb58a82` 验证本机浏览器 Session 与公网管理员拒绝。测试适配器记录了唯一的 Finder 启动参数，故障测试另核验丢失确认后只重发回执。
+打开剪辑项目文件夹使用 Tools 原生回环入口，需同时加载 `deploy/compose/tools.compose.yaml` 和 `deploy/compose/tools-native.compose.yaml`，并将 Mac worker 指向同一 Assets 状态根目录。Video 先核验账号项目，Assets 只创建该项目的固定目录，再由 Tools 下发限时打开任务。五容器隔离运行 `fpl-video-reveal-860cb58a82` 验证本机浏览器 Session 与公网管理员拒绝。测试适配器记录了唯一的 Finder 启动参数，故障测试另核验丢失确认后只重发回执。
 
 剪辑素材改名使用 Assets 的原件保留回执，剪辑默认效果与预期修订在 Video 提交。四容器 `fpl-video-media-edits-fb1afe1de2` 验证素材重命名、旧修订拒绝、服务重启后的状态和原件 SHA256。隔离故障测试分别验证准备和确认的响应丢失。
 
@@ -562,7 +562,7 @@ Motion 的 MP4 与 ProRes 4444 可交接到同账号的现有或新建剪辑项�
 
 分段任务可导出有序 MP4 批次并从原地址下载 ZIP。Rendering 核验封存规格，Assets 校验整组字节后原子发布，下载时重新比对每项 SHA256。五容器 Chromium 运行 `fpl-video-segments-5c805158cd` 验证真实编码、双服务重启、批次重放、取消、独立文件与 ZIP 条目一致以及 Range 下载。故障测试验证第二段摘要不符时整组不可见。
 
-分段可交接到既有或新建 Visual 画布。叠加 `deploy/project-owners.compose.yaml`、`deploy/video.compose.yaml` 和 `deploy/video-visual-handoff.compose.yaml`，并分别提供 `FPL_VIDEO_SEGMENT_VISUAL_KEY` 和 `FPL_VISUAL_SEGMENT_ASSETS_KEY`。显式运行 Video、Assets、Visual 的迁移。待接收文件在目标确认前不可见。确认时核对画布修订，并登记文件库归属、画布节点与输出历史。隔离测试覆盖丢失确认、过期修订和分段传输失败。 六容器 Chromium 运行 `fpl-video-visual-handoff-94b5a2c569` 验证两种目标、ZIP 摘要、服务重启和源项目删除后目标原件仍可下载。
+分段可交接到既有或新建 Visual 画布。叠加 `deploy/compose/project-owners.compose.yaml`、`deploy/compose/video.compose.yaml` 和 `deploy/compose/video-visual-handoff.compose.yaml`，并分别提供 `FPL_VIDEO_SEGMENT_VISUAL_KEY` 和 `FPL_VISUAL_SEGMENT_ASSETS_KEY`。显式运行 Video、Assets、Visual 的迁移。待接收文件在目标确认前不可见。确认时核对画布修订，并登记文件库归属、画布节点与输出历史。隔离测试覆盖丢失确认、过期修订和分段传输失败。 六容器 Chromium 运行 `fpl-video-visual-handoff-94b5a2c569` 验证两种目标、ZIP 摘要、服务重启和源项目删除后目标原件仍可下载。
 
 ### 剪辑与特效历史记录
 
@@ -575,21 +575,21 @@ Motion 与 Video 启动检查覆盖归属清单中的 21 和 38 项操作。七�
 
 ### 视觉创作工坊的浏览器版本与模型目录
 
-用 `npm run services:build:web -- visual` 构建项目、画布、素材和任务入口。将清单返回的目录传给 `npm run services:build -- visual --build --web-release`，并使用 `deploy/project-owners.compose.yaml` 中的 Visual 状态卷和身份凭据。安装时核验程序文件与 Visual 的发布 API 摘要。旧程序的写请求返回 409。
+用 `npm run services:build:web -- visual` 构建项目、画布、素材和任务入口。将清单返回的目录传给 `npm run services:build -- visual --build --web-release`，并使用 `deploy/compose/project-owners.compose.yaml` 中的 Visual 状态卷和身份凭据。安装时核验程序文件与 Visual 的发布 API 摘要。旧程序的写请求返回 409。
 
 模型选项和验收模型通过 Identity 将原请求委派给 Models。Models 在自己的账号库筛选可用条目，只返回界面所需字段。五容器隔离运行 `fpl-visual-browser-9163104183` 在 Chromium 验证四个入口、390／768／1440 宽度、画布保存和过期浏览器版本拒绝，并在重启后核验项目与模型目录。剩余公开操作和正式历史导入继续由 Visual 就绪门禁跟踪。
 
-Visual ZIP 导入使用 `deploy/visual-snapshots.compose.yaml`，与 `deploy/project-owners.compose.yaml` 一起加载。将独立的 `FPL_VISUAL_ARCHIVE_KEY` 以受保护的文件挂载到 Visual 和 Assets，分别运行两者的 `migrate`。副本公开前核验原件摘要、目录、画布、输出历史、验收关联和同账号模型绑定。结算回执中断时，启动同版本 Visual 与 Assets 以恢复原批次。导入完成后可以再次从同一 ZIP 创建新的项目副本。
+Visual ZIP 导入使用 `deploy/compose/visual-snapshots.compose.yaml`，与 `deploy/compose/project-owners.compose.yaml` 一起加载。将独立的 `FPL_VISUAL_ARCHIVE_KEY` 以受保护的文件挂载到 Visual 和 Assets，分别运行两者的 `migrate`。副本公开前核验原件摘要、目录、画布、输出历史、验收关联和同账号模型绑定。结算回执中断时，启动同版本 Visual 与 Assets 以恢复原批次。导入完成后可以再次从同一 ZIP 创建新的项目副本。
 
-Visual 生成任务与批次需要 `deploy/visual-generation.compose.yaml`。将独立的 `FPL_VISUAL_GENERATION_KEY` 只读挂载给 Visual 和 Models，分别运行两者的 `migrate`。Visual 按画布版本提交任务，Models 保存执行计划和供应商回执，Assets 只在画布结果事务确认后公开原件。图片和视频继续按原账号等待队列与执行额度运行。未确认的结果保持可恢复，已提交但结果未知的供应商任务禁止重提。
+Visual 生成任务与批次需要 `deploy/compose/visual-generation.compose.yaml`。将独立的 `FPL_VISUAL_GENERATION_KEY` 只读挂载给 Visual 和 Models，分别运行两者的 `migrate`。Visual 按画布版本提交任务，Models 保存执行计划和供应商回执，Assets 只在画布结果事务确认后公开原件。图片和视频继续按原账号等待队列与执行额度运行。未确认的结果保持可恢复，已提交但结果未知的供应商任务禁止重提。
 
 视觉验收的固定模型回执使用 Models 的 0018 迁移。Models 只返回固定连接的公开投影，保留同账号同运行 ID 的精确请求摘要、结果和调用日志。中断后未知的供应商调用禁止重提。Rendering 通过 Assets 的同项目版本化原件进行基础取样，自动取样与手动区间取样分别授权。
 
-节点固定模型验收另需 Visual 的 0009 迁移。Visual 冻结画布和方案版本后登记原件，逐来源结算 Assets 证据回执，随后经 Identity 复核执行账号并调用固定模型。Visual 重启后从已有证据和模型回执续跑。隔离七容器运行 `fpl-visual-node-native-283354a174` 验证真实 FFmpeg 取样、封闭 SSE 夹具、Chromium 页面和重启后的证据摘要。Mac CLI 验收需要 `deploy/agent-runtime.compose.yaml`、Agent Runtime 的 0002 迁移及已登记的 Mac worker。以 `studio.host.agent_execution.agent_connections_worker` 启动同一版本 worker，使用独占的 TOML 与原生凭据，固定连接由可信本机设置启用。Agent Runtime 只为仍有效的租约提供同项目保留素材。追加帧以 SHA256 核验，发布后由 Assets 持有。Agent Runtime 的暂存保留至执行截止后一小时供回执恢复。隔离七容器运行 `fpl-visual-native-agent-531ece22b9` 经回环原生网关启动真实受限 CLI 子进程，核验 MCP 媒体操作、追加帧摘要、容器重启和 Chromium 入口。
+节点固定模型验收另需 Visual 的 0009 迁移。Visual 冻结画布和方案版本后登记原件，逐来源结算 Assets 证据回执，随后经 Identity 复核执行账号并调用固定模型。Visual 重启后从已有证据和模型回执续跑。隔离七容器运行 `fpl-visual-node-native-283354a174` 验证真实 FFmpeg 取样、封闭 SSE 夹具、Chromium 页面和重启后的证据摘要。Mac CLI 验收需要 `deploy/compose/agent-runtime.compose.yaml`、Agent Runtime 的 0002 迁移及已登记的 Mac worker。以 `studio.host.agent_execution.agent_connections_worker` 启动同一版本 worker，使用独占的 TOML 与原生凭据，固定连接由可信本机设置启用。Agent Runtime 只为仍有效的租约提供同项目保留素材。追加帧以 SHA256 核验，发布后由 Assets 持有。Agent Runtime 的暂存保留至执行截止后一小时供回执恢复。隔离七容器运行 `fpl-visual-native-agent-531ece22b9` 经回环原生网关启动真实受限 CLI 子进程，核验 MCP 媒体操作、追加帧摘要、容器重启和 Chromium 入口。
 
 Visual 助手的私网模型轮次需要 Models 的 0019 迁移。Models 绑定账号、项目、对话和运行，持有固定模型签名、额度和唯一调用日志。已完成轮次可按相同摘要重放，提交中断的轮次保持结果未知。公开消息流与审批继续使用原 URL 和 SSE v2 事件。
 
-助手源事务需要 Visual 0010 和 Models 0020 迁移。叠加 `deploy/visual-assistant.compose.yaml`，将独立的 `FPL_VISUAL_ASSISTANT_SETTLEMENT_KEY` 只读挂载到 Visual 与 Models。结算只接受同账号、同运行、同追踪标识的短时服务签名。原始请求授权仅用于当前请求。
+助手源事务需要 Visual 0010 和 Models 0020 迁移。叠加 `deploy/compose/visual-assistant.compose.yaml`，将独立的 `FPL_VISUAL_ASSISTANT_SETTLEMENT_KEY` 只读挂载到 Visual 与 Models。结算只接受同账号、同运行、同追踪标识的短时服务签名。原始请求授权仅用于当前请求。
 
 批准后的助手生成另需 Identity 0009 迁移。Identity 登记原账号、审批、项目、生成任务和计划摘要，结果发布时复核原账号授权并封存文件长度与 SHA256。Visual 将生成任务和对应画布节点一并提交。
 
@@ -597,13 +597,13 @@ Visual 就绪探针要求归属清单中的 58 个操作均已装配，并检查
 
 ### Galgame 工坊的浏览器版本与故事验收
 
-运行 `npm run services:build:web -- galgame`，将清单目录传给 `npm run services:build -- galgame --build --web-release`。在 `deploy/project-owners.compose.yaml` 中使用 Galgame 专属状态目录和 Identity 凭据。项目列表、总览、编辑和已保存 Story 预演由 Galgame 镜像提供，旧版本写请求返回 409。
+运行 `npm run services:build:web -- galgame`，将清单目录传给 `npm run services:build -- galgame --build --web-release`。在 `deploy/compose/project-owners.compose.yaml` 中使用 Galgame 专属状态目录和 Identity 凭据。项目列表、总览、编辑和已保存 Story 预演由 Galgame 镜像提供，旧版本写请求返回 409。
 
 四容器隔离运行 `fpl-galgame-browser-77e550aeb2` 通过网关导入 Story 1.3、检查引用范围、下载并比较保留文件字节，以及设置项目完成状态。Chromium 打开四个入口并验证 390／768／1440 宽度。Galgame 与 Assets 重启后复核同一 Story、线路报告和素材。项目写入、生成任务和完整历史的其余接线仍由就绪门禁跟踪。
 
-Galgame 快照 ZIP 导入使用 `deploy/galgame-snapshots.compose.yaml`，与 `deploy/project-owners.compose.yaml` 一起加载。将与其他凭据独立的归档密钥文件传给 `FPL_GALGAME_ARCHIVE_KEY`，只读挂载在 Galgame 和 Assets。启动前分别运行两者的 `migrate`。导入后先读回副本的线路报告，再按 ZIP 清单检查下载文件的 SHA256。若提交已落盘而发布回执中断，启动原版本服务以恢复该批次的发布。
+Galgame 快照 ZIP 导入使用 `deploy/compose/galgame-snapshots.compose.yaml`，与 `deploy/compose/project-owners.compose.yaml` 一起加载。将与其他凭据独立的归档密钥文件传给 `FPL_GALGAME_ARCHIVE_KEY`，只读挂载在 Galgame 和 Assets。启动前分别运行两者的 `migrate`。导入后先读回副本的线路报告，再按 ZIP 清单检查下载文件的 SHA256。若提交已落盘而发布回执中断，启动原版本服务以恢复该批次的发布。
 
-完整 Galgame 装配覆盖归属清单中的 52 个公开操作。`/ready` 要求发布版本匹配、归档密钥已挂载且后台执行器健康。剪辑交接还需要 `deploy/video.compose.yaml`，使用其中的 Video 归档配置。隔离验收在剪辑工坊打开目标时间线，随后重启 Galgame、Rendering 和 Video 并读回相同的目标项目 ID。
+完整 Galgame 装配覆盖归属清单中的 52 个公开操作。`/ready` 要求发布版本匹配、归档密钥已挂载且后台执行器健康。剪辑交接还需要 `deploy/compose/video.compose.yaml`，使用其中的 Video 归档配置。隔离验收在剪辑工坊打开目标时间线，随后重启 Galgame、Rendering 和 Video 并读回相同的目标项目 ID。
 
 ### 旧 Agent 工作台归档
 

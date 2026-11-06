@@ -17,6 +17,7 @@ from studio.apps.remote_desktop.storage.preference_models import DesktopPreferen
 from studio.apps.remote_desktop.storage.preferences import PreferenceRecords
 from studio.apps.remote_desktop.storage.service_models import RemoteSetupJob
 from studio.apps.remote_desktop.transport.desktop_http import router
+from studio.apps.remote_desktop.transport.disabled_app_http import router as disabled_app_router
 from studio.apps.remote_desktop.transport.guacamole import DesktopConnection
 from studio.apps.remote_desktop.transport.setup_native_http import router as setup_native_router
 from studio.apps.remote_desktop.use_cases.preferences import DesktopPreferences
@@ -120,6 +121,7 @@ def create_app(
     app.state.cloud_identity = identity
     app.state.identity_public_key = public_key
     app.include_router(router, prefix="/v1")
+    app.include_router(disabled_app_router, prefix="/v1")
     app.add_middleware(SignedIdentity, service="remote", public_key=public_key, catalog=catalog)
     app.add_middleware(RequestLimit, prefix="/v1/cloud-control/", maximum=64 * 1024)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

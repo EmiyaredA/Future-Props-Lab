@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_website_legacy_snapshot.py` 核对原链接、封存相对链接、恢复解释器字节和外部链接拒绝，并在同一恢复包重启隔离旧站。
+`tests/integration/test_website_legacy_snapshot.py` 核对原链接、封存相对链接、恢复解释器字节和外部链接拒绝，并在同一恢复包重启隔离旧站。

@@ -23,6 +23,6 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/visual-reference-drop.test.tsx` 覆盖素材树拖入、整栏类型路由、草稿和提交一致、重复/满额/错误类型/失效/跨项目/无效载荷拒绝、单选与禁用框。
+- `web/tests/features/visual-reference-drop.test.tsx` 覆盖素材树拖入、整栏类型路由、草稿和提交一致、重复/满额/错误类型/失效/跨项目/无效载荷拒绝、单选与禁用框。
 - 现有参考排序、看板及生成测试验证原输入与提交流程。
-- `tests/test_visual_node_outputs.py` 验证图片、视频与音频生成的自身引用拒绝。`web/e2e/visual-workshop-reference-drop.spec.ts` 验证明暗主题下实际拖拽、保存、刷新及自身引用拒绝。
+- `tests/apps/visual_workshop/test_visual_node_outputs.py` 验证图片、视频与音频生成的自身引用拒绝。`web/e2e/visual-workshop-reference-drop.spec.ts` 验证明暗主题下实际拖拽、保存、刷新及自身引用拒绝。

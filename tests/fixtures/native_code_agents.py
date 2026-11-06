@@ -67,7 +67,7 @@ if "run" in sys.argv:
     prompt = sys.stdin.read()
     report = "Return only a JSON object matching this schema" in prompt
     if "SLOW_NATIVE" in prompt:
-        Path("native-pid").write_text(str(os.getpid()))
+        send({"type": "text", "part": {"text": str(os.getpid())}})
         time.sleep(60)
     if "BAD_NATIVE" in prompt:
         print("invalid-json")

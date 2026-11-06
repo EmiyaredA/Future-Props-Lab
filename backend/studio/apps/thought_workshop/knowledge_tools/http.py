@@ -3,7 +3,7 @@
 from fastapi import APIRouter, HTTPException, Query
 
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.http_bindings import SessionDep
+from studio.apps.thought_workshop.http_bindings import AssetMetadataDep, SessionDep
 from studio.apps.thought_workshop.knowledge_tools.checkpoints import Checkpoints
 from studio.apps.thought_workshop.knowledge_tools.export_snapshot import export_snapshot
 from studio.apps.thought_workshop.knowledge_tools.preferences import Preferences
@@ -187,5 +187,7 @@ async def record_reading(body: ReadingIn, session: SessionDep, principal: Studio
 
 
 @router.get("/knowledge-bases/{project_id}/export-snapshot", response_model=LibraryExportSnapshot)
-async def library_export_snapshot(project_id: str, session: SessionDep, owner_user_id: OwnerDep):
-    return await call(export_snapshot(session, owner_user_id, project_id))
+async def library_export_snapshot(
+    project_id: str, session: SessionDep, owner_user_id: OwnerDep, assets: AssetMetadataDep
+):
+    return await call(export_snapshot(session, owner_user_id, project_id, assets=assets))

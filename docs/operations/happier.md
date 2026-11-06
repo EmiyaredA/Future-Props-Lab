@@ -16,14 +16,14 @@
 4. 用独立 Compose 项目、未使用的回环端口和专用项目目录验收。设置 `FPL_HAPPIER_ORIGIN`、`FPL_HAPPIER_RELAY_PORT` 和 `FPL_HAPPIER_PROJECT_ROOT`。Compose 使用新命名的加密数据卷。先临时允许设备密钥账号注册：
 
    ```sh
-   FPL_HAPPIER_BOOTSTRAP_SIGNUP=true docker compose -f deploy/happier.compose.yaml up -d relay
+   FPL_HAPPIER_BOOTSTRAP_SIGNUP=true docker compose --project-directory deploy -f deploy/compose/happier.compose.yaml up -d relay
    ```
 
-5. 指定管理员通过 Studio HTTPS 登录，在云控验证密码，打开 Happier 并创建原生账号。把恢复密钥保存在自己的密码管理器。执行 `docker compose -f deploy/happier.compose.yaml run --rm runner happier auth login`，在已解锁的 Happier 浏览器中批准配对。用 Runner 内的 `codex login --device-auth` 准备隔离凭据。
+5. 指定管理员通过 Studio HTTPS 登录，在云控验证密码，打开 Happier 并创建原生账号。把恢复密钥保存在自己的密码管理器。执行 `docker compose --project-directory deploy -f deploy/compose/happier.compose.yaml run --rm runner happier auth login`，在已解锁的 Happier 浏览器中批准配对。用 Runner 内的 `codex login --device-auth` 准备隔离凭据。
 6. 取消临时注册开关，重新创建 Relay 并启动 Runner：
 
    ```sh
-   FPL_HAPPIER_BOOTSTRAP_SIGNUP=false docker compose -f deploy/happier.compose.yaml up -d --force-recreate relay runner
+   FPL_HAPPIER_BOOTSTRAP_SIGNUP=false docker compose --project-directory deploy -f deploy/compose/happier.compose.yaml up -d --force-recreate relay runner
    ```
 
 7. 核验设备配对与恢复、新建 Codex 会话、首轮流式响应、审批同意和拒绝、文件访问、断线重连和重启后续聊。检查宽屏原生右栏、窄屏导航、切换桌面后的会话，以及 Runner 对项目之外宿主路径的读取限制。确认直接访问 Happier、错误账号和重放凭证都被拒绝，并核验 FPL 注销、撤权和解锁到期会关闭已连接的实时通道。

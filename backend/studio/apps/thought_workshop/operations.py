@@ -57,8 +57,10 @@ def transform(current, body):
     return ThoughtNotePut(**values, document=document, expected_revision=body.expected_revision)
 
 
-async def apply_operations(session, owner_user_id, note_id, body, author_id=None):
-    notes = Notes(session, owner_user_id, author_id)
+async def apply_operations(
+    session, owner_user_id, note_id, body, author_id=None, *, assets, accounts=None
+):
+    notes = Notes(session, owner_user_id, author_id, assets=assets, accounts=accounts)
     current = note_out(await notes.get(note_id))
     key = dict(owner_user_id=owner_user_id, kind="thought", resource_id=note_id, body=body)
     saved = await replay(session, **key)

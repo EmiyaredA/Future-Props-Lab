@@ -28,6 +28,6 @@ DSH 最终 turn/end 错误只投影错误码与说明，不复制请求头等诊
 
 ## Verification
 
-`tests/test_agent_workbench.py` 验证从账号 schema 升级时原有数据和迁移记录不变，验证保留 `.jsonl` 后缀的压缩归档、追加压缩帧和增量读取，以及原生索引改名、内嵌大图片与普通日志分批越过压缩展开阈值。`tests/test_agent_session_records.py` 验证图片跨块、转义引号和 UTF-8、原始位置、半行补齐、非图片体积拒绝及压缩上限；工作台存储测试覆盖 DSH 错误回填不清空已有历史。`web/e2e/agent-workbench.spec.ts` 从应用卡片进入，覆盖阅读、来源授权、主题切换当帧、四种宽度与键盘操作。
+`tests/apps/agent_workbench/test_agent_workbench.py` 验证从账号 schema 升级时原有数据和迁移记录不变，验证保留 `.jsonl` 后缀的压缩归档、追加压缩帧和增量读取，以及原生索引改名、内嵌大图片与普通日志分批越过压缩展开阈值。`tests/integration/test_agent_session_records.py` 验证图片跨块、转义引号和 UTF-8、原始位置、半行补齐、非图片体积拒绝及压缩上限；工作台存储测试覆盖 DSH 错误回填不清空已有历史。`web/e2e/agent-workbench.spec.ts` 从应用卡片进入，覆盖阅读、来源授权、主题切换当帧、四种宽度与键盘操作。
 
 真机核验、正式切换回执和门禁结果保存在 `.local/agent-workbench/release/` 与 `.local/agent-workbench/resume/`。四个真实来源已绑定，三个 APP 的人工标记进入正式阅读投影；CLI 原端认证失败和超时单独记录，不记为模型调用成功。正式实例正常退出后将锁交给已获用户授权的清理和网站迁移流程，后续读取修复需要由当前发布流程加载，不能重启旧快照。真实 APP／CLI 活动、完整链路延迟与隔离夹具结果分别记录，不用格式测试代替原生实例验收。

@@ -136,6 +136,10 @@ test("创建、编辑文字、备注和页面，保存重开及放映", async ({
       await save(page);
       await page.reload();
       await expect(
+        canvas.getByText("第二页内容", { exact: true }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: "幻灯片 1", exact: true }).click();
+      await expect(
         canvas.getByText("中文输入与 Native PPTX", { exact: true }),
       ).toBeVisible();
       await page.getByRole("button", { name: /演示者备注/ }).click();

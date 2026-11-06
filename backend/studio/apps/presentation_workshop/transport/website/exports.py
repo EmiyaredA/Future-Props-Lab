@@ -12,10 +12,10 @@ from studio.apps.presentation_workshop.exchange.export_formats import (
     export_preview,
 )
 from studio.apps.presentation_workshop.exports import export_project
-from studio.apps.presentation_workshop.projects import PresentationError, Presentations
+from studio.apps.presentation_workshop.projects import PresentationError
 from studio.apps.presentation_workshop.schemas.document import PresentationExportIn
+from studio.apps.presentation_workshop.transport.website.dependencies import PresentationDep
 from studio.apps.presentation_workshop.transport.website.projects import mapped
-from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
 router = APIRouter()
 
@@ -40,12 +40,10 @@ async def mapped_export(work):
         }
     },
 )
-async def export_pptx(
-    session: SessionDep, owner_user_id: OwnerDep, project_id: str, body: PresentationExportIn
-):
+async def export_pptx(projects: PresentationDep, project_id: str, body: PresentationExportIn):
     try:
         result = await export_project(
-            Presentations(session, owner_user_id),
+            projects,
             project_id,
             body.expected_revision,
         )
@@ -60,12 +58,8 @@ async def export_pptx(
 
 
 @router.post("/projects/{project_id}/export/preview", response_model=ExportPreview)
-async def preview_export(
-    project_id: str, body: PresentationExportIn, session: SessionDep, owner_user_id: OwnerDep
-):
-    return await mapped_export(
-        export_preview(Presentations(session, owner_user_id), project_id, body.expected_revision)
-    )
+async def preview_export(project_id: str, body: PresentationExportIn, projects: PresentationDep):
+    return await mapped_export(export_preview(projects, project_id, body.expected_revision))
 
 
 @router.post(
@@ -84,13 +78,10 @@ async def export_file(
     project_id: str,
     format: Literal["json", "fplppt"],
     body: PresentationExportIn,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
+    projects: PresentationDep,
 ):
     content = await mapped_export(
-        export_document(
-            Presentations(session, owner_user_id), project_id, body.expected_revision, format
-        )
+        export_document(projects, project_id, body.expected_revision, format)
     )
     return Response(
         content,

@@ -18,6 +18,10 @@ def main():
     parser.add_argument("--check", action="store_true")
     options = parser.parse_args()
     values = read_config(options.config)
+    if not options.only_management and (
+        values.get("fpl_cloud_control_apps_enabled") or values.get("fpl_happier_origin")
+    ):
+        raise SystemExit("当前独立业务部署不支持已启用的远程应用或 Happier 接入")
     environment = values.get("fpl_deployment_environment", {})
     if not environment or "FPL_MANAGEMENT_IMAGE" not in environment:
         raise SystemExit("独立服务尚未配置，请先完成隔离构建与部署配置；不会迁移或接管旧数据库")
@@ -39,7 +43,7 @@ def main():
             control.services,
             ROOT,
             only_management=options.only_management,
-            credential_root=control.compose_file.parent,
+            credential_root=control.project_directory,
         )
         subprocess.run([*command, "config", "--quiet"], env=env, check=True, cwd=ROOT)
         if options.check:

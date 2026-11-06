@@ -42,5 +42,5 @@ schema 迁移只生成文件归属清单。正式布局 API 通过短事务更�
 - Web 全量运行 2,954 项通过、4 项文档断言失败；运行期间账号面板测试改名造成一次旧路径加载失败，改名后账号面板/模型分配/模板/工具专项 9 项全部通过。文档失败涉及缺少面试助手覆盖和已删除空间面板的证据路径。
 - 后端全量 2,265 项通过、3 项跳过、10 项失败。失败为 5 个旧 Amadeus `model_id` 任务契约、2 个已关闭模型回合接口、跨 feature 私有导入、SDK 文档标签覆盖与画布 `workflow_parameters` 预期。最终索引修复另由上述 21 项验证。
 - 桌面编译、类型检查、格式检查与 51 项 Node 测试通过；Web 类型检查与 ESLint 通过。OpenAPI、Web 生成类型和 Python SDK 生成契约检查通过，官方导入包一致。
-- 构建完成 TypeScript/Vite 后，Galgame CSS 325.6 KiB 超过 324.8 KiB 门禁。完整 Python lint/format 仍报告未修改的 `tests/test_video_download.py`；Web format 仍有未修改文件。没有调整门禁或为通过检查跳过断言。
+- 构建完成 TypeScript/Vite 后，Galgame CSS 325.6 KiB 超过 324.8 KiB 门禁。完整 Python lint/format 仍报告未修改的 `tests/apps/tools/test_video_download.py`；Web format 仍有未修改文件。没有调整门禁或为通过检查跳过断言。
 - SDK 文档检查报告受保护页面陈旧；未重新生成这些页面。文档中心保护检查通过。完整检查结果保存在忽略目录 `.local/account-ownership/`，不随代码提交。

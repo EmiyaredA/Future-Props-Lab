@@ -27,4 +27,4 @@ Status: implemented
 
 ## Verification
 
-`uv run pytest -q tests/test_director_desk_projects.py tests/test_director_desk_agent.py tests/test_workspace_governance.py::test_every_business_operation_has_an_explicit_policy`；`npm run contracts:check`；`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。
+`uv run pytest -q tests/test_director_desk_projects.py tests/test_director_desk_agent.py tests/apps/visual_workshop/test_workspace_governance.py::test_every_business_operation_has_an_explicit_policy`；`npm run contracts:check`；`python3 skills/future-props-lab-automation/scripts/validate_skills.py`。

@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_model_governance_transfer.py` 验证加密快照、跨账号同步目标、旧跨服务额度拒绝、重启后的批次重放和启动恢复。
+`tests/apps/model_service/test_model_governance_transfer.py` 验证加密快照、跨账号同步目标、旧跨服务额度拒绝、重启后的批次重放和启动恢复。

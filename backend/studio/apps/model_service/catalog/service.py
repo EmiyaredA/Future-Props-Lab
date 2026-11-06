@@ -110,11 +110,13 @@ class ModelCatalogService:
         cipher: CatalogCipher,
         task_usage: CatalogTaskUsage | None = None,
         defaults_store: CatalogDefaults | None = None,
+        readiness=None,
     ) -> None:
         self.session = session
         self.cipher = cipher
         self.task_usage = task_usage
         self.defaults_store = defaults_store
+        self.readiness = readiness
 
     def _task_usage(self) -> CatalogTaskUsage:
         if self.task_usage is None:
@@ -158,7 +160,7 @@ class ModelCatalogService:
         installations = {
             item.id: item for item in await self.session.scalars(select(LocalModelInstallation))
         }
-        platform_compatible = await host_compatible(self.session)
+        platform_compatible = await host_compatible(self.session, readiness=self.readiness)
         grouped: dict[str, list[ModelEntry]] = {}
         for entry in entries:
             grouped.setdefault(entry.provider_id, []).append(entry)
@@ -418,7 +420,7 @@ class ModelCatalogService:
 
     async def attach_local_model(self, body):
         model = definition(body.model_id)
-        await require_ready(self.session, body.model_id)
+        await require_ready(self.session, body.model_id, readiness=self.readiness)
         await self.advance_revision(body.expected_catalog_revision)
         owner_user_id = self._owner_user_id()
         provider = await self.session.scalar(

@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_interview_transfer.py` 从隔离旧站创建场次和上传材料，再验证旧站恢复、报告、准备任务恢复、跨账号拒绝、文件摘要和回执重放。
+`tests/apps/interview_assistant/test_interview_transfer.py` 从隔离旧站创建场次和上传材料，再验证旧站恢复、报告、准备任务恢复、跨账号拒绝、文件摘要和回执重放。

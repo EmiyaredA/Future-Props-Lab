@@ -135,7 +135,7 @@ async def persist_archive(
     knowledge_base_id=None,
     expected_revision=None,
 ):
-    knowledge = KnowledgeBases(notes.session, notes.owner_user_id)
+    knowledge = KnowledgeBases(notes.session, notes.owner_user_id, assets=notes.assets)
     project_mapping = {}
     note_mapping = dict(ids.notes)
     project_rows = {}

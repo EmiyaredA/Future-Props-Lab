@@ -24,10 +24,13 @@ class MotionExportRunner(PollingTaskRunner):
         self,
         session_factory: async_sessionmaker[AsyncSession],
         settings: Settings,
+        *,
+        projects,
     ) -> None:
         super().__init__()
         self.session_factory = session_factory
         self.settings = settings
+        self.projects = projects
         self.storage = AssetStorage(self.settings)
 
     async def recover(self) -> None:
@@ -110,9 +113,8 @@ class MotionExportRunner(PollingTaskRunner):
         try:
             async with self.session_factory() as session:
                 bind_owner(session, owner_user_id)
-                assets = await MotionAssets(session, owner_user_id, settings=self.settings).paths(
-                    task.project_id
-                )
+                projects = self.projects(session, owner_user_id)
+                assets = await MotionAssets(projects, settings=self.settings).paths(task.project_id)
             document = MotionComposition.model_validate(task.snapshot_document)
             payload = task.request_payload
             start = int(payload["startFrame"])

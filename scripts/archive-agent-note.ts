@@ -6,7 +6,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve } from "node:path";
-import { agentNoteRoot, AGENT_NOTE_CLASSES, walkAgentNoteTree } from "./agent-note-tree.ts";
+import { agentNoteRoot, AGENT_NOTE_CLASSES, walkAgentNoteTree } from "./checks/agent-note-tree.ts";
 
 const args = process.argv.slice(2);
 const targetArg = args[0];

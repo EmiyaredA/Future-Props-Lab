@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from app.console.routes.code_agents import router as code_agents_router
+from studio.apps.agent_runtime.transport.code_agents import router as code_agents_router
 from studio.apps.amadeus.transport.website import require_amadeus_session
 from studio.apps.amadeus.transport.website import router as amadeus_router
 from studio.apps.asset_library.transport.website.files import router as file_management_router

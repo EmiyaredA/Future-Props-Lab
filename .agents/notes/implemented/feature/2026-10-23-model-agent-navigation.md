@@ -27,7 +27,7 @@ Status: implemented
 
 ## Verification
 
-`web/tests/code-agents-ui.test.tsx` 覆盖页头切换、状态映射、详情和复制、授权旧数据保留、保存锁定与冲突、桌面桥状态及显式开启。模型目录、只读、导航、本地模型与桌面接入运行现有回归测试。
+`web/tests/features/code-agents-ui.test.tsx` 覆盖页头切换、状态映射、详情和复制、授权旧数据保留、保存锁定与冲突、桌面桥状态及显式开启。模型目录、只读、导航、本地模型与桌面接入运行现有回归测试。
 
 响应式浏览器用例覆盖两个原地址、历史切换、明暗主题和 390/768/1280/1600px 宽度；本地截图与视觉对照记录归档到 `.local/model-agents-ui/`。使用相关 lint、格式检查、构建、verify-notes 与 check-docs-center-protected 验证交付。
 

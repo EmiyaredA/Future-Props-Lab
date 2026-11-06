@@ -9,12 +9,12 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from starlette.requests import HTTPConnection
 
 from studio.apps.presentation_workshop.archive_transport import ArchiveTransport
 from studio.apps.presentation_workshop.assets import ProjectAssets, ProjectReferences
 from studio.apps.presentation_workshop.imports import ImportDelivery, Imports
 from studio.apps.presentation_workshop.project_errors import PresentationError
+from studio.apps.presentation_workshop.projects import Presentations
 from studio.apps.presentation_workshop.storage.migrations.registry import MIGRATIONS
 from studio.apps.presentation_workshop.storage.service_models import (
     MODELS,
@@ -150,17 +150,19 @@ def create_app(
         run_worker=run_worker,
     )
 
-    async def request_session(connection: HTTPConnection):
+    def presentation_projects(connection, session, owner):
+        return Presentations(
+            session,
+            owner,
+            asset_access=ProjectAssets(connection, capabilities, staging),
+            retention=ProjectReferences(connection, session, app.state.reference_mutations),
+        )
+
+    app.state.presentation_projects = presentation_projects
+    app.state.presentation_importer = lambda connection: Imports(connection, archive, imports)
+
+    async def request_session():
         async with database.sessions() as session:
-            session.info.update(
-                presentation_project_assets=lambda _db, _owner: ProjectAssets(
-                    connection, capabilities, staging
-                ),
-                presentation_import=Imports(connection, archive, imports),
-                presentation_retention=ProjectReferences(
-                    connection, session, app.state.reference_mutations
-                ),
-            )
             yield session
 
     async def presentation_error(request, exc):

@@ -29,7 +29,7 @@ Status: implemented
 
 ## Verification
 
-- `web/tests/video-editor-transform.test.tsx` 覆盖几何、锚点、镜像、转场缩放、关键帧、CAS 构造、单批撤销重做、实时草稿、取消、权限、锁定、保存失败和数值输入保护。
+- `web/tests/features/video-editor-transform.test.tsx` 覆盖几何、锚点、镜像、转场缩放、关键帧、CAS 构造、单批撤销重做、实时草稿、取消、权限、锁定、保存失败和数值输入保护。
 - `web/e2e/video-editor-transform.spec.ts` 通过正式 API 创建隔离视频工程，使用真实鼠标验证变换、精确帧版本和像素、撤销重做、刷新、明暗主题、全屏比例和画布边缘手柄；所有数据库、素材和截图落入 `.local/video-transform/`。
 - 验证入口：视频编辑器 Web 测试、`tests/test_architecture.py`、Web lint、格式检查、构建、`npm run contracts:check`、`npm run knowledge:seed:check`、`npm run verify-notes` 和 `npm run check-docs-center-protected`。
 

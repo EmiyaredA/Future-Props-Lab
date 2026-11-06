@@ -135,34 +135,29 @@ async def persist_import(
     manifest,
     knowledge_base_id,
     expected_revision,
+    *,
+    accounts,
 ):
     await session.execute(text("BEGIN IMMEDIATE"))
     receipt = await session.get(ThoughtArchiveImport, (owner, key.batch_id))
     if receipt is None or receipt.state != "staging":
         raise ThoughtError("归档批次状态不匹配", 409, "archive_outcome_conflict")
-    # The port carries only validated metadata from this batch. No HTTP occurs during writes.
-    factory = session.info["thought_asset_metadata_factory"]
-    session.info["thought_asset_metadata_factory"] = lambda _session, _owner: StagedMetadata(
-        metadata
+    # This read view contains the sealed batch metadata, so validation performs no HTTP.
+    result, _, _ = await persist_archive(
+        Notes(session, owner, owner, assets=StagedMetadata(metadata), accounts=accounts),
+        payload,
+        parsed,
+        mapping,
+        ids,
+        knowledge_base_id,
+        expected_revision,
     )
-    try:
-        result, _, _ = await persist_archive(
-            Notes(session, owner, owner),
-            payload,
-            parsed,
-            mapping,
-            ids,
-            knowledge_base_id,
-            expected_revision,
-        )
-        await session.flush()
-        await verify_revisions(session, manifest.projections)
-        receipt.state = "commit"
-        receipt.manifest_sha256 = manifest.fingerprint
-        receipt.result = result.model_dump(mode="json")
-        await session.flush()
-    finally:
-        session.info["thought_asset_metadata_factory"] = factory
+    await session.flush()
+    await verify_revisions(session, manifest.projections)
+    receipt.state = "commit"
+    receipt.manifest_sha256 = manifest.fingerprint
+    receipt.result = result.model_dump(mode="json")
+    await session.flush()
 
 
 async def fingerprint_upload(upload, maximum_bytes, knowledge_base_id, expected_revision):
@@ -185,6 +180,7 @@ async def import_archive(
     session,
     *,
     owner,
+    accounts,
     upload,
     request_key,
     knowledge_base_id,
@@ -254,6 +250,7 @@ async def import_archive(
                 manifest,
                 knowledge_base_id,
                 expected_revision,
+                accounts=accounts,
             )
             commit_started = True
             await session.commit()

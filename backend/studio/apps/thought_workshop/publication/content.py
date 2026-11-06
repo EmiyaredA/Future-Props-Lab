@@ -26,10 +26,10 @@ from studio.apps.thought_workshop.schemas.workshop import ThoughtNotePut
 from studio.runtime.revisions import RevisionConflictError
 
 
-async def get_note(session, principal, pub_id, note_id):
+async def get_note(session, principal, pub_id, note_id, *, accounts):
     pub = await publication(session, pub_id)
-    c, n, role = await article(session, principal, pub, note_id)
-    rows, _ = await visible(session, principal, pub)
+    c, n, role = await article(session, principal, pub, note_id, accounts=accounts)
+    rows, _ = await visible(session, principal, pub, accounts=accounts)
     ids = {row.id for row, _, _ in rows}
     projected = note_out(n).model_copy(
         update={"parent_id": n.parent_id if n.parent_id in ids else None}
@@ -54,9 +54,11 @@ class NoteEdit:
         )
 
 
-async def authorize_note_edit(session, principal, pub_id, note_id, body):
+async def authorize_note_edit(session, principal, pub_id, note_id, body, *, accounts):
     pub = await publication(session, pub_id)
-    config, current, role = await article(session, principal, pub, note_id, level="edit")
+    config, current, role = await article(
+        session, principal, pub, note_id, level="edit", accounts=accounts
+    )
     validated = body.validated(current)
     # Retaining existing references is allowed; introducing a hidden file or note is not.
     allowed = file_ids(current.document) | set(
@@ -68,7 +70,7 @@ async def authorize_note_edit(session, principal, pub_id, note_id, body):
     )
     if not file_ids(validated.document) <= allowed:
         raise missing()
-    rows, _ = await visible(session, principal, pub)
+    rows, _ = await visible(session, principal, pub, accounts=accounts)
     edit = NoteEdit(
         pub.owner_user_id,
         pub.revision,
@@ -85,17 +87,17 @@ async def authorize_note_edit(session, principal, pub_id, note_id, body):
         )
     introduced = reference_ids(validated.document) - reference_ids(current.document)
     if introduced:
-        targets = await resolve(session, principal, pub_id, list(introduced))
+        targets = await resolve(session, principal, pub_id, list(introduced), accounts=accounts)
         if any(not target.available for target in targets):
             raise missing()
     return edit
 
 
-async def write_note_edit(session, principal, pub_id, note_id, edit):
+async def write_note_edit(session, principal, pub_id, note_id, edit, *, accounts, assets=None):
     bind_source(session, await publication(session, pub_id))
-    value = await Notes(session, edit.owner, principal.user_id).put(
-        note_id, edit.body, commit=False
-    )
+    value = await Notes(
+        session, edit.owner, principal.user_id, assets=assets, accounts=accounts
+    ).put(note_id, edit.body, commit=False)
     return CommunityNote(
         note=edit.project(value),
         **capabilities(edit.role),
@@ -103,17 +105,25 @@ async def write_note_edit(session, principal, pub_id, note_id, edit):
     )
 
 
-async def save_note(session, principal, pub_id, note_id, body):
+async def save_note(session, principal, pub_id, note_id, body, *, accounts, source_assets):
     await begin_write(session)
-    edit = await authorize_note_edit(session, principal, pub_id, note_id, body)
-    result = await write_note_edit(session, principal, pub_id, note_id, edit)
+    edit = await authorize_note_edit(session, principal, pub_id, note_id, body, accounts=accounts)
+    result = await write_note_edit(
+        session,
+        principal,
+        pub_id,
+        note_id,
+        edit,
+        accounts=accounts,
+        assets=source_assets(session, edit.owner),
+    )
     await session.commit()
     return result
 
 
-async def snapshot(session, principal, pub_id):
+async def snapshot(session, principal, pub_id, *, accounts):
     pub = await publication(session, pub_id)
-    rows, manager = await visible(session, principal, pub, include_content=True)
+    rows, manager = await visible(session, principal, pub, include_content=True, accounts=accounts)
     if not rows and not manager:
         raise missing()
     ids = {n.id for n, _, _ in rows}
@@ -126,14 +136,14 @@ async def snapshot(session, principal, pub_id):
         }
         for target in targets:
             try:
-                _, target_pub, _, _ = await TableAccess(session, principal).access(
-                    pub_id, target, parent.id
-                )
+                _, target_pub, _, _ = await TableAccess(
+                    session, principal, accounts=accounts
+                ).access(pub_id, target, parent.id)
             except ThoughtError as error:
                 if error.status != 404:
                     raise
                 continue
-            target_rows, _ = await visible(session, principal, target_pub)
+            target_rows, _ = await visible(session, principal, target_pub, accounts=accounts)
             readable.update(n.id for n, _, _ in target_rows)
     bind_source(session, pub)
     documents = [
@@ -149,18 +159,18 @@ async def snapshot(session, principal, pub_id):
         for n, _, _ in rows
     ]
     return {
-        "knowledge_base": (await output(session, principal, pub, rows, manager)).model_dump(
-            mode="json"
-        ),
+        "knowledge_base": (
+            await output(session, principal, pub, rows, manager, accounts=accounts)
+        ).model_dump(mode="json"),
         "documents": documents,
         "asset_ids": sorted({a for n, _, _ in rows for a in file_ids(n.document)}),
     }
 
 
-async def backlinks(session, principal, pub_id, note_id, offset, limit):
+async def backlinks(session, principal, pub_id, note_id, offset, limit, *, accounts):
     pub = await publication(session, pub_id)
-    await article(session, principal, pub, note_id)
-    d = await catalog_directory(session, principal, pub_id)
+    await article(session, principal, pub, note_id, accounts=accounts)
+    d = await catalog_directory(session, principal, pub_id, accounts=accounts)
     ids = set(
         await session.scalars(
             select(ThoughtDocumentReference.note_id).where(

@@ -223,6 +223,7 @@ def create_app(
         database.sessions,
         local_runtime=local_runtime or broker,
         synthesis_scope=broker.foreground_synthesis,
+        readiness=broker,
         settings=settings,
         prepare_claim=partial(authority.prepare, "inference"),
         terminal_settlement=settle,
@@ -365,6 +366,7 @@ def create_app(
 
     app.state.model_catalog_bindings = CatalogBindings(
         defaults=OwnedCatalogDefaults,
+        readiness=broker,
         task_usage=OwnedCatalogTaskUsage,
         cipher=SecretCipher(settings.fpl_secrets_key),
     )
@@ -379,6 +381,7 @@ def create_app(
     app.state.runner_supervisor = supervisor
     app.state.local_models = local
     app.state.native_model_retention = broker.retention
+    app.state.require_native_model_retention = True
     app.state.studio_socket_auth = socket_authenticator(public_key, identity)
     app.state.model_library_inputs = LibraryInputBindings(
         for_request=lambda request, _session, _owner: HttpLibraryInputs(

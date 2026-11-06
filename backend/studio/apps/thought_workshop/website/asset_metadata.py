@@ -32,14 +32,12 @@ class AssetMetadata(Protocol):
     async def download(self, asset: LibraryAsset, target): ...
 
 
-def metadata(session, owner_user_id: str) -> AssetMetadata:
-    bound = session.info.get("owner_user_id")
-    if bound is not None and bound != owner_user_id:
-        raise ThoughtError("素材账号上下文不匹配", 403, "asset_context_mismatch")
-    factory = session.info.get("thought_asset_metadata_factory")
-    if factory is None:
+async def describe_assets(assets: AssetMetadata | None, asset_ids: set[str]):
+    if not asset_ids:
+        return {}
+    if assets is None:
         raise ThoughtError("素材目录尚未连接", 503, "asset_metadata_unavailable")
-    return factory(session, owner_user_id)
+    return await assets.describe(asset_ids)
 
 
 async def read_bytes(port: AssetMetadata, asset: LibraryAsset) -> bytes:

@@ -15,14 +15,23 @@ from studio.apps.thought_workshop.external_sync.ports import ArticleConnections
 from studio.apps.thought_workshop.external_sync.preview import preview_note
 from studio.apps.thought_workshop.external_sync.records import ArticleSyncRecords, task_out
 from studio.apps.thought_workshop.external_sync.schemas import ArticleSyncReconcileOut
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata
 from studio.contracts.integrations.external_documents import ExternalError
 from studio.runtime.time import utc_now
 
 
 class ArticleSync(ArticleSyncRecords):
-    def __init__(self, session, owner_user_id, principal, *, connections: ArticleConnections):
+    def __init__(
+        self,
+        session,
+        owner_user_id,
+        principal,
+        *,
+        connections: ArticleConnections,
+        assets: AssetMetadata,
+    ):
         super().__init__(session, owner_user_id, principal)
-        self.connections = connections
+        self.connections, self.assets = connections, assets
 
     async def bind(self, note_id, body):
         return await bind_note(
@@ -43,7 +52,7 @@ class ArticleSync(ArticleSyncRecords):
                 raise ExternalError("目标文档不可编辑", 403)
             return revision, remote
 
-        return await preview_note(self, read_target, note_id, body)
+        return await preview_note(self, read_target, note_id, body, assets=self.assets)
 
     async def submit(self, note_id, body):
         operation_id = str(body.operation_id)

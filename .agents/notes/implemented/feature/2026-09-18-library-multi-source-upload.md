@@ -29,6 +29,6 @@ Status: implemented
 
 ## Verification
 
-- `tests/test_visual_workshop.py`：`display_name` 上传与 `file-library/asset-imports` 复制改名。
-- `web/tests/file-management.test.tsx`：总文件菜单与本地上传确认改名。
+- `tests/apps/visual_workshop/test_visual_workshop.py`：`display_name` 上传与 `file-library/asset-imports` 复制改名。
+- `web/tests/features/file-management.test.tsx`：总文件菜单与本地上传确认改名。
 - `npm run contracts:generate`、`npm run verify-notes`。

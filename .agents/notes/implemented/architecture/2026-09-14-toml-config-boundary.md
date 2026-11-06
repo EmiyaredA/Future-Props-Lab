@@ -22,5 +22,5 @@ Status: implemented
 
 ## Verification
 
-运行 `npm run config:migrate -- --check` 和 `tests/test_configuration.py`。
+运行 `npm run config:migrate -- --check` 和 `tests/integration/test_configuration.py`。
 

@@ -25,4 +25,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_visual_canvas_capacity.py` 验证新数量边界、最大长度依赖链及末端环、公开 OpenAPI 与 Python SDK 上限、从 500 节点经正式 HTTP operations 增加到 1000 节点，以及失败后图和输出历史保留。Web 容量测试核对生成 OpenAPI 边界与粘贴预检，既有粘贴旅程验证超限不改变画布和撤销历史。执行契约生成/检查、相关后端与 Web 测试、Ruff、Prettier 和 Agent Note 校验；受保护产品文档中心逐文件 SHA256 前后核对不变。
+`tests/apps/visual_workshop/test_visual_canvas_capacity.py` 验证新数量边界、最大长度依赖链及末端环、公开 OpenAPI 与 Python SDK 上限、从 500 节点经正式 HTTP operations 增加到 1000 节点，以及失败后图和输出历史保留。Web 容量测试核对生成 OpenAPI 边界与粘贴预检，既有粘贴旅程验证超限不改变画布和撤销历史。执行契约生成/检查、相关后端与 Web 测试、Ruff、Prettier 和 Agent Note 校验；受保护产品文档中心逐文件 SHA256 前后核对不变。

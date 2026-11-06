@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_thought_sync_transfer.py` 使用旧数据库的隔离样本和实际维护监听器，验证重启重放、未知步骤、连接和素材读回、跨账号与目标不匹配拒绝，以及启动后核对与结束任务。
+`tests/apps/thought_workshop/test_thought_sync_transfer.py` 使用旧数据库的隔离样本和实际维护监听器，验证重启重放、未知步骤、连接和素材读回、跨账号与目标不匹配拒绝，以及启动后核对与结束任务。

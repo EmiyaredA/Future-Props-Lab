@@ -26,6 +26,6 @@ Skill 允许单独安装或随官方包发现；个人 Codex skills 目录通过
 
 ## Verification
 
-Skill Creator quick_validate 与官方包结构校验通过；`tests/test_research_skill.py` 在无公共 conftest 的隔离运行中 13 项通过，覆盖来源读取、实测产物、断链、完成时未决问题披露、存档状态和畸形输入。Ruff 检查与格式检查通过。共享测试入口在首次运行时因并行工作中的迁移模块未就绪无法加载，没有为此改动其他任务文件。
+Skill Creator quick_validate 与官方包结构校验通过；`tests/integration/test_research_skill.py` 在无公共 conftest 的隔离运行中 13 项通过，覆盖来源读取、实测产物、断链、完成时未决问题披露、存档状态和畸形输入。Ruff 检查与格式检查通过。共享测试入口在首次运行时因并行工作中的迁移模块未就绪无法加载，没有为此改动其他任务文件。
 
 本地原型经独立临时 Chrome 渲染，生成三个主要页面和深色、手机预览；检查引用跳转、筛选、搜索、意见本地保存、Markdown 导出、主题切换与 390／768／1024 宽度无根级横向溢出，未连接真实 App。产物与验证记录保存到 `.local/research-workbench-preview/`，不进入受保护的文档中心。

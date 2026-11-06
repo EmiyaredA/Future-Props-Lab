@@ -23,6 +23,6 @@ Status: implemented
 
 ## Verification
 
-`web/tests/presentation-clipboard.test.tsx` 覆盖纯文本与 HTML/纯文本双格式粘贴、换行、选区替换、同框复制再粘贴、一次更新回调以及无文字时不删除选区。修复前双格式、同框粘贴和无文字三个用例失败。
+`web/tests/features/presentation-clipboard.test.tsx` 覆盖纯文本与 HTML/纯文本双格式粘贴、换行、选区替换、同框复制再粘贴、一次更新回调以及无文字时不删除选区。修复前双格式、同框粘贴和无文字三个用例失败。
 
-`web/tests/presentation-document.test.ts` 验证颜色归一化与非法值回退；`web/e2e/presentation-history.spec.ts` 使用实际键盘复制粘贴，验证撤销重做与保存后重开内容。
+`web/tests/features/presentation-document.test.ts` 验证颜色归一化与非法值回退；`web/e2e/presentation-history.spec.ts` 使用实际键盘复制粘贴，验证撤销重做与保存后重开内容。

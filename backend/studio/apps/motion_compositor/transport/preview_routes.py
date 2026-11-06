@@ -7,11 +7,10 @@ from fastapi.responses import Response
 from studio.apps.motion_compositor.projects import (
     MotionInvalid,
     MotionNotFound,
-    MotionProjects,
     MotionUnavailable,
 )
+from studio.apps.motion_compositor.transport.dependencies import MotionDep
 from studio.apps.motion_compositor.transport.website.errors import _error
-from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.motion_compositor.motion_preview import (
@@ -69,14 +68,12 @@ async def render(request, project_id, frame):
 @router.get("/projects/{project_id}/preview/frame", responses={200: {"content": {"image/png": {}}}})
 async def exact_frame(
     request: Request,
-    session: SessionDep,
-    owner_user_id: OwnerDep,
+    projects: MotionDep,
     project_id: str,
     frame: int = Query(ge=0),
     revision: int | None = Query(default=None, ge=0),
 ) -> Response:
     try:
-        projects = MotionProjects(session, owner_user_id)
         snapshot = await projects.document(project_id)
         if revision is not None and revision != snapshot.revision:
             raise RevisionConflictError(

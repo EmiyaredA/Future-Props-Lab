@@ -113,6 +113,8 @@ test("编辑器菜单、备注、背景、实际缩放与独立截图", async ({
   await page.getByRole("button", { name: "导出 PPTX", exact: true }).click();
   await (await download).saveAs(info.outputPath("presentation-ui.pptx"));
   await page.reload();
+  await expect(canvas.getByText("感谢聆听", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "幻灯片 1", exact: true }).click();
   await page.getByRole("button", { name: /演示者备注/ }).click();
   await expect(page.getByRole("textbox", { name: "演示者备注" })).toHaveValue(
     "备注折叠与保存验收",

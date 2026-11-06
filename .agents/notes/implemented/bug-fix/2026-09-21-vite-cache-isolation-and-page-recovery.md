@@ -30,6 +30,6 @@ Status: implemented
 ## Verification
 
 - `node web/scripts/check-vite-isolation.mjs` 同时运行两套 React/Dialog 图，验证隔离缓存下对话框可打开。
-- `web/e2e/page-recovery.spec.ts` 和 `web/tests/page-recovery.test.tsx` 覆盖模块加载、组件渲染失败及未保存导航保护。
+- `web/e2e/page-recovery.spec.ts` 和 `web/tests/shared/page-recovery.test.tsx` 覆盖模块加载、组件渲染失败及未保存导航保护。
 - `web/e2e/live2d-workshop.spec.ts` 在全新 Playwright 缓存中通过三个流程；PSD Worker 的 `ag-psd` 在导入前完成预构建，导入期间不再整页刷新。
 - 正式桌面界面只读检查确认页面恢复且新建角色对话框可打开；没有创建项目或写入正式数据。

@@ -20,4 +20,4 @@ Status: implemented
 
 ## Verification
 
-`tests/test_thought_cutover_transfer.py` 从旧站 HTTP 创建带中文和标点的请求标识，并验证恢复旧站、跨账号拒绝、重启重放和同标识变更冲突。
+`tests/apps/thought_workshop/test_thought_cutover_transfer.py` 从旧站 HTTP 创建带中文和标点的请求标识，并验证恢复旧站、跨账号拒绝、重启重放和同标识变更冲突。

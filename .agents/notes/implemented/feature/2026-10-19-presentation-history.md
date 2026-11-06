@@ -28,6 +28,6 @@ Status: implemented
 
 ## Verification
 
-`web/tests/presentation-draft.test.tsx` 覆盖合并、上限、分支、组合输入、跨页及保存并发和冲突；`web/tests/presentation-history.test.tsx` 验证名称、备注、属性、输入法、跨页和弹窗边界。`web/e2e/presentation-history.spec.ts` 在隔离数据库中验证混合编辑、富文本、重开、手势取消与页面恢复；既有演示工坊测试回归素材、裁剪、连接、分组和换肤。测试产物位于已忽略的 `.local/presentation-history/`，不使用正式运行数据。
+`web/tests/features/presentation-draft.test.tsx` 覆盖合并、上限、分支、组合输入、跨页及保存并发和冲突；`web/tests/features/presentation-history.test.tsx` 验证名称、备注、属性、输入法、跨页和弹窗边界。`web/e2e/presentation-history.spec.ts` 在隔离数据库中验证混合编辑、富文本、重开、手势取消与页面恢复；既有演示工坊测试回归素材、裁剪、连接、分组和换肤。测试产物位于已忽略的 `.local/presentation-history/`，不使用正式运行数据。
 
 演示工坊及官方内容相关测试通过，11 个浏览器文件共 36 条旅程通过。Web lint、构建、Agent Note、导入包与文档中心保护检查通过，修改文件通过格式检查。全仓库格式检查仍报告 HEAD 中已有的 `web/src/docs/styles-components.css` 与 `official/content/thought-workshop/help.md`，不修改这两处范围外内容。

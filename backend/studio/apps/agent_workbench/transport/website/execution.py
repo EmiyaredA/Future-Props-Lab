@@ -5,7 +5,6 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 from fastapi.responses import StreamingResponse
 
-from app.console.governance.code_agents import resolve_connection
 from studio.apps.agent_workbench.execution import (
     history_source,
     projects,
@@ -30,6 +29,7 @@ from studio.apps.agent_workbench.execution.schemas import (
 )
 from studio.apps.identity.storage.cloud_access import require_enabled, require_unlocked
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
+from studio.host.agent_execution.cli.connections import resolve_connection
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.website import require_local_browser
 
@@ -62,9 +62,9 @@ def local(request):
     return getattr(request.state, "website_local", False)
 
 
-async def require_agent(agent_id):
+async def require_agent(agent_id, *, settings):
     try:
-        await resolve_connection(agent_id, probe=False)
+        await resolve_connection(agent_id, settings=settings, probe=False)
     except OperationError as exc:
         raise HTTPException(exc.status, detail={"code": exc.code, "message": str(exc)}) from exc
 
@@ -133,7 +133,7 @@ async def create_chat(request: Request, body: ChatCreate, db: SessionDep, princi
         local=local(request),
         settings=await asyncio.to_thread(request.app.state.workbench_settings),
     )
-    await require_agent(body.agent_id)
+    await require_agent(body.agent_id, settings=request.app.state.workbench_settings())
     return await storage.create_chat(
         db,
         principal,
@@ -172,7 +172,7 @@ async def send_turn(
     )
     chat = await transcripts.get_chat(db, principal.user_id, chat_id)
     if body.mode == "immediate":
-        await require_agent(chat.agent_id)
+        await require_agent(chat.agent_id, settings=request.app.state.workbench_settings())
     turn, created = await storage.create_turn(
         db,
         principal,

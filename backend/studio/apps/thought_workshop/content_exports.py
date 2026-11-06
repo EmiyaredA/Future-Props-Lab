@@ -1,4 +1,3 @@
-import asyncio
 import html
 import shutil
 import tempfile
@@ -13,32 +12,32 @@ from studio.apps.thought_workshop.multitable.content import project
 from studio.apps.thought_workshop.notes import Notes, note_out
 from studio.apps.thought_workshop.schemas.conversion import ThoughtMarkdownOut
 from studio.apps.thought_workshop.schemas.document import file_ids
-from studio.apps.thought_workshop.website.asset_metadata import metadata
+from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata
 from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.tasks.blocking_io import run_blocking_io
 
 
-async def resolve_assets(session, owner_user_id, ids):
-    return await metadata(session, owner_user_id).describe(set(ids)) if ids else {}
-
-
-async def convert(session, owner_user_id, body):
-    rows = await resolve_assets(session, owner_user_id, set(body.assets.values()))
+async def convert(body, *, assets: AssetMetadata):
+    rows = await assets.describe(set(body.assets.values())) if body.assets else {}
     document, warnings = parse_markdown(
         body.markdown, {path: rows[id] for path, id in body.assets.items()}
     )
     return ThoughtMarkdownOut(document=document, warnings=warnings)
 
 
-async def export_note(session, owner_user_id, note_id, expected_revision, format):
+async def export_note(
+    session, owner_user_id, note_id, expected_revision, format, *, assets: AssetMetadata
+):
     note = await Notes(session, owner_user_id).get(note_id)
     if note.revision != expected_revision:
         raise RevisionConflictError(
             expected_revision, note.revision, note_out(note).model_dump(mode="json")
         )
-    assets = await resolve_assets(session, owner_user_id, file_ids(note.document))
+    asset_ids = file_ids(note.document)
+    entries = await assets.describe(set(asset_ids)) if asset_ids else {}
     files = {
         id: "assets/" + id + Path(row.original_filename).suffix.lower()
-        for id, row in assets.items()
+        for id, row in entries.items()
     }
     title, document = note.title, await project(session, owner_user_id, note)
     await session.rollback()
@@ -76,9 +75,9 @@ async def export_note(session, owner_user_id, note_id, expected_revision, format
             target.write_text(content, encoding="utf-8")
 
     try:
-        for id, asset in assets.items():
-            await metadata(session, owner_user_id).download(asset, sources / id)
-        await asyncio.to_thread(write)
+        for id, asset in entries.items():
+            await assets.download(asset, sources / id)
+        await run_blocking_io(write)
         return target
     except BaseException:
         shutil.rmtree(directory, ignore_errors=True)

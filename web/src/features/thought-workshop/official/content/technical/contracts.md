@@ -72,6 +72,6 @@ API 参考精确列字段，技术文档解释字段为何存在及消费者怎�
 
 ## 代码入口
 
-1. `scripts/export_openapi.py`
-2. `scripts/generate_sdk.py`
+1. `scripts/contracts/export_openapi.py`
+2. `scripts/contracts/generate_sdk.py`
 3. `sdk/python/operations.json`

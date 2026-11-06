@@ -23,4 +23,4 @@ Status: implemented
 
 ## Verification
 
-`uv run pytest -q tests/test_audio_annotation.py`；`npm run test --workspace web -- tests/audio-annotation-emotion-field.test.tsx`；`npm run contracts:check`。
+`uv run pytest -q tests/apps/audio_annotation/test_audio_annotation.py`；`npm run test --workspace web -- tests/audio-annotation-emotion-field.test.tsx`；`npm run contracts:check`。
