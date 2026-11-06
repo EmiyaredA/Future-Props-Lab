@@ -431,8 +431,9 @@ def test_cli_configuration_does_not_inherit_backend_credentials(tmp_path, monkey
 
 
 @pytest.mark.asyncio
-async def test_codex_subprocess_consumes_jsonl_and_structured_delivery(
-    client, tmp_path, monkeypatch
+@pytest.mark.parametrize("executor_kind", ["subprocess", "memory"])
+async def test_executor_delivers_structured_bundle_and_progress(
+    client, tmp_path, monkeypatch, executor_kind
 ):
     import sys
     import textwrap
@@ -472,7 +473,23 @@ async def test_codex_subprocess_consumes_jsonl_and_structured_delivery(
     async def active():
         return True
 
-    actual, searches = await codex.CodexExecutor(lambda: str(fake)).run(task, root, event, active)
+    class MemoryExecutor:
+        async def run(self, job, directory, on_event, is_active):
+            assert job.id == task.id and directory == root
+            assert await is_active()
+            files = TaskFiles(directory)
+            for identifier in files.manifest["files"]:
+                files.read_input(identifier)
+            await on_event("material", "Codex 已执行本场材料／草稿工具")
+            await on_event("search", "Codex 已完成一次联网检索", [])
+            return expected, 1
+
+    executor = (
+        codex.CodexExecutor(lambda: str(fake))
+        if executor_kind == "subprocess"
+        else MemoryExecutor()
+    )
+    actual, searches = await executor.run(task, root, event, active)
     assert actual == expected
     assert searches == 1
     assert {item[0] for item in events} == {"material", "search"}

@@ -5,11 +5,13 @@ from types import SimpleNamespace
 import pytest
 
 from studio.apps.audio_annotation.clients.saved_audio import ClipInput
+from studio.apps.audio_annotation.schemas.document import AudioAnnotationSegmentTranscriptionOut
 from studio.apps.audio_annotation.sources import AudioAnnotationError
 from studio.apps.audio_annotation.use_cases.transcribe_segment import (
     TranscribeSegment,
     TranscriptionScope,
 )
+from studio.assembly.website.annotation_transcription import WebsiteTranscription
 
 
 class Projects:
@@ -79,3 +81,39 @@ async def test_transcription_calls_executor_once_and_closes_upload_after_unknown
     else:
         assert await call == "candidate"
     assert len(executor.calls) == 1 and upload.content == b""
+
+
+@pytest.mark.parametrize("adapter", ["memory", "website"])
+async def test_model_executor_contract_returns_candidate_and_releases_input(adapter):
+    candidate = AudioAnnotationSegmentTranscriptionOut(
+        text="candidate",
+        model_id="model",
+        requested_language=None,
+        resolved_language="zh",
+        requested_target_language=None,
+        resolved_target_language=None,
+        log_id="call-log",
+    )
+    calls = []
+
+    async def recognize(project_id, *, owner_user_id, upload, model_id, **_kwargs):
+        assert project_id == "owned" and owner_user_id == "alice"
+        assert model_id == candidate.model_id
+        calls.append(await upload.read())
+        return candidate
+
+    models = SimpleNamespace(transcribe=recognize)
+    executor = recognize if adapter == "memory" else WebsiteTranscription(None, models)
+    upload = ClipInput(b"wav")
+    result = await TranscribeSegment(Projects(), executor)(
+        "owned",
+        upload=upload,
+        model_id=candidate.model_id,
+        segment_id="segment",
+        start_ms=0,
+        end_ms=1000,
+        language_tag=None,
+        target_language_tag=None,
+    )
+    assert result == candidate
+    assert calls == [b"wav"] and upload.content == b""
