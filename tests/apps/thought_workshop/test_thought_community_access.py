@@ -74,10 +74,10 @@ def actor(identity):
 
 
 async def evidence(db, who, asset, **kwargs):
-    async with db.sessions(
-        info={"allow_system_reads": True, "thought_directory": Directory()}
-    ) as session:
-        return await published_asset(session, actor(who), "pub", asset, **kwargs)
+    async with db.sessions(info={"allow_system_reads": True}) as session:
+        return await published_asset(
+            session, actor(who), "pub", asset, accounts=Directory(), **kwargs
+        )
 
 
 async def test_only_referenced_current_article_and_published_cover_have_evidence(community):
@@ -117,22 +117,22 @@ async def test_fresh_check_rejects_revoked_membership_and_changed_article(commun
 
 
 async def test_source_bound_session_is_not_used_as_authorization_context(community):
-    async with community.sessions(
-        info={"owner_user_id": "source", "thought_directory": Directory()}
-    ) as session:
+    async with community.sessions(info={"owner_user_id": "source"}) as session:
         with pytest.raises(ValueError, match="未绑定账号"):
-            await published_asset(session, actor("viewer"), "pub", "visible", note_id="note")
+            await published_asset(
+                session, actor("viewer"), "pub", "visible", accounts=Directory(), note_id="note"
+            )
 
 
 async def test_only_browser_sessions_can_receive_published_asset_evidence(community):
-    async with community.sessions(
-        info={"allow_system_reads": True, "thought_directory": Directory()}
-    ) as session:
+    async with community.sessions(info={"allow_system_reads": True}) as session:
         credential = SimpleNamespace(
             user_id="viewer", platform_role="user", auth_kind="management_api_key"
         )
         with pytest.raises(ThoughtError) as exc:
-            await published_asset(session, credential, "pub", "visible", note_id="note")
+            await published_asset(
+                session, credential, "pub", "visible", accounts=Directory(), note_id="note"
+            )
         assert exc.value.status == 404
 
 

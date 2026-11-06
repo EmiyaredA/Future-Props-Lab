@@ -17,17 +17,22 @@ def missing():
     return ThoughtError("内容不存在或不可访问", 404, "not_found")
 
 
-async def current_actor(session, principal):
-    return await directory(session).current(principal)
+async def current_actor(session, principal, *, accounts=None):
+    accounts = directory(session) if accounts is None else accounts
+    return await accounts.current(principal)
 
 
-async def manages_source(session, principal, owner_user_id):
-    principal = await current_actor(session, principal)
+async def manages_source(session, principal, owner_user_id, *, accounts=None):
+    principal = await current_actor(session, principal, accounts=accounts)
     return principal.user_id == owner_user_id
 
 
-async def source_role(session, principal, owner_user_id):
-    return "manage" if await manages_source(session, principal, owner_user_id) else None
+async def source_role(session, principal, owner_user_id, *, accounts=None):
+    return (
+        "manage"
+        if await manages_source(session, principal, owner_user_id, accounts=accounts)
+        else None
+    )
 
 
 async def require_source_manager(session, principal, owner_user_id):
@@ -75,8 +80,8 @@ def can_certify(principal):
     return principal.platform_role in {"admin"}
 
 
-async def article(session, principal, pub, note_id, *, level="read", inactive=False):
-    principal = await current_actor(session, principal)
+async def article(session, principal, pub, note_id, *, level="read", inactive=False, accounts=None):
+    principal = await current_actor(session, principal, accounts=accounts)
     config = await session.get(PublishedArticle, (pub.id, note_id))
     note = await session.scalar(
         select(ThoughtNote).where(
@@ -88,7 +93,7 @@ async def article(session, principal, pub, note_id, *, level="read", inactive=Fa
     )
     if config is None or note is None or (not inactive and not config.active):
         raise missing()
-    original_role = await source_role(session, principal, pub.owner_user_id)
+    original_role = await source_role(session, principal, pub.owner_user_id, accounts=accounts)
     member = await session.get(ArticleMember, (pub.id, note_id, principal.user_id))
     role = effective_role(
         pub, principal, original_role, member.role if member else None, config.visibility

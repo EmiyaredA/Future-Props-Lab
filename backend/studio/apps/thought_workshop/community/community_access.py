@@ -30,7 +30,15 @@ class CommunityAssetEvidence:
 
 
 async def published_asset(
-    session, principal, publication_id, asset_id, *, note_id=None, cover=False, allow_draft=False
+    session,
+    principal,
+    publication_id,
+    asset_id,
+    *,
+    accounts,
+    note_id=None,
+    cover=False,
+    allow_draft=False,
 ):
     """Re-evaluate a browser viewer's current publication, article and body.
 
@@ -40,14 +48,14 @@ async def published_asset(
     """
     if session.info.get("owner_user_id") is not None:
         raise ValueError("社区授权必须从未绑定账号的发布目录会话开始")
-    principal = await current_actor(session, principal)
+    principal = await current_actor(session, principal, accounts=accounts)
     if principal.auth_kind != "session":
         raise missing()
     pub = await publication(session, publication_id)
     if cover:
         if note_id is not None or not asset_id or asset_id != pub.cover_asset_id:
             raise missing()
-        rows, manager = await visible(session, principal, pub)
+        rows, manager = await visible(session, principal, pub, accounts=accounts)
         if not rows and not manager:
             raise missing()
         return CommunityAssetEvidence(
@@ -62,7 +70,7 @@ async def published_asset(
             True,
         )
     if note_id:
-        config, note, role = await article(session, principal, pub, note_id)
+        config, note, role = await article(session, principal, pub, note_id, accounts=accounts)
         allowed = file_ids(note.document)
         if note.kind == "multitable":
             allowed |= asset_ids(await snapshot(session, note.id))
@@ -89,7 +97,7 @@ async def published_asset(
             config.revision,
             False,
         )
-    rows, _manager = await visible(session, principal, pub, include_content=True)
+    rows, _manager = await visible(session, principal, pub, include_content=True, accounts=accounts)
     for note, config, role in rows:
         if not role:
             continue

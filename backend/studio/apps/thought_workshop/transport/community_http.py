@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 
 from studio.apps.thought_workshop.community.community_access import published_asset
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.http_bindings import CommunitySessionDep
+from studio.apps.thought_workshop.http_bindings import CommunityDirectoryDep, CommunitySessionDep
 from studio.apps.thought_workshop.publication.access import publication
 from studio.apps.thought_workshop.publication.sessions import source_sessions
 from studio.assembly.http_dependencies import PublicStudioAuth
@@ -122,7 +122,16 @@ class CommunityFiles:
 
 
 async def _content(
-    request, session, principal, publication_id, asset_id, note_id=None, cover=False, size=None
+    request,
+    session,
+    principal,
+    publication_id,
+    asset_id,
+    *,
+    accounts,
+    note_id=None,
+    cover=False,
+    size=None,
 ):
     files = getattr(request.app.state, "community_files", None)
     if not isinstance(files, CommunityFiles):
@@ -136,6 +145,7 @@ async def _content(
                 principal,
                 publication_id,
                 asset_id,
+                accounts=accounts.for_session(source),
                 note_id=note_id,
                 cover=cover,
                 allow_draft=note_id is not None,
@@ -150,10 +160,13 @@ async def cover(
     request: Request,
     publication_id: str,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     size: ThumbnailSize | None = None,
 ):
-    return await _content(request, session, principal, publication_id, None, cover=True, size=size)
+    return await _content(
+        request, session, principal, publication_id, None, accounts=accounts, cover=True, size=size
+    )
 
 
 @router.get("/publications/{publication_id}/assets/{asset_id}/content")
@@ -162,10 +175,18 @@ async def asset(
     publication_id: str,
     asset_id: str,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     note_id: str | None = None,
     size: ThumbnailSize | None = None,
 ):
     return await _content(
-        request, session, principal, publication_id, asset_id, note_id=note_id, size=size
+        request,
+        session,
+        principal,
+        publication_id,
+        asset_id,
+        accounts=accounts,
+        note_id=note_id,
+        size=size,
     )

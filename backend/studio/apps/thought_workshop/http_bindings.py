@@ -1,4 +1,4 @@
-"""Thought request sessions receive an explicit Identity account-directory port."""
+"""Bind Thought and Identity capabilities to the authenticated request."""
 
 import inspect
 from typing import Annotated
@@ -7,13 +7,16 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.thought_workshop.errors import ThoughtError
-from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
+from studio.apps.thought_workshop.website.account_directory import (
+    AccountDirectory,
+    DirectoryBindings,
+)
 from studio.apps.thought_workshop.website.asset_metadata import AssetMetadata, AssetMetadataBindings
 from studio.assembly.http_dependencies import PublicStudioAuth, StudioAuth
 from studio.assembly.http_dependencies import SessionDep as BaseSessionDep
 
 
-async def bind_ports(request, session, principal):
+async def request_account_directory(request, session, principal) -> AccountDirectory:
     binding = getattr(request.app.state, "thought_directory", None)
     if not isinstance(binding, DirectoryBindings):
         raise HTTPException(503, {"code": "account_directory_unavailable"})
@@ -25,8 +28,19 @@ async def bind_ports(request, session, principal):
         await directory.profiles(ids=(principal.user_id,))
     except ThoughtError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
-    session.info["thought_directory"] = directory
-    return session
+    return directory
+
+
+async def private_directory(request: Request, session: BaseSessionDep, principal: StudioAuth):
+    return await request_account_directory(request, session, principal)
+
+
+async def public_directory(request: Request, session: BaseSessionDep, principal: PublicStudioAuth):
+    return await request_account_directory(request, session, principal)
+
+
+AccountDirectoryDep = Annotated[AccountDirectory, Depends(private_directory)]
+CommunityDirectoryDep = Annotated[AccountDirectory, Depends(public_directory)]
 
 
 async def request_asset_metadata(request, session, principal):
@@ -48,12 +62,14 @@ async def thought_assets(request: Request, session: BaseSessionDep, principal: S
 AssetMetadataDep = Annotated[AssetMetadata, Depends(thought_assets)]
 
 
-async def thought_session(request: Request, session: BaseSessionDep, principal: StudioAuth):
-    return await bind_ports(request, session, principal)
+async def thought_session(session: BaseSessionDep, accounts: AccountDirectoryDep):
+    session.info["thought_directory"] = accounts
+    return session
 
 
-async def community_session(request: Request, session: BaseSessionDep, principal: PublicStudioAuth):
-    return await bind_ports(request, session, principal)
+async def community_session(session: BaseSessionDep, accounts: CommunityDirectoryDep):
+    session.info["thought_directory"] = accounts
+    return session
 
 
 SessionDep = Annotated[AsyncSession, Depends(thought_session)]

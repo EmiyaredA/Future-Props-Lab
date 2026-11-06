@@ -234,14 +234,13 @@ async def grant(case, *, cover=False, note_id="note"):
     )
     assert response.status_code == 204, response.text
     assertion = response.headers[HEADER]
-    async with case.db.sessions(
-        info={"allow_system_reads": True, "thought_directory": Directory()}
-    ) as session:
+    async with case.db.sessions(info={"allow_system_reads": True}) as session:
         evidence = await published_asset(
             session,
             SimpleNamespace(user_id=case.viewer, platform_role="user", auth_kind="session"),
             "pub",
             case.asset,
+            accounts=Directory(),
             note_id=None if cover else note_id,
             cover=cover,
         )

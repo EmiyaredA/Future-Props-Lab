@@ -27,11 +27,11 @@ from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase, Th
 from studio.apps.thought_workshop.website.account_directory import author as find_author
 
 
-async def visible(session, principal, pub, query="", include_content=False):
+async def visible(session, principal, pub, query="", include_content=False, *, accounts=None):
     manager = principal.user_id == pub.publisher_id or await manages_source(
-        session, principal, pub.owner_user_id
+        session, principal, pub.owner_user_id, accounts=accounts
     )
-    original_role = await source_role(session, principal, pub.owner_user_id)
+    original_role = await source_role(session, principal, pub.owner_user_id, accounts=accounts)
     statement = (
         select(ThoughtNote, PublishedArticle, ArticleMember.role)
         .join(
