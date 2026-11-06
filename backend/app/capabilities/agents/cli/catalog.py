@@ -14,7 +14,7 @@ from studio.contracts.agent_runtime.definitions import AgentId as AgentId
 
 from .codex_profile import AUTH_ARGS, CodexLoginRequired, profile_environment, profile_path
 from .conversation import codex_models, probe_codex
-from .transport import CliError, _stop, environment
+from .transport import CliError, _stop, environment, read_control_output
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ async def _probe_output(path, args, *, timeout=10, env=None):
         stderr=asyncio.subprocess.DEVNULL,
     )
     try:
-        output = await asyncio.wait_for(process.stdout.read(16384), timeout)
+        output = await asyncio.wait_for(read_control_output(process.stdout, 16384), timeout)
         await asyncio.wait_for(process.wait(), timeout)
         return process.returncode, output
     finally:
@@ -117,16 +117,24 @@ async def inspect_executable(agent_id, path, *, codex_profile=None):
             credential = home / ".credentials.yaml"
             code = 0 if credential.is_file() and credential.stat().st_size else 1
         elif agent_id == "pi":
-            from .isolation import control_output, launch
+            from .isolation import launch, pi_auth_status
 
             with TemporaryDirectory(prefix="fpl-cli-probe-") as root:
                 async with launch(agent_id, path, Path(root), {}) as (_, env):
-                    code, _ = await control_output(path, list(definition.auth_args), env)
+                    code = await pi_auth_status(path, definition.auth_args, env)
+        elif agent_id == "opencode":
+            code, output = await _probe_output(
+                path,
+                ("--pure", *definition.auth_args),
+                env={**environment(), "OPENCODE_DISABLE_MODELS_FETCH": "true"},
+            )
+            clean = re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", output)
+            count = re.search(rb"\b(\d+) credentials?\b", clean)
+            if code or count is None:
+                raise CliError("无法读取 OpenCode 登录状态，请在终端运行 opencode auth list 检查")
+            code = int(count[1] == b"0")
         else:
-            code, output = await _probe_output(path, definition.auth_args)
-            if agent_id == "opencode":
-                clean = re.sub(rb"\x1b\[[0-?]*[ -/]*[@-~]", b"", output)
-                code = code or (0 if re.search(rb"\b[1-9]\d* credentials?\b", clean) else 1)
+            code, _ = await _probe_output(path, definition.auth_args)
         if code:
             return {
                 **result,
@@ -142,7 +150,9 @@ async def inspect_executable(agent_id, path, *, codex_profile=None):
         return {**result, "status": "probe_failed", "message": "CLI 检测失败，请检查安装与登录状态"}
 
 
-async def inspect_connection(settings, agent_id, *, discover_models=True, app_server=True):
+async def inspect_connection(
+    settings, agent_id, *, discover_models=True, app_server=True, probe_disabled=False
+):
     definition = DEFINITIONS[agent_id]
     result = dict(
         id=agent_id,
@@ -158,7 +168,12 @@ async def inspect_connection(settings, agent_id, *, discover_models=True, app_se
     try:
         enabled, path, message = connection(settings, agent_id)
         result.update(executable=path, message=message, enabled=enabled)
-        if message or not enabled:
+        if not enabled and probe_disabled:
+            prefix = settings_prefix(agent_id)
+            probe_settings = settings.model_copy(update={f"fpl_code_agents_{prefix}_enabled": True})
+            _, path, message = connection(probe_settings, agent_id)
+            result.update(executable=path, message=message)
+        if message or (not enabled and not probe_disabled):
             return result
         if sys.platform != "darwin":
             return {
@@ -170,6 +185,10 @@ async def inspect_connection(settings, agent_id, *, discover_models=True, app_se
             profile_path(settings.runtime_path) if agent_id == "codex" and app_server else None
         )
         result = await inspect_executable(agent_id, path, codex_profile=profile)
+        if not enabled:
+            if result["available"]:
+                result.update(status="ready_to_enable", message="安装和登录已验证，等待启用连接")
+            return {**result, "enabled": False, "available": False}
         if profile is not None and result["available"]:
             async with probe_codex(path, profile) as request:
                 if discover_models:

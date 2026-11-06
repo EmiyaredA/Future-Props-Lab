@@ -135,6 +135,8 @@ export function ActivityRow({
         <button
           type="button"
           className="aw-link aw-activity-file"
+          data-file-path={details.file.path}
+          data-file-line={details.file.line ?? undefined}
           onClick={onOpenFile}
         >
           {details.file.path}

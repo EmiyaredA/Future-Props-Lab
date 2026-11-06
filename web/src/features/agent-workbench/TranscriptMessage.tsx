@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import rehypeHighlight from "rehype-highlight";
@@ -13,6 +13,43 @@ import {
 } from "lucide-react";
 import { AgentLogo } from "@features/code-agents";
 import { agentName, displayTime, type Conversation } from "./api";
+import { fileReference, type FileReference } from "./fileReferences";
+
+// Stable renderers keep focused file links mounted during SSE/layout updates.
+const FileNavigation = createContext<
+  ((file: FileReference) => void) | undefined
+>(undefined);
+function TranscriptLink({
+  children,
+  href,
+}: {
+  children?: ReactNode;
+  href?: string;
+}) {
+  const open = useContext(FileNavigation);
+  const file = open && href ? fileReference(href) : undefined;
+  return file ? (
+    <button
+      type="button"
+      className="aw-file-link"
+      data-file-path={file.path}
+      data-file-line={file.line}
+      onClick={() => open?.(file)}
+    >
+      {children}
+    </button>
+  ) : /^https?:\/\//.test(href ?? "") ? (
+    <a href={href} target="_blank" rel="noreferrer noopener">
+      {children}
+    </a>
+  ) : (
+    <span>{children}</span>
+  );
+}
+const markdownComponents = {
+  img: () => <span className="aw-subtle">[图片引用]</span>,
+  a: TranscriptLink,
+};
 
 export function TranscriptMessage({
   agent,
@@ -52,9 +89,11 @@ export function TranscriptMessage({
 export function TranscriptText({
   text,
   raw = false,
+  onOpenFile,
 }: {
   text: string;
   raw?: boolean;
+  onOpenFile?: (file: FileReference) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const body = expanded ? text : text.slice(0, 24000);
@@ -64,26 +103,18 @@ export function TranscriptText({
         <pre>{body}</pre>
       ) : (
         <div className="aw-prose">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[
-              [rehypeHighlight, { detect: false, ignoreMissing: true }],
-            ]}
-            skipHtml
-            components={{
-              img: () => <span className="aw-subtle">[图片引用]</span>,
-              a: ({ children, href }) =>
-                /^https?:\/\//.test(href ?? "") ? (
-                  <a href={href} target="_blank" rel="noreferrer noopener">
-                    {children}
-                  </a>
-                ) : (
-                  <span>{children}</span>
-                ),
-            }}
-          >
-            {body}
-          </ReactMarkdown>
+          <FileNavigation value={onOpenFile}>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[
+                [rehypeHighlight, { detect: false, ignoreMissing: true }],
+              ]}
+              skipHtml
+              components={markdownComponents}
+            >
+              {body}
+            </ReactMarkdown>
+          </FileNavigation>
         </div>
       )}
       {text.length > 24000 && (

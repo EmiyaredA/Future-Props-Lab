@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sqlite3
 import time
 
 import httpx
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import delete, func, select, text, update
+from sqlalchemy.exc import OperationalError
 from watchfiles import awatch
 
 from studio.apps.agent_workbench.storage.models import (
@@ -21,6 +23,13 @@ from studio.runtime.tasks.polling import PollingTaskRunner
 from studio.runtime.time import utc_now
 
 logger = logging.getLogger(__name__)
+
+
+def sqlite_write_busy(error):
+    if not isinstance(error, OperationalError):
+        return False
+    code = getattr(error.orig, "sqlite_errorcode", 0)
+    return code & 0xFF in {sqlite3.SQLITE_BUSY, sqlite3.SQLITE_LOCKED}
 
 
 class WorkbenchSyncRunner(PollingTaskRunner):
@@ -126,7 +135,7 @@ class WorkbenchSyncRunner(PollingTaskRunner):
                     running[1].cancel()
                 continue
             failures, retry_at = self.backoffs.get(source_id, (0, 0))
-            if source_id not in queued and time.monotonic() < retry_at:
+            if time.monotonic() < retry_at:
                 continue
             if source.endpoint:
                 task = self.endpoint_tasks.get(source_id)
@@ -176,10 +185,20 @@ class WorkbenchSyncRunner(PollingTaskRunner):
                     failures,
                     time.monotonic() + min(30, 2 ** min(failures, 5)),
                 )
-                logger.warning("Agent workbench source unavailable (%s)", type(exc).__name__)
-                await self.finish(
-                    source, "unavailable", "来源暂不可读；已保留同步副本，请检查路径、版本或端点"
-                )
+                if sqlite_write_busy(exc):
+                    logger.debug("Agent workbench scan deferred while SQLite is busy")
+                else:
+                    logger.warning("Agent workbench source unavailable (%s)", type(exc).__name__)
+                    try:
+                        await self.finish(
+                            source,
+                            "unavailable",
+                            "来源暂不可读；已保留同步副本，请检查路径、版本或端点",
+                        )
+                    except OperationalError as error:
+                        if not sqlite_write_busy(error):
+                            raise
+                        logger.debug("Agent workbench receipt deferred while SQLite is busy")
             self.last_poll[source.id] = time.monotonic()
 
     async def scan(self, source):
@@ -334,6 +353,7 @@ class WorkbenchSyncRunner(PollingTaskRunner):
     async def finish(self, source, status, message):
         async with self.sessions() as db:
             bind_owner(db, source.owner_user_id)
+            await db.execute(text("BEGIN IMMEDIATE"))
             row = await db.scalar(
                 select(WorkbenchSource).where(
                     WorkbenchSource.id == source.id,

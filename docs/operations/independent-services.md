@@ -320,7 +320,7 @@ uv run python -m scripts.website.migrate_assets --plan "$plan" \
 
 ### Identity 账号与凭据迁移
 
-与 Tools 使用同一份源快照和迁移计划。Identity 的账号数据集核对计划中的全部账号 UUID，随后导入 Studio 会话、Management API Key、加密 TOTP 登记和会话解锁记录。保留密码摘要、原账号 ID、角色、凭据范围、过期与撤销状态。旧站的会话保持 Studio 用途。管理中台需要其专用会话。凭据摘要和加密 TOTP 记录只通过显式回环维护进程传输，报告只保存数据集计数与批次摘要。
+与 Tools 使用同一份源快照和迁移计划。Identity 的账号数据集核对计划中的全部账号 UUID，随后导入 Studio 会话、Management API Key、历史加密 TOTP 登记和会话解锁记录。保留密码摘要、原账号 ID、角色、凭据范围、过期与撤销状态。旧站的会话保持 Studio 用途。管理中台需要其专用会话。凭据摘要和加密 TOTP 记录只通过显式回环维护进程传输，报告只保存数据集计数与批次摘要。
 
 ```sh
 uv run python -m studio.assembly.independent.identity.cli migration-export --migration-plan "$plan" \
@@ -331,7 +331,7 @@ uv run python -m scripts.website.migrate_identity --plan "$plan" \
   --source http://127.0.0.1:19563 --target http://127.0.0.1:19564
 ```
 
-目标先按同版本显式初始化 schema，且处于停止状态。导入会拒绝缺少账号、账号冲突或摘要变化。隔离验收经独立 Identity 登录及授权入口验证原 Studio 会话、原管理密钥、已撤销密钥与另一账号密码。TOTP 验证保留原加密密钥和已使用验证码计数，解锁记录必须对应同一账号的已导入会话。邀请码与安全审计使用迁移运行的独立分区，保留已删除邀请码、原加密密钥下可读取的密文、核销历史以及无账号的失败事件。核销记录按原账号导入，核对每份邀请码的累计核销次数。Models 目录在账号迁移后单独处理。只有所有数据集、文件与跨服务关系校验通过后才能恢复网站写入。
+目标先按同版本显式初始化 schema，且处于停止状态。导入会拒绝缺少账号、账号冲突或摘要变化。隔离验收经独立 Identity 登录及授权入口验证原 Studio 会话、原管理密钥、已撤销密钥与另一账号密码。历史 TOTP 数据集保留原密文和已使用验证码计数，云控运行期只使用会话解锁记录。解锁记录必须对应同一账号的已导入会话。邀请码与安全审计使用迁移运行的独立分区，保留已删除邀请码、原加密密钥下可读取的密文、核销历史以及无账号的失败事件。核销记录按原账号导入，核对每份邀请码的累计核销次数。Models 目录在账号迁移后单独处理。只有所有数据集、文件与跨服务关系校验通过后才能恢复网站写入。
 
 Identity 传输工具随后核验并迁移同一快照中 `profiles/` 下的账号原头像。每个文件的账号路径、媒体类型和 SHA256 必须与账号记录一致。未登记的原件、符号链接、缺失或摘要不符都会停止验收。目标在写入同目录树内的私有暂存后，原子发布原件并同步目录。重放核对已存在文件的字节，再返回同一结果。暂存文件保留在快照中，生成的预览由账号资料入口按需重建。
 
@@ -391,9 +391,9 @@ uv run python -m scripts.website.migrate_director --plan "$plan" \
 
 ### 主线云控与执行契约
 
-主线 `5f16f360` 新增的云控浏览页面仍由 Portal 提供。TOTP 与解锁凭据归 Identity，桌面状态、连接和 WebSocket 归已登记的 Remote 能力，工作台聊天与执行归 Agents。编程智能体目录、检测和本机启用归 Agent Runtime。归属清单现在同时登记页面根和各 TOML 字段的所有者。旧 `/remote` 占位页已从清单撤去，保留正式 `/cloud-control` 入口。
+主线 `5f16f360` 新增的云控浏览页面仍由 Portal 提供。密码重验和会话解锁归 Identity，桌面状态、连接和 WebSocket 归已登记的 Remote 能力，工作台聊天与执行归 Agents。编程智能体目录、检测和本机启用归 Agent Runtime。归属清单现在同时登记页面根和各 TOML 字段的所有者。旧 `/remote` 占位页已从清单撤去，保留正式 `/cloud-control` 入口。
 
-合并后的兼容应用继续执行云控权限、可信入口、密码重验和已配置的桌面或项目限制。独立 Remote 已装配桌面连接，Identity 已装配加密 TOTP 迁移。Agents 原生执行和配置投影仍需接线和隔离验证。Identity 已签发仅用于 Remote WebSocket 的票据 SHA256 并提供限定用途的实时云控授权复核。独立 Identity 已装配 TOTP 验证与自有 schema。Agents 已装配自有聊天记录、SSE 和重启恢复；新执行与审批写入仍由独立服务就绪门禁拦截。独立网关继续移除业务上游请求中的浏览器 Cookie，桌面专用凭据须单独限定用途与目标。
+合并后的兼容应用继续执行云控权限、可信入口、密码重验和已配置的桌面或项目限制。独立 Remote 已装配桌面连接，Identity 已装配加密 TOTP 迁移。Agents 原生执行和配置投影仍需接线和隔离验证。Identity 已签发仅用于 Remote WebSocket 的票据 SHA256 并提供限定用途的实时云控授权复核。独立 Identity 与兼容网站共用密码重验后的云控解锁接口。Agents 已装配自有聊天记录、SSE 和重启恢复；新执行与审批写入仍由独立服务就绪门禁拦截。独立网关继续移除业务上游请求中的浏览器 Cookie，桌面专用凭据须单独限定用途与目标。
 
 ### Agent Runtime 独立连接目录
 
@@ -449,7 +449,7 @@ uv run python -m scripts.website.migrate_site \
 
 ### Remote 桌面连接
 
-运行 `npm run services:build -- remote --build` 并加载 `deploy/remote.compose.yaml`，为 Remote 指定专用卷、Identity 公钥、服务凭据和只读传输配置。网关只把签名上下文转交 Remote。连接票据仅能使用一次，绑定账号、会话、可信入口与当前 TOTP 登记代。撤销会话或重设验证器会阻止旧连接继续传输。
+运行 `npm run services:build -- remote --build` 并加载 `deploy/remote.compose.yaml`，为 Remote 指定专用卷、Identity 公钥、服务凭据和只读传输配置。网关只把签名上下文转交 Remote。连接票据仅能使用一次，绑定账号、会话和可信入口。撤销会话或关闭对应的云控授权会阻止旧连接继续传输。
 
 Remote 设置需要 0003 迁移及 `deploy/remote-settings.compose.yaml`。用独立原生凭据注册 Gateway 的 `remote` 回环通道。启动 Mac worker 时显式提供专用状态目录、原生 worker 凭据、权威部署 TOML 和预先创建的投影根目录。
 

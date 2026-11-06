@@ -2,8 +2,6 @@
 
 import hashlib
 import json
-import secrets
-import time
 from datetime import timedelta
 from io import BytesIO
 from uuid import UUID, uuid4
@@ -26,9 +24,8 @@ from studio.apps.identity.credentials.operations import complete_login, create_a
 from studio.apps.identity.profile import apply_avatar, stage_avatar
 from studio.apps.identity.registration.accounts import create_account
 from studio.apps.identity.registration.invitations import change_invite, create_invite, register
-from studio.apps.identity.storage.cloud_factors import FactorRecords
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
-from studio.apps.identity.use_cases.cloud_factors import CloudFactors, totp
+from studio.apps.identity.storage.models.cloud import CloudFactor, CloudUnlock
 from studio.assembly.independent.identity.application import create_app
 from studio.config.settings import get_settings
 from studio.contracts.identity.authentication import CSRF_COOKIE, SESSION_COOKIE
@@ -165,15 +162,23 @@ async def make_legacy(path):
                 expected_revision=owner.revision,
                 client_ip="",
             )
-            factors = CloudFactors(
-                FactorRecords(sessions, clock=utc_now),
-                cipher=SecretCipher(get_settings().fpl_secrets_key),
-                clock=time.time,
-                secret_bytes=secrets.token_bytes,
+            # Historical rows still transfer even though live unlock no longer reads TOTP.
+            session.add(
+                CloudFactor(
+                    owner_user_id=owner.id,
+                    secret=SecretCipher(get_settings().fpl_secrets_key).encrypt("legacy-factor"),
+                    pending_until=0,
+                    last_counter=1234,
+                    attempts=0,
+                    attempt_window=0,
+                )
             )
-            secret = await factors.enroll(principal)
-            used_code = totp(secret, int(time.time()) // 30)
-            await factors.verify(principal, used_code, enroll=True)
+            session.add(
+                CloudUnlock(
+                    session_id=auth.id, owner_user_id=owner.id, expires_at=0, ticket_until=0
+                )
+            )
+            await session.commit()
             return (
                 owner.id,
                 other.id,
@@ -183,8 +188,6 @@ async def make_legacy(path):
                 raw_key,
                 raw_revoked,
                 original,
-                secret,
-                used_code,
                 invite,
                 deleted["invite"]["id"],
             )
@@ -206,8 +209,6 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             raw_key,
             revoked_key,
             avatar,
-            secret,
-            used_code,
             invite,
             deleted_id,
         ) = await make_legacy(legacy)
@@ -339,37 +340,18 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             assert profile_avatar.status_code == 200
             assert profile_avatar.content == avatar
 
-            factor = "/v1/cloud-control/totp"
+            unlock = "/v1/cloud-control/unlock"
             csrf_headers = {"X-CSRF-Token": csrf, "Origin": "http://127.0.0.1:19000"}
-            assert (await api.post(factor + "/enroll")).status_code == 403
-            replay = await api.post(
-                factor + "/verify", headers=csrf_headers, json={"code": used_code}
-            )
-            assert replay.status_code == 403
-            current_code = totp(secret, int(time.time()) // 30 + 1)
-            verified = await api.post(
-                factor + "/verify", headers=csrf_headers, json={"code": current_code}
-            )
-            assert verified.status_code == 204
-            rejected_public = await api.post(
-                "https://studio.example.test" + factor + "/enroll",
-                headers={
-                    "X-Fpl-Ingress": "public",
-                    "X-CSRF-Token": csrf,
-                    "Origin": "https://studio.example.test",
-                },
-            )
-            assert rejected_public.status_code == 403
-            enrollment = await api.post(factor + "/enroll", headers=csrf_headers)
-            assert enrollment.status_code == 200
-            assert enrollment.headers["Cache-Control"] == "no-store"
-            code = totp(enrollment.json()["secret"], int(time.time()) // 30)
+            purpose = {"purpose": "agent"}
+            assert (await api.post(unlock, json=purpose)).status_code == 403
+            assert (await api.post(unlock, headers=csrf_headers, json=purpose)).json()[
+                "code"
+            ] == "reauthentication_required"
             assert (
-                await api.post(factor + "/confirm", headers=csrf_headers, json={"code": code})
+                await api.post("/v1/auth/reauth", headers=csrf_headers, json={"password": PASSWORD})
             ).status_code == 204
-            assert (
-                await api.post(factor + "/verify", headers=csrf_headers, json={"code": code})
-            ).status_code == 403
+            assert (await api.post(unlock, headers=csrf_headers, json=purpose)).status_code == 204
+            assert (await api.post("/v1/cloud-control/totp/enroll")).status_code == 404
             retained = await api.get("/v1/account/api-keys")
             assert retained.status_code == 200
             assert {entry["name"] for entry in retained.json()} == {"Retained key", "Revoked key"}

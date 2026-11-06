@@ -126,7 +126,7 @@ async def reauth(request: Request, session: SessionDep, body: ReauthIn):
     ) or not request.app.state.auth_attempts.allow(f"reauth:user:{ip}:{principal.user_id}", 5):
         raise HTTPException(429, detail={"code": "login_rate_limited"})
     if not await reauthenticate(session, principal, password=body.password, client_ip=ip):
-        raise HTTPException(401, detail={"code": "invalid_credentials"})
+        raise HTTPException(401, detail={"code": "invalid_credentials", "message": "密码不正确"})
     return Response(status_code=204)
 
 

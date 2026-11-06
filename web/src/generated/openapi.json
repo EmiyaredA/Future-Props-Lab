@@ -5949,10 +5949,6 @@
             "title": "Enabled",
             "type": "boolean"
           },
-          "enrolled": {
-            "title": "Enrolled",
-            "type": "boolean"
-          },
           "guacd_ready": {
             "title": "Guacd Ready",
             "type": "boolean"
@@ -5991,7 +5987,6 @@
           "enabled",
           "public_enabled",
           "public_desktop_vnc_only",
-          "enrolled",
           "guacd_ready",
           "screen_sharing_ready"
         ],
@@ -6039,8 +6034,9 @@
             "title": "Enabled",
             "type": "boolean"
           },
-          "enrolled": {
-            "title": "Enrolled",
+          "happier_available": {
+            "default": false,
+            "title": "Happier Available",
             "type": "boolean"
           },
           "host_label": {
@@ -6070,12 +6066,29 @@
           "desktop_configured",
           "desktop_authorized",
           "local",
-          "enrolled",
           "unlocked_until",
           "idle_minutes",
           "idle_revision"
         ],
         "title": "CloudStatus",
+        "type": "object"
+      },
+      "CloudUnlockRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "purpose": {
+            "enum": [
+              "agent",
+              "desktop"
+            ],
+            "title": "Purpose",
+            "type": "string"
+          }
+        },
+        "required": [
+          "purpose"
+        ],
+        "title": "CloudUnlockRequest",
         "type": "object"
       },
       "ColorRule": {
@@ -8610,19 +8623,6 @@
           }
         },
         "title": "EndpointStatus",
-        "type": "object"
-      },
-      "Enrollment": {
-        "properties": {
-          "secret": {
-            "title": "Secret",
-            "type": "string"
-          }
-        },
-        "required": [
-          "secret"
-        ],
-        "title": "Enrollment",
         "type": "object"
       },
       "ExecutionCatalog": {
@@ -18863,6 +18863,24 @@
           "assetId"
         ],
         "title": "HandoffOut",
+        "type": "object"
+      },
+      "HappierLaunch": {
+        "properties": {
+          "exchange_url": {
+            "title": "Exchange Url",
+            "type": "string"
+          },
+          "ticket": {
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "exchange_url",
+          "ticket"
+        ],
+        "title": "HappierLaunch",
         "type": "object"
       },
       "HistoryBlock": {
@@ -36415,25 +36433,6 @@
         "title": "ValidationReconcileOut",
         "type": "object"
       },
-      "VerificationCode": {
-        "properties": {
-          "code": {
-            "pattern": "^[0-9]{6}$",
-            "title": "Code",
-            "type": "string"
-          },
-          "desktop": {
-            "default": false,
-            "title": "Desktop",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "code"
-        ],
-        "title": "VerificationCode",
-        "type": "object"
-      },
       "VideoCapabilitiesOut": {
         "properties": {
           "audio_only": {
@@ -48069,6 +48068,27 @@
         ]
       }
     },
+    "/v1/cloud-control/happier/launch": {
+      "post": {
+        "operationId": "launch_happier_v1_cloud_control_happier_launch_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HappierLaunch"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Launch Happier",
+        "tags": [
+          "cloud-control"
+        ]
+      }
+    },
     "/v1/cloud-control/settings": {
       "get": {
         "operationId": "settings_view_v1_cloud_control_settings_get",
@@ -48150,14 +48170,14 @@
         ]
       }
     },
-    "/v1/cloud-control/totp/confirm": {
+    "/v1/cloud-control/unlock": {
       "post": {
-        "operationId": "confirm_v1_cloud_control_totp_confirm_post",
+        "operationId": "unlock_v1_cloud_control_unlock_post",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/VerificationCode"
+                "$ref": "#/components/schemas/CloudUnlockRequest"
               }
             }
           },
@@ -48178,62 +48198,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Confirm",
-        "tags": [
-          "cloud-control"
-        ]
-      }
-    },
-    "/v1/cloud-control/totp/enroll": {
-      "post": {
-        "operationId": "enroll_v1_cloud_control_totp_enroll_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Enrollment"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Enroll",
-        "tags": [
-          "cloud-control"
-        ]
-      }
-    },
-    "/v1/cloud-control/totp/verify": {
-      "post": {
-        "operationId": "verify_v1_cloud_control_totp_verify_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VerificationCode"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "204": {
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Verify",
+        "summary": "Unlock",
         "tags": [
           "cloud-control"
         ]

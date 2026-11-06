@@ -121,14 +121,18 @@ class SetupHost:
         )
         if result is None or not result.active:
             raise HTTPException(403, "cloud_setup_authority_ended")
-        return {"active": True, "enrolled": result.enrolled}
+        return {"active": True}
 
     async def settle(self, worker, lease, outcome):
         await self.match_lease(worker, lease, active=False)
         if outcome.status == "completed":
             try:
-                value = CloudSetup.model_validate(outcome.result)
-                if value.model_dump(mode="json") != outcome.result:
+                result = outcome.result.copy()
+                # Accept receipts written before the enrollment field was retired.
+                if isinstance(result.get("enrolled"), bool):
+                    del result["enrolled"]
+                value = CloudSetup.model_validate(result)
+                if value.model_dump(mode="json") != result:
                     raise ValueError("unexpected setup data")
             except (ValueError, ValidationError):
                 raise HTTPException(422, "cloud_setup_receipt_invalid") from None

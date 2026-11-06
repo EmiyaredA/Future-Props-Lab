@@ -11,6 +11,14 @@ class CliError(ValueError):
     pass
 
 
+async def read_control_output(stream, limit):
+    try:
+        await stream.readexactly(limit + 1)
+    except asyncio.IncompleteReadError as exc:
+        return exc.partial
+    raise CliError("CLI 输出超出限制")
+
+
 def environment():
     names = {
         "PATH",

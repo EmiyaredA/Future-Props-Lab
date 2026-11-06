@@ -1,6 +1,7 @@
 """Authorize the configured FPL Codex connection from the Mac terminal."""
 
 import argparse
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -24,9 +25,11 @@ def main():
     parser.add_argument("--device-auth", action="store_true")
     args = parser.parse_args()
     settings = get_cloud_settings()
-    enabled, executable, message = connection(settings, "codex")
-    if not enabled or not executable:
-        raise SystemExit(message or "请先在部署配置中指定 Codex CLI")
+    # Resolve the same executable as the enable flow before credentials exist.
+    login_settings = settings.model_copy(update={"fpl_code_agents_codex_enabled": True})
+    _, executable, message = connection(login_settings, "codex")
+    if not executable or not Path(executable).is_file() or not os.access(executable, os.X_OK):
+        raise SystemExit(message or "未找到可执行的 Codex CLI，请先安装或核对部署配置")
     profile = profile_path(settings.runtime_path)
     if profile != profile.resolve():
         raise SystemExit("FPL Codex 专用目录不能经过符号链接")

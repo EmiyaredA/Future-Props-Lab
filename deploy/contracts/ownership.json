@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "ad541271867353d0e44413b5e377609f73c13295d1dc9c75bccdbcde720cc1c2",
+  "openapi_sha256": "a6b056b560e402702584fd21e0e54f4818d2200bc37e6984e77f2d31f8dd936a",
   "operations": [
     {
       "service": "identity",
@@ -669,6 +669,12 @@
       "operation_id": "save_idle_v1_cloud_control_desktop_idle_put"
     },
     {
+      "service": "gateway",
+      "method": "POST",
+      "path": "/v1/cloud-control/happier/launch",
+      "operation_id": "launch_happier_v1_cloud_control_happier_launch_post"
+    },
+    {
       "service": "remote",
       "method": "GET",
       "path": "/v1/cloud-control/settings",
@@ -689,20 +695,8 @@
     {
       "service": "identity",
       "method": "POST",
-      "path": "/v1/cloud-control/totp/confirm",
-      "operation_id": "confirm_v1_cloud_control_totp_confirm_post"
-    },
-    {
-      "service": "identity",
-      "method": "POST",
-      "path": "/v1/cloud-control/totp/enroll",
-      "operation_id": "enroll_v1_cloud_control_totp_enroll_post"
-    },
-    {
-      "service": "identity",
-      "method": "POST",
-      "path": "/v1/cloud-control/totp/verify",
-      "operation_id": "verify_v1_cloud_control_totp_verify_post"
+      "path": "/v1/cloud-control/unlock",
+      "operation_id": "unlock_v1_cloud_control_unlock_post"
     },
     {
       "service": "agent-runtime",
@@ -5526,6 +5520,13 @@
       "dsh_executable": "agent-runtime",
       "pi_enabled": "agent-runtime",
       "pi_executable": "agent-runtime"
+    },
+    "happier": {
+      "admin_user_id": "gateway",
+      "origin": "gateway",
+      "listen_port": "gateway",
+      "relay_port": "gateway",
+      "oidc_client_secret": "gateway"
     },
     "visual_acceptance": {
       "model_owner_user_id": "models",

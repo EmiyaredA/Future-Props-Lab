@@ -10,7 +10,7 @@ from tempfile import TemporaryDirectory
 
 import yaml
 
-from .transport import CliError, _stop, environment, spawn_transport
+from .transport import CliError, _stop, environment, read_control_output, spawn_transport
 
 RESOURCES = Path(__file__).parent
 
@@ -38,10 +38,8 @@ async def control_output(executable, args, env, *, cwd=None):
     )
     try:
         async with asyncio.timeout(10):
-            output = await process.stdout.read(1024 * 1024 + 1)
+            output = await read_control_output(process.stdout, 1024 * 1024)
             await process.wait()
-        if len(output) > 1024 * 1024:
-            raise CliError("CLI 连接配置超出限制")
         return process.returncode, output
     finally:
         await _stop(process)
@@ -50,6 +48,49 @@ async def control_output(executable, args, env, *, cwd=None):
 def link_credentials(source, target):
     if source.is_file():
         target.symlink_to(source.resolve())
+
+
+def validate_pi_model_credentials(value):
+    if isinstance(value, dict):
+        api_key = value.get("apiKey")
+        headers = value.get("headers")
+        credentials = [api_key, *headers.values()] if isinstance(headers, dict) else [api_key]
+        if any(isinstance(item, str) and item.startswith("!") for item in credentials):
+            raise CliError("Pi 模型连接须使用静态凭据或环境变量，不能执行凭据命令")
+        for item in value.values():
+            validate_pi_model_credentials(item)
+    elif isinstance(value, list):
+        for item in value:
+            validate_pi_model_credentials(item)
+
+
+async def pi_auth_status(executable, args, env):
+    profile = Path(env["PI_CODING_AGENT_DIR"])
+    settings = read_json(profile / "settings.json")
+    provider = settings.get("defaultProvider")
+    if provider:
+        selectors = [("--provider", provider)]
+    else:
+        auth = read_json(profile / "auth.json")
+        models = read_json(profile / "models.json")
+        providers = models.get("providers", {})
+        if not isinstance(providers, dict):
+            raise CliError("Pi 模型供应商配置格式无效")
+        selectors = [
+            ("--provider", name) for name in sorted(auth.keys() | providers.keys()) if name
+        ]
+        if not selectors and settings.get("defaultModel"):
+            selectors = [("--model", settings["defaultModel"])]
+    invalid = False
+    async with asyncio.timeout(10):
+        for selector in selectors:
+            code, _ = await control_output(executable, [*args, *selector], env, cwd=profile)
+            if code == 0:
+                return 0
+            invalid = invalid or code != 1
+    if invalid:
+        raise CliError("无法读取 Pi 登录状态，请在 Pi 中核对供应商和模型配置")
+    return 1
 
 
 def connection_environment(config, env):
@@ -180,9 +221,16 @@ async def launch(kind, executable, root, tool_config):
             }
             safe["retry"] = {"enabled": False}
             (profile / "settings.json").write_text(json.dumps(safe))
+            auth = read_json(home / "auth.json")
+            for credential in auth.values():
+                key = credential.get("key") if isinstance(credential, dict) else None
+                if isinstance(key, str) and key.startswith("!"):
+                    raise CliError("Pi 登录凭据不能通过命令获取，请在 Pi 中重新登录")
+            models = read_json(home / "models.json")
+            validate_pi_model_credentials(models)
             for name in ("auth.json", "models.json"):
                 link_credentials(home / name, profile / name)
-            connection_environment(read_json(home / "models.json"), env)
+            connection_environment(models, env)
             env["PI_CODING_AGENT_DIR"] = str(profile)
             env["FPL_CLI_MCP_CONFIG"] = json.dumps(tool_config)
             args = [

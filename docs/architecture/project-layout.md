@@ -289,8 +289,10 @@ Assets 的 `backend/studio/assembly/independent/asset_library/maintenance.py` �
 独立 Amadeus 由 `backend/studio/apps/amadeus/` 装配，拥有六张对话、运行、消息、问题、动作和事件记录表。共享记录与恢复规则位于 `studio/apps/amadeus/storage/runs.py` 和 `storage/recovery.py`，兼容站在 `execution/website_runs.py` 绑定原 CLI 连接。 `skill_pins.py` 固定对话加载的 Skill 版本并校验来源原件，`studio/apps/integrations/amadeus_skill_archive.py` 装配受控的同账号快照，`studio/apps/amadeus/storage/skill_files.py` 按原路径读取固定版本文件。`native_host.py` 保存精确原生任务与回执，`studio/host/agent_execution/amadeus_worker.py` 通过专用回环入口核验本机 Finder 租约并探测脚本沙箱。`dialogue_runs.py` 持久化对话进度和工具审批，`studio/host/agent_execution/amadeus_dialogue.py` 拥有实际 CLI 连接与进程，`deploy/images/amadeus/` 锁定独立的工具 Schema 验证依赖。门户复用页面侧栏并按侧栏容器宽度布局。
 
 Remote 的 `backend/studio/apps/remote_desktop/` 拥有桌面偏好、短期连接票据与 WebSocket。 `studio/host/cloud_projection.py` 按归属发布 Mac 云控策略，`studio/config/cloud_projection.py` 核对当前提交和服务自己的 TOML 摘要。Remote 维护受认证的设置租约与结果，`studio/host/cloud_setup_worker.py` 在 Mac 按配置修订保存并发布投影。
-共享 `studio/apps/remote_desktop/transport/guacamole.py` 负责 Guacamole 协议，旧站与 Remote 分别注入自己的授权和连接端口。历史偏好由 `studio/apps/remote_desktop/preference_migration.py` 在回环维护入口导入，Identity 的 `credential_migration.py` 保留加密 TOTP 登记与归属会话。
+共享 `studio/apps/remote_desktop/transport/guacamole.py` 负责 Guacamole 协议，旧站与 Remote 分别注入自己的授权和连接端口。历史偏好由 `studio/apps/remote_desktop/preference_migration.py` 在回环维护入口导入，Identity 的 `credential_migration.py` 保留历史加密 TOTP 登记与归属会话。
 `deploy/remote.compose.yaml` 只装配私网桌面服务，另需显式选择 Guacamole 对端。Identity 提供限定到原请求的会话复核。
+
+兼容网站的 `assembly/website/happier.py` 装配云控启动凭证与 FPL 会话复核，`happier_ingress.py` 转发独立 HTTPS 浏览器入口和实时连接。单客户端 OIDC 规则归 Identity。 `deploy/happier.compose.yaml` 仅装配上游 Relay 与隔离 CLI Runner，`scripts/website/build_happier.py` 在固定上游 Web 构建中启用原生右侧栏默认值。
 
 Agents 的 `execution_http.py` 读取自有聊天记录并逐次复核 SSE 授权。共享的 `studio/apps/agent_workbench/execution/transcripts.py` 管理会话读回及中断状态。独立立即轮次由 `execution_turns.py` 协调租约，`use_cases/settle_turn.py` 通过 `storage/turn_settlement.py` 在一个短事务内核对账号、执行尝试及载荷并提交回执、轮次与队列暂停。`rules/turn_endings.py` 共用网站、独立执行与恢复的结束规则，迟到回执不覆盖已结束轮次；`studio/host/workbench_turn.py` 在 Mac 执行并提交回执，兼容站与独立服务共用 `turn_activity.py` 的活动投影。
 
@@ -479,7 +481,7 @@ Future-Props-Lab/
   `studio/contracts/tools/`。网站临时下载生命周期归 `apps/tools/video_downloads/local_jobs.py`，关闭时等待已接受任务；
   独立服务使用现有持久任务及回执。素材入库由 `assembly/website/video_library.py` 显式连接素材所有者，
   两种下载状态实现尚待后续统一端口，不因目录迁移视为完成。
-- `web/src/features/cloud-control/` 拥有云控两栏／三栏布局、远程画面与验证界面；文件阅读和命令展示仍由 `web/src/features/agent-workbench/` 拥有，通过显式阅读容器接入云控。Identity 的 `use_cases/cloud_factors.py` 与 `storage/cloud_factors.py` 共同拥有按账号的 TOTP；Remote Desktop 的 `use_cases/preferences.py` 与 `storage/preferences.py` 拥有空闲锁定偏好，`transport/guacamole.py` 拥有有界桌面协议与连接生命周期；可信本机配置探测归 `studio/host/deployment/cloud_setup.py`，网站组合入口归 `studio/assembly/website/cloud_control.py`。工作台仍可从 `/agents` 阅读已同步的原端会话。
+- `web/src/features/cloud-control/` 拥有云控两栏／三栏布局、远程画面与验证界面；文件阅读和命令展示仍由 `web/src/features/agent-workbench/` 拥有，通过显式阅读容器接入云控。Identity 的 `use_cases/cloud_unlock.py` 与 `storage/cloud_unlock.py` 负责按会话和用途授予云控权限；Remote Desktop 的 `use_cases/preferences.py` 与 `storage/preferences.py` 拥有空闲锁定偏好，`transport/guacamole.py` 拥有有界桌面协议与连接生命周期；可信本机配置探测归 `studio/host/deployment/cloud_setup.py`，网站组合入口归 `studio/assembly/website/cloud_control.py`。工作台仍可从 `/agents` 阅读已同步的原端会话。
   API、SSE 与后台采集同时检查 `cloud-control.access`，身份降级后保留原账号副本和检查点。
   当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。
 `web/src/features/applications/ApplicationCard.tsx` 拥有应用目录的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。
@@ -1049,7 +1051,7 @@ OpenAPI 导出只构造 HTTP 协议层。测试通过 `tests/website_test_suppor
 
 `assembly/website/account_provisioning.py` 注入兼容站模型目录初始化回调，仍与账号创建共用原事务；独立 Identity 使用持久目录事件。原 Console 模型聚合转发和平台协议聚合转发已移除。`platform_settings` 保持原表及已登记键分区，不归入账号私有状态。
 
-登录、注册与远程桌面的短期尝试窗口由每个应用显式构造 `runtime/http/rate_limit.AttemptLimiter`。同实例的协议适配与桌面连接共用该实例；桌面认证成功清除当前实例对应键，不影响其他应用。Cookie 安全属性和允许的请求来源在装配中绑定。窗口只限流，不代替数据库中的账号、Session 和 TOTP 授权事实。
+登录、注册与远程桌面的短期尝试窗口由每个应用显式构造 `runtime/http/rate_limit.AttemptLimiter`。同实例的协议适配与桌面连接共用该实例；桌面认证成功清除当前实例对应键，不影响其他应用。Cookie 安全属性和允许的请求来源在装配中绑定。窗口只限流，不代替数据库中的账号、Session 和云控授权事实。
 
 ## 自动化发现与开发者文档
 
@@ -1065,9 +1067,9 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 网站与独立装配共用会话、消息、审批、提问、运行记录与恢复实现；网站执行协调和独立租约协调
 仍分别适配当前执行方式，尚需后续统一业务端口，不能仅据此标记整个迁移完成。
 
-### 云控验证器的身份归属
+### 云控会话授权的身份归属
 
-`studio/contracts/identity/cloud_factors.py` 只定义登记与验证 DTO。`studio/apps/identity/use_cases/cloud_factors.py` 定义不可变快照、决策与原子存储端口；`storage/cloud_factors.py` 在独立短事务内复核账号会话、执行规则并提交。无效验证码的尝试次数也必须持久化；轮换同时撤销旧桌面授权，取消和写入失败整体回滚。`transport/website/cloud_totp.py` 由兼容站和独立 Identity 共用，只映射领域错误。装配显式提供加密器、时钟和随机源，未知提交响应不自动重试。
+`studio/contracts/identity/cloud_unlock.py` 定义解锁用途。`studio/apps/identity/use_cases/cloud_unlock.py` 定义密码重验时效和 Agent 授权期限。`storage/cloud_unlock.py` 在独立短事务内复核部署策略、活动管理员会话及登录后的重验时间，原子保存 Agent 解锁期限或公网桌面会话授权。`transport/website/cloud_unlock.py` 由兼容站和独立 Identity 共用，传递可信入口并映射领域错误。装配显式提供存储、策略读取器和时钟，未知提交响应不自动重试。历史加密验证器记录仅保留在凭据迁移中。
 
 `storage/cloud_access.py` 暂时保留原云控授权查询，其全局配置读取和工作台消费者仍属于后续待迁移部分；该批次不代表桌面、工作台和全部身份用例已解耦。
 

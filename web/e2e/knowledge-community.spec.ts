@@ -1,3 +1,4 @@
+import { proofStep } from "./proof-checkpoint";
 import { pickProjectMore } from "./thought-helpers";
 import { test, expect, type BrowserContext, type Page } from "@playwright/test";
 import fs from "node:fs/promises";
@@ -149,13 +150,10 @@ test("全局入口仅在库外显示，三类知识库保留返回入口和独�
     },
   ]) {
     await page.goto(resource.path);
-    const directory = page.getByRole("button", {
-      name: resource.name === "private" ? "笔记目录" : "目录",
-      exact: true,
-    });
     for (const width of [1600, 768, 390]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
-      if (width <= 1200) await directory.click();
+      if (width <= 1200)
+        await page.getByRole("button", { name: "目录", exact: true }).click();
       await expect(sidebar).toBeVisible();
       await expect(
         sidebar.getByRole("navigation", { name: "思绪工坊入口" }),
@@ -186,7 +184,7 @@ test("全局入口仅在库外显示，三类知识库保留返回入口和独�
       if (width <= 1200) await page.keyboard.press("Escape");
     }
     await page.reload();
-    await directory.click();
+    await page.getByRole("button", { name: "目录", exact: true }).click();
     const back = sidebar.getByRole("button", {
       name: resource.back,
       exact: true,
@@ -267,6 +265,7 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
     );
   }
   await page.goto(`/apps/thought-workshop/knowledge-bases/${kb.id}`);
+  await page.getByRole("button", { name: "全部文档", exact: true }).click();
   await pickProjectMore(page, "发布到知识社区");
   const publish = page.getByRole("alertdialog", {
     name: "发布到知识社区",
@@ -285,12 +284,17 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
   await choose(page, "新成员权限", "可管理");
   await publish.getByRole("button", { name: "添加", exact: true }).click();
   await capture(page, "publish-articles");
-  await test.step("发布选定文章并等待确认", async () => {
-    await publish
-      .getByRole("button", { name: "发布选定文章", exact: true })
-      .click();
-    await expect(publish).toBeHidden();
-  });
+  await proofStep(
+    info,
+    "发布选定文章并等待确认",
+    "提交发布后对话框关闭。",
+    async () => {
+      await publish
+        .getByRole("button", { name: "发布选定文章", exact: true })
+        .click();
+      await expect(publish).toBeHidden();
+    },
+  );
   const config = await (
     await owner.request.get(COMM + `/libraries/${kb.id}/publication`)
   ).json();
@@ -306,22 +310,29 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
     page.locator(".community-book").filter({ hasText: "创作手记" }),
   ).toBeVisible();
   await capture(page, "community-user-books");
-  await view.goto(url + `/documents/${notes[1].id}`);
-  await expect(
-    view.getByRole("heading", { name: notes[1].title, exact: true }),
-  ).toBeVisible();
-  await expect(
-    view.getByRole("button", { name: "编辑文档", exact: true }),
-  ).toHaveCount(0);
-  await expect(view.getByText("个人草稿", { exact: true })).toHaveCount(0);
-  await capture(view, "article-readonly");
-  await info.attach("访客只读视图", {
-    body: await view.screenshot(),
-    contentType: "image/png",
-  });
-  expect(
-    (await visitor.request.get(ROOT + `/notes/${notes[1].id}`)).status(),
-  ).toBe(404);
+  await proofStep(
+    info,
+    "检查访客只读权限",
+    "访客能阅读公开文章，不能编辑或读取私人原稿。",
+    async () => {
+      await view.goto(url + `/documents/${notes[1].id}`);
+      await expect(
+        view.getByRole("heading", { name: notes[1].title, exact: true }),
+      ).toBeVisible();
+      await expect(
+        view.getByRole("button", { name: "编辑文档", exact: true }),
+      ).toHaveCount(0);
+      await expect(view.getByText("个人草稿", { exact: true })).toHaveCount(0);
+      await capture(view, "article-readonly");
+      await info.attach("访客只读视图", {
+        body: await view.screenshot(),
+        contentType: "image/png",
+      });
+      expect(
+        (await visitor.request.get(ROOT + `/notes/${notes[1].id}`)).status(),
+      ).toBe(404);
+    },
+  );
   await page.goto(url + `/documents/${notes[1].id}`);
   await page
     .getByRole("button", { name: "社区文档更多操作", exact: true })
@@ -356,21 +367,30 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
   await expect(
     view.getByRole("textbox", { name: "笔记正文", exact: true }),
   ).toContainText("灵感清单.txt");
-  await test.step("授权编辑并核对写回原笔记", async () => {
-    await view
-      .getByRole("button", { name: "社区文档更多操作", exact: true })
-      .click();
-    await view.getByRole("menuitem", { name: "保存", exact: true }).click();
-    await expect(
-      view.getByRole("status").filter({ hasText: "已保存" }),
-    ).toBeVisible();
-    await capture(view, "article-editing");
-    const original = await (
-      await owner.request.get(ROOT + `/notes/${notes[1].id}`)
-    ).json();
-    expect(original.title).toBe("灵感采集与整理");
-    expect(JSON.stringify(original.document)).toContain("编辑者补充");
-  });
+  await proofStep(
+    info,
+    "授权编辑并核对写回原笔记",
+    "访客保存后，所有者读到修改后的标题与正文。",
+    async () => {
+      await view
+        .getByRole("button", { name: "社区文档更多操作", exact: true })
+        .click();
+      await view.getByRole("menuitem", { name: "保存", exact: true }).click();
+      await expect(
+        view.getByRole("status").filter({ hasText: "已保存" }),
+      ).toBeVisible();
+      await capture(view, "article-editing");
+      const original = await (
+        await owner.request.get(ROOT + `/notes/${notes[1].id}`)
+      ).json();
+      expect(original.title).toBe("灵感采集与整理");
+      expect(JSON.stringify(original.document)).toContain("编辑者补充");
+      await info.attach("授权访客保存后的文档", {
+        body: await view.screenshot(),
+        contentType: "image/png",
+      });
+    },
+  );
   await view.getByRole("button", { name: "返回阅读", exact: true }).click();
   await view
     .getByRole("button", { name: "社区文档更多操作", exact: true })
@@ -480,18 +500,27 @@ test("精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤�
     page.getByRole("alertdialog", { name: "发布到知识社区" }),
   ).toBeVisible();
   await capture(page, "withdraw-publication");
-  await test.step("撤回发布并验证访客失去访问权限", async () => {
-    await page
-      .getByRole("button", { name: "撤回整个知识库", exact: true })
-      .click();
-    await expect(
-      page.getByRole("alertdialog", { name: "发布到知识社区" }),
-    ).toBeHidden();
-    await view.reload();
-    await expect(
-      view.getByRole("alert").filter({ hasText: "不可访问" }),
-    ).toBeVisible();
-  });
+  await proofStep(
+    info,
+    "撤回发布并验证访客失去访问权限",
+    "撤回后原访客链接显示不可访问。",
+    async () => {
+      await page
+        .getByRole("button", { name: "撤回整个知识库", exact: true })
+        .click();
+      await expect(
+        page.getByRole("alertdialog", { name: "发布到知识社区" }),
+      ).toBeHidden();
+      await view.reload();
+      await expect(
+        view.getByRole("alert").filter({ hasText: "不可访问" }),
+      ).toBeVisible();
+      await info.attach("撤回后访客不可访问", {
+        body: await view.screenshot(),
+        contentType: "image/png",
+      });
+    },
+  );
   expect(errors).toEqual([]);
   await visitor.close();
 });

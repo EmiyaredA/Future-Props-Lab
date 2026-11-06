@@ -197,6 +197,7 @@ test("Agent workbench APP/CLI reading, filters, source consent and responsive th
     localStorage.setItem("future_props_theme", "light"),
   );
   await page.goto("/cloud-control");
+  await page.getByRole("button", { name: "Agent 工作台", exact: true }).click();
   await page.getByRole("button", { name: "会话历史", exact: true }).click();
   await page.getByRole("button", { name: "查看完整工作台" }).click();
   await expect(page).toHaveURL(/\/agents$/);

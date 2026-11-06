@@ -546,6 +546,7 @@ async def test_import_source_rejects_another_accounts_integration():
         session.add_all(
             [account_record(id=owner, name=owner), account_record(id=foreign, name=foreign)]
         )
+        await session.flush()
         session.add(
             ToolApiIntegration(
                 id="foreign-source",

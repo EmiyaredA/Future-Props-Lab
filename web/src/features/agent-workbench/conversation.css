@@ -550,3 +550,231 @@ button.aw-link:disabled {
     display: none;
   }
 }
+
+/* Keep disclosure hover local and code independent of the transcript width. */
+.aw-tool > summary {
+  width: fit-content;
+  max-width: 100%;
+  border-radius: 7px;
+  padding: 6px 8px;
+  gap: 8px;
+  transition:
+    color 120ms,
+    background-color 120ms;
+}
+.aw-tool > summary:hover {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.aw-tool > summary > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.aw-tool-group > summary > svg:first-child {
+  opacity: 0.55;
+}
+.aw-tool-content {
+  margin-inline-start: 9px;
+  padding: 3px 0 6px 10px;
+}
+.aw-tool-content .aw-tool-content {
+  margin-inline-start: 0;
+  padding: 5px 0 8px;
+  border: 0;
+}
+.aw-activity-row {
+  flex-wrap: wrap;
+  gap: 0 8px;
+  padding: 0;
+}
+.aw-activity-main {
+  flex: 1 1 100%;
+}
+.aw-activity-file {
+  margin: 0 8px 6px;
+}
+.aw-code-block {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  margin: 4px 0 10px;
+  min-width: 0;
+}
+.aw-code-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  border-bottom: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--muted);
+}
+.aw-code-meta {
+  margin-inline-start: auto;
+  font-size: 10px;
+}
+.aw-code-toolbar button {
+  display: grid;
+  place-items: center;
+  padding: 4px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.aw-code-toolbar button:hover,
+.aw-code-toolbar button[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.aw-tool .aw-code-block pre {
+  margin: 0;
+  padding: 10px 12px;
+  max-height: 320px;
+  border: 0;
+  border-radius: 0;
+  white-space: pre;
+  overflow-wrap: normal;
+  font:
+    12px/1.65 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  tab-size: 2;
+}
+.aw-tool .aw-code-block pre.is-wrapped {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+:is(.aw-code-block, .aw-source-code) .hljs-keyword,
+:is(.aw-code-block, .aw-source-code) .hljs-literal {
+  color: var(--accent-text);
+}
+:is(.aw-code-block, .aw-source-code) .hljs-string {
+  color: var(--ok);
+}
+:is(.aw-code-block, .aw-source-code) .hljs-comment {
+  color: var(--muted);
+}
+:is(.aw-code-block, .aw-source-code) .hljs-title,
+:is(.aw-code-block, .aw-source-code) .hljs-built_in {
+  color: var(--blue);
+}
+.aw-code-feedback {
+  display: block;
+  padding: 3px 9px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.aw-file-link {
+  border: 0;
+  border-radius: 4px;
+  padding: 1px 3px;
+  background: var(--surface-soft);
+  color: var(--accent-text);
+  font: inherit;
+  text-align: start;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.aw-file-link:hover {
+  background: var(--accent-soft);
+}
+.aw-file-references {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0 10px;
+  font:
+    11px/1.6 ui-monospace,
+    monospace;
+}
+.aw-history-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  container: aw-history / inline-size;
+}
+.aw-history-transcript {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+.aw-history-content.has-source > .aw-source-pane {
+  flex: 0 0 48%;
+  border-inline-start: 1px solid var(--border);
+}
+.aw-source-caption {
+  margin: 0;
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+}
+@container aw-history (width < 650px) {
+  .aw-history-content.has-source > .aw-history-transcript {
+    display: none;
+  }
+  .aw-history-content.has-source > .aw-source-pane {
+    flex: 1;
+    border: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aw-tool > summary {
+    transition: none;
+  }
+}
+.aw-source-actions {
+  padding: 0 12px 12px;
+}
+.aw-code-block code,
+.aw-source-line code {
+  font: inherit;
+}
+.aw-code-block pre {
+  margin: 0;
+  overflow: auto;
+  max-height: 320px;
+  padding: 10px 12px;
+  font:
+    12px/1.65 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  white-space: pre;
+}
+.aw-code-block pre.is-wrapped {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.aw-source-code .hljs-number,
+.aw-source-code .hljs-type {
+  color: var(--blue);
+}
+.aw-source-code .hljs-attr,
+.aw-source-code .hljs-attribute,
+.aw-source-code .hljs-selector-class {
+  color: var(--accent-text);
+}
+.aw-source-code .hljs-tag,
+.aw-source-code .hljs-name {
+  color: var(--accent-text);
+}
+.aw-source-code .hljs-addition {
+  color: var(--ok);
+}
+.aw-source-code .hljs-deletion {
+  color: var(--danger);
+}

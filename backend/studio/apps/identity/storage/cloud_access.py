@@ -1,4 +1,4 @@
-"""Explicitly enabled host access, with password reauthentication and per-account TOTP."""
+"""Explicitly enabled host access and password-verified session grants."""
 
 import os
 import time
@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import select
 
 from studio.apps.identity.storage.models.accounts import AuthSession, User
-from studio.apps.identity.storage.models.cloud import CloudFactor, CloudUnlock
+from studio.apps.identity.storage.models.cloud import CloudUnlock
 from studio.config.settings import get_cloud_settings
 from studio.contracts.identity.cloud_authority import TICKET_SECONDS as TICKET_SECONDS
 from studio.runtime.time import utc_now
@@ -43,8 +43,8 @@ def require_enabled(principal, *, local, desktop=False, settings=None):
         raise HTTPException(403, "该账号或入口未启用云控操作")
 
 
-def session_query(principal):
-    now = utc_now()
+def session_query(principal, *, now=None):
+    now = now if now is not None else utc_now()
     return (
         select(AuthSession.id)
         .join(User, User.id == AuthSession.user_id)
@@ -78,9 +78,9 @@ async def desktop_authorized(db, principal, *, local):
 async def unlock_expiry(db, principal, *, local, settings=None):
     if not _allowed(settings or get_cloud_settings(), principal, local=local, desktop=False):
         return 0
-    sessions = session_query(principal)
-    if not local:
-        sessions = sessions.where(AuthSession.reauthenticated_at > AuthSession.created_at)
+    sessions = session_query(principal).where(
+        AuthSession.reauthenticated_at > AuthSession.created_at
+    )
     row = await db.scalar(
         select(CloudUnlock.expires_at).where(
             CloudUnlock.session_id.in_(sessions),
@@ -92,10 +92,4 @@ async def unlock_expiry(db, principal, *, local, settings=None):
 
 async def require_unlocked(db, principal, *, local, settings=None):
     if not await unlock_expiry(db, principal, local=local, settings=settings):
-        raise HTTPException(403, "请先验证密码及动态验证码")
-
-
-async def enrolled(db, owner):
-    return bool(
-        await db.scalar(select(CloudFactor.secret).where(CloudFactor.owner_user_id == owner))
-    )
+        raise HTTPException(403, "请先验证管理员密码")

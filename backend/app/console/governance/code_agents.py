@@ -51,7 +51,10 @@ async def resolve_connection(agent_id, *, settings=None, probe=True, app_server=
 async def catalog(*, can_enable=False):
     settings = get_cloud_settings()
     connections = await asyncio.gather(
-        *(inspect_connection(settings, identity) for identity in DEFINITIONS)
+        *(
+            inspect_connection(settings, identity, probe_disabled=can_enable)
+            for identity in DEFINITIONS
+        )
     )
     if not can_enable:
         for item in connections:

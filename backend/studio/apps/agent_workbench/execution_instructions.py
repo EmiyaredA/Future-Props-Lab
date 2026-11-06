@@ -59,7 +59,6 @@ class ExecutionInstructions:
             row.status != "running"
             or current is None
             or current.local != local
-            or current.factor_epoch != grant.factor_epoch
             or not self.steerable(turn)
         ):
             raise HTTPException(409, "当前轮无法接收插入指令")

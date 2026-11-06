@@ -59,11 +59,11 @@ def create_app(
     preferences = DesktopPreferences(PreferenceRecords(database.sessions))
     identity = LiveAuthorization(service="remote", credential=credential, transport=transport)
 
-    async def current_access(principal, _local, assertion, epoch):
+    async def current_access(principal, _local, assertion):
         current = await identity.cloud_authority(
             assertion=assertion, method="GET", path=DESKTOP_SOCKET
         )
-        if current is None or not current.desktop_authorized or current.factor_epoch != epoch:
+        if current is None or not current.desktop_authorized:
             return None
         return (await preferences.read(owner=principal.user_id)).idle_minutes
 

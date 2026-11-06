@@ -40,9 +40,8 @@ class CloudSetupWorker:
 
     async def authority(self, lease):
         result = await self.transport.post("authorize", {"lease": lease.model_dump(mode="json")})
-        if result.get("active") is not True or type(result.get("enrolled")) is not bool:
+        if result.get("active") is not True:
             raise LeaseEnded("云控设置授权已失效")
-        return result["enrolled"]
 
     async def execute(self, lease):
         if lease.operation not in OPERATIONS:
@@ -50,18 +49,17 @@ class CloudSetupWorker:
         if lease.operation == READ and lease.payload:
             raise ProtocolConflict("云控设置读取不得携带修改参数")
         try:
-            enrolled = await self.authority(lease)
+            await self.authority(lease)
             owner = lease.owner_user_id
             settings = Settings(_config_file=self.config, _read_environment=False)
             assert_setup_account(settings, owner)
             if lease.operation == SAVE:
                 body = CloudSetupUpdate.model_validate(lease.payload)
-                self.require_factor(body, enrolled)
                 await self.save(lease, owner, body)
                 await asyncio.to_thread(self.synchronize)
             raw = config_bytes(self.config)
             settings = Settings(_config_file=self.config, _read_environment=False)
-            result = await read_snapshot(self.config, raw, settings, enrolled)
+            result = await read_snapshot(self.config, raw, settings)
             return NativeOutcome(status="completed", result=result.model_dump(mode="json"))
         except LeaseEnded:
             return NativeOutcome(
@@ -74,11 +72,6 @@ class CloudSetupWorker:
                 status="failed", error_code=ERRORS[exc.status_code], message=str(exc.detail)
             )
 
-    @staticmethod
-    def require_factor(body, enrolled):
-        if body.public_enabled and not enrolled:
-            raise HTTPException(409, "请先在本机登记验证器")
-
     async def save(self, lease, owner, body):
         edit = setup_edit(owner, body)
         loop = asyncio.get_running_loop()
@@ -86,8 +79,7 @@ class CloudSetupWorker:
         def update(document):
             # The CAS lock is held here; confirm the exact browser request just
             # before applying the authorized fields.
-            confirmed = asyncio.run_coroutine_threadsafe(self.authority(lease), loop).result(5)
-            self.require_factor(body, confirmed)
+            asyncio.run_coroutine_threadsafe(self.authority(lease), loop).result(5)
             edit(document)
 
         await asyncio.to_thread(replace_config, self.config, body.revision, update)

@@ -962,7 +962,6 @@ class ClipMergeOperation(WireModel):
 
 class CloudSetup(WireModel):
     enabled: bool = Field(default=..., alias='enabled')
-    enrolled: bool = Field(default=..., alias='enrolled')
     guacd_ready: bool = Field(default=..., alias='guacd_ready')
     host_label: str = Field(default=..., alias='host_label')
     public_desktop_vnc_only: bool = Field(default=..., alias='public_desktop_vnc_only')
@@ -979,12 +978,15 @@ class CloudStatus(WireModel):
     desktop_authorized: bool = Field(default=..., alias='desktop_authorized')
     desktop_configured: bool = Field(default=..., alias='desktop_configured')
     enabled: bool = Field(default=..., alias='enabled')
-    enrolled: bool = Field(default=..., alias='enrolled')
+    happier_available: bool = Field(default=False, alias='happier_available')
     host_label: str = Field(default=..., alias='host_label')
     idle_minutes: int = Field(default=..., alias='idle_minutes')
     idle_revision: int = Field(default=..., alias='idle_revision')
     local: bool = Field(default=..., alias='local')
     unlocked_until: int = Field(default=..., alias='unlocked_until')
+
+class CloudUnlockRequest(WireModel):
+    purpose: Literal['agent', 'desktop'] = Field(default=..., alias='purpose')
 
 class ColorRule(WireModel):
     color: str = Field(default='#7c89c9', alias='color')
@@ -1412,9 +1414,6 @@ class EndpointStatus(WireModel):
     last_checked_at: str = Field(default='', alias='last_checked_at')
     phase: Literal['off', 'starting', 'ready', 'connecting', 'reconnecting', 'failed'] = Field(default='off', alias='phase')
     url: str = Field(default='', alias='url')
-
-class Enrollment(WireModel):
-    secret: str = Field(default=..., alias='secret', repr=False)
 
 class ExecutionCatalog(WireModel):
     agents: list[AgentChoice] = Field(default=..., alias='agents')
@@ -2918,6 +2917,10 @@ class HandoffIn(WireModel):
 class HandoffOut(WireModel):
     asset_id: str = Field(default=..., alias='assetId')
     project_id: str = Field(default=..., alias='projectId')
+
+class HappierLaunch(WireModel):
+    exchange_url: str = Field(default=..., alias='exchange_url')
+    ticket: str = Field(default=..., alias='ticket')
 
 class HistoryBlock(WireModel):
     call_id: str | None = Field(default=None, alias='call_id')
@@ -5684,10 +5687,6 @@ class ValidationReconcileOut(WireModel):
     released: bool = Field(default=..., alias='released')
     status: Literal['completed', 'not-started'] = Field(default=..., alias='status')
 
-class VerificationCode(WireModel):
-    code: str = Field(default=..., alias='code')
-    desktop: bool = Field(default=False, alias='desktop')
-
 class VideoCapabilitiesOut(WireModel):
     audio_only: bool = Field(default=False, alias='audio_only')
     default_generate_audio: bool = Field(default=True, alias='default_generate_audio')
@@ -6739,6 +6738,7 @@ ClipMergeOperation.model_rebuild()
 CloudSetup.model_rebuild()
 CloudSetupUpdate.model_rebuild()
 CloudStatus.model_rebuild()
+CloudUnlockRequest.model_rebuild()
 ColorRule.model_rebuild()
 CommunityArticle.model_rebuild()
 CommunityDirectory.model_rebuild()
@@ -6810,7 +6810,6 @@ DuplicateOut.model_rebuild()
 DuplicateSnapshot.model_rebuild()
 EndpointState.model_rebuild()
 EndpointStatus.model_rebuild()
-Enrollment.model_rebuild()
 ExecutionCatalog.model_rebuild()
 Experience.model_rebuild()
 ExportCreateIn.model_rebuild()
@@ -7016,6 +7015,7 @@ GenerationTaskOut.model_rebuild()
 HTTPValidationError.model_rebuild()
 HandoffIn.model_rebuild()
 HandoffOut.model_rebuild()
+HappierLaunch.model_rebuild()
 HistoryBlock.model_rebuild()
 HistoryPresentation.model_rebuild()
 IdlePreference.model_rebuild()
@@ -7401,7 +7401,6 @@ ValidationAttemptListOut.model_rebuild()
 ValidationAttemptOut.model_rebuild()
 ValidationError.model_rebuild()
 ValidationReconcileOut.model_rebuild()
-VerificationCode.model_rebuild()
 VideoCapabilitiesOut.model_rebuild()
 VideoDownloadAssetOut.model_rebuild()
 VideoDownloadDepsOut.model_rebuild()

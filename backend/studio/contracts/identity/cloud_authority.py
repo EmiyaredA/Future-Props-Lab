@@ -66,8 +66,6 @@ class CloudAuthority(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
     active: bool
     enabled: bool = False
-    enrolled: bool = False
     unlocked_until: int = Field(default=0, ge=0)
     desktop_configured: bool = False
     desktop_authorized: bool = False
-    factor_epoch: str | None = None

@@ -27,7 +27,6 @@ class TurnGrant:
     path: str
     session_id: str
     local: bool
-    factor_epoch: str | None
     expires: float
 
 
@@ -55,21 +54,16 @@ class ExecutionTurns:
         if value is None:
             raise HTTPException(503, "workbench_authority_unavailable")
         if not value.active or not value.enabled or value.unlocked_until <= time():
-            raise HTTPException(403, "请先验证密码及动态验证码")
-        return value
+            raise HTTPException(403, "请先验证管理员密码")
 
     async def issue_grant(self, assertion, path, local, session_id):
-        proof = await self.authority(assertion, path)
-        return TurnGrant(
-            assertion, path, session_id, local, proof.factor_epoch, monotonic() + MAX_TURN_SECONDS
-        )
+        await self.authority(assertion, path)
+        return TurnGrant(assertion, path, session_id, local, monotonic() + MAX_TURN_SECONDS)
 
     async def verify_grant(self, grant):
         if grant.expires <= monotonic():
             raise HTTPException(410, "workbench_execution_lease_ended")
-        proof = await self.authority(grant.assertion, grant.path)
-        if proof.factor_epoch != grant.factor_epoch:
-            raise HTTPException(403, "workbench_authority_revoked")
+        await self.authority(grant.assertion, grant.path)
 
     def stage_job(self, db, turn, chat, root, grant):
         payload = TurnScope(
@@ -267,14 +261,9 @@ class ExecutionTurns:
         if turn_records.approval_status(row, approval) is None:
             raise HTTPException(404, "审批不存在")
         await db.rollback()
-        proof = await self.authority(assertion, decision_path(chat, turn, approval))
+        await self.authority(assertion, decision_path(chat, turn, approval))
         grant = self.grants.get((owner, turn))
-        if (
-            grant is None
-            or grant.local != local
-            or grant.expires <= monotonic()
-            or grant.factor_epoch != proof.factor_epoch
-        ):
+        if grant is None or grant.local != local or grant.expires <= monotonic():
             raise HTTPException(409, "审批已处理或失效")
         await turn_records.begin(db)
         await turn_records.record_decision(db, owner, chat, turn, approval, approved)

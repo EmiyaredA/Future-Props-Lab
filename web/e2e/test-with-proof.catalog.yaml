@@ -1,0 +1,88 @@
+version: 1
+features:
+  - id: thought
+    title: 思绪工坊
+    icon: document
+    criteria:
+      - id: thought.persist
+        title: 富文本保存、刷新与备份恢复
+        steps: [创建并编辑笔记, 保存并刷新, 导出并重新导入备份]
+        expected: 标题、正文和表格在刷新后保留，导出的知识库可以导回。
+        tests:
+          [
+            {
+              executor: browser,
+              file: web/e2e/thought-workshop.spec.ts,
+              title: rich notes persist and archives import,
+            },
+          ]
+        evidence: [steps, screenshot, trace]
+        reviewRequired: true
+      - id: thought.publish
+        title: 逐篇发布、跨账号编辑授权与撤回
+        steps: [发布选定文章, 验证访客权限, 授权并保存, 撤销权限并撤回发布]
+        expected: 私人正文仍受保护，授权编辑写回原笔记，撤销或撤回后受限操作被拒绝。
+        tests:
+          [
+            {
+              executor: browser,
+              file: web/e2e/knowledge-community.spec.ts,
+              title: 精选书架、逐篇发布、跨空间授权编辑、收藏导出和撤回,
+            },
+          ]
+        evidence: [steps, screenshot, trace]
+        reviewRequired: true
+  - id: visual
+    title: 视觉工坊
+    icon: browser
+    criteria:
+      - id: visual.upload
+        title: 创建视觉项目并上传图片
+        steps: [新建项目, 上传图片, 刷新并检查素材]
+        expected: 项目进入画布，上传的图片在刷新后仍可从项目素材库访问。
+        tests:
+          [
+            {
+              executor: browser,
+              file: web/e2e/visual-workshop-real-smoke.spec.ts,
+              title: 真实前后端可通过 UI 创建视觉项目并上传项目图片,
+            },
+          ]
+        evidence: [steps, screenshot, trace]
+        reviewRequired: true
+      - id: visual.generate
+        title: 真实供应商生成与任务恢复
+        expected: 生成任务得到供应商结果，产物归档并可在重开后访问。
+        tests: []
+  - id: presentation
+    title: 演示工坊
+    icon: workflow
+    criteria:
+      - id: presentation.persist
+        title: 编辑演示、重开与放映
+        steps: [编辑文字与备注, 保存并重开, 放映并翻页]
+        expected: 重开后文字和备注保留，放映可以翻页且不显示备注。
+        tests:
+          [
+            {
+              executor: browser,
+              file: web/e2e/presentation-workshop.spec.ts,
+              title: 创建、编辑文字、备注和页面，保存重开及放映,
+            },
+          ]
+        evidence: [steps, screenshot, trace]
+        reviewRequired: true
+      - id: presentation.export
+        title: 导出并检查 PPTX
+        steps: [启动实际导出, 验证下载反馈, 读取 PPTX 幻灯片内容]
+        expected: 生成与下载状态可见，文件包含有效的 PPTX 结构和默认封面文字。
+        tests:
+          [
+            {
+              executor: browser,
+              file: web/e2e/presentation-export-feedback.spec.ts,
+              title: "真实 PPTX 下载期间持续显示进度，完成后明确提示下载位置入口",
+            },
+          ]
+        evidence: [steps, screenshot, trace, file]
+        reviewRequired: true

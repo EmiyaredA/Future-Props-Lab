@@ -153,14 +153,19 @@ async def test_remote_settings_commit_live_scopes_and_replay_receipt(
         read = await submit("GET")
         assert read.status_code == 200 and read.json()["host_label"] == "Before", read.text
         assert read.json()["guacd_ready"]
-        body = {"revision": read.json()["revision"], "host_label": "After", "public_enabled": False}
-        requires_factor = await submit("PUT", json={**body, "public_enabled": True})
-        assert requires_factor.status_code == 409
+        body = {"revision": read.json()["revision"], "host_label": "After", "public_enabled": True}
+        reauth = await case.browser.post(
+            "/v1/auth/reauth",
+            json={"password": PASSWORD},
+            headers={"Origin": ORIGIN, "X-CSRF-Token": case.csrf},
+        )
+        assert reauth.status_code == 204, reauth.text
         bridge.lose_receipt = True
         saved = await submit("PUT", json=body)
         assert saved.status_code == 200 and saved.json()["host_label"] == "After", saved.text
         await worker.poll_once()
         assert not list(worker.receipts.pending())
+        assert saved.json()["public_enabled"] and "enrolled" not in saved.json()
         assert "After" in config.read_text() and saved.json()["revision"] != body["revision"]
         assert projection.read()["fpl_cloud_control_host_label"] == "After"
         status = await api.get(

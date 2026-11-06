@@ -42,12 +42,14 @@ function hasDesktopPixels(display: Display, sample: CanvasRenderingContext2D) {
 }
 
 export function RemoteDesktop({
+  paneId,
   status,
   visible,
   onUnlock,
   onSetup,
   onChange,
 }: {
+  paneId: string;
   status?: CloudStatus;
   visible: boolean;
   onUnlock: () => void;
@@ -367,9 +369,11 @@ export function RemoteDesktop({
 
   return (
     <section
+      id={paneId}
       className="cloud-pane cloud-remote"
       ref={pane}
       aria-label="远程桌面"
+      hidden={!visible}
     >
       <header className="cloud-pane-bar">
         <h2>

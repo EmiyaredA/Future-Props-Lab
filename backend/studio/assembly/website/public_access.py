@@ -31,6 +31,7 @@ class WebAccess:
         self.profile = self.store.profile()
         self.static_root = static_root
         self.shared_static = shared_static
+        self.local_https_enabled = bool(settings.fpl_happier_origin)
         self.authenticate = authenticate
         self.local = EndpointStatus(url=f"http://127.0.0.1:{self.profile.local_port}")
         self.public = EndpointStatus(url=self.profile.origin)
@@ -74,7 +75,7 @@ class WebAccess:
         )
 
     async def __call__(self, app, scope, receive, send):
-        if self.local.phase != "ready" or not self.public_enabled:
+        if self.local.phase != "ready" or not (self.public_enabled or self.local_https_enabled):
             if scope["type"] == "websocket":
                 await send({"type": "websocket.close", "code": 1008})
             else:

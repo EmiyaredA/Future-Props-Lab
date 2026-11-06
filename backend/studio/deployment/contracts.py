@@ -67,8 +67,10 @@ def operation_owner(path):
     parts = path.strip("/").split("/")
     if len(parts) < 2 or parts[0] != "v1":
         raise ValueError("不是业务 API")
-    if path.startswith("/v1/cloud-control/totp/"):
+    if path == "/v1/cloud-control/unlock":
         return "identity"
+    if path == "/v1/cloud-control/happier/launch":
+        return "gateway"
     if path == "/v1/file-storage/open-folder":
         return "tools"
     if path in {
@@ -219,6 +221,7 @@ CONFIG_GROUP_OWNERS = {
     "storage": "per-service",
     "security": "per-service",
     "remote_web": "gateway",
+    "happier": "gateway",
     "integrations": "integrations",
 }
 CONFIG_FIELD_OWNERS = {

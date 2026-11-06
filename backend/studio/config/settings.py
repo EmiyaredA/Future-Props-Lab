@@ -121,6 +121,11 @@ class Settings(BaseSettings):
     fpl_cloud_control_vnc_port: int = Field(default=5900, ge=1, le=65535)
     fpl_cloud_control_vnc_password: str = Field(default="", repr=False)
     fpl_cloud_control_projects: dict[str, CloudProject] = Field(default_factory=dict)
+    fpl_happier_admin_user_id: str = ""
+    fpl_happier_origin: str = ""
+    fpl_happier_listen_port: int = Field(default=28082, ge=1024, le=65535)
+    fpl_happier_relay_port: int = Field(default=3005, ge=1024, le=65535)
+    fpl_happier_oidc_client_secret: str = Field(default="", repr=False)
     fpl_code_agents_codex_enabled: bool | None = None
     fpl_code_agents_codex_executable: str = ""
     fpl_code_agents_claude_enabled: bool | None = None
@@ -183,6 +188,26 @@ class Settings(BaseSettings):
                 raise ValueError("远程 Web 必须配置精确 HTTPS 来源")
         if self.fpl_remote_web_root and not Path(self.fpl_remote_web_root).is_absolute():
             raise ValueError("远程 Web 构建目录必须为绝对路径")
+        if self.fpl_happier_origin:
+            happier = urlsplit(self.fpl_happier_origin)
+            if (
+                not self.fpl_remote_web_enabled
+                or happier.scheme != "https"
+                or not happier.hostname
+                or happier.username is not None
+                or self.fpl_happier_origin != f"https://{happier.netloc}"
+                or any(char.isspace() for char in happier.netloc)
+                or happier.hostname == urlsplit(self.fpl_remote_web_origin).hostname
+                or not self.fpl_happier_admin_user_id
+                or len(self.fpl_happier_oidc_client_secret) < 32
+                or self.fpl_happier_listen_port
+                in {
+                    self.fpl_website_port,
+                    self.fpl_remote_web_port,
+                    self.fpl_happier_relay_port,
+                }
+            ):
+                raise ValueError("Happier 需要独立 HTTPS 来源、管理员、OIDC 密钥和独立监听端口")
         try:
             Fernet(self.fpl_secrets_key.encode("ascii"))
         except Exception as exc:

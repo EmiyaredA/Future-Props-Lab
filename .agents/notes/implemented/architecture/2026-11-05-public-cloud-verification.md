@@ -2,6 +2,8 @@
 
 Status: implemented
 
+验证器要求由[云控使用管理员密码解锁](../simplification/2026-11-06-cloud-password-unlock.md)取代。
+
 ## Problem
 
 主线的公网仅桌面配置会直接使用登录和 VNC 密码。当前仓库指令要求公网远程桌面和工作台执行均经过账号授权、密码重验与 TOTP。

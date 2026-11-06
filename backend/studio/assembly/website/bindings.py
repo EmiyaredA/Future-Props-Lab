@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import secrets
-import time
 from functools import partial
 
 from app.console.governance.code_agent_connections import enable_connection
@@ -22,13 +20,12 @@ from studio.apps.director_desk.agent_session import DirectorEditorSessions
 from studio.apps.director_desk.storage.file_paths import DirectorStorage
 from studio.apps.gateway.storage.website_resources import WebsiteResources
 from studio.apps.gateway.use_cases.resource_links import ResourceLinks
-from studio.apps.identity.storage.cloud_factors import FactorRecords
+from studio.apps.identity.storage.cloud_unlock import CloudUnlockRecords
 from studio.apps.identity.storage.workbench_access import WorkbenchStreamAuthorization
 from studio.apps.identity.transport.database_auth import (
     authenticate_database_request,
     authenticate_database_websocket,
 )
-from studio.apps.identity.use_cases.cloud_factors import CloudFactors
 from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.model_service.admission.bindings import AdmissionBindings
 from studio.apps.model_service.admission.website_queue import admit_generation_tasks
@@ -103,11 +100,8 @@ def bind_components(app, settings, database):
     app.state.auth_attempts = AttemptLimiter()
     app.state.invitation_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.assistant_approvals = ApprovalBroker()
-    app.state.cloud_factors = CloudFactors(
-        FactorRecords(database.sessions, clock=utc_now),
-        cipher=SecretCipher(settings.fpl_secrets_key),
-        clock=lambda: time.time(),
-        secret_bytes=secrets.token_bytes,
+    app.state.cloud_unlocks = CloudUnlockRecords(
+        database.sessions, clock=utc_now, settings_reader=get_cloud_settings
     )
     app.state.model_template_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.model_decrypt = app.state.model_template_cipher.decrypt

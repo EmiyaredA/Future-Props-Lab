@@ -13,8 +13,8 @@ from sqlalchemy import update
 
 from app.capabilities.agents.cli.catalog import connection, inspect_connection
 from app.capabilities.agents.cli.codex_profile import profile_path
-from app.console.governance.code_agents import resolve_connection
 from studio.apps.amadeus.storage.models import AmadeusConversation
+from app.console.governance.code_agents import resolve_connection
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.runtime.database.operation_receipts import OperationError
@@ -311,10 +311,27 @@ async def test_cli_defaults_for_active_accounts_and_preserves_owner_boundary():
 
 
 @pytest.mark.usefixtures("configured")
-async def test_cli_host_paths_and_enable_require_local_admin(monkeypatch):
+async def test_cli_host_paths_and_enable_require_local_admin(tmp_path, monkeypatch):
     admin, *_ = await client_account(admin=True)
     regular, *_ = await client_account()
     enabled = []
+    claude = tmp_path / "claude"
+    logged_in = tmp_path / "claude-logged-in"
+    claude.write_text(
+        f"#!{sys.executable}\n"
+        "import sys\n"
+        "from pathlib import Path\n"
+        "if '--version' in sys.argv: print('Claude Code 2.1.259')\n"
+        f"elif not Path({str(logged_in)!r}).exists(): raise SystemExit(1)\n"
+    )
+    claude.chmod(0o700)
+    settings = get_settings()
+    monkeypatch.setattr(settings, "fpl_code_agents_claude_enabled", False)
+    monkeypatch.setattr(settings, "fpl_code_agents_claude_executable", str(claude))
+    for identity in ("opencode", "dsh", "pi"):
+        monkeypatch.setattr(
+            settings, f"fpl_code_agents_{identity}_executable", str(tmp_path / identity)
+        )
 
     async def enable(_request, agent_id):
         enabled.append(agent_id)
@@ -328,6 +345,11 @@ async def test_cli_host_paths_and_enable_require_local_admin(monkeypatch):
         public_catalog = (await admin.get("/v1/code-agents")).json()
         assert not public_catalog["can_enable"]
         assert not any(item["executable"] for item in public_catalog["items"])
+        public_claude = next(
+            item for item in public_catalog["items"] if item["id"] == "claude-code"
+        )
+        assert public_claude["status"] == "disabled"
+        assert not public_claude["version"]
         assert (await admin.post("/v1/code-agents/codex/enable")).status_code == 403
         for client, can_enable in ((regular, False), (admin, True)):
             async with httpx.AsyncClient(
@@ -339,6 +361,24 @@ async def test_cli_host_paths_and_enable_require_local_admin(monkeypatch):
                 local_catalog = (await browser.get("/v1/code-agents")).json()
                 assert local_catalog["can_enable"] is can_enable
                 assert any(item["executable"] for item in local_catalog["items"]) is can_enable
+                local_claude = next(
+                    item for item in local_catalog["items"] if item["id"] == "claude-code"
+                )
+                assert not local_claude["enabled"]
+                assert not local_claude["available"]
+                assert local_claude["status"] == ("not_authenticated" if can_enable else "disabled")
+                if can_enable:
+                    assert local_claude["version"] == "2.1.259"
+                    logged_in.touch()
+                    response = await browser.post("/v1/code-agents/detect")
+                    assert response.status_code == 200, response.text
+                    checked = next(
+                        item for item in response.json()["items"] if item["id"] == "claude-code"
+                    )
+                    assert checked["status"] == "ready_to_enable"
+                    assert not checked["enabled"]
+                    assert not checked["available"]
+                    assert not settings.fpl_code_agents_claude_enabled
                 response = await browser.post("/v1/code-agents/codex/enable")
                 assert response.status_code == (204 if can_enable else 403), response.text
     assert enabled == ["codex"]

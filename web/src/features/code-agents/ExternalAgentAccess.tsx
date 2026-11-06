@@ -1,15 +1,17 @@
 import { useId, useState } from "react";
-import { Check, ChevronDown, Copy, Link2 } from "lucide-react";
+import { Check, ChevronDown, Copy } from "lucide-react";
 
-const clients = [
-  {
-    id: "codex",
-    label: "Codex · TOML",
+const clients = {
+  codex: {
+    name: "Codex",
+    profile: "codex",
+    format: "TOML",
     text: '[mcp_servers.future_props_lab]\ncommand = "fpl"\nargs = ["--profile", "codex", "mcp", "serve"]',
   },
-  {
-    id: "claude",
-    label: "Claude Code · JSON",
+  "claude-code": {
+    name: "Claude Code",
+    profile: "claude",
+    format: "JSON",
     text: JSON.stringify(
       {
         mcpServers: {
@@ -23,108 +25,103 @@ const clients = [
       2,
     ),
   },
-];
+};
 
-export function ExternalAgentAccess() {
+export function ExternalAgentAccess({
+  agentId,
+}: {
+  agentId: keyof typeof clients;
+}) {
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState("");
+  const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
   const id = useId();
-  const copy = async (key: string, text: string) => {
+  const client = clients[agentId];
+  const copy = async () => {
     setCopyError("");
     try {
-      await navigator.clipboard.writeText(text);
-      setCopied(key);
+      await navigator.clipboard.writeText(client.text);
+      setCopied(true);
     } catch {
-      setCopyError("复制失败，请选择配置内容手动复制");
+      setCopied(false);
+      setCopyError("复制失败，请选择配置内容手动复制。");
     }
   };
+
   return (
-    <section
-      className="code-agent-section code-agent-external"
-      aria-labelledby={`${id}-title`}
-    >
-      <div className="code-agent-section-heading">
-        <div>
-          <h2 id={`${id}-title`}>
-            <Link2 size={22} aria-hidden />
-            外部客户端接入
-          </h2>
-          <p>让本机 CLI 连接已授权的 FPL 项目。</p>
-        </div>
-        <div className="code-agent-external-actions">
-          <button
-            type="button"
-            className="btn"
-            aria-expanded={open}
-            aria-controls={`${id}-config`}
-            onClick={() => setOpen(!open)}
-          >
-            {open ? "收起配置" : "展开配置"}
-            <ChevronDown
-              size={16}
-              aria-hidden
-              className={open ? "is-expanded" : undefined}
-            />
-          </button>
-        </div>
+    <>
+      <p>
+        如果你在 FPL 外运行 {client.name}，可通过 MCP 访问已授权的 FPL 项目。
+      </p>
+      <div className="code-agent-step-actions">
+        <button
+          type="button"
+          className="btn code-agent-config-toggle"
+          aria-expanded={open}
+          aria-controls={id}
+          onClick={() => setOpen(!open)}
+        >
+          {open ? "收起 MCP 配置" : "展开 MCP 配置"}
+          <ChevronDown
+            size={14}
+            aria-hidden
+            className={open ? "is-expanded" : undefined}
+          />
+        </button>
       </div>
-      {open && (
-        <div id={`${id}-config`} className="code-agent-external-body">
-          <p>在网站账号设置中创建 API 密钥，再为各客户端保存独立连接配置。</p>
-          <ol>
-            <li>
-              在 Mac 终端运行{" "}
-              <code>
-                fpl --profile codex connect --url http://127.0.0.1:9000
-              </code>
-              ；Claude Code 使用独立 profile。
-            </li>
-            <li>
-              按提示安全输入密钥；只读或读写能力由密钥和账号权限共同决定。
-            </li>
-            <li>
-              将对应配置加入客户端，再调用 operations 核对操作和资源版本。
-            </li>
-          </ol>
-          <div className="code-agent-client-grid">
-            {clients.map((item) => (
-              <div className="code-agent-snippet" key={item.id}>
-                <div>
-                  <h3>{item.label}</h3>
-                  <button
-                    type="button"
-                    className="code-agent-copy"
-                    aria-label={`复制 ${item.id} MCP 配置`}
-                    onClick={() => void copy(item.id, item.text)}
-                  >
-                    {copied === item.id ? (
-                      <Check size={16} aria-hidden />
-                    ) : (
-                      <Copy size={16} aria-hidden />
-                    )}
-                  </button>
-                </div>
-                <pre>{item.text}</pre>
-              </div>
-            ))}
+      <div id={id} hidden={!open} className="code-agent-external-body">
+        <ol>
+          <li>在网站账号设置中创建 Management API Key。</li>
+          <li>
+            将下方命令中的「FPL
+            网站地址」替换为实际地址，在终端运行并按提示输入密钥。
+            <code className="code-agent-connect-command">
+              {`fpl --profile ${client.profile} connect --url "<FPL 网站地址>"`}
+            </code>
+          </li>
+          <li>
+            将下方配置加入 {client.name}，再调用 MCP 的 <code>operations</code>{" "}
+            核对可用操作和资源版本。
+          </li>
+        </ol>
+        <div className="code-agent-snippet">
+          <div>
+            <h5>
+              {client.name} · {client.format}
+            </h5>
+            <button
+              type="button"
+              className="code-agent-copy code-agent-copy-command"
+              aria-label={`复制 ${client.name} MCP 配置`}
+              onClick={() => void copy()}
+            >
+              {copied ? (
+                <Check size={16} aria-hidden />
+              ) : (
+                <Copy size={16} aria-hidden />
+              )}
+              <span>复制配置</span>
+            </button>
           </div>
-          {copied && (
-            <p className="code-agent-notice" role="status">
-              {copied === "codex" ? "Codex" : "Claude Code"} 配置已复制
-            </p>
-          )}
-          {copyError && (
-            <p className="code-agent-error" role="alert">
-              {copyError}
-            </p>
-          )}
-          <p className="code-agent-muted">
-            客户端授权沿用账号设置中的 API 密钥列表，可随时撤销。使用随 App
-            提供的 fpl；若终端未配置 PATH，请替换为实际可执行文件的绝对路径。
-          </p>
+          <pre tabIndex={0} aria-label={`${client.name} MCP 配置示例`}>
+            <code>{client.text}</code>
+          </pre>
         </div>
-      )}
-    </section>
+        {copied && (
+          <p className="code-agent-notice" role="status">
+            {client.name} 配置已复制
+          </p>
+        )}
+        {copyError && (
+          <p className="code-agent-error" role="alert">
+            {copyError}
+          </p>
+        )}
+        <p>
+          读写能力由密钥和账号权限共同决定，可在账号设置撤销密钥。如果终端找不到
+          <code> fpl</code>，请在命令和配置中使用其绝对路径。
+        </p>
+      </div>
+    </>
   );
 }

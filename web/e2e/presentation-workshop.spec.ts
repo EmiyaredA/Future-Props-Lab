@@ -1,3 +1,4 @@
+import { proofStep } from "./proof-checkpoint";
 import { expect, test, type Page } from "@playwright/test";
 import {
   newDeck,
@@ -127,35 +128,49 @@ test("创建、编辑文字、备注和页面，保存重开及放映", async ({
   await canvas.getByText("在此输入文字", { exact: true }).dblclick();
   await editor.fill("第二页内容");
   await page.keyboard.press("Escape");
-  await test.step("保存重开，核对文字和备注", async () => {
-    await save(page);
-    await page.reload();
-    await expect(
-      canvas.getByText("中文输入与 Native PPTX", { exact: true }),
-    ).toBeVisible();
-    await page.getByRole("button", { name: /演示者备注/ }).click();
-    await expect(page.getByRole("textbox", { name: "演示者备注" })).toHaveValue(
-      "这段备注应保存并导出。",
-    );
-  });
-  await test.step("开始放映并核对翻页", async () => {
-    await page.getByRole("button", { name: "从头放映", exact: true }).click();
-    const show = page.getByRole("dialog", { name: "幻灯片放映" });
-    await expect(
-      show.getByText("中文输入与 Native PPTX", { exact: true }),
-    ).toBeVisible();
-    await expect(show.getByRole("textbox", { name: "演示者备注" })).toHaveCount(
-      0,
-    );
-    await page.keyboard.press("ArrowRight");
-    await expect(show.getByText("第二页内容", { exact: true })).toBeVisible();
-    await info.attach("放映第二页", {
-      body: await page.screenshot(),
-      contentType: "image/png",
-    });
-    await page.keyboard.press("Escape");
-    await expect(show).toHaveCount(0);
-  });
+  await proofStep(
+    info,
+    "保存重开，核对文字和备注",
+    "重开后幻灯片文字和演示者备注仍然保留。",
+    async () => {
+      await save(page);
+      await page.reload();
+      await expect(
+        canvas.getByText("中文输入与 Native PPTX", { exact: true }),
+      ).toBeVisible();
+      await page.getByRole("button", { name: /演示者备注/ }).click();
+      await expect(
+        page.getByRole("textbox", { name: "演示者备注" }),
+      ).toHaveValue("这段备注应保存并导出。");
+      await info.attach("重开后保留的文字与备注", {
+        body: await page.screenshot(),
+        contentType: "image/png",
+      });
+    },
+  );
+  await proofStep(
+    info,
+    "开始放映并核对翻页",
+    "放映可翻到第二页，且不显示演示者备注。",
+    async () => {
+      await page.getByRole("button", { name: "从头放映", exact: true }).click();
+      const show = page.getByRole("dialog", { name: "幻灯片放映" });
+      await expect(
+        show.getByText("中文输入与 Native PPTX", { exact: true }),
+      ).toBeVisible();
+      await expect(
+        show.getByRole("textbox", { name: "演示者备注" }),
+      ).toHaveCount(0);
+      await page.keyboard.press("ArrowRight");
+      await expect(show.getByText("第二页内容", { exact: true })).toBeVisible();
+      await info.attach("放映第二页", {
+        body: await page.screenshot(),
+        contentType: "image/png",
+      });
+      await page.keyboard.press("Escape");
+      await expect(show).toHaveCount(0);
+    },
+  );
 });
 test("图形移动、缩放、旋转、锁定与撤销", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });

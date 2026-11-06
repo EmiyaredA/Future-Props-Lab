@@ -11,8 +11,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @contextlib.asynccontextmanager
-async def local_frontend(app, enabled):
-    if not enabled:
+async def loopback_listener(app, port):
+    if port is None:
         yield
         return
     import uvicorn
@@ -21,7 +21,7 @@ async def local_frontend(app, enabled):
 
     with socket.socket() as listener:
         listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        listener.bind(("127.0.0.1", 3000))
+        listener.bind(("127.0.0.1", port))
         server = BrowserServer(
             uvicorn.Config(
                 app,
@@ -36,12 +36,22 @@ async def local_frontend(app, enabled):
             while not server.started:
                 if task.done():
                     await task
-                    raise RuntimeError("本机前端监听启动失败")
+                    raise RuntimeError(f"本机监听启动失败（端口 {port}）")
                 await asyncio.sleep(0.05)
             yield
         finally:
             server.should_exit = True
             await task
+
+
+@contextlib.asynccontextmanager
+async def happier_listener(app, settings):
+    if app.state.happier is None or app.state.storage_upgrade_required:
+        yield
+        return
+    ingress = app.state.happier.ingress()
+    async with ingress.client, loopback_listener(ingress, settings.fpl_happier_listen_port):
+        yield
 
 
 async def authenticate_browser(scope, receive, *, sessions):
@@ -104,8 +114,14 @@ def create_app():
 
     @contextlib.asynccontextmanager
     async def lifespan(application):
-        async with original_lifespan(application) as state, local_frontend(application, shared):
+        async with (
+            original_lifespan(application) as state,
+            loopback_listener(application, 3000 if shared else None),
+            happier_listener(application, settings),
+        ):
             try:
+                if app.state.happier is not None and not app.state.storage_upgrade_required:
+                    await access.action("local_start")
                 if settings.fpl_website_public_enabled:
                     try:
                         await access.action("public_start")

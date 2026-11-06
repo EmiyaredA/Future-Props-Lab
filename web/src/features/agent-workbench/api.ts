@@ -1,5 +1,18 @@
 import type { components } from "@generated/api";
 import { api, unwrap } from "@platform/api/client";
+import type { FileReference } from "./fileReferences";
+
+export const getHistorySource = async (
+  id: string,
+  target: FileReference,
+  signal?: AbortSignal,
+) =>
+  unwrap(
+    await api.GET("/v1/agent-workbench/sessions/{session_id}/source", {
+      params: { path: { session_id: id }, query: target },
+      signal,
+    }),
+  );
 
 export type Source = components["schemas"]["WorkbenchSourceOut"];
 export type Conversation = components["schemas"]["WorkbenchSessionOut"];

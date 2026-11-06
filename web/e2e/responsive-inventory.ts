@@ -5,7 +5,7 @@
 // 本机头像菜单的访问面板与公网隐藏边界由 website.spec.ts 覆盖。
 // 已移除空间治理与公开空间入口。
 // 模型目录、协议类型连接树与编辑弹窗由 model-catalog.spec.ts 补充明暗主题及手机检查。
-// 模型与智能体统一入口、键盘切换、授权矩阵由 code-agents.spec.ts 覆盖 390/768/1280/1600px 与明暗主题。
+// 模型与智能体统一入口、键盘切换和接入向导由 code-agents.spec.ts 覆盖 390/768/1280/1600px 与明暗主题。
 // 官方技术文档图、放大阅读和个人全屏画板由 technical-knowledge.spec.ts 覆盖 390/768/1600 宽度与明暗主题。
 import type { AppPage } from "../src/app/routes";
 

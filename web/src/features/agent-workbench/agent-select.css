@@ -1,0 +1,47 @@
+.workbench-agent-select .custom-select-menu {
+  padding: 5px;
+  box-shadow: 0 10px 30px rgb(0 0 0 / 14%);
+}
+.workbench-agent-select .custom-select-menu button {
+  position: relative;
+  min-height: 38px;
+  padding: 7px 25px 7px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.workbench-agent-select .custom-select-menu button > span {
+  gap: 9px;
+}
+.workbench-agent-select .custom-select-menu button:disabled {
+  opacity: 1;
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.workbench-agent-select .custom-select-menu button[aria-selected="true"] {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.workbench-agent-select
+  .custom-select-menu
+  button[aria-selected="true"]::after {
+  position: absolute;
+  inset: 50% 11px auto auto;
+  width: 7px;
+  height: 4px;
+  border: solid currentColor;
+  border-width: 0 0 1.5px 1.5px;
+  transform: translateY(-65%) rotate(-45deg);
+  content: "";
+}
+.workbench-agent-select .custom-select-menu button:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: -2px;
+}
+.workbench-agent-select .custom-select-menu small {
+  padding-inline-start: 27px;
+  color: var(--muted);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}

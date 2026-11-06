@@ -15,8 +15,14 @@ def send(value):
 if "--version" in sys.argv:
     print("fake-native 9.9.9")
     raise SystemExit
-if sys.argv[1:3] in (["auth", "list"], ["auth", "check"]):
+if sys.argv[1:4] == ["--pure", "auth", "list"]:
+    assert os.environ["OPENCODE_DISABLE_MODELS_FETCH"] == "true"
+    print("Credentials", flush=True)
+    time.sleep(0.1)
     print("1 credential")
+    raise SystemExit
+if sys.argv[1:3] == ["auth", "check"]:
+    assert sys.argv[3:] == ["--json", "--no-refresh", "--provider", "fixture"]
     raise SystemExit
 assert "FPL_SECRETS_KEY" not in os.environ
 assert "FPL_STUDIO_TOKEN" not in os.environ

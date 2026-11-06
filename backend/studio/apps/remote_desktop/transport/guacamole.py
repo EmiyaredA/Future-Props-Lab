@@ -21,6 +21,9 @@ from studio.contracts.identity.cloud_authority import (
 MAX_INSTRUCTION = 16 * 1024 * 1024
 MAX_DESKTOP_FRAME = 24 * 1024 * 1024
 LARGE_DESKTOP_FRAME = 64 * 1024
+FIRST_IMAGE_BUFFER_SECONDS = 2
+IMAGE_BUFFER_SECONDS = 0.25
+GUACD_KEEPALIVE_SECONDS = 5
 COMPRESSIBLE_IMAGES = {"image/png", "image/webp", "image/jpeg"}
 IMAGE_CHUNK = 8000
 log = logging.getLogger("uvicorn.error")
@@ -161,14 +164,30 @@ class DesktopInput:
 @dataclass
 class DesktopTransfer:
     image_chunks: int = 0
+    upstream_chars: int = 0
     bytes_sent: int = 0
     sync_sent: int = 0
     sync_received: int = 0
+    browser_pings: int = 0
     keepalives: int = 0
+    last_image_at: float | None = None
+    last_sync_at: float | None = None
+    buffer_expiries: int = 0
+    max_image_processing: float = 0
+    upstream_end: str = ""
+
+
+async def keep_guacd_alive(writer, transfer):
+    # guacd times out its own input stream. A delayed browser response or
+    # blocked WebSocket send must not stop this loopback heartbeat.
+    while True:
+        await asyncio.sleep(GUACD_KEEPALIVE_SECONDS)
+        writer.write(instruction("nop"))
+        await writer.drain()
+        transfer.keepalives += 1
 
 
 async def browser_input(socket, writer, inputs, transfer):
-    last_keepalive = inputs.clock()
     while True:
         message = await socket.receive_text()
         if not message or len(message) > 8192:
@@ -181,22 +200,16 @@ async def browser_input(socket, writer, inputs, transfer):
                 raise ValueError("Incomplete desktop input")
             (opcode, *args), end = parsed
             if opcode == "" and len(args) == 2 and args[0] == "ping":
+                transfer.browser_pings += 1
                 await socket.send_text(message[start:end])
-                now = inputs.clock()
-                if now - last_keepalive >= 5:
-                    # The tunnel can answer pings while the renderer is still
-                    # receiving its first image and has no frame to acknowledge.
-                    writer.write(instruction("nop"))
-                    last_keepalive = now
             elif opcode == "fpl_release" and not args:
                 inputs.release(writer)
-            elif opcode in {"ack", "sync", "mouse", "key", "nop", "disconnect"}:
+            elif opcode == "disconnect" and not args:
+                return
+            elif opcode in {"ack", "sync", "mouse", "key", "nop"}:
                 active |= inputs.track(opcode, args)
                 writer.write(message[start:end].encode())
                 transfer.sync_received += opcode == "sync"
-                transfer.keepalives += opcode == "nop"
-                if opcode == "nop":
-                    last_keepalive = inputs.clock()
             else:
                 raise ValueError("Desktop input opcode denied")
             start = end
@@ -299,6 +312,17 @@ class PublicDesktopImages:
         self.pending = []
         self.size = 0
 
+    def flush(self):
+        pending, self.pending = self.pending, []
+        self.first = False
+        self.size = 0
+        return pending
+
+    async def flush_incomplete(self):
+        # Keep unfinished streams byte-for-byte intact. Complete tiles can still
+        # be compressed, even when guacd has not sent the frame's sync.
+        return await asyncio.to_thread(compact_desktop_frame, self.flush())
+
     async def output(self, fields, raw):
         if self.passthrough:
             if fields[0] == "sync":
@@ -308,18 +332,13 @@ class PublicDesktopImages:
             return [raw]
         self.size += len(raw)
         if self.size > MAX_DESKTOP_FRAME:
-            self.first = False
             self.passthrough = fields[0] != "sync"
-            self.size = 0
-            pending, self.pending = self.pending, []
-            return [*[message for _, message in pending], raw]
+            return [*[message for _, message in self.flush()], raw]
         self.pending.append((fields, raw))
         if fields[0] != "sync":
             return []
         compact = self.first or self.size >= LARGE_DESKTOP_FRAME
-        self.first = False
-        self.size = 0
-        pending, self.pending = self.pending, []
+        pending = self.flush()
         if not compact:
             return [message for _, message in pending]
         return await asyncio.to_thread(compact_desktop_frame, pending)
@@ -327,15 +346,52 @@ class PublicDesktopImages:
 
 async def browser_output(socket, reader, owner, ticket, settings, transfer, *, local, attempts):
     first_frame = True
-    deadline = asyncio.get_running_loop().time() + 10
+    clock = asyncio.get_running_loop().time
+    first_sync_deadline = clock() + 10
+    buffer_deadline = None
     images = None if local else PublicDesktopImages()
+
+    async def send(messages):
+        for message in messages:
+            await socket.send_text(message)
+            transfer.bytes_sent += len(message)
+
     while True:
-        if first_frame:
-            async with asyncio.timeout_at(deadline):
+        deadline = first_sync_deadline if first_frame else None
+        if buffer_deadline is not None:
+            deadline = min(deadline, buffer_deadline) if deadline is not None else buffer_deadline
+        try:
+            if deadline is None:
                 fields, raw = await reader.next()
-        else:
-            fields, raw = await reader.next()
+            else:
+                if clock() >= deadline:
+                    raise TimeoutError
+                async with asyncio.timeout_at(deadline):
+                    fields, raw = await reader.next()
+        except TimeoutError:
+            if buffer_deadline is None or deadline != buffer_deadline:
+                transfer.upstream_end = "guacd_first_sync_timeout"
+                raise
+            transfer.buffer_expiries += 1
+            started = clock()
+            messages = await images.flush_incomplete()
+            transfer.max_image_processing = max(transfer.max_image_processing, clock() - started)
+            await send(messages)
+            buffer_deadline = None
+            continue
+        except (EOFError, OSError, ValueError) as error:
+            transfer.upstream_end = "guacd_read_" + type(error).__name__
+            raise
+        transfer.upstream_chars += len(raw)
+        if fields[0] in {"blob", "png", "jpeg", "webp"}:
+            transfer.image_chunks += 1
+            transfer.last_image_at = clock()
         if fields[0] in {"error", "disconnect", "require", "argv", "msg"}:
+            transfer.upstream_end = "guacd_" + fields[0]
+            if fields[0] == "error" and len(fields) >= 3:
+                status = fields[2]
+                if status.isascii() and status.isdecimal() and len(status) <= 5:
+                    transfer.upstream_end += "_" + status
             reason = upstream_error(fields)
             if (
                 first_frame
@@ -346,15 +402,23 @@ async def browser_output(socket, reader, owner, ticket, settings, transfer, *, l
             ):
                 reason = "desktop_password_invalid"
             return reason
-        if first_frame and fields[0] == "sync":
-            ticket.password = ""
-            attempts.clear(f"cloud-vnc:{owner}")
-            first_frame = False
+        if fields[0] == "sync":
+            transfer.last_sync_at = clock()
+            if first_frame:
+                ticket.password = ""
+                attempts.clear(f"cloud-vnc:{owner}")
+                first_frame = False
+        started = clock()
         messages = await images.output(fields, raw) if images else [raw]
-        for message in messages:
-            await socket.send_text(message)
-            transfer.bytes_sent += len(message)
-        transfer.image_chunks += fields[0] in {"blob", "png", "jpeg", "webp"}
+        if images and images.pending:
+            if buffer_deadline is None:
+                limit = FIRST_IMAGE_BUFFER_SECONDS if images.first else IMAGE_BUFFER_SECONDS
+                buffer_deadline = started + limit
+        else:
+            buffer_deadline = None
+        if fields[0] == "sync":
+            transfer.max_image_processing = max(transfer.max_image_processing, clock() - started)
+        await send(messages)
         transfer.sync_sent += fields[0] == "sync"
 
 
@@ -378,6 +442,10 @@ class DesktopTicket:
     expiry: asyncio.TimerHandle
 
 
+class DesktopAccessUnavailable(RuntimeError):
+    """The authorization store could not establish current access."""
+
+
 class DesktopConnection:
     def __init__(self, *, settings, access, connect_upstream, attempts):
         self.attempts = attempts
@@ -389,8 +457,8 @@ class DesktopConnection:
         self.active = None
 
     @staticmethod
-    def scope(principal, local, epoch):
-        return principal.user_id, principal.session_id, local, epoch
+    def scope(principal, local):
+        return principal.user_id, principal.session_id, local
 
     def discard(self, token):
         ticket = self.tickets.pop(token, None)
@@ -398,8 +466,8 @@ class DesktopConnection:
             ticket.expiry.cancel()
         return ticket
 
-    def issue(self, principal, local, password, *, epoch=None):
-        scope = self.scope(principal, local, epoch)
+    def issue(self, principal, local, password):
+        scope = self.scope(principal, local)
         for token, ticket in list(self.tickets.items()):
             if ticket.scope == scope:
                 self.discard(token)
@@ -411,33 +479,32 @@ class DesktopConnection:
         self.tickets[digest] = DesktopTicket(scope, password, expiry)
         return token
 
-    def revoke(self, owner):
-        for token, ticket in list(self.tickets.items()):
-            if ticket.scope[0] == owner:
-                self.discard(token)
+    def update_idle(self, owner):
         if self.active and self.active[0] == owner:
             self.active[1].set()
 
-    def update_idle(self, owner):
-        if self.active and self.active[0] == owner:
-            self.active[2].set()
-
-    async def connect(self, socket, principal, local, *, proof=None, context=None, epoch=None):
+    async def connect(self, socket, principal, local, *, proof=None, context=None):
         digest = (
             proof
             if proof is not None
             else desktop_ticket_digest(socket.cookies.get(DESKTOP_COOKIE, ""))
         )
         ticket = self.tickets.get(digest)
-        if ticket is None or ticket.scope != self.scope(principal, local, epoch):
+        if ticket is None or ticket.scope != self.scope(principal, local):
             await socket.close(4403)
             return
         self.discard(digest)
 
         async def check():
-            return await self.access(principal, local, context, epoch)
+            return await self.access(principal, local, context)
 
-        if await check() is None:
+        try:
+            minutes = await check()
+        except DesktopAccessUnavailable:
+            log.warning("Desktop connection rejected: authorization store unavailable")
+            await socket.close(1013)
+            return
+        if minutes is None:
             await socket.close(4403)
             return
         await socket.accept(subprotocol="guacamole")
@@ -454,10 +521,10 @@ class DesktopConnection:
         started = clock()
         inputs = DesktopInput(clock)
         transfer = DesktopTransfer()
-        revoked = asyncio.Event()
         changed = asyncio.Event()
-        self.active = (principal.user_id, revoked, changed)
+        self.active = (principal.user_id, changed)
         reason = None
+        stage = "guacd_handshake"
         writer = None
         tasks = []
         try:
@@ -466,39 +533,52 @@ class DesktopConnection:
                 stream, writer = await self.connect_upstream(settings)
                 reader = GuacdReader(stream)
                 await handshake(reader, writer, settings, ticket.password, local=local)
-            if revoked.is_set() or await check() is None:
+            heartbeat = asyncio.create_task(
+                keep_guacd_alive(writer, transfer), name="guacd_keepalive"
+            )
+            tasks.append(heartbeat)
+            stage = "authorization"
+            if await check() is None:
                 reason = "desktop_authorization_required"
                 return
             inputs.last_activity = inputs.clock()
-            watcher = asyncio.create_task(watch_access(inputs, changed, check))
-            control = asyncio.create_task(revoked.wait())
-            tasks = [
-                asyncio.create_task(browser_input(socket, writer, inputs, transfer)),
-                asyncio.create_task(
-                    browser_output(
-                        socket,
-                        reader,
-                        principal.user_id,
-                        ticket,
-                        settings,
-                        transfer,
-                        local=local,
-                        attempts=self.attempts,
-                    )
-                ),
-                watcher,
-                control,
-            ]
-            done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            reason = (
-                "desktop_authorization_required"
-                if control in done
-                else next((task.result() for task in done if task is not tasks[0]), None)
+            tasks.extend(
+                [
+                    asyncio.create_task(
+                        browser_input(socket, writer, inputs, transfer), name="browser_input"
+                    ),
+                    asyncio.create_task(
+                        browser_output(
+                            socket,
+                            reader,
+                            principal.user_id,
+                            ticket,
+                            settings,
+                            transfer,
+                            local=local,
+                            attempts=self.attempts,
+                        ),
+                        name="browser_output",
+                    ),
+                    asyncio.create_task(watch_access(inputs, changed, check), name="authorization"),
+                ]
             )
+            stage = "relay"
+            done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            finished = next(task for task in tasks if task in done)
+            stage = finished.get_name()
+            reason = finished.result()
         except WebSocketDisconnect:
-            pass
-        except (OSError, TimeoutError, EOFError, ValueError):
+            stage = "browser_disconnected"
+        except DesktopAccessUnavailable:
+            stage = "authorization_storage_unavailable"
             reason = "desktop_unavailable"
+        except (OSError, TimeoutError, EOFError, ValueError) as error:
+            stage += "_" + type(error).__name__
+            reason = "desktop_unavailable"
+        except asyncio.CancelledError:
+            stage = "server_cancelled"
+            raise
         finally:
             ticket.password = ""
             self.active = None
@@ -506,17 +586,41 @@ class DesktopConnection:
                 task.cancel()
             if tasks:
                 await asyncio.gather(*tasks, return_exceptions=True)
-            if not local and (reason == "desktop_unavailable" or transfer.sync_received == 0):
-                log.warning(
-                    "Public desktop ended after %.1fs: reason=%s, sent_chars=%d, image_chunks=%d, "
-                    "sync_sent=%d, sync_received=%d, keepalives=%d",
-                    clock() - started,
+            if reason == "desktop_unavailable" or not local:
+                ended = clock()
+                clean = (
+                    reason is None
+                    and stage == "browser_input"
+                    and transfer.sync_received > 0
+                    and transfer.buffer_expiries == 0
+                )
+                level = log.info if clean else log.warning
+                level(
+                    "Desktop ended after %.1fs: local=%s, stage=%s, upstream_end=%s, reason=%s, "
+                    "upstream_chars=%d, sent_chars=%d, image_chunks=%d, "
+                    "sync_sent=%d, sync_received=%d, browser_pings=%d, keepalives=%d, "
+                    "last_image_ago_s=%s, last_sync_ago_s=%s, "
+                    "buffer_expiries=%d, max_image_processing_ms=%.1f",
+                    ended - started,
+                    local,
+                    stage,
+                    transfer.upstream_end or "-",
                     reason or "connection_closed",
+                    transfer.upstream_chars,
                     transfer.bytes_sent,
                     transfer.image_chunks,
                     transfer.sync_sent,
                     transfer.sync_received,
+                    transfer.browser_pings,
                     transfer.keepalives,
+                    "-"
+                    if transfer.last_image_at is None
+                    else f"{ended - transfer.last_image_at:.2f}",
+                    "-"
+                    if transfer.last_sync_at is None
+                    else f"{ended - transfer.last_sync_at:.2f}",
+                    transfer.buffer_expiries,
+                    transfer.max_image_processing * 1000,
                 )
             if writer:
                 with suppress(OSError, TimeoutError):

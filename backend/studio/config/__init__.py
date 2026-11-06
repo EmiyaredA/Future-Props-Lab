@@ -41,6 +41,16 @@ FIELDS = {
         "pi_enabled": ("fpl_code_agents_pi_enabled", bool),
         "pi_executable": ("fpl_code_agents_pi_executable", str),
     },
+    "happier": {
+        name: (f"fpl_happier_{name}", kind)
+        for name, kind in {
+            "admin_user_id": str,
+            "origin": str,
+            "listen_port": int,
+            "relay_port": int,
+            "oidc_client_secret": str,
+        }.items()
+    },
     "visual_acceptance": {
         "model_owner_user_id": ("fpl_acceptance_model_owner_user_id", str),
         "model_id": ("fpl_acceptance_model_id", str),

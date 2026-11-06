@@ -1653,6 +1653,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/cloud-control/happier/launch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Launch Happier */
+        post: operations["launch_happier_v1_cloud_control_happier_launch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/cloud-control/settings": {
         parameters: {
             query?: never;
@@ -1688,7 +1705,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/cloud-control/totp/confirm": {
+    "/v1/cloud-control/unlock": {
         parameters: {
             query?: never;
             header?: never;
@@ -1697,42 +1714,8 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Confirm */
-        post: operations["confirm_v1_cloud_control_totp_confirm_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/cloud-control/totp/enroll": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Enroll */
-        post: operations["enroll_v1_cloud_control_totp_enroll_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/cloud-control/totp/verify": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Verify */
-        post: operations["verify_v1_cloud_control_totp_verify_post"];
+        /** Unlock */
+        post: operations["unlock_v1_cloud_control_unlock_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -10575,8 +10558,6 @@ export interface components {
         CloudSetup: {
             /** Enabled */
             enabled: boolean;
-            /** Enrolled */
-            enrolled: boolean;
             /** Guacd Ready */
             guacd_ready: boolean;
             /** Host Label */
@@ -10607,8 +10588,11 @@ export interface components {
             desktop_configured: boolean;
             /** Enabled */
             enabled: boolean;
-            /** Enrolled */
-            enrolled: boolean;
+            /**
+             * Happier Available
+             * @default false
+             */
+            happier_available: boolean;
             /** Host Label */
             host_label: string;
             /** Idle Minutes */
@@ -10619,6 +10603,14 @@ export interface components {
             local: boolean;
             /** Unlocked Until */
             unlocked_until: number;
+        };
+        /** CloudUnlockRequest */
+        CloudUnlockRequest: {
+            /**
+             * Purpose
+             * @enum {string}
+             */
+            purpose: "agent" | "desktop";
         };
         /** ColorRule */
         ColorRule: {
@@ -11627,11 +11619,6 @@ export interface components {
              * @default
              */
             url: string;
-        };
-        /** Enrollment */
-        Enrollment: {
-            /** Secret */
-            secret: string;
         };
         /** ExecutionCatalog */
         ExecutionCatalog: {
@@ -15503,6 +15490,13 @@ export interface components {
             assetId: string;
             /** Projectid */
             projectId: string;
+        };
+        /** HappierLaunch */
+        HappierLaunch: {
+            /** Exchange Url */
+            exchange_url: string;
+            /** Ticket */
+            ticket: string;
         };
         /** HistoryBlock */
         HistoryBlock: {
@@ -22283,16 +22277,6 @@ export interface components {
              */
             status: "completed" | "not-started";
         };
-        /** VerificationCode */
-        VerificationCode: {
-            /** Code */
-            code: string;
-            /**
-             * Desktop
-             * @default false
-             */
-            desktop: boolean;
-        };
         /** VideoCapabilitiesOut */
         VideoCapabilitiesOut: {
             /**
@@ -28028,6 +28012,26 @@ export interface operations {
             };
         };
     };
+    launch_happier_v1_cloud_control_happier_launch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HappierLaunch"];
+                };
+            };
+        };
+    };
     settings_view_v1_cloud_control_settings_get: {
         parameters: {
             query?: never;
@@ -28101,7 +28105,7 @@ export interface operations {
             };
         };
     };
-    confirm_v1_cloud_control_totp_confirm_post: {
+    unlock_v1_cloud_control_unlock_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -28110,58 +28114,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VerificationCode"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    enroll_v1_cloud_control_totp_enroll_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Enrollment"];
-                };
-            };
-        };
-    };
-    verify_v1_cloud_control_totp_verify_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VerificationCode"];
+                "application/json": components["schemas"]["CloudUnlockRequest"];
             };
         };
         responses: {

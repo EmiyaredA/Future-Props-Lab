@@ -4,6 +4,7 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
 
 from studio.apps.remote_desktop.use_cases.preferences import PreferenceConflict
+from studio.assembly.identity_http import require_recent_reauthentication
 from studio.config import ConfigurationError
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET, TICKET_SECONDS
@@ -52,7 +53,6 @@ async def status(request: Request, principal: StudioAuth):
         idle_minutes=preference.idle_minutes,
         idle_revision=preference.revision,
         local=request.state.service_actor.local,
-        enrolled=current.enrolled,
         unlocked_until=current.unlocked_until,
     )
 
@@ -97,7 +97,7 @@ async def connect(request: Request, body: DesktopLogin, principal: StudioAuth):
         raise HTTPException(429, "连接尝试过多，请稍后重试")
     local = request.state.service_actor.local
     ticket = request.app.state.cloud_desktop.issue(
-        principal, local, body.password.get_secret_value(), epoch=current.factor_epoch
+        principal, local, body.password.get_secret_value()
     )
     if ticket is None:
         raise HTTPException(503, "桌面连接暂不可用")
@@ -151,7 +151,6 @@ async def desktop_socket(socket: WebSocket):
         actor.local,
         proof=actor.desktop_ticket_sha256,
         context=assertion,
-        epoch=current.factor_epoch,
     )
 
 
@@ -164,6 +163,7 @@ async def settings_view(request: Request, principal: StudioAuth):
 @router.put("/settings", response_model=CloudSetup)
 async def settings_save(request: Request, body: CloudSetupUpdate, principal: StudioAuth):
     require_local_browser(request, principal)
+    require_recent_reauthentication(principal)
     return await setup_snapshot(request, principal.user_id, body)
 
 

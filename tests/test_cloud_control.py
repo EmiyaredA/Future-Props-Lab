@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from contextlib import aclosing, asynccontextmanager
+from datetime import timedelta
 from pathlib import Path
 from threading import Event
 from types import SimpleNamespace
@@ -13,6 +14,7 @@ from uuid import uuid4
 import httpx
 import pytest
 from PIL import Image
+from sqlalchemy import text
 
 from db.migrations import runner as migration_runner
 from studio.apps.agent_workbench.execution import (
@@ -28,12 +30,12 @@ from studio.apps.agent_workbench.transport import (
 )
 from studio.apps.agent_workbench.transport.website import execution
 from studio.apps.identity.storage import cloud_access as access
-from studio.apps.identity.use_cases.cloud_factors import totp
 from studio.apps.remote_desktop.transport import guacamole as desktop
 from studio.assembly.website import desktop as desktop_binding
 from studio.assembly.website.account_provisioning import create_account
 from studio.config.settings import CloudProject, get_settings
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
+from studio.runtime.time import utc_now
 from website_test_support import SessionLocal, app
 
 pytestmark = pytest.mark.real_auth
@@ -73,39 +75,50 @@ def configure(monkeypatch, *owners):
     monkeypatch.setattr(settings, "fpl_cloud_control_admin_user_ids", os.pathsep.join(owners))
 
 
-async def enroll(client):
-    result = await client.post(CLOUD + "/totp/enroll")
-    assert result.status_code == 200, result.text
-    secret = result.json()["secret"]
-    code = totp(secret, int(access.time.time()) // 30)
-    result = await client.post(CLOUD + "/totp/confirm", json={"code": code})
+async def unlock(client, purpose="agent"):
+    reauth = await client.post("/v1/auth/reauth", json={"password": PASSWORD})
+    assert reauth.status_code == 204, reauth.text
+    result = await client.post(CLOUD + "/unlock", json={"purpose": purpose})
     assert result.status_code == 204, result.text
-    return code
 
 
-async def test_totp_unlock_requires_csrf_rejects_replay_and_logout_revokes(monkeypatch):
-    client, owner = await admin_client()
-    remote, other = await admin_client(local=False)
+@pytest.mark.parametrize("local", [True, False])
+async def test_agent_unlock_requires_recent_password_and_csrf(monkeypatch, local):
+    client, owner = await admin_client(local=local)
+    regular, other = await admin_client(local=local, role="user")
     configure(monkeypatch, owner, other)
-    async with aclosing(client), aclosing(remote):
-        assert (await remote.post(CLOUD + "/totp/enroll")).status_code == 403
+    body = {"purpose": "agent"}
+    async with aclosing(client), aclosing(regular):
+        assert (await regular.post(CLOUD + "/unlock", json=body)).status_code == 403
+        initial = await client.post(CLOUD + "/unlock", json=body)
+        assert initial.status_code == 403
+        assert initial.json()["code"] == "reauthentication_required"
+        invalid = await client.post("/v1/auth/reauth", json={"password": "incorrect"})
+        assert invalid.status_code == 401 and invalid.json()["code"] == "invalid_credentials"
+        assert (await client.post(CLOUD + "/unlock", json=body)).status_code == 403
         assert (
-            await remote.post(CLOUD + "/desktop/connect", json={"password": "fixture"})
-        ).status_code == 403
-        missing_csrf = client.headers.pop("X-CSRF-Token")
-        assert (await client.post(CLOUD + "/totp/enroll")).status_code == 403
-        client.headers["X-CSRF-Token"] = missing_csrf
-        code = await enroll(client)
-        assert (await client.get(CLOUD + "/status")).json()["unlocked_until"] > 0
-        assert (await client.post(CLOUD + "/totp/verify", json={"code": code})).status_code == 403
-        ticket = await client.post(CLOUD + "/desktop/connect", json={"password": "fixture"})
-        assert ticket.status_code == 204
-        assert "HttpOnly" in ticket.headers["set-cookie"]
-        assert DESKTOP_SOCKET in ticket.headers["set-cookie"]
+            await client.post("/v1/auth/reauth", json={"password": PASSWORD})
+        ).status_code == 204
+        csrf = client.headers.pop("X-CSRF-Token")
+        assert (await client.post(CLOUD + "/unlock", json=body)).status_code == 403
+        client.headers["X-CSRF-Token"] = csrf
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                app.state.cloud_unlocks, "clock", lambda: utc_now() + timedelta(minutes=11)
+            )
+            stale = await client.post(CLOUD + "/unlock", json=body)
+            assert stale.status_code == 403 and stale.json()["code"] == "reauthentication_required"
+        if not local:
+            with monkeypatch.context() as patch:
+                patch.setattr(get_settings(), "fpl_cloud_control_public_enabled", False)
+                assert (await client.post(CLOUD + "/unlock", json=body)).status_code == 403
+        assert (await client.post(CLOUD + "/unlock", json=body)).status_code == 204
+        state = (await client.get(CLOUD + "/status")).json()
+        assert 895 <= state["unlocked_until"] - access.time.time() <= 900
+        assert state["desktop_authorized"] is local
+        assert "enrolled" not in state
         assert (await client.post("/v1/auth/logout")).status_code == 204
-        assert (
-            await client.post(CLOUD + "/desktop/connect", json={"password": "fixture"})
-        ).status_code == 401
+        assert (await client.post(CLOUD + "/unlock", json=body)).status_code == 401
 
 
 @pytest.mark.parametrize("local", [True, False])
@@ -151,7 +164,7 @@ async def test_guacd_handshake_uses_fixed_target_and_stream_frames(local):
     assert desktop.parse_instruction("4.mo") is None
 
 
-async def test_desktop_tunnel_ping_keeps_guacd_alive_without_keyboard_activity():
+async def test_desktop_tunnel_ping_is_echoed_without_keyboard_activity():
     pings = iter((1, 5, 6, 10))
     now = 0
     replies = []
@@ -180,7 +193,7 @@ async def test_desktop_tunnel_ping_keeps_guacd_alive_without_keyboard_activity()
     with pytest.raises(EOFError):
         await desktop.browser_input(Socket(), Writer(), inputs, desktop.DesktopTransfer())
     assert replies == [ping] * 4
-    assert upstream == [desktop.instruction("nop")] * 2
+    assert upstream == []
     assert inputs.last_activity == 0
 
 
@@ -222,6 +235,62 @@ async def test_public_first_frame_compacts_interleaved_png_tiles():
         ["end", "1"],
         ["sync", "1"],
     ]
+
+
+async def test_public_relay_releases_pending_image_when_guacd_sync_stalls(monkeypatch):
+    monkeypatch.setattr(desktop, "FIRST_IMAGE_BUFFER_SECONDS", 0.01)
+    monkeypatch.setattr(
+        desktop, "compress_desktop_tile", lambda chunks: "AA==" if chunks == ["AAAA"] else None
+    )
+    stream = asyncio.StreamReader()
+    outgoing = asyncio.Queue()
+    transfer = desktop.DesktopTransfer()
+    socket = SimpleNamespace(send_text=outgoing.put)
+    ticket = SimpleNamespace(password="fixture")
+    attempts = SimpleNamespace(clear=lambda _: None)
+    header = desktop.instruction("img", "1", "14", "0", "image/png", "0", "0")
+    blob = desktop.instruction("blob", "1", "AA==")
+    end = desktop.instruction("end", "1")
+    complete_header = desktop.instruction("img", "2", "14", "0", "image/png", "1", "0")
+    compact_header = desktop.instruction("img", "2", "14", "0", "image/webp", "1", "0")
+    complete_blob = desktop.instruction("blob", "2", "AAAA")
+    compact_blob = desktop.instruction("blob", "2", "AA==")
+    complete_end = desktop.instruction("end", "2")
+    sync = desktop.instruction("sync", "7")
+    task = asyncio.create_task(
+        desktop.browser_output(
+            socket,
+            desktop.GuacdReader(stream),
+            "owner",
+            ticket,
+            None,
+            transfer,
+            local=False,
+            attempts=attempts,
+        )
+    )
+    try:
+        async with asyncio.timeout(2):
+            stream.feed_data(
+                header + blob + complete_header + complete_blob + complete_end + end[:4]
+            )
+            assert await outgoing.get() == header.decode()
+            assert await outgoing.get() == blob.decode()
+            assert await outgoing.get() == compact_header.decode()
+            assert await outgoing.get() == compact_blob.decode()
+            assert await outgoing.get() == complete_end.decode()
+            assert transfer.buffer_expiries == 1
+            stream.feed_data(end[4:] + sync)
+            assert await outgoing.get() == end.decode()
+            assert await outgoing.get() == sync.decode()
+            stream.feed_eof()
+            with pytest.raises(EOFError):
+                await task
+            assert transfer.sync_sent == 1 and transfer.image_chunks == 2
+            assert transfer.upstream_end == "guacd_read_EOFError"
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
 
 
 async def test_public_desktop_compacts_large_updates_after_the_first_frame():
@@ -393,8 +462,8 @@ async def test_local_project_picker_keeps_recent_projects_private(monkeypatch, t
         ]
         body = {"project_id": selected["id"], "agent_id": "codex"}
         assert (await client.post(WORKBENCH + "/chats", json=body)).status_code == 403
-        await enroll(client)
-        await enroll(other)
+        await unlock(client)
+        await unlock(other)
         assert (await other.post(WORKBENCH + "/chats", json=body)).status_code == 404
         opened = await client.post(WORKBENCH + "/chats", json=body)
         assert opened.status_code == 201, opened.text
@@ -447,7 +516,7 @@ async def test_slow_project_check_releases_sqlite_and_rechecks_binding(monkeypat
     monkeypatch.setattr(projects, "validate_project_root", slow_check)
     monkeypatch.setattr(execution, "resolve_connection", connection)
     async with aclosing(client):
-        await enroll(client)
+        await unlock(client)
         path = WORKBENCH + "/chats"
         slow = asyncio.create_task(
             client.post(path, json={"project_id": "slow", "agent_id": "codex"})
@@ -538,7 +607,7 @@ async def test_managed_chat_keeps_context_and_executes_approved_file_once(
     monkeypatch.setattr(runner, "resolve_connection", resolve)
     monkeypatch.setattr(runner, "run_dialogue", dialogue)
     async with aclosing(client), aclosing(other):
-        await enroll(client)
+        await unlock(client)
         identity = "project"
         if agent == "pi":
             picked = await client.post(WORKBENCH + "/execution/projects", json={"root": str(root)})
@@ -660,20 +729,11 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
     configure(monkeypatch, owner)
     settings = get_settings()
     if not local:
-        enroll_client, owner = await admin_client()
-        configure(monkeypatch, owner)
-        async with aclosing(enroll_client):
-            key = (await enroll_client.post(CLOUD + "/totp/enroll")).json()["secret"]
-            counter = int(access.time.time()) // 30
-            confirmed = await enroll_client.post(
-                CLOUD + "/totp/confirm", json={"code": totp(key, counter)}
-            )
-            assert confirmed.status_code == 204
-            client.cookies = enroll_client.cookies
-            client.headers["X-CSRF-Token"] = client.cookies["fpl_csrf"]
         monkeypatch.setattr(settings, "fpl_cloud_control_public_desktop_vnc_only", True)
         monkeypatch.setattr(settings, "fpl_remote_web_origin", "https://test")
     received = asyncio.Queue()
+    upstream_heartbeat = asyncio.Event()
+    monkeypatch.setattr(desktop, "GUACD_KEEPALIVE_SECONDS", 0.05)
 
     async def fake_guacd(reader, writer):
         stream = desktop.GuacdReader(reader)
@@ -687,7 +747,12 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
             writer.write(desktop.instruction("ready", "isolated"))
             writer.write(desktop.instruction("size", "0", "640", "400"))
             await writer.drain()
-            await received.put((await stream.next())[0])
+            while True:
+                fields, _ = await stream.next()
+                if fields != ["nop"]:
+                    await received.put(fields)
+                    break
+                upstream_heartbeat.set()
             await reader.read()
         finally:
             writer.close()
@@ -701,15 +766,15 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
         if not local:
             status = (await client.get(CLOUD + "/status")).json()
             assert status["desktop_configured"] and not status["desktop_authorized"]
-            assert not status["enabled"] and not status["enrolled"]
-            auth = {"code": totp(key, counter + 1), "desktop": True}
-            premature = await client.post(CLOUD + "/totp/verify", json=auth)
+            assert not status["enabled"]
+            auth = {"purpose": "desktop"}
+            premature = await client.post(CLOUD + "/unlock", json=auth)
             assert premature.status_code == 403
             assert premature.json()["code"] == "reauthentication_required"
+            await unlock(client, "desktop")
             assert (
-                await client.post("/v1/auth/reauth", json={"password": PASSWORD})
-            ).status_code == 204
-            assert (await client.post(CLOUD + "/totp/verify", json=auth)).status_code == 204
+                await client.post(CLOUD + "/unlock", json={"purpose": "agent"})
+            ).status_code == 403
             catalog = (await client.get(WORKBENCH + "/execution/catalog")).json()
             assert not catalog["enabled"]
             monkeypatch.setattr(settings, "fpl_cloud_control_public_enabled", False)
@@ -728,12 +793,16 @@ async def test_desktop_websocket_checks_origin_consumes_ticket_and_closes_on_log
         assert (await out.get())["type"] == "websocket.close"
         await task
         origin = "http://127.0.0.1:3000" if local else "https://test"
-        task, incoming, out = await desktop_asgi(client, origin, local=local)
-        assert (await out.get())["subprotocol"] == "guacamole"
-        await out.get()
-        assert (await out.get())["text"] == "4.size,1.0,3.640,3.400;"
-        await incoming.put({"type": "websocket.receive", "text": "3.key,2.97,1.1;"})
-        assert await received.get() == ["key", "97", "1"]
+        async with SessionLocal() as writer:
+            await writer.execute(text("BEGIN IMMEDIATE"))
+            task, incoming, out = await desktop_asgi(client, origin, local=local)
+            assert (await out.get())["subprotocol"] == "guacamole"
+            await out.get()
+            assert (await out.get())["text"] == "4.size,1.0,3.640,3.400;"
+            await asyncio.wait_for(upstream_heartbeat.wait(), 1)
+            await incoming.put({"type": "websocket.receive", "text": "3.key,2.97,1.1;"})
+            assert await received.get() == ["key", "97", "1"]
+            await writer.rollback()
         await incoming.put({"type": "websocket.disconnect", "code": 1000})
         await task
         task, _, out = await desktop_asgi(client, origin, local=local)
@@ -851,15 +920,16 @@ async def test_local_setup_is_scoped_and_applies_without_restart(monkeypatch, tm
         body = {
             "revision": first["revision"],
             "host_label": "Mac test",
-            "public_enabled": False,
+            "public_enabled": True,
         }
-        blocked = await client.put(CLOUD + "/settings", json={**body, "public_enabled": True})
-        assert blocked.status_code == 409
+        assert (
+            await client.post("/v1/auth/reauth", json={"password": PASSWORD})
+        ).status_code == 204
         saved = await client.put(CLOUD + "/settings", json=body)
         assert saved.status_code == 200, saved.text
         assert "secrets_key" not in saved.text
         assert saved.json()["guacd_ready"]
-        assert saved.json()["public_enabled"] is False
+        assert saved.json()["public_enabled"] is True
         assert "# keep" in file.read_text()
         assert "projects" not in first and "projects" not in saved.json()
         assert config.get_cloud_settings().fpl_cloud_control_projects["legacy"].user_ids == [
@@ -925,31 +995,18 @@ async def test_idle_preference_checks_revision_and_desktop_activity_is_explicit(
 
 
 async def test_public_desktop_proof_outlives_agent_unlock_until_session_logout(monkeypatch):
-    local, owner = await admin_client()
-    remote, other = await admin_client(local=False)
-    configure(monkeypatch, owner, other)
-    async with aclosing(local), aclosing(remote):
-        key = (await local.post(CLOUD + "/totp/enroll")).json()["secret"]
-        now = int(access.time.time())
-        code = totp(key, now // 30)
-        assert (await local.post(CLOUD + "/totp/confirm", json={"code": code})).status_code == 204
-        remote.cookies = local.cookies
-        remote.headers["X-CSRF-Token"] = remote.cookies["fpl_csrf"]
+    remote, owner = await admin_client(local=False)
+    configure(monkeypatch, owner)
+    async with aclosing(remote):
         login = {"password": "temporary"}
         assert (await remote.post(CLOUD + "/desktop/connect", json=login)).status_code == 403
-        assert (
-            await remote.post("/v1/auth/reauth", json={"password": PASSWORD})
-        ).status_code == 204
-        result = await remote.post(
-            CLOUD + "/totp/verify",
-            json={
-                "code": totp(key, now // 30 + 1),
-                "desktop": True,
-            },
-        )
-        assert result.status_code == 204, result.text
+        await unlock(remote)
+        assert (await remote.post(CLOUD + "/desktop/connect", json=login)).status_code == 403
+        await unlock(remote, "desktop")
+        deadline = (await remote.get(CLOUD + "/status")).json()["unlocked_until"]
+        assert deadline > 0
         assert (await remote.get(CLOUD + "/status")).json()["desktop_authorized"]
-        monkeypatch.setattr(access.time, "time", lambda: now + 20 * 60)
+        monkeypatch.setattr(access.time, "time", lambda: deadline)
         state = (await remote.get(CLOUD + "/status")).json()
         assert state["unlocked_until"] == 0 and state["desktop_authorized"]
         assert (await remote.post(CLOUD + "/desktop/connect", json=login)).status_code == 204
@@ -1091,7 +1148,7 @@ async def test_workbench_queue_is_fifo_idempotent_and_pauses_on_stop_or_restart(
         ),
     )
     async with aclosing(client), aclosing(other):
-        await enroll(client)
+        await unlock(client)
         result = await client.post(
             WORKBENCH + "/chats", json={"project_id": "project", "agent_id": "codex"}
         )

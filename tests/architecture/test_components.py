@@ -202,17 +202,17 @@ def test_old_prefixed_packages_cannot_be_reintroduced():
     assert not [p for p in legacy.rglob("*.py") if p.parent != legacy], "stale app slice"
 
 
-def test_cloud_factors_have_one_owner_and_explicit_dependencies():
+def test_cloud_unlock_has_one_owner_and_explicit_dependencies():
     for name in (
         "backend/app/console/cloud_control/access.py",
         "backend/app/console/cloud_control/models.py",
         "backend/app/console/routes/cloud_totp.py",
     ):
         assert not (ROOT / name).exists(), name
-    path = STUDIO / "apps/identity/use_cases/cloud_factors.py"
+    path = STUDIO / "apps/identity/use_cases/cloud_unlock.py"
     for dependency in imports(path):
         assert not dependency.startswith(("studio.config", "studio.runtime.secrets"))
-    route = STUDIO / "apps/identity/transport/website/cloud_totp.py"
+    route = STUDIO / "apps/identity/transport/website/cloud_unlock.py"
     tree = ast.parse(route.read_text())
     assert not any(
         isinstance(node, ast.Name) and node.id == "SessionDep" for node in ast.walk(tree)

@@ -1,14 +1,19 @@
 import * as Dialog from "@radix-ui/react-dialog";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, ChevronDown, ChevronRight, FolderOpen } from "lucide-react";
-import { useState } from "react";
 import {
-  browseProjectDirectories,
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Folder,
+  FolderOpen,
+} from "lucide-react";
+import { useRef, useState } from "react";
+import {
   registerProjectDirectory,
   type ExecutionCatalog,
   type ProjectChoice,
 } from "./executionApi";
-import { workbenchKeys } from "./queryKeys";
+import { ProjectDirectoryTree } from "./ProjectDirectoryTree";
+import { useProjectDirectories } from "./useProjectDirectories";
 import "./project-picker.css";
 
 export function ProjectPicker({
@@ -26,23 +31,35 @@ export function ProjectPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [browsing, setBrowsing] = useState(false);
-  const [parent, setParent] = useState<string>();
+  const [directory, setDirectory] = useState<string>();
   const [path, setPath] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const directories = useQuery({
-    queryKey: workbenchKeys.directories(owner, parent),
-    queryFn: ({ signal }) => browseProjectDirectories(parent, signal),
-    enabled: open && browsing,
-    retry: false,
-  });
+  const title = useRef<HTMLHeadingElement>(null);
+  const listing = useProjectDirectories(
+    owner,
+    directory,
+    !!directory && open && browsing,
+  );
+  const pastedPath = path.trim();
+  const target =
+    pastedPath ||
+    (!listing.error && listing.data?.selectable ? directory : undefined);
 
   function close() {
     setOpen(false);
     setBrowsing(false);
-    setParent(undefined);
+    setDirectory(undefined);
     setPath("");
     setError("");
+  }
+
+  function changeView(next: boolean) {
+    setError("");
+    setDirectory(undefined);
+    setPath("");
+    setBrowsing(next);
+    title.current?.focus();
   }
 
   async function choose(root: string) {
@@ -63,6 +80,37 @@ export function ProjectPicker({
     ({ root }) => !recent.some((item) => item.root === root),
   );
 
+  const groups = [
+    {
+      label: "最近项目",
+      items: recent.map((item) => ({
+        ...item,
+        key: item.root,
+        select: () => void choose(item.root),
+      })),
+    },
+    {
+      label: "推荐项目",
+      items: recommended.map((item) => ({
+        ...item,
+        key: item.root,
+        select: () => void choose(item.root),
+      })),
+    },
+    {
+      label: "已配置项目",
+      items: catalog.projects.map((item) => ({
+        ...item,
+        key: item.id,
+        root: undefined,
+        select: () => {
+          onSelect(item);
+          close();
+        },
+      })),
+    },
+  ].filter(({ items }) => items.length);
+
   return (
     <Dialog.Root
       open={open}
@@ -77,156 +125,140 @@ export function ProjectPicker({
           type="button"
           disabled={disabled}
         >
-          <FolderOpen size={15} aria-hidden="true" />
+          <FolderOpen size={16} aria-hidden="true" />
           <span>{selected?.label ?? "选择项目"}</span>
           <ChevronDown size={14} aria-hidden="true" />
         </button>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Overlay className="workbench-project-overlay" />
-        <Dialog.Content className="workbench-project-dialog" aria-busy={busy}>
-          <header>
-            <Dialog.Title>
-              {browsing ? "选择项目目录" : "选择项目"}
-            </Dialog.Title>
-            <Dialog.Description>
-              选择在这台 Mac 上运行会话的目录。
-            </Dialog.Description>
+        <Dialog.Content
+          className="workbench-project-dialog"
+          aria-busy={busy}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            title.current?.focus();
+          }}
+        >
+          <header className="workbench-picker-header">
+            <span className="workbench-picker-emblem">
+              <FolderOpen size={20} aria-hidden="true" />
+            </span>
+            <div>
+              <Dialog.Title ref={title} tabIndex={-1}>
+                {browsing ? "选择项目目录" : "选择项目"}
+              </Dialog.Title>
+              <Dialog.Description>
+                选择在这台 Mac 上运行会话的目录。
+              </Dialog.Description>
+            </div>
           </header>
           {browsing ? (
-            <>
-              <div className="workbench-directory-location">
+            <form
+              className="workbench-picker-body"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (target && !busy) void choose(target);
+              }}
+            >
+              <div className="workbench-picker-toolbar">
                 <button
-                  className="btn"
+                  className="workbench-picker-link"
                   type="button"
-                  aria-label="返回上一级"
                   disabled={busy}
-                  onClick={() => {
-                    setError("");
-                    if (parent)
-                      setParent(directories.data?.parent ?? undefined);
-                    else setBrowsing(false);
-                  }}
+                  onClick={() => changeView(false)}
                 >
-                  <ArrowLeft size={16} aria-hidden="true" />
+                  <ArrowLeft size={14} aria-hidden="true" />
+                  返回项目
                 </button>
-                <code>{parent ?? "这台 Mac"}</code>
+                <span>本机目录</span>
               </div>
-              <div className="workbench-project-list" aria-label="子目录">
-                {directories.isPending ? (
-                  <p role="status">正在读取目录…</p>
-                ) : directories.error ? (
-                  <p role="alert">{directories.error.message}</p>
-                ) : directories.data?.items.length ? (
-                  directories.data.items.map((item) => (
-                    <button
-                      className="btn"
-                      type="button"
-                      key={item.root}
-                      disabled={busy}
-                      onClick={() => {
-                        setParent(item.root);
-                        setError("");
-                      }}
-                    >
-                      <FolderOpen size={16} aria-hidden="true" />
-                      <span>{item.label}</span>
-                      <ChevronRight size={14} aria-hidden="true" />
-                    </button>
-                  ))
-                ) : (
-                  <p>没有可浏览的子目录。</p>
-                )}
-              </div>
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  if (path && !busy) void choose(path);
+              <ProjectDirectoryTree
+                owner={owner}
+                selected={directory}
+                disabled={busy}
+                onSelect={(root) => {
+                  setDirectory(root);
+                  setPath("");
+                  setError("");
                 }}
-              >
-                <label>
-                  或粘贴项目绝对路径
-                  <input
-                    value={path}
-                    onChange={(event) => setPath(event.target.value)}
-                    placeholder="/Users/…/my-project"
-                    maxLength={4096}
-                    disabled={busy}
-                  />
-                </label>
-                {error && <p role="alert">{error}</p>}
-                <div className="workbench-project-actions">
-                  <Dialog.Close asChild>
-                    <button className="btn" type="button" disabled={busy}>
-                      取消
-                    </button>
-                  </Dialog.Close>
-                  <button
-                    className="btn"
-                    type="button"
-                    disabled={busy || !directories.data?.selectable || !!path}
-                    onClick={() => parent && void choose(parent)}
-                  >
-                    使用此目录
-                  </button>
-                  <button
-                    className="btn workbench-project-primary"
-                    type="submit"
-                    disabled={busy || !path}
-                  >
-                    使用粘贴的路径
-                  </button>
-                </div>
-              </form>
-            </>
-          ) : (
-            <>
-              <div className="workbench-project-list">
-                {[
-                  { label: "最近项目", items: recent },
-                  { label: "推荐项目", items: recommended },
-                ].map(
-                  ({ label, items }) =>
-                    items.length > 0 && (
-                      <section key={label} aria-label={label}>
-                        <h3>{label}</h3>
-                        {items.map((item) => (
-                          <button
-                            className="btn"
-                            type="button"
-                            key={item.root}
-                            disabled={busy}
-                            onClick={() => void choose(item.root)}
-                          >
-                            <FolderOpen size={16} aria-hidden="true" />
-                            <span>
-                              {item.label}
-                              <small>{item.root}</small>
-                            </span>
-                          </button>
-                        ))}
-                      </section>
-                    ),
+              />
+              <div className="workbench-picker-location">
+                <span>已选目录</span>
+                {directory ? (
+                  <code title={directory}>{directory}</code>
+                ) : (
+                  <span>点击目录名选中</span>
                 )}
-                {catalog.projects.length > 0 && (
-                  <section aria-label="已配置项目">
-                    <h3>已配置项目</h3>
-                    {catalog.projects.map((project) => (
+              </div>
+              {directory &&
+                !pastedPath &&
+                (listing.isPending ? (
+                  <p role="status">正在核对所选目录…</p>
+                ) : listing.error || !listing.data.selectable ? (
+                  <p role="alert">
+                    {listing.error?.message ?? "无法使用此目录"}
+                  </p>
+                ) : null)}
+              <label className="workbench-picker-path">
+                或粘贴项目绝对路径
+                <input
+                  value={path}
+                  onChange={(event) => {
+                    setPath(event.target.value);
+                    setError("");
+                  }}
+                  placeholder="/Users/…/my-project"
+                  maxLength={4096}
+                  disabled={busy}
+                />
+              </label>
+              {error && <p role="alert">{error}</p>}
+              <div className="workbench-project-actions">
+                <Dialog.Close asChild>
+                  <button className="btn" type="button" disabled={busy}>
+                    取消
+                  </button>
+                </Dialog.Close>
+                <button
+                  className="btn workbench-project-primary"
+                  type="submit"
+                  disabled={busy || !target}
+                >
+                  {pastedPath ? "使用粘贴的路径" : "使用此目录"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="workbench-picker-body">
+              <div className="workbench-picker-pane workbench-project-list">
+                {groups.map(({ label, items }) => (
+                  <section key={label} aria-label={label}>
+                    <h3>{label}</h3>
+                    {items.map((item) => (
                       <button
-                        className="btn"
+                        className="workbench-project-row"
                         type="button"
-                        key={project.id}
+                        key={item.key}
                         disabled={busy}
-                        onClick={() => {
-                          onSelect(project);
-                          close();
-                        }}
+                        onClick={item.select}
                       >
-                        <FolderOpen size={16} aria-hidden="true" />
-                        <span>{project.label}</span>
+                        <Folder size={17} aria-hidden="true" />
+                        <span>
+                          {item.label}
+                          {item.root && (
+                            <small title={item.root}>{item.root}</small>
+                          )}
+                        </span>
+                        <ChevronRight size={14} aria-hidden="true" />
                       </button>
                     ))}
                   </section>
+                ))}
+                {!groups.length && (
+                  <p className="workbench-tree-message">
+                    暂无项目，浏览本机目录以选择项目。
+                  </p>
                 )}
               </div>
               {error && <p role="alert">{error}</p>}
@@ -240,15 +272,13 @@ export function ProjectPicker({
                   className="btn workbench-project-primary"
                   type="button"
                   disabled={busy}
-                  onClick={() => {
-                    setError("");
-                    setBrowsing(true);
-                  }}
+                  onClick={() => changeView(true)}
                 >
-                  选择其他目录
+                  <FolderOpen size={16} aria-hidden="true" />
+                  <span>选择其他目录</span>
                 </button>
               </div>
-            </>
+            </div>
           )}
         </Dialog.Content>
       </Dialog.Portal>

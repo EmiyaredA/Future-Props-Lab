@@ -10,6 +10,7 @@ from pathlib import Path
 
 import pytest
 
+from app.capabilities.agents.cli.catalog import inspect_connection, inspect_executable
 from app.capabilities.agents.cli.isolation import dsh_connection_patches, launch
 from app.capabilities.agents.cli.native import converse
 from app.capabilities.agents.cli.process import execute
@@ -38,11 +39,46 @@ async def native_cli(tmp_path, monkeypatch):
     home.mkdir()
     (home / ".credentials.yaml").write_text("fixture: not-a-real-credential")
     monkeypatch.setenv("DSH_HOME", str(home))
-    monkeypatch.setenv("PI_CODING_AGENT_DIR", str(tmp_path / "pi-home"))
+    pi_home = tmp_path / "pi-home"
+    pi_home.mkdir()
+    (pi_home / "auth.json").write_text('{"fixture":{"type":"api_key","key":"fixture"}}')
+    monkeypatch.setenv("PI_CODING_AGENT_DIR", str(pi_home))
     monkeypatch.setenv("OPENAI_API_KEY", "must-not-be-inherited")
     monkeypatch.setenv("FPL_STUDIO_TOKEN", "must-not-be-inherited")
     yield str(executable)
     await app.state.code_agent_runs.close()
+
+
+@pytest.mark.parametrize("kind", NATIVE)
+async def test_disabled_native_cli_can_report_ready_to_enable(native_cli, kind, monkeypatch):
+    settings = get_settings()
+    monkeypatch.setattr(settings, f"fpl_code_agents_{kind}_enabled", False)
+    status = await inspect_connection(settings, kind, probe_disabled=True)
+    assert status["status"] == "ready_to_enable", status["message"]
+    assert status["executable"] == native_cli
+    assert status["version"] == "9.9.9"
+    assert not status["enabled"]
+    assert not status["available"]
+
+
+@pytest.mark.parametrize(
+    ("exit_code", "summary", "expected"),
+    [
+        (0, "0 credentials", "not_authenticated"),
+        (1, "", "probe_failed"),
+    ],
+)
+async def test_opencode_distinguishes_missing_credentials_from_probe_error(
+    native_cli, monkeypatch, exit_code, summary, expected
+):
+    async def output(_path, args, **_kwargs):
+        if args == ["--version"]:
+            return 0, b"1.19.4"
+        return exit_code, summary.encode()
+
+    monkeypatch.setattr("app.capabilities.agents.cli.catalog._probe_output", output)
+    status = await inspect_executable("opencode", native_cli)
+    assert status["status"] == expected
 
 
 @pytest.mark.parametrize("kind", NATIVE)
@@ -134,6 +170,17 @@ async def test_pi_and_opencode_profiles_exclude_personal_tools(tmp_path, native_
         assert config["model"] == "fake/model"
         assert config["mcp"] == {} and config["plugin"] == []
         assert config["permission"] == {"*": "deny"}
+    (home / "auth.json").write_text('{"fixture":{"type":"api_key","key":"!exit 42"}}')
+    status = await inspect_executable("pi", native_cli)
+    assert status["status"] == "probe_failed"
+    assert "不能通过命令获取" in status["message"]
+    (home / "auth.json").write_text("{}")
+    (home / "models.json").write_text(
+        '{"providers":{"fixture":{"models":[{"headers":{"Authorization":"!exit 42"}}]}}}'
+    )
+    status = await inspect_executable("pi", native_cli)
+    assert status["status"] == "probe_failed"
+    assert "不能执行凭据命令" in status["message"]
 
 
 def test_harness_imports_connection_rows_and_rejects_dynamic_provider_scripts(tmp_path):

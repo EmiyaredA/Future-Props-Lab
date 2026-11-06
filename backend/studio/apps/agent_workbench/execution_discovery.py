@@ -92,7 +92,7 @@ class ExecutionDiscovery:
         if operation in {CHECK_PROJECT, PREVIEW_SOURCE} and (
             not value.enabled or value.unlocked_until <= time()
         ):
-            raise HTTPException(403, "请先验证密码及动态验证码")
+            raise HTTPException(403, "请先验证管理员密码")
         return value
 
     async def execute(self, owner, assertion, operation, scope, *, source=None):

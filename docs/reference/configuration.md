@@ -111,4 +111,8 @@ Playwright E2E，按 Playwright 的安装说明单独准备，不参与正式视
 
 可信本机管理员可以在「编程智能体」启用已安装并登录的 CLI。所有有效账号都能在各自有权访问的功能中使用已启用的连接。云控仅向管理员开放，本机设置可保存主机名和公网开关。
 
-交互式 Codex 使用 `[code_agents].codex_executable` 指定的独立 CLI。服务所在 Mac 上安装经验证的官方 Codex CLI 0.166.0，并在仓库根目录运行 `npm run codex:login` 授权 FPL 专用登录。凭据保存在运行目录的 `profiles/codex-app-server/`，仅服务账号可访问。返回「编程智能体」点「重新检测」，Codex 应显示「已连接」。云控选择的目录仍由 FPL 项目工具按授权访问，写文件和运行命令继续走现有审批。
+交互式 Codex 使用 `[code_agents].codex_executable` 指定的独立 CLI，路径留空时自动发现。服务所在 Mac 上安装经验证的官方 Codex CLI 0.166.0，再运行 `npm --prefix "<FPL 安装目录>" run codex:login` 授权 FPL 专用登录。将占位符替换为 FPL 安装目录的绝对路径，即可在任意目录运行。连接未启用时也可以先完成这一步。凭据保存在运行目录的 `profiles/codex-app-server/`，仅服务账号可访问。返回「编程智能体」的 Codex 教程，在第三步点「重新检测」；如果尚未启用，由本机管理员点「启用 CLI 连接」并验证密码。完成后 Codex 应显示「已连接」。云控选择的目录仍由 FPL 项目工具按授权访问，写文件和运行命令继续走现有审批。
+
+## Happier 工作台
+
+可选 `[happier]` 配置指定专用管理员、独立 HTTPS 来源和回环端口。部署和凭据配对步骤见[云控 Happier 部署](../operations/happier.md)。

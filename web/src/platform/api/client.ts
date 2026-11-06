@@ -136,17 +136,23 @@ api.use({
   async onRequest({ request }) {
     return addApplicationBuild(applySessionHeaders(request));
   },
-  async onResponse({ response }) {
+  async onResponse({ response, schemaPath }) {
     observeApplicationBuild(response);
-    if (response.status === 401) notifyAuthRequired();
-    if (response.status === 403) {
+    if (response.status === 401 || response.status === 403) {
       const problem = parseProblemDetail(
         await response
           .clone()
           .json()
           .catch(() => ({})),
       );
-      if (
+      if (response.status === 401) {
+        if (
+          schemaPath !== "/v1/auth/reauth" ||
+          problem.code !== "invalid_credentials"
+        ) {
+          notifyAuthRequired();
+        }
+      } else if (
         ["insufficient_permission", "insufficient_scope"].includes(
           String(problem.code),
         )

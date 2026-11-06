@@ -7,10 +7,10 @@ class CloudStatus(BaseModel):
     desktop_configured: bool
     desktop_authorized: bool
     local: bool
-    enrolled: bool
     unlocked_until: int
     idle_minutes: int
     idle_revision: int
+    happier_available: bool = False
 
 
 class DesktopLogin(BaseModel):
@@ -39,7 +39,6 @@ class CloudSetup(BaseModel):
     enabled: bool
     public_enabled: bool
     public_desktop_vnc_only: bool
-    enrolled: bool
     guacd_ready: bool
     screen_sharing_ready: bool | None
 

@@ -14,7 +14,6 @@ import {
   type Agent,
 } from "./api";
 import { AgentConnectionCard, AgentStatus } from "./AgentConnectionCard";
-import { ExternalAgentAccess } from "./ExternalAgentAccess";
 import { AgentLogo } from "./AgentLogo";
 import "./code-agents.css";
 
@@ -39,8 +38,11 @@ export function CodeAgentsPage({
   const detect = useMutation({
     mutationFn: detectAgents,
     retry: false,
-    onSuccess: (data) =>
-      client.setQueryData(codeAgentKeys.catalog(scope), data),
+    onSuccess: async (data) => {
+      const queryKey = codeAgentKeys.catalog(scope);
+      await client.cancelQueries({ queryKey, exact: true });
+      client.setQueryData(queryKey, data);
+    },
   });
   const selectedAgent =
     agents.data?.items.find((agent) => agent.id === selectedAgentId) ??
@@ -61,11 +63,12 @@ export function CodeAgentsPage({
       setEnablePending(false);
     }
   }
+  const checking = detect.isPending || agents.isFetching || enablePending;
   const actions = (
     <button
       type="button"
-      className="code-agent-detect"
-      disabled={detect.isPending || agents.isFetching}
+      className={`btn code-agent-detect${selectedAgent?.status === "disabled" ? "" : " primary"}`}
+      disabled={checking}
       onClick={() => detect.mutate()}
     >
       <>
@@ -78,6 +81,15 @@ export function CodeAgentsPage({
       {detect.isPending ? "检测中…" : "重新检测"}
     </button>
   );
+  const detectionFeedback = detect.error ? (
+    <p className="code-agent-error" role="alert">
+      {apiErrorMessage(detect.error, "检测失败，请稍后重试")}
+    </p>
+  ) : detect.isSuccess ? (
+    <p className="code-agent-notice" role="status">
+      连接状态已更新
+    </p>
+  ) : null;
   return (
     <section
       className={`code-agents-page${renderHeader ? " model-infrastructure-page" : ""}`}
@@ -94,6 +106,7 @@ export function CodeAgentsPage({
         </header>
       )}
       <div
+        className="code-agents-content"
         id={renderHeader ? "model-infrastructure-content" : undefined}
         role={renderHeader ? "tabpanel" : undefined}
         aria-labelledby={
@@ -105,76 +118,70 @@ export function CodeAgentsPage({
           pending={agents.isPending}
           onRetry={() => agents.refetch()}
         />
-        {detect.error && (
-          <p className="code-agent-error" role="alert">
-            {apiErrorMessage(detect.error, "检测失败，请稍后重试")}
-          </p>
+        {!selectedAgent && detectionFeedback}
+        {agents.data && (
+          <div
+            className={`code-agent-console${selectedAgent ? "" : " is-empty"}`}
+          >
+            {agents.data.items.length ? (
+              <>
+                <div
+                  className="code-agent-roster"
+                  role="group"
+                  aria-label="本机编程智能体"
+                >
+                  {agents.data.items.map((agent) => {
+                    const selected = agent.id === selectedAgent?.id;
+                    return (
+                      <button
+                        type="button"
+                        key={agent.id}
+                        className="code-agent-roster-item"
+                        aria-pressed={selected}
+                        onClick={() => setSelectedAgentId(agent.id)}
+                      >
+                        <span className="code-agent-roster-icon">
+                          <AgentLogo id={agent.id} size={20} />
+                        </span>
+                        <span className="code-agent-roster-copy">
+                          <strong>{agent.name}</strong>
+                          <AgentStatus agent={agent} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="code-agent-settings">
+                  {selectedAgent && (
+                    <AgentConnectionCard
+                      key={selectedAgent.id}
+                      agent={selectedAgent}
+                      checking={checking}
+                      detection={
+                        <>
+                          {actions}
+                          {detectionFeedback}
+                        </>
+                      }
+                      onEnable={
+                        canManage && agents.data.can_enable
+                          ? () => {
+                              setEnableError("");
+                              setEnabling(selectedAgent);
+                            }
+                          : undefined
+                      }
+                    />
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="code-agent-empty">
+                暂无编程智能体连接，请检查部署配置后重新检测。
+              </p>
+            )}
+          </div>
         )}
-        {detect.isSuccess && (
-          <p className="code-agent-notice" role="status">
-            连接状态已更新
-          </p>
-        )}
-        <div
-          className={`code-agent-console${selectedAgent ? "" : " is-empty"}`}
-        >
-          {agents.data && (
-            <>
-              {agents.data.items.length ? (
-                <>
-                  <div
-                    className="code-agent-roster"
-                    role="group"
-                    aria-label="本机编程智能体"
-                  >
-                    {agents.data.items.map((agent) => {
-                      const selected = agent.id === selectedAgent?.id;
-                      return (
-                        <button
-                          type="button"
-                          key={agent.id}
-                          className="code-agent-roster-item"
-                          aria-pressed={selected}
-                          onClick={() => setSelectedAgentId(agent.id)}
-                        >
-                          <span className="code-agent-roster-icon">
-                            <AgentLogo id={agent.id} size={20} />
-                          </span>
-                          <span className="code-agent-roster-copy">
-                            <strong>{agent.name}</strong>
-                            <AgentStatus agent={agent} />
-                          </span>
-                        </button>
-                      );
-                    })}
-                    <div className="code-agent-roster-footer">{actions}</div>
-                  </div>
-                  <div className="code-agent-settings">
-                    {selectedAgent && (
-                      <AgentConnectionCard
-                        key={selectedAgent.id}
-                        agent={selectedAgent}
-                        onEnable={
-                          canManage && agents.data.can_enable
-                            ? () => {
-                                setEnableError("");
-                                setEnabling(selectedAgent);
-                              }
-                            : undefined
-                        }
-                      />
-                    )}
-                  </div>
-                </>
-              ) : (
-                <p className="code-agent-empty">
-                  暂无编程智能体连接，请检查部署配置后重新检测。
-                </p>
-              )}
-            </>
-          )}
-          <ExternalAgentAccess />
-        </div>
       </div>
       {enabling && (
         <TextInputDialog

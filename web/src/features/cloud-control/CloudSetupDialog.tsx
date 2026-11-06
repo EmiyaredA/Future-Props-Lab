@@ -7,12 +7,10 @@ import { getSetup, saveSetup, type CloudSetup } from "./cloudApi";
 
 function SetupCheckbox({
   checked,
-  disabled,
   onChange,
   children,
 }: {
   checked: boolean;
-  disabled?: boolean;
   onChange: (checked: boolean) => void;
   children: ReactNode;
 }) {
@@ -21,7 +19,6 @@ function SetupCheckbox({
       <input
         type="checkbox"
         checked={checked}
-        disabled={disabled}
         onChange={(event) => onChange(event.target.checked)}
       />
       <span className="cloud-setup-tick" aria-hidden="true">
@@ -36,12 +33,10 @@ function SetupForm({
   initial,
   refresh,
   changed,
-  enroll,
 }: {
   initial: CloudSetup;
   refresh: () => Promise<void>;
   changed: () => void;
-  enroll: () => void;
 }) {
   const [data, setData] = useState(initial);
   const [host, setHost] = useState(initial.host_label);
@@ -162,32 +157,16 @@ function SetupForm({
           </div>
         )}
         <div className="cloud-setup-public">
-          <SetupCheckbox
-            checked={publicEnabled}
-            disabled={!data.enrolled && !publicEnabled}
-            onChange={setPublicEnabled}
-          >
+          <SetupCheckbox checked={publicEnabled} onChange={setPublicEnabled}>
             {data.public_desktop_vnc_only
               ? "允许已授权管理员从公网连接桌面"
               : "允许已授权管理员从公网连接"}
           </SetupCheckbox>
           {data.public_desktop_vnc_only && (
             <p className="cloud-setup-hint">
-              公网桌面首次连接需要验证 FPL 管理员密码和动态验证码。Agent
+              公网桌面首次连接需要验证 FPL 管理员密码，再输入 VNC 密码。Agent
               执行仅限本机。
             </p>
-          )}
-          {!data.enrolled && (
-            <p className="cloud-setup-hint">
-              {data.enabled
-                ? "开启公网前需登记验证器。"
-                : "启用云控后可登记验证器。"}
-            </p>
-          )}
-          {data.enabled && !data.enrolled && (
-            <button type="button" className="btn" onClick={enroll}>
-              登记验证器
-            </button>
           )}
         </div>
       </section>
@@ -222,12 +201,10 @@ export function CloudSetupDialog({
   owner,
   close,
   changed,
-  enroll,
 }: {
   owner: string;
   close: () => void;
   changed: () => void;
-  enroll: () => void;
 }) {
   const [epoch, setEpoch] = useState(0);
   const title = useRef<HTMLHeadingElement>(null);
@@ -271,7 +248,6 @@ export function CloudSetupDialog({
               key={epoch}
               initial={setup.data}
               changed={changed}
-              enroll={enroll}
               refresh={async () => {
                 const result = await setup.refetch();
                 if (result.isSuccess) setEpoch((value) => value + 1);

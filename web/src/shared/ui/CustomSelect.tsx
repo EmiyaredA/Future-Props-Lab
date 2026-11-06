@@ -15,6 +15,7 @@ export type SelectOption = {
   description?: string;
   disabled?: boolean;
   swatch?: string;
+  icon?: ReactNode;
 };
 
 function Chevron({ open }: { open: boolean }) {
@@ -37,6 +38,7 @@ export function CustomSelect({
   disabled = false,
   className = "",
   leadingIcon,
+  placeholder = "请选择",
   showChevron = true,
   escapeClipping = true,
   menuMinWidth = 180,
@@ -49,6 +51,7 @@ export function CustomSelect({
   disabled?: boolean;
   className?: string;
   leadingIcon?: ReactNode;
+  placeholder?: string;
   showChevron?: boolean;
   escapeClipping?: boolean;
   menuMinWidth?: number;
@@ -184,11 +187,11 @@ export function CustomSelect({
         }}
       >
         <span className="custom-select-trigger-content">
-          {leadingIcon}
+          {selected?.icon ?? leadingIcon}
           {selected && renderOption ? (
             renderOption(selected)
           ) : (
-            <span>{selected?.label ?? "请选择"}</span>
+            <span>{selected?.label ?? placeholder}</span>
           )}
         </span>
         {showChevron ? <Chevron open={open} /> : null}
@@ -203,6 +206,9 @@ export function CustomSelect({
           aria-label={ariaLabel}
           onKeyDown={handleListKeyDown}
         >
+          {!options.length && (
+            <span className="custom-select-empty">暂无可选项</span>
+          )}
           {options.map((option, index) => (
             <button
               ref={(node) => {
@@ -237,6 +243,7 @@ export function CustomSelect({
               ) : (
                 <>
                   <span>
+                    {option.icon}
                     {option.swatch ? (
                       <i
                         className="custom-select-swatch"

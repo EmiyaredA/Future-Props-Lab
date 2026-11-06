@@ -1,5 +1,8 @@
 import { useState } from "react";
 import type { Conversation, HistoryEntry } from "./api";
+import { ToolCodeBlock } from "./ToolCodeBlock";
+import { toolCode } from "./toolCode";
+import { commandFiles, type FileReference } from "./fileReferences";
 import {
   TranscriptActivity,
   TranscriptMessage,
@@ -38,6 +41,9 @@ function historyReplies(
 ) {
   const replies: Reply[] = [];
   for (const entry of entries) {
+    const codexUserMessage =
+      agent === "codex" && entry.kind === "message" && entry.role === "user";
+    if (codexUserMessage && !entry.text && !entry.attachments?.length) continue;
     const presentation = entry.presentation;
     const messageId =
       presentation?.message_id ??
@@ -49,7 +55,12 @@ function historyReplies(
     const role =
       entry.kind === "message" &&
       entry.role === "user" &&
-      !(turnId && previous?.role === "assistant" && previous.turnId === turnId)
+      (codexUserMessage ||
+        !(
+          turnId &&
+          previous?.role === "assistant" &&
+          previous.turnId === turnId
+        ))
         ? "user"
         : ["message", "compaction", "branch_summary"].includes(entry.kind) &&
             !["assistant", "user"].includes(entry.role)
@@ -175,9 +186,11 @@ function operationDetails({ line, results }: Operation) {
 export function HistoryTranscript({
   messages,
   item,
+  onOpenFile,
 }: {
   messages: HistoryEntry[];
   item: Conversation;
+  onOpenFile?: (file: FileReference) => void;
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   const toggle = (keys: string[], open: boolean) =>
@@ -233,7 +246,7 @@ export function HistoryTranscript({
               {line.kind === "duration" ? (
                 <ActivityDuration milliseconds={line.details?.duration_ms} />
               ) : (
-                <TranscriptText text={line.text} />
+                <TranscriptText text={line.text} onOpenFile={onOpenFile} />
               )}
               {attachments(line)}
             </div>
@@ -260,6 +273,11 @@ export function HistoryTranscript({
               {section.operations.map((operation) => {
                 const { line, results } = operation;
                 const details = operationDetails(operation);
+                const code = toolCode(line.text, line.toolName ?? "");
+                const files =
+                  onOpenFile && code.language && code.language !== "json"
+                    ? commandFiles(code.text)
+                    : [];
                 const name =
                   line.toolName ||
                   (line.kind === "thinking"
@@ -280,12 +298,42 @@ export function HistoryTranscript({
                       details={details}
                       open={expanded.has(line.id)}
                       onToggle={(open) => toggle([line.id], open)}
+                      onOpenFile={
+                        details?.file && onOpenFile
+                          ? () =>
+                              onOpenFile({
+                                path: details.file!.path,
+                                line: details.file!.line ?? undefined,
+                              })
+                          : undefined
+                      }
                     >
                       {line.text && !details?.questions?.length && (
-                        <>
-                          {line.kind === "tool_call" && <small>调用参数</small>}
-                          <TranscriptText text={line.text} raw />
-                        </>
+                        <ToolCodeBlock
+                          {...code}
+                          label={
+                            line.kind === "tool_call" ? code.label : "输出"
+                          }
+                        />
+                      )}
+                      {files.length > 0 && (
+                        <div
+                          className="aw-file-references"
+                          aria-label="命令中的文件"
+                        >
+                          {files.map((file) => (
+                            <button
+                              type="button"
+                              className="aw-file-link"
+                              data-file-path={file.path}
+                              data-file-line={file.line}
+                              key={file.path}
+                              onClick={() => onOpenFile?.(file)}
+                            >
+                              {file.path}
+                            </button>
+                          ))}
+                        </div>
                       )}
                       {attachments(line)}
                       {results.length > 0 &&
@@ -293,10 +341,7 @@ export function HistoryTranscript({
                           <div key={result.id} data-entry-id={result.id}>
                             {result.text &&
                               !result.details?.answers?.length && (
-                                <>
-                                  <small>输出</small>
-                                  <TranscriptText text={result.text} raw />
-                                </>
+                                <ToolCodeBlock text={result.text} />
                               )}
                             {attachments(result)}
                           </div>

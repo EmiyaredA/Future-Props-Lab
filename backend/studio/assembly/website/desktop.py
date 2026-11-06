@@ -3,15 +3,21 @@
 import asyncio
 from functools import partial
 
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import TimeoutError as PoolTimeout
+
 from studio.apps.identity.storage.cloud_access import desktop_authorized
 from studio.apps.remote_desktop.transport import guacamole as desktop_bridge
 
 
-async def _access(principal, local, _context=None, _epoch=None, *, sessions, preferences):
-    async with sessions() as db:
-        if not await desktop_authorized(db, principal, local=local):
-            return None
-    return (await preferences.read(owner=principal.user_id)).idle_minutes
+async def _access(principal, local, _context=None, *, sessions, preferences):
+    try:
+        async with sessions() as db:
+            if not await desktop_authorized(db, principal, local=local):
+                return None
+        return (await preferences.read(owner=principal.user_id)).idle_minutes
+    except (OperationalError, PoolTimeout) as error:
+        raise desktop_bridge.DesktopAccessUnavailable from error
 
 
 async def watch_access(principal, local, inputs, changed, *, sessions, preferences):

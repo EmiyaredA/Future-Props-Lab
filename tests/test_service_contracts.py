@@ -45,7 +45,7 @@ def test_cloud_control_capabilities_keep_their_registered_owners():
 
     data = document(ROOT)
     paths = {item["path"]: item["service"] for item in data["operations"]}
-    assert paths["/v1/cloud-control/totp/confirm"] == "identity"
+    assert paths["/v1/cloud-control/unlock"] == "identity"
     assert paths["/v1/cloud-control/desktop/connect"] == "remote"
     assert paths["/v1/agent-workbench/chats/{chat_id}/events"] == "agents"
     assert paths["/v1/code-agents/{agent_id}/enable"] == "agent-runtime"

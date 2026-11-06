@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
 
 from studio.apps.identity.storage import cloud_access as access
-from studio.apps.identity.transport.website.cloud_totp import router as totp_router
+from studio.apps.identity.transport.website.cloud_unlock import router as unlock_router
 from studio.apps.remote_desktop.use_cases.preferences import PreferenceConflict
 from studio.assembly.http_dependencies import (
     SessionDep,
@@ -10,6 +10,7 @@ from studio.assembly.http_dependencies import (
     resolve_studio_websocket_principal,
 )
 from studio.assembly.website import cloud_setup as setup
+from studio.assembly.website.happier import launch_router
 from studio.config.settings import get_cloud_settings
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
 from studio.contracts.remote_desktop.desktop import (
@@ -34,7 +35,6 @@ async def status(request: Request, response: Response, db: SessionDep, principal
     settings = get_cloud_settings()
     local = local_request(request)
     enabled = access.allowed(principal, local=local)
-    enrolled = await access.enrolled(db, principal.user_id) if enabled else False
     preference = await request.app.state.desktop_preferences.read(owner=principal.user_id)
     return CloudStatus(
         enabled=enabled,
@@ -44,8 +44,12 @@ async def status(request: Request, response: Response, db: SessionDep, principal
         idle_minutes=preference.idle_minutes,
         idle_revision=preference.revision,
         local=local,
-        enrolled=enrolled,
         unlocked_until=await access.unlock_expiry(db, principal, local=local),
+        happier_available=bool(
+            enabled
+            and request.app.state.happier
+            and request.app.state.happier.available(request, principal)
+        ),
     )
 
 
@@ -127,18 +131,17 @@ async def desktop_socket(socket: WebSocket):
 
 
 @router.get("/settings", response_model=CloudSetup)
-async def settings_view(request: Request, db: SessionDep, principal: StudioAuth):
+async def settings_view(request: Request, principal: StudioAuth):
     require_local_browser(request, principal)
-    return await setup.read_setup(db, principal)
+    return await setup.read_setup(principal)
 
 
 @router.put("/settings", response_model=CloudSetup)
-async def settings_save(
-    request: Request, body: CloudSetupUpdate, db: SessionDep, principal: StudioAuth
-):
+async def settings_save(request: Request, body: CloudSetupUpdate, principal: StudioAuth):
     require_local_browser(request, principal)
     require_recent_reauthentication(principal)
-    return await setup.save_setup(db, principal, body)
+    return await setup.save_setup(principal, body)
 
 
-router.include_router(totp_router)
+router.include_router(unlock_router)
+router.include_router(launch_router)

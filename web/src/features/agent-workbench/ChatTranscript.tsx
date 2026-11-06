@@ -6,6 +6,7 @@ import {
   TranscriptText,
 } from "./TranscriptMessage";
 import { ActivityRow } from "./ActivityRow";
+import { ToolCodeBlock } from "./ToolCodeBlock";
 import type { SourceTarget } from "./WorkbenchSourcePane";
 import type { ChatDetail } from "./executionApi";
 
@@ -54,7 +55,11 @@ function ApprovalBlock({
     <div className="cloud-approval" key={approval.id}>
       <span className="aw-badge">{approvalLabels[approval.status]}</span>
       <strong>{title}</strong>
-      <pre>{approval.preview || "内容无差异"}</pre>
+      <ToolCodeBlock
+        text={approval.preview || "内容无差异"}
+        label={approval.kind === "write" ? "更改预览" : "Shell"}
+        language={approval.kind === "write" ? "diff" : "bash"}
+      />
       {unlocked && (
         <div className="cloud-pane-actions">
           <button
@@ -79,7 +84,11 @@ function ApprovalBlock({
       key={approval.id}
       title={`${title} · ${approvalLabels[approval.status] ?? approval.status}`}
     >
-      <TranscriptText text={approval.preview || "内容无差异"} raw />
+      <ToolCodeBlock
+        text={approval.preview || "内容无差异"}
+        label={approval.kind === "write" ? "更改预览" : "Shell"}
+        language={approval.kind === "write" ? "diff" : "bash"}
+      />
     </TranscriptDisclosure>
   );
 }

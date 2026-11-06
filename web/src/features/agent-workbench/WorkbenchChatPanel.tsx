@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -34,8 +35,11 @@ import {
   type TurnCreate,
 } from "./executionApi";
 import { workbenchKeys as keys } from "./queryKeys";
+import "./agent-select.css";
 
 type Props = {
+  paneId?: string;
+  hidden?: boolean;
   owner: string;
   host: string;
   enabled: boolean;
@@ -44,9 +48,23 @@ type Props = {
   onSetup?: () => void;
   onSources: () => void;
   onHistory: (id?: string) => void;
+  readerHost?: HTMLElement | null;
+  onOpenReader?: () => void;
+  onCloseReader?: () => void;
 };
 
-function NativeHistory({ owner, id }: { owner: string; id: string }) {
+function NativeHistory({
+  owner,
+  id,
+  readerHost,
+  onOpenReader,
+  onCloseReader,
+  unlocked,
+  onUnlock,
+}: { owner: string; id: string } & Pick<
+  Props,
+  "readerHost" | "onOpenReader" | "onCloseReader" | "unlocked" | "onUnlock"
+>) {
   const { detail, paused } = useWorkbench(owner, {}, id);
   if (detail.data)
     return (
@@ -55,6 +73,10 @@ function NativeHistory({ owner, id }: { owner: string; id: string }) {
         item={detail.data}
         owner={owner}
         paused={paused}
+        readerHost={readerHost}
+        onOpenReader={onOpenReader}
+        onCloseReader={onCloseReader}
+        fileAccess={{ allowed: unlocked, unlock: onUnlock }}
       />
     );
   return (
@@ -67,6 +89,8 @@ function NativeHistory({ owner, id }: { owner: string; id: string }) {
 const activeStatuses = ["running", "waiting_approval", "cancelling"];
 
 export function WorkbenchChatPanel({
+  paneId,
+  hidden,
   owner,
   host,
   enabled,
@@ -75,6 +99,9 @@ export function WorkbenchChatPanel({
   onSetup,
   onSources,
   onHistory,
+  readerHost,
+  onOpenReader,
+  onCloseReader,
 }: Props) {
   const cache = useQueryClient();
   const selectionKey = `fpl.cloud-control.chat.${owner}`;
@@ -91,6 +118,7 @@ export function WorkbenchChatPanel({
   const visibleSource = enabled && unlocked ? sourceTarget : undefined;
   function closeSource() {
     setSourceTarget(undefined);
+    onCloseReader?.();
     requestAnimationFrame(() =>
       sourceTrigger.current?.focus({ preventScroll: true }),
     );
@@ -280,7 +308,12 @@ export function WorkbenchChatPanel({
     chat?.steerable_turn_id === active.id;
 
   return (
-    <section className="cloud-pane cloud-chat" aria-label="Agent 工作台">
+    <section
+      id={paneId}
+      className="cloud-pane cloud-chat"
+      aria-label="Agent 工作台"
+      hidden={hidden}
+    >
       <header className="cloud-pane-bar">
         <h2>
           <Terminal size={17} aria-hidden="true" /> Agent 工作台
@@ -356,7 +389,16 @@ export function WorkbenchChatPanel({
           ))}
         </div>
       ) : nativeId ? (
-        <NativeHistory owner={owner} id={nativeId} />
+        <NativeHistory
+          key={nativeId}
+          owner={owner}
+          id={nativeId}
+          readerHost={readerHost}
+          onOpenReader={onOpenReader}
+          onCloseReader={onCloseReader}
+          unlocked={enabled && unlocked}
+          onUnlock={onUnlock}
+        />
       ) : (
         <>
           {id ? (
@@ -409,22 +451,23 @@ export function WorkbenchChatPanel({
               )}
               <CustomSelect
                 value={agentChoice?.id ?? ""}
-                options={[
-                  { value: "", label: "选择 CLI", disabled: true },
-                  ...agents.map((item) => ({
-                    value: item.id,
-                    label: item.id === "codex" ? "Codex CLI" : item.label,
-                    disabled: !item.available,
-                    description: item.available ? undefined : item.status,
-                  })),
-                ]}
+                className="workbench-agent-select"
+                options={agents.map((item) => ({
+                  value: item.id,
+                  label: item.id === "codex" ? "Codex CLI" : item.label,
+                  disabled: !item.available,
+                  description: item.available ? undefined : item.status,
+                  icon: <AgentLogo id={item.id} size={18} />,
+                }))}
                 onChange={(value) =>
                   setAgent(
                     agents.find((item) => item.id === value && item.available)
                       ?.id,
                   )
                 }
-                ariaLabel="选择 CLI"
+                ariaLabel="选择 Agent"
+                placeholder="选择 Agent"
+                menuMinWidth={244}
                 leadingIcon={<Terminal size={15} aria-hidden="true" />}
                 disabled={pending}
               />
@@ -432,7 +475,7 @@ export function WorkbenchChatPanel({
           ) : null}
           {id ? (
             <div
-              className={`aw-execution-content${visibleSource ? " has-source" : ""}`}
+              className={`aw-execution-content${visibleSource && !readerHost ? " has-source" : ""}`}
             >
               <ChatTranscript
                 key={id}
@@ -445,6 +488,7 @@ export function WorkbenchChatPanel({
                       ? document.activeElement
                       : null;
                   setSourceTarget(target);
+                  onOpenReader?.();
                 }}
                 decide={(turn, approval, approved) => {
                   void action(async () => {
@@ -455,15 +499,27 @@ export function WorkbenchChatPanel({
                   });
                 }}
               />
-              {visibleSource && (
-                <WorkbenchSourcePane
-                  key={`${id}:${visibleSource.turnId}:${visibleSource.callId}`}
-                  owner={owner}
-                  chatId={id}
-                  target={visibleSource}
-                  close={closeSource}
-                />
-              )}
+              {visibleSource &&
+                (readerHost ? (
+                  createPortal(
+                    <WorkbenchSourcePane
+                      key={`${id}:${visibleSource.turnId}:${visibleSource.callId}`}
+                      owner={owner}
+                      chatId={id}
+                      target={visibleSource}
+                      close={closeSource}
+                    />,
+                    readerHost,
+                  )
+                ) : (
+                  <WorkbenchSourcePane
+                    key={`${id}:${visibleSource.turnId}:${visibleSource.callId}`}
+                    owner={owner}
+                    chatId={id}
+                    target={visibleSource}
+                    close={closeSource}
+                  />
+                ))}
             </div>
           ) : (
             <div className="cloud-chat-empty cloud-chat-start">

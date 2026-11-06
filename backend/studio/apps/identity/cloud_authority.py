@@ -1,14 +1,11 @@
 """Return only current cloud authority for a bound Remote or Workbench request."""
 
-import hashlib
 import secrets
 
 import jwt
 from fastapi import APIRouter, HTTPException, Request, Response
-from sqlalchemy import select
 
 from studio.apps.identity.storage import cloud_access as access
-from studio.apps.identity.storage.models.cloud import CloudFactor
 from studio.contracts.identity.claims import verify_context
 from studio.contracts.identity.cloud_authority import (
     AUTHORITY_PATH,
@@ -17,7 +14,6 @@ from studio.contracts.identity.cloud_authority import (
     permits_cloud_authority,
 )
 from studio.contracts.identity.principal import StudioPrincipal
-from studio.contracts.remote_desktop.setup import SETTINGS_PATH
 
 from .live import active_actor
 
@@ -68,18 +64,9 @@ async def cloud_authority(request: Request, response: Response, body: CloudAutho
     async with request.app.state.database.sessions() as db:
         if not await active_actor(db, actor):
             return CloudAuthority(active=False)
-        enabled = access.allowed(principal, local=actor.local)
-        factor = await db.scalar(
-            select(CloudFactor.secret).where(CloudFactor.owner_user_id == actor.user_id)
-        )
         return CloudAuthority(
             active=True,
-            enabled=enabled,
-            enrolled=bool(factor)
-            and (
-                enabled or (actor.local and body.service == "remote" and body.path == SETTINGS_PATH)
-            ),
-            factor_epoch=hashlib.sha256(factor.encode()).hexdigest() if factor else None,
+            enabled=access.allowed(principal, local=actor.local),
             unlocked_until=await access.unlock_expiry(db, principal, local=actor.local),
             desktop_configured=access.allowed(principal, local=actor.local, desktop=True),
             desktop_authorized=await access.desktop_authorized(db, principal, local=actor.local),

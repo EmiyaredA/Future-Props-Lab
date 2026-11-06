@@ -1,6 +1,6 @@
 import { expect, test, type WebSocketRoute } from "@playwright/test";
 
-test("cloud control resizes both panes and retains the original workbench", async ({
+test("cloud control switches full-width views and retains the original workbench", async ({
   page,
 }) => {
   await page.goto("/apps");
@@ -9,55 +9,46 @@ test("cloud control resizes both panes and retains the original workbench", asyn
   ).toHaveCount(0);
   await page.getByRole("button", { name: "云控", exact: true }).click();
   await expect(page).toHaveURL(/\/cloud-control$/);
+  const switcher = page.getByRole("group", { name: "云控视图" });
+  const desktopTab = switcher.getByRole("button", {
+    name: "远程桌面",
+    exact: true,
+  });
+  const agentTab = switcher.getByRole("button", {
+    name: "Agent 工作台",
+    exact: true,
+  });
   const desktop = page.getByRole("region", { name: "远程桌面", exact: true });
   const chat = page.getByRole("region", { name: "Agent 工作台", exact: true });
-  const divider = page.getByRole("separator", { name: "调整远程桌面宽度" });
+  await expect(desktopTab).toHaveAttribute("aria-pressed", "true");
   for (const width of [390, 768, 1280, 1616]) {
     await page.setViewportSize({ width, height: 973 });
     for (const theme of ["浅色", "深色"]) {
       await page.getByRole("button", { name: theme, exact: true }).click();
-      await expect(
-        page.getByRole("heading", { name: "云控", exact: true }),
-      ).toBeVisible();
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth + 1,
         ),
       ).toBe(true);
     }
-    if (width < 820) {
-      const switcher = page.getByRole("group", { name: "云控面板" });
-      await switcher.getByRole("button", { name: "远程桌面" }).click();
-      await expect(desktop).toBeVisible();
-      await expect(chat).toBeHidden();
-      await switcher.getByRole("button", { name: "Agent 工作台" }).click();
-      await expect(chat).toBeVisible();
-      await expect(desktop).toBeHidden();
-    } else {
-      await expect(chat).toBeVisible();
-      await expect(desktop).toBeVisible();
-    }
+    await desktopTab.press("Enter");
+    await expect(desktop).toBeVisible();
+    await expect(chat).toBeHidden();
+    await agentTab.press("Space");
+    await expect(agentTab).toBeFocused();
+    await expect(chat).toBeVisible();
+    await expect(desktop).toBeHidden();
+    const workspace = await page.locator(".cloud-workspace").boundingBox();
+    expect((await chat.boundingBox())!.width).toBeCloseTo(workspace!.width, 0);
   }
-  await divider.focus();
-  await page.keyboard.press("ArrowLeft");
-  const ratio = await divider.getAttribute("aria-valuenow");
-  expect(Number(ratio)).toBeLessThan(65);
-  const position = await divider.boundingBox();
-  expect(position).not.toBeNull();
-  await page.mouse.move(position!.x + position!.width / 2, position!.y + 40);
-  await page.mouse.down();
-  await page.mouse.move(position!.x - 100, position!.y + 40, { steps: 5 });
-  await page.mouse.up();
-  const dragged = await divider.getAttribute("aria-valuenow");
-  expect(Number(dragged)).toBeLessThan(Number(ratio));
+  await expect(
+    page.getByRole("separator", { name: "调整远程桌面宽度" }),
+  ).toHaveCount(0);
   await page.reload();
-  await expect(divider).toHaveAttribute("aria-valuenow", dragged!);
+  await expect(agentTab).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "会话历史" }).click();
   await page.getByRole("button", { name: "查看完整工作台" }).click();
   await expect(page).toHaveURL(/\/agents$/);
-  await expect(
-    page.getByRole("region", { name: "Agent 工作台" }),
-  ).toBeVisible();
 });
 
 test("ordinary accounts cannot mount cloud control or workbench requests", async ({
@@ -130,7 +121,7 @@ test("retired host tools are absent even with old favorites and usage", async ({
 test("the embedded desktop connects and the selected CLI survives reload", async ({
   page,
 }) => {
-  test.setTimeout(60_000);
+  await page.clock.install();
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   const deadline = Math.floor(Date.now() / 1000) + 600;
@@ -154,7 +145,6 @@ test("the embedded desktop connects and the selected CLI survives reload", async
         idle_minutes: preference.idle_minutes,
         idle_revision: preference.revision,
         local: true,
-        enrolled: true,
         unlocked_until: deadline,
       },
     }),
@@ -188,6 +178,12 @@ test("the embedded desktop connects and the selected CLI survives reload", async
         agents: [
           { id: "codex", label: "Codex", available: true, status: "已连接" },
           { id: "pi", label: "Pi", available: true, status: "已连接" },
+          {
+            id: "claude-code",
+            label: "Claude Code",
+            available: false,
+            status: "请先在本机登录 Claude Code",
+          },
         ],
       },
     }),
@@ -258,9 +254,8 @@ test("the embedded desktop connects and the selected CLI survives reload", async
   await expect(desktop.getByText("已连接", { exact: true })).toHaveCount(0);
   await expect(desktop.locator(".cloud-remote-surface")).toBeHidden();
   await expect(desktop.getByRole("button", { name: "全屏" })).toBeDisabled();
-  await expect(desktop.getByText(/等待桌面画面超时/)).toBeVisible({
-    timeout: 28_000,
-  });
+  await page.clock.runFor(25_000);
+  await expect(desktop.getByText(/等待桌面画面超时/)).toBeVisible();
   await expect(desktop.locator("canvas")).toHaveCount(0);
   await startDesktop("重新连接");
   await expect(desktop.getByText("等待画面", { exact: true })).toBeVisible();
@@ -364,8 +359,30 @@ test("the embedded desktop connects and the selected CLI survives reload", async
   await expect
     .poll(() => page.evaluate(() => Boolean(document.fullscreenElement)))
     .toBe(false);
-  await page.getByRole("combobox", { name: "选择 CLI", exact: true }).click();
-  await page.getByRole("option", { name: "Codex CLI", exact: true }).click();
+  const switcher = page.getByRole("group", { name: "云控视图" });
+  const chatToggle = switcher.getByRole("button", { name: "Agent 工作台" });
+  const desktopToggle = switcher.getByRole("button", { name: "远程桌面" });
+  await chatToggle.click();
+  const agentSelect = page.getByRole("combobox", { name: "选择 Agent" });
+  await agentSelect.press("ArrowDown");
+  const agentOption = page.getByRole("option", {
+    name: "Codex CLI",
+    exact: true,
+  });
+  await expect(agentOption.locator(".code-agent-logo")).toBeVisible();
+  const agentMenu = page.getByRole("listbox", { name: "选择 Agent" });
+  await expect(agentMenu.getByRole("option")).toHaveCount(3);
+  const unavailableAgent = agentMenu.getByRole("option", {
+    name: /Claude Code/,
+  });
+  await expect(unavailableAgent).toBeDisabled();
+  await expect(unavailableAgent.locator(".code-agent-logo")).toBeVisible();
+  await agentMenu.screenshot({
+    path: test.info().outputPath("workbench-agent-menu.png"),
+  });
+  await agentOption.press("Enter");
+  await expect(agentSelect.locator(".code-agent-logo")).toBeVisible();
+  await expect(agentSelect).toBeFocused();
   await page.getByRole("combobox", { name: "选择项目", exact: true }).click();
   await page
     .getByRole("option", { name: "Fixture project", exact: true })
@@ -379,24 +396,39 @@ test("the embedded desktop connects and the selected CLI survives reload", async
     path: test.info().outputPath("cloud-control-desktop.png"),
   });
   await page.setViewportSize({ width: 390, height: 900 });
-  const switcher = page.getByRole("group", { name: "云控面板" });
-  await switcher.getByRole("button", { name: "Agent 工作台" }).click();
   await expect(page.getByText("回复 1", { exact: true })).toBeVisible();
   await page.screenshot({
     path: test.info().outputPath("cloud-control-mobile.png"),
   });
-  await switcher.getByRole("button", { name: "远程桌面" }).click();
+  await desktopToggle.click();
   await expect(desktop.getByText("已连接", { exact: true })).toBeVisible();
   await page.setViewportSize({ width: 1800, height: 920 });
+  await desktop.locator(".cloud-remote-surface").click();
+  await expect(keyboard).toBeFocused();
+  const releases = () =>
+    desktopInputs.filter((message) => message === "11.fpl_release;").length;
+  const previousReleases = releases();
+  const previousSocket = desktopSocket;
+  await chatToggle.click();
+  await expect(desktop).toBeHidden();
+  await expect.poll(releases).toBeGreaterThan(previousReleases);
   await input.fill("正在输入的草稿");
+  await desktopToggle.click();
+  await expect(input).toBeHidden();
+  await expect(desktop.getByText("已连接", { exact: true })).toBeVisible();
+  expect(desktopSocket).toBe(previousSocket);
+  await chatToggle.click();
+  await expect(input).toHaveValue("正在输入的草稿");
+  await input.focus();
   const viewport = await page.locator(".cloud-workspace").boundingBox();
   expect(viewport!.width).toBeGreaterThan(1650);
   desktopSocket!.send("5.error,20.desktop_idle_timeout,3.512;");
+  await expect(input).toBeFocused();
+  await expect(input).toHaveValue("正在输入的草稿");
+  await desktopToggle.click();
   await expect(
     desktop.getByRole("dialog", { name: "远程桌面已锁定" }),
   ).toBeVisible();
-  await expect(input).toBeFocused();
-  await expect(input).toHaveValue("正在输入的草稿");
   await expect(desktop.locator("canvas")).toHaveCount(0);
   await page.getByLabel("VNC 密码", { exact: true }).fill("test-vnc");
   await desktop.getByRole("button", { name: "重新连接", exact: true }).click();
@@ -404,6 +436,7 @@ test("the embedded desktop connects and the selected CLI survives reload", async
   await desktopSocket!.close({ code: 1012 });
   await expect(desktop.getByText("远程桌面已断开，请重新连接。")).toBeVisible();
   await expect(desktop.locator("canvas")).toHaveCount(0);
+  await chatToggle.click();
   await page.reload();
   await expect(page.getByText("回复 1", { exact: true })).toBeVisible();
   await input.fill("接着聊");
@@ -412,21 +445,37 @@ test("the embedded desktop connects and the selected CLI survives reload", async
   expect(errors).toEqual([]);
 });
 
-test("public desktop can display a WebP first frame after a slow transfer", async ({
+test("public desktop unlocks with a password and reconnects with VNC only", async ({
   page,
 }) => {
   await page.clock.install();
+  let authorized = false;
+  let passwordChecks = 0;
+  await page.route("**/v1/auth/reauth", (route) => {
+    const { password } = route.request().postDataJSON();
+    passwordChecks++;
+    return password === "fixture-password"
+      ? route.fulfill({ status: 204 })
+      : route.fulfill({
+          status: 401,
+          json: { code: "invalid_credentials", detail: "密码不正确" },
+        });
+  });
+  await page.route("**/v1/cloud-control/unlock", (route) => {
+    expect(route.request().postDataJSON()).toEqual({ purpose: "desktop" });
+    authorized = true;
+    return route.fulfill({ status: 204 });
+  });
   await page.route("**/v1/cloud-control/status", (route) =>
     route.fulfill({
       json: {
         enabled: false,
         host_label: "Fixture Mac",
         desktop_configured: true,
-        desktop_authorized: true,
+        desktop_authorized: authorized,
         idle_minutes: 30,
         idle_revision: 0,
         local: false,
-        enrolled: false,
         unlocked_until: null,
       },
     }),
@@ -448,6 +497,16 @@ test("public desktop can display a WebP first frame after a slow transfer", asyn
   await page.goto("/cloud-control");
   const desktop = page.getByRole("region", { name: "远程桌面", exact: true });
   await desktop.getByRole("button", { name: "连接桌面", exact: true }).click();
+  const unlock = page.getByRole("dialog", { name: "验证桌面访问权限" });
+  const password = unlock.getByLabel("管理员密码");
+  await expect(password).toBeFocused();
+  await password.fill("wrong-password");
+  await unlock.getByRole("button", { name: "验证", exact: true }).click();
+  await expect(unlock.getByRole("alert")).toHaveText("密码不正确");
+  expect(authorized).toBe(false);
+  await password.fill("fixture-password");
+  await password.press("Enter");
+  await expect(unlock).toBeHidden();
   await desktop.getByLabel("VNC 密码", { exact: true }).fill("test-vnc");
   await desktop.getByRole("button", { name: "连接桌面", exact: true }).click();
   await expect(desktop.getByText("等待画面", { exact: true })).toBeVisible();
@@ -462,6 +521,9 @@ test("public desktop can display a WebP first frame after a slow transfer", asyn
   await expect(desktop.getByText("等待画面", { exact: true })).toBeVisible();
   desktopSocket!.send("3.end,1.1;4.sync,1.2;");
   await expect(desktop.getByText("已连接", { exact: true })).toBeVisible();
+  desktopSocket!.send("5.error,20.desktop_idle_timeout,3.512;");
+  await expect(desktop.getByLabel("VNC 密码", { exact: true })).toBeVisible();
+  expect(passwordChecks).toBe(2);
 });
 
 test("cloud settings only configure desktop connection on wide and narrow screens", async ({
@@ -477,7 +539,6 @@ test("cloud settings only configure desktop connection on wide and narrow screen
         idle_minutes: 30,
         idle_revision: 0,
         local: true,
-        enrolled: false,
         unlocked_until: null,
       },
     }),
@@ -488,7 +549,6 @@ test("cloud settings only configure desktop connection on wide and narrow screen
     enabled: true,
     public_enabled: false,
     public_desktop_vnc_only: true,
-    enrolled: true,
     guacd_ready: true,
     screen_sharing_ready: true,
   };
@@ -541,7 +601,8 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
 }, info) => {
   const base = "/Users/demo/Projects";
   const recommended = `${base}/recommended`;
-  const browsed = `${base}/browsed`;
+  const sandbox = `${base}/sandbox`;
+  const browsed = `${sandbox}/browsed`;
   const pasted = "/Volumes/Work/pasted";
   const picked: { id: string; label: string; root: string }[] = [];
   const chats = new Map<
@@ -579,7 +640,6 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
         idle_minutes: 30,
         idle_revision: 0,
         local: true,
-        enrolled: true,
         unlocked_until: deadline,
       },
     }),
@@ -598,20 +658,33 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
       },
     }),
   );
+  const listings = {
+    "": {
+      parent: null,
+      selectable: false,
+      items: [
+        { root: base, label: "项目" },
+        { root: "/Users/demo/Desktop", label: "桌面" },
+      ],
+    },
+    [base]: {
+      parent: null,
+      selectable: false,
+      items: [
+        { root: recommended, label: "recommended" },
+        { root: sandbox, label: "sandbox" },
+      ],
+    },
+    [sandbox]: {
+      parent: base,
+      selectable: true,
+      items: [{ root: browsed, label: "browsed" }],
+    },
+    [browsed]: { parent: sandbox, selectable: true, items: [] },
+  };
   await page.route("**/v1/agent-workbench/execution/directories*", (route) => {
     const parent = new URL(route.request().url()).searchParams.get("parent");
-    return route.fulfill({
-      json:
-        parent === browsed
-          ? { parent: base, selectable: true, items: [] }
-          : {
-              parent: null,
-              selectable: false,
-              items: parent
-                ? [{ root: browsed, label: "browsed" }]
-                : [{ root: base, label: "项目" }],
-            },
-    });
+    return route.fulfill({ json: listings[parent ?? ""] });
   });
   await page.route("**/v1/agent-workbench/execution/projects", (route) => {
     const { root } = route.request().postDataJSON();
@@ -724,9 +797,23 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/cloud-control");
+  const chatTab = page
+    .getByRole("group", { name: "云控视图" })
+    .getByRole("button", { name: "Agent 工作台" });
+  await chatTab.click();
   const workbench = page.getByRole("region", { name: "Agent 工作台" });
   const picker = page.getByRole("dialog", { name: "选择项目", exact: true });
   const browser = page.getByRole("dialog", { name: "选择项目目录" });
+  const browseButton = picker.getByRole("button", { name: "选择其他目录" });
+  async function expectBrowseButtonAligned() {
+    await expect(browseButton).toBeInViewport();
+    const icon = (await browseButton.locator("svg").boundingBox())!;
+    const label = (await browseButton.getByText("选择其他目录").boundingBox())!;
+    expect(
+      Math.abs(icon.y + icon.height / 2 - label.y - label.height / 2),
+    ).toBeLessThan(1);
+    expect(label.x - (icon.x + icon.width)).toBeGreaterThanOrEqual(6);
+  }
   const select = workbench.getByRole("button", {
     name: "选择项目",
     exact: true,
@@ -736,8 +823,8 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
     await expect(
       workbench.getByRole("button", { name: label, exact: true }),
     ).toBeVisible();
-    const cli = workbench.getByRole("combobox", { name: "选择 CLI" });
-    if ((await cli.innerText()).includes("选择 CLI")) {
+    const cli = workbench.getByRole("combobox", { name: "选择 Agent" });
+    if ((await cli.innerText()).includes("选择 Agent")) {
       await cli.click();
       await page.getByRole("option", { name: "Codex CLI" }).click();
     }
@@ -788,9 +875,6 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
   await expect(workbench.getByText("Agent 已接收指令")).toBeVisible();
   await composer.fill("检查兼容性");
   await workbench.screenshot({ path: info.outputPath("workbench-queue.png") });
-  const chatTab = page
-    .getByRole("group", { name: "云控面板" })
-    .getByRole("button", { name: "Agent 工作台" });
   await page.setViewportSize({ width: 390, height: 680 });
   await chatTab.click();
   await expect(
@@ -811,10 +895,34 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
   await workbench
     .getByRole("button", { name: "recommended", exact: true })
     .click();
-  await picker.getByRole("button", { name: "选择其他目录" }).click();
-  await browser.getByRole("button", { name: "项目", exact: true }).click();
-  await browser.getByRole("button", { name: "browsed", exact: true }).click();
+  await expectBrowseButtonAligned();
+  await picker.screenshot({
+    path: info.outputPath("workbench-project-picker.png"),
+  });
+  await browseButton.click();
+  const expand = browser.getByRole("button", { name: "展开 项目" });
+  await expand.press("Enter");
+  const expandSandbox = browser.getByRole("button", { name: "展开 sandbox" });
+  await expandSandbox.press("Enter");
+  const directory = browser.getByRole("button", {
+    name: "browsed",
+    exact: true,
+  });
+  await expect(directory).toBeVisible();
+  await expect(
+    browser.getByRole("button", { name: "使用此目录" }),
+  ).toBeDisabled();
+  await directory.press("Space");
+  await expect(directory).toHaveAttribute("aria-pressed", "true");
   await expect(browser.getByText(browsed, { exact: true })).toBeVisible();
+  await browser.getByRole("button", { name: "折叠 项目" }).click();
+  await expect(directory).toBeHidden();
+  await expand.click();
+  await expandSandbox.click();
+  await expect(directory).toHaveAttribute("aria-pressed", "true");
+  await browser.screenshot({
+    path: info.outputPath("workbench-project-tree.png"),
+  });
   await browser
     .getByRole("button", { name: "使用此目录", exact: true })
     .click();
@@ -824,7 +932,13 @@ test("cloud workbench starts chats from recommended, browsed and pasted director
   await page.setViewportSize({ width: 390, height: 680 });
   await chatTab.click();
   await workbench.getByRole("button", { name: "browsed", exact: true }).click();
-  await picker.getByRole("button", { name: "选择其他目录" }).click();
+  await expectBrowseButtonAligned();
+  await browseButton.click();
+  expect(
+    await browser.evaluate(
+      (element) => element.scrollWidth <= element.clientWidth,
+    ),
+  ).toBe(true);
   const path = browser.getByLabel("或粘贴项目绝对路径");
   await path.fill("/invalid");
   await browser.getByRole("button", { name: "使用粘贴的路径" }).click();
@@ -872,7 +986,10 @@ test("programming CLI controls have room and admins have no per-CLI grant switch
   await page.goto("/code-agents");
   const card = page.getByRole("article", { name: "Codex 连接" });
   const enable = card.getByRole("button", { name: "启用 CLI 连接" });
-  const command = card.getByText("npm run codex:login", { exact: true });
+  const command = card.getByText(
+    'npm --prefix "<FPL 安装目录>" run codex:login',
+    { exact: true },
+  );
   await expect(enable).toBeVisible();
   await expect(command).toBeVisible();
   await expect(
@@ -882,7 +999,7 @@ test("programming CLI controls have room and admins have no per-CLI grant switch
     await page.setViewportSize({ width, height: 900 });
     const button = (await enable.boundingBox())!;
     const login = (await command.boundingBox())!;
-    expect(login.y - (button.y + button.height)).toBeGreaterThanOrEqual(12);
+    expect(button.y - (login.y + login.height)).toBeGreaterThanOrEqual(12);
   }
   await page.setViewportSize({ width: 1470, height: 900 });
   await card.screenshot({

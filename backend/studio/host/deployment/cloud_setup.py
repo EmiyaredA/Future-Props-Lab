@@ -28,7 +28,7 @@ async def probe_port(port, *, vnc=False):
         return False
 
 
-async def read_snapshot(path, raw, settings, has_factor):
+async def read_snapshot(path, raw, settings):
     guacd, sharing = await asyncio.gather(
         probe_port(settings.fpl_cloud_control_guacd_port),
         probe_port(settings.fpl_cloud_control_vnc_port, vnc=True),
@@ -41,7 +41,6 @@ async def read_snapshot(path, raw, settings, has_factor):
         enabled=settings.fpl_cloud_control_enabled,
         public_enabled=settings.fpl_cloud_control_public_enabled,
         public_desktop_vnc_only=settings.fpl_cloud_control_public_desktop_vnc_only,
-        enrolled=has_factor,
         guacd_ready=guacd,
         screen_sharing_ready=(
             sharing

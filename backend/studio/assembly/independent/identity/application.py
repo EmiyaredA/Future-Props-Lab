@@ -1,7 +1,5 @@
 """Account-only ASGI application, with its own SQLite and lifecycle."""
 
-import secrets
-import time
 from contextlib import asynccontextmanager
 from functools import partial
 from urllib.parse import urlsplit
@@ -27,7 +25,7 @@ from studio.apps.identity.model_audit import ModelAuditInbox
 from studio.apps.identity.model_governance import router as model_governance_router
 from studio.apps.identity.project_certification import router as certification_router
 from studio.apps.identity.retention_api import router as retention_router
-from studio.apps.identity.storage.cloud_factors import FactorRecords
+from studio.apps.identity.storage.cloud_unlock import CloudUnlockRecords
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
 from studio.apps.identity.storage.models.accounts import (
     AuthSession,
@@ -57,10 +55,9 @@ from studio.apps.identity.transport.model_audit_http import router as model_audi
 from studio.apps.identity.transport.website import (
     account_management,
     accounts,
-    cloud_totp,
+    cloud_unlock,
     registration,
 )
-from studio.apps.identity.use_cases.cloud_factors import CloudFactors
 from studio.config import ConfigurationError
 from studio.config.settings import get_cloud_settings, get_settings
 from studio.contracts.identity.certification import MAX_BODY as CERTIFICATION_BODY
@@ -140,11 +137,8 @@ def create_app(
     app.state.database = database
     app.state.auth_attempts = AttemptLimiter()
     app.state.invitation_cipher = SecretCipher(settings.fpl_secrets_key)
-    app.state.cloud_factors = CloudFactors(
-        FactorRecords(database.sessions, clock=utc_now),
-        cipher=SecretCipher(settings.fpl_secrets_key),
-        clock=lambda: time.time(),
-        secret_bytes=secrets.token_bytes,
+    app.state.cloud_unlocks = CloudUnlockRecords(
+        database.sessions, clock=utc_now, settings_reader=get_cloud_settings
     )
     app.state.integration_intents = IntegrationIntents(
         database, private_key.public_key(), catalog, private_key=private_key, key_id=key_id
@@ -185,7 +179,7 @@ def create_app(
             ):
                 included.routes.append(route)
     app.include_router(included, prefix="/v1")
-    app.include_router(cloud_totp.router, prefix="/v1/cloud-control", tags=["cloud-control"])
+    app.include_router(cloud_unlock.router, prefix="/v1/cloud-control", tags=["cloud-control"])
     app.include_router(authorization_router, include_in_schema=False)
     app.include_router(catalog_events_router)
     app.include_router(cloud_authority_router)

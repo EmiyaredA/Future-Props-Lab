@@ -40,7 +40,6 @@
 }
 .cloud-workspace {
   display: grid;
-  grid-template-columns: minmax(0, var(--cloud-ratio)) 12px minmax(0, 1fr);
   flex: 1;
   min-height: 0;
 }
@@ -179,20 +178,6 @@
 .cloud-remote:fullscreen {
   border: 0;
   border-radius: 0;
-}
-.cloud-divider {
-  display: grid;
-  place-items: center;
-  min-width: 0;
-  cursor: col-resize;
-  touch-action: none;
-  color: var(--muted);
-}
-.cloud-divider:hover,
-.cloud-divider:focus-visible {
-  color: var(--accent);
-  outline: none;
-  background: var(--accent-soft);
 }
 .cloud-chat-context {
   display: flex;
@@ -355,9 +340,6 @@
   margin: 8px 12px;
   color: var(--danger);
 }
-.cloud-mobile-switch {
-  display: none;
-}
 .cloud-dialog-overlay {
   position: fixed;
   z-index: 80;
@@ -404,23 +386,6 @@
   margin-top: 8px;
 }
 
-@container (max-width: 819px) {
-  .cloud-mobile-switch {
-    display: flex;
-    gap: 8px;
-  }
-  .cloud-mobile-switch [aria-pressed="true"] {
-    color: var(--accent);
-  }
-  .cloud-workspace {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .cloud-divider,
-  .cloud-workspace[data-pane="chat"] .cloud-remote,
-  .cloud-workspace[data-pane="desktop"] .cloud-chat {
-    display: none;
-  }
-}
 @container (max-width: 530px) {
   .cloud-pane-bar {
     flex-wrap: wrap;

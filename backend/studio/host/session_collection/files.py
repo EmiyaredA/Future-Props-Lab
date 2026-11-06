@@ -18,6 +18,7 @@ MAX_CHUNK = 4 * 1024 * 1024
 MAX_RECORD = 64 * 1024 * 1024
 MAX_EXPANDED = 512 * 1024 * 1024
 NORMALIZATION_VERSION = 1
+CODEX_NORMALIZATION_VERSION = 1
 PRESENTATION_VERSION = 2
 SKIP_DIRS = {"node_modules", ".git", "skills", "plugins", "cache", "Cache", "attachments"}
 
@@ -214,7 +215,10 @@ class JsonlAdapter:
 
     def read_history(self, root, locator, checkpoint):
         # Re-read changed normalization rules in bounded batches using existing entry identities.
-        normalization_version = NORMALIZATION_VERSION if self.agent_id == "dsh" else 0
+        normalization_version = {
+            "dsh": NORMALIZATION_VERSION,
+            "codex": CODEX_NORMALIZATION_VERSION,
+        }.get(self.agent_id, 0)
         reindex = bool(checkpoint) and (
             checkpoint.get("normalization_version", 0) != normalization_version
             or checkpoint.get("presentation_version") != PRESENTATION_VERSION

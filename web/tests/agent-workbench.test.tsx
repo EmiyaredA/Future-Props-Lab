@@ -226,13 +226,91 @@ describe("Agent 工作台", () => {
     fireEvent.click(summary.closest("summary")!);
     const command = within(transcript).getByText("exec");
     fireEvent.click(command.closest("summary")!);
-    expect(within(transcript).getByText("调用参数")).toBeVisible();
+    expect(within(transcript).getByText("Shell")).toBeVisible();
     expect(within(transcript).getByText("matched preview")).toBeVisible();
     expect(within(transcript).getByText(/已经定位到问题/)).toBeVisible();
     unmount();
   });
 
-  it("shows structured question receipts inside the reply and keeps historical paths read-only", async () => {
+  it("renders a Codex follow-up with an attachment as its own user message", async () => {
+    const [, assistant, call, final] = workbenchEntries();
+    const turn_id = "same-turn";
+    const followUp = {
+      ...assistant,
+      role: "user" as const,
+      presentation: { turn_id, message_id: "follow-up" },
+    };
+    vi.mocked(api.getSession).mockResolvedValue({
+      ...workbenchSessions[0],
+      agent_id: "codex",
+    });
+    vi.mocked(api.getHistory).mockResolvedValue({
+      items: [
+        { ...assistant, text: "助手先说明", presentation: { turn_id } },
+        {
+          ...call,
+          kind: "tool_call",
+          role: "assistant",
+          presentation: { turn_id },
+        },
+        {
+          ...followUp,
+          id: "body",
+          native_id: "follow-up:0",
+          ordinal: 3,
+          text: "## 我的标题\n补充正文",
+        },
+        {
+          ...followUp,
+          id: "open",
+          native_id: "follow-up:1",
+          ordinal: 4,
+          text: "",
+        },
+        {
+          ...followUp,
+          id: "image",
+          native_id: "follow-up:2",
+          ordinal: 5,
+          text: "[附件引用]",
+        },
+        {
+          ...followUp,
+          id: "close",
+          native_id: "follow-up:3",
+          ordinal: 6,
+          text: "",
+        },
+        {
+          ...final,
+          ordinal: 7,
+          text: "助手继续回复",
+          presentation: { turn_id },
+        },
+      ],
+      next_cursor: null,
+      change_cursor: 1,
+      branches: [],
+      selected_branch: null,
+    });
+    mount();
+    const transcript = await screen.findByLabelText("会话记录");
+    await within(transcript).findByText("补充正文");
+    const [first, user, last] = within(transcript).getAllByRole("article");
+    expect(first).toHaveClass("is-assistant");
+    expect(first).toHaveTextContent("助手先说明");
+    expect(first.querySelector("summary")).not.toBeNull();
+    expect(user).toHaveClass("is-user");
+    expect(
+      within(user).getByRole("heading", { name: "我的标题" }),
+    ).toBeVisible();
+    expect(within(user).getByText("[附件引用]")).toBeVisible();
+    expect(user.querySelectorAll(".aw-line")).toHaveLength(2);
+    expect(last).toHaveClass("is-assistant");
+    expect(last).toHaveTextContent("助手继续回复");
+  });
+
+  it("shows structured question receipts and exposes historical file reading", async () => {
     const entries = workbenchEntries();
     vi.mocked(api.getHistory).mockResolvedValue({
       items: [
@@ -296,7 +374,7 @@ describe("Agent 工作台", () => {
     expect(within(transcript).getByText(/src\/preview.py/)).toBeVisible();
     expect(
       within(transcript).queryByRole("button", { name: "src/preview.py" }),
-    ).toBeNull();
+    ).toBeVisible();
     unmount();
   });
 
