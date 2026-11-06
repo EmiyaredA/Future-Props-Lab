@@ -66,7 +66,7 @@ it("retries an unavailable relay and preserves the same frame across cloud view 
           userId="happier-owner"
           permissions={["cloud-control.access"]}
         >
-          <CloudControlPage owner="happier-owner" />
+          <CloudControlPage owner="happier-owner" hideUnavailableAgent />
         </AccountAccessProvider>
       </QueryClientProvider>,
     );
@@ -97,6 +97,37 @@ it("retries an unavailable relay and preserves the same frame across cloud view 
     localStorage.removeItem("fpl.cloud-control.view.happier-owner");
   }
 });
+it("shows the independent Agent tab only when the server offers Happier", async () => {
+  const queryClient = new QueryClient();
+  const owner = "independent-owner";
+  const statusKey = ["cloud-control", owner, "status"];
+  queryClient.setQueryDefaults(statusKey, { staleTime: Infinity });
+  const status = {
+    enabled: true,
+    local: true,
+    unlocked_until: 0,
+    desktop_configured: false,
+    host_label: "Fixture Mac",
+  };
+  queryClient.setQueryData(statusKey, status);
+  render(
+    <QueryClientProvider client={queryClient}>
+      <AccountAccessProvider
+        userId={owner}
+        permissions={["cloud-control.access"]}
+      >
+        <CloudControlPage owner={owner} hideUnavailableAgent preferAgent />
+      </AccountAccessProvider>
+    </QueryClientProvider>,
+  );
+  expect(screen.queryByRole("button", { name: /^Agent 工作台$/ })).toBeNull();
+  const url = "https://studio.fpl.localhost:3443/cloud-control?view=agent";
+  queryClient.setQueryData(statusKey, { ...status, happier_studio_url: url });
+  expect(
+    await screen.findByRole("link", { name: "从 Studio HTTPS 入口登录" }),
+  ).toHaveAttribute("href", url);
+});
+
 it("switches cloud views and remembers the selection per account", async () => {
   const queryClient = new QueryClient();
   const view = (owner: string) => (

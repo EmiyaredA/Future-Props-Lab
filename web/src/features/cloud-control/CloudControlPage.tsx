@@ -36,17 +36,16 @@ function savedView(owner: string, preferAgent: boolean): View {
 function CloudWorkspace({
   owner,
   preferAgent = false,
-  desktopOnly = false,
+  hideUnavailableAgent = false,
 }: {
   owner: string;
   preferAgent?: boolean;
-  desktopOnly?: boolean;
+  hideUnavailableAgent?: boolean;
 }) {
   const paneId = useId();
   const [selected, setView] = useState<View>(() =>
     savedView(owner, preferAgent),
   );
-  const view = desktopOnly ? "desktop" : selected;
   useEffect(() => {
     if (preferAgent) setView("agent");
   }, [preferAgent]);
@@ -66,6 +65,11 @@ function CloudWorkspace({
     queryFn: ({ signal }) => readCloudStatus(signal),
     refetchInterval: 15_000,
   });
+  const desktopOnly =
+    hideUnavailableAgent &&
+    !status.data?.happier_available &&
+    !status.data?.happier_studio_url;
+  const view = desktopOnly ? "desktop" : selected;
   const [now, setNow] = useState(() => Date.now());
   const desktopLabel = status.data?.remote_apps_enabled
     ? "远程应用"

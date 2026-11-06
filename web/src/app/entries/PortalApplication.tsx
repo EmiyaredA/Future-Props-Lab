@@ -29,7 +29,13 @@ function PortalContents() {
     >
       <div className="portal-scroll">
         {/^\/cloud-control\/?$/.test(location.pathname) ? (
-          <CloudControlPage owner={me.user.id} desktopOnly />
+          <CloudControlPage
+            owner={me.user.id}
+            hideUnavailableAgent
+            preferAgent={
+              new URLSearchParams(location.search).get("view") === "agent"
+            }
+          />
         ) : /^\/apps\/?$/.test(location.pathname) ? (
           <ApplicationCenterRoute applications={applications} onOpen={open} />
         ) : (
