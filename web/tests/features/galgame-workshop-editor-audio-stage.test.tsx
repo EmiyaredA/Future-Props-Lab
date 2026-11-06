@@ -1,3 +1,4 @@
+import "../support/galgame-editor-logic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -668,8 +669,11 @@ test("previews character placement and inherits it when adding dialogue", async 
   const { container } = renderEditor();
   await screen.findByText("纵向切片");
 
+  const tracks = within(
+    await screen.findByRole("region", { name: "多轨剧情时间轴" }),
+  );
   expect(screen.getByRole("button", { name: "编辑" })).toHaveClass("active");
-  await user.click(screen.getByRole("button", { name: "在播放头添加内容" }));
+  await user.click(tracks.getByRole("button", { name: "在播放头添加内容" }));
   await user.click(screen.getByRole("button", { name: /角色登场 \/ 调整/ }));
   expect(await screen.findByLabelText("登场或调整角色")).toHaveTextContent(
     "调查员",
@@ -707,7 +711,7 @@ test("previews character placement and inherits it when adding dialogue", async 
   expect(previewActor).not.toHaveAttribute("tabindex");
   expect(previewActor).not.toHaveAttribute("aria-label", "调整角色 调查员");
 
-  await user.click(screen.getByRole("button", { name: "在播放头添加内容" }));
+  await user.click(tracks.getByRole("button", { name: "在播放头添加内容" }));
   await user.click(screen.getByRole("button", { name: "对白" }));
   await waitFor(
     () => {
@@ -788,9 +792,10 @@ test("edits saved dialogue placement and removes all staged actors", async () =>
   });
 
   await user.click(screen.getByRole("button", { name: "演出" }));
-  await user.click(
-    await screen.findByRole("button", { name: "在播放头添加内容" }),
+  const tracks = within(
+    await screen.findByRole("region", { name: "多轨剧情时间轴" }),
   );
+  await user.click(tracks.getByRole("button", { name: "在播放头添加内容" }));
   await user.click(screen.getByRole("button", { name: "全部退场" }));
   await waitFor(
     () => {

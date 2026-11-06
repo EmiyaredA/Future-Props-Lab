@@ -1,3 +1,4 @@
+import "../support/galgame-editor-logic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -540,35 +541,37 @@ test("opens the visual timeline and edits precise cue timing", async () => {
   );
   renderEditor();
 
-  expect(
-    await screen.findByRole("region", { name: "多轨剧情时间轴" }),
-  ).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: /旁白 00:12\.300/ }));
+  const timeline = await screen.findByRole("region", {
+    name: "多轨剧情时间轴",
+  });
+  expect(timeline).toBeInTheDocument();
+  const tracks = within(timeline);
+  await user.click(tracks.getByRole("button", { name: /旁白 00:12\.300/ }));
   expect(screen.getByLabelText("对白开始时间")).toHaveValue("00:12.300");
   expect(screen.getByLabelText("对白结束时间")).toHaveValue("00:18.900");
   expect(
-    screen.getByRole("button", { name: /旁白 00:12\.300/ }),
+    tracks.getByRole("button", { name: /旁白 00:12\.300/ }),
   ).toBeInTheDocument();
   expect(screen.getByLabelText("时间轴轨道")).toHaveTextContent("BGM");
   expect(
-    screen.getByRole("button", { name: /完整广播剧/ }),
+    tracks.getByRole("button", { name: /完整广播剧/ }),
   ).toBeInTheDocument();
   await user.click(screen.getByLabelText("精确设置"));
   expect(screen.queryByText("校准音轨长度")).not.toBeInTheDocument();
   expect(screen.getByLabelText("时间轴缩放")).toHaveValue("300");
   expect(
-    screen.getByRole("button", { name: "在播放头添加内容" }),
+    tracks.getByRole("button", { name: "在播放头添加内容" }),
   ).toHaveTextContent("00:12.300");
-  const playTimeline = screen.getByRole("button", {
+  const playTimeline = tracks.getByRole("button", {
     name: "播放编辑时间轴",
   });
   await waitFor(() => expect(playTimeline).toBeEnabled());
   await user.click(playTimeline);
   expect(EditorMockAudio.instances[0]?.src).toMatch(/^blob:/);
   expect(EditorMockAudio.instances[0]?.play).toHaveBeenCalled();
-  await user.click(screen.getByRole("button", { name: "暂停编辑时间轴" }));
+  await user.click(tracks.getByRole("button", { name: "暂停编辑时间轴" }));
 
-  const playhead = screen.getByRole("slider", { name: "时间轴播放头" });
+  const playhead = tracks.getByRole("slider", { name: "时间轴播放头" });
   const timeArea = playhead.closest(".galgame-timeline-time-area");
   expect(timeArea).not.toBeNull();
   vi.spyOn(timeArea!, "getBoundingClientRect").mockReturnValue({
@@ -587,7 +590,7 @@ test("opens the visual timeline and edits precise cue timing", async () => {
   fireEvent.pointerUp(window, { clientX: 600, pointerId: 1 });
   expect(playhead).toHaveAttribute("aria-valuenow", "52500");
   expect(
-    screen.getByRole("button", { name: "在播放头添加内容" }),
+    tracks.getByRole("button", { name: "在播放头添加内容" }),
   ).toHaveTextContent("00:52.500");
 
   fireEvent.keyDown(playhead, { key: "ArrowRight" });

@@ -1,4 +1,4 @@
-import "../support/galgame-editor-logic";
+import { withinEditorPanel } from "../support/galgame-editor-logic";
 import { publicImageSources } from "@shared/lib/imageSources";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
@@ -695,7 +695,11 @@ test("operates on scene and CG rows through item menus", async () => {
   await screen.findByText("纵向切片");
   await openAssetSection(user, "场景");
 
-  const roofTrigger = screen.getByRole("button", {
+  const sceneBrowser = withinEditorPanel(
+    document,
+    ".galgame-unified-visual-workspace",
+  );
+  const roofTrigger = sceneBrowser.getByRole("button", {
     name: "更多操作 天台",
   });
   await user.click(roofTrigger);
@@ -738,22 +742,28 @@ test("operates on scene and CG rows through item menus", async () => {
     { timeout: 2000 },
   );
 
-  await user.click(screen.getByRole("button", { name: "更多操作 新天台" }));
+  await user.click(
+    sceneBrowser.getByRole("button", { name: "更多操作 新天台" }),
+  );
   await user.click(screen.getByRole("menuitem", { name: "重命名" }));
   await user.clear(screen.getByLabelText("重命名场景"));
   await user.keyboard("{Escape}");
   expect(screen.queryByLabelText("重命名场景")).toBeNull();
   expect(
-    screen.getByRole("button", { name: "更多操作 新天台" }),
+    sceneBrowser.getByRole("button", { name: "更多操作 新天台" }),
   ).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "更多操作 新天台" }));
+  await user.click(
+    sceneBrowser.getByRole("button", { name: "更多操作 新天台" }),
+  );
   await user.click(screen.getByRole("menuitem", { name: "重命名" }));
   await user.clear(screen.getByLabelText("重命名场景"));
   await user.click(screen.getByLabelText("搜索场景和 CG"));
   expect(screen.getByRole("status")).toHaveTextContent("名称不能为空");
 
-  await user.click(screen.getByRole("button", { name: "更多操作 新天台" }));
+  await user.click(
+    sceneBrowser.getByRole("button", { name: "更多操作 新天台" }),
+  );
   await user.click(screen.getByRole("menuitem", { name: "移动到 郊区" }));
   await waitFor(
     () => {
@@ -765,7 +775,7 @@ test("operates on scene and CG rows through item menus", async () => {
     { timeout: 2000 },
   );
 
-  await user.click(screen.getByRole("button", { name: "更多操作 大厅" }));
+  await user.click(sceneBrowser.getByRole("button", { name: "更多操作 大厅" }));
   expect(screen.getByRole("menuitem", { name: "删除场景" })).toBeDisabled();
   await user.click(screen.getByRole("menuitem", { name: "复制场景" }));
   await waitFor(
@@ -780,7 +790,9 @@ test("operates on scene and CG rows through item menus", async () => {
   );
   expect(screen.getByLabelText("场景名称")).toHaveValue("大厅 副本");
 
-  await user.click(screen.getByRole("button", { name: "更多操作 雨夜 CG" }));
+  await user.click(
+    sceneBrowser.getByRole("button", { name: "更多操作 雨夜 CG" }),
+  );
   const cgMenu = screen.getByRole("menu", { name: "雨夜 CG 操作" });
   expect(
     within(cgMenu).queryByRole("menuitem", { name: "移出分组" }),
@@ -802,7 +814,7 @@ test("operates on scene and CG rows through item menus", async () => {
   );
 
   await user.click(
-    screen.getByRole("button", { name: "更多操作 雨夜 CG 副本" }),
+    sceneBrowser.getByRole("button", { name: "更多操作 雨夜 CG 副本" }),
   );
   await user.click(screen.getByRole("menuitem", { name: "删除 CG" }));
   await waitFor(

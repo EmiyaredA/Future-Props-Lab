@@ -1,4 +1,4 @@
-import "../support/galgame-editor-logic";
+import { withinEditorPanel } from "../support/galgame-editor-logic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -242,14 +242,8 @@ beforeEach(() => {
   );
 });
 
-// Keep accessible-name queries inside the active editor panel. Searching the
-// entire editor repeatedly makes jsdom recalculate styles for unrelated controls.
 function characterControls() {
-  const panel = document.querySelector<HTMLElement>(
-    ".galgame-character-workspace",
-  );
-  if (!panel) throw new Error("missing character workspace");
-  return within(panel);
+  return withinEditorPanel(document, ".galgame-character-workspace");
 }
 
 test("edits independent two-dimensional character position presets", async () => {
@@ -322,7 +316,11 @@ test("edits independent two-dimensional character position presets", async () =>
   await user.click(
     characterControls().getByRole("button", { name: "位置与尺寸" }),
   );
-  const stage = screen.getByRole("application", {
+  const settings = withinEditorPanel(
+    container,
+    ".galgame-stage-settings-workspace",
+  );
+  const stage = settings.getByRole("application", {
     name: "位置与尺寸舞台预览",
   });
   vi.spyOn(stage, "getBoundingClientRect").mockReturnValue({
@@ -376,7 +374,7 @@ test("edits independent two-dimensional character position presets", async () =>
     expect(previewSprite).toHaveStyle({ left: "45%", top: "60%" });
   });
 
-  const center = screen.getByRole("spinbutton", { name: "中站位 X" });
+  const center = settings.getByRole("spinbutton", { name: "中站位 X" });
   fireEvent.change(center, { target: { value: "99" } });
 
   await waitFor(
@@ -391,24 +389,20 @@ test("edits independent two-dimensional character position presets", async () =>
     { timeout: 2000 },
   );
 
-  await user.click(characterControls().getByRole("button", { name: "左上角" }));
+  await user.click(settings.getByRole("button", { name: "左上角" }));
   await waitFor(() => {
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
     expect(saved?.settings?.characterStage?.anchor).toBe("topLeft");
   });
 
-  await user.click(
-    characterControls().getByRole("button", { name: "新增位置" }),
-  );
+  await user.click(settings.getByRole("button", { name: "新增位置" }));
   await user.type(screen.getByLabelText("新增位置预设名称"), "近景");
   await user.keyboard("{Enter}");
-  const customPosition = characterControls().getByRole("button", {
+  const customPosition = settings.getByRole("button", {
     name: /近景 50，50/,
   });
   expect(customPosition).toBeInTheDocument();
-  expect(
-    characterControls().getByRole("button", { name: "删除位置预设" }),
-  ).toBeEnabled();
+  expect(settings.getByRole("button", { name: "删除位置预设" })).toBeEnabled();
 
   await user.click(customPosition);
   await user.keyboard("{F2}");
@@ -416,20 +410,16 @@ test("edits independent two-dimensional character position presets", async () =>
   await user.clear(presetName);
   await user.type(presetName, "近景改名{Enter}");
   expect(
-    characterControls().getByRole("button", { name: /近景改名 50，50/ }),
+    settings.getByRole("button", { name: /近景改名 50，50/ }),
   ).toBeInTheDocument();
 
-  await user.click(
-    characterControls().getByRole("button", { name: /^设为默认位置$/ }),
-  );
-  await user.click(
-    characterControls().getByRole("button", { name: "删除位置预设" }),
-  );
+  await user.click(settings.getByRole("button", { name: /^设为默认位置$/ }));
+  await user.click(settings.getByRole("button", { name: "删除位置预设" }));
   expect(
     characterControls().queryByRole("button", { name: /近景改名/ }),
   ).not.toBeInTheDocument();
 
-  const height = screen.getByRole("spinbutton", {
+  const height = settings.getByRole("spinbutton", {
     name: "默认画面高度",
   });
   fireEvent.change(height, { target: { value: "450" } });
@@ -509,10 +499,12 @@ test("creates and removes an independent character stage scheme", async () => {
   await user.click(
     characterControls().getByRole("button", { name: "位置与尺寸" }),
   );
-  await user.click(
-    characterControls().getByRole("button", { name: /全局 固定/ }),
+  const settings = withinEditorPanel(
+    document,
+    ".galgame-stage-settings-workspace",
   );
-  await user.click(screen.getByRole("option", { name: /调查员 跟随全局/ }));
+  await user.click(settings.getByRole("button", { name: /全局 固定/ }));
+  await user.click(settings.getByRole("option", { name: /调查员 跟随全局/ }));
   expect(screen.getByText("当前角色正在跟随全局方案。")).toBeVisible();
 
   await user.click(
@@ -539,8 +531,12 @@ test("creates and removes an independent character stage scheme", async () => {
   await user.click(
     characterControls().getByRole("button", { name: "位置与尺寸" }),
   );
+  const reopenedSettings = withinEditorPanel(
+    document,
+    ".galgame-stage-settings-workspace",
+  );
   expect(
-    characterControls().getByRole("button", { name: /调查员 独立/ }),
+    reopenedSettings.getByRole("button", { name: /调查员 独立/ }),
   ).toBeVisible();
 
   fireEvent.change(screen.getByLabelText("默认画面高度"), {
@@ -556,7 +552,7 @@ test("creates and removes an independent character stage scheme", async () => {
   });
 
   await user.click(
-    characterControls().getByRole("button", { name: "删除角色独立方案" }),
+    reopenedSettings.getByRole("button", { name: "删除角色独立方案" }),
   );
   await user.click(screen.getByRole("button", { name: /^删除独立方案$/ }));
   await waitFor(() => {
@@ -913,6 +909,10 @@ test("opens selected characters with a blank expression detail and compact role 
     "资源操作",
   ])
     expect(within(expressionSettings).getByText(heading)).toBeVisible();
+  const presentation = withinEditorPanel(
+    expressionSettings,
+    ".galgame-expression-presentation",
+  );
   const expressionName = within(expressionSettings).getByRole("textbox", {
     name: "表情名称",
   });
@@ -930,18 +930,12 @@ test("opens selected characters with a blank expression detail and compact role 
     within(expressionSettings).getByRole("button", { name: "替换图片" }),
   ).toBeVisible();
   expect(
-    within(expressionSettings).getByRole("button", { name: "静态图片" }),
+    presentation.getByRole("button", { name: "静态图片" }),
   ).toHaveAttribute("aria-pressed", "true");
-  expect(
-    within(expressionSettings).getByRole("button", { name: "Spine" }),
-  ).toBeDisabled();
-  expect(
-    within(expressionSettings).getByRole("button", { name: "Live2D" }),
-  ).toBeDisabled();
+  expect(presentation.getByRole("button", { name: "Spine" })).toBeDisabled();
+  expect(presentation.getByRole("button", { name: "Live2D" })).toBeDisabled();
 
-  await user.click(
-    within(expressionSettings).getByRole("button", { name: "序列帧" }),
-  );
+  await user.click(presentation.getByRole("button", { name: "序列帧" }));
   await waitFor(() => {
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
     expect(saved?.characters?.[0].expressions?.[1]).toMatchObject({
@@ -954,7 +948,7 @@ test("opens selected characters with a blank expression detail and compact role 
       },
     });
   });
-  const fpsSlider = within(expressionSettings).getByRole("slider", {
+  const fpsSlider = presentation.getByRole("slider", {
     name: "播放帧率滑杆",
   });
   expect(fpsSlider).toHaveValue("2");
@@ -984,16 +978,14 @@ test("opens selected characters with a blank expression detail and compact role 
     characterControls().getByRole("button", { name: "资源引用" }),
   ).toHaveAttribute("aria-expanded", "false");
   fireEvent.change(
-    within(expressionSettings).getByRole("slider", {
+    presentation.getByRole("slider", {
       name: "播放帧率滑杆",
     }),
     { target: { value: "13" } },
   );
+  await user.click(presentation.getByRole("checkbox", { name: "循环播放" }));
   await user.click(
-    within(expressionSettings).getByRole("checkbox", { name: "循环播放" }),
-  );
-  await user.click(
-    within(expressionSettings).getByRole("combobox", {
+    presentation.getByRole("combobox", {
       name: "从已有表情添加帧",
     }),
   );
@@ -1007,21 +999,17 @@ test("opens selected characters with a blank expression detail and compact role 
       frames: [{ assetId: "portrait-alt" }, { assetId: "portrait-default" }],
     });
   });
-  await user.click(
-    within(expressionSettings).getByRole("button", { name: "语音口型" }),
-  );
+  await user.click(presentation.getByRole("button", { name: "语音口型" }));
   expect(
     screen.getByText("语音口型需要依次准备闭口、半口和张口三帧。"),
   ).toBeVisible();
   await user.click(
-    within(expressionSettings).getByRole("combobox", {
+    presentation.getByRole("combobox", {
       name: "从已有表情添加帧",
     }),
   );
   await user.click(screen.getByRole("option", { name: "平静" }));
-  await user.click(
-    within(expressionSettings).getByRole("button", { name: "语音口型" }),
-  );
+  await user.click(presentation.getByRole("button", { name: "语音口型" }));
   await waitFor(() => {
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
     expect(saved?.characters?.[0].expressions?.[1].sequence).toMatchObject({
@@ -1035,17 +1023,15 @@ test("opens selected characters with a blank expression detail and compact role 
     });
   });
   expect(
-    within(expressionSettings).queryByRole("checkbox", { name: "循环播放" }),
+    presentation.queryByRole("checkbox", { name: "循环播放" }),
   ).not.toBeInTheDocument();
   expect(within(expressionSettings).getByText("语音驱动")).toBeVisible();
   expect(
-    within(expressionSettings).getByRole("combobox", {
+    presentation.getByRole("combobox", {
       name: "从已有表情添加帧",
     }),
   ).toBeDisabled();
-  await user.click(
-    within(expressionSettings).getByRole("button", { name: "静态图片" }),
-  );
+  await user.click(presentation.getByRole("button", { name: "静态图片" }));
   const modeDialog = screen.getByRole("alertdialog", {
     name: "切换为静态图片？",
   });

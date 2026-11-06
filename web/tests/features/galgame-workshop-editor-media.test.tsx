@@ -1,4 +1,4 @@
-import "../support/galgame-editor-logic";
+import { withinEditorPanel } from "../support/galgame-editor-logic";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -544,9 +544,13 @@ test("manages CG variants and authors explicit show and hide blocks", async () =
   renderEditor();
   await screen.findByText("纵向切片");
   await openAssetSection(user, "场景");
-  await user.click(screen.getByRole("button", { name: "剧情 CG" }));
-  await user.click(screen.getByRole("button", { name: "新建 CG" }));
-  await user.click(screen.getByRole("button", { name: "添加差分" }));
+  const visuals = withinEditorPanel(
+    document,
+    ".galgame-unified-visual-workspace",
+  );
+  await user.click(visuals.getByRole("button", { name: "剧情 CG" }));
+  await user.click(visuals.getByRole("button", { name: "新建 CG" }));
+  await user.click(visuals.getByRole("button", { name: "添加差分" }));
   await user.click(
     await screen.findByRole("button", {
       name: /rain-confession.png.*点击选择/,
@@ -573,8 +577,12 @@ test("manages CG variants and authors explicit show and hide blocks", async () =
     { timeout: 2000 },
   );
 
-  await user.click(screen.getByRole("button", { name: "剧本" }));
-  await user.click(screen.getByRole("button", { name: "在播放头添加内容" }));
+  const workspace = screen.getByRole("navigation", { name: "创作工作区" });
+  await user.click(within(workspace).getByRole("button", { name: "剧本" }));
+  const tracks = within(
+    await screen.findByRole("region", { name: "多轨剧情时间轴" }),
+  );
+  await user.click(tracks.getByRole("button", { name: "在播放头添加内容" }));
   await user.click(screen.getByRole("button", { name: "显示 CG" }));
   await user.click(await screen.findByLabelText("CG 画面适配"));
   await user.click(screen.getByRole("option", { name: "完整显示（黑边）" }));
@@ -588,7 +596,7 @@ test("manages CG variants and authors explicit show and hide blocks", async () =
   fireEvent.change(screen.getByLabelText("CG 画面宽度数值"), {
     target: { value: "72" },
   });
-  await user.click(screen.getByRole("button", { name: "在播放头添加内容" }));
+  await user.click(tracks.getByRole("button", { name: "在播放头添加内容" }));
   await user.click(screen.getByRole("button", { name: "隐藏 CG" }));
   await waitFor(
     () => {
@@ -681,8 +689,11 @@ test("uses workshop dropdowns for dialogue properties and switches appearance", 
   );
   renderEditor();
 
+  const tracks = within(
+    await screen.findByRole("region", { name: "多轨剧情时间轴" }),
+  );
   await user.click(
-    await screen.findByRole("button", { name: /冈部伦太郎 00:00\.000/ }),
+    tracks.getByRole("button", { name: /冈部伦太郎 00:00\.000/ }),
   );
   await user.click(screen.getByText("高级设置", { selector: "summary" }));
   const characterSelect = await screen.findByLabelText("说话角色");
