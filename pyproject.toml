@@ -63,7 +63,7 @@ ignore = ["B008"]
 "db/migrations/versions/r0060_model_inference.py" = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["app", "db", "studio"]
+known-first-party = ["db", "studio"]
 
 [build-system]
 requires = ["hatchling"]

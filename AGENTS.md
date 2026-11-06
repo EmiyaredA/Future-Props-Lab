@@ -236,6 +236,8 @@
   允许签发账号在浏览器 Session 通过近期密码验证后取回加密副本对应的明文，禁止缓存取回响应。
 - Compose 基础清单与功能叠加归 `deploy/compose/`。仓库清单以 `deploy/` 解析相对挂载，
   外部封存清单使用各自目录。管理装配可解析迁移前登记的仓库基础清单路径。
+- 契约生成与服务契约读取归 `scripts/contracts/`，资产和文档保护等检查归
+  `scripts/checks/`。受保护的 SDK 文档生成入口仍在原路径。
 - 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、
   `pyproject.toml`、脚本、README 和 CI/测试入口。
 - `scripts/demo/` 只保存内容专用演示维护工具；必须通过正式 API 操作，并要求调用者显式提供项目 ID、

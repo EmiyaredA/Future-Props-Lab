@@ -7,7 +7,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 LFS_POINTER_PREFIX = b"version https://git-lfs.github.com/spec/v1"
 LFS_OID_PATTERN = re.compile(rb"^oid sha256:([0-9a-f]{64})$", re.MULTILINE)
 ASSET_SUFFIXES = {".avif", ".gif", ".jpeg", ".jpg", ".png", ".webp"}

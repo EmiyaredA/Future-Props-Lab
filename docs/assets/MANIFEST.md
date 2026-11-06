@@ -27,7 +27,7 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 
 ## 生产运行资产
 
-这些文件也由 Git LFS 管理，但会被对应 CI Job 选择性下载。`scripts/check_lfs_assets.py` 在安装和构建
+这些文件也由 Git LFS 管理，但会被对应 CI Job 选择性下载。`scripts/checks/check_lfs_assets.py` 在安装和构建
 入口检查 Git LFS、对象物化状态与下列校验值。
 
 | 文件 | 用途 | 来源与版本 | 许可证 | SHA-256 | 生产构建 |

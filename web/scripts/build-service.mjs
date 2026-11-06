@@ -68,7 +68,7 @@ sources.push(
 );
 const apiHash = execFileSync(
   "uv",
-  ["run", "python", "scripts/website/web_contract.py", service],
+  ["run", "python", "scripts/contracts/web_contract.py", service],
   { cwd: repo, encoding: "utf8" },
 ).trim();
 const id = digest(

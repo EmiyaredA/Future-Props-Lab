@@ -330,7 +330,7 @@ Visual 的 Canvas、工程与历史输出由 `studio/apps/visual_workshop/migrat
 
 Visual 助手的对话、消息和操作记录由 `studio/apps/visual_workshop/conversations.py` 查询。模型选项由 Models 提供账号投影，附件元数据由 Assets 按项目、对话、精确 ID 和保留引用核验。新建及删除对话与素材引用回执共用 Visual 数据事务。 `studio/apps/visual_workshop/migration_assistant.py` 逐条迁移历史对话、消息、附件和操作。Assets 在画布投影与原件摘要通过后恢复同工程的对话素材引用。 Visual 删除项目时由 `studio/apps/visual_workshop/project_deletion.py` 核对项目版本、画布和对话范围，提交删除与恢复回执。Assets 的 `visual_project_removal.py` 在确认回执后清除画布与对话引用、项目放置和私有原件，保留文件库原件。项目文件、放置和分段交接发布在 Assets 写事务中检查删除准备。 Visual 的素材节点与输出上传由 `studio/apps/visual_workshop/uploads.py` 准备画布引用，Assets 的 `visual_upload_stages.py` 流式验证长度与 SHA256，并在画布事务确认后发布原件和引用。GIF 检查版本与 MP4 同批发布；暂存失败和源回滚由 Assets 的日志与清理生命周期处理。
 
-`web/src/app/entries/` 拥有独立应用装配与导航，`agents.tsx` 不加载门户路由，`IndependentShell.tsx` 复用账号、主题和导航组件。`web/service.config.ts` 选择单一入口和所属程序素材，`web/scripts/build-service.mjs` 生成逐文件 SHA256、gzip／Brotli 及单服务契约清单；产物保存在被忽略的 `.local/service-web/`，镜像封装时核验清单。`scripts/website/web_contract.py` 仅读静态契约，不初始化数据库。Models 的 `models.tsx` 只装配模型目录、测试和日志，保留当前账号权限、未保存导航保护及跨应用跳转。程序版本摘要包含所属 HTTP／WebSocket 契约，防止契约变化复用旧缓存；其他服务的契约变化不改变本服务协议摘要。 Visual 的 `visual.tsx` 与 `VisualApplication.tsx` 装配项目、画布、素材和任务入口，复用 Visual 功能页面及权限分支。Visual 镜像在提供程序资源前比对已安装程序的 API 摘要。 Galgame 的 `galgame.tsx` 与 `GalgameApplication.tsx` 独立装配项目列表、总览、编辑及预演，保留账号权限和已保存 Story 的预演回退。
+`web/src/app/entries/` 拥有独立应用装配与导航，`agents.tsx` 不加载门户路由，`IndependentShell.tsx` 复用账号、主题和导航组件。`web/service.config.ts` 选择单一入口和所属程序素材，`web/scripts/build-service.mjs` 生成逐文件 SHA256、gzip／Brotli 及单服务契约清单；产物保存在被忽略的 `.local/service-web/`，镜像封装时核验清单。`scripts/contracts/web_contract.py` 仅读静态契约，不初始化数据库。Models 的 `models.tsx` 只装配模型目录、测试和日志，保留当前账号权限、未保存导航保护及跨应用跳转。程序版本摘要包含所属 HTTP／WebSocket 契约，防止契约变化复用旧缓存；其他服务的契约变化不改变本服务协议摘要。 Visual 的 `visual.tsx` 与 `VisualApplication.tsx` 装配项目、画布、素材和任务入口，复用 Visual 功能页面及权限分支。Visual 镜像在提供程序资源前比对已安装程序的 API 摘要。 Galgame 的 `galgame.tsx` 与 `GalgameApplication.tsx` 独立装配项目列表、总览、编辑及预演，保留账号权限和已保存 Story 的预演回退。
 
 `shared/ui/NavigationProtection.tsx` 在每个独立应用内协调多个未保存保护，协议与 Hook 位于 `navigationGuards.ts` 和 `useUnsavedNavigation.tsx`。确认逐项进行，全部通过才继续；明确同意跨页面离开后不重复触发原生提示。`platform/api/applicationBuild.ts` 携带非鉴权的应用版本标记并广播本应用更新，`platform/programAsset.ts` 定位当前程序资源。共享登录通过显式回调清理应用自有临时状态。
 
@@ -383,6 +383,8 @@ Future-Props-Lab/
 │   ├── registry.py    # 有序 migration 注册表与最新版本
 │   └── runner.py      # checksum、连续前缀检查和事务应用
 ├── scripts/website/   # 网站启动、LaunchAgent、数据迁移、临时清理与独立任务工具入口
+├── scripts/contracts/ # OpenAPI、SDK、头像类型、服务归属与 Web 契约读取
+├── scripts/checks/    # 资产、SDK 安装、Agent Note 与文档保护检查
 ├── web/src/
 │   ├── app/           # Studio Session、URL 契约与应用注册表
 │   │   ├── entries/   # 独立应用与网站入口装配
@@ -902,7 +904,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 - `sdk/python/`：可独立构建安装的 `future-props-lab-sdk`；`src/future_props_lab/generated/` 只保存生成模型和具名资源方法，其他模块拥有 HTTPX 通信、流、鉴权、实时语音和本地文档构建器。
 - `sdk/python/operations.json`：受版本控制的 HTTP 操作到稳定 Python 方法名映射；`coverage.json` 记录契约与文档证据，不能替代业务闭环验收。
 - `scripts/test_with_proof.mjs` 将 `web/e2e/test-with-proof.catalog.yaml` 和专用 Playwright 配置接入功能验收工作台。隔离环境和验收产物位于 `.local/test-with-proof/`。
-- `scripts/generate_sdk.py`、`scripts/generate_sdk_docs.py`：从 OpenAPI 与方法映射生成 SDK 和公开模块参考；纳入 `contracts:generate` 与 `contracts:check`。仅浏览器 Session 的知识社区操作不加入 SDK 方法映射，相关 HTTP 数据类型仍由 OpenAPI 生成。
+- `scripts/contracts/generate_sdk.py`、`scripts/generate_sdk_docs.py`：从 OpenAPI 与方法映射生成 SDK 和公开模块参考；纳入 `contracts:generate` 与 `contracts:check`。仅浏览器 Session 的知识社区操作不加入 SDK 方法映射，相关 HTTP 数据类型仍由 OpenAPI 生成。
 - `backend/studio/apps/model_service/inference/`：独立模型能力查询、输入素材、文本调用、任务与结果管理；`studio/apps/model_service/transport/website/model_inference.py` 只处理协议。
 - 工坊各自的 `operations.py` 拥有细粒度编辑校验与一次事务；`runtime/operation_receipts.py` 仅提供持久化回执原语，`entity_edits.py` 仅提供纯列表编辑。
 - `backend/studio/apps/model_service/storage/models/model_inference.py` 与 `models/project_operations.py` 对应追加迁移 `0059_project_operations`、`0060_model_inference`。
@@ -923,7 +925,7 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 ### 内置角色展示
 
-首页直接加载 `web/public/brand/home/` 的红莉栖待机动画与透明回退图，不读取账号项目。Amadeus 使用 `shared/live2d/` 的纯姿态、网格与渲染能力，内置模型位于 `web/public/brand/amadeus/`；后端 `studio/apps/media_rendering/local/live2d/` 只保留离线渲染及内置模型校验，`scripts/generate_avatar_contract.py` 从纯模型生成独立的头像资产类型。角色编辑工坊和独立桌宠运行已退役，`0118_retire_character_workshops` 移除专属表，历史迁移保留。
+首页直接加载 `web/public/brand/home/` 的红莉栖待机动画与透明回退图，不读取账号项目。Amadeus 使用 `shared/live2d/` 的纯姿态、网格与渲染能力，内置模型位于 `web/public/brand/amadeus/`；后端 `studio/apps/media_rendering/local/live2d/` 只保留离线渲染及内置模型校验，`scripts/contracts/generate_avatar_contract.py` 从纯模型生成独立的头像资产类型。角色编辑工坊和独立桌宠运行已退役，`0118_retire_character_workshops` 移除专属表，历史迁移保留。
 
 ## 视觉项目看板与输出历史
 

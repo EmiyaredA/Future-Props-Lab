@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 
-from scripts.check_lfs_assets import asset_digest, check_asset_manifest
+from scripts.checks.check_lfs_assets import asset_digest, check_asset_manifest
 
 
 def test_asset_digest_accepts_materialized_files_and_lfs_pointer_oids(tmp_path) -> None:

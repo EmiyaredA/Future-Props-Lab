@@ -186,7 +186,7 @@ def test_realtime_protocol_audio_mute_interrupt_and_close(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_every_named_operation_reaches_declared_http_route():
-    from scripts.generate_sdk import identifier
+    from scripts.contracts.generate_sdk import identifier
 
     root = Path(__file__).resolve().parents[1]
     mapping = json.loads((root / "sdk/python/operations.json").read_text())

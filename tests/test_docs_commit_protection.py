@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "scripts/check-docs-center-protected.mjs"
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts/checks/check-docs-center-protected.mjs"
 DOC = "web/src/docs/articles/sdk/reference.md"
 
 

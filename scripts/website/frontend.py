@@ -114,7 +114,7 @@ def source_snapshot(root):
         for name in (
             "package.json",
             "package-lock.json",
-            "scripts/check_lfs_assets.py",
+            "scripts/checks/check_lfs_assets.py",
             "scripts/generate_image_variants.py",
         )
     ]
