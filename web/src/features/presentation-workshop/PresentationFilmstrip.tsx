@@ -1,5 +1,5 @@
 import { ArrowUp, ArrowDown, Copy, Trash2, Plus } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SlidePreview } from "./SlideSurface";
 import type { Deck } from "./types";
 
@@ -31,6 +31,10 @@ export function PresentationFilmstrip({
   const dragged = useRef<string | null>(null);
   const [pageSelection, setPageSelection] = useState<string[]>([]);
   const anchor = useRef(active);
+  const initialActive = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    initialActive.current?.scrollIntoView?.({ block: "nearest" });
+  }, []);
   const chosen = pageSelection.filter((id) =>
     deck.slides.some((s) => s.id === id),
   );
@@ -152,6 +156,7 @@ export function PresentationFilmstrip({
             )}
           <span className="presentation-slide-number">{index + 1}</span>
           <button
+            ref={slide.id === active ? initialActive : undefined}
             className="presentation-slide-select"
             aria-label={`幻灯片 ${index + 1}`}
             aria-current={slide.id === active ? "true" : undefined}

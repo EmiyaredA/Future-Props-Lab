@@ -137,6 +137,7 @@ def create_app(
     app.state.database = database
     app.state.auth_attempts = AttemptLimiter()
     app.state.invitation_cipher = SecretCipher(settings.fpl_secrets_key)
+    app.state.management_api_key_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.cloud_unlocks = CloudUnlockRecords(
         database.sessions, clock=utc_now, settings_reader=get_cloud_settings
     )

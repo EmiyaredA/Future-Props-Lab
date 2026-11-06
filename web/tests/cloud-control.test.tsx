@@ -75,7 +75,7 @@ it("opens Happier once and preserves the same frame across cloud view changes", 
     expect(exchange).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: /^Agent 工作台$/ }));
     await waitFor(() => expect(exchange).toHaveBeenCalledTimes(1));
-    const frame = screen.getByTitle("Happier Agent 工作台");
+    const frame = await screen.findByTitle("Happier Agent 工作台");
     await waitFor(() =>
       expect(frame).toHaveAttribute("src", "https://happier.example.test/"),
     );

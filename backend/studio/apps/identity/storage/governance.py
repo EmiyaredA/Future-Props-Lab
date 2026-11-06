@@ -72,7 +72,7 @@ async def revoke_account_credentials(session: AsyncSession, user_id: str) -> Non
             ManagementApiKey.user_id == user_id,
             ManagementApiKey.revoked_at.is_(None),
         )
-        .values(revoked_at=now, revision=ManagementApiKey.revision + 1)
+        .values(revoked_at=now, secret_ciphertext=None, revision=ManagementApiKey.revision + 1)
     )
 
 

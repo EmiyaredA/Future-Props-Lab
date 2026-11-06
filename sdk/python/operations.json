@@ -1167,6 +1167,10 @@
     "method": "remove_api_key",
     "resource": "accounts"
   },
+  "POST /v1/account/api-keys/{key_id}/secret": {
+    "method": "reveal_api_key_secret",
+    "resource": "accounts"
+  },
   "POST /v1/account/demo-services/{service_id}/install": {
     "method": "install",
     "resource": "demo"

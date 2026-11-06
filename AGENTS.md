@@ -223,7 +223,8 @@
   会话、部署策略及登录后的密码重验时间，原子保存 Agent 解锁期限或桌面会话授权。两种装配注入
   存储、策略读取器和时钟，协议层不持有数据库 Session，未知提交不能自动重试。历史验证器记录仅供凭据迁移。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
-  写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。
+  写请求统一携带可读 CSRF Cookie 对应的请求头。临时密码只允许展示一次。有效的 Management API Key
+  允许签发账号在浏览器 Session 通过近期密码验证后取回加密副本对应的明文，禁止缓存取回响应。
 - 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、
   `pyproject.toml`、脚本、README 和 CI/测试入口。
 - `scripts/demo/` 只保存内容专用演示维护工具；必须通过正式 API 操作，并要求调用者显式提供项目 ID、

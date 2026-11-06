@@ -16,6 +16,7 @@ from studio.apps.identity.credentials.operations import (
     load_current_auth,
     reauthenticate,
     renew_api_key,
+    reveal_api_key,
     revoke_api_key,
     revoke_other_sessions,
     revoke_session,
@@ -48,6 +49,7 @@ from studio.contracts.identity.accounts import (
     ApiKeyCreatedOut,
     ApiKeyCreateIn,
     ApiKeyOut,
+    ApiKeySecretOut,
     AuthMeOut,
     ChangePasswordIn,
     CurrentUserOut,
@@ -317,7 +319,9 @@ async def api_keys(request: Request, session: SessionDep):
 
 
 @router.post("/account/api-keys", response_model=ApiKeyCreatedOut, status_code=201)
-async def add_api_key(request: Request, session: SessionDep, body: ApiKeyCreateIn):
+async def add_api_key(
+    request: Request, response: Response, session: SessionDep, body: ApiKeyCreateIn
+):
     principal = await _browser_auth(request, session)
     key, secret = await create_api_key(
         session,
@@ -326,8 +330,26 @@ async def add_api_key(request: Request, session: SessionDep, body: ApiKeyCreateI
         scopes=list(body.scopes),
         expires_in_days=body.expires_in_days,
         client_ip=client_ip(request),
+        encrypt=request.app.state.management_api_key_cipher.encrypt,
     )
+    response.headers["Cache-Control"] = "no-store"
     return ApiKeyCreatedOut(api_key=_key_out(key), secret=secret)
+
+
+@router.post("/account/api-keys/{key_id}/secret", response_model=ApiKeySecretOut)
+async def reveal_api_key_secret(
+    key_id: str, request: Request, response: Response, session: SessionDep
+):
+    principal = await _browser_auth(request, session)
+    secret = await reveal_api_key(
+        session,
+        principal,
+        key_id=key_id,
+        client_ip=client_ip(request),
+        decrypt=request.app.state.management_api_key_cipher.decrypt,
+    )
+    response.headers["Cache-Control"] = "no-store"
+    return ApiKeySecretOut(secret=secret)
 
 
 @router.post("/account/api-keys/{key_id}/revoke", response_model=ApiKeyOut)

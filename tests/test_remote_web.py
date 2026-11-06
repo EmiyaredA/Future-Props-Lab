@@ -95,6 +95,32 @@ def test_remote_web_default_closed_and_configuration_validated(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_canonical_https_can_serve_locally_without_the_public_tunnel(tmp_path):
+    import httpx
+    from fastapi import FastAPI
+
+    from studio.assembly.website.public_access import WebAccess
+
+    app = FastAPI()
+    app.get("/ready")(lambda: {"status": "ready"})
+    settings = Settings(
+        _config_file=None, fpl_remote_web_enabled=True, fpl_remote_web_origin=ORIGIN
+    )
+    access = WebAccess(app, settings, tmp_path, tmp_path, None, local_https_enabled=True)
+    access.local.phase = "ready"
+
+    async def dispatch(scope, receive, send):
+        await access(app, scope, receive, send)
+
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(dispatch), base_url=ORIGIN
+    ) as client:
+        assert not access.public_enabled
+        assert (await client.get("/ready")).status_code == 200
+        assert (await client.get("/ready", headers={"Host": "untrusted.test"})).status_code == 403
+
+
+@pytest.mark.asyncio
 async def test_public_listener_restarts_after_a_real_http_connection(tmp_path):
     import json
     import socket

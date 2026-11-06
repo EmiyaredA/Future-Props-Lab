@@ -1,4 +1,7 @@
-import { useNavigationProtection } from "@shared/ui/navigationGuards";
+import {
+  NAVIGATION_COMMITTED,
+  useNavigationProtection,
+} from "@shared/ui/navigationGuards";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -20,7 +23,7 @@ export function AccountPanel({
 }) {
   const navigation = useNavigationProtection();
   const state = useAccountPanel(session);
-  const { open, busy, close } = state;
+  const { open, tab, busy, close } = state;
   const [confirming, setConfirming] = useState(false);
   const pending = useRef<(() => void) | null>(null);
   const dirty =
@@ -50,6 +53,15 @@ export function AccountPanel({
       return true;
     });
   }, [navigation, open, dirty, busy, close]);
+  useEffect(() => {
+    if (!open || tab !== "keys") return;
+    window.addEventListener(NAVIGATION_COMMITTED, close);
+    window.addEventListener("pagehide", close);
+    return () => {
+      window.removeEventListener(NAVIGATION_COMMITTED, close);
+      window.removeEventListener("pagehide", close);
+    };
+  }, [open, tab, close]);
   useEffect(() => {
     if (!open) return;
     const previous = document.body.style.overflow;

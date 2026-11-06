@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from secrets import compare_digest
 
+from cryptography.fernet import InvalidToken
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +30,11 @@ from studio.apps.identity.storage.models.accounts import (
     SecurityAuditEvent,
     User,
 )
-from studio.contracts.identity.authentication import SESSION_ABSOLUTE_DAYS, SESSION_IDLE_HOURS
+from studio.contracts.identity.authentication import (
+    REAUTH_MINUTES,
+    SESSION_ABSOLUTE_DAYS,
+    SESSION_IDLE_HOURS,
+)
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.identity.principal import StudioPrincipal
 from studio.contracts.identity.usernames import normalize_username
@@ -335,6 +342,7 @@ async def create_api_key(
     scopes: list[str],
     expires_in_days: int,
     client_ip: str,
+    encrypt: Callable[[str], str],
 ) -> tuple[ManagementApiKey, str]:
     principal = await begin_governance(session, principal)
     allowed = {"studio:read", "studio:write"}
@@ -350,11 +358,13 @@ async def create_api_key(
         user_id=principal.user_id,
         name=name.strip(),
         key_hash=hash_secret(raw),
+        secret_ciphertext=encrypt(raw),
         key_prefix=raw[:12],
         scopes=sorted(normalized),
         expires_at=utc_now() + timedelta(days=expires_in_days),
     )
     session.add(key)
+    await session.flush()
     add_audit_event(
         session,
         "management_api_key.created",
@@ -365,6 +375,53 @@ async def create_api_key(
     )
     await session.commit()
     return key, raw
+
+
+async def reveal_api_key(
+    session: AsyncSession,
+    principal: StudioPrincipal,
+    *,
+    key_id: str,
+    client_ip: str,
+    decrypt: Callable[[str], str],
+) -> str:
+    principal = await begin_governance(session, principal)
+    key = await session.scalar(
+        select(ManagementApiKey).where(
+            ManagementApiKey.id == key_id,
+            ManagementApiKey.user_id == principal.user_id,
+        )
+    )
+    if key is None:
+        raise AccountError("api_key_not_found")
+    now = utc_now()
+    if (
+        not key.secret_ciphertext
+        or key.revoked_at is not None
+        or key.expires_at <= now
+        or not set(key.scopes) <= principal.scopes
+    ):
+        raise AccountError("api_key_secret_unavailable")
+    if principal.reauthenticated_at is None or now - principal.reauthenticated_at > timedelta(
+        minutes=REAUTH_MINUTES
+    ):
+        raise AccountError("reauthentication_required")
+    try:
+        raw = decrypt(key.secret_ciphertext)
+    except (InvalidToken, UnicodeError):
+        raise AccountError("api_key_secret_unavailable") from None
+    if not compare_digest(hash_secret(raw), key.key_hash):
+        raise AccountError("api_key_secret_unavailable")
+    add_audit_event(
+        session,
+        "management_api_key.secret_revealed",
+        actor_user_id=principal.user_id,
+        owner_user_id=principal.user_id,
+        client_ip=client_ip,
+        metadata={"key_id": key.id},
+    )
+    await session.commit()
+    return raw
 
 
 async def revoke_api_key(
@@ -392,6 +449,7 @@ async def revoke_api_key(
         key.id,
         expected_revision,
         revoked_at=utc_now(),
+        secret_ciphertext=None,
     )
     add_audit_event(
         session,

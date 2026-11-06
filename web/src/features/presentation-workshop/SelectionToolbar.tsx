@@ -1,6 +1,12 @@
 import { canContainText } from "./textAdapter";
 import type { Editor } from "@tiptap/react";
-import { Ellipsis, LockKeyhole, SlidersHorizontal, Layers } from "lucide-react";
+import {
+  ArrowDown,
+  Ellipsis,
+  LockKeyhole,
+  SlidersHorizontal,
+  Layers,
+} from "lucide-react";
 import { PresentationMenu } from "./PresentationMenu";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -20,6 +26,7 @@ export type SelectionActions = {
   arrange: (mode: LayoutCommand) => void;
   order: (mode: string) => void;
   inspect: () => void;
+  moveDown?: () => void;
   media?: MediaActions;
 };
 export function SelectionToolbar({
@@ -220,6 +227,17 @@ export function SelectionToolbar({
                 <Layers size={16} />
               </PresentationMenu>
             </>
+          )}
+          {actions.moveDown && !editor && (
+            <button
+              type="button"
+              aria-label="向下移动所选元素"
+              title="下移 10 px（↓ 微调，Shift + ↓ 下移 10 px）"
+              onClick={actions.moveDown}
+            >
+              <ArrowDown size={16} />
+              下移
+            </button>
           )}
           <PresentationMenu
             label="更多元素操作"

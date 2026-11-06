@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 @contextlib.asynccontextmanager
-async def loopback_listener(app, port):
+async def loopback_listener(app, port, **transport_options):
     if port is None:
         yield
         return
@@ -29,6 +29,7 @@ async def loopback_listener(app, port):
                 access_log=False,
                 proxy_headers=False,
                 timeout_graceful_shutdown=5,
+                **transport_options,
             )
         )
         task = asyncio.create_task(server.serve(sockets=[listener]))
@@ -49,8 +50,15 @@ async def happier_listener(app, settings):
     if app.state.happier is None or app.state.storage_upgrade_required:
         yield
         return
+    from studio.assembly.website.happier_ingress import MAX_UPDATES_FRAME_BYTES
+
     ingress = app.state.happier.ingress()
-    async with ingress.client, loopback_listener(ingress, settings.fpl_happier_listen_port):
+    async with (
+        ingress.client,
+        loopback_listener(
+            ingress, settings.fpl_happier_listen_port, ws_max_size=MAX_UPDATES_FRAME_BYTES
+        ),
+    ):
         yield
 
 
@@ -98,6 +106,7 @@ def create_app():
         web_root,
         partial(authenticate_browser, sessions=app.state.database.sessions),
         shared_static=static,
+        local_https_enabled=app.state.happier is not None,
     )
     app.state.web_access = access
     attach_website(

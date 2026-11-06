@@ -333,6 +333,7 @@ def test_management_api_key_mutations_require_browser_session_auth() -> None:
         "add_api_key",
         "remove_api_key",
         "renew_api_key_expiration",
+        "reveal_api_key_secret",
         "delete_api_key_record",
     ):
         calls = {

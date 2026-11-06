@@ -43,6 +43,9 @@
   .api-key-search {
     width: 100%;
   }
+}
+
+@container api-key-settings (max-width: 710px) {
   .api-key-table-wrap {
     overflow: visible;
     border: 0;
@@ -60,12 +63,20 @@
     display: block;
     width: 100%;
   }
-  .api-key-table tr {
+  .api-key-table tbody {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 13px 18px;
-    margin-bottom: 12px;
-    padding: 16px;
+    gap: 8px;
+  }
+  .api-key-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(110px, 0.85fr);
+    grid-template-areas:
+      "identity status"
+      "access dates"
+      "actions actions";
+    align-items: start;
+    gap: 12px;
+    padding: 12px 14px;
     border: 1px solid var(--border);
     border-radius: 13px;
     background: var(--surface);
@@ -76,23 +87,36 @@
     border: 0;
     white-space: normal;
   }
-  .api-key-table td::before {
+  .api-key-table td[data-label]::before {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
     color: var(--muted);
     content: attr(data-label);
     font-size: 10px;
   }
-  .api-key-table td:first-child,
-  .api-key-table td:nth-child(3),
-  .api-key-table td:last-child {
-    grid-column: 1 / -1;
+  .api-key-identity-cell {
+    grid-area: identity;
+  }
+  .api-key-table .api-key-state-cell {
+    grid-area: status;
+    text-align: right;
+  }
+  .api-key-access-cell {
+    grid-area: access;
+  }
+  .api-key-dates {
+    grid-area: dates;
+  }
+  .api-key-actions-cell {
+    grid-area: actions;
   }
   .api-key-actions {
-    justify-content: flex-start;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
   }
-  .api-key-scope-list {
-    flex-wrap: wrap;
+  .api-key-reveal-button {
+    margin-right: auto;
   }
 }
 
@@ -103,14 +127,5 @@
   .api-key-permissions > div {
     align-items: stretch;
     flex-direction: column;
-  }
-  .api-key-table tr {
-    grid-template-columns: 1fr;
-  }
-  .api-key-table td {
-    grid-column: 1 / -1;
-  }
-  .api-key-actions {
-    flex-wrap: wrap;
   }
 }

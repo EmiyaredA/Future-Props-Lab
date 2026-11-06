@@ -128,6 +128,14 @@ export function useSceneTools({
       ? pending
       : null;
   const connectionValue = edge ?? (connectionActive ? pending : null);
+  const removeConnection = () => {
+    if (readOnly || !edge) return;
+    change((current) => ({
+      ...current,
+      connections: (current.connections ?? []).filter((c) => c.id !== edge.id),
+    }));
+    closeConnection();
+  };
   const updateConnection = (patch: Partial<Connection>, group?: string) => {
     if (!connectionValue || readOnly) return;
     if (pending)
@@ -270,6 +278,8 @@ export function useSceneTools({
         </div>
       ) : null,
     edgeId: connectionValue?.id ?? null,
+    canRemoveConnection: !!edge,
+    removeConnection,
     closeConnection,
     connectionOpen: !!connectionValue,
     connectionSelectionVersion,
@@ -301,16 +311,7 @@ export function useSceneTools({
           setEdgeId(pending.id);
           setPending(null);
         }}
-        onRemove={() => {
-          if (readOnly) return;
-          change((current) => ({
-            ...current,
-            connections: (current.connections ?? []).filter(
-              (c) => c.id !== edgeId,
-            ),
-          }));
-          closeConnection();
-        }}
+        onRemove={removeConnection}
       />
     ) : null,
     infoAction: readOnly ? undefined : infoAction,

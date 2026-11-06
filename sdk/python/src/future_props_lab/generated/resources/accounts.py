@@ -31,6 +31,10 @@ class Accounts:
         'Remove Api Key. POST /v1/account/api-keys/{key_id}/revoke'
         return self._client._call('POST', '/v1/account/api-keys/{key_id}/revoke', parameters=[('key_id', 'path', key_id)], body=body, media_type='application/json', response_type=models.ApiKeyOut)
 
+    def reveal_api_key_secret(self, *, key_id: str) -> models.ApiKeySecretOut:
+        'Reveal Api Key Secret. POST /v1/account/api-keys/{key_id}/secret'
+        return self._client._call('POST', '/v1/account/api-keys/{key_id}/secret', parameters=[('key_id', 'path', key_id)], response_type=models.ApiKeySecretOut)
+
     def directory(self, *, q: str | Unset = UNSET, limit: int | Unset = UNSET) -> models.AccountDirectoryOut:
         'Directory. GET /v1/account/directory'
         return self._client._call('GET', '/v1/account/directory', parameters=[('q', 'query', q), ('limit', 'query', limit)], response_type=models.AccountDirectoryOut)
@@ -114,6 +118,10 @@ class AsyncAccounts:
     async def remove_api_key(self, *, key_id: str, body: models.RevokeApiKeyIn | dict) -> models.ApiKeyOut:
         'Remove Api Key. POST /v1/account/api-keys/{key_id}/revoke'
         return await self._client._call('POST', '/v1/account/api-keys/{key_id}/revoke', parameters=[('key_id', 'path', key_id)], body=body, media_type='application/json', response_type=models.ApiKeyOut)
+
+    async def reveal_api_key_secret(self, *, key_id: str) -> models.ApiKeySecretOut:
+        'Reveal Api Key Secret. POST /v1/account/api-keys/{key_id}/secret'
+        return await self._client._call('POST', '/v1/account/api-keys/{key_id}/secret', parameters=[('key_id', 'path', key_id)], response_type=models.ApiKeySecretOut)
 
     async def directory(self, *, q: str | Unset = UNSET, limit: int | Unset = UNSET) -> models.AccountDirectoryOut:
         'Directory. GET /v1/account/directory'

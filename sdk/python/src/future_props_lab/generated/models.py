@@ -389,6 +389,10 @@ class ApiKeyOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     revoked_at: datetime | None = Field(default=..., alias='revoked_at')
     scopes: list[str] = Field(default=..., alias='scopes')
+    secret_available: bool = Field(default=..., alias='secret_available', repr=False)
+
+class ApiKeySecretOut(WireModel):
+    secret: str = Field(default=..., alias='secret', repr=False)
 
 class ApplicationState(WireModel):
     error: str = Field(default='', alias='error', max_length=500)
@@ -6636,6 +6640,7 @@ AnnotationSplitOperation.model_rebuild()
 ApiKeyCreateIn.model_rebuild()
 ApiKeyCreatedOut.model_rebuild()
 ApiKeyOut.model_rebuild()
+ApiKeySecretOut.model_rebuild()
 ApplicationState.model_rebuild()
 ApprovalDecision.model_rebuild()
 ApprovalOut.model_rebuild()

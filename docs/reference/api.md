@@ -128,6 +128,7 @@ Principal 相符，防止切换工作区时授权到错误空间。`POST /agent/
 - `PATCH /v1/account/profile` 与头像 GET/PUT/DELETE
 - `GET/DELETE /v1/account/sessions/{session_id}`、`POST /v1/account/sessions/revoke-others`
 - `GET/POST /v1/account/api-keys`、`POST /v1/account/api-keys/{key_id}/renew|revoke`、`DELETE /v1/account/api-keys/{key_id}`。续期与删除必填 `expected_revision`；续期保持原密钥，从原到期时间或服务器当前时间中较晚者继续延长。
+- `POST /v1/account/api-keys/{key_id}/secret` 返回当前账号有效密钥的 `{ secret }`，需要浏览器 Session、CSRF 和 10 分钟内的密码验证。响应禁止缓存，列表中的 `secret_available` 表示是否保存了加密副本。旧密钥只保存哈希。
 - `GET /v1/account/security-events`
 - `GET/POST /v1/platform/accounts`：搜索、状态/平台身份筛选、服务端分页与创建（邮箱、管理员身份）。
 - `PATCH /v1/platform/accounts/{user_id}`：状态或平台身份变更，必填 `expected_revision`。

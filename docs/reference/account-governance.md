@@ -6,7 +6,9 @@
 
 仅有 `admin`（管理员）和 `user`（普通用户）。两者均能管理自己的内容、模型配置和集成；管理员另有账号治理、平台模型模板、CLI Agent 授权、演示服务、运行额度和官方标记管理能力。管理员不能浏览其他账号的私人资源或调用日志。权限由 `AuthMeOut.permission_keys` 返回，并与 API Key scope 取交集。
 
-Cookie Session 使用 HttpOnly Cookie，写操作校验 CSRF。个人和平台治理只接受浏览器 Session。Management API Key 绑定签发账号，明文只展示一次；`studio:read` 不允许写入，授权不随管理员身份扩大到他人数据。密码重置、账号禁用和身份变更撤销已有凭据。
+Cookie Session 使用 HttpOnly Cookie，写操作校验 CSRF。个人和平台治理只接受浏览器 Session。Management API Key 绑定签发账号。`studio:read` 不允许写入，管理员也无权访问其他账号的私人资源。密码重置、账号禁用和身份变更撤销已有凭据。
+
+新建的有效密钥可以在「账号设置 → API 密钥」中查看并复制。超过 10 分钟未验证密码时，取回前需重新验证。服务端保存哈希和加密副本，列表只显示前缀。此前签发的密钥只有哈希，仍可用于认证，但无法找回明文。迁移 `0124_management_api_key_secrets` 和独立 Identity 迁移 `0010_management_api_key_secrets` 为加密副本增加可空字段。
 
 普通账号可使用 `GET /v1/account/directory` 查询有效账号的最小公开身份（ID、用户名、展示名），用于显式文章授权及人员字段；不返回邮箱或私人资源。
 
