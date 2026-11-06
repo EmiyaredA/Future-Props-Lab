@@ -1,5 +1,26 @@
 # 云控
 
+## 远程应用
+
+兼容网站启用 `cloud_control.apps_enabled` 后，云控显示「远程应用」与「Agent 工作台」。远程应用一次连接一个 Mac 窗口。应用使用当前 Mac 用户账号的权限。
+
+1. 在 Mac 登录会话中用 Xcode 命令行工具和 Go 1.24+ 构建辅助程序。先用隔离的站点配置验收，构建输出路径使用已忽略的本地目录。
+
+   ```sh
+   scripts/website/build_remote_apps.sh "$PWD/.local/remote-apps/FPLRemoteApps.app"
+   ```
+
+2. 在 Mac 的系统设置中为辅助程序授予「屏幕与系统音频录制」和「辅助功能」。运行辅助程序的 `status` 子命令检查 `unlocked`、`screen_capture` 与 `accessibility`。正式部署可设置 `FPL_REMOTE_APPS_SIGNING_IDENTITY`，使更新后的构建沿用签名身份。权限必须在运行网站的 Mac 用户登录会话中验证。
+3. 在隔离 TOML 的 `[cloud_control]` 设置 `apps_enabled = true`，将 `apps_host` 设为构建脚本输出的绝对路径。用本机入口登录已获准的管理员，打开「远程应用」和「添加应用」。在「常用应用」选 Chrome 和文本编辑，或在「已安装应用」搜索。输入管理员密码保存，应用会出现在标签栏。
+4. 点击应用标签和「连接应用」。应用有多个可见窗口时，用底部的窗口菜单切换。点击画面接管输入，用 Shift + Esc 释放。窗口关闭、最小化或尺寸变化后重新选择窗口。Mac 锁屏时在主机解锁再连接。
+5. 在受信本机「云控设置」显式允许公网访问。从另一台设备打开现有 HTTPS 入口并验证 FPL 管理员密码。浏览器经同源 WebSocket 交换 WebRTC 信令，媒体和键鼠走 WebRTC。公网配置自托管 coturn 的 `apps_turn_urls`，例如 `turn:turn.example.com:3478?transport=udp` 和 `turns:turn.example.com:5349`，以及与中继匹配的 `apps_turn_secret`。为 TURN 单独配置 DNS、TLS 证书及中继端口范围。
+
+上线前分别记录局域网、公网直连和 TURN 中继的点击到画面变化 P95，以及限速丢包下的恢复表现。目标为局域网 150 ms 内和正常公网 300 ms 内。测试 Chrome 与文本编辑的中文输入、滚动、拖拽、快捷键和多窗口，再验证失焦、注销、移除应用与锁屏时停止输入，撤权与切换时清屏。按部署门禁通过后在正式网站启用该功能。启用时网站的 VNC 连接入口被关闭。
+
+远程应用使用 `GET /v1/cloud-control/apps` 读取允许的应用，使用 `GET /v1/cloud-control/apps/installed` 与 `PUT /v1/cloud-control/apps` 从可信本机读取目录和保存名单。保存使用配置 revision。`POST /v1/cloud-control/apps/connect` 签发 30 秒内单次有效的浏览器会话票据，由同源 `/v1/cloud-control/apps/socket` 消费。
+
+## 屏幕共享模式
+
 管理员从「云控」页头切换「远程桌面」与「Agent 工作台」。当前视图占满内容区。切换时保留桌面连接和工作台会话，浏览器按账号记住上次选择。
 
 ## 本机启用

@@ -1071,6 +1071,8 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 
 ### 远程桌面与公网网站装配
 
+兼容网站的应用远控通过 `studio/assembly/website/remote_apps.py` 组合 Identity 会话复核、配置 CAS 与 Mac Host 适配。`studio/apps/remote_desktop/` 管理短时握手和信令生命周期，`studio/host/remote_apps/` 管理本机应用发现、窗口采集、编码与目标进程输入。Go/Pion 进程直接与浏览器交换媒体，网站按会话撤销进程。Web 的 `features/cloud-control/` 拥有应用标签与本机名单表单。
+
 `studio/apps/remote_desktop/use_cases/preferences.py` 定义按账号读取和完整 CAS 更新端口，`storage/preferences.py` 每次操作使用独立短会话。HTTP 层只映射冲突快照，提交成功后才通知活动连接重新读取空闲策略；取消或写入失败回滚，响应丢失后重读版本。网站与独立 Remote 使用相同用例和存储适配。公开 DTO 归 `studio/contracts/remote_desktop/desktop.py`，VNC 探测归 Remote 的 `clients/vnc_probe.py`。
 
 `studio/assembly/website/desktop.py` 注入本地身份查询与偏好端口，不重导出协议符号。`cloud_setup.py` 组合 Identity 登记状态与 Host 的配置修改；Host 工作进程使用相同的显式路径配置适配，不导入网站装配。`public_access.py` 拥有附加网站监听与 SSH 子进程生命周期，凭据定位在 `studio/host/deployment/web_profiles.py`，公开状态与错误在 `studio/contracts/gateway/web_access.py`。原持久凭据目录、配置键、服务 ID 和网络协议不变，旧云控与 web_access 源码目录已删除。
