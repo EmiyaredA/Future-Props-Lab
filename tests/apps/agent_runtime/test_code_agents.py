@@ -4,6 +4,7 @@ import asyncio
 import io
 import json
 import sys
+import tempfile
 from contextlib import aclosing
 from pathlib import Path
 
@@ -248,8 +249,14 @@ async def wait_run(client, root, identity):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("agent", ["codex", "claude-code"])
-async def test_backend_owned_native_run_and_event_tombstones(configured, agent):
+async def test_backend_owned_native_run_and_event_tombstones(
+    configured, agent, tmp_path, monkeypatch
+):
     assert configured
+    if agent == "claude-code":
+        long_temporary = tmp_path / ("relay-" + "a" * 110)
+        long_temporary.mkdir()
+        monkeypatch.setattr(tempfile, "tempdir", str(long_temporary))
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
         status = (await client.get("/v1/code-agents")).json()

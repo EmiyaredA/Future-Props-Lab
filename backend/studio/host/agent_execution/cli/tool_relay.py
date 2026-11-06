@@ -26,8 +26,8 @@ class ToolRelay:
         self.handlers = set()
 
     async def start(self):
-        # The short socket directory is an unconfigurable, process-owned system temporary.
-        self.directory = tempfile.TemporaryDirectory(prefix="fpl-tools-")
+        # A caller's TMPDIR can exceed macOS's Unix socket path limit.
+        self.directory = tempfile.TemporaryDirectory(prefix="fpl-tools-", dir="/tmp")
         os.chmod(self.directory.name, 0o700)
         socket_path = str(Path(self.directory.name) / "s")
 
