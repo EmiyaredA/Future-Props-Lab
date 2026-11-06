@@ -129,7 +129,7 @@ export function PresentationToolbar({
             className="btn"
             aria-label="框选元素"
             aria-pressed={boxSelect}
-            title="框选元素：拖动包围对象，Shift 追加，Escape 取消"
+            title="框选元素：拖动包围对象，Shift 追加；选中后可拖动或按方向键移动"
             onClick={onBoxSelect}
           >
             <BoxSelect size={18} />

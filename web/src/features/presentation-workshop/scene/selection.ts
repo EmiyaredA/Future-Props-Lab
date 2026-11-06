@@ -1,6 +1,6 @@
 import { rotatedBounds, type Rect } from "../selectionGeometry";
-import type { Slide } from "../types";
-import { members, selectionIds } from "./model";
+import type { Slide, SlideElement } from "../types";
+import { members, selectionIds, type Group } from "./model";
 
 export function groupAtHit(slide: Slide, id: string, scope: string | null) {
   return slide.groups?.find(
@@ -39,37 +39,49 @@ export function selectionAtHit(
   return { scope: nextScope, ids, drill };
 }
 
-/** A marquee encloses complete logical objects at the active group level. */
+/** Prefer whole groups; a partial frame can select enclosed members in place. */
 export function marqueeSelection(
   slide: Slide,
   area: Rect,
   scope: string | null = null,
 ): string[] {
-  const allowed = scope ? new Set(members(slide, scope)) : null;
-  const selected = new Set<string>(),
-    visited = new Set<string>();
-  for (const element of slide.elements) {
-    if (
-      element.hidden ||
-      element.locked ||
-      (allowed && !allowed.has(element.id)) ||
-      visited.has(element.id)
-    )
-      continue;
-    const ids = selectionIds(slide, element.id, scope);
-    ids.forEach((id) => visited.add(id));
-    const unit = slide.elements.filter((e) => ids.includes(e.id));
-    if (unit.some((e) => e.locked)) continue;
-    const visible = unit.filter((e) => !e.hidden);
-    if (!visible.length) continue;
-    const bounds = rotatedBounds(visible);
-    if (
+  const groups = slide.groups ?? [];
+  const byId = new Map(slide.elements.map((e) => [e.id, e]));
+  const selected = new Set<string>();
+  const encloses = (elements: SlideElement[]) => {
+    const bounds = rotatedBounds(elements);
+    return (
       bounds.x >= area.x - 1e-6 &&
       bounds.y >= area.y - 1e-6 &&
       bounds.x + bounds.width <= area.x + area.width + 1e-6 &&
       bounds.y + bounds.height <= area.y + area.height + 1e-6
-    )
-      ids.forEach((id) => selected.add(id));
+    );
+  };
+  const selectElement = (element: SlideElement | undefined) => {
+    if (element && !element.hidden && !element.locked && encloses([element]))
+      selected.add(element.id);
+  };
+  const visitGroup = (group: Group) => {
+    const elements = members(slide, group.id).flatMap(
+      (id) => byId.get(id) ?? [],
+    );
+    const visible = elements.filter((e) => !e.hidden);
+    if (!visible.length) return;
+    if (encloses(visible)) {
+      if (!elements.some((e) => e.locked))
+        elements.forEach((e) => selected.add(e.id));
+      return;
+    }
+    group.element_ids?.forEach((id) => selectElement(byId.get(id)));
+    groups.filter((child) => child.parent_id === group.id).forEach(visitGroup);
+  };
+  const activeGroup = groups.find((g) => g.id === scope);
+  if (activeGroup) {
+    activeGroup.element_ids?.forEach((id) => selectElement(byId.get(id)));
+  } else if (!scope) {
+    const grouped = new Set(groups.flatMap((g) => g.element_ids ?? []));
+    slide.elements.filter((e) => !grouped.has(e.id)).forEach(selectElement);
   }
+  groups.filter((g) => (g.parent_id ?? null) === scope).forEach(visitGroup);
   return slide.elements.filter((e) => selected.has(e.id)).map((e) => e.id);
 }

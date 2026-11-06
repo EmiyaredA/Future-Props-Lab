@@ -175,7 +175,7 @@ describe("逻辑对象框选", () => {
       marqueeSelection(s, { x: 70, y: 70, width: 160, height: 160 }),
     ).toEqual(["a"]);
   });
-  it("分组完整包围才选中，组内框选不扩展到组外", () => {
+  it("完整包围时选整组，局部包围时选择组内对象；组内框选不扩展到组外", () => {
     const s = fixture();
     s.groups = [
       { id: "root", name: "外层", element_ids: ["c"] },
@@ -183,7 +183,10 @@ describe("逻辑对象框选", () => {
     ];
     expect(
       marqueeSelection(s, { x: 90, y: 90, width: 320, height: 120 }),
-    ).toEqual([]);
+    ).toEqual(["a", "b"]);
+    expect(
+      marqueeSelection(s, { x: 90, y: 90, width: 120, height: 120 }),
+    ).toEqual(["a"]);
     expect(
       marqueeSelection(s, { x: 90, y: 90, width: 720, height: 420 }),
     ).toEqual(["a", "b", "c"]);

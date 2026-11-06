@@ -227,6 +227,39 @@ it("连接粗细的本地草稿随历史恢复，长滑杆手势只占一步", a
   expect(width).toHaveValue(9);
 });
 
+it.each(["Backspace", "Delete"])(
+  "选中连接后按 %s 删除，快捷键撤销和重做恢复同一条连接",
+  (deleteKey) => {
+    const initial = project();
+    const slide = initial.document.slides[0];
+    slide.connections = [{ ...newConnection(slide, []), label: "测试连接" }];
+    const { container } = mount(false, initial);
+    const edge = screen.getByRole("button", { name: "编辑连接测试连接" });
+    fireEvent.pointerDown(edge);
+    const label = screen.getByLabelText("连接标签");
+    fireEvent.keyDown(label, { key: deleteKey });
+    expect(
+      screen.getByRole("button", { name: "编辑连接测试连接" }),
+    ).toBeInTheDocument();
+    fireEvent.keyDown(edge, { key: deleteKey });
+    expect(
+      screen.queryByRole("button", { name: "编辑连接测试连接" }),
+    ).not.toBeInTheDocument();
+    const canvas = container.querySelector<HTMLElement>(
+      ".presentation-canvas",
+    )!;
+    expect(canvas).toHaveFocus();
+    key(canvas);
+    expect(
+      screen.getByRole("button", { name: "编辑连接测试连接" }),
+    ).toBeInTheDocument();
+    key(canvas, true);
+    expect(
+      screen.queryByRole("button", { name: "编辑连接测试连接" }),
+    ).not.toBeInTheDocument();
+  },
+);
+
 it("弹窗的搜索与源码不穿透历史；只读时没有文稿撤销", async () => {
   const { unmount } = mount();
   const user = userEvent.setup();

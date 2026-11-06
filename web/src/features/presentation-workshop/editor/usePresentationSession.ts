@@ -58,7 +58,19 @@ export function usePresentationSession({
       refetchType: "none",
     });
   });
-  const [active, setActive] = useState(initial.document.slides[0].id),
+  const [active, setActive] = useState(() => {
+      try {
+        const saved = sessionStorage.getItem(
+          `presentation-slide:${initial.id}`,
+        );
+        return (
+          initial.document.slides.find((slide) => slide.id === saved)?.id ??
+          initial.document.slides[0].id
+        );
+      } catch {
+        return initial.document.slides[0].id;
+      }
+    }),
     [selected, select] = useState<string[]>([]),
     [editing, setEditing] = useState<string | null>(null);
   const [editor, setEditor] = useState<Editor | null>(null),
@@ -86,6 +98,13 @@ export function usePresentationSession({
   const slide =
     draft.draft.document.slides.find((s) => s.id === active) ??
     draft.draft.document.slides[0];
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(`presentation-slide:${initial.id}`, slide.id);
+    } catch {
+      // Storage may be unavailable; editing still works without restoration.
+    }
+  }, [initial.id, slide.id]);
   const slideIndex = draft.draft.document.slides.findIndex(
     (s) => s.id === slide.id,
   );

@@ -203,6 +203,12 @@ export function EditorCanvas({
                   },
                   duplicate: commands.get("duplicate").onSelect,
                   remove: commands.get("remove").onSelect,
+                  moveDown: commands.get("down").disabled
+                    ? undefined
+                    : () => {
+                        commands.run("down", 10);
+                        focusCanvas();
+                      },
                   order,
                   arrange,
                   inspect: () => {

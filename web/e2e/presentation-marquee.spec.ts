@@ -4,7 +4,7 @@ import {
   newElement,
 } from "../src/features/presentation-workshop/templates";
 
-async function create(page: Page, groups = false) {
+async function create(page: Page, groupMembers?: string[]) {
   await page.setViewportSize({ width: 1680, height: 1050 });
   await page.goto("/apps/presentation-workshop");
   const csrf = (await page.context().cookies()).find(
@@ -57,8 +57,10 @@ async function create(page: Page, groups = false) {
       hidden: true,
     }),
   ];
-  if (groups)
-    slide.groups = [{ id: "group", name: "卡片组合", element_ids: ["a", "b"] }];
+  if (groupMembers)
+    slide.groups = [
+      { id: "group", name: "卡片组合", element_ids: groupMembers },
+    ];
   const response = await page.request.post(
     "/v1/presentation-workshop/projects",
     {
@@ -190,6 +192,29 @@ test("页外空白可框选；选择不保存，整组移动只产生一次撤�
   }
 });
 
+test("框选大组内的部分卡片后可一起下移，并通过快捷键撤销", async ({ page }) => {
+  const project = await create(page, ["a", "b", "c"]);
+  await frame(page, [90, 90], [410, 210]);
+  await page.getByRole("button", { name: "向下移动所选元素" }).click();
+  const element = (id: string) =>
+    canvas(page).locator(`[data-element-id="${id}"]`);
+  await expect(element("a")).toHaveCSS("top", "110px");
+  await expect(element("b")).toHaveCSS("top", "110px");
+  await expect(element("c")).toHaveCSS("top", "400px");
+  await expect(element("a")).toHaveCSS("left", "100px");
+  await expect(canvas(page)).toBeFocused();
+  await page.keyboard.press("Control+z");
+  await expect(element("a")).toHaveCSS("top", "100px");
+  await expect(element("b")).toHaveCSS("top", "100px");
+  await page.keyboard.press("Control+Shift+z");
+  const result = await saved(page, project.id);
+  expect(
+    result.document.slides[0].elements
+      .slice(1, 4)
+      .map(({ y }: { y: number }) => y),
+  ).toEqual([110, 110, 400]);
+});
+
 test("背景覆盖时用工具拉框，Shift追加、Escape恢复，支持反向框选", async ({
   page,
 }, info) => {
@@ -222,10 +247,13 @@ test("背景覆盖时用工具拉框，Shift追加、Escape恢复，支持反向
   await page.screenshot({ path: info.outputPath("explicit-marquee.png") });
 });
 
-test("分组完整包含才框选，进入组后可框选成员", async ({ page }) => {
-  await create(page, true);
+test("直接框选组内成员，也支持选中整组后进入组内", async ({ page }) => {
+  await create(page, ["a", "b"]);
   await frame(page, [90, 90], [210, 210]);
-  await expect(page.locator(".presentation-selection")).toHaveCount(0);
+  await expect(page.locator(".presentation-selection")).toHaveCount(1);
+  await expect(
+    inspector(page).getByRole("heading", { name: "元素格式", exact: true }),
+  ).toBeVisible();
   await frame(page, [90, 90], [410, 210]);
   await expect(
     inspector(page).getByRole("heading", { name: "2 个元素", exact: true }),

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { parseRoute, pathFor, type AppPage, type AppRoute } from "@app/routes";
+import { NAVIGATION_COMMITTED } from "@shared/ui/navigationGuards";
 
 /** Own browser history and unsaved-navigation continuations for one mounted website. */
 export function useWebsiteNavigation() {
@@ -46,6 +47,7 @@ export function useWebsiteNavigation() {
               (next.search ?? ""),
           );
           setRoute(next);
+          window.dispatchEvent(new Event(NAVIGATION_COMMITTED));
         })
       ) {
         const previous = routeRef.current;
@@ -58,6 +60,7 @@ export function useWebsiteNavigation() {
         return;
       }
       setRoute(next);
+      window.dispatchEvent(new Event(NAVIGATION_COMMITTED));
     };
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
@@ -69,8 +72,10 @@ export function useWebsiteNavigation() {
     search?: string,
   ) => {
     const path = pathFor(next, projectId, documentId) + (search ?? "");
-    if (path !== window.location.pathname + window.location.search)
+    if (path !== window.location.pathname + window.location.search) {
       window.history.pushState({}, "", path);
+      window.dispatchEvent(new Event(NAVIGATION_COMMITTED));
+    }
     setRoute({ page: next, projectId, documentId, search });
   };
   // A feature has already committed its resource identity; update this history entry only.
@@ -79,8 +84,11 @@ export function useWebsiteNavigation() {
     projectId?: string,
     documentId?: string,
   ) => {
-    window.history.replaceState({}, "", pathFor(next, projectId, documentId));
+    const path = pathFor(next, projectId, documentId);
+    const changed = path !== window.location.pathname + window.location.search;
+    window.history.replaceState({}, "", path);
     setRoute({ page: next, projectId, documentId });
+    if (changed) window.dispatchEvent(new Event(NAVIGATION_COMMITTED));
   };
   const navigate = (
     next: AppPage,

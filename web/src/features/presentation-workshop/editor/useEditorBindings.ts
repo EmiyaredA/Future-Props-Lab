@@ -76,7 +76,12 @@ export function useEditorBindings(
       }
       if (["Delete", "Backspace"].includes(event.key)) {
         event.preventDefault();
-        commands.run("remove");
+        if (scene.canRemoveConnection) {
+          scene.removeConnection();
+          event.currentTarget
+            .querySelector<HTMLElement>(".presentation-canvas")
+            ?.focus();
+        } else commands.run("remove");
       }
       if (event.key === "Escape") {
         if (editing) setEditing(null);
