@@ -26,7 +26,7 @@ Status: implemented
 
 可执行命令使用 `python -m studio.assembly.independent.<owner>.cli`，Mac 入口为 `studio.assembly.host.cli`。Python 打包只登记 `app`、`studio` 和 `db`；构建脚本、镜像定义、运维入口、测试和技术文章代码路径同步迁移。
 
-本批没有宣告[整体提案](../../proposed/architecture/2026-11-05-studio-component-ownership.md)完成。`app/llm`、`app/capabilities`、`app/console` 等兼容实现，以及其余业务逐用例的端口化、完整前端/测试目录整理仍需后续批次。当前 `website` 适配中的 SQL 与业务混合不能被视为目标分层。
+本批没有宣告[整体提案](2026-11-05-studio-component-ownership.md)完成。`app/llm`、`app/capabilities`、`app/console` 等兼容实现，以及其余业务逐用例的端口化、完整前端/测试目录整理仍需后续批次。当前 `website` 适配中的 SQL 与业务混合不能被视为目标分层。
 
 ## Verification
 
