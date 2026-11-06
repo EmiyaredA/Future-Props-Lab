@@ -1,19 +1,14 @@
 """Bind Happier grants to the compatibility site's existing cloud authority."""
 
 from fastapi import APIRouter, HTTPException, Request, Response
-from pydantic import BaseModel
 
 from studio.apps.identity.storage.cloud_access import unlock_expiry
 from studio.apps.identity.use_cases.happier_oidc import EXCHANGE_PATH, HappierIdentity
 from studio.assembly.http_dependencies import StudioAuth
 from studio.assembly.website.happier_ingress import HappierIngress
+from studio.contracts.identity.happier import HappierLaunch
 
 launch_router = APIRouter()
-
-
-class HappierLaunch(BaseModel):
-    exchange_url: str
-    ticket: str
 
 
 class Happier:

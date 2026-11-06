@@ -15,6 +15,7 @@ from studio.apps.gateway.notifications import router as notification_router
 from studio.apps.gateway.service_status import ServiceMonitor
 from studio.apps.gateway.storage.migrations.registry import MIGRATIONS
 from studio.apps.gateway.storage.service_models import ChangeCursor, ChangeReceipt
+from studio.apps.gateway.transport.cloud_control import router as cloud_control_router
 from studio.apps.gateway.transport.service import router
 from studio.apps.gateway.use_cases.resource_links import ResourceLinks
 from studio.config.settings import get_settings
@@ -89,6 +90,7 @@ def create_app(
     app.state.access = access
     app.state.service_monitor = service_monitor
     app.include_router(router, prefix="/v1")
+    app.include_router(cloud_control_router, prefix="/v1")
     app.include_router(notification_router)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(StarletteHTTPException, http_exception_handler)

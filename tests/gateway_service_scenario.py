@@ -112,6 +112,17 @@ async def journey():
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app), base_url="http://gateway"
         ) as client:
+            path = "/v1/cloud-control/happier/launch"
+            assert (await client.post(path)).status_code == 401
+            denied = await client.post(path, headers=headers("POST", path))
+            assert denied.status_code == 403
+            for local in (True, False):
+                disabled = await client.post(
+                    path, headers=headers("POST", path, admin=True, local=local)
+                )
+                assert disabled.status_code == 403
+                assert "未启用 Happier" in disabled.json()["detail"]
+                assert disabled.headers["cache-control"] == "no-store"
             path = "/v1/automation/runtime"
             assert (await client.get(path)).status_code == 401
             assert (await client.get(path, headers=headers("GET", path))).json() == {
