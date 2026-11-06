@@ -11,7 +11,6 @@ from studio.assembly.http_dependencies import (
 )
 from studio.assembly.website import cloud_setup as setup
 from studio.assembly.website.happier import launch_router
-from studio.config.settings import get_cloud_settings
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
 from studio.contracts.remote_desktop.desktop import (
     CloudSetup,
@@ -32,19 +31,21 @@ def local_request(request):
 @router.get("/status", response_model=CloudStatus)
 async def status(request: Request, response: Response, db: SessionDep, principal: StudioAuth):
     response.headers["Cache-Control"] = "no-store"
-    settings = get_cloud_settings()
+    settings = request.app.state.read_cloud_settings()
     local = local_request(request)
-    enabled = access.allowed(principal, local=local)
+    enabled = access.allowed(principal, local=local, settings=settings)
     preference = await request.app.state.desktop_preferences.read(owner=principal.user_id)
     return CloudStatus(
         enabled=enabled,
         host_label=settings.fpl_cloud_control_host_label,
-        desktop_configured=access.allowed(principal, local=local, desktop=True),
-        desktop_authorized=await access.desktop_authorized(db, principal, local=local),
+        desktop_configured=access.allowed(principal, local=local, desktop=True, settings=settings),
+        desktop_authorized=await access.desktop_authorized(
+            db, principal, local=local, settings=settings
+        ),
         idle_minutes=preference.idle_minutes,
         idle_revision=preference.revision,
         local=local,
-        unlocked_until=await access.unlock_expiry(db, principal, local=local),
+        unlocked_until=await access.unlock_expiry(db, principal, local=local, settings=settings),
         happier_available=bool(
             enabled
             and request.app.state.happier
@@ -55,7 +56,12 @@ async def status(request: Request, response: Response, db: SessionDep, principal
 
 @router.put("/desktop/idle", response_model=IdlePreference)
 async def save_idle(request: Request, body: IdlePreference, principal: StudioAuth):
-    access.require_enabled(principal, local=local_request(request), desktop=True)
+    access.require_enabled(
+        principal,
+        local=local_request(request),
+        desktop=True,
+        settings=request.app.state.read_cloud_settings(),
+    )
     try:
         preference = await request.app.state.desktop_preferences.save(
             owner=principal.user_id, minutes=body.idle_minutes, revision=body.revision
@@ -79,7 +85,8 @@ async def save_idle(request: Request, body: IdlePreference, principal: StudioAut
 @router.post("/desktop/connect", status_code=204)
 async def connect(request: Request, body: DesktopLogin, db: SessionDep, principal: StudioAuth):
     local = local_request(request)
-    if not await access.desktop_authorized(db, principal, local=local):
+    settings = request.app.state.read_cloud_settings()
+    if not await access.desktop_authorized(db, principal, local=local, settings=settings):
         raise HTTPException(
             403,
             detail={
@@ -110,7 +117,7 @@ async def connect(request: Request, body: DesktopLogin, db: SessionDep, principa
 @router.websocket("/desktop/socket")
 async def desktop_socket(socket: WebSocket):
     local = local_request(socket)
-    settings = get_cloud_settings()
+    settings = socket.app.state.read_cloud_settings()
     local_origins = {"http://127.0.0.1:3000", f"http://127.0.0.1:{settings.fpl_website_port}"}
     origins = local_origins if local else {settings.fpl_remote_web_origin}
     if (
@@ -124,7 +131,7 @@ async def desktop_socket(socket: WebSocket):
     except HTTPException:
         await socket.close(4403)
         return
-    if not access.allowed(principal, local=local, desktop=True):
+    if not access.allowed(principal, local=local, desktop=True, settings=settings):
         await socket.close(4403)
         return
     await socket.app.state.cloud_desktop.connect(socket, principal, local)

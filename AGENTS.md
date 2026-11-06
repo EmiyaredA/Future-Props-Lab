@@ -222,6 +222,8 @@
 - 云控密码解锁规则归 Identity 的 `use_cases/cloud_unlock.py`。共享存储在短事务内复核活动管理员
   会话、部署策略及登录后的密码重验时间，原子保存 Agent 解锁期限或桌面会话授权。两种装配注入
   存储、策略读取器和时钟，协议层不持有数据库 Session，未知提交不能自动重试。历史验证器记录仅供凭据迁移。
+- Identity 全包禁止读取进程全局配置。网站和独立服务装配提供云控策略读取器；一次状态或内部授权响应
+  使用同一快照，活动桌面连接、Happier 授权及云控解锁在各自的复核点重新读取策略。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
   写请求统一携带可读 CSRF Cookie 对应的请求头。临时密码只允许展示一次。有效的 Management API Key
   允许签发账号在浏览器 Session 通过近期密码验证后取回加密副本对应的明文，禁止缓存取回响应。

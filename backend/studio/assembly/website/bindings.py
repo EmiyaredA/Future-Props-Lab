@@ -84,7 +84,6 @@ from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT
 from studio.assembly.website.thought_writing import WebsiteWritingModels
 from studio.assembly.website.video_library import ingest_library
 from studio.config import REPO_ROOT
-from studio.config.settings import get_cloud_settings
 from studio.host.project_files.video_dependencies import probe_deps
 from studio.host.project_files.video_execution import _run_yt_dlp
 from studio.host.session_collection.access import LocalSourceAccess
@@ -95,7 +94,7 @@ from studio.runtime.tasks.reactive_tools.approval import ApprovalBroker
 from studio.runtime.time import utc_now
 
 
-def bind_components(app, settings, database):
+def bind_components(app, settings, database, *, read_cloud_settings):
     app.state.raster_previews = RasterPreviews(capacity=2)
     app.state.avatar_previews = RasterPreviews(capacity=1)
     bind_creative(app, settings)
@@ -104,7 +103,7 @@ def bind_components(app, settings, database):
     app.state.management_api_key_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.assistant_approvals = ApprovalBroker()
     app.state.cloud_unlocks = CloudUnlockRecords(
-        database.sessions, clock=utc_now, settings_reader=get_cloud_settings
+        database.sessions, clock=utc_now, settings_reader=read_cloud_settings
     )
     app.state.model_template_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.model_decrypt = app.state.model_template_cipher.decrypt
@@ -243,11 +242,11 @@ def bind_components(app, settings, database):
     app.state.desktop_preferences = DesktopPreferences(PreferenceRecords(sessions))
     app.state.cloud_desktop = DesktopConnection(
         sessions=sessions,
-        settings_reader=get_cloud_settings,
+        settings_reader=read_cloud_settings,
         attempts=app.state.auth_attempts,
         preferences=app.state.desktop_preferences,
     )
-    app.state.workbench_settings = get_cloud_settings
+    app.state.workbench_settings = read_cloud_settings
     app.state.workbench_runs = WorkbenchRuns(
         sessions=sessions, settings=settings, load_settings=app.state.workbench_settings
     )

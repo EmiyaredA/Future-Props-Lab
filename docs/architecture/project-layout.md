@@ -1073,7 +1073,7 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 
 `studio/contracts/identity/cloud_unlock.py` 定义解锁用途。`studio/apps/identity/use_cases/cloud_unlock.py` 定义密码重验时效和 Agent 授权期限。`storage/cloud_unlock.py` 在独立短事务内复核部署策略、活动管理员会话及登录后的重验时间，原子保存 Agent 解锁期限或公网桌面会话授权。`transport/website/cloud_unlock.py` 由兼容站和独立 Identity 共用，传递可信入口并映射领域错误。装配显式提供存储、策略读取器和时钟，未知提交响应不自动重试。历史加密验证器记录仅保留在凭据迁移中。
 
-`storage/cloud_access.py` 暂时保留原云控授权查询，其全局配置读取和工作台消费者仍属于后续待迁移部分；该批次不代表桌面、工作台和全部身份用例已解耦。
+`storage/cloud_access.py` 的会话查询与云控策略判断显式接收快照。兼容网站启动装配绑定 TOML 热读，独立 Identity 装配绑定服务策略投影，直接构造的网站默认使用实例设置。状态与内部授权响应各使用一份快照；桌面连接、Happier 授权和解锁事务按各自的复核时点读取最新策略。
 
 ### 远程桌面与公网网站装配
 

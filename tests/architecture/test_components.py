@@ -28,6 +28,7 @@ def test_interview_file_scope_is_explicit():
     [
         "asset_library",
         "galgame_workshop",
+        "identity",
         "model_service",
         "motion_compositor",
         "presentation_workshop",

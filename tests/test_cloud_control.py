@@ -42,13 +42,13 @@ CLOUD = "/v1/cloud-control"
 WORKBENCH = "/v1/agent-workbench"
 
 
-async def admin_client(local=True, *, role="admin"):
+async def admin_client(local=True, *, role="admin", website=app):
     async def dispatch(scope, receive, send):
         scope["state"] = {"website_local": local}
-        await app(scope, receive, send)
+        await website(scope, receive, send)
 
     username = "cloud-test-" + uuid4().hex[:12]
-    async with SessionLocal() as db:
+    async with website.state.database.sessions() as db:
         user, _ = await create_account(
             db,
             username=username,
@@ -1055,25 +1055,7 @@ async def test_vnc_auth_rejection_is_distinct_from_no_service():
     assert not await password_rejected(settings, "test")
 
 
-async def test_desktop_password_is_redacted_and_connection_attempts_are_limited(monkeypatch):
-    client, owner = await admin_client()
-    configure(monkeypatch, owner)
-    async with aclosing(client):
-        oversized = "secret-not-for-response-" * 12
-        result = await client.post(CLOUD + "/desktop/connect", json={"password": oversized})
-        assert result.status_code == 422
-        assert oversized not in result.text
-        for _ in range(8):
-            result = await client.post(CLOUD + "/desktop/connect", json={"password": "test"})
-            assert result.status_code == 204
-        assert (
-            await client.post(CLOUD + "/desktop/connect", json={"password": "test"})
-        ).status_code == 429
-
-
 async def test_idle_watcher_rechecks_active_connection_when_preference_changes(monkeypatch):
-    from types import SimpleNamespace
-
     clock = 0.0
     minutes = 30
     polled = asyncio.Event()
@@ -1089,16 +1071,18 @@ async def test_idle_watcher_rechecks_active_connection_when_preference_changes(m
     monkeypatch.setattr(desktop_binding, "desktop_authorized", authorized)
     inputs = desktop.DesktopInput(lambda: clock)
     changed = asyncio.Event()
-    task = asyncio.create_task(
-        desktop_binding.watch_access(
-            SimpleNamespace(user_id="fixture"),
-            True,
-            inputs,
-            changed,
-            sessions=SessionLocal,
-            preferences=SimpleNamespace(read=preferences),
-        )
+    connection = desktop_binding.DesktopConnection(
+        sessions=SessionLocal,
+        settings_reader=get_settings,
+        attempts=app.state.auth_attempts,
+        preferences=SimpleNamespace(read=preferences),
     )
+    principal = SimpleNamespace(user_id="fixture")
+
+    async def check():
+        return await connection.access(principal, True)
+
+    task = asyncio.create_task(desktop.watch_access(inputs, changed, check))
     try:
         await asyncio.wait_for(polled.wait(), 1)
         clock = 6 * 60

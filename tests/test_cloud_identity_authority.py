@@ -39,9 +39,20 @@ async def test_only_remote_websocket_receives_desktop_ticket_proof(scenario, mon
     )
     assert login.status_code == 200
     case.csrf = case.browser.cookies["fpl_csrf"]
-    settings = get_settings()
-    monkeypatch.setattr(settings, "fpl_cloud_control_enabled", True)
-    monkeypatch.setattr(settings, "fpl_cloud_control_admin_user_ids", admin.id)
+    settings = get_settings().model_copy(
+        update={
+            "fpl_cloud_control_enabled": True,
+            "fpl_cloud_control_admin_user_ids": admin.id,
+        }
+    )
+    reads = 0
+
+    def read_policy():
+        nonlocal reads
+        reads += 1
+        return settings
+
+    monkeypatch.setattr(case.identity.state, "read_cloud_settings", read_policy)
     case.identity.state.identity_options["service_credentials"]["remote"] = REMOTE_CREDENTIAL
 
     headers = {
@@ -93,10 +104,23 @@ async def test_only_remote_websocket_receives_desktop_ticket_proof(scenario, mon
         transport=case.mesh,
         headers={"Authorization": f"Bearer {REMOTE_CREDENTIAL}"},
     ) as service:
+        before = reads
         authority = await service.post(AUTHORITY_PATH, json=body)
+        assert reads == before + 1
         assert authority.status_code == 200
         assert authority.json()["active"] and authority.json()["desktop_authorized"]
         assert raw_ticket not in authority.text
+        with monkeypatch.context() as revoked_policy:
+            revoked_policy.setattr(settings, "fpl_cloud_control_enabled", False)
+            revoked = await service.post(AUTHORITY_PATH, json=body)
+            assert revoked.status_code == 200
+            assert revoked.json()["active"]
+            assert not revoked.json()["enabled"]
+            assert not revoked.json()["desktop_authorized"]
+            assert revoked.json()["unlocked_until"] == 0
+            assert (
+                await case.browser.get("/_internal/v1/authorize", headers=headers)
+            ).status_code == 403
         foreign = await service.post(
             AUTHORITY_PATH, json={**body, "path": "/v1/model-test/realtime"}
         )

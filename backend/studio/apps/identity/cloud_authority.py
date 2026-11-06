@@ -64,10 +64,18 @@ async def cloud_authority(request: Request, response: Response, body: CloudAutho
     async with request.app.state.database.sessions() as db:
         if not await active_actor(db, actor):
             return CloudAuthority(active=False)
+        # A response describes one policy version, even if an update lands mid-query.
+        settings = request.app.state.read_cloud_settings()
         return CloudAuthority(
             active=True,
-            enabled=access.allowed(principal, local=actor.local),
-            unlocked_until=await access.unlock_expiry(db, principal, local=actor.local),
-            desktop_configured=access.allowed(principal, local=actor.local, desktop=True),
-            desktop_authorized=await access.desktop_authorized(db, principal, local=actor.local),
+            enabled=access.allowed(principal, local=actor.local, settings=settings),
+            unlocked_until=await access.unlock_expiry(
+                db, principal, local=actor.local, settings=settings
+            ),
+            desktop_configured=access.allowed(
+                principal, local=actor.local, desktop=True, settings=settings
+            ),
+            desktop_authorized=await access.desktop_authorized(
+                db, principal, local=actor.local, settings=settings
+            ),
         )
