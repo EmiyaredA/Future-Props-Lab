@@ -25,13 +25,23 @@ class BrowserServer(uvicorn.Server):
 
 
 class WebAccess:
-    def __init__(self, app, settings, data_root, static_root, authenticate, *, shared_static=None):
+    def __init__(
+        self,
+        app,
+        settings,
+        data_root,
+        static_root,
+        authenticate,
+        *,
+        shared_static=None,
+        local_https_enabled=False,
+    ):
         self.app = app
         self.store = ProfileStore(data_root, settings)
         self.profile = self.store.profile()
         self.static_root = static_root
         self.shared_static = shared_static
-        self.local_https_enabled = bool(settings.fpl_happier_origin)
+        self.local_https_enabled = local_https_enabled
         self.authenticate = authenticate
         self.local = EndpointStatus(url=f"http://127.0.0.1:{self.profile.local_port}")
         self.public = EndpointStatus(url=self.profile.origin)

@@ -26,6 +26,8 @@ from studio.apps.identity.use_cases.happier_oidc import BROWSER_COOKIE, EXCHANGE
 
 DISCOVERY = "/.well-known/openid-configuration"
 UPDATES = "/v1/updates"
+# Match the pinned Happier relay's default Socket.IO payload limit.
+MAX_UPDATES_FRAME_BYTES = 25_000_000
 SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 REQUEST_HEADERS = {
     "accept",
@@ -216,7 +218,7 @@ class HappierIngress:
                 proxy=None,
                 open_timeout=5,
                 close_timeout=1,
-                max_size=8 * 1024 * 1024,
+                max_size=MAX_UPDATES_FRAME_BYTES,
             ) as upstream:
                 await socket.accept()
                 await relay_updates(socket, upstream, self.identity, grant)

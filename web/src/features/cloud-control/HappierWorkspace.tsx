@@ -22,7 +22,7 @@ export function HappierWorkspace({
       className="cloud-happier"
     >
       {unlocked ? (
-        <HappierFrame name={paneId + "-happier"} visible={!hidden} />
+        <HappierFrame visible={!hidden} />
       ) : (
         <div className="cloud-happier-state">
           <button type="button" className="btn" onClick={onUnlock}>
@@ -37,7 +37,7 @@ export function HappierWorkspace({
   );
 }
 
-function HappierFrame({ name, visible }: { name: string; visible: boolean }) {
+function HappierFrame({ visible }: { visible: boolean }) {
   const [source, setSource] = useState<string>();
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string>();
@@ -70,16 +70,16 @@ function HappierFrame({ name, visible }: { name: string; visible: boolean }) {
 
   return (
     <>
-      <iframe
-        name={name}
-        title="Happier Agent 工作台"
-        src={source}
-        hidden={!loaded}
-        referrerPolicy="strict-origin"
-        onLoad={() => {
-          if (source) setLoaded(true);
-        }}
-      />
+      {source && (
+        <iframe
+          title="Happier Agent 工作台"
+          src={source}
+          allow="clipboard-read; clipboard-write"
+          hidden={!loaded}
+          referrerPolicy="strict-origin"
+          onLoad={() => setLoaded(true)}
+        />
+      )}
       {!loaded && (
         <div className="cloud-happier-state">
           {error ? (
