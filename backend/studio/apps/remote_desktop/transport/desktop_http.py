@@ -1,5 +1,7 @@
 """Remote status, idle settings, ticket issuance and authenticated Guacamole upgrade."""
 
+from urllib.parse import urlsplit
+
 import jwt
 from fastapi import APIRouter, HTTPException, Request, Response, WebSocket
 
@@ -47,6 +49,10 @@ async def status(request: Request, principal: StudioAuth):
     preference = await request.app.state.desktop_preferences.read(owner=principal.user_id)
     state = request.app.state
     policy = remote_policy(state)
+    happier_url = current.happier_studio_url if current.enabled else None
+    happier_available = bool(
+        happier_url and request.headers.get("host") == urlsplit(happier_url).netloc
+    )
     return CloudStatus(
         enabled=current.enabled,
         host_label=policy.get("fpl_cloud_control_host_label", state.remote_settings.host_label),
@@ -57,6 +63,12 @@ async def status(request: Request, principal: StudioAuth):
         local=request.state.service_actor.local,
         unlocked_until=current.unlocked_until,
         remote_apps_enabled=policy.get("fpl_cloud_control_apps_enabled", False),
+        happier_available=happier_available,
+        happier_studio_url=(
+            f"{happier_url}/cloud-control?view=agent"
+            if happier_url and not happier_available
+            else None
+        ),
     )
 
 

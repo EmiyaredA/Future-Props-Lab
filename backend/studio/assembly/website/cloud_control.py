@@ -34,7 +34,8 @@ async def status(request: Request, response: Response, db: SessionDep, principal
     response.headers["Cache-Control"] = "no-store"
     settings = request.app.state.read_cloud_settings()
     local = local_request(request)
-    enabled = access.allowed(principal, local=local, settings=settings)
+    agent_local = local or getattr(request.state, "website_happier_local", False)
+    enabled = access.allowed(principal, local=agent_local, settings=settings)
     preference = await request.app.state.desktop_preferences.read(owner=principal.user_id)
     happier = request.app.state.happier
     happier_available = bool(enabled and happier and happier.available(request, principal))
@@ -49,7 +50,9 @@ async def status(request: Request, response: Response, db: SessionDep, principal
         idle_revision=preference.revision,
         remote_apps_enabled=settings.fpl_cloud_control_apps_enabled,
         local=local,
-        unlocked_until=await access.unlock_expiry(db, principal, local=local, settings=settings),
+        unlocked_until=await access.unlock_expiry(
+            db, principal, local=agent_local, settings=settings
+        ),
         happier_available=happier_available,
         happier_studio_url=(
             happier.studio_origin + "/cloud-control?view=agent"

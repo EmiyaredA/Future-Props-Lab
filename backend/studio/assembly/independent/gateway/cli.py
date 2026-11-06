@@ -53,6 +53,8 @@ def run(options):
         from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
         from studio.apps.gateway.bridge_listener import serve_creative_bridge
+        from studio.apps.gateway.transport.cloud_control import LocalHappier
+        from studio.apps.identity.clients.authorization import LiveAuthorization
         from studio.assembly.independent.gateway.application import create_app
         from studio.contracts.gateway.routing import RouteCatalog
         from studio.runtime.http.capability_client import CapabilityClient
@@ -62,7 +64,19 @@ def run(options):
             raise ValueError("Identity 公钥类型无效")
         catalog = RouteCatalog.read(options.catalog)
         credential = options.identity_token.read_text().strip()
+        settings = get_settings()
+        happier = None
+        if settings.fpl_happier_origin:
+            if not settings.fpl_happier_studio_origin:
+                raise ValueError("独立网关仅支持本机 HTTPS Happier")
+            happier = LocalHappier(
+                studio_origin=settings.fpl_happier_studio_origin,
+                origin=settings.fpl_happier_origin,
+                relay_port=settings.fpl_happier_relay_port,
+                identity=LiveAuthorization(service="gateway", credential=credential),
+            )
         app = create_app(
+            happier=happier,
             state_root=state,
             catalog=catalog,
             public_key=public,
@@ -120,7 +134,16 @@ def serve_caddy(options, app, uvicorn, bridge_worker):
 
     threading.Thread(target=observe, daemon=True).start()
     try:
-        uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+        from studio.apps.gateway.transport.happier_ingress import MAX_UPDATES_FRAME_BYTES
+
+        uvicorn.run(
+            app,
+            host="0.0.0.0",
+            port=options.port,
+            proxy_headers=False,
+            access_log=False,
+            ws_max_size=MAX_UPDATES_FRAME_BYTES,
+        )
     finally:
         stopping.set()
         if child.poll() is None:

@@ -35,6 +35,8 @@ def render_gateway(
     control=False,
     audience="studio",
     creative_ingress=None,
+    happier_studio_origin=None,
+    happier_origin=None,
 ):
     if audience not in {"studio", "management"}:
         raise ValueError("Unknown gateway audience")
@@ -102,6 +104,21 @@ def render_gateway(
             groups[("creative", "POST", bridge_routes[operation.path])].append(operation)
         else:
             groups[(operation.service, operation.method, "")].append(operation)
+    listeners = [("local", "http://:9000"), ("public", "http://:28081")]
+    tls = "    tls /run/fpl/happier-cert.pem /run/fpl/happier-key.pem"
+    if happier_studio_origin or happier_origin:
+        if audience != "studio" or not control:
+            raise ValueError("本机 Happier 需要 Studio 控制网关")
+        for value in (happier_studio_origin, happier_origin):
+            if not value or not re.fullmatch(
+                r"https://[a-zA-Z0-9.-]+[.]localhost:[0-9]{4,5}", value
+            ):
+                raise ValueError("Happier 需要两个精确的本机 HTTPS 来源")
+        studio, happier = urlsplit(happier_studio_origin), urlsplit(happier_origin)
+        if studio.hostname == happier.hostname or studio.port == happier.port:
+            raise ValueError("Happier 与 Studio 必须使用不同的本机主机名和端口")
+        origins["happier-local"] = studio
+        listeners.append(("happier-local", "https://:3443"))
     result = [
         "{",
         "  admin off",
@@ -117,10 +134,12 @@ def render_gateway(
         "  }",
         "}",
     ]
-    for ingress, port in (("local", 9000), ("public", 28081)):
+    for ingress, listener in listeners:
         origin = origins[ingress]
+        matcher = ingress.replace("-", "_")
         lines = [
-            f"http://:{port} {{",
+            f"{listener} {{",
+            *([tls] if ingress == "happier-local" else []),
             "  route {",
             f"    @bad_host expression {{http.request.hostport}} != {quoted(origin.netloc)}",
             "    respond @bad_host 403",
@@ -181,7 +200,7 @@ def render_gateway(
             )
         if audience == "studio":
             for index, operation in enumerate(catalog.websockets):
-                name = f"{ingress}_socket_{index}"
+                name = f"{matcher}_socket_{index}"
                 lines.extend(
                     [
                         f"    @{name} {{",
@@ -223,7 +242,7 @@ def render_gateway(
         for index, ((service, method, bridge_path), operations) in enumerate(
             sorted(groups.items())
         ):
-            name = f"{ingress}_api_{index}"
+            name = f"{matcher}_api_{index}"
             paths = "|".join(op.pattern().pattern[1:-1] for op in operations)
             lines.extend(
                 [
@@ -300,7 +319,7 @@ def render_gateway(
                     paths.append(root + "/*")
             if not service.page_roots:
                 continue
-            name = f"{ingress}_page_{service.id}"
+            name = f"{matcher}_page_{service.id}"
             lines.extend(
                 [
                     f"    @{name} path " + " ".join(paths),
@@ -314,6 +333,24 @@ def render_gateway(
             )
         lines.extend(["    respond 404", "  }", "}"])
         result.extend(lines)
+    if happier_origin:
+        result.extend(
+            [
+                "https://:3444 {",
+                tls,
+                "  route {",
+                f"    @bad_host expression {{http.request.hostport}} != {quoted(happier.netloc)}",
+                "    respond @bad_host 403",
+                "    request_header -X-Fpl-*",
+                "    request_header -X-Forwarded-*",
+                "    request_header -Forwarded",
+                "    reverse_proxy 127.0.0.1:8080 {",
+                "      flush_interval -1",
+                "    }",
+                "  }",
+                "}",
+            ]
+        )
     if native_tokens:
         result.extend(
             [

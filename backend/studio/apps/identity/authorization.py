@@ -109,7 +109,10 @@ async def authorize(request: Request):
                 raise HTTPException(403, "browser_session_required")
             if not principal.allows(CLOUD_CONTROL_PERMISSION):
                 raise HTTPException(403, "insufficient_permission")
-        local = request.headers.get("x-fpl-ingress") == "local" and principal.auth_kind == "session"
+        local = (
+            request.headers.get("x-fpl-ingress") in {"local", "happier-local"}
+            and principal.auth_kind == "session"
+        )
         desktop_ticket = None
         if socket is not None and is_desktop_upgrade(service, method, path):
             desktop_ticket = desktop_ticket_digest(request.cookies.get(DESKTOP_COOKIE, ""))

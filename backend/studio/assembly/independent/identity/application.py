@@ -159,6 +159,9 @@ def create_app(
 
     app.state.account_storage_check = no_storage_upgrade
     app.state.service_catalog = catalog
+    studio_origins = {"local": urlsplit(local_origin), "public": urlsplit(public_origin)}
+    if settings.fpl_happier_studio_origin:
+        studio_origins["happier-local"] = urlsplit(settings.fpl_happier_studio_origin)
     app.state.identity_options = {
         "service_credentials": dict(service_credentials or {}),
         "gateway_token": gateway_token,
@@ -169,7 +172,7 @@ def create_app(
         },
         "private_key": private_key,
         "key_id": key_id,
-        "origins": {"local": urlsplit(local_origin), "public": urlsplit(public_origin)},
+        "origins": studio_origins,
     }
 
     included = APIRouter()
@@ -211,6 +214,7 @@ def create_app(
         GatewayTransport,
         gateway_token=gateway_token,
         local_origin=local_origin,
+        happier_studio_origin=settings.fpl_happier_studio_origin,
         public_origin=public_origin,
         catalog=catalog,
         management_gateway_token=management_gateway_token,

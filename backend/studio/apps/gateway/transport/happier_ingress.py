@@ -18,7 +18,7 @@ from starlette.websockets import WebSocketDisconnect
 from websockets.asyncio.client import connect
 from websockets.exceptions import WebSocketException
 
-from studio.apps.identity.use_cases.happier_access import BROWSER_COOKIE, EXCHANGE_PATH
+from studio.contracts.identity.happier import BROWSER_COOKIE, EXCHANGE_PATH
 
 UPDATES = "/v1/updates"
 # Match the pinned Happier relay's default Socket.IO payload limit.
@@ -47,12 +47,12 @@ RESPONSE_HEADERS = {
 
 
 class HappierIngress:
-    def __init__(self, access, *, studio_origin, relay_port):
+    def __init__(self, access, *, studio_origin, relay_port, relay_host="127.0.0.1"):
         self.access = access
         self.studio_origin = studio_origin
         self.host = urlsplit(access.origin).netloc
-        self.upstream = f"http://127.0.0.1:{relay_port}"
-        self.socket_url = f"ws://127.0.0.1:{relay_port}"
+        self.upstream = f"http://{relay_host}:{relay_port}"
+        self.socket_url = f"ws://{relay_host}:{relay_port}"
         self.client = httpx.AsyncClient(trust_env=False)
         self.app = Starlette(
             routes=[

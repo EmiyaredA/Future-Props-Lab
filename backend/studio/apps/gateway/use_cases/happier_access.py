@@ -8,12 +8,11 @@ import time
 from dataclasses import dataclass
 
 import jwt
+from cryptography.fernet import Fernet, InvalidToken
 
 from studio.contracts.identity.permissions import role_scopes
 from studio.contracts.identity.principal import StudioPrincipal
 
-EXCHANGE_PATH = "/v1/cloud-control/happier/exchange"
-BROWSER_COOKIE = "__Host-fpl_happier"
 TICKET_SECONDS = 60
 
 
@@ -45,6 +44,7 @@ class BrowserGrant:
     principal: StudioPrincipal
     local: bool
     expires: int
+    proof: str | None = None
 
 
 class HappierAccess:
@@ -54,31 +54,36 @@ class HappierAccess:
         self.clock = clock
         self.launches = OneTimeGrants(clock)
         self.cookie_key = secrets.token_bytes(32)
+        self.proof_cipher = Fernet(Fernet.generate_key())
 
-    def launch(self, principal, local, expires):
-        return self.launches.issue(BrowserGrant(principal, local, int(expires)))
+    def launch(self, principal, local, expires, *, proof=None):
+        return self.launches.issue(BrowserGrant(principal, local, int(expires), proof))
 
     async def allowed(self, grant):
         return grant.expires > self.clock() and await self.authorize_grant(grant)
 
     def cookie(self, grant):
-        return jwt.encode(
-            {
-                "sub": grant.principal.user_id,
-                "sid": grant.principal.session_id,
-                "local": grant.local,
-                "exp": grant.expires,
-            },
-            self.cookie_key,
-            algorithm="HS256",
-        )
+        claims = {
+            "sub": grant.principal.user_id,
+            "sid": grant.principal.session_id,
+            "local": grant.local,
+            "exp": grant.expires,
+        }
+        if grant.proof:
+            claims["proof"] = self.proof_cipher.encrypt(grant.proof.encode()).decode()
+        return jwt.encode(claims, self.cookie_key, algorithm="HS256")
 
     def browser_grant(self, cookie):
         if not cookie:
             return None
         try:
             data = jwt.decode(cookie, self.cookie_key, algorithms=["HS256"])
-        except jwt.InvalidTokenError:
+            proof = (
+                self.proof_cipher.decrypt(data["proof"].encode()).decode()
+                if "proof" in data
+                else None
+            )
+        except (jwt.InvalidTokenError, InvalidToken):
             return None
         return BrowserGrant(
             StudioPrincipal(
@@ -91,4 +96,5 @@ class HappierAccess:
             ),
             data["local"],
             data["exp"],
+            proof,
         )

@@ -24,6 +24,16 @@ SERVICE_FILES = (
 )
 
 FEATURE_FILES = (
+    (
+        "happier-local",
+        ("gateway",),
+        (
+            "FPL_HAPPIER_STUDIO_PORT",
+            "FPL_HAPPIER_BROWSER_PORT",
+            "FPL_HAPPIER_CERT_FILE",
+            "FPL_HAPPIER_KEY_FILE",
+        ),
+    ),
     ("remote-guacd", ("remote",), ("FPL_GUACD_IMAGE",)),
     (
         "remote-settings",

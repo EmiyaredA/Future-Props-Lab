@@ -174,6 +174,8 @@ docs/
 
 ## Agent 工作台
 
+本机 Happier 可使用独立回环 TLS 监听器。`scripts/website/application.py` 绑定 Studio 与 Happier 两个同站来源，`WebsiteTransport` 依据实际监听 socket 标记本机 Happier 入口，仅 Agent 解锁使用该标记。
+
 日常网站的云控页由 `web/src/features/cloud-control/` 嵌入 Happier 原生 Web。`studio/assembly/website/happier.py` 与 `happier_ingress.py` 在独立 HTTPS 来源管理浏览器授权并转发网页、API 和实时连接。Identity 的 `happier_access.py` 持有短期凭证与浏览器授权。Happier 原生账号、设备配对、会话加密和 CLI 生命周期由固定版本的上游实现提供。
 
 旧工作台的数据归属及迁移仍在 `studio/apps/agent_workbench/`。旧站启动、公开 API、独立 Compose 和 Gateway 均不装配此工作台。归档及回退使用原部署版本，详见 [Happier 部署与切换](../operations/happier.md)。
@@ -358,7 +360,7 @@ Remote 的 `backend/studio/apps/remote_desktop/` 拥有桌面偏好、短期连�
 共享 `studio/apps/remote_desktop/transport/guacamole.py` 负责 Guacamole 协议，旧站与 Remote 分别注入自己的授权和连接端口。历史偏好由 `studio/apps/remote_desktop/preference_migration.py` 在回环维护入口导入，Identity 的 `credential_migration.py` 保留历史加密 TOTP 登记与归属会话。
 `deploy/compose/remote.compose.yaml` 只装配私网桌面服务，另需显式选择 Guacamole 对端。Identity 提供限定到原请求的会话复核。
 
-兼容网站的 `assembly/website/happier.py` 装配云控启动凭证与 FPL 会话复核，`happier_ingress.py` 转发独立 HTTPS 浏览器入口和实时连接。单客户端 OIDC 规则归 Identity。 `deploy/compose/happier.compose.yaml` 仅装配上游 Relay 与隔离 CLI Runner，`scripts/website/build_happier.py` 在固定上游 Web 构建中启用原生右侧栏默认值。
+兼容网站和独立 Gateway 分别装配 Identity 复核。Gateway 的 `use_cases/happier_access.py` 和 `transport/happier_ingress.py` 共用浏览器凭证、网页和实时转发。独立 Compose 的本机 HTTPS 入口与本机 HTTP、公网入口共用同一 Gateway 和业务服务。 `deploy/compose/happier.compose.yaml` 仅装配上游 Relay 与隔离 CLI Runner，`scripts/website/build_happier.py` 在固定上游 Web 构建中启用原生右侧栏默认值。
 
 
 `studio/deployment/images.py` 构建可审计源码闭包，`gateway.py` 从操作归属生成监听器路由。`deploy/images/` 下 Identity、Gateway、Portal、Assets、Rendering、Management、Models、Integrations、Thought 和 Creative 各自保存依赖锁和镜像定义。Remote 单独使用 `deploy/images/remote/` 锁定 WebSocket 和图片转换依赖。Visual、Galgame、Tools、Director 与 Agent Runtime 共用 `deploy/images/owned-http/` 的依赖锁和镜像定义，镜像构建各自检查源码闭包。`deploy/compose/compose.yaml` 装配基础服务。 仓库清单与功能叠加同放 `deploy/compose/`，管理装配仍以 `deploy/` 解析相对凭据和挂载路径。已有的仓库基础清单配置可解析到新路径。Mac 管理启动器通过 `studio/host/deployment/compose_selection.py` 按显式镜像和功能配置合并所有服务叠加清单。项目所有者和功能挂载按依赖顺序装配，Guacamole 随 Remote 进入业务启停组。Models 只挂自有状态、最小配置和身份连接，使用单独外联网络请求供应商。`scripts/website/service_build.py` 和 `service_docker_smoke.py` 分别提供 CLI 构建与账号容器隔离验收；`tests/gateway_assertion_probe.py` 只属于测试传输探针，不是工作台服务。运行及切换状态见[独立服务迁移](../operations/independent-services.md)。 `backend/studio/apps/tools/` 独立装配账号收藏和最近使用 API，使用自有数据与身份公钥。`deploy/compose/tools.compose.yaml` 提供隔离启动，`web/src/app/entries/tools.tsx` 构建工具目录和两条深链接，`studio/apps/tools/host.py` 管理本机文件库目录任务与回执。`studio/host/tools_worker.py` 从专用回环入口领取有效租约，只在配置的 Assets 根目录下解析当前账号的文件库。视频下载依赖探测复用回环 worker，公开入口隐去可执行文件路径。`videos.py` 保存下载任务，`video_files.py` 核对字节摘要并保存交付回执，`video_library.py` 通过限定授权把文件流交给 Assets。Mac 下载中间文件由 `studio/host/tools_video.py` 管理。 `studio/contracts/management/migration_batches.py` 定义迁移运行计划、规范化摘要和账号回执；Tools 的 `navigation_migration.py` 拥有历史导航数据集，`migration_application.py` 装配独立回环维护入口。由 `scripts/website/migrate_tools_navigation.py` 传输并双向核验批次。

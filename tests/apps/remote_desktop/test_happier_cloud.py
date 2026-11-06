@@ -4,10 +4,10 @@ from contextlib import aclosing, asynccontextmanager
 import httpx
 import pytest
 
-from studio.apps.identity.use_cases.happier_access import BROWSER_COOKIE
-from studio.assembly.website import happier_ingress
+from studio.apps.gateway.transport import happier_ingress
 from studio.assembly.website.happier import Happier
 from studio.config.settings import get_settings
+from studio.contracts.identity.happier import BROWSER_COOKIE
 from tests.apps.remote_desktop.test_cloud_control import CLOUD, admin_client, configure, unlock
 from website_test_support import SessionLocal, app
 

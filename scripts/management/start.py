@@ -19,8 +19,6 @@ def main():
     parser.add_argument("--check", action="store_true")
     options = parser.parse_args()
     values = read_config(options.config)
-    if not options.only_management and values.get("fpl_happier_origin"):
-        raise SystemExit("当前独立业务部署不支持已启用的 Happier 接入")
     environment = values.get("fpl_deployment_environment", {})
     if not environment or "FPL_MANAGEMENT_IMAGE" not in environment:
         raise SystemExit("独立服务尚未配置，请先完成隔离构建与部署配置；不会迁移或接管旧数据库")
@@ -42,6 +40,10 @@ def main():
             or not os.access(helper, os.X_OK)
         ):
             raise SystemExit("远程应用需要已选定的 Remote、Mac worker 凭据和可执行的辅助程序")
+    if not options.only_management and values.get("fpl_happier_origin"):
+        from studio.host.deployment.happier_preflight import check_happier_deployment
+
+        check_happier_deployment(values, control)
     if options.only_management:
         configured["fpl_management_host_auto_start"] = False
         configured["fpl_website_public_enabled"] = False

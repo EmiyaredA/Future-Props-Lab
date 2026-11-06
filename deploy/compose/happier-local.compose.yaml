@@ -1,0 +1,19 @@
+# Both listeners serve the selected Gateway image, exposed only on Mac loopback.
+services:
+  gateway:
+    ports:
+      - "127.0.0.1:${FPL_HAPPIER_STUDIO_PORT:?Select the local Studio HTTPS port}:3443"
+      - "127.0.0.1:${FPL_HAPPIER_BROWSER_PORT:?Select the local Happier HTTPS port}:3444"
+    volumes:
+      - type: bind
+        source: ${FPL_HAPPIER_CERT_FILE:?Select the local HTTPS certificate}
+        target: /run/fpl/happier-cert.pem
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${FPL_HAPPIER_KEY_FILE:?Select the local HTTPS private key}
+        target: /run/fpl/happier-key.pem
+        read_only: true
+        bind:
+          create_host_path: false

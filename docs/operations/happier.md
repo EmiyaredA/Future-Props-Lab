@@ -28,6 +28,30 @@
 
 7. 核验设备配对与恢复、新建 Codex 会话、首轮流式响应、审批同意和拒绝、文件访问、断线重连和重启后续聊。检查宽屏原生右栏、窄屏导航、切换桌面后的会话，以及 Runner 对项目之外宿主路径的读取限制。确认直接访问 Happier、错误账号和重放凭证都被拒绝，并核验 FPL 注销、撤权和解锁到期会关闭已连接的实时通道。
 
+## 仅在本机使用
+
+保留已有公网网站配置。在 `[happier]` 指定 `studio_origin` 和 `origin`，使用同站的两个
+`.localhost` HTTPS 主机名和显式端口。例如 Studio 使用 `https://studio.fpl.localhost:3443`，
+Happier 使用 `https://happier.fpl.localhost:3444`，`listen_port` 设为 3444。用
+`tls_certfile` 和 `tls_keyfile` 指向覆盖两个主机名的证书和私钥绝对路径。网站只在回环接口启动这两个 TLS 监听器。
+
+浏览器需要认可这张证书。验收可在专用 Chromium 配置中仅信任该证书的公钥。使用本机 Studio
+HTTPS 地址登录，云控原有的公网桌面限制仍生效。局域网和公网网关均不转发这两个监听器。
+
+## 独立 Studio 部署
+
+独立部署复用本机 Relay。将正式 TOML 的 `[happier]` 投影到 Identity 和 Gateway 的最小
+配置文件，并为 Gateway 生成 Caddyfile 时向 `render_gateway` 传入 `happier_studio_origin`、
+`happier_origin` 和 `control=True`。正式配置的 `[deployment.environment]` 中设置
+`FPL_HAPPIER_STUDIO_PORT`、`FPL_HAPPIER_BROWSER_PORT`、`FPL_HAPPIER_CERT_FILE` 和
+`FPL_HAPPIER_KEY_FILE`，值与 `[happier]` 一致。Compose 将两个 TLS 端口发布到 Mac 回环，
+Gateway 通过 `host.docker.internal` 访问同一 Mac 上的加密 Relay。TLS 私钥只挂载给 Gateway。
+
+本机 HTTP 端口统一为 3000。将 Identity 的 `[website].port`、`FPL_LOCAL_PORT` 和 Caddy
+本机来源配置为同一个端口。公网 Studio 使用同一 Gateway、前端产物和业务服务。本机云控可引导至
+Studio HTTPS，再按原有密码重验和设备密钥流程打开 Happier。通过公网 Studio 登录不能签发本机
+Happier 票据。现有公网 Agents 域名的代理、SSH 转发和 Relay 独立保留。
+
 ## 旧工作台归档与正式发布
 
 1. 隔离验收通过后安排维护窗口。停止接受旧工作台操作，等待或明确结束正在运行的轮次。停止网站、旧 Agents Compose 服务及主机采集与执行进程。

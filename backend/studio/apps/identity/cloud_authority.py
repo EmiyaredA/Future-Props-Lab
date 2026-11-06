@@ -61,6 +61,14 @@ async def cloud_authority(request: Request, response: Response, body: CloudAutho
         platform_role="admin",
         session_id=actor.session_id,
     )
+    config = request.app.state.settings
+    happier_origin = (
+        config.fpl_happier_studio_origin
+        if actor.local and actor.user_id == config.fpl_happier_admin_user_id
+        else ""
+    )
+    if body.service == "gateway" and not happier_origin:
+        return CloudAuthority(active=False)
     async with request.app.state.database.sessions() as db:
         if not await active_actor(db, actor):
             return CloudAuthority(active=False)
@@ -80,4 +88,7 @@ async def cloud_authority(request: Request, response: Response, body: CloudAutho
                 db, principal, local=actor.local, settings=settings
             ),
             recently_reauthenticated=reauthenticated,
+            happier_studio_url=happier_origin or None
+            if body.path == "/v1/cloud-control/status"
+            else None,
         )

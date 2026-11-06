@@ -1,11 +1,16 @@
 """Remote receives a scoped desktop proof without the browser's credential."""
 
+import json
 from pathlib import Path
 
 import httpx
 import pytest
 
+from studio.apps.gateway.storage.migrations.registry import MIGRATIONS as GATEWAY_MIGRATIONS
+from studio.apps.gateway.transport.cloud_control import LocalHappier
 from studio.apps.identity.accounts import create_account
+from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.assembly.independent.gateway.application import create_app as create_gateway
 from studio.config.settings import get_settings
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.claims import HEADER, issue_context, verify_context
@@ -15,9 +20,14 @@ from studio.contracts.identity.cloud_authority import (
     DESKTOP_SOCKET,
     desktop_ticket_digest,
 )
+from studio.contracts.identity.happier import BROWSER_COOKIE, EXCHANGE_PATH, LAUNCH_PATH
 from studio.deployment.gateway import render_gateway
+from studio.runtime.database.migrations import apply
 from tests.apps.thought_workshop.test_community_asset_protocol import (  # noqa: F401
+    CATALOG,
+    GATEWAY_SECRET,
     PASSWORD,
+    Noop,
     scenario,
 )
 from tests.integration.test_independent_project_catalog import authorize
@@ -153,3 +163,123 @@ def test_gateway_strips_browser_cookie_before_the_remote_upgrade():
         )
         >= 2
     )
+
+
+async def test_local_happier_grant_is_revoked_by_identity(scenario, monkeypatch, tmp_path):  # noqa: F811
+    studio = "https://studio.fpl.localhost:3443"
+    origin = "https://happier.fpl.localhost:3444"
+    public = "https://studio.example.test"
+    credential = "gateway-happier-authority-fixture-00000"
+    identity = scenario.identity
+    async with identity.state.database.sessions() as session:
+        admin, _ = await create_account(
+            session,
+            username="happier-admin",
+            display_name="Happier Admin",
+            password=PASSWORD,
+            platform_role="admin",
+        )
+    config = identity.state.settings.model_copy(
+        update={
+            "fpl_cloud_control_enabled": True,
+            "fpl_cloud_control_admin_user_ids": admin.id,
+            "fpl_happier_admin_user_id": admin.id,
+            "fpl_happier_studio_origin": studio,
+            "fpl_happier_origin": origin,
+        }
+    )
+    monkeypatch.setattr(identity.state, "settings", config)
+    monkeypatch.setattr(identity.state, "read_cloud_settings", lambda: config)
+    monkeypatch.setattr(identity.state.cloud_unlocks, "settings_reader", lambda: config)
+    identity.state.identity_options["service_credentials"]["gateway"] = credential
+    live = LiveAuthorization(service="gateway", credential=credential, transport=scenario.mesh)
+    happier = LocalHappier(studio_origin=studio, origin=origin, relay_port=3305, identity=live)
+
+    class RelayBody(httpx.AsyncByteStream):
+        async def __aiter__(self):
+            yield b"Relay HTML"
+
+    async def relay(request):
+        assert BROWSER_COOKIE not in request.headers.get("cookie", "")
+        if request.url.path == "/v1/features":
+            return httpx.Response(
+                200, json={"capabilities": {"encryption": {"storagePolicy": "required_e2ee"}}}
+            )
+        return httpx.Response(200, stream=RelayBody(), headers={"Content-Type": "text/html"})
+
+    await happier.ingress.client.aclose()
+    happier.ingress.client = httpx.AsyncClient(transport=httpx.MockTransport(relay))
+    state = tmp_path / "gateway"
+    apply(state / "service.db", "gateway", GATEWAY_MIGRATIONS)
+    monkeypatch.setenv("FPL_DATABASE_PATH", str(state / "service.db"))
+    get_settings.cache_clear()
+    gateway = create_gateway(
+        state_root=state,
+        catalog=CATALOG,
+        public_key=scenario.key.public_key(),
+        capabilities=Noop(),
+        happier=happier,
+        schema=json.loads((ROOT / "web/src/generated/openapi.json").read_text()),
+        manifest={},
+    )
+    ingress_headers = {
+        "X-Fpl-Gateway": GATEWAY_SECRET,
+        "X-Fpl-Ingress": "local",
+        "X-Fpl-Client-Ip": "127.0.0.1",
+    }
+    async with (
+        gateway.router.lifespan_context(gateway),
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(identity), base_url=ORIGIN, headers=ingress_headers
+        ) as admin_browser,
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(gateway), base_url=studio
+        ) as studio_browser,
+        httpx.AsyncClient(transport=httpx.ASGITransport(gateway), base_url=origin) as relay_browser,
+    ):
+        login = await admin_browser.post(
+            "/v1/auth/login", json={"username": "happier-admin", "password": PASSWORD}
+        )
+        assert login.status_code == 200, login.text
+        csrf = {"Origin": ORIGIN, "X-CSRF-Token": admin_browser.cookies["fpl_csrf"]}
+
+        async def assertion():
+            result = await admin_browser.get(
+                "/_internal/v1/authorize",
+                headers={
+                    **csrf,
+                    "X-Fpl-Target-Service": "gateway",
+                    "X-Fpl-Request-Method": "POST",
+                    "X-Fpl-Request-Uri": LAUNCH_PATH,
+                },
+            )
+            assert result.status_code == 204, result.text
+            return {HEADER: result.headers[HEADER], "Origin": studio}
+
+        assert (await relay_browser.get("/")).status_code == 403
+        headers = await assertion()
+        assert (await studio_browser.post(LAUNCH_PATH, headers=headers)).status_code == 403
+        assert (
+            await admin_browser.post("/v1/auth/reauth", headers=csrf, json={"password": PASSWORD})
+        ).status_code == 204
+        assert (
+            await admin_browser.post(
+                "/v1/cloud-control/unlock", headers=csrf, json={"purpose": "agent"}
+            )
+        ).status_code == 204
+        headers = await assertion()
+        assert (
+            await studio_browser.post(LAUNCH_PATH, headers={**headers, "Origin": public})
+        ).status_code == 403
+        launched = await studio_browser.post(LAUNCH_PATH, headers=headers)
+        assert launched.status_code == 200, launched.text
+        ticket = {"ticket": launched.json()["ticket"]}
+        exchange = await relay_browser.post(EXCHANGE_PATH, data=ticket, headers={"Origin": studio})
+        assert exchange.status_code == 204, exchange.text
+        assert BROWSER_COOKIE in relay_browser.cookies
+        assert (await relay_browser.get("/")).text == "Relay HTML"
+        assert (
+            await relay_browser.post(EXCHANGE_PATH, data=ticket, headers={"Origin": studio})
+        ).status_code == 403
+        assert (await admin_browser.post("/v1/auth/logout", headers=csrf)).status_code == 204
+        assert (await relay_browser.get("/")).status_code == 403

@@ -15,6 +15,7 @@ from studio.apps.gateway.notifications import router as notification_router
 from studio.apps.gateway.service_status import ServiceMonitor
 from studio.apps.gateway.storage.migrations.registry import MIGRATIONS
 from studio.apps.gateway.storage.service_models import ChangeCursor, ChangeReceipt
+from studio.apps.gateway.transport.cloud_control import LocalHappierIngress
 from studio.apps.gateway.transport.cloud_control import router as cloud_control_router
 from studio.apps.gateway.transport.service import router
 from studio.apps.gateway.use_cases.resource_links import ResourceLinks
@@ -43,6 +44,7 @@ def create_app(
     publishers=None,
     access=None,
     monitor=None,
+    happier=None,
     version="development",
 ):
     database = Database("gateway", state_root, models=MODELS)
@@ -67,6 +69,8 @@ def create_app(
             yield
         finally:
             await service_monitor.close()
+            if happier is not None:
+                await happier.close()
             await capabilities.close()
             await database.close()
 
@@ -88,6 +92,7 @@ def create_app(
     app.state.automation_manifest = manifest
     app.state.publishers = dict(publishers or {})
     app.state.access = access
+    app.state.happier = happier
     app.state.service_monitor = service_monitor
     app.include_router(router, prefix="/v1")
     app.include_router(cloud_control_router, prefix="/v1")
@@ -98,6 +103,8 @@ def create_app(
     app.add_exception_handler(OperationalError, storage_operational_error_handler)
     app.add_middleware(SignedIdentity, service="gateway", public_key=public_key, catalog=catalog)
     app.add_middleware(RequestLimit, prefix="/_internal/", maximum=64 * 1024)
+    if happier is not None:
+        app.add_middleware(LocalHappierIngress, happier=happier)
 
     @app.get("/health")
     async def health():

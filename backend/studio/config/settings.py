@@ -128,6 +128,9 @@ class Settings(BaseSettings):
     fpl_cloud_control_projects: dict[str, CloudProject] = Field(default_factory=dict)
     fpl_happier_admin_user_id: str = ""
     fpl_happier_origin: str = ""
+    fpl_happier_studio_origin: str = ""
+    fpl_happier_tls_certfile: str = ""
+    fpl_happier_tls_keyfile: str = ""
     fpl_happier_listen_port: int = Field(default=28082, ge=1024, le=65535)
     fpl_happier_relay_port: int = Field(default=3005, ge=1024, le=65535)
     fpl_code_agents_codex_enabled: bool | None = None
@@ -195,13 +198,14 @@ class Settings(BaseSettings):
         if self.fpl_happier_origin:
             happier = urlsplit(self.fpl_happier_origin)
             if (
-                not self.fpl_remote_web_enabled
+                not (self.fpl_remote_web_enabled or self.fpl_happier_studio_origin)
                 or happier.scheme != "https"
                 or not happier.hostname
                 or happier.username is not None
                 or self.fpl_happier_origin != f"https://{happier.netloc}"
                 or any(char.isspace() for char in happier.netloc)
-                or happier.hostname == urlsplit(self.fpl_remote_web_origin).hostname
+                or happier.hostname
+                == urlsplit(self.fpl_happier_studio_origin or self.fpl_remote_web_origin).hostname
                 or not self.fpl_happier_admin_user_id
                 or self.fpl_happier_listen_port
                 in {
@@ -211,6 +215,34 @@ class Settings(BaseSettings):
                 }
             ):
                 raise ValueError("Happier 需要独立 HTTPS 来源、指定管理员和独立监听端口")
+        if self.fpl_happier_studio_origin:
+            studio = urlsplit(self.fpl_happier_studio_origin)
+            browser = urlsplit(self.fpl_happier_origin)
+            if (
+                studio.scheme != "https"
+                or studio.username is not None
+                or self.fpl_happier_studio_origin != f"https://{studio.netloc}"
+                or not studio.hostname
+                or not browser.hostname
+                or not studio.hostname.endswith(".localhost")
+                or studio.hostname.partition(".")[2] != browser.hostname.partition(".")[2]
+                or browser.port != self.fpl_happier_listen_port
+                or not studio.port
+                or studio.port < 1024
+                or studio.port
+                in {
+                    3000,
+                    self.fpl_website_port,
+                    self.fpl_remote_web_port,
+                    self.fpl_happier_listen_port,
+                    self.fpl_happier_relay_port,
+                }
+                or not all(
+                    Path(path).is_absolute()
+                    for path in (self.fpl_happier_tls_certfile, self.fpl_happier_tls_keyfile)
+                )
+            ):
+                raise ValueError("本机 Happier 需要同站 .localhost HTTPS、独立端口及 TLS 文件")
         try:
             Fernet(self.fpl_secrets_key.encode("ascii"))
         except Exception as exc:

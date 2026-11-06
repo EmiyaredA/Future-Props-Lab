@@ -5380,6 +5380,9 @@
     "happier": {
       "admin_user_id": "gateway",
       "origin": "gateway",
+      "studio_origin": "gateway",
+      "tls_certfile": "gateway",
+      "tls_keyfile": "gateway",
       "listen_port": "gateway",
       "relay_port": "gateway"
     },

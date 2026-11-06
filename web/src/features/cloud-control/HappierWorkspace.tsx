@@ -68,8 +68,9 @@ function HappierFrame({ visible }: { visible: boolean }) {
         if (response.status === 503)
           throw new Error("Happier 暂不可用，请稍后重试");
         if (!response.ok) throw new Error("Happier 授权失败，请重试");
-        if (!controller.signal.aborted)
-          setSource(new URL("/", exchange_url).href);
+        const workspace = new URL("/", exchange_url);
+        workspace.searchParams.set("server", workspace.origin);
+        if (!controller.signal.aborted) setSource(workspace.href);
       })
       .catch((reason: unknown) => {
         if (!controller.signal.aborted) {

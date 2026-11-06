@@ -5,6 +5,7 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from studio.contracts.identity.happier import LAUNCH_PATH
 from studio.contracts.remote_desktop.apps import APP_SOCKET
 from studio.contracts.remote_desktop.setup import REQUESTS
 
@@ -25,6 +26,8 @@ def is_desktop_upgrade(service, method, path):
 
 
 def permits_cloud_authority(service, method, path):
+    if service == "gateway":
+        return (method, path) == ("POST", LAUNCH_PATH)
     if service == "remote":
         return (method, path) in REQUESTS.values() or (method, path) in {
             ("GET", "/v1/cloud-control/status"),
@@ -74,3 +77,4 @@ class CloudAuthority(BaseModel):
     desktop_configured: bool = False
     desktop_authorized: bool = False
     recently_reauthenticated: bool = False
+    happier_studio_url: str | None = None

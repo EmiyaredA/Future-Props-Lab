@@ -49,6 +49,10 @@ origin = ""
 admin_user_id = ""
 listen_port = 28082
 relay_port = 3005
+# Optional separate loopback HTTPS pair for Happier. The public gateway is independent.
+studio_origin = ""
+tls_certfile = ""
+tls_keyfile = ""
 
 [remote_web]
 # 兼容旧配置字段，自动启动由 website.public_enabled 控制。

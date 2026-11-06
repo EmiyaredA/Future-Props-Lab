@@ -14,9 +14,10 @@ router = APIRouter()
 async def unlock(request: Request, body: CloudUnlockRequest, principal: StudioAuth):
     if session_policy(request).purpose != "studio":
         raise HTTPException(403, "请使用网站管理员会话")
+    local = getattr(request.state, "website_local", False) or (
+        body.purpose == "agent" and getattr(request.state, "website_happier_local", False)
+    )
     try:
-        await request.app.state.cloud_unlocks.grant(
-            principal, body.purpose, local=getattr(request.state, "website_local", False)
-        )
+        await request.app.state.cloud_unlocks.grant(principal, body.purpose, local=local)
     except CloudUnlockError as error:
         raise HTTPException(error.status, {"code": error.code, "message": str(error)}) from None

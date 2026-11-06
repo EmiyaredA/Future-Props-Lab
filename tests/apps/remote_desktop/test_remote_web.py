@@ -156,3 +156,58 @@ async def test_public_listener_restarts_after_a_real_http_connection(tmp_path):
             await access.stop_local()
     finally:
         await access.close()
+
+
+@pytest.mark.asyncio
+async def test_local_happier_scope_is_separate_from_the_public_website():
+    from studio.runtime.http.remote_web import RemoteWeb
+    from studio.runtime.http.website import WebsiteTransport
+
+    async def authenticate(_scope, _receive):
+        pass
+
+    async def upstream(scope, _receive, send):
+        seen.append(scope["state"])
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+
+    async def public(app, scope, receive, send):
+        await public_ingress(app, scope, receive, send)
+
+    async def receive():
+        return {"type": "http.disconnect"}
+
+    async def send(message):
+        if message["type"] == "http.response.start":
+            statuses.append(message["status"])
+
+    local_origin = "https://studio.fpl.localhost:3443"
+    local_ingress = RemoteWeb(
+        origin=local_origin, port=3443, static=None, authenticate=authenticate
+    )
+    public_ingress = RemoteWeb(origin=ORIGIN, port=28081, static=None, authenticate=authenticate)
+    public.accepts = public_ingress.accepts
+    transport = WebsiteTransport(
+        upstream, local_port=9001, public_access=public, happier_local=local_ingress
+    )
+    seen, statuses = [], []
+    for port, host in (
+        (3443, b"studio.fpl.localhost:3443"),
+        (28081, b"studio.example.test"),
+        (28081, b"studio.fpl.localhost:3443"),
+    ):
+        await transport(
+            {
+                "type": "http",
+                "path": "/health",
+                "method": "GET",
+                "server": ("127.0.0.1", port),
+                "headers": [(b"host", host), (b"x-fpl-happier-local", b"true")],
+            },
+            receive,
+            send,
+        )
+    assert statuses == [200, 200, 403]
+    assert seen == [
+        {"website_local": False, "website_happier_local": True},
+        {"website_local": False, "website_happier_local": False},
+    ]

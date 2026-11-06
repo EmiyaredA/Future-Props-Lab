@@ -22,6 +22,7 @@ class GatewayTransport:
         local_origin,
         public_origin,
         catalog,
+        happier_studio_origin="",
         management_gateway_token=None,
         management_local_origin="",
         management_public_origin="",
@@ -31,6 +32,8 @@ class GatewayTransport:
         self.app = app
         self.token = gateway_token
         self.origins = {"local": urlsplit(local_origin), "public": urlsplit(public_origin)}
+        if happier_studio_origin:
+            self.origins["happier-local"] = urlsplit(happier_studio_origin)
         self.catalog = catalog
         if management_gateway_token is not None and (
             len(management_gateway_token) < 32
@@ -85,7 +88,7 @@ class GatewayTransport:
             policy = PUBLIC_MANAGEMENT_SESSION if ingress == "public" else MANAGEMENT_SESSION
         scope["state"] = {
             **scope.get("state", {}),
-            "website_local": ingress == "local",
+            "website_local": ingress in {"local", "happier-local"},
             "session_policy": policy,
         }
         scope["client"] = (headers.get("x-fpl-client-ip", ""), 0)
@@ -96,7 +99,7 @@ class GatewayTransport:
                 outgoing["Cache-Control"] = "no-store"
                 if ingress == "local" and not management and path == "/v1/auth/me":
                     outgoing["X-Fpl-Invite-Registration"] = "allowed"
-                if ingress == "public":
+                if origin.scheme == "https":
                     message["headers"] = [
                         (
                             name,

@@ -51,6 +51,9 @@ FIELDS = {
         for name, kind in {
             "admin_user_id": str,
             "origin": str,
+            "studio_origin": str,
+            "tls_certfile": str,
+            "tls_keyfile": str,
             "listen_port": int,
             "relay_port": int,
         }.items()

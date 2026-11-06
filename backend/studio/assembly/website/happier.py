@@ -2,18 +2,19 @@
 
 from fastapi import APIRouter, HTTPException, Request, Response
 
+from studio.apps.gateway.transport.happier_ingress import HappierIngress
+from studio.apps.gateway.use_cases.happier_access import HappierAccess
 from studio.apps.identity.storage.cloud_access import unlock_expiry
-from studio.apps.identity.use_cases.happier_access import EXCHANGE_PATH, HappierAccess
 from studio.assembly.http_dependencies import StudioAuth
-from studio.assembly.website.happier_ingress import HappierIngress
-from studio.contracts.identity.happier import HappierLaunch
+from studio.contracts.identity.happier import EXCHANGE_PATH, HappierLaunch
 
 launch_router = APIRouter()
 
 
 class Happier:
     def __init__(self, settings, sessions, *, read_cloud_settings):
-        self.studio_origin = settings.fpl_remote_web_origin
+        self.local_only = bool(settings.fpl_happier_studio_origin)
+        self.studio_origin = settings.fpl_happier_studio_origin or settings.fpl_remote_web_origin
         self.admin_user_id = settings.fpl_happier_admin_user_id
         self.sessions = sessions
         self.read_cloud_settings = read_cloud_settings
@@ -38,6 +39,7 @@ class Happier:
     def available(self, request, principal):
         return (
             self.eligible(principal)
+            and (not self.local_only or getattr(request.state, "website_happier_local", False))
             and f"{request.url.scheme}://{request.url.netloc}" == self.studio_origin
         )
 
@@ -59,7 +61,7 @@ async def launch_happier(request: Request, response: Response, principal: Studio
     happier = request.app.state.happier
     if happier is None or not happier.available(request, principal):
         raise HTTPException(403, "该账号或入口未启用 Happier")
-    local = getattr(request.state, "website_local", False)
+    local = happier.local_only or getattr(request.state, "website_local", False)
     expires = await happier.expiry(principal, local)
     if not expires:
         raise HTTPException(403, "请先验证管理员密码")

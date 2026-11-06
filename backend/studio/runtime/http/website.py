@@ -144,10 +144,12 @@ class WebsiteTransport:
         frontend_origin=None,
         frontend_port=None,
         public_access=None,
+        happier_local=None,
         automation_policy=None,
     ):
         self.app, self.local_port, self.public_access = app, local_port, public_access
         self.automation_policy = automation_policy
+        self.happier_local = happier_local
         if frontend_origin not in {None, "http://127.0.0.1:3000"}:
             raise ValueError("Unsupported local frontend origin")
         self.frontend_origin = frontend_origin
@@ -159,19 +161,28 @@ class WebsiteTransport:
             await self.app(scope, receive, send)
             return
         public = self.public_access is not None and self.public_access.accepts(scope)
+        happier_local = self.happier_local is not None and self.happier_local.accepts(scope)
         headers = Headers(scope=scope)
         server = scope.get("server")
         local = server in {("127.0.0.1", self.local_port), ("127.0.0.1", self.frontend_port)}
         host = f"127.0.0.1:{server[1]}" if local else None
         safe_origin = headers.get("origin") in {None, f"http://{host}", self.frontend_origin}
-        if not public and (not local or headers.get("host") != host or not safe_origin):
+        if (
+            not public
+            and not happier_local
+            and (not local or headers.get("host") != host or not safe_origin)
+        ):
             if scope["type"] == "websocket":
                 await send({"type": "websocket.close", "code": 1008})
             else:
                 await PlainTextResponse("Forbidden", status_code=403)(scope, receive, send)
             return
         scope = dict(scope)
-        scope["state"] = {**scope.get("state", {}), "website_local": not public}
+        scope["state"] = {
+            **scope.get("state", {}),
+            "website_local": not (public or happier_local),
+            "website_happier_local": happier_local,
+        }
         if scope["type"] == "http" and scope["path"].startswith("/v1/"):
             if self.api_paths is None:
                 self.api_paths = [path_pattern(path) for path in scope["app"].openapi()["paths"]]
@@ -194,7 +205,7 @@ class WebsiteTransport:
         async def observe(message):
             if (
                 message["type"] == "http.response.start"
-                and not public
+                and local
                 and scope.get("method") == "GET"
                 and scope["path"] == "/v1/auth/me"
             ):
@@ -211,7 +222,9 @@ class WebsiteTransport:
                     revisions[principal.user_id] = revisions.get(principal.user_id, 0) + 1
             await send(message)
 
-        if public:
+        if happier_local:
+            await self.happier_local(self.app, scope, receive, observe)
+        elif public:
             await self.public_access(self.app, scope, receive, observe)
         else:
             await self.app(scope, receive, observe)
@@ -226,6 +239,7 @@ def attach_website(
     frontend_port=None,
     static=None,
     public_access=None,
+    happier_local=None,
     automation_policy=None,
 ):
     if not (web_root / "index.html").is_file():
@@ -238,6 +252,7 @@ def attach_website(
         frontend_origin=frontend_origin,
         frontend_port=frontend_port,
         public_access=public_access,
+        happier_local=happier_local,
         automation_policy=automation_policy,
     )
     app.mount("/", static or WebsiteStaticFiles(directory=web_root, html=True), name="website")

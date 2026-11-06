@@ -79,7 +79,10 @@ it("retries an unavailable relay and preserves the same frame across cloud view 
     fireEvent.click(screen.getByRole("button", { name: "重试" }));
     const frame = await screen.findByTitle("Happier Agent 工作台");
     await waitFor(() =>
-      expect(frame).toHaveAttribute("src", "https://happier.example.test/"),
+      expect(frame).toHaveAttribute(
+        "src",
+        "https://happier.example.test/?server=https%3A%2F%2Fhappier.example.test",
+      ),
     );
     fireEvent.load(frame);
     expect(frame).toBeVisible();
