@@ -10,7 +10,7 @@ from studio.apps.agent_workbench.execution import project_files
 from studio.apps.agent_workbench.storage.models import WorkbenchSession
 from studio.apps.identity.storage import cloud_access as access
 from studio.config.settings import CloudProject, get_settings
-from test_cloud_control import PASSWORD, WORKBENCH, admin_client, configure, enroll
+from test_cloud_control import WORKBENCH, admin_client, configure, unlock
 from website_test_support import SessionLocal
 
 pytestmark = pytest.mark.real_auth
@@ -49,8 +49,8 @@ async def test_history_source_requires_project_authorization_and_current_unlock(
         await db.commit()
     url = f"{WORKBENCH}/sessions/{identities[0]}/source"
     async with aclosing(client), aclosing(other), aclosing(remote):
-        await enroll(client)
-        await enroll(other)
+        await unlock(client)
+        await unlock(other)
         # A native log claiming a cwd does not itself grant filesystem access.
         assert (await client.get(url, params={"path": "sample.py"})).status_code == 403
         registered = await client.post(WORKBENCH + "/execution/projects", json={"root": str(root)})
@@ -85,8 +85,7 @@ async def test_history_source_requires_project_authorization_and_current_unlock(
         remote.cookies = client.cookies
         remote.headers["X-CSRF-Token"] = client.cookies["fpl_csrf"]
         monkeypatch.setattr(get_settings(), "fpl_cloud_control_public_desktop_vnc_only", False)
-        reauthenticated = await remote.post("/v1/auth/reauth", json={"password": PASSWORD})
-        assert reauthenticated.status_code == 204, reauthenticated.text
+        await unlock(remote)
         assert (await remote.get(url, params={"path": "sample.py"})).status_code == 200
         original_read = project_files.read_file
 

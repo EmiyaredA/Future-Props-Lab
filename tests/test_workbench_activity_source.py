@@ -9,7 +9,7 @@ from studio.apps.agent_workbench.execution import runner
 from studio.apps.agent_workbench.transport.website import execution
 from studio.apps.identity.storage import cloud_access as access
 from studio.config.settings import CloudProject, get_settings
-from test_cloud_control import WORKBENCH, admin_client, await_turn, configure, enroll
+from test_cloud_control import WORKBENCH, admin_client, await_turn, configure, unlock
 from website_test_support import SessionLocal, app
 
 pytestmark = pytest.mark.real_auth
@@ -64,8 +64,8 @@ async def test_managed_source_preview_rechecks_scope_and_filesystem(monkeypatch,
         ),
     )
     async with aclosing(client), aclosing(other):
-        await enroll(client)
-        await enroll(other)
+        await unlock(client)
+        await unlock(other)
         response = await client.post(
             WORKBENCH + "/chats", json={"project_id": "fixture", "agent_id": "codex"}
         )
