@@ -18,8 +18,10 @@ from studio.runtime.database.ownership import bind_owner
 from studio.runtime.messaging.authorized_stream import authorized_stream
 
 
-async def prepare(session, owner_user_id, body, *, decrypt, settings):
-    model, provider = await get_model(session, owner_user_id, body.model_id, "text")
+async def prepare(session, owner_user_id, body, *, decrypt, settings, readiness=None):
+    model, provider = await get_model(
+        session, owner_user_id, body.model_id, "text", readiness=readiness
+    )
     args = dict(
         kind=provider.kind,
         base_url=provider.base_url,

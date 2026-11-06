@@ -12,6 +12,7 @@ from studio.apps.model_service.catalog.default_storage import CatalogDefaults
 from studio.apps.model_service.catalog.service import ModelCatalogService
 from studio.apps.model_service.catalog.suppliers import ModelSupplierService
 from studio.apps.model_service.catalog.task_usage import CatalogTaskUsage
+from studio.apps.model_service.local_models.catalog import ModelReadiness
 from studio.assembly.http_dependencies import SessionDep, StudioAuth
 
 
@@ -20,6 +21,7 @@ class CatalogBindings:
     cipher: CatalogCipher
     defaults: Callable[[AsyncSession], CatalogDefaults]
     task_usage: Callable[[AsyncSession], CatalogTaskUsage]
+    readiness: ModelReadiness | None = None
 
 
 def bindings(request):
@@ -36,6 +38,7 @@ def catalog_case(request: Request, session: SessionDep, _principal: StudioAuth):
         defaults_store=owner.defaults(session),
         task_usage=owner.task_usage(session),
         cipher=owner.cipher,
+        readiness=owner.readiness,
     )
 
 
@@ -46,6 +49,7 @@ def supplier_case(request: Request, session: SessionDep, _principal: StudioAuth)
         defaults_store=owner.defaults(session),
         task_usage=owner.task_usage(session),
         cipher=owner.cipher,
+        readiness=owner.readiness,
     )
 
 

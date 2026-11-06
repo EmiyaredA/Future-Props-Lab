@@ -142,6 +142,7 @@ async def case(tmp_path):
     inference = InferenceRunner(
         database.sessions,
         local_runtime=broker,
+        readiness=broker,
         settings=settings,
         synthesis_scope=broker.foreground_synthesis,
         decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
@@ -382,6 +383,7 @@ async def test_models_restart_settles_original_native_job_and_never_reruns(case)
         replacement = InferenceRunner(
             case.database.sessions,
             local_runtime=restarted,
+            readiness=restarted,
             settings=case.settings,
             synthesis_scope=restarted.foreground_synthesis,
             decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,

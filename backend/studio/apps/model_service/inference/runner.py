@@ -68,10 +68,12 @@ class InferenceRunner(PollingTaskRunner):
         prepare_claim=None,
         terminal_settlement=None,
         synthesis_scope=None,
+        readiness=None,
     ):
         super().__init__()
         self.session_factory, self.transport = session_factory, transport
         self.local_runtime = local_runtime
+        self.readiness = readiness
         self.synthesis_scope = synthesis_scope or nullcontext
         self.terminal_settlement = terminal_settlement
         self.settings = settings
@@ -344,7 +346,12 @@ class InferenceRunner(PollingTaskRunner):
             output = self.storage.root(task.owner_user_id) / "outputs" / key
             output.parent.mkdir(parents=True, exist_ok=True)
             result = await synthesize(
-                self.local_runtime, self.session_factory, task, source, output
+                self.local_runtime,
+                self.session_factory,
+                task,
+                source,
+                output,
+                readiness=self.readiness,
             )
             if (
                 not output.is_file()

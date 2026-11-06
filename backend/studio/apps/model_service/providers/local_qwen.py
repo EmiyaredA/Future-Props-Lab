@@ -52,10 +52,10 @@ async def inspect_reference(path):
             await process.wait()
 
 
-async def synthesize(runtime, sessions, task, source, output):
+async def synthesize(runtime, sessions, task, source, output, *, readiness=None):
     async def validate():
         async with sessions() as session:
-            await require_ready(session, task.model_slug)
+            await require_ready(session, task.model_slug, readiness=readiness)
 
     payload = {key: task.payload[key] for key in ("text", "language", "reference_text")}
     payload.update(

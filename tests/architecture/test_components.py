@@ -70,6 +70,7 @@ def test_migrated_apps_never_select_process_global_configuration(application):
         ),
         ("motion_compositor", {"motion_project_resources"}),
         ("video_editor", {"video_project_layouts", "video_timeline_assets"}),
+        ("model_service", {"native_model_readiness"}),
     ],
 )
 def test_migrated_components_receive_request_ports(application, keys):

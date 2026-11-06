@@ -39,6 +39,7 @@ async def model_options(request: Request, session: SessionDep, owner_user_id: Ow
         session,
         owner_user_id,
         upload_configured=bool(request.app.state.settings.fpl_temp_media_upload_url),
+        readiness=request.app.state.model_catalog_bindings.readiness,
     )
 
 
@@ -57,6 +58,7 @@ async def generate_text(
             body,
             decrypt=request.app.state.model_decrypt,
             settings=request.app.state.settings,
+            readiness=request.app.state.model_catalog_bindings.readiness,
         )
     )
     async with aclosing(
@@ -109,6 +111,7 @@ async def stream_text(
             body,
             decrypt=request.app.state.model_decrypt,
             settings=request.app.state.settings,
+            readiness=request.app.state.model_catalog_bindings.readiness,
         )
     )
 
@@ -183,6 +186,7 @@ async def create_task(
             body,
             task_admission(request, session, "inference"),
             credential=credential,
+            readiness=request.app.state.model_catalog_bindings.readiness,
         )
     )
 
@@ -268,5 +272,6 @@ async def delete_task(
             owner_user_id,
             settings=request.app.state.settings,
             native_retention=getattr(request.app.state, "native_model_retention", None),
+            require_native_retention=request.app.state.require_native_model_retention,
         ).delete(task_id, expected_revision)
     )
