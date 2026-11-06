@@ -760,7 +760,12 @@ export function ThoughtWorkshopPage({
             if (f)
               void run(async () => {
                 const { importFile } = await import("./portability");
-                const result = await importFile(f, project);
+                const result = await importFile(
+                  f,
+                  projectId
+                    ? async () => (await getDirectory(projectId)).knowledge_base
+                    : undefined,
+                );
                 setNotice(result.warnings?.join(" ") || "导入完成");
                 if (result.open_note_id) {
                   const importedNote = await getNote(result.open_note_id);

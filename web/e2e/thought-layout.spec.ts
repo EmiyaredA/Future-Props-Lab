@@ -32,16 +32,50 @@ async function noOverflow(page: Page) {
 test("code and image blocks keep compact spacing when image controls appear", async ({
   page,
 }, testInfo) => {
-  await page.goto("/apps/thought-workshop");
-  await newDocument(page);
-  const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
-  await page.locator('input[accept=".zip,.md,.markdown"]').setInputFiles({
-    name: "块间距.md",
-    mimeType: "text/markdown",
-    buffer: Buffer.from(
-      "```text\nClaude Code = 一个 agent loop\n  + 工具\n```",
-    ),
+  let pauseDirectory = false;
+  let releaseDirectory = () => {};
+  const directoryGate = new Promise<void>((resolve) => {
+    releaseDirectory = resolve;
   });
+  let markDirectoryPaused = () => {};
+  const directoryPaused = new Promise<void>((resolve) => {
+    markDirectoryPaused = resolve;
+  });
+  await page.route(
+    "**/thought-workshop/knowledge-bases/*/documents",
+    async (route) => {
+      if (route.request().method() !== "POST") return route.continue();
+      const response = await route.fetch();
+      pauseDirectory = response.ok();
+      await route.fulfill({ response });
+    },
+  );
+  await page.route(
+    "**/thought-workshop/knowledge-bases/*/directory",
+    async (route) => {
+      if (pauseDirectory) {
+        markDirectoryPaused();
+        await directoryGate;
+      }
+      await route.continue();
+    },
+  );
+  await page.goto("/apps/thought-workshop");
+  const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
+  try {
+    await newDocument(page);
+    await directoryPaused;
+    await page.locator('input[accept=".zip,.md,.markdown"]').setInputFiles({
+      name: "块间距.md",
+      mimeType: "text/markdown",
+      buffer: Buffer.from(
+        "```text\nClaude Code = 一个 agent loop\n  + 工具\n```",
+      ),
+    });
+  } finally {
+    pauseDirectory = false;
+    releaseDirectory();
+  }
   const code = prose.locator(".document-code-block");
   await expect(code).toBeVisible();
   await code.locator("pre").click();

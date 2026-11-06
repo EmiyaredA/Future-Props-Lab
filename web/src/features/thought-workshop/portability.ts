@@ -117,7 +117,10 @@ function relativePath(base: string, source: string): string | null {
   }
   return parts.join("/");
 }
-export async function importFile(file: File, project?: KnowledgeBase) {
+export async function importFile(
+  file: File,
+  resolveProject?: () => Promise<KnowledgeBase>,
+) {
   if (file.name.toLowerCase().endsWith(".zip") && (await isBackup(file)))
     return { ...(await importArchive(file)), open_note_id: null };
   if (file.size > 128 * 1024 * 1024)
@@ -332,7 +335,7 @@ export async function importFile(file: File, project?: KnowledgeBase) {
     new File([zipSync(output) as BlobPart], "markdown.zip", {
       type: "application/zip",
     }),
-    project,
+    await resolveProject?.(),
   );
   return {
     ...result,
