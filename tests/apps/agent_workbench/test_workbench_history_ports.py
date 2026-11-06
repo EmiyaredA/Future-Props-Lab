@@ -5,16 +5,13 @@ from contextlib import aclosing
 import pytest
 
 from studio.apps.agent_workbench.storage.change_events import SqlChangeEvents
-from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
 from studio.apps.agent_workbench.storage.models import WorkbenchChange
 from studio.apps.agent_workbench.use_cases.history_subscription import (
     Change,
     ChangePage,
     HistorySubscription,
 )
-from studio.assembly.independent.agent_workbench.application import MODELS
-from studio.runtime.database.migrations import apply
-from studio.runtime.database.sessions import Database
+from tests.apps.agent_workbench.archive_database import open_archive
 
 
 class MemoryEvents:
@@ -27,12 +24,11 @@ class MemoryEvents:
 
 
 @pytest.fixture(params=["memory", "sqlite"])
-async def events(request, tmp_path):
+async def events(request, tmp_path, monkeypatch):
     if request.param == "memory":
         yield MemoryEvents()
         return
-    database = Database("agents", tmp_path, models=MODELS)
-    apply(database.path, "agents", MIGRATIONS)
+    database = open_archive(tmp_path, monkeypatch)
     try:
         async with database.sessions(info={"owner_user_id": "alice"}) as db:
             db.add_all(WorkbenchChange(owner_user_id="alice", kind="source") for _ in range(201))

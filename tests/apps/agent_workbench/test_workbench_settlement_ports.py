@@ -10,7 +10,6 @@ import pytest
 
 from studio.apps.agent_workbench.execution.models import WorkbenchChat, WorkbenchTurn
 from studio.apps.agent_workbench.rules.turn_endings import closed_approvals, closed_inflight
-from studio.apps.agent_workbench.storage.migrations.registry import MIGRATIONS
 from studio.apps.agent_workbench.storage.service_models import WorkbenchExecutionJob
 from studio.apps.agent_workbench.storage.turn_settlement import SqlTurnSettlement
 from studio.apps.agent_workbench.use_cases.settle_turn import (
@@ -20,13 +19,11 @@ from studio.apps.agent_workbench.use_cases.settle_turn import (
     canonical,
     decide,
 )
-from studio.assembly.independent.agent_workbench.application import MODELS
 from studio.contracts.agent_workbench.execution import RUN_TURN, TurnScope
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
-from studio.runtime.database.migrations import apply
-from studio.runtime.database.sessions import Database
 from studio.runtime.tasks.native_queue import digest
 from studio.runtime.time import utc_now
+from tests.apps.agent_workbench.archive_database import open_archive
 
 
 class MemorySettlement:
@@ -108,7 +105,7 @@ class SqlHarness:
 
 
 @pytest.fixture(params=["memory", "sqlite"])
-async def receipt_store(request, tmp_path):
+async def receipt_store(request, tmp_path, monkeypatch):
     lease = NativeLease(
         job_id=uuid4(),
         lease_id=uuid4(),
@@ -123,8 +120,7 @@ async def receipt_store(request, tmp_path):
     if request.param == "memory":
         yield MemorySettlement(lease, "running"), lease
         return
-    database = Database("agents", tmp_path, models=MODELS)
-    apply(database.path, "agents", MIGRATIONS)
+    database = open_archive(tmp_path, monkeypatch)
     try:
         async with database.sessions(info={"owner_user_id": "alice"}) as db:
             db.add(
