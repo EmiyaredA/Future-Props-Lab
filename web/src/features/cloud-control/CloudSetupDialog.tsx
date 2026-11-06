@@ -180,8 +180,8 @@ function SetupForm({
           {data.public_desktop_vnc_only && (
             <p className="cloud-setup-hint">
               {data.remote_apps_enabled
-                ? "公网首次连接应用需要验证 FPL 管理员密码。Agent 执行仅限本机。"
-                : "公网桌面首次连接需要验证 FPL 管理员密码，再输入 VNC 密码。Agent 执行仅限本机。"}
+                ? "公网首次连接应用需要验证 FPL 管理员密码。"
+                : "公网桌面首次连接需要验证 FPL 管理员密码，再输入 VNC 密码。"}
             </p>
           )}
         </div>

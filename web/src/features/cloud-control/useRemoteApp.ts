@@ -73,7 +73,7 @@ export function useRemoteApp() {
     let waitingFor: number | undefined;
     let offered = false;
     let selectionSent = false;
-    let timeout = window.setTimeout(
+    const timeout = window.setTimeout(
       () => fail("等待应用画面超时，请重新连接"),
       32_000,
     );

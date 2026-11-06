@@ -253,6 +253,8 @@ def exercise(
 
             assert wait_for("/ready").json()["service"] == "gateway"
             assert client.get("/v1/unknown").status_code == 404
+            for path in ("/agents", "/apps/agent-workbench", "/v1/agent-workbench/sessions"):
+                assert client.get(path).status_code == 404
             assert client.get("/_internal/v1/authorize").status_code == 404
             assert client.get("/v1/auth/me", headers={"Host": "attacker.test"}).status_code == 403
             assert (
