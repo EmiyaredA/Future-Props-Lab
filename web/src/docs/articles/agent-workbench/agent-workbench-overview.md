@@ -1,6 +1,9 @@
-<!-- docs: {"group": "agent-workbench", "order": 0, "title": "Agent 工作台使用指南", "lead": "阅读与同步本机编程会话，核对来源和私人数据边界。", "evidence": ["web/src/features/agent-workbench/AgentWorkbenchPage.tsx", "docs/reference/agent-workbench.md"]} -->
+<!-- docs: {"group": "agent-workbench", "order": 0, "title": "Agent 工作台使用指南", "lead": "阅读与同步本机编程会话，核对来源和私人数据边界。", "evidence": ["backend/studio/host/session_collection/collector.py", "docs/reference/agent-workbench.md"]} -->
 
 # Agent 工作台：阅读现有会话
+
+> [!NOTE]
+> 下文保留旧 FPL 工作台的操作记录。当前网站的 Agent 工作台从「云控 → Agent 工作台」进入，由 Happier 提供。
 
 本篇说明Agent 工作台的实际操作、可验证结果和数据边界，帮助你在当前账号中完成操作后确认保存状态。
 
