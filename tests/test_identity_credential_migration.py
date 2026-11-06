@@ -13,18 +13,22 @@ from PIL import Image
 from scripts.website.migrate_identity import CREDENTIALS
 from scripts.website.migrate_identity_avatars import transfer_avatars
 from scripts.website.migration_transfer import pages, transfer
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from starlette.datastructures import Headers, UploadFile
 from tests.test_community_asset_protocol import CATALOG, GATEWAY_SECRET, PASSWORD
 from tests.test_tools_navigation_migration import available_ports, listener
 
 from db.migrations import apply_migrations
+from db.migrations import runner as website_migrations
 from studio.apps.identity.avatar_migration import AVATAR_PATH, DIGEST_HEADER
 from studio.apps.identity.credentials.operations import complete_login, create_api_key
+from studio.apps.identity.credentials.session_secrets import hash_secret
 from studio.apps.identity.profile import apply_avatar, stage_avatar
 from studio.apps.identity.registration.accounts import create_account
 from studio.apps.identity.registration.invitations import change_invite, create_invite, register
 from studio.apps.identity.storage.migrations.registry import MIGRATIONS
+from studio.apps.identity.storage.models.accounts import ManagementApiKey
 from studio.apps.identity.storage.models.cloud import CloudFactor, CloudUnlock
 from studio.assembly.independent.identity.application import create_app
 from studio.config.settings import get_settings
@@ -44,6 +48,67 @@ from studio.runtime.secrets import SecretCipher
 from studio.runtime.time import utc_now
 
 pytestmark = pytest.mark.real_auth
+
+
+@pytest.mark.parametrize("independent", [False, True], ids=["website", "identity"])
+async def test_schema_upgrade_retains_hash_only_key(tmp_path, monkeypatch, independent):
+    path = tmp_path / "previous.db"
+    if independent:
+        apply(path, "identity", MIGRATIONS[:-1])
+    else:
+        previous = website_migrations.MIGRATIONS[:-1]
+        with monkeypatch.context() as patch:
+            patch.setattr(website_migrations, "MIGRATIONS", previous)
+            patch.setattr(website_migrations, "LATEST_MIGRATION_ID", previous[-1].migration_id)
+            apply_migrations(path)
+
+    async def skip_catalog(_session, _id, _role):
+        pass
+
+    key_id = str(uuid4())
+    digest = hash_secret("fpm_hash-only-fixture")
+    expires_at = utc_now() + timedelta(days=7)
+    engine = create_async_engine(f"sqlite+aiosqlite:///{path}")
+    sessions = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with sessions() as session:
+            owner, _ = await create_account(
+                session,
+                initializer=skip_catalog,
+                username="ExistingAccount",
+                display_name="Existing Account",
+                password=PASSWORD,
+            )
+            await session.execute(
+                text("""
+                    INSERT INTO management_api_keys
+                        (id, user_id, name, key_hash, key_prefix, scopes, expires_at,
+                         revision, created_at, updated_at)
+                    VALUES
+                        (:id, :owner, 'Existing', :digest, 'fpm_hash-onl', '["studio:read"]',
+                         :expires_at, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+                """),
+                {"id": key_id, "owner": owner.id, "digest": digest, "expires_at": expires_at},
+            )
+            await session.commit()
+    finally:
+        await engine.dispose()
+
+    if independent:
+        apply(path, "identity", MIGRATIONS)
+    else:
+        apply_migrations(path)
+    try:
+        async with sessions() as session:
+            record = await session.get(ManagementApiKey, key_id)
+            assert record is not None
+            assert (record.key_hash, record.expires_at, record.secret_ciphertext) == (
+                digest,
+                expires_at,
+                None,
+            )
+    finally:
+        await engine.dispose()
 
 
 async def make_legacy(path):
@@ -129,7 +194,19 @@ async def make_legacy(path):
                 scopes=["studio:read"],
                 expires_in_days=7,
                 client_ip="",
+                encrypt=SecretCipher(get_settings().fpl_secrets_key).encrypt,
             )
+            old, old_raw = await create_api_key(
+                session,
+                principal,
+                name="Hash-only key",
+                scopes=["studio:read"],
+                expires_in_days=7,
+                client_ip="",
+                encrypt=SecretCipher(get_settings().fpl_secrets_key).encrypt,
+            )
+            old.secret_ciphertext = None
+            await session.commit()
             revoked, raw_revoked = await create_api_key(
                 session,
                 principal,
@@ -137,13 +214,16 @@ async def make_legacy(path):
                 scopes=["studio:write"],
                 expires_in_days=7,
                 client_ip="",
+                encrypt=SecretCipher(get_settings().fpl_secrets_key).encrypt,
             )
             # Test-only state covers already-revoked historical credentials.
             revoked.revoked_at = utc_now() - timedelta(minutes=10)
+            revoked.secret_ciphertext = None
             await session.commit()
             await session.refresh(owner)
             await session.refresh(other)
             await session.refresh(key)
+            await session.refresh(old)
             avatar = BytesIO()
             Image.new("RGB", (5, 5), "blue").save(avatar, format="PNG")
             original = avatar.getvalue()
@@ -186,6 +266,8 @@ async def make_legacy(path):
                 csrf,
                 key.id,
                 raw_key,
+                old.id,
+                old_raw,
                 raw_revoked,
                 original,
                 invite,
@@ -207,6 +289,8 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             csrf,
             key_id,
             raw_key,
+            old_key_id,
+            old_raw_key,
             revoked_key,
             avatar,
             invite,
@@ -267,7 +351,12 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             == 409
         )
         reports = [transfer(client, plan, source, dest, dataset) for dataset in CREDENTIALS]
-        assert [report["record_count"] for report in reports[:-1]] == [2, 2, 2, 1, 1, 2, 1]
+        assert [report["record_count"] for report in reports[:-1]] == [2, 2, 3, 1, 1, 2, 1]
+        key_batch = next(pages(client, source, headers, plan, UUID(owner), CREDENTIALS[2])).batch
+        exported = {row["id"]: row for row in key_batch.model_dump(mode="json")["records"]}
+        assert "secret_ciphertext" not in exported[old_key_id]
+        assert exported[key_id]["secret_ciphertext"] != raw_key
+        assert raw_key not in key_batch.model_dump_json()
         assert reports[-1]["record_count"] > 0
         original_audit = next(pages(client, source, headers, plan, plan.run_id, audit))
         assert any(record.actor_user_id is None for record in original_audit.batch.records)
@@ -354,7 +443,18 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             assert (await api.post("/v1/cloud-control/totp/enroll")).status_code == 404
             retained = await api.get("/v1/account/api-keys")
             assert retained.status_code == 200
-            assert {entry["name"] for entry in retained.json()} == {"Retained key", "Revoked key"}
+            assert {entry["name"]: entry["secret_available"] for entry in retained.json()} == {
+                "Retained key": True,
+                "Hash-only key": False,
+                "Revoked key": False,
+            }
+            reveal_path = f"/v1/account/api-keys/{key_id}/secret"
+            assert (await api.post(reveal_path)).json()["code"] == "csrf_failed"
+            recovered = await api.post(reveal_path, headers=csrf_headers)
+            assert recovered.json() == {"secret": raw_key}
+            assert recovered.headers["Cache-Control"] == "no-store"
+            old = await api.post(f"/v1/account/api-keys/{old_key_id}/secret", headers=csrf_headers)
+            assert old.json()["code"] == "api_key_secret_unavailable"
 
             invites_path = "/v1/platform/registration-invite-codes"
             assert (await api.get(invites_path)).status_code == 404
@@ -409,6 +509,15 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             )
             assert actor.user_id == owner and actor.api_key_id == key_id
             assert "studio:write" not in actor.scopes
+            assert (
+                await api.get(
+                    "/_internal/v1/authorize",
+                    headers={**key_headers, "Authorization": f"Bearer {old_raw_key}"},
+                )
+            ).status_code == 204
+            assert (
+                await api.post(reveal_path, headers={"Authorization": f"Bearer {raw_key}"})
+            ).json()["code"] == "browser_session_required"
             revoked = await api.get(
                 "/_internal/v1/authorize",
                 headers={**key_headers, "Authorization": f"Bearer {revoked_key}"},
@@ -422,6 +531,12 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
             profile = await api.get("/v1/auth/me")
             assert "cloud-control.access" not in profile.json()["permission_keys"]
             assert (await api.get("/v1/account/api-keys")).json() == []
+            assert (
+                await api.post(
+                    reveal_path,
+                    headers={**csrf_headers, "X-CSRF-Token": api.cookies[CSRF_COOKIE]},
+                )
+            ).status_code == 404
             assert (await api.get("/v1/account/profile/avatar")).status_code == 404
     finally:
         get_settings.cache_clear()

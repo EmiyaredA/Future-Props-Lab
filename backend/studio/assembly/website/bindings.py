@@ -99,6 +99,7 @@ def bind_components(app, settings, database):
     bind_creative(app, settings)
     app.state.auth_attempts = AttemptLimiter()
     app.state.invitation_cipher = SecretCipher(settings.fpl_secrets_key)
+    app.state.management_api_key_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.assistant_approvals = ApprovalBroker()
     app.state.cloud_unlocks = CloudUnlockRecords(
         database.sessions, clock=utc_now, settings_reader=get_cloud_settings

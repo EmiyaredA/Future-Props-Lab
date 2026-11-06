@@ -56,6 +56,7 @@ def _key_out(key) -> ApiKeyOut:
         id=key.id,
         name=key.name,
         key_prefix=key.key_prefix,
+        secret_available=bool(key.secret_ciphertext),
         scopes=[str(scope) for scope in key.scopes],
         expires_at=key.expires_at,
         last_used_at=key.last_used_at,

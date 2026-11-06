@@ -249,6 +249,10 @@ async def scenario():
             )
             assert created_key.status_code == 201
             issued = created_key.json()
+            secret_path = "/v1/account/api-keys/" + issued["api_key"]["id"] + "/secret"
+            revealed = await client.post(secret_path, headers=unsafe)
+            assert revealed.json() == {"secret": issued["secret"]}
+            assert revealed.headers["Cache-Control"] == "no-store"
             key_headers = {
                 "X-Fpl-Target-Service": "models",
                 "X-Fpl-Request-Method": "GET",
@@ -283,6 +287,9 @@ async def scenario():
                 json={"expected_revision": issued["api_key"]["revision"]},
             )
             assert key_revoke.status_code == 200
+            assert (await client.post(secret_path, headers=unsafe)).json()[
+                "code"
+            ] == "api_key_secret_unavailable"
             assert (await authorize_key()).status_code == 401
             live_body = {
                 "service": "agents",

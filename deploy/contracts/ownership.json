@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "a6b056b560e402702584fd21e0e54f4818d2200bc37e6984e77f2d31f8dd936a",
+  "openapi_sha256": "98acb2308fd693b8348e84a506a8a240b20ae9ad4cc89401c985cdd30eef2a9e",
   "operations": [
     {
       "service": "identity",
@@ -31,6 +31,12 @@
       "method": "POST",
       "path": "/v1/account/api-keys/{key_id}/revoke",
       "operation_id": "remove_api_key_v1_account_api_keys__key_id__revoke_post"
+    },
+    {
+      "service": "identity",
+      "method": "POST",
+      "path": "/v1/account/api-keys/{key_id}/secret",
+      "operation_id": "reveal_api_key_secret_v1_account_api_keys__key_id__secret_post"
     },
     {
       "service": "models",

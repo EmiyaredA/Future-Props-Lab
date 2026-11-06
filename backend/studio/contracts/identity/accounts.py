@@ -133,6 +133,7 @@ class ApiKeyOut(BaseModel):
     id: str
     name: str
     key_prefix: str
+    secret_available: bool
     scopes: list[str]
     expires_at: datetime
     last_used_at: datetime | None
@@ -143,7 +144,11 @@ class ApiKeyOut(BaseModel):
 
 class ApiKeyCreatedOut(BaseModel):
     api_key: ApiKeyOut
-    secret: str
+    secret: str = Field(repr=False)
+
+
+class ApiKeySecretOut(BaseModel):
+    secret: str = Field(repr=False)
 
 
 class RevokeApiKeyIn(BaseModel):

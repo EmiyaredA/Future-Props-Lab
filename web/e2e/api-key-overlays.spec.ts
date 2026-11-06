@@ -18,7 +18,9 @@ async function expectAbovePanel(element: Locator) {
 }
 
 for (const theme of ["light", "dark"] as const) {
-  test(`密钥弹层在懒加载模型页及滚动列表上方：${theme}`, async ({ page }) => {
+  test(`密钥弹层在懒加载模型页及滚动列表上方：${theme}`, async ({
+    page,
+  }, testInfo) => {
     await page.addInitScript(
       (value) => localStorage.setItem("future_props_theme", value),
       theme,
@@ -30,11 +32,12 @@ for (const theme of ["light", "dark"] as const) {
           ? "部署自动化与工作空间集成的长名称密钥".repeat(3)
           : `测试密钥 ${index + 1}`,
       key_prefix: `fpm_example${index}`,
-      scopes: ["studio:read", "studio:write"],
+      scopes: index % 2 ? ["studio:read", "studio:write"] : ["studio:read"],
       created_at: "2026-09-01T12:00:00Z",
       expires_at: "2099-12-01T12:00:00Z",
       last_used_at: null,
       revoked_at: index === 5 ? "2026-09-10T12:00:00Z" : null,
+      secret_available: index % 2 === 1 && index !== 5,
       revision: 0,
     }));
     await page.route("**/v1/account/api-keys", (route) =>
@@ -54,8 +57,12 @@ for (const theme of ["light", "dark"] as const) {
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       await row.scrollIntoViewIfNeeded();
-      const opener = row.getByRole("button", { name: "续期", exact: true });
-      await opener.click();
+      const opener = row.getByRole("button", { name: "测试密钥 8更多操作" });
+      await opener.press("ArrowDown");
+      const renewal = row.getByRole("menuitem", { name: "续期", exact: true });
+      await expectAbovePanel(renewal);
+      await expect(renewal).toBeFocused();
+      await page.keyboard.press("Enter");
       const renew = page.getByRole("alertdialog", { name: "续期“测试密钥 8”" });
       await expectAbovePanel(renew.getByRole("button", { name: "确认续期" }));
       await renew.getByRole("combobox", { name: "续期时长" }).click();
@@ -71,19 +78,22 @@ for (const theme of ["light", "dark"] as const) {
         renew.getByRole("button", { name: "关闭确认弹窗" }),
       ).toBeFocused();
       await page.screenshot({
-        path: `/tmp/fpl-key-renew-overlay-${theme}-${width}.png`,
+        path: testInfo.outputPath(`renew-${theme}-${width}.png`),
       });
       await page.keyboard.press("Escape");
       await expect(renew).toBeHidden();
       await expect(panel).toBeVisible();
       await expect(opener).toBeFocused();
-      await row.getByRole("button", { name: "删除", exact: true }).click();
+      await opener.click();
+      const deletion = row.getByRole("menuitem", { name: "删除", exact: true });
+      await expectAbovePanel(deletion);
+      await deletion.click();
       const remove = page.getByRole("alertdialog", {
         name: "删除“测试密钥 8”",
       });
       await expectAbovePanel(remove.getByRole("button", { name: "确认删除" }));
       await remove.getByRole("button", { name: "取消" }).click();
-      await row.getByRole("button", { name: "测试密钥 8更多操作" }).click();
+      await opener.click();
       await expectAbovePanel(row.getByRole("menuitem", { name: "撤销密钥" }));
       await row.getByRole("menuitem", { name: "撤销密钥" }).click();
       const revoke = page.getByRole("alertdialog", {
@@ -99,15 +109,18 @@ for (const theme of ["light", "dark"] as const) {
       await expect(panel).toBeVisible();
       await row.scrollIntoViewIfNeeded();
       await expectAbovePanel(
-        row.getByRole("button", { name: "删除", exact: true }),
+        row.getByRole("button", { name: "查看并复制", exact: true }),
       );
       expect(
         await panel
           .locator(".api-key-table-wrap")
           .evaluate((node) => node.scrollWidth <= node.clientWidth + 1),
       ).toBe(true);
-      await page.screenshot({
-        path: `/tmp/fpl-key-list-overlays-${theme}-${width}.png`,
+      await panel
+        .getByRole("row", { name: /部署自动化/ })
+        .scrollIntoViewIfNeeded();
+      await panel.screenshot({
+        path: testInfo.outputPath(`list-${theme}-${width}.png`),
       });
     }
   });

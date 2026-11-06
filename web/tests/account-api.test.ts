@@ -51,6 +51,7 @@ test("keeps invitation and one-time API key creation on the shared client", asyn
     id: "key-1",
     name: "交付密钥",
     key_prefix: "fpm_example",
+    secret_available: true,
     scopes: ["studio:read"],
     expires_at: "2026-12-01T00:00:00Z",
     last_used_at: null,

@@ -2402,12 +2402,17 @@
             },
             "title": "Scopes",
             "type": "array"
+          },
+          "secret_available": {
+            "title": "Secret Available",
+            "type": "boolean"
           }
         },
         "required": [
           "id",
           "name",
           "key_prefix",
+          "secret_available",
           "scopes",
           "expires_at",
           "last_used_at",
@@ -2416,6 +2421,19 @@
           "created_at"
         ],
         "title": "ApiKeyOut",
+        "type": "object"
+      },
+      "ApiKeySecretOut": {
+        "properties": {
+          "secret": {
+            "title": "Secret",
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret"
+        ],
+        "title": "ApiKeySecretOut",
         "type": "object"
       },
       "ApplicationState": {
@@ -43081,6 +43099,48 @@
           }
         },
         "summary": "Remove Api Key",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/api-keys/{key_id}/secret": {
+      "post": {
+        "operationId": "reveal_api_key_secret_v1_account_api_keys__key_id__secret_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeySecretOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reveal Api Key Secret",
         "tags": [
           "accounts"
         ]

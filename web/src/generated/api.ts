@@ -107,6 +107,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/account/api-keys/{key_id}/secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reveal Api Key Secret */
+        post: operations["reveal_api_key_secret_v1_account_api_keys__key_id__secret_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/account/demo-services/{service_id}/install": {
         parameters: {
             query?: never;
@@ -9359,6 +9376,13 @@ export interface components {
             revoked_at: string | null;
             /** Scopes */
             scopes: string[];
+            /** Secret Available */
+            secret_available: boolean;
+        };
+        /** ApiKeySecretOut */
+        ApiKeySecretOut: {
+            /** Secret */
+            secret: string;
         };
         /** ApplicationState */
         ApplicationState: {
@@ -24672,6 +24696,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiKeyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_api_key_secret_v1_account_api_keys__key_id__secret_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeySecretOut"];
                 };
             };
             /** @description Validation Error */

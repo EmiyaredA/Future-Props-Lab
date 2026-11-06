@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AccountPanel } from "@features/accounts/AccountPanel";
 import type { AccountSessionContext } from "@features/accounts/api";
@@ -12,6 +12,7 @@ const accountApi = vi.hoisted(() => ({
   createApiKey: vi.fn(),
   deleteApiKey: vi.fn(),
   renewApiKey: vi.fn(),
+  revealApiKeySecret: vi.fn(),
   revokeApiKey: vi.fn(),
   listWorkspaces: vi.fn(),
   listMyInvitations: vi.fn(),
@@ -69,6 +70,7 @@ const generatedKey = {
   id: "key-1",
   name: "Codex 临时写入",
   key_prefix: "fpm_example",
+  secret_available: true,
   scopes: ["studio:read", "studio:write"],
   expires_at: "2026-11-28T00:00:00Z",
   last_used_at: null,
@@ -135,6 +137,36 @@ test("creates and copies a Management API Key without a password unlock form", a
   expect(screen.queryByText("fpm_copy-this-once")).not.toBeInTheDocument();
 });
 
+test("ignores a late key response after its dialog closes", async () => {
+  const user = userEvent.setup();
+  const key = { ...generatedKey, expires_at: "2099-01-01T00:00:00Z" };
+  let complete: (value: { secret: string }) => void = () => {};
+  accountApi.listApiKeys.mockResolvedValue([key]);
+  accountApi.revealApiKeySecret.mockImplementationOnce(
+    () => new Promise((resolve) => (complete = resolve)),
+  );
+  accountApi.revealApiKeySecret.mockResolvedValueOnce({
+    secret: "fpm_current-response",
+  });
+  render(<AccountPanel session={{ me, refresh: vi.fn(), logout: vi.fn() }} />);
+  await user.click(screen.getByRole("button", { name: "账号菜单" }));
+  await user.click(screen.getByRole("menuitem", { name: "账号设置" }));
+  await user.click(screen.getByRole("button", { name: "API 密钥" }));
+  const opener = await screen.findByRole("button", { name: "查看并复制" });
+  await user.click(opener);
+  const signal = accountApi.revealApiKeySecret.mock.calls[0][1] as AbortSignal;
+  const dialog = screen.getByRole("alertdialog");
+  await user.click(within(dialog).getByRole("button", { name: /^关闭$/ }));
+  expect(signal.aborted).toBe(true);
+  await user.click(opener);
+  expect(await screen.findByDisplayValue("fpm_current-response")).toBeVisible();
+  await act(async () => complete({ secret: "fpm_late-response" }));
+  expect(
+    screen.queryByDisplayValue("fpm_late-response"),
+  ).not.toBeInTheDocument();
+  expect(screen.getByDisplayValue("fpm_current-response")).toBeVisible();
+});
+
 test("filters, renews, revokes and deletes Management API Keys", async () => {
   const user = userEvent.setup();
   const activeKey = { ...generatedKey, name: "自动化部署" };
@@ -169,7 +201,11 @@ test("filters, renews, revokes and deletes Management API Keys", async () => {
   await user.clear(screen.getByLabelText("搜索密钥"));
 
   const activeRow = screen.getByRole("row", { name: /自动化部署/ });
-  await user.click(within(activeRow).getByRole("button", { name: "续期" }));
+  const activeMenu = within(activeRow).getByRole("button", {
+    name: "自动化部署更多操作",
+  });
+  await user.click(activeMenu);
+  await user.click(within(activeRow).getByRole("menuitem", { name: "续期" }));
   const renewDialog = screen.getByRole("alertdialog", {
     name: /续期“自动化部署”/,
   });
@@ -184,9 +220,7 @@ test("filters, renews, revokes and deletes Management API Keys", async () => {
     expect(accountApi.renewApiKey).toHaveBeenCalledWith(activeKey, 30),
   );
 
-  await user.click(
-    within(activeRow).getByRole("button", { name: "自动化部署更多操作" }),
-  );
+  await user.click(activeMenu);
   await user.click(screen.getByRole("menuitem", { name: "撤销密钥" }));
   await user.click(screen.getByRole("button", { name: "确认撤销" }));
   await waitFor(() =>
@@ -194,10 +228,13 @@ test("filters, renews, revokes and deletes Management API Keys", async () => {
   );
 
   const revokedRow = screen.getByRole("row", { name: /旧密钥/ });
+  await user.click(
+    within(revokedRow).getByRole("button", { name: "旧密钥更多操作" }),
+  );
   expect(
-    within(revokedRow).getByRole("button", { name: "续期" }),
-  ).toBeDisabled();
-  await user.click(within(revokedRow).getByRole("button", { name: "删除" }));
+    within(revokedRow).queryByRole("menuitem", { name: "续期" }),
+  ).not.toBeInTheDocument();
+  await user.click(within(revokedRow).getByRole("menuitem", { name: "删除" }));
   expect(screen.getByText(/立即失效并从列表移除/)).toBeVisible();
   await user.click(screen.getByRole("button", { name: "确认删除" }));
   await waitFor(() =>

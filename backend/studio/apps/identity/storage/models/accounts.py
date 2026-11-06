@@ -66,6 +66,7 @@ class ManagementApiKey(Base):
     )
     name: Mapped[str] = mapped_column(String(64))
     key_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    secret_ciphertext: Mapped[str | None] = mapped_column(Text, nullable=True)
     key_prefix: Mapped[str] = mapped_column(String(16))
     scopes: Mapped[list] = mapped_column(JSON, default=list)
     expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)

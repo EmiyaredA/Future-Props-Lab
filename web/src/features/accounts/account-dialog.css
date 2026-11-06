@@ -96,7 +96,7 @@
   width: min(880px, 100%);
 }
 .account-dialog-settings-keys {
-  width: min(1280px, 100%);
+  width: min(1000px, 100%);
 }
 .account-dialog-settings-keys .account-settings-body {
   height: min(690px, calc(100dvh - 170px));

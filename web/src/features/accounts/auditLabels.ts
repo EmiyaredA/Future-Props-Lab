@@ -31,6 +31,7 @@ export const auditLabels: Record<string, string> = {
   "workspace.invitation_declined": "拒绝成员邀请",
   "workspace.invitation_revoked": "撤销成员邀请",
   "management_api_key.created": "创建管理密钥",
+  "management_api_key.secret_revealed": "查看管理密钥",
   "management_api_key.renewed": "续期管理密钥",
   "management_api_key.revoked": "撤销管理密钥",
   "management_api_key.deleted": "删除管理密钥",

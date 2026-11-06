@@ -342,8 +342,13 @@ def test_file_tools_reject_private_paths_and_changes_after_approval(tmp_path):
 
 def test_project_migration_preserves_existing_chat_binding(tmp_path, monkeypatch):
     database = tmp_path / "previous-workbench.db"
+    before_projects = next(
+        index
+        for index, migration in enumerate(migration_runner.MIGRATIONS)
+        if migration.migration_id == "0122_workbench_projects"
+    )
     with monkeypatch.context() as patch:
-        patch.setattr(migration_runner, "MIGRATIONS", migration_runner.MIGRATIONS[:-2])
+        patch.setattr(migration_runner, "MIGRATIONS", migration_runner.MIGRATIONS[:before_projects])
         patch.setattr(migration_runner, "LATEST_MIGRATION_ID", "0121_cloud_desktop_sessions")
         migration_runner.apply_migrations(database)
     with migration_runner.connect_database(database) as connection:
@@ -359,8 +364,14 @@ def test_project_migration_preserves_existing_chat_binding(tmp_path, monkeypatch
                 'turn', 'owner', 'chat', 'client', 1, 'prompt', 'answer', 'completed', '[]', 2
             );
         """)
-    assert migration_runner.apply_migrations(database) == ("0123_workbench_turns", True)
-    assert migration_runner.apply_migrations(database) == ("0123_workbench_turns", False)
+    assert migration_runner.apply_migrations(database) == (
+        migration_runner.LATEST_MIGRATION_ID,
+        True,
+    )
+    assert migration_runner.apply_migrations(database) == (
+        migration_runner.LATEST_MIGRATION_ID,
+        False,
+    )
     with migration_runner.connect_database(database) as connection:
         assert connection.execute("SELECT project_id FROM workbench_chats").fetchone() == (
             "legacy-project",

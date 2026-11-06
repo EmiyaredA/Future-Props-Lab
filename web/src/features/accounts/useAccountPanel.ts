@@ -1,6 +1,12 @@
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { ApiError } from "@platform/api/client";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   type AccountSessionContext,
   type AccountSession,
@@ -21,6 +27,7 @@ export function useAccountPanel(session: AccountSessionContext) {
 
   const { me, refresh, logout } = session;
   const requestEpoch = useRef(0);
+  const secretEpoch = useRef(0);
   const [open, setOpen] = useState<"account" | null>(null);
   const openRef = useRef(open);
   openRef.current = open;
@@ -46,6 +53,12 @@ export function useAccountPanel(session: AccountSessionContext) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [changedPassword, setChangedPassword] = useState("");
   const [changedPasswordAgain, setChangedPasswordAgain] = useState("");
+
+  const clearSecret = useCallback(() => {
+    secretEpoch.current += 1;
+    setRevealedKey("");
+    setRevealedKeyCopied(false);
+  }, []);
 
   const report = async (work: () => Promise<void>, mutation = true) => {
     const scope = requestScope.current;
@@ -149,6 +162,7 @@ export function useAccountPanel(session: AccountSessionContext) {
 
   const createKey = async (event: FormEvent) => {
     event.preventDefault();
+    const epoch = ++secretEpoch.current;
     await report(async () => {
       const result = await createApiKey(
         keyName,
@@ -159,16 +173,20 @@ export function useAccountPanel(session: AccountSessionContext) {
       );
       setKeyName("");
       if (openRef.current !== "account" || tabRef.current !== "keys") return;
-      setRevealedKey(result.secret);
-      setRevealedKeyCopied(false);
+      if (epoch === secretEpoch.current) {
+        setRevealedKey(result.secret);
+        setRevealedKeyCopied(false);
+      }
       await loadSecurity();
     });
   };
 
   const copyRevealedKey = async () => {
     if (!revealedKey) return;
+    const epoch = secretEpoch.current;
     await report(async () => {
       await navigator.clipboard.writeText(revealedKey);
+      if (epoch !== secretEpoch.current) return;
       setRevealedKeyCopied(true);
       setNotice("Management API Key 已复制。");
     });
@@ -180,8 +198,7 @@ export function useAccountPanel(session: AccountSessionContext) {
     requestEpoch.current += 1;
     setError("");
     setNotice("");
-    setRevealedKey("");
-    setRevealedKeyCopied(false);
+    clearSecret();
     setCurrentPassword("");
     setChangedPassword("");
     setChangedPasswordAgain("");
@@ -191,6 +208,7 @@ export function useAccountPanel(session: AccountSessionContext) {
 
   useEffect(() => {
     const showAccount = () => {
+      clearSecret();
       setTab("profile");
       setOpen("account");
     };
@@ -198,7 +216,7 @@ export function useAccountPanel(session: AccountSessionContext) {
     return () => {
       window.removeEventListener("future-props:open-account", showAccount);
     };
-  }, []);
+  }, [clearSecret]);
   return {
     transferProgress: activeTransferProgress,
     loading,
@@ -242,10 +260,7 @@ export function useAccountPanel(session: AccountSessionContext) {
     createKey,
     copyRevealedKey,
     close,
-    clearSecret: () => {
-      setRevealedKey("");
-      setRevealedKeyCopied(false);
-    },
+    clearSecret,
     clearMessages: () => {
       setError("");
       setNotice("");

@@ -192,7 +192,9 @@ async def test_management_key_scope_and_account_isolation() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.real_auth
-async def test_management_key_creation_does_not_require_password_reauthentication() -> None:
+async def test_management_key_creation_and_reveal_have_distinct_password_requirements(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     username, temporary = await create_test_account()
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
@@ -218,7 +220,61 @@ async def test_management_key_creation_does_not_require_password_reauthenticatio
             },
         )
         assert created.status_code == 201, created.text
-        assert created.json()["secret"].startswith("fpm_")
+        assert created.headers["Cache-Control"] == "no-store"
+        record = created.json()["api_key"]
+        secret = created.json()["secret"]
+        assert secret.startswith("fpm_") and record["secret_available"]
+        path = f"/v1/account/api-keys/{record['id']}/secret"
+        assert (await client.post(path)).json()["code"] == "csrf_failed"
+        stale = await client.post(path, headers=unsafe_headers(client))
+        assert stale.status_code == 403
+        assert stale.json()["code"] == "reauthentication_required"
+        assert (
+            await client.post(
+                "/v1/auth/reauth",
+                headers=unsafe_headers(client),
+                json={"password": "New-Password-2026!"},
+            )
+        ).status_code == 204
+        revealed = await client.post(path, headers=unsafe_headers(client))
+        assert revealed.json() == {"secret": secret}
+        assert revealed.headers["Cache-Control"] == "no-store"
+
+        async with SessionLocal() as session:
+            stored = await session.get(ManagementApiKey, record["id"])
+            assert stored is not None
+            assert stored.key_hash == hash_secret(secret)
+            encrypted = stored.secret_ciphertext
+            assert encrypted and encrypted != secret
+        listing = await client.get("/v1/account/api-keys")
+        audit = await client.get("/v1/account/security-events")
+        assert listing.json() == [record]
+        assert any(
+            event["event_type"] == "management_api_key.secret_revealed"
+            for event in audit.json()["items"]
+        )
+        for response in (listing, audit, stale):
+            assert secret not in response.text and encrypted not in response.text
+
+        assert (
+            await client.post("/v1/auth/logout", headers=unsafe_headers(client))
+        ).status_code == 204
+        assert (await client.post(path)).status_code == 401
+        assert (
+            await client.post(
+                "/v1/auth/login",
+                json={"username": username, "password": "New-Password-2026!"},
+            )
+        ).status_code == 200
+        assert (await client.post(path, headers=unsafe_headers(client))).json() == {
+            "secret": secret
+        }
+        with monkeypatch.context() as clock:
+            clock.setattr(
+                "studio.apps.identity.transport.database_auth.utc_now",
+                lambda: utc_now() + timedelta(days=365),
+            )
+            assert (await client.post(path, headers=unsafe_headers(client))).status_code == 401
 
 
 @pytest.mark.asyncio
@@ -242,6 +298,8 @@ async def test_management_key_renew_delete_conflicts_and_isolation() -> None:
         assert created.status_code == 201, created.text
         key = created.json()["api_key"]
         secret = created.json()["secret"]
+        reveal_path = f"/v1/account/api-keys/{key['id']}/secret"
+        assert (await second.post(reveal_path, headers=unsafe_headers(second))).status_code == 404
 
         for invalid_days in (0, 366):
             invalid_duration = await first.post(
@@ -281,6 +339,9 @@ async def test_management_key_renew_delete_conflicts_and_isolation() -> None:
             json={"expected_revision": key["revision"], "expires_in_days": 30},
         )
         assert renewed.status_code == 200, renewed.text
+        assert (await first.post(reveal_path, headers=unsafe_headers(first))).json() == {
+            "secret": secret
+        }
         renewed_key = renewed.json()
         assert renewed_key["revision"] == key["revision"] + 1
         assert datetime.fromisoformat(renewed_key["expires_at"]) == datetime.fromisoformat(
@@ -292,6 +353,9 @@ async def test_management_key_renew_delete_conflicts_and_isolation() -> None:
             headers={"Authorization": f"Bearer {secret}"},
         ) as renewed_client:
             assert (await renewed_client.get("/v1/visual-workshop/projects")).status_code == 200
+            blocked = await renewed_client.post(reveal_path)
+            assert blocked.status_code == 403
+            assert blocked.json()["code"] == "browser_session_required"
 
         stale_renewal = await first.post(
             f"/v1/account/api-keys/{key['id']}/renew",
@@ -323,6 +387,10 @@ async def test_management_key_renew_delete_conflicts_and_isolation() -> None:
         )
         assert revoked.status_code == 200, revoked.text
         revoked_key = revoked.json()
+        assert not revoked_key["secret_available"]
+        assert (await first.post(reveal_path, headers=unsafe_headers(first))).json()[
+            "code"
+        ] == "api_key_secret_unavailable"
         rejected = await first.post(
             f"/v1/account/api-keys/{key['id']}/renew",
             headers=unsafe_headers(first),
@@ -351,6 +419,10 @@ async def test_management_key_renew_delete_conflicts_and_isolation() -> None:
             row.expires_at = utc_now() - timedelta(days=1)
             await session.commit()
 
+        expired = await first.post(
+            f"/v1/account/api-keys/{expired_key['id']}/secret", headers=unsafe_headers(first)
+        )
+        assert expired.json()["code"] == "api_key_secret_unavailable"
         renewed_expired = await first.post(
             f"/v1/account/api-keys/{expired_key['id']}/renew",
             headers=unsafe_headers(first),

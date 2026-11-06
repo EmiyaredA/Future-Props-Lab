@@ -1,16 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import {
-  Check,
-  Info,
-  KeyRound,
-  RefreshCw,
-  Search,
-  ShieldCheck,
-  Trash2,
-} from "lucide-react";
+import { Check, Copy, Info, KeyRound, Search, ShieldCheck } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ApiKeyMoreMenu } from "./ApiKeyMoreMenu";
+import { ApiKeySecretDialog } from "./ApiKeySecretDialog";
 import { deleteApiKey, renewApiKey, revokeApiKey, type ApiKey } from "./api";
 import { formatAccountDate } from "./formatAccountDate";
 import { accountAllows } from "./permissions";
@@ -81,8 +74,16 @@ export function ApiKeysSettings({
   const [renewTarget, setRenewTarget] = useState<ApiKey | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ApiKey | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<ApiKey | null>(null);
+  const [secretKeyId, setSecretKeyId] = useState<string | null>(null);
   const canWrite = accountAllows(me, "content.write");
   const [now] = useState(() => Date.now());
+  const secretTarget = keys.find(
+    (key) =>
+      key.id === secretKeyId &&
+      key.secret_available &&
+      !key.revoked_at &&
+      Date.parse(key.expires_at) > now,
+  );
   const filteredKeys = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
     return keys.filter((key) => {
@@ -151,7 +152,7 @@ export function ApiKeysSettings({
             <ShieldCheck aria-hidden />
           </span>
           <div>
-            <strong>请立即保存，这段密钥只显示一次</strong>
+            <strong>密钥已创建，可稍后从列表再次查看并复制</strong>
             <code>{revealedKey}</code>
           </div>
           <button
@@ -171,7 +172,7 @@ export function ApiKeysSettings({
         <div className="api-key-card-title">
           <div>
             <h4>创建新密钥</h4>
-            <p>密钥将绑定当前账号，创建后无法再次查看明文。</p>
+            <p>密钥绑定当前账号，可在有效期内从列表查看并复制。</p>
           </div>
           <Info aria-hidden />
         </div>
@@ -254,13 +255,11 @@ export function ApiKeysSettings({
         <table className="api-key-table">
           <thead>
             <tr>
-              <th>名称</th>
               <th>密钥</th>
-              <th>权限范围</th>
-              <th>创建时间</th>
-              <th>到期时间</th>
+              <th>权限</th>
+              <th>有效期</th>
               <th>状态</th>
-              <th aria-label="操作" />
+              <th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -268,60 +267,70 @@ export function ApiKeysSettings({
               const keyStatus = statusOf(key, now);
               return (
                 <tr key={key.id}>
-                  <td data-label="名称">
-                    <strong title={key.name}>{key.name}</strong>
-                  </td>
-                  <td data-label="密钥">
-                    <code>{key.key_prefix}••••</code>
-                  </td>
-                  <td data-label="权限范围">
-                    <div className="api-key-scope-list">
-                      {key.scopes.map((scope) => (
-                        <span key={scope}>{scope}</span>
-                      ))}
+                  <td className="api-key-identity-cell">
+                    <div className="api-key-identity">
+                      <span className="api-key-row-icon">
+                        <KeyRound aria-hidden />
+                      </span>
+                      <div>
+                        <strong title={key.name}>{key.name}</strong>
+                        <code>{key.key_prefix}••••</code>
+                        {!key.secret_available && keyStatus !== "revoked" ? (
+                          <small className="api-key-legacy-hint">
+                            旧密钥不可找回
+                          </small>
+                        ) : null}
+                      </div>
                     </div>
                   </td>
-                  <td data-label="创建时间">
-                    {formatAccountDate(key.created_at)}
+                  <td className="api-key-access-cell" data-label="权限">
+                    <span className="api-key-access">
+                      {key.scopes.includes("studio:write")
+                        ? "读取与写入"
+                        : "只读"}
+                    </span>
                   </td>
-                  <td data-label="到期时间">
-                    {formatAccountDate(key.expires_at)}
+                  <td className="api-key-dates" data-label="到期时间">
+                    <time dateTime={key.expires_at}>
+                      {formatAccountDate(key.expires_at)}
+                    </time>
+                    <small>
+                      创建于{" "}
+                      <time dateTime={key.created_at}>
+                        {formatAccountDate(key.created_at)}
+                      </time>
+                    </small>
                   </td>
-                  <td data-label="状态">
+                  <td className="api-key-state-cell">
                     <span className={`api-key-status ${keyStatus}`}>
                       {STATUS_LABELS[keyStatus]}
                     </span>
                   </td>
-                  <td data-label="操作">
+                  <td className="api-key-actions-cell">
                     <div className="api-key-actions">
-                      <button
-                        type="button"
-                        className="btn small"
-                        disabled={busy || keyStatus === "revoked"}
-                        onClick={() => {
+                      {key.secret_available &&
+                      (keyStatus === "active" || keyStatus === "expiring") ? (
+                        <button
+                          type="button"
+                          className="api-key-reveal-button"
+                          disabled={busy}
+                          onClick={() => setSecretKeyId(key.id)}
+                        >
+                          <Copy aria-hidden />
+                          查看并复制
+                        </button>
+                      ) : null}
+                      <ApiKeyMoreMenu
+                        name={key.name}
+                        disabled={busy}
+                        revoked={keyStatus === "revoked"}
+                        onRenew={() => {
                           setRenewDuration("90");
                           setRenewTarget(key);
                         }}
-                      >
-                        <RefreshCw aria-hidden />
-                        续期
-                      </button>
-                      <button
-                        type="button"
-                        className="btn small danger-quiet"
-                        disabled={busy}
-                        onClick={() => setDeleteTarget(key)}
-                      >
-                        <Trash2 aria-hidden />
-                        删除
-                      </button>
-                      {keyStatus !== "revoked" ? (
-                        <ApiKeyMoreMenu
-                          name={key.name}
-                          disabled={busy}
-                          onRevoke={() => setRevokeTarget(key)}
-                        />
-                      ) : null}
+                        onRevoke={() => setRevokeTarget(key)}
+                        onDelete={() => setDeleteTarget(key)}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -343,6 +352,14 @@ export function ApiKeysSettings({
           </div>
         ) : null}
       </div>
+
+      {secretTarget ? (
+        <ApiKeySecretDialog
+          key={secretTarget.id}
+          apiKey={secretTarget}
+          close={() => setSecretKeyId(null)}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={!!renewTarget}

@@ -97,6 +97,13 @@ class SessionRecord(IdentityRecord):
 class KeyRecord(IdentityRecord):
     name: str = Field(max_length=64)
     key_hash: Digest = Field(repr=False)
+    secret_ciphertext: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=1024,
+        repr=False,
+        exclude_if=lambda value: value is None,
+    )
     key_prefix: str = Field(max_length=16)
     scopes: list[str] = Field(max_length=32)
     expires_at: datetime

@@ -35,8 +35,8 @@ export const changePassword = async (
     }),
   );
 
-export const reauthenticate = async (password: string) =>
-  unwrap(await api.POST("/v1/auth/reauth", { body: { password } }));
+export const reauthenticate = async (password: string, signal?: AbortSignal) =>
+  unwrap(await api.POST("/v1/auth/reauth", { body: { password }, signal }));
 
 export const updateProfile = async (
   displayName: string,
@@ -115,6 +115,14 @@ export const revokeApiKey = async (key: ApiKey) =>
     await api.POST("/v1/account/api-keys/{key_id}/revoke", {
       params: { path: { key_id: key.id } },
       body: { expected_revision: key.revision },
+    }),
+  );
+
+export const revealApiKeySecret = async (keyId: string, signal: AbortSignal) =>
+  unwrap(
+    await api.POST("/v1/account/api-keys/{key_id}/secret", {
+      params: { path: { key_id: keyId } },
+      signal,
     }),
   );
 
