@@ -19,10 +19,15 @@ export default defineConfig(async (environment) => {
           response.end("Forbidden");
           return;
         }
+        const pathname = new URL(request.url ?? "/", local).pathname;
         if (
           request.method === "GET" &&
           request.headers.accept?.includes("text/html") &&
-          (request.url === "/" || request.url?.startsWith("/management/"))
+          pathname !== "/management/v1" &&
+          !pathname.startsWith("/management/v1/") &&
+          (pathname === "/" ||
+            pathname === "/management" ||
+            pathname.startsWith("/management/"))
         )
           request.url = "/management.html";
         next();
@@ -35,6 +40,7 @@ export default defineConfig(async (environment) => {
     define: {
       ...shared.define,
       "import.meta.env.VITE_FPL_SERVICE": JSON.stringify("management"),
+      "import.meta.env.VITE_API_BASE": JSON.stringify("/management"),
     },
     plugins: [...(shared.plugins || []), entry],
     server: {
@@ -43,7 +49,11 @@ export default defineConfig(async (environment) => {
       port,
       strictPort: true,
       proxy: {
-        "/v1": { target, changeOrigin: true, headers: { Origin: target } },
+        "/management/v1": {
+          target,
+          changeOrigin: true,
+          headers: { Origin: target },
+        },
       },
     },
   };

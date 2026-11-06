@@ -92,6 +92,9 @@ export default defineConfig(async (environment) => {
     ],
     define: {
       ...shared.define,
+      ...(service === "management" && {
+        "import.meta.env.VITE_API_BASE": JSON.stringify("/management"),
+      }),
       "import.meta.env.VITE_FPL_SERVICE": JSON.stringify(service),
       "import.meta.env.VITE_FPL_WEB_BUILD": JSON.stringify(build),
       "import.meta.env.VITE_FPL_PROGRAM_HASH": JSON.stringify(sourceHash),

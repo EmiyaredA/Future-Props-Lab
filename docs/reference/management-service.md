@@ -6,9 +6,9 @@
 
 管理端保留账号、邀请码、模型模板、演示服务、运行额度和审计页面，并提供应用运行与访问管理。原应用账号菜单仅保留个人设置和退出。
 
-默认正式管理入口为 `http://127.0.0.1:9002`；独立开发入口为 `http://127.0.0.1:3001`。管理公网使用单独的 HTTPS 来源和回环转发，默认端口 28083，与业务 28081 分离。公网可以治理账号和模型配置；主机启停、日志和隧道动作只接受 Identity 证明的真实本机管理会话。
+默认正式管理入口为 `http://127.0.0.1:9002/management`，独立开发入口为 `http://127.0.0.1:3001/management`。管理公网使用业务 HTTPS 站点的 `/management`，通过 Mac 回环 28083 和远端回环 28082 转发。管理浏览器通过 `/management/v1/*` 调用 API，管理网关将请求映射到服务的 `/v1/*`。公网可以治理账号和模型配置，主机启停、日志和隧道动作只接受 Identity 证明的真实本机管理会话。
 
-Identity 是账号和会话的唯一真源。管理端使用 `fpl_management_session` / `fpl_management_csrf`，业务端使用原 Cookie。Identity 在自己的 `0002_management_sessions` 迁移中增加会话用途；复制 Cookie 值到另一入口仍会被服务端拒绝。旧单体迁移注册表不增加这项迁移。
+Identity 是账号和会话的唯一真源。管理端使用 `fpl_management_session` 和 `fpl_management_csrf`，公网将两者限定在 `/management`。Identity 在自己的 `0002_management_sessions` 迁移中记录会话用途，复制 Cookie 值到另一入口仍会被服务端拒绝。同域页面属于同一个浏览器来源，Cookie 路径只限制发送范围。
 
 ## 命令与 API
 
@@ -31,11 +31,11 @@ Mac worker 主动连接管理端专用回环通道。通道同时验证专用 in
 
 worker 只运行固定 Compose 服务组的启动、SIGTERM、显式 SIGKILL、状态和限量日志命令。启动使用已选定的 Compose 配置并等待健康状态；不会自动换端口。后台观测独立于命令轮询；某个服务退出、缺失或健康检查失败时，仅报告未就绪的服务，保留其他服务和任务。恢复后观测状态自动更新，监督器不会自动停止或重启任何服务。只有明确的停止、重启或强制停止命令才改变服务组生命周期。Identity、Models 和 Management 不能加入可停止的业务组。停止先发 SIGTERM，30 秒未退出才允许用户另行确认强制停止；不会自动 SIGKILL。日志只读取固定服务组，限量并脱敏，不接受文件路径。
 
-两个 SSH 子进程由 Mac worker 独立持有，使用专用密钥、严格 known_hosts 和固定远端回环转发。连接完成后核对网关 service/build_id，状态匹配才显示就绪。停止业务组不会停止管理容器或管理隧道。容器不挂载 Docker Socket、用户主目录、SSH 密钥或个人 CLI 凭据。
+两个 SSH 子进程由 Mac worker 独立持有，使用专用密钥、严格 known_hosts 和固定远端回环转发。连接完成后，业务通过 `/build.json` 核对网关和构建，管理通过 `/management/build.json` 核对。停止业务组后仍可访问管理容器和管理隧道。
 
 ## 配置与切换
 
-所有 Compose 调用显式传入 `--env-file /dev/null`，并禁用 `.env` 自动加载。持久配置真源仍为 `backend/config.toml`。`[management]` 声明独立来源，`[deployment]` 声明 Compose 项目与受限环境投影，`[management_host]` 声明本机 worker，`[management_remote]` 声明管理隧道；其 HTTPS 来源统一使用 `[management].public_origin`，不另存第二份地址。服务配置、Caddyfile 和凭据文件是带 0600 权限的部署投影，不能成为第二份配置真源。
+所有 Compose 调用显式传入 `--env-file /dev/null`，并禁用 `.env` 自动加载。持久配置真源为 `backend/config.toml`。`[management]` 声明本机来源和公网 HTTPS 来源，公网值只填来源，例如 `https://studio.futurepropslab.cn`，访问路径由管理网关提供。`[deployment]` 声明 Compose 项目与受限环境投影，`[management_host]` 声明本机 worker，`[management_remote]` 声明管理隧道。服务配置、Caddyfile 和凭据文件是带 0600 权限的部署投影。
 
 使用 `deploy/compose.yaml` 与 `deploy/management.compose.yaml` 两份清单。Identity 增加独立管理网关凭据与来源，service credentials 中显式登记 management。管理镜像只获得 Identity 公钥、自己的服务凭据、worker 验证材料、自有数据库及只读路由/程序，不获得 Identity 私钥。
 

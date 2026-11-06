@@ -17,13 +17,24 @@ studio.{$RC_DOMAIN} {
   request_header -X-Auth-Request-Email
   request_header -X-Remote-Control-Proxy
   @program {
-    not path /v1 /v1/* /health /ready
+    not path /v1 /v1/* /management/v1 /management/v1/* /health /ready
   }
   encode @program zstd gzip
-  reverse_proxy 127.0.0.1:28080 {
-    header_up X-Forwarded-Proto https
-    transport http {
-      dial_timeout 3s
+  @management path /management /management/* /_apps/management/*
+  handle @management {
+    reverse_proxy 127.0.0.1:28082 {
+      header_up X-Forwarded-Proto https
+      transport http {
+        dial_timeout 3s
+      }
+    }
+  }
+  handle {
+    reverse_proxy 127.0.0.1:28080 {
+      header_up X-Forwarded-Proto https
+      transport http {
+        dial_timeout 3s
+      }
     }
   }
   handle_errors {

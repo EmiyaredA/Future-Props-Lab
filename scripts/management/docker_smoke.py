@@ -36,7 +36,7 @@ def exercise(
     service_token, ingress_token, worker_token = [secrets.token_urlsafe(48) for _ in range(3)]
     password = secrets.token_urlsafe(25) + "-Aa9!"
     local = f"http://127.0.0.1:{local_port}"
-    public = "https://admin.example.test"
+    public = "https://studio.example.test"
     catalog = RouteCatalog.read(ROOT / "deploy/contracts/ownership.json")
     materials = {
         "identity.toml": (
@@ -205,7 +205,8 @@ def exercise(
             else:
                 raise RuntimeError("隔离管理入口未就绪")
             login = client.post(
-                "/v1/auth/login", json={"username": "isolated-admin", "password": password}
+                "/management/v1/auth/login",
+                json={"username": "isolated-admin", "password": password},
             )
             assert login.status_code == 200, login.text
             client.headers["X-CSRF-Token"] = client.cookies["fpl_management_csrf"]
@@ -213,6 +214,9 @@ def exercise(
                 "fpl_management_session" in client.cookies and "fpl_session" not in client.cookies
             )
             assert client.get("/v1/platform/accounts").status_code == 200
+            assert client.get("/management/v1/platform/accounts").status_code == 200
+            assert client.get("/management/build.json").json()["service"] == "management"
+            assert client.get("/management/v1/unregistered").status_code == 404
             assert client.get("/v1/automation/access").status_code == 404
             page = client.get("/management/access")
             assert page.status_code == 200 and "/_apps/management/" in page.text
@@ -229,21 +233,53 @@ def exercise(
                 base_url=f"http://127.0.0.1:{public_port}",
                 trust_env=False,
                 headers={
-                    "Host": "admin.example.test",
+                    "Host": "studio.example.test",
                     "Origin": public,
-                    "Cookie": "; ".join(f"{key}={value}" for key, value in client.cookies.items()),
-                    "X-CSRF-Token": client.cookies["fpl_management_csrf"],
                     "X-Fpl-Ingress": "local",
                 },
             ) as remote:
-                assert remote.get("/v1/platform/accounts").status_code == 200
-                assert remote.get("/v1/management/runtime").json()["local_browser"] is False
+                assert remote.get("/v1/platform/accounts").status_code == 404
+                login = remote.post(
+                    "/management/v1/auth/login",
+                    json={"username": "isolated-admin", "password": password},
+                )
+                assert login.status_code == 200, login.text
+                cookies = login.headers.get_list("set-cookie")
+                assert len(cookies) == 2 and all(
+                    "path=/management" in value.lower() and "; secure" in value.lower()
+                    for value in cookies
+                )
+                assert any(
+                    value.startswith("fpl_management_session=") and "httponly" in value.lower()
+                    for value in cookies
+                )
+                # Model the Secure cookies a browser would send through the HTTPS edge.
+                remote.headers["Cookie"] = "; ".join(
+                    f"{name}={value}" for name, value in remote.cookies.items()
+                )
+                assert remote.get("/management/v1/platform/accounts").status_code == 200
+                assert (
+                    remote.get("/management/v1/management/runtime").json()["local_browser"] is False
+                )
                 denied = remote.post(
-                    "/v1/management/application/actions",
+                    "/management/v1/management/application/actions",
+                    json={"action": "stop", "request_id": __import__("uuid").uuid4().hex},
+                )
+                assert denied.status_code == 403
+                remote.headers["X-CSRF-Token"] = remote.cookies["fpl_management_csrf"]
+                denied = remote.post(
+                    "/management/v1/management/application/actions",
                     json={"action": "stop", "request_id": __import__("uuid").uuid4().hex},
                 )
                 assert denied.status_code == 403, denied.text
-                assert remote.get("/v1/management/application/logs").status_code == 403
+                assert remote.get("/management/v1/management/application/logs").status_code == 403
+                assert remote.get("/management/_native/v1/claim").status_code == 404
+                logout = remote.post("/management/v1/auth/logout")
+                assert logout.status_code == 204
+                assert all(
+                    "path=/management" in value.lower()
+                    for value in logout.headers.get_list("set-cookie")
+                )
             native = f"http://127.0.0.1:{native_port}/management/_native/v1"
             with httpx.Client(
                 trust_env=False, headers={"Authorization": "Bearer " + worker_token}

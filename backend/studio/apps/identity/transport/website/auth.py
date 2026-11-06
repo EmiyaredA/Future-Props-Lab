@@ -80,7 +80,7 @@ def _set_cookies(
         httponly=True,
         secure=secure,
         samesite="lax",
-        path="/",
+        path=policy.cookie_path,
         max_age=max_age,
     )
     response.set_cookie(
@@ -89,7 +89,7 @@ def _set_cookies(
         httponly=False,
         secure=secure,
         samesite="lax",
-        path="/",
+        path=policy.cookie_path,
         max_age=max_age,
     )
 
@@ -97,8 +97,12 @@ def _set_cookies(
 def _clear_cookies(
     response: Response, policy: SessionPolicy = STUDIO_SESSION, *, secure: bool
 ) -> None:
-    response.delete_cookie(policy.session_cookie, path="/", secure=secure, samesite="lax")
-    response.delete_cookie(policy.csrf_cookie, path="/", secure=secure, samesite="lax")
+    response.delete_cookie(
+        policy.session_cookie, path=policy.cookie_path, secure=secure, samesite="lax"
+    )
+    response.delete_cookie(
+        policy.csrf_cookie, path=policy.cookie_path, secure=secure, samesite="lax"
+    )
 
 
 async def _browser_auth(request: Request, session: SessionDep, *, forced: bool = False):

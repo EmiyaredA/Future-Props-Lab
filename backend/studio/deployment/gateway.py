@@ -152,6 +152,33 @@ def render_gateway(
                 "      }",
                 "    }",
             ]
+        if audience == "management":
+            lines.extend(
+                [
+                    "    @management_internal path /management/_internal /management/_internal/*"
+                    " /management/_native /management/_native/* /management/_bridge"
+                    " /management/_bridge/*",
+                    "    respond @management_internal 404",
+                    "    handle /management/build.json {",
+                    "      rewrite * /build.json",
+                    "      header >Cache-Control no-store",
+                    "      reverse_proxy 127.0.0.1:8080 {",
+                    "        header_up -Cookie",
+                    "        header_up -Authorization",
+                    "      }",
+                    "    }",
+                ]
+            )
+            if ingress == "public":
+                lines.extend(
+                    ["    @unprefixed_api path /v1 /v1/*", "    respond @unprefixed_api 404"]
+                )
+            lines.extend(
+                [
+                    "    @management_api path /management/v1 /management/v1/*",
+                    "    uri @management_api strip_prefix /management",
+                ]
+            )
         lines.extend(
             [
                 "    @old_agents path /apps/agent-workbench /apps/agent-workbench/*",

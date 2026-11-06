@@ -238,6 +238,7 @@ async def test_tunnel_rejects_mismatched_gateway_builds(tmp_path, monkeypatch):
     )
 
     def response(request):
+        assert request.url.path == "/management/build.json"
         return httpx.Response(
             200,
             json={

@@ -6,7 +6,11 @@ from urllib.parse import urlsplit
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import PlainTextResponse
 
-from studio.contracts.identity.session_policy import MANAGEMENT_SESSION, STUDIO_SESSION
+from studio.contracts.identity.session_policy import (
+    MANAGEMENT_SESSION,
+    PUBLIC_MANAGEMENT_SESSION,
+    STUDIO_SESSION,
+)
 
 
 class GatewayTransport:
@@ -76,10 +80,13 @@ class GatewayTransport:
             return
         scope = dict(scope)
         scope["scheme"] = origin.scheme
+        policy = STUDIO_SESSION
+        if management:
+            policy = PUBLIC_MANAGEMENT_SESSION if ingress == "public" else MANAGEMENT_SESSION
         scope["state"] = {
             **scope.get("state", {}),
             "website_local": ingress == "local",
-            "session_policy": MANAGEMENT_SESSION if management else STUDIO_SESSION,
+            "session_policy": policy,
         }
         scope["client"] = (headers.get("x-fpl-client-ip", ""), 0)
 

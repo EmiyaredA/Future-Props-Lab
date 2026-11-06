@@ -12,9 +12,9 @@ const user = {
 };
 async function mock(page: Page, local: boolean) {
   const actions: { url: string; data: Record<string, unknown> }[] = [];
-  await page.route("**/v1/**", async (route) => {
+  await page.route("**/management/v1/**", async (route) => {
     const request = route.request(),
-      path = new URL(request.url()).pathname;
+      path = new URL(request.url()).pathname.slice("/management".length);
     let value: unknown;
     if (path === "/v1/auth/me")
       value = {
@@ -50,7 +50,7 @@ async function mock(page: Page, local: boolean) {
         phase: "off",
         url: path.endsWith("business")
           ? "https://studio.example.test"
-          : "https://admin.example.test",
+          : "https://studio.example.test/management",
         error: "",
       };
     else if (path === "/v1/platform/accounts")
@@ -93,7 +93,9 @@ for (const theme of ["light", "dark"]) {
         page.getByRole("heading", { name: "访问管理", exact: true }),
       ).toBeVisible();
       await expect(
-        page.getByText("https://admin.example.test", { exact: true }),
+        page.getByText("https://studio.example.test/management", {
+          exact: true,
+        }),
       ).toBeVisible();
       await expect(
         page.getByText("https://studio.example.test", { exact: true }),

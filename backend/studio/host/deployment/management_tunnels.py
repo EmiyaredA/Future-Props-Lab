@@ -22,8 +22,11 @@ class GatewayTunnel:
         self.phase, self.error, self.build_id = "off", "", ""
 
     def snapshot(self):
+        origin = self.profile.origin
+        if origin and self.service == "management":
+            origin += "/management"
         return {
-            "url": self.profile.origin,
+            "url": origin,
             "phase": self.phase,
             "error": self.error,
             "build_id": self.build_id,
@@ -46,9 +49,10 @@ class GatewayTunnel:
             raise ValueError("请先在配置中登记独立公网网关")
         self.credential(p.identity_id, "identity")
         self.credential(p.known_hosts_id, "known_hosts")
+        probe = "/management/build.json" if self.service == "management" else "/build.json"
         async with httpx.AsyncClient(trust_env=False, timeout=5, follow_redirects=False) as client:
             local = await client.get(
-                f"http://127.0.0.1:{p.local_port}/build.json",
+                f"http://127.0.0.1:{p.local_port}{probe}",
                 headers={"Host": urlsplit(p.origin).netloc},
             )
             local.raise_for_status()
@@ -59,7 +63,7 @@ class GatewayTunnel:
                 raise ValueError("本机网关构建标识无效")
             self.build_id = body["build_id"]
             if remote:
-                public = await client.get(p.origin + "/build.json")
+                public = await client.get(p.origin + probe)
                 public.raise_for_status()
                 other = public.json()
                 if (other.get("service"), other.get("build_id")) != (self.service, self.build_id):
