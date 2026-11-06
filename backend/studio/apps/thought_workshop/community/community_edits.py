@@ -45,6 +45,7 @@ async def save_note(
     note_id,
     body,
     *,
+    accounts,
     references,
     identity,
     assertion,
@@ -53,7 +54,10 @@ async def save_note(
     if principal.auth_kind != "session":
         raise missing()
     async with source_sessions(request_session)() as session:
-        edit = await authorize_note_edit(session, principal, publication_id, note_id, body)
+        accounts = accounts.for_session(session)
+        edit = await authorize_note_edit(
+            session, principal, publication_id, note_id, body, accounts=accounts
+        )
         assets = file_ids(edit.body.document)
         pins = await note_pin_ids(session, edit.owner, note_id, assets)
         scope = CommunityRetentionScope(
@@ -86,7 +90,9 @@ async def save_note(
         try:
             await require_actor(identity, assertion, "PUT", source_path)
             await begin_write(session)
-            current = await authorize_note_edit(session, principal, publication_id, note_id, body)
+            current = await authorize_note_edit(
+                session, principal, publication_id, note_id, body, accounts=accounts
+            )
             if (
                 current.owner != scope.owner_id
                 or current.publication_revision != scope.publication_revision

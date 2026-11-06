@@ -29,13 +29,14 @@ def directory(session) -> AccountDirectory:
     return value.for_session(session)
 
 
-async def profiles(session, *, ids=(), usernames=()):
+async def profiles(session, *, ids=(), usernames=(), accounts=None):
     if not ids and not usernames:
         return []
-    return await directory(session).profiles(ids=ids, usernames=usernames)
+    accounts = directory(session) if accounts is None else accounts
+    return await accounts.profiles(ids=ids, usernames=usernames)
 
 
-async def author(session, user_id):
+async def author(session, user_id, *, accounts=None):
     if not user_id:
         return None
-    return next(iter(await profiles(session, ids=(user_id,))), None)
+    return next(iter(await profiles(session, ids=(user_id,), accounts=accounts)), None)

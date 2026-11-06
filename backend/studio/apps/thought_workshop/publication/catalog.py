@@ -87,10 +87,10 @@ async def visible(session, principal, pub, query="", include_content=False, *, a
     ], manager
 
 
-async def output(session, principal, pub, rows=None, manager=None):
+async def output(session, principal, pub, rows=None, manager=None, *, accounts):
     if rows is None:
-        rows, manager = await visible(session, principal, pub)
-    author = await find_author(session, pub.publisher_id)
+        rows, manager = await visible(session, principal, pub, accounts=accounts)
+    author = await find_author(session, pub.publisher_id, accounts=accounts)
     favorite = await session.get(CommunityFavorite, (principal.user_id, "community/" + pub.id))
     if not favorite:
         favorite = (
@@ -132,9 +132,9 @@ async def output(session, principal, pub, rows=None, manager=None):
     )
 
 
-async def directory(session, principal, id):
+async def directory(session, principal, id, *, accounts):
     pub = await publication(session, id)
-    rows, manager = await visible(session, principal, pub)
+    rows, manager = await visible(session, principal, pub, accounts=accounts)
     if not rows and not manager:
         raise missing()
     ids = {n.id for n, _, _ in rows}
@@ -153,11 +153,14 @@ async def directory(session, principal, id):
         for n, c, role in rows
     ]
     return CommunityDirectory(
-        publication=await output(session, principal, pub, rows, manager), documents=docs
+        publication=await output(session, principal, pub, rows, manager, accounts=accounts),
+        documents=docs,
     )
 
 
-async def listing(session, principal, query, mine, favorites, offset, limit, official=None):
+async def listing(
+    session, principal, query, mine, favorites, offset, limit, official=None, *, accounts
+):
     manager = Publication.owner_user_id == principal.user_id
     source_member = manager
     granted = (
@@ -251,23 +254,23 @@ async def listing(session, principal, query, mine, favorites, offset, limit, off
     result = []
     for pub in pubs:
         manager = principal.user_id == pub.publisher_id or await manages_source(
-            session, principal, pub.owner_user_id
+            session, principal, pub.owner_user_id, accounts=accounts
         )
         if mine and not (manager or pub.publisher_id == principal.user_id):
             continue
         if not pub.active and not mine:
             continue
-        rows, _ = await visible(session, principal, pub)
+        rows, _ = await visible(session, principal, pub, accounts=accounts)
         if not rows and not manager:
             continue
-        item = await output(session, principal, pub, rows, manager)
+        item = await output(session, principal, pub, rows, manager, accounts=accounts)
         if favorites and not item.favorite:
             continue
         if (
             query.strip()
             and query.casefold() not in (item.title + " " + item.description).casefold()
         ):
-            matched, _ = await visible(session, principal, pub, query)
+            matched, _ = await visible(session, principal, pub, query, accounts=accounts)
             if not matched:
                 continue
         result.append(item)

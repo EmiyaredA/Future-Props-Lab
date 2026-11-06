@@ -3,6 +3,7 @@
 from fastapi import APIRouter, HTTPException, Request
 
 from studio.apps.thought_workshop.errors import ThoughtError
+from studio.apps.thought_workshop.http_bindings import CommunityDirectoryDep
 from studio.apps.thought_workshop.http_bindings import CommunitySessionDep as SessionDep
 from studio.apps.thought_workshop.multitable.schemas import (
     BatchIn,
@@ -28,11 +29,12 @@ async def conversion(
     note_id: str,
     body: ConversionIn,
     session: SessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     parent_note_id: str | None = None,
 ):
     return await call(
-        CommunityTables(session, principal).conversion(
+        CommunityTables(session, principal, accounts=accounts).conversion(
             publication_id, note_id, body, parent_note_id
         )
     )
@@ -50,11 +52,14 @@ async def structure(
     publication_id: str,
     note_id: str,
     session: SessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     parent_note_id: str | None = None,
 ):
     return await call(
-        CommunityTables(session, principal).structure(publication_id, note_id, parent_note_id)
+        CommunityTables(session, principal, accounts=accounts).structure(
+            publication_id, note_id, parent_note_id
+        )
     )
 
 
@@ -65,11 +70,12 @@ async def records(
     table_id: str,
     body: QueryIn,
     session: SessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     parent_note_id: str | None = None,
 ):
     return await call(
-        CommunityTables(session, principal).records(
+        CommunityTables(session, principal, accounts=accounts).records(
             publication_id, note_id, table_id, body, parent_note_id
         )
     )
@@ -82,11 +88,12 @@ async def operations(
     note_id: str,
     body: BatchIn,
     session: SessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     parent_note_id: str | None = None,
 ):
     return await call(
-        CommunityTables(session, principal).apply(
+        CommunityTables(session, principal, accounts=accounts).apply(
             publication_id,
             note_id,
             body,

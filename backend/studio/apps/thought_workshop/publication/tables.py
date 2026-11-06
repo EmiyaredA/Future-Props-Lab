@@ -19,13 +19,15 @@ from studio.apps.thought_workshop.storage.models import ThoughtNote
 
 
 class TableAccess:
-    def __init__(self, session, principal):
-        self.session, self.principal = session, principal
+    def __init__(self, session, principal, *, accounts):
+        self.session, self.principal, self.accounts = session, principal, accounts
 
     async def access(self, pub_id, note_id, parent_id=None, *, write=False, source_assets=None):
         pub = await publication(self.session, pub_id)
         if parent_id:
-            _, parent, _ = await article(self.session, self.principal, pub, parent_id)
+            _, parent, _ = await article(
+                self.session, self.principal, pub, parent_id, accounts=self.accounts
+            )
             if note_id not in reference_ids(parent.document):
                 raise missing()
             target = await self.session.scalar(
@@ -41,7 +43,12 @@ class TableAccess:
                 raise missing()
             pub = await publication(self.session, target.id)
         config, note, role = await article(
-            self.session, self.principal, pub, note_id, level="edit" if write else "read"
+            self.session,
+            self.principal,
+            pub,
+            note_id,
+            level="edit" if write else "read",
+            accounts=self.accounts,
         )
         bind_source(self.session, pub)
         assets = (
@@ -94,7 +101,7 @@ class TableAccess:
         authorized_source = pub.id, pub.owner_user_id, pub.revision, config.revision
         current = await snapshot(self.session, note_id)
         allowed_assets = await self.allowed_assets(note_id, current)
-        rows, _ = await visible(self.session, self.principal, pub)
+        rows, _ = await visible(self.session, self.principal, pub, accounts=self.accounts)
 
         async def before_write(before, after):
             nonlocal pub, role
@@ -109,7 +116,9 @@ class TableAccess:
                 or not asset_ids(after) <= await self.allowed_assets(note_id, before)
             ):
                 raise missing()
-            current_rows, _ = await visible(self.session, self.principal, pub)
+            current_rows, _ = await visible(
+                self.session, self.principal, pub, accounts=self.accounts
+            )
 
             def note_refs(state):
                 return {
@@ -146,14 +155,17 @@ class TableAccess:
 class CommunityTables:
     """Each browser operation binds the source only inside its own session."""
 
-    def __init__(self, request_session, principal):
+    def __init__(self, request_session, principal, *, accounts):
         self.sessions = source_sessions(request_session)
-        self.principal = principal
+        self.principal, self.accounts = principal, accounts
 
     async def run(self, method, *args, **kwargs):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
-            return await getattr(TableAccess(session, self.principal), method)(*args, **kwargs)
+            return await getattr(
+                TableAccess(session, self.principal, accounts=self.accounts.for_session(session)),
+                method,
+            )(*args, **kwargs)
 
     async def structure(self, *args):
         return await self.run("structure", *args)

@@ -115,13 +115,14 @@ async def test_community_preserves_service_guard_and_request_directory(tmp_path)
                 )
                 await session.commit()
         directory = object()
-        async with database.sessions(
-            info={"owner_user_id": "beta", "thought_directory": directory}
-        ) as request_session:
-            community = Community(request_session, SimpleNamespace(user_id="beta"))
+        async with database.sessions(info={"owner_user_id": "beta"}) as request_session:
+            community = Community(
+                request_session, SimpleNamespace(user_id="beta"), accounts=directory
+            )
             async with community.sessions() as source_session:
                 assert isinstance(source_session.sync_session, ServiceSession)
-                assert source_session.info["thought_directory"] is directory
+                assert community.accounts is directory
+                assert "thought_directory" not in source_session.info
                 assert source_session.info["owner_user_id"] is None
                 assert source_session.info["allow_system_reads"] is True
                 assert len(list(await source_session.scalars(select(Publication)))) == 2

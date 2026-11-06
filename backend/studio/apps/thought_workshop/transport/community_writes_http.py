@@ -4,7 +4,7 @@ from fastapi import APIRouter, File, HTTPException, Request, UploadFile
 
 from studio.apps.thought_workshop.community.community_edits import save_note
 from studio.apps.thought_workshop.community.community_upload import upload_attachment
-from studio.apps.thought_workshop.http_bindings import CommunitySessionDep
+from studio.apps.thought_workshop.http_bindings import CommunityDirectoryDep, CommunitySessionDep
 from studio.apps.thought_workshop.multitable.schemas import BatchIn, BatchOut
 from studio.apps.thought_workshop.publication.schemas import CommunityNote, CommunityNotePut
 from studio.apps.thought_workshop.schemas.workshop import ThoughtAttachmentOut
@@ -23,6 +23,7 @@ async def save(
     note_id: str,
     body: CommunityNotePut,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
 ):
     return await guarded(
@@ -32,6 +33,7 @@ async def save(
             publication_id,
             note_id,
             body,
+            accounts=accounts,
             references=request.app.state.thought_references,
             identity=request.app.state.identity,
             assertion=request.state.service_assertion,
@@ -50,6 +52,7 @@ async def operations(
     note_id: str,
     body: BatchIn,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     parent_note_id: str | None = None,
 ):
@@ -61,6 +64,7 @@ async def operations(
             note_id,
             body,
             parent_note_id,
+            accounts=accounts,
             references=request.app.state.thought_references,
             identity=request.app.state.identity,
             assertion=request.state.service_assertion,
@@ -77,6 +81,7 @@ async def upload(
     publication_id: str,
     note_id: str,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     upload: UploadFile = File(),
 ):
@@ -91,6 +96,7 @@ async def upload(
             publication_id,
             note_id,
             upload,
+            accounts=accounts,
             request_key=request.headers.get("idempotency-key"),
             maximum_bytes=app.thought_upload_configuration.maximum_bytes,
             delivery=app.thought_community_uploads,

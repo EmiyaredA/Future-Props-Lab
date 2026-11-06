@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, Query
 
-from studio.apps.thought_workshop.http_bindings import CommunitySessionDep
+from studio.apps.thought_workshop.http_bindings import CommunityDirectoryDep, CommunitySessionDep
 from studio.apps.thought_workshop.multitable.schemas import (
     ConversionIn,
     ConversionOut,
@@ -31,6 +31,7 @@ router = APIRouter(prefix="/thought-workshop/community", tags=["knowledge-commun
 @router.get("/publications", response_model=list[PublicationOut])
 async def listing(
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     query: str = Query(default="", max_length=240),
     official: bool | None = None,
@@ -40,40 +41,66 @@ async def listing(
     limit: int = Query(default=24, ge=1, le=48),
 ):
     return await guarded(
-        Community(session, principal).list(query, mine, favorites, offset, limit, official)
+        Community(session, principal, accounts=accounts).list(
+            query, mine, favorites, offset, limit, official
+        )
     )
 
 
 @router.get("/libraries/{library_id}/publication", response_model=PublicationConfig)
-async def config(library_id: str, session: CommunitySessionDep, principal: PublicStudioAuth):
-    return await guarded(Community(session, principal).config(library_id))
+async def config(
+    library_id: str,
+    session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
+    principal: PublicStudioAuth,
+):
+    return await guarded(Community(session, principal, accounts=accounts).config(library_id))
 
 
 @router.get("/publications/{publication_id}", response_model=CommunityDirectory)
-async def directory(publication_id: str, session: CommunitySessionDep, principal: PublicStudioAuth):
-    return await guarded(Community(session, principal).directory(publication_id))
+async def directory(
+    publication_id: str,
+    session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
+    principal: PublicStudioAuth,
+):
+    return await guarded(Community(session, principal, accounts=accounts).directory(publication_id))
 
 
 @router.get("/publications/{publication_id}/notes/{note_id}", response_model=CommunityNote)
 async def note(
-    publication_id: str, note_id: str, session: CommunitySessionDep, principal: PublicStudioAuth
+    publication_id: str,
+    note_id: str,
+    session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
+    principal: PublicStudioAuth,
 ):
-    return await guarded(Community(session, principal).get_note(publication_id, note_id))
+    return await guarded(
+        Community(session, principal, accounts=accounts).get_note(publication_id, note_id)
+    )
 
 
 @router.get("/publications/{publication_id}/permissions", response_model=list[ArticleConfig])
 async def settings(
     publication_id: str,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     note_id: list[str] = Query(min_length=1, max_length=2000),
 ):
-    return await guarded(Community(session, principal).settings(publication_id, note_id))
+    return await guarded(
+        Community(session, principal, accounts=accounts).settings(publication_id, note_id)
+    )
 
 
 @router.get("/publications/{publication_id}/export-snapshot", response_model=CommunitySnapshot)
-async def export(publication_id: str, session: CommunitySessionDep, principal: PublicStudioAuth):
-    return await guarded(Community(session, principal).snapshot(publication_id))
+async def export(
+    publication_id: str,
+    session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
+    principal: PublicStudioAuth,
+):
+    return await guarded(Community(session, principal, accounts=accounts).snapshot(publication_id))
 
 
 @router.get(
@@ -84,18 +111,23 @@ async def backlinks(
     publication_id: str,
     note_id: str,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     offset: int = Query(default=0, ge=0),
     limit: int = Query(default=40, ge=1, le=100),
 ):
     return await guarded(
-        Community(session, principal).backlinks(publication_id, note_id, offset, limit)
+        Community(session, principal, accounts=accounts).backlinks(
+            publication_id, note_id, offset, limit
+        )
     )
 
 
 @router.get("/favorites", response_model=FavoritesOut)
-async def favorites(session: CommunitySessionDep, principal: PublicStudioAuth):
-    return await guarded(Community(session, principal).favorites())
+async def favorites(
+    session: CommunitySessionDep, accounts: CommunityDirectoryDep, principal: PublicStudioAuth
+):
+    return await guarded(Community(session, principal, accounts=accounts).favorites())
 
 
 @router.get(
@@ -108,11 +140,14 @@ async def table_structure(
     publication_id: str,
     note_id: str,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     parent_note_id: str | None = None,
 ):
     return await guarded(
-        CommunityTables(session, principal).structure(publication_id, note_id, parent_note_id)
+        CommunityTables(session, principal, accounts=accounts).structure(
+            publication_id, note_id, parent_note_id
+        )
     )
 
 
@@ -128,11 +163,12 @@ async def table_records(
     table_id: str,
     body: QueryIn,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     parent_note_id: str | None = None,
 ):
     return await guarded(
-        CommunityTables(session, principal).records(
+        CommunityTables(session, principal, accounts=accounts).records(
             publication_id, note_id, table_id, body, parent_note_id
         )
     )
@@ -147,11 +183,12 @@ async def conversion(
     note_id: str,
     body: ConversionIn,
     session: CommunitySessionDep,
+    accounts: CommunityDirectoryDep,
     principal: PublicStudioAuth,
     parent_note_id: str | None = None,
 ):
     return await guarded(
-        CommunityTables(session, principal).conversion(
+        CommunityTables(session, principal, accounts=accounts).conversion(
             publication_id, note_id, body, parent_note_id
         )
     )

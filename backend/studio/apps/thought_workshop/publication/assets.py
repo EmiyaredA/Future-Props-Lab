@@ -31,12 +31,13 @@ async def content(
     cover=False,
     size: ThumbnailSize | None = None,
     *,
+    accounts,
     settings,
     previews,
 ):
     pub = await publication(session, pub_id)
     if note_id:
-        _, n, role = await article(session, principal, pub, note_id)
+        _, n, role = await article(session, principal, pub, note_id, accounts=accounts)
         allowed = file_ids(n.document)
         if n.kind == "multitable":
             allowed |= asset_ids(await snapshot(session, n.id))
@@ -50,7 +51,9 @@ async def content(
                 )
             )
     else:
-        rows, manager = await visible(session, principal, pub, include_content=not cover)
+        rows, manager = await visible(
+            session, principal, pub, include_content=not cover, accounts=accounts
+        )
         if not rows and not manager:
             raise missing()
         allowed = (
@@ -79,9 +82,11 @@ async def content(
     return row.mime_type, path
 
 
-async def upload(session, principal, pub_id, note_id, incoming: IncomingFile, *, settings):
+async def upload(
+    session, principal, pub_id, note_id, incoming: IncomingFile, *, accounts, settings
+):
     pub = await publication(session, pub_id)
-    await article(session, principal, pub, note_id, level="edit")
+    await article(session, principal, pub, note_id, level="edit", accounts=accounts)
     bind_source(session, pub)
     owner_user_id = pub.owner_user_id
     # No write transaction is held during file validation and storage.
@@ -99,7 +104,7 @@ async def upload(session, principal, pub_id, note_id, incoming: IncomingFile, *,
     )
     await begin_write(session)
     pub = await publication(session, pub_id)
-    await article(session, principal, pub, note_id, level="edit")
+    await article(session, principal, pub, note_id, level="edit", accounts=accounts)
     session.add(
         CommunityUpload(note_id=note_id, asset_id=result.asset_id, user_id=principal.user_id)
     )
@@ -110,9 +115,9 @@ async def upload(session, principal, pub_id, note_id, incoming: IncomingFile, *,
 class LegacyCommunityFiles:
     """Materialize community files in the compatibility site's own database."""
 
-    def __init__(self, request_session, principal, *, settings, previews):
+    def __init__(self, request_session, principal, *, settings, previews, accounts):
         self.sessions = source_sessions(request_session)
-        self.principal = principal
+        self.principal, self.accounts = principal, accounts
         self.settings, self.previews = settings, previews
 
     async def asset(self, id, asset, note=None, size=None):
@@ -127,6 +132,7 @@ class LegacyCommunityFiles:
                 False,
                 size,
                 settings=self.settings,
+                accounts=self.accounts.for_session(session),
                 previews=self.previews,
             )
 
@@ -142,10 +148,19 @@ class LegacyCommunityFiles:
                 cover=True,
                 size=size,
                 settings=self.settings,
+                accounts=self.accounts.for_session(session),
                 previews=self.previews,
             )
 
     async def upload(self, id, note, incoming):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
-            return await upload(session, self.principal, id, note, incoming, settings=self.settings)
+            return await upload(
+                session,
+                self.principal,
+                id,
+                note,
+                incoming,
+                settings=self.settings,
+                accounts=self.accounts.for_session(session),
+            )

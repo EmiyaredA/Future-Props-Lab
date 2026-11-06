@@ -44,6 +44,7 @@ async def publish_with_references(
     principal,
     body,
     *,
+    accounts,
     assertion,
     source_method,
     source_path,
@@ -59,6 +60,7 @@ async def publish_with_references(
             "allow_system_reads": True,
         }
     ) as session:
+        accounts = accounts.for_session(session)
         if publication_id is not None:
             pub = await publication(session, publication_id, active=False)
             library_id = pub.knowledge_base_id
@@ -76,7 +78,7 @@ async def publish_with_references(
             raise RevisionConflictError(
                 body.expected_revision,
                 pub.revision,
-                (await output(session, principal, pub)).model_dump(mode="json"),
+                (await output(session, principal, pub, accounts=accounts)).model_dump(mode="json"),
             )
         if pub is None and body.expected_revision != 0:
             raise ThoughtError("发布配置版本已变化", 409, "revision_conflict")
@@ -99,7 +101,9 @@ async def publish_with_references(
         )
         retained = RetainedPublication(identity, revision, cover, references, prepared)
         try:
-            return await publish(session, principal, library_id, body, owner, retained=retained)
+            return await publish(
+                session, principal, library_id, body, owner, retained=retained, accounts=accounts
+            )
         except BaseException:
             if not retained.settling:
                 await session.rollback()

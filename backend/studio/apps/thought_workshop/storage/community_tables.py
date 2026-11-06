@@ -25,6 +25,7 @@ async def apply_table(
     body,
     parent_note_id,
     *,
+    accounts,
     references,
     identity,
     assertion,
@@ -78,7 +79,9 @@ async def apply_table(
 
         try:
             await session.execute(text("BEGIN"))
-            return await TableAccess(session, principal).apply(
+            return await TableAccess(
+                session, principal, accounts=accounts.for_session(session)
+            ).apply(
                 publication_id,
                 note_id,
                 body,

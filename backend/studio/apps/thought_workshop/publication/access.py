@@ -35,8 +35,8 @@ async def source_role(session, principal, owner_user_id, *, accounts=None):
     )
 
 
-async def require_source_manager(session, principal, owner_user_id):
-    if not await manages_source(session, principal, owner_user_id):
+async def require_source_manager(session, principal, owner_user_id, *, accounts):
+    if not await manages_source(session, principal, owner_user_id, accounts=accounts):
         raise missing()
 
 
@@ -106,7 +106,7 @@ async def article(session, principal, pub, note_id, *, level="read", inactive=Fa
     return config, note, role
 
 
-async def members(session, pub_id, note_id):
+async def members(session, pub_id, note_id, *, accounts):
     rows = list(
         await session.scalars(
             select(ArticleMember).where(
@@ -115,7 +115,10 @@ async def members(session, pub_id, note_id):
             )
         )
     )
-    users = {user.id: user for user in await profiles(session, ids={row.user_id for row in rows})}
+    users = {
+        user.id: user
+        for user in await profiles(session, ids={row.user_id for row in rows}, accounts=accounts)
+    }
     return [
         dict(
             username=users[row.user_id].username,

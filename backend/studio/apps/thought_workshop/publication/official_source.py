@@ -79,7 +79,7 @@ async def receipt(session, principal, request_id):
     return ThoughtImportOut.model_validate(row.result)
 
 
-async def resolve_legacy(session, principal, library_key, document_key=""):
+async def resolve_legacy(session, principal, library_key, document_key="", *, accounts):
     # Origin mappings alone never authorize access or expose private imported titles.
 
     rows = (
@@ -101,10 +101,10 @@ async def resolve_legacy(session, principal, library_key, document_key=""):
     for pub_id, note_id in rows:
         try:
             pub = await publication(session, pub_id)
-            _, note, _ = await article(session, principal, pub, note_id)
+            _, note, _ = await article(session, principal, pub, note_id, accounts=accounts)
             targets.append(
                 LegacyTarget(
-                    publication=await output(session, principal, pub),
+                    publication=await output(session, principal, pub, accounts=accounts),
                     note_id=note.id,
                     title=note.title,
                     excerpt=note.search_text[:240],

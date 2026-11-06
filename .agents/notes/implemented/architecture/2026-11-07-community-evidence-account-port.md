@@ -27,3 +27,10 @@ tested with an alternate implementation without changing session metadata.
 
 Community asset evidence and the independent Identity integration
 exercise authenticated reads, revocation and source ownership.
+
+## Follow-up
+
+Community reads, publication management and independent edits and
+uploads now also receive the explicit directory. Adapters rebind it
+to the authorized source transaction and preserve the live viewer
+and short-lived Identity profile checks.

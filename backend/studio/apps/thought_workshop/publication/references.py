@@ -14,9 +14,9 @@ class CommunityReferenceTarget(ReferenceTarget):
     publication_id: str | None = None
 
 
-async def resolve(session, principal, pub_id, ids):
+async def resolve(session, principal, pub_id, ids, *, accounts):
     source = await publication(session, pub_id)
-    rows, manager = await visible(session, principal, source)
+    rows, manager = await visible(session, principal, source, accounts=accounts)
     if not rows and not manager:
         raise missing()
     candidates = (
@@ -35,7 +35,7 @@ async def resolve(session, principal, pub_id, ids):
     for note_id, target_id in candidates:
         try:
             target = await publication(session, target_id)
-            _, note, _ = await article(session, principal, target, note_id)
+            _, note, _ = await article(session, principal, target, note_id, accounts=accounts)
         except ThoughtError as error:
             if error.status != 404:
                 raise

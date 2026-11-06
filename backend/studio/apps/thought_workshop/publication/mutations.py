@@ -34,9 +34,9 @@ async def begin_write(session):
     await session.execute(text("BEGIN IMMEDIATE"))
 
 
-async def config(session, principal, library_id, owner_user_id=None):
+async def config(session, principal, library_id, owner_user_id=None, *, accounts):
     owner_user_id = owner_user_id or principal.owner_user_id
-    await require_source_manager(session, principal, owner_user_id)
+    await require_source_manager(session, principal, owner_user_id, accounts=accounts)
     await KnowledgeBases(session, owner_user_id).get(library_id)
     pub = await session.scalar(
         select(Publication).where(
@@ -60,7 +60,7 @@ async def config(session, principal, library_id, owner_user_id=None):
         )
     ).all()
     return PublicationConfig(
-        publication=await output(session, principal, pub),
+        publication=await output(session, principal, pub, accounts=accounts),
         can_set_official=can_certify(principal),
         articles=[
             ArticleConfig(
@@ -69,18 +69,20 @@ async def config(session, principal, library_id, owner_user_id=None):
                 revision=c.revision,
                 visibility=c.visibility,
                 active=c.active,
-                members=await members(session, pub.id, n.id),
+                members=await members(session, pub.id, n.id, accounts=accounts),
             )
             for c, n in rows
         ],
     )
 
 
-async def settings(session, principal, pub_id, note_ids):
+async def settings(session, principal, pub_id, note_ids, *, accounts):
     pub = await publication(session, pub_id)
     result = []
     for id in dict.fromkeys(note_ids):
-        c, n, _ = await article(session, principal, pub, id, level="manage", inactive=True)
+        c, n, _ = await article(
+            session, principal, pub, id, level="manage", inactive=True, accounts=accounts
+        )
         result.append(
             ArticleConfig(
                 note_id=n.id,
@@ -88,13 +90,13 @@ async def settings(session, principal, pub_id, note_ids):
                 revision=c.revision,
                 visibility=c.visibility,
                 active=c.active,
-                members=await members(session, pub_id, id),
+                members=await members(session, pub_id, id, accounts=accounts),
             )
         )
     return result
 
 
-async def resolve_member_settings(session, settings):
+async def resolve_member_settings(session, settings, *, accounts):
     normalized = set()
     for setting in settings:
         names = [member.username.strip().casefold() for member in setting.members]
@@ -104,7 +106,10 @@ async def resolve_member_settings(session, settings):
             normalized.update(normalize_username(member.username) for member in setting.members)
         except ValueError:
             raise ThoughtError("成员账号不存在或不可用", 422, "member_not_found") from None
-    users = {user.username.lower(): user for user in await profiles(session, usernames=normalized)}
+    users = {
+        user.username.lower(): user
+        for user in await profiles(session, usernames=normalized, accounts=accounts)
+    }
     result = {}
     for setting in settings:
         members = []
@@ -145,15 +150,17 @@ async def apply_settings(session, pub, setting, users, *, new=False):
     )
 
 
-async def publish(session, principal, library_id, body, owner_user_id=None, *, retained=None):
+async def publish(
+    session, principal, library_id, body, owner_user_id=None, *, accounts, retained=None
+):
     owner_user_id = owner_user_id or principal.owner_user_id
     # Account lookup is completed before the source writer lock is acquired.
-    await require_source_manager(session, principal, owner_user_id)
+    await require_source_manager(session, principal, owner_user_id, accounts=accounts)
     await KnowledgeBases(session, owner_user_id).get(library_id)
-    member_users = await resolve_member_settings(session, body.articles)
+    member_users = await resolve_member_settings(session, body.articles, accounts=accounts)
     await begin_write(session)
-    principal = await current_actor(session, principal)
-    await require_source_manager(session, principal, owner_user_id)
+    principal = await current_actor(session, principal, accounts=accounts)
+    await require_source_manager(session, principal, owner_user_id, accounts=accounts)
     source = await KnowledgeBases(session, owner_user_id).get(library_id)
     pub = await session.scalar(
         select(Publication).where(
@@ -193,7 +200,7 @@ async def publish(session, principal, library_id, body, owner_user_id=None, *, r
         raise RevisionConflictError(
             body.expected_revision,
             pub.revision,
-            (await output(session, principal, pub)).model_dump(mode="json"),
+            (await output(session, principal, pub, accounts=accounts)).model_dump(mode="json"),
         )
     if len({a.note_id for a in body.articles}) != len(body.articles):
         raise ThoughtError("文章不能重复", 422, "duplicate_article")
@@ -223,20 +230,36 @@ async def publish(session, principal, library_id, body, owner_user_id=None, *, r
     if retained is not None:
         await retained.record(session, pub)
     await session.commit()
-    return await config(session, principal, library_id, owner_user_id)
+    return await config(session, principal, library_id, owner_user_id, accounts=accounts)
 
 
-async def permissions(session, principal, pub_id, body):
+async def permissions(session, principal, pub_id, body, *, accounts):
     pub = await publication(session, pub_id)
     for setting in body.articles:
-        await article(session, principal, pub, setting.note_id, level="manage", inactive=True)
-    member_users = await resolve_member_settings(session, body.articles)
+        await article(
+            session,
+            principal,
+            pub,
+            setting.note_id,
+            level="manage",
+            inactive=True,
+            accounts=accounts,
+        )
+    member_users = await resolve_member_settings(session, body.articles, accounts=accounts)
     await begin_write(session)
     pub = await publication(session, pub_id)
     if len({a.note_id for a in body.articles}) != len(body.articles):
         raise ThoughtError("文章不能重复", 422, "duplicate_article")
     for setting in body.articles:
-        await article(session, principal, pub, setting.note_id, level="manage", inactive=True)
+        await article(
+            session,
+            principal,
+            pub,
+            setting.note_id,
+            level="manage",
+            inactive=True,
+            accounts=accounts,
+        )
     bind_source(session, pub)
     for setting in body.articles:
         await apply_settings(session, pub, setting, member_users[setting.note_id])
@@ -252,7 +275,7 @@ async def permissions(session, principal, pub_id, body):
                 revision=c.revision,
                 visibility=c.visibility,
                 active=c.active,
-                members=await members(session, pub_id, n.id),
+                members=await members(session, pub_id, n.id, accounts=accounts),
             )
         )
     await session.commit()

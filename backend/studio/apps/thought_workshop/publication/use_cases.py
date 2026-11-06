@@ -17,14 +17,20 @@ from studio.apps.thought_workshop.storage.models import ThoughtNote
 
 
 class Community:
-    def __init__(self, request_session, principal):
+    def __init__(self, request_session, principal, *, accounts):
         self.sessions = source_sessions(request_session)
-        self.principal = principal
+        self.principal, self.accounts = principal, accounts
 
     async def run(self, operation, *args, **kwargs):
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
-            return await operation(session, self.principal, *args, **kwargs)
+            return await operation(
+                session,
+                self.principal,
+                *args,
+                accounts=self.accounts.for_session(session),
+                **kwargs,
+            )
 
     async def list(self, query="", mine=False, favorites=False, offset=0, limit=24, official=None):
         return await self.run(catalog.listing, query, mine, favorites, offset, limit, official)
@@ -48,12 +54,21 @@ class Community:
         async with self.sessions() as session:
             await session.execute(text("BEGIN"))
             pub = await publication(session, id, active=False)
-            await require_source_manager(session, self.principal, pub.owner_user_id)
+            await require_source_manager(
+                session,
+                self.principal,
+                pub.owner_user_id,
+                accounts=self.accounts.for_session(session),
+            )
             bind_source(session, pub)
             return CommunityManagement(
                 directory=await Directory(session, pub.owner_user_id).tree(pub.knowledge_base_id),
                 config=await mutations.config(
-                    session, self.principal, pub.knowledge_base_id, pub.owner_user_id
+                    session,
+                    self.principal,
+                    pub.knowledge_base_id,
+                    pub.owner_user_id,
+                    accounts=self.accounts.for_session(session),
                 ),
             )
 
@@ -61,7 +76,12 @@ class Community:
         async with self.sessions() as session:
             pub = await publication(session, id, active=False)
             return await mutations.publish(
-                session, self.principal, pub.knowledge_base_id, body, pub.owner_user_id
+                session,
+                self.principal,
+                pub.knowledge_base_id,
+                body,
+                pub.owner_user_id,
+                accounts=self.accounts.for_session(session),
             )
 
     async def settings(self, id, notes):
