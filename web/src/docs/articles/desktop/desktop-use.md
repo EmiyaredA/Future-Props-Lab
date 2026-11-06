@@ -16,7 +16,7 @@
 
 ## 外部 CLI、SDK 与 MCP
 
-1. 在「账号设置 → API 密钥」创建所需权限与期限的密钥。明文只展示一次，妥善保管。
+1. 在「账号设置 → API 密钥」创建所需权限与期限的密钥。需要再次复制时，在有效密钥的对应行点击「查看并复制」。
 2. 在 Mac 运行 `fpl --profile codex connect --url http://127.0.0.1:9000`，按提示输入密钥。命令只输出账号和连接结果，不输出密钥。
 3. 使用 `fpl --profile codex operations` 核对已登记操作；在编程智能体页面复制 MCP 配置，使用 `fpl --profile codex mcp serve`。
 4. `fpl open director PROJECT_ID` 返回有权访问的作品链接。在浏览器打开并登录后应看到对应工程；该命令不强制切换已有编辑页面。

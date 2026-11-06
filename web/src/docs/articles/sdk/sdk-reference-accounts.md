@@ -23,6 +23,7 @@
 | [add_api_key](#add-api-key) | `POST /v1/account/api-keys` |
 | [renew_api_key](#renew-api-key) | `POST /v1/account/api-keys/{key_id}/renew` |
 | [remove_api_key](#remove-api-key) | `POST /v1/account/api-keys/{key_id}/revoke` |
+| [reveal_api_key_secret](#reveal-api-key-secret) | `POST /v1/account/api-keys/{key_id}/secret` |
 | [delete_other_sessions](#delete-other-sessions) | `POST /v1/account/sessions/revoke-others` |
 | [change_current_password](#change-current-password) | `POST /v1/auth/change-password` |
 | [login](#login) | `POST /v1/auth/login` |
@@ -307,6 +308,25 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ApiKeyOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## reveal_api_key_secret {#reveal-api-key-secret}
+
+`client.accounts.reveal_api_key_secret(...)`
+
+**接口**：`POST /v1/account/api-keys/{key_id}/secret`。**鉴权**：Session；敏感操作需要二次验证。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `key_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ApiKeySecretOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
