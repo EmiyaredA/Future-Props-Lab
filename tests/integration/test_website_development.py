@@ -159,3 +159,29 @@ def test_background_service_and_npm_aliases_use_the_same_pair(tmp_path):
         package["scripts"][name] == "npm start"
         for name in ["dev", "dev:web", "dev:backend", "start:backend"]
     )
+
+
+def test_website_service_accepts_registered_independent_management(tmp_path):
+    import plistlib
+
+    launcher = tmp_path / ".local/candidate/scripts/management/start.py"
+    python = tmp_path / ".venv/bin/python"
+    config = tmp_path / "backend/config.toml"
+    for path in (launcher, python, config):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+    record = {
+        "Label": service.MANAGEMENT_LABEL,
+        "ProgramArguments": [str(python), str(launcher), "--config", str(config)],
+        "WorkingDirectory": str(launcher.parents[2]),
+    }
+    registration = tmp_path / service.ACTIVE_LAUNCH
+    registration.parent.mkdir(parents=True, exist_ok=True)
+    registration.touch(mode=0o600)
+    registration.write_bytes(plistlib.dumps(record))
+    assert service.registered_definition(tmp_path) == record
+
+    record["ProgramArguments"][-1] = str(launcher)
+    registration.write_bytes(plistlib.dumps(record))
+    with pytest.raises(SystemExit, match="运行目录不匹配"):
+        service.registered_definition(tmp_path)

@@ -10,6 +10,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LABEL = "cn.futurepropslab.website"
+MANAGEMENT_LABEL = "cn.futurepropslab.management"
 ACTIVE_LAUNCH = Path(".local/studio-ops/active-launch.plist")
 
 
@@ -53,17 +54,23 @@ def registered_definition(root):
     value = plistlib.loads(path.read_bytes())
     args = value.get("ProgramArguments", [])
     directory = Path(value.get("WorkingDirectory", ""))
+    label = value.get("Label")
+    prefixes = {
+        LABEL: [str(directory / "scripts/website/serve.py"), "--reload", "--config"],
+        MANAGEMENT_LABEL: [str(directory / "scripts/management/start.py"), "--config"],
+    }
     if (
-        value.get("Label") != LABEL
+        label not in prefixes
         or not directory.is_absolute()
         or not directory.resolve().is_relative_to(root)
-        or len(args) != 5
-        or args[1:4] != [str(directory / "scripts/website/serve.py"), "--reload", "--config"]
+        or args[1:-1] != prefixes[label]
         or not Path(args[0]).is_absolute()
         or not Path(args[0]).parent.resolve().is_relative_to(root)
-        or not Path(args[4]).is_absolute()
-        or not Path(args[4]).resolve().is_relative_to(root)
-        or not all(Path(args[index]).is_file() for index in (0, 1, 4))
+        or not Path(args[-1]).is_absolute()
+        or not Path(args[-1]).resolve().is_relative_to(root)
+        or label == MANAGEMENT_LABEL
+        and Path(args[-1]) != root / "backend/config.toml"
+        or not all(Path(args[index]).is_file() for index in (0, 1, -1))
     ):
         raise SystemExit("Studio 启动登记与本项目的运行目录不匹配")
     return value
@@ -87,11 +94,17 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["install", "start", "stop", "status", "uninstall"])
     args = parser.parse_args()
-    target = Path.home() / "Library/LaunchAgents" / f"{LABEL}.plist"
+    registered = registered_definition(ROOT)
+    label = registered["Label"] if registered else LABEL
+    target = Path.home() / "Library/LaunchAgents" / f"{label}.plist"
     domain = f"gui/{os.getuid()}"
-    service = f"{domain}/{LABEL}"
+    service = f"{domain}/{label}"
+    if args.action in {"start", "install"}:
+        other = LABEL if label == MANAGEMENT_LABEL else MANAGEMENT_LABEL
+        conflict = subprocess.run(["launchctl", "print", f"{domain}/{other}"], capture_output=True)
+        if conflict.returncode == 0:
+            raise SystemExit("另一套 Studio 后台仍在运行，请先完成切换")
     if args.action == "install":
-        registered = registered_definition(ROOT)
         expected = registered or definition()
         loaded = subprocess.run(["launchctl", "print", service], capture_output=True)
         if loaded.returncode == 0:
@@ -116,6 +129,7 @@ def main():
         subprocess.run(
             check_command,
             cwd=expected["WorkingDirectory"],
+            env={**os.environ, **expected.get("EnvironmentVariables", {})},
             check=True,
         )
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -125,7 +139,6 @@ def main():
         target.chmod(0o600)
         subprocess.run(["launchctl", "bootstrap", domain, str(target)], check=True)
     elif args.action == "start":
-        registered = registered_definition(ROOT)
         expected = registered or definition()
         installed = plistlib.loads(target.read_bytes()) if target.is_file() else {}
         fields = ("Label", "ProgramArguments", "WorkingDirectory")
