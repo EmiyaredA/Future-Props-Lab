@@ -58,7 +58,7 @@ def seed_inference(database, root, owner, call):
             (
                 finished,
                 str(owner),
-                "completed-request",
+                "r" * 65,
                 "a" * 64,
                 json.dumps({"asset_ids": [asset], "reference_asset_id": asset}),
                 "completed",

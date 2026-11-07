@@ -23,7 +23,8 @@ IDENTIFIERS = TypeAdapter(list[Identifier])
 
 class InferenceTask(HistoryRecord):
     id: Identifier
-    request_id: str = Field(min_length=1, max_length=64)
+    # Legacy internal submissions could exceed the public request limit.
+    request_id: str = Field(min_length=1, max_length=128)
     fingerprint: str = Field(pattern=r"^[a-f0-9]{64}$")
     provider_id: Identifier | None
     model_id: Identifier | None
