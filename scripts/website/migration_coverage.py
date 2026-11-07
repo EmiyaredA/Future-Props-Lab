@@ -109,7 +109,7 @@ def registered_owners(catalog):
 
 
 LEGACY_AGENT_IDS = {"codex", "claude-code", "opencode", "dsh", "pi"}
-LEGACY_AGENT_PURPOSES = {"amadeus", "visual_acceptance", "interview_preparation"}
+LEGACY_AGENT_PURPOSES = {"amadeus", "visual_acceptance", "interview_preparation", "agent_workbench"}
 LEGACY_AGENT_SLOTS = {
     f"{agent}:{purpose}" for agent in LEGACY_AGENT_IDS for purpose in LEGACY_AGENT_PURPOSES
 }

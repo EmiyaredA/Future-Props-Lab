@@ -807,18 +807,38 @@ def test_snapshot_rejects_external_absolute_model_link(tmp_path):
         legacy_snapshot.runtime_inventory(runtime, allow_legacy_python_link=True)
 
 
-def test_coverage_archives_known_legacy_agent_grants_and_flags_unknown_settings():
+def test_snapshot_resolves_relative_database_from_original_checkout(tmp_path):
+    source = tmp_path / "original"
+    runtime = source / ".runtime"
+    runtime.mkdir(parents=True)
+    apply_migrations(runtime / legacy_snapshot.DATABASE)
+    config = configuration(
+        source / "backend/config.toml",
+        database=Path(".runtime/future-props.db"),
+        key=Fernet.generate_key().decode(),
+        port=3000,
+        web=tmp_path / "web",
+    )
+    output = tmp_path / "snapshot"
+    with pytest.raises(ValueError, match="网站配置与指定源数据库不一致"):
+        legacy_snapshot.create(runtime, config, output, REVISION, source_config_root=tmp_path)
+    legacy_snapshot.create(runtime, config, output, REVISION, source_config_root=source)
+    assert (output / "backend/config.toml").read_bytes() == config.read_bytes()
+
+
+@pytest.mark.parametrize("purpose", ["amadeus", "agent_workbench"])
+def test_coverage_archives_known_legacy_agent_grants_and_flags_unknown_settings(purpose):
     owner = str(uuid4())
     policy = json.loads((ROOT / "deploy/contracts/ownership.json").read_text())["partitions"][
         "platform_settings"
     ]
-    grant = {"user_id": owner, "agent_id": "codex", "purpose": "amadeus"}
+    grant = {"user_id": owner, "agent_id": "codex", "purpose": purpose}
     with closing(sqlite3.connect(":memory:")) as database:
         database.execute("CREATE TABLE platform_settings (id TEXT PRIMARY KEY, payload JSON)")
         database.executemany(
             "INSERT INTO platform_settings VALUES (?, ?)",
             [
-                ("code_agents", json.dumps({"grants": [grant], "managed": ["codex:amadeus"]})),
+                ("code_agents", json.dumps({"grants": [grant], "managed": [f"codex:{purpose}"]})),
                 ("account_defaults:" + owner, "{}"),
             ],
         )

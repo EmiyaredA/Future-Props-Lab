@@ -609,7 +609,7 @@ Galgame 快照 ZIP 导入使用 `deploy/compose/galgame-snapshots.compose.yaml`�
 
 ### 旧 Agent 工作台归档
 
-独立 Compose 已移除 Agents 服务和工作台执行覆盖。旧工作台表在覆盖报告中标为 `retained_for_rollback`，随封存快照保留。恢复步骤见 [Happier 部署与切换](happier.md)。
+独立 Compose 已移除旧 FPL Agents 服务和工作台执行覆盖。旧工作台表和已识别的工作台授权随封存快照保留，在覆盖报告中标为 `retained_for_rollback`。遇到无法识别的授权格式，迁移仍会阻止切换。恢复步骤见 [Happier 部署与切换](happier.md)。
 
 ### Thought 文档、表格与素材引用迁移
 

@@ -175,7 +175,7 @@ def revision_id(revision):
     return revision
 
 
-def create(runtime, config, output, revision):
+def create(runtime, config, output, revision, *, source_config_root=None):
     from studio.config import read_config
     from studio.config.settings import Settings
 
@@ -184,7 +184,12 @@ def create(runtime, config, output, revision):
     destination = output.resolve()
     if destination.is_relative_to(runtime) or runtime.is_relative_to(destination):
         raise ValueError("快照目标与运行目录必须隔离")
-    if Settings.validate_file_values(read_config(config)).database_path != runtime / DATABASE:
+    values = read_config(config)
+    if source_config_root is not None:
+        config_root = directory(source_config_root)
+        database_path = Path(values.get("fpl_database_path", str(Path(RUNTIME) / DATABASE)))
+        values["fpl_database_path"] = str(config_root / database_path.expanduser())
+    if Settings.validate_file_values(values).database_path != runtime / DATABASE:
         raise ValueError("网站配置与指定源数据库不一致")
     lock = runtime / "website.lock"
     if lock.is_symlink() or (lock.exists() and not lock.is_file()):
@@ -236,6 +241,7 @@ def main():
     seal = commands.add_parser("create")
     seal.add_argument("--runtime", type=Path, required=True)
     seal.add_argument("--config", type=Path, required=True)
+    seal.add_argument("--source-config-root", type=Path)
     seal.add_argument("--output", type=Path, required=True)
     recover = commands.add_parser("restore")
     recover.add_argument("--snapshot", type=Path, required=True)
@@ -247,7 +253,11 @@ def main():
     try:
         if options.command == "create":
             result = create(
-                options.runtime, options.config, options.output, options.source_revision
+                options.runtime,
+                options.config,
+                options.output,
+                options.source_revision,
+                source_config_root=options.source_config_root,
             )
         else:
             result = restore(
