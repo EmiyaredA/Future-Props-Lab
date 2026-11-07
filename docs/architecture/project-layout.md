@@ -1,5 +1,8 @@
 # 项目目录索引
 
+本文用于定位目录、入口与代码所有者。修改装配、应用注册或跨应用交接时查阅
+[Studio 框架契约](studio-framework.md)，能力专属规则见[能力实现契约](capability-contracts.md)。
+
 ## Studio 组件归属迁移
 
 所有原 `backend/fpl_*` 包已迁出，源码统一进入 `backend/studio/`。原 `backend/app/apps/` 的十个业务切片也已归并到对应应用。Agent CLI 及连接治理也已迁入，`backend/app/` 已无源码。
@@ -743,10 +746,8 @@ Skill 不可变版本保存在 `accounts/<user-id>/integrations/skills/<skill-id
 `.local/interview-room-prototype/` 保存面试室的独立前端交互原型、模拟任务与对话状态、生成的示意图和浏览器验收证据；不注册生产路由，不接入后端、外部 Agent、真实检索或音视频采集，刷新即清空本次记录。
 本地临时分镜、场景图、导出结果、下载与研究草稿统一放在仓库根目录 `.local/`
 （`scratch/`、`output/`、`tmp/`、`downloads/`、`research/`），与 `.runtime/`
-一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建
-目录并执行 `registry.py` 中已登记、带 checksum 的 migration；每个连接启用外键约束、WAL
-与忙等待。迁移历史只追加且不导入运行时 `app`，schema 变化必须同时更新 ORM、注册表、测试
-和文档。`r0019_project_storage_layout` 只增加存储版本；旧文件由受鉴权的显式迁移 API 校验并搬迁，
+一样被 git 忽略，不进入文档资产或产品素材真源。正式启动和 schema 迁移遵守[生产部署流程](../operations/production-deployment.md)。
+`r0019_project_storage_layout` 只增加存储版本。旧文件由受鉴权的显式迁移 API 校验并搬迁，
 schema migration 不执行文件 I/O。
 
 目录配置、模型测试会话与生成任务、视觉工坊项目、含节点级生成草稿和动态连线的节点画布、项目对话、文件夹、文件和项目引用

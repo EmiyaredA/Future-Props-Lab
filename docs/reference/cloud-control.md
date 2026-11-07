@@ -1,5 +1,21 @@
 # 云控
 
+## 授权与装配
+
+- 云控是仅管理员可用的一级功能，入口为 `/cloud-control`。日常网站的 Agent 页签嵌入 Happier，旧 `/agents` 链接归入该页签。
+  浏览器入口复核 `cloud-control.access`、指定管理员和登录后密码重验。部署和端到端加密设备登录见[Happier 部署](../operations/happier.md)。
+  Happier 持有会话和执行，Runner 仅挂载已授权项目，Relay 原始端口只对回环和专用 Runner 开放。
+  旧工作台保留迁移历史与恢复归属，正式网站入口使用当前装配。
+- 桌面空闲偏好由 Remote Desktop 的显式用例和原子存储端口拥有，两种装配共用实现；
+  HTTP 层不接收数据库会话，CAS 成功后才通知连接重读策略。配置探测和主机修改归 Host，
+  网站组合路由与附加监听器归 `assembly/website`，不得重建旧 `cloud_control` 或 `web_access` 包。
+- 云控密码解锁规则归 Identity 的 `use_cases/cloud_unlock.py`。共享存储在短事务内复核活动管理员
+  会话、部署策略及登录后的密码重验时间，原子保存 Agent 解锁期限或桌面会话授权。两种装配注入
+  存储、策略读取器和时钟，协议层不持有数据库 Session，未知提交不能自动重试。历史验证器记录仅供凭据迁移。
+- Identity 全包禁止读取进程全局配置。网站和独立服务装配提供云控策略读取器；一次状态或内部授权响应
+  使用同一快照，活动桌面连接、Happier 授权及云控解锁在各自的复核点重新读取策略。
+- 远程应用名单由可信本机管理员重验密码后写入 TOML，窗口采集和输入由 Host 辅助程序执行。
+
 ## 远程应用
 
 兼容网站启用 `cloud_control.apps_enabled` 后，云控显示「远程应用」与「Agent 工作台」。远程应用一次连接一个 Mac 窗口。应用使用当前 Mac 用户账号的权限。

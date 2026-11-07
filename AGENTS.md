@@ -2,308 +2,40 @@
 
 ## 开始前
 
-- 每次正式处理仓库任务前先阅读本文件；所有命令默认在仓库根目录执行。
-- 本项目定位为单机部署的模型基础设施管理台，支持单机独立应用服务、每服务 SQLite 和按账号隔离的私人数据；实时语音仅用于模型测试，不引入 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展或多实例部署能力。
-  思绪工坊中的「知识库」仅表示文档项目容器，普通文档归当前账号私有；知识社区通过显式发布和逐篇授权开放给同一部署中的登录账号，不授予源账号私人资源访问权。AI 写作仅通过 Agent/SDK 接入，应用内无入口。
-- 目录职责以 [`docs/architecture/project-layout.md`](docs/architecture/project-layout.md)
-  为唯一完整索引；新增目录或改变职责时同步更新该文件。
-- Python 命令与临时诊断优先通过 `uv run` 执行。
-- 代理为仓库任务主动生成且需要落盘或保留的临时输入、诊断文件、截图、渲染中间结果、导出草稿和本地验收产物，
-  必须统一放在仓库根目录的 `.local/` 下，并按能力或任务使用清晰的子目录；创建前先用 `git check-ignore`
-  确认目标路径已被忽略。不得在仓库根目录或受版本控制目录另建 `scene-output/`、`output/`、`tmp/`
-  等临时产物目录。用户明确指定的正式交付路径和工具自身不可配置的短生命周期系统临时文件不受此限制。
-- 仓库二进制资产使用 Git LFS；缺少对象时先按路径选择性 `git lfs pull`，不得把 LFS 指针当作字体、
-  模型或图片内容处理。
-- 后端持久配置只放在 `backend/config.toml`，按分组使用 TOML 原生类型；进程环境变量可供测试与部署覆盖。
-  `.env` 仅用于一次性转换，成功后归档为 0600 备份，不再读取。不得提交真实配置或备份，不得输出密钥。
-  `backend/studio/config/` 是不依赖业务应用或数据库的共享配置格式和转换模块。
-- 非机械性的行为、架构、跨文件契约、流程工具链、测试策略或落盘/网络/配置格式改动，按
-  `docs/operations/agent-notes.md` 在 `.agents/notes/` 创建或更新 Agent Note；纯格式化、样式、无歧义重命名和局部机械修复免写。
-- `web/src/docs/`、`web/public/docs/`、文档中心覆盖清单和 `scripts/generate_sdk_docs.py` 是产品文档中心的受保护内容。工程决策整理不得迁移、删除、重写或重新生成这些路径。
-- 思绪工坊的 `web/src/features/thought-workshop/official/content/` 是知识库版主要使用指南；修改用户行为时同步维护对应正文。官方文档是管理员维护并发布的普通笔记；内置 Markdown 与图形仅构建管理员主动导入包，导入不自动发布，升级不覆盖已导入内容。官方标记仅平台管理员可设置，只读、可见范围与编辑授权独立校验；现有文档中心继续按原保护规则维护。
-- 技术文档正文与旁置图形同步反映当前实现。画板持久化使用 `CanvasScene.sceneVersion` 契约，不保存 React Flow 运行状态；前后端校验和静态 SVG 布局规则保持一致，图片只引用经账号归属校验的托管素材。
-- 官方文章遵守 `docs/operations/official-knowledge-writing.md`：操作步骤带可验证结果，技术图解释实例与边界，每篇维护简介和相关阅读。导入转换只解析受控 Markdown 提示框，运行期共用标准富文本阅读组件，关闭原始 HTML；菜单和弹窗不得重建图形、重置视口。
+- 每次正式处理仓库任务前先阅读本文件。命令默认在仓库根目录执行，Python 命令与诊断优先用 `uv run`。
+- 保留用户已有的未提交改动。先定位问题根因和同类风险，修复影响当前交付的缺陷，把无关问题留给单独的改动。
+- 主动落盘的临时输入、诊断、截图、渲染中间结果和本地验收产物放在 `.local/` 的任务子目录。创建前用
+  `git check-ignore` 核验。用户指定的正式交付路径和工具自身不可配置的短生命周期系统临时文件除外。
 
-## 代码编写原则
+## 编程与验证
 
-- 编写或修改代码时避免循环依赖、跨模块访问内部实现、共享可变状态和隐含的数据传递。
-  按真实业务职责拆成接口明确、可独立替换的组件或功能切片。删除、复制、内联或重写一个组件时，
-  不应需要理解或改写其他组件的内部实现；不要为了拆分而增加无业务意义的层数或文件。
-- 动手实现前明确数据如何流动：输入来自哪里，经过哪些校验与变换，输出给谁，哪些状态需要持久化，
-  并发、失败和恢复时如何保持一致。跨模块通过明确契约传递数据，不共享可变的内部状态或隐含上下文。
-- 实现用户行为时检查明显漏洞、性能退化、错误恢复，以及不同页面和入口对同一操作的权限、状态与
-  反馈是否一致。抽象必须准确表达业务概念，不把不同生命周期的状态或职责强行合并。
-- 将局部实现问题限制在组件边界内，让单个组件可以重写而不牵动全局。组件内部的冗长或小瑕疵不应
-  成为跨模块耦合的理由；已知 Bug 仍需修复，下文的单文件、目录体量和质量门禁仍需遵守。
+- 按业务职责组织代码。用清楚的接口传递数据，由调用方显式提供依赖。避免循环依赖、访问模块内部实现、
+  共享可变状态和隐式上下文。拆分应让组件可独立修改，避免为满足体量检查机械分片。
+- 实现前梳理输入、校验、转换、输出和持久状态。考虑并发、取消、部分失败、重试和恢复。
+- 修改用户行为时，检查各入口的权限、状态和反馈是否一致，并检查性能、错误恢复和可访问性。
+- 按改动范围验证相关行为与契约，优先使用确定性测试。说明缺失的验证和原因。命令、质量门禁及文档同步范围见
+  [开发与验证流程](docs/operations/development-workflow.md)。
 
-## 常用命令
+## 数据与凭据
 
-- 安装后端与 Web 依赖：`npm run setup`。
-- 一键启动固定热加载后端与 Web：`npm run dev` 或 `npm start`；`dev:backend`、
-  `dev:web` 兼容别名也启动同一整套服务，不再单独启动。
-- 正式 Studio 启动：`npm run website:service -- start`，与登录时的 LaunchAgent 使用同一份定义；状态查看用 `npm run website:service -- status`。日常启停不生成迁移备份。构建资源：`npm run build:studio`。
-- 日常开发沿用 `backend/config.toml` 和 `.runtime/` 的现有账号、模型及素材，前端固定回环 3000、后端固定回环 9001；自动测试必须显式使用临时隔离配置与数据库，不得读取现有数据。
-- 数据库迁移：`npm run db:migrate`；只检查迁移状态：`npm run db:migrate:check`。
-- OpenAPI 生成与 stale-check：`npm run contracts:generate`、`npm run contracts:check`。
-- 测试：`npm test`；浏览器端到端测试：`npm run test:e2e`。
-- 质量检查：`npm run lint`、`npm run format:check`、`npm run build`；需要自动格式化时使用
-  `npm run format`。
-- Git LFS：`npm run lfs:check:pointers` 检查指针，`npm run lfs:check` 检查生产运行资产。
-- Agent Note：`npm run verify-notes` 检查树结构、格式和归档封印；`npm run check-docs-center-protected` 检查文档中心保护路径。
+- 私人资源归已验证账号所有，管理员也受账号隔离约束。后台任务从持久记录恢复账号。
+- 禁止绕过应用修改持久数据库，包括数据修复、删库重建和 schema 修改。日常命令行诊断仅限只读查询。
+  已登记迁移和账本不可手改。正式迁移先在隔离库验证，再走显式部署流程。
+- 自动测试使用隔离配置和临时数据库。正式配置、凭据、备份和运行数据不得提交，密钥不得输出。
+- 产品文档中心受保护。工程整理不得迁移、删除、改写或重新生成受保护内容。
+  路径与提交规则见 [Agent Note 维护规则](docs/operations/agent-notes.md#受保护的产品文档中心)。
 
-## 应用与目录边界
+## 按任务阅读
 
-- 原 `fpl_*` 包与 `app/apps/` 业务切片已迁入 `backend/studio/`，不得重建旧目录或转发包。
-  `apps/` 拥有业务，`contracts/` 按所有者保存纯协议，`runtime/` 拥有无业务归属机制，
-  `assembly/independent/<owner>/` 拥有服务构造、CLI 和维护装配；主机入口在 `assembly/host/`。
-- `studio/assembly/website/` 显式构造兼容网站：`application` 创建实例，`bindings` 注入组件，
-  `lifecycle` 管理启停，`http` 与 `routes` 注册协议，`models` 限定网站会话规则。
-  导入不读取配置或创建数据库；测试实例由隔离配置的 `tests/website_test_support.py` 拥有。
-- `studio` 的父包初始化保持无副作用。`contracts`、配置格式、纯 `rules` 与 `use_cases`
-  不导入 ORM、HTTP 框架、主机实现或应用内部模块。业务用例声明所需接口，装配注入存储与
-  外部客户端；用例通过命令、快照和领域错误交互，不接收数据库 Session。
-- 公共跨进程客户端归所属应用 `clients/`，允许进入其他服务镜像的具体模块由
-  `studio/deployment/images.py` 登记。不能放宽成整个业务包；其递归依赖仍须通过存储隔离检查。
-- `studio/runtime/database/` 拥有数据库、ORM 和迁移原语，`http/` 拥有传输适配，
-  `tasks/` 拥有任务机制，`files/` 与 `messaging/` 拥有通用文件和签名载荷机制。
-  业务状态转换、账号归属与原子提交规则仍属于业务所有者。
-- 文件格式表归 `studio/contracts/asset_library/file_types.py`；字节检测、完整文件校验、SVG
-  安全规范化、摘要及归档编解码归 `studio/runtime/files/`。目录暂存机制不决定应用布局，
-  `runtime/database/project_files.py` 通过创建／删除布局接口执行原有事务补偿。
-  导演台使用自有 `storage/file_paths.py`，两套装配显式提供存储，不继承素材库布局或读取全局配置。
-- 集成中心目录、外部连接与 Skill 操作共用 `studio/apps/integrations/` 实现，依赖由网站和
-  独立装配显式提供；不得在目录构造器回退读取全局配置、创建默认加密器或查找全局客户端。
-  公共 DTO 和 MCP 能力协议归 `studio/contracts/integrations/`，密钥加密机制归 `runtime/secrets.py`。
-- 工具导航收藏和使用次数通过 `studio/apps/tools/use_cases/navigation.py` 的显式存储与时钟端口执行。
-  存储每操作持有短事务，不向 HTTP 或业务传递会话；次数增量的未知提交不能自动重试。
-- 创作工坊的发布过滤在 `studio/apps/creative_workshop/rules/publication.py` 保持纯函数；
-  作者目录、来源、归档和文件设置通过 `CreativeResources` 显式传入，不写入 Session 服务定位表。
-  安装用例调用注入端口，兼容网站跨表存储与独立投递分别由装配选择；不得回退读取全局配置。
-- 音频标注文档编辑由 `EditDocument` 执行版本判断与纯转换，`DocumentEdits` 在一个事务内提交
-  CAS 与回执；并发失败复查原请求回执，取消回滚。HTTP 层只映射领域错误。
-- 音频标注创建与导入由 `CreateProject` 共用用例执行，时长、说话人和片段转换规则归 `rules/`。
-  创建输入端口只借出已授权描述和转录快照，路径与媒体探测留在适配器；`storage/projects.py`
-  原子提交项目、文档、波形及引用投递，借用范围覆盖提交结果，未知提交不得自动重建项目。
-- 音频标注删除用例只删除指定版本的任务及引用，保留源音频；存储在写入时再次执行 CAS。
-  已保存片段导出与识别通过 `SavedAudio` 的快照、裁切、识别端口执行，业务不访问存储私有属性。
-  媒体适配器在 I/O 前释放读取事务并负责临时文件；识别结果只返回候选，不代替编辑 CAS。
-- 兼容网站的音频跨表来源装配归 `assembly/website/annotation_sources.py` 与 `annotation_imports.py`。
-  转录私有原件先校验、探测及暂存字节，再将素材与标注加入同一短事务；取消须等复制停止后清理。
-  提交确认丢失时按持久素材记录核对，不能把已提交文件当作失败副本删除。
-- `TranscribeSegment` 统一裁决音频项目归属与可识别范围，范围存储返回脱离 ORM 的快照并释放事务。
-  网站与独立执行器只负责模型调用适配；网站跨表连接归装配，Models 的转录解密器必须显式注入。
-- `backend/studio/` 全树纳入文件和目录行数预算；迁移路径同时更新入口、镜像闭包、打包、
-  契约归属和测试。不得用空目录、软链接或永久转发表示迁移完成。
-- `backend/app/` 的源码已迁出。Agent CLI 进程、凭据隔离、探测及 TOML 修改归
-  `studio/host/agent_execution/cli/`。连接 DTO 归 `contracts/agent_runtime/`，公共连接路由归
-  Agent Runtime。兼容站通过 Identity 复核活动账号，独立入口用原有租约访问 Host。
-- 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
-  事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、
-  `studio/apps/model_service/transport/website/`、`console/routes/`、`capabilities/*/routes/` 与各业务包 `routes.py` 遵守同一边界。
-- 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
-  在所属能力内按具体职责命名文件或子包，例如 `studio/apps/model_service/catalog/`、`studio/apps/asset_library/storage/`。
-- 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。
-- 浏览器是唯一客户端。`runtime/website.py` 拥有可信监听入口和静态页面，`scripts/website/serve.py` 在数据库导入前加载 TOML、核验迁移并持有正式数据锁；存在待处理迁移时拒绝启动，不在重启时执行未核准迁移。原桌面代码仅保留于归档分支。
-- 正式网站数据保存在项目 `.runtime/`，本地模型位于 `.runtime/local-models/`，配置仅在 `backend/config.toml`。从桌面迁入时唯一源为当时正在使用的 Application Support/Future Props Lab；完整停机、备份、核验后迁入，不与项目旧开发库合并，不更换加密密钥。原目录和恢复快照在验收前保留。
-- 本机前端 3000、API 9001 与公网回环 28081 共用一个 ASGI 应用和 Runner 生命周期。`scripts/website/development.py` 是命令行和后台服务共用的单例启动器，先等待后端就绪，再启动前端构建监听；任一子进程退出时清理整套服务，不自动换端口。重载父进程持续持有数据锁，每个 worker 导入数据库前检查迁移。公网不暴露 Vite，由网关经隧道转发并读取与本机相同的静态构建。`studio/assembly/website/public_access.py` 拥有公网监听器与专用 SSH 生命周期；附加 lifespan 关闭。本机管理权限依据实际 socket，不信任客户端 hostname 或转发头。公网管理员也不得管理主机目录、Codex、磁盘或访问配置；相关菜单只在本机入口显示。
-- 网站静态资源通过 `build:studio` 构建清单、哈希与压缩文件；云端仅托管程序。`/v1`、私人素材、SSE 不进入共享缓存，HTML 回退不覆盖未知 API 和缺失资源。公网启动要求构建匹配。
-- Amadeus 新对话由已登记的 Codex、Claude Code、OpenCode、DeepSeek Harness 或 Pi CLI 执行；FPL 后端持有运行、事件、审批和恢复，CLI 仅获得任务工具授权，不继承个人工具或通用 Shell。连接部署配置归 TOML，由可信本机管理员启用；有效账号可在有权访问的功能中使用已启用的连接。固定业务任务共用连接注册表并保留自有任务边界，云控仍仅管理员可访问。外部 CLI 的模型和认证配置按白名单读取，执行配置、插件和工具目录不直接继承。
-- CLI/SDK/MCP 使用网站地址和 Management API Key。`studio/contracts/gateway/automation_operations.json` 维护业务白名单，`/v1/automation` 提供能力发现与有归属校验的资源链接；不控制浏览器标签页，不开放账号治理、密钥管理或任意系统命令。客户端凭据目录 0700、文件 0600，不通过参数或日志传递密钥。
-- Amadeus 共享记录和恢复归 `studio/apps/amadeus/storage/`，公开协议归 `contracts/amadeus/`。
-  会话文件适配必须显式接收根目录；Finder 与脚本进程适配归 Host，禁止回退全局配置。
-- Agent 原生会话格式、受限附件、只读文件与本机 OpenCode 读取归 `studio/host/session_collection/`；
-  历史快照和活动展示协议归 `studio/contracts/agent_workbench/`。服务只能消费公开契约与采集回执，
-  不加载 Host 解析器；父包不通过懒加载转发符号。
-- 通用工具循环、上下文预算和进程内审批等待归 `studio/runtime/tasks/reactive_tools/`。
-  循环必须接收审批端口；应用装配创建并在关闭时清理协调器，不在模块导入时创建单例。
-  持久审批、业务授权、最终状态和重启恢复仍由所属应用负责，通用循环不得代为裁决。
-- 云控 Agent 工作台使用自托管 Happier 原生 Web 和端到端加密设备登录。网站装配持有浏览器入口，
-  复核 FPL 管理员会话、部署策略和密码解锁。Happier 管理会话和执行，Runner 只挂载明确授权的项目，
-  Relay 原始端口仅限回环和专用 Runner。旧工作台的迁移历史与恢复归属保留，线上入口不再装配。
-- Amadeus 使用当前页面侧栏和显式账号上下文接口，不依赖原生窗口或 IPC。下载与演示窗口使用浏览器能力，并保留弹窗阻止反馈和未保存保护。
-- Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
-  `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证
-  基础设施，`generated/` 只保存生成契约。
-- Web 的 `app/routing/` 负责页面组合与浏览器导航控制器，`app/layout/` 保留展示壳；
-  未保存拦截、历史回退和 Agent 导航共享 `useWebsiteNavigation`，生命周期结束必须移除监听。
-  URL 类型与解析契约继续由 `app/routes.ts` 拥有，不将导航控制器放入业务 feature。
-- 浏览器启动入口归 `app/entries/`；兼容网站先通过 `website-bootstrap.ts` 建立加载失败反馈，
-  再加载 `website.tsx` 的 React 装配。通用 UI 与浏览器 API 测试分别归 `web/tests/shared/` 与 `web/tests/platform/`。
-- Web 的 `platform/` 与 `shared/` 不得依赖 `features/` 或 `app/`，`features/` 不得依赖
-  `app/`；业务代码不得堆回 `web/src/` 根目录。生产请求通过 OpenAPI 生成类型访问后端，
-  `generated/` 文件不得手工编辑。
-- Models、Visual Workshop、Thought Workshop、Presentation Workshop、Audio Annotation 与 Integration Center 的 TanStack Query 键由各自 `queryKeys.ts` 唯一
-  维护；跨功能消费者导入 owner 的 key factory，不得复制同名缓存键。鉴权文件预览统一使用
-  `platform/api/useApiBlobUrl.ts` 管理取消、竞态和 Object URL 回收；自有缓存或多音轨播放器除外。
-- Web 中面向用户可见的交互控件不得直接暴露浏览器默认外观或原生弹层。下拉菜单、颜色选择、
-  日期选择等必须使用项目自绘组件并适配明暗主题；原生 `select`、`input[type="color"]`、
-  `input[type="date"]` 仅可作为完全隐藏的底层能力，不能作为最终可见 UI。新增或修改页面时应
-  同步检查键盘操作、焦点状态与无障碍标签，避免因浏览器或操作系统不同出现不一致样式。
-- 模型目录的凭据读写、诊断、默认项冲突快照及演示安装使用装配提供的 `CatalogCipher`；
-  邀请码创建与查看显式接收 Identity 装配的加密／解密能力。禁止回退到旧全局凭据帮助函数，
-  密钥提示由 `studio/runtime/secrets.py` 的实例统一生成，不在业务内复制解密和脱敏规则。
-- 演示工坊的项目、模板、编辑回执和导入使用当前装配提供的账号范围项目适配。素材读取、留存
-  与导入显式注入，Session 仅持有账号与事务上下文。两套入口保留各自的素材交付和事务边界。
-- 特效制作的 HTTP 装配与网站渲染 Runner 显式构造账号范围的项目适配。素材元数据与文件布局
-  端口由两套装配提供，导出、快照和编辑共享其账号与事务上下文。
-- 视频剪辑的项目布局和时间轴素材端口由装配按账号与操作显式传入。网站助手和特效交接也使用
-  装配绑定的端口，布局变更、片段任务和编辑回执沿用原有事务及恢复规则。
-- 独立模型助手轮次、视觉验收、Galgame 转录与思绪写作显式注入解密能力；构造器不接收整个
-  应用状态容器。网站思绪写作的跨库连接归 `assembly/website/thought_writing.py`，业务只消费写作端口。
-- 文本推理、模型测试 SSE 与实时语音 WS 的解密器由 HTTP/WS 装配显式传入；语音来源校验
-  使用当前应用的 CORS 配置。实时语音父包保持轻量，调用方导入具体目录或会话组件。
-- 模型与供应商差异在 `backend/studio/apps/model_service/providers/` 的适配边界内归一化。公共 REST/SSE、模型
-  测试和调用日志契约保持供应商无关；供应商管理页面可以展示配置，但前端运行流程不得依赖
-  供应商原始事件。
-- 生成 Driver、转录 Runner 和工坊模型适配显式接收解密器；Models Runner 必须接收配置，
-  不允许默认全局配置回退。旧 `app/runtime/` 已移除，生产代码不得导入旧运行时。
-- 图片/视频后台任务的状态转换由 `studio/apps/model_service/generation/driver.GenerationTaskDriver` 唯一编排；各功能
-  只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
-- Models 的视觉生成提交、执行、结果读取与清理各自接收会话、文件、授权及传输依赖，
-  不持有应用状态容器或借用另一组件的生命周期。文件布局归 `storage/visual_generation_files.py`，
-  批次身份和摘要读取归 `storage/visual_generation_batches.py`；结果读取不依赖 Runner 实例。
-- Models 的独立目录和推理 Runner 显式接收原生就绪端口，独立结果删除要求清理端口已装配。
-  兼容网站沿用本机就绪校验。Session 不承担原生能力选择。
-- Models 全包禁止读取进程全局配置；测试台、转录与独立推理的文件根目录和上传策略必须显式传入。
-  HTTP 适配从当前应用装配获取配置，推理文件布局由 `InferenceStorage` 实例持有；不提供默认根目录函数。
-- 视觉工坊全包禁止读取进程全局配置；网站生成、助手工具与验收使用当前应用注入的配置和素材存储。
-  助手流的生成查询与提交使用准备对话时选定的同一份配置。独立视觉服务继续通过跨服务端口取得能力。
-- 栅格缩略图只使用 `runtime/files/raster.py` 的有界解码器；实例与并发额度由应用装配持有，
-  不在模块导入时创建全局实例或信号量。素材缓存路径与协议错误归所属应用；重复取消必须等待
-  解码线程结束再释放额度。头像读写与启动清理显式接收配置，不读取全局设置。
-- 面试材料与执行输入目录由装配显式传入，不从 Session 服务定位表读取。材料上传进入提交阶段后，
-  确认丢失或取消不能删除可能已被记录引用的原件；重新读取快照核对结果，场次删除统一回收私人副本。
-- 媒体本地适配通过 `studio/deployment/media_modules.py` 逐模块登记可打包范围，不开放媒体存储或用例；
-  预览并发由装配实例持有，禁止模块全局信号量。
-- 确定性时间线画面与视频渲染由 `backend/studio/apps/media_rendering/local/` 统一拥有；Galgame 直接导出不得
-  依赖 `video_editor/` 实现，只有显式的视频编辑器交接用例可以跨功能调用。
-- ORM 的 ID/时间默认工厂由 `studio/runtime/ids.py` 与 `studio/runtime/time.py` 维护；各包 ORM 模型只依赖
-  `studio.runtime.database.orm_base` 与上述工厂。生产 Python 包不得形成强依赖环。账号项目记录的加载、CAS
-  更新和删除原语可复用 `runtime/project_records.py`，但事务、默认文档、快照和领域规则必须留在所属功能包。
-  编辑批处理回执与传输形状归属 `studio/runtime/database/project_operations.py`、`studio/runtime/operation_batches.py`。
-- Story 总校验保持纯函数分层：身份/角色、素材、国际化、时间轴、流程与表现层规则归属
-  `apps/galgame_workshop/schemas/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
-- 身份契约归属 `studio/contracts/identity/`；账号、Session、审计、Management API Key 与注册归属
-  `studio/apps/identity/`。跨应用不加载账号 ORM；兼容网站的模型初始化由装配绑定。仅有 `admin` 和 `user` 两种平台角色。管理员不具有其他账号私人数据的读取权。
-  `StudioPrincipal.user_id` 是私人数据唯一归属来源，`owner_user_id` 与它相同；业务请求不得接受客户端指定归属。
-  路由通过 `OwnerDep` 传递账号，根资源保存 `owner_user_id`，子资源继承已经校验的根资源归属。
-  不存在 Workspace、成员角色、动态权限矩阵、账号切换空间或 `default` 回退；后台执行器从持久任务恢复账号。
-  `AssetStorage` 的项目路径与写入方法必须显式传入账号；跨账号 ID 按不存在处理。
-  HTTP `UploadFile` 只在路由中出现，业务用例依赖 `studio.contracts.asset_library.incoming.IncomingFile`。
-  素材描述、媒体请求、时间线与特效文档归各所有者的 `studio/contracts/`；导入契约不得加载
-  素材 ORM、文件适配或渲染器。接收流的 I/O 适配器负责成功、失败及取消后的关闭。
-- 媒体裁切、格式读取、预览、缩略图和取帧共用 `studio/apps/media_rendering/use_cases/read_media.py`；用例只接收
-  素材借用、执行与授权端口。素材存储关闭查询事务后才借出内容，完成处理后重新验证身份。
-  文件路径限定在 I/O 适配内，借用句柄不能存入任务、缓存或响应。
-  派生输出使用独立句柄，来源释放不影响输出；授权失败和 HTTP 响应中断均须清理临时输出。
-- 思绪工坊禁止读取进程全局配置；网站上传、备份、导入及社区素材由协议装配显式传入当前配置。
-  旧站素材元数据适配器接收文件存储，读取前仍复核账号、版本及文件状态；不得自行选取数据根目录。
-  素材及 Identity 目录端口经请求装配或源账号适配器提供，禁止通过数据库 Session 查找。
-- 思绪归档导入和独立社区的文档及表格编辑显式传入本次准备的素材视图。授权或写入失败时沿用
-  引用协调器的回滚规则，封存后的写入校验只使用已验证的快照。
-- 思绪外部同步的提交与核对显式接收素材、暂存、授权和执行接口，不接收 HTTP Request 或应用状态容器。
-  同步输入暂存只消费已授权素材端口；未知提交保留暂存供恢复核对。阻塞文件 I/O 使用
-  `runtime/tasks/blocking_io.py` 等待真实操作停止后传播取消，避免清理与后台写入竞争。
-- 思绪工坊 `publication/` 拥有发布与逐篇授权，社区接口仅使用浏览器 Session；先验证发布记录、当前文章与有效角色，再在独立会话中显式绑定源账号。素材仅开放可读正文实际引用的文件与发布封面；不开放历史、私人目录或普通文件库查询。正文仍由 Notes 用例执行校验、CAS 和历史，回收站事务同步撤回发布，恢复不自动重新发布。
-- 固定账号权限由 `studio/contracts/identity/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
-  `studio/contracts/identity/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
-  只读浏览页面由各功能模块拥有，账号查询键由 `features/accounts/queryKeys.ts` 唯一维护。
-- 模型模板同步、运行额度和演示配置属于 `studio/apps/model_service/`；兼容网站按已登记设置键
-  读写原表，不转移存储归属。演示执行组件不依赖账号治理或模型目录，由装配注入配置读取。
-- 原平台设置表的通用记录和 CAS 机制在 `studio/runtime/database/settings_*`；键归属由
-  `studio/contracts/management/setting_owners.py` 登记，应用存储适配限定可访问分区。
-  原语不自行提交，授权、业务写入和审计仍在调用者完整事务内；模板加密器由两种装配显式传入。
-- 桌面空闲偏好由 Remote Desktop 的显式用例和原子存储端口拥有，两种装配共用实现；
-  HTTP 层不接收数据库会话，CAS 成功后才通知连接重读策略。配置探测和主机修改归 Host，
-  网站组合路由与附加监听器归 `assembly/website`，不得重建旧 `cloud_control` 或 `web_access` 包。
-- 云控密码解锁规则归 Identity 的 `use_cases/cloud_unlock.py`。共享存储在短事务内复核活动管理员
-  会话、部署策略及登录后的密码重验时间，原子保存 Agent 解锁期限或桌面会话授权。两种装配注入
-  存储、策略读取器和时钟，协议层不持有数据库 Session，未知提交不能自动重试。历史验证器记录仅供凭据迁移。
-- Identity 全包禁止读取进程全局配置。网站和独立服务装配提供云控策略读取器；一次状态或内部授权响应
-  使用同一快照，活动桌面连接、Happier 授权及云控解锁在各自的复核点重新读取策略。
-- Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
-  写请求统一携带可读 CSRF Cookie 对应的请求头。临时密码只允许展示一次。有效的 Management API Key
-  允许签发账号在浏览器 Session 通过近期密码验证后取回加密副本对应的明文，禁止缓存取回响应。
-- Compose 基础清单与功能叠加归 `deploy/compose/`。仓库清单以 `deploy/` 解析相对挂载，
-  外部封存清单使用各自目录。管理装配可解析迁移前登记的仓库基础清单路径。
-- 契约生成与服务契约读取归 `scripts/contracts/`，资产和文档保护等检查归
-  `scripts/checks/`。受保护的 SDK 文档生成入口仍在原路径。
-- 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、
-  `pyproject.toml`、脚本、README 和 CI/测试入口。
-- `scripts/demo/` 只保存内容专用演示维护工具；必须通过正式 API 操作，并要求调用者显式提供项目 ID、
-  素材根目录和输入/输出路径，不得保存本机绝对路径或默认目标项目。
-
-- 「云控」是仅管理员可访问的一级功能，入口为 `/cloud-control`。日常网站的 Agent 页签嵌入
-  Happier，旧 `/agents` 链接归并到该页签。兼容网站可在验收后启用 Mac 单窗口远控。应用名单由
-  可信本机管理员重验密码后写入 TOML。窗口采集和目标进程输入由 Host 辅助程序执行，启用后
-  网站整屏连接入口关闭。Happier 的浏览器
-  入口仍要求 `cloud-control.access`、指定管理员和登录后的密码重验。独立 Compose 的云控提供远程桌面。
-
-## SDK 与文档契约
-
-- Python SDK 位于 `sdk/python/`，不依赖后端运行时。`generated/` 由 OpenAPI 和 `operations.json` 生成，不手工编辑。
-- 修改公共接口后运行 `npm run contracts:generate`，同时更新 SDK 与文档参考；`npm run sdk:check` 检查生成物。具名方法覆盖不等于业务闭环测试。
-- 独立模型任务归属 `studio/apps/model_service/inference/`；备份账号时一并保留 `model-inference/inputs/`、`model-inference/outputs/`。提交中断禁止重新提交供应商。
-
-## SQLite、迁移与并发
-
-- `.runtime/future-props.db` 是默认单机 SQLite 真源。FastAPI 启动时会自动应用已登记迁移，
-  并为连接启用外键、WAL 和忙等待；不要把该行为替换成 Sayflow 的 PostgreSQL 多实例方案。
-- 绝对禁止通过 `sqlite3`、临时 Python/SQL 脚本、数据库客户端或其他绕过应用的方式，直接对
-  任何持久数据库执行数据写入、修复、删库重建或 schema 修改；不得手工修改
-  `schema_migrations`、迁移 checksum 或伪造迁移状态。命令行诊断仅允许只读查询。
-- 运行期数据的创建、更新、删除、修复、导入、回填与管理能力必须设计为正式的 `/v1` API，
-  经所属功能模块执行业务校验、事务、并发控制和错误映射；Web、测试工具与运维流程统一调用
-  该 API，不得把直接操作持久数据库作为实现方案或故障恢复步骤。仅允许存储层和迁移测试在
-  各自创建的临时隔离数据库中直接构造测试状态，测试结束后不得影响任何持久数据库。
-- `npm run account -- create-admin|create-user|reset-password` 是账号恢复的离线入口，但只能调用
-  `accounts/` 中与 HTTP 共用的正式用例，不得执行裸 SQL；账号与其模型目录在同一事务创建。
-- `db/migrations/` 是唯一 schema 迁移入口。已登记迁移的 ID、顺序和 SQL 不得改写；修复或
-  扩展只能在 `versions/` 追加新版本并更新 `registry.py`。
-- schema 演进只能通过新增并登记 migration 完成；migration 可以承担 schema 所必需的确定性
-  数据变换，但不得替代面向运行期数据管理的 API。迁移首次写入真实持久数据库前必须先在
-  临时测试数据库完成验证并定稿，禁止一边运行应用自动迁移一边继续修改同一 migration。
-- 任何 schema 或持久化兼容性变更必须同步更新 ORM、追加 migration、更新注册表、测试和
-  数据/API 文档。迁移包不得导入运行时 `app`。
-- `AsyncSession` 是单任务资源，不得由并行分支共享。外部模型请求、网络等待或大文件 I/O
-  不得放在已经开始写入的长事务中；流式生成应使用独立短事务准备和结算状态。
-- 整体 JSON、配置和会话等 revisioned 资源使用数据库 CAS：缺少 revision 返回 422，冲突
-  返回 409 与当前快照，客户端不得静默覆盖。
-- 备份数据库前先停止应用，复制完整运行目录与配置，包含 SQLite、`accounts/`、`profiles/`、
-  回收站和升级保留的旧文件；不要把
-  `.runtime/` 当作可提交的代码、
-  迁移或测试资产。
-
-## 测试、文档与质量门禁
-
-- 后端测试按 `tests/{architecture,apps,contracts,runtime,host,integration}/` 归类。Web 测试按
-  `web/tests/{features,shared,platform}/` 归类，浏览器旅程归 `web/e2e/`。受保护产品文档直接引用
-  的测试证据保留原路径。可自动化验证的行为应由自动测试覆盖。
-- 架构测试用于守住依赖方向、迁移独立性、路由版本和核心目录；修改架构规则时应同时更新
-  `AGENTS.md`、项目结构文档与对应测试，避免出现多个互相矛盾的事实源。
-- HTTP 或 SSE 契约变化必须更新后端 schema/路由、OpenAPI 生成物、Web 消费端、API 参考和
-  契约测试。
-- 按改动范围运行 `npm test`、`npm run lint`、`npm run format:check`、
-  `npm run contracts:check` 和 `npm run build`；缺少真实凭证时明确报告相关测试未执行，不得
-  用真实供应商调用代替确定性测试。
-- 单文件软上限：生产 Python 900 行、TS/TSX 1000 行、CSS 800 行，测试文件 1200 行；OpenAPI 等
-  生成文件排除。没有任何尺寸豁免机制，超限只能按语义拆分，不得为了过门禁做机械切片。
-- `web/src/apps|console` 和 `backend/studio/` 下每一层目录直接持有的源码不超过 6000 行，超出必须再分出命名子域。这些目录内的文件名不得带
-  `-foundation`、`-components`、`-interactions`、`-part\d*`、`-base`、`-extra`、`-misc` 后缀，
-  也不得出现只做转发的空壳 `@import` 样式。不得新增编号式 CSS 分片；构建预算脚本只读产物，
-  不得在构建后拆分或改写 CSS。
-- App 之间默认零互相依赖。例外仅限视频剪辑向视觉创作工坊的片段交接、特效制作向视频剪辑工坊的成片交接，登记在
-  `tests/architecture/test_repository.py` 的 `ALLOWED_APP_HANDOFFS`，且必须经目标 App 的公共入口。
-- 新增 Web 路由或独立 HTML 入口时，同步更新 `web/e2e/responsive-inventory.ts` 与相应适配用例；
-  页面不得依靠根级隐藏横向溢出来通过检查，复杂区域使用明确的局部滚动和可点击操作入口。
-- 修复问题时先定位根因和同类风险；保留用户已有的未提交改动，不覆盖或顺手重写无关文件。
-- 新增或替换 `docs/` 图片、固定字体或 VAD 二进制时同步更新 `docs/assets/MANIFEST.md`，并执行
-  `git lfs fsck`；未核清来源和许可证的演示素材不得视为可再分发资产。
-
-## 账号归属升级
-
-- `0116_account_ownership` 是逻辑空间移除的唯一 schema 迁移，旧空间按唯一活动 Owner 归属；没有唯一 Owner 时拒绝迁移。
-  历史迁移不改写，旧 Session 与 Management API Key 全部撤销。角色 `super_admin/admin` 合并为 `admin`，`member` 变为 `user`。
-- 文件归属清单由 `studio/apps/asset_library/storage/layout/account_upgrade.py` 和正式布局 API 执行，路径为 `accounts/<user-id>/`。
-  迁移期间仅允许身份与管理员布局升级接口，后台任务不启动；逐文件校验后落盘，拒绝链接和异内容覆盖，保留原文件作恢复副本。
-  完成后必须重启应用；开发测试只使用隔离数据库，禁止自动升级或重启未核准的正式实例。
+| 改动范围 | 先读 |
+| --- | --- |
+| 新增工坊、调整应用装配、跨工坊交接、公共路由或权限 | [Studio 框架契约](docs/architecture/studio-framework.md) |
+| 新增目录、调整职责或定位实现 | [项目目录索引](docs/architecture/project-layout.md)，目录职责变化同步更新索引 |
+| 改某项能力的行为、存储或恢复 | [能力实现契约](docs/architecture/capability-contracts.md) |
+| 开发命令、测试门禁、公共契约和 SDK 生成 | [开发与验证流程](docs/operations/development-workflow.md) |
+| 文件落盘与数据库提交 | [文件暂存与数据库事务](docs/operations/file-transactions.md) |
+| 正式启动、公网、停机备份或数据迁移 | [生产部署](docs/operations/production-deployment.md) |
+| 知识社区发布与逐篇授权 | [知识社区](docs/reference/knowledge-community.md) |
+| 修改思绪工坊用户行为或维护官方文章与图形 | [官方知识库写作](docs/operations/official-knowledge-writing.md)，同步更新对应指南 |
+| 云控授权、Happier 或外部 Agent 执行 | [云控](docs/reference/cloud-control.md)、[Happier 部署](docs/operations/happier.md)、[编程智能体接入](docs/operations/code-agents.md) |
+| 非机械性的行为、架构、跨文件契约、工具链、测试策略或落盘、网络、配置格式改动 | 按 [Agent Note 维护规则](docs/operations/agent-notes.md#何时写) 记录决策 |
