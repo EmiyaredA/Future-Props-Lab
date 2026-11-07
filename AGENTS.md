@@ -41,7 +41,7 @@
 - 安装后端与 Web 依赖：`npm run setup`。
 - 一键启动固定热加载后端与 Web：`npm run dev` 或 `npm start`；`dev:backend`、
   `dev:web` 兼容别名也启动同一整套服务，不再单独启动。
-- 网站正式启动：`npm start`；构建资源：`npm run build:studio`；用户级后台服务：`npm run website:service -- install|start|stop|status|uninstall`。
+- 正式 Studio 启动：`npm run website:service -- start`，与登录时的 LaunchAgent 使用同一份定义；状态查看用 `npm run website:service -- status`。日常启停不生成迁移备份。构建资源：`npm run build:studio`。
 - 日常开发沿用 `backend/config.toml` 和 `.runtime/` 的现有账号、模型及素材，前端固定回环 3000、后端固定回环 9001；自动测试必须显式使用临时隔离配置与数据库，不得读取现有数据。
 - 数据库迁移：`npm run db:migrate`；只检查迁移状态：`npm run db:migrate:check`。
 - OpenAPI 生成与 stale-check：`npm run contracts:generate`、`npm run contracts:check`。

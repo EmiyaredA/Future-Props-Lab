@@ -7,7 +7,7 @@ Future Props Lab 使用单台 Mac、一个后端进程和 SQLite；浏览器为�
 1. 安装 Node.js 24、npm 11、Python 3.11+、uv、Git LFS 与支持 H.264/AAC 的 FFmpeg/FFprobe，运行 `npm run setup`。验收结果为依赖安装与 LFS 资产检查成功。
 2. 新安装按 README 创建配置与管理员；已有桌面数据必须使用原配置和原密钥，不能生成替代密钥。正式数据迁移工具是 `scripts/website/data_transfer.py`，要求显式提供源、项目和报告目录；在原实例正常停机、释放锁及迁移状态定稿后使用。迁移保留完整恢复快照，核验 SHA256、SQLite 与原数据，不执行 SQL 写入。
 3. 将 `[website].web_root` 设为 `.local/studio-current/current`，运行 `uv run python scripts/website/frontend.py` 建立并校验首个共享构建。运行 `npm start`（或 `npm run dev`），本机固定通过 `http://127.0.0.1:3000` 登录，API 后端为 9001。
-4. 运行 `npm run website:service -- install` 安装同一套前后端的用户级 LaunchAgent。已有旧版服务先 `stop`，再 `install` 更新原 LaunchAgent，不另建服务。用 `status` 查看，`stop` 卸载本次运行，`start` 重新加载；`uninstall` 移除自动启动。服务状态和 `/ready` 均成功才算启动完成。
+4. 运行 `npm run website:service -- install` 安装用户级 LaunchAgent。正式 Studio 的手动启动入口是 `npm run website:service -- start`。Mac 登录时使用同一份 LaunchAgent，`status` 显示实际运行路径。已固定线上版本的主机使用本机私有的启动登记，手动启动先核对登记、已安装定义和已加载定义，再复用或加载后台。两种启动方式都直接使用已有数据和构建。服务状态和 `/ready` 均成功才算启动完成。
 
 正式入口在导入数据库前读取配置并持有 `.runtime/website.lock`。迁入后还持有原桌面目录的数据锁，阻止旧客户端误启动。存在待执行或漂移迁移时拒绝启动；迁移必须先在隔离数据验证，再按停机备份流程执行。服务不自动执行尚未核准的正式迁移。
 
@@ -27,9 +27,9 @@ Future Props Lab 使用单台 Mac、一个后端进程和 SQLite；浏览器为�
 
 ## 备份与恢复
 
-正常停止服务和隧道，确认数据锁与数据库句柄释放，再完整备份 `.runtime/`、`backend/config.toml` 与 `backend/web-access/`；本地模型、账号素材、历史、回收站及旧文件一并保留。不得只复制 SQLite 主文件。
+每次正式数据迁移前，正常停止写入、服务和隧道，确认数据锁与数据库句柄释放。备份整个 `.runtime/`、`backend/config.toml`、`backend/web-access/` 和恢复同版本所需的代码、依赖、前端构建及接入凭据。本地模型、账号素材、历史和回收站随完整运行目录备份。日常启动、重启和状态查询无需生成迁移备份。
 
-升级先备份并核验，再更新代码、冻结依赖和构建资源。回滚必须恢复同版本的代码、配置及整个数据快照，不能手工修改迁移记录。旧桌面目录和网站化迁移快照在完成浏览器验收、验证回滚之前保留。
+用停写后的封存数据生成迁移计划。逐文件比对 SHA256，检查 SQLite 完整性、外键和迁移账本，并确认备份的代码与构建能通过隔离启动预检。新备份验证通过后替换上一份完整备份，再开始正式导入。迁移失败时，用当次备份恢复对应的代码、配置、前端和完整数据，随后核对本机及公网的 `/ready` 和 `/build.json`。历史验收只保留报告。旧桌面来源按既有数据迁移验收规则保留。
 
 ## 独立管理侧切换门禁
 

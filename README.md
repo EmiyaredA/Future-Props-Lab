@@ -22,8 +22,9 @@ LibreOffice 或额外预览服务。视频和音频继续使用上述 FFmpeg/FFp
 
 ## 快速开始
 
-日常使用一套自动更新的前后端。`npm start` 或 `npm run dev` 启动同一个入口；
-`npm run website:service -- install` 安装登录后自动启动的后台服务。默认本机入口是
+正式 Studio 通过 `npm run website:service -- start` 手动启动，和 Mac 登录时加载的后台共用同一份启动定义。
+`npm run website:service -- status` 查看实际运行路径。`npm run website:service -- install` 安装后台服务。
+前台开发使用 `npm start` 或 `npm run dev`。默认本机入口是
 [http://127.0.0.1:3000](http://127.0.0.1:3000)，后端固定为 `127.0.0.1:9001`。关闭浏览器不会停止后台任务。
 
 Amadeus 从顶栏或工坊按钮打开页面侧栏，可引用当前页面与选中控件。CLI / Python SDK / MCP 使用
@@ -133,4 +134,4 @@ Apple Silicon Mac（macOS 15+）可在模型服务中按需安装 Qwen3-TTS Base
 
 ### 独立管理端
 
-管理中台使用独立服务与数据库，账号和模型治理分别由 Identity、Models 承接。已配置并完成迁移的多服务部署使用 `npm start`，仅启动管理侧使用 `npm run management:start`；管理页面使用 `npm run build:management` 独立构建。管理入口默认 `http://127.0.0.1:9002`，开发入口为 3001。旧单体恢复入口为 `npm run start:legacy`，正式切换前不能与新管理器竞争同一部署。配置、权限和隔离验收见[独立管理服务](docs/reference/management-service.md)。
+管理中台使用独立服务与数据库，账号和模型治理分别由 Identity、Models 承接。已配置并完成迁移的多服务部署使用 `npm run services:start`，仅启动管理侧使用 `npm run management:start`；管理页面使用 `npm run build:management` 独立构建。管理入口默认 `http://127.0.0.1:9002`，开发入口为 3001。旧单体恢复入口为 `npm run start:legacy`，正式切换前不能与新管理器竞争同一部署。配置、权限和隔离验收见[独立管理服务](docs/reference/management-service.md)。

@@ -4,11 +4,13 @@ import argparse
 import os
 import plistlib
 import shutil
+import stat
 import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LABEL = "cn.futurepropslab.website"
+ACTIVE_LAUNCH = Path(".local/studio-ops/active-launch.plist")
 
 
 def definition(root=ROOT):
@@ -37,6 +39,50 @@ def definition(root=ROOT):
     }
 
 
+def registered_definition(root):
+    path = root / ACTIVE_LAUNCH
+    if not path.exists() and not path.is_symlink():
+        return None
+    info = path.lstat()
+    if (
+        not stat.S_ISREG(info.st_mode)
+        or info.st_uid != os.getuid()
+        or stat.S_IMODE(info.st_mode) != 0o600
+    ):
+        raise SystemExit("Studio 启动登记必须是当前用户拥有的 0600 普通文件")
+    value = plistlib.loads(path.read_bytes())
+    args = value.get("ProgramArguments", [])
+    directory = Path(value.get("WorkingDirectory", ""))
+    if (
+        value.get("Label") != LABEL
+        or not directory.is_absolute()
+        or not directory.resolve().is_relative_to(root)
+        or len(args) != 5
+        or args[1:4] != [str(directory / "scripts/website/serve.py"), "--reload", "--config"]
+        or not Path(args[0]).is_absolute()
+        or not Path(args[0]).parent.resolve().is_relative_to(root)
+        or not Path(args[4]).is_absolute()
+        or not Path(args[4]).resolve().is_relative_to(root)
+        or not all(Path(args[index]).is_file() for index in (0, 1, 4))
+    ):
+        raise SystemExit("Studio 启动登记与本项目的运行目录不匹配")
+    return value
+
+
+def check_loaded_definition(status, expected):
+    lines = status.splitlines()
+    try:
+        begin = lines.index("\targuments = {") + 1
+        end = lines.index("\t}", begin)
+        arguments = [line.strip() for line in lines[begin:end]]
+    except ValueError:
+        arguments = []
+    if arguments != expected["ProgramArguments"] or (
+        "\tworking directory = " + expected["WorkingDirectory"] not in lines
+    ):
+        raise SystemExit("当前后台与已登记的 Studio 启动路径不一致，请检查 status")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["install", "start", "stop", "status", "uninstall"])
@@ -45,8 +91,19 @@ def main():
     domain = f"gui/{os.getuid()}"
     service = f"{domain}/{LABEL}"
     if args.action == "install":
-        subprocess.run(
-            [
+        registered = registered_definition(ROOT)
+        expected = registered or definition()
+        loaded = subprocess.run(["launchctl", "print", service], capture_output=True)
+        if loaded.returncode == 0:
+            raise SystemExit("请先停止现有服务，再 install 更新统一启动入口")
+        if target.exists():
+            installed = plistlib.loads(target.read_bytes())
+            if installed.get("WorkingDirectory") not in {str(ROOT), expected["WorkingDirectory"]}:
+                raise SystemExit("同名服务属于其他目录，拒绝覆盖")
+        check_command = (
+            [*registered["ProgramArguments"], "--check"]
+            if registered
+            else [
                 shutil.which("uv"),
                 "run",
                 "--no-sync",
@@ -54,32 +111,34 @@ def main():
                 str(ROOT / "scripts/website/serve.py"),
                 "--check",
                 "--reload",
-            ],
-            cwd=ROOT,
+            ]
+        )
+        subprocess.run(
+            check_command,
+            cwd=expected["WorkingDirectory"],
             check=True,
         )
-        if target.exists():
-            installed = plistlib.loads(target.read_bytes())
-            if installed.get("WorkingDirectory") != str(ROOT):
-                raise SystemExit("同名服务属于其他目录，拒绝覆盖")
-            loaded = subprocess.run(["launchctl", "print", service], capture_output=True)
-            if loaded.returncode == 0:
-                raise SystemExit("请先停止现有服务，再 install 更新统一启动入口")
         target.parent.mkdir(parents=True, exist_ok=True)
         (ROOT / ".runtime/logs").mkdir(parents=True, exist_ok=True, mode=0o700)
         with target.open("wb") as file:
-            plistlib.dump(definition(), file)
+            plistlib.dump(expected, file)
         target.chmod(0o600)
         subprocess.run(["launchctl", "bootstrap", domain, str(target)], check=True)
     elif args.action == "start":
-        if (
-            not target.exists()
-            or plistlib.loads(target.read_bytes()).get("ProgramArguments")
-            != definition()["ProgramArguments"]
+        registered = registered_definition(ROOT)
+        expected = registered or definition()
+        installed = plistlib.loads(target.read_bytes()) if target.is_file() else {}
+        fields = ("Label", "ProgramArguments", "WorkingDirectory")
+        if (registered is not None and installed != registered) or any(
+            installed.get(field) != expected[field] for field in fields
         ):
             raise SystemExit("请先停止旧服务并运行 install 更新统一启动入口")
-        loaded = subprocess.run(["launchctl", "print", service], capture_output=True)
+        loaded = subprocess.run(["launchctl", "print", service], capture_output=True, text=True)
         if loaded.returncode == 0:
+            check_loaded_definition(loaded.stdout, expected)
+            if "\tstate = running" in loaded.stdout.splitlines():
+                print("Studio 已在运行")
+                return
             subprocess.run(["launchctl", "kickstart", service], check=True)
         else:
             subprocess.run(["launchctl", "bootstrap", domain, str(target)], check=True)
