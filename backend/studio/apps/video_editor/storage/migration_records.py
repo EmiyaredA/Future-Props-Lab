@@ -3,9 +3,10 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from studio.apps.video_editor.schemas import VideoEditorDefaultEffects, VideoEditorTimelineBatchIn
+from studio.apps.video_editor.schemas.timeline import VideoEditorTimelineOperation
 from studio.apps.video_editor.storage.models import (
     VideoEditorAssetMetadata,
     VideoEditorOperationBatch,
@@ -24,7 +25,10 @@ from studio.contracts.management.project_history import (
     ProjectRecord,
     TaskRecord,
 )
-from studio.contracts.video_editor.timeline_document import parse_timeline_document
+from studio.contracts.video_editor.timeline_document import (
+    VideoEditorTransition,
+    parse_timeline_document,
+)
 from studio.runtime.database.project_history_migration import ProjectDataset
 
 
@@ -44,10 +48,34 @@ class VideoTimelineRecord(DocumentRecord):
         return document
 
 
+class LegacyEdgeTransition(VideoEditorTransition):
+    id: str = Field(min_length=1, max_length=64)
+    placement: Literal["in", "out"]
+    from_clip_id: str | None = Field(default=None, alias="fromClipId", min_length=1, max_length=64)
+    to_clip_id: str | None = Field(default=None, alias="toClipId", min_length=1, max_length=64)
+
+    @model_validator(mode="after")
+    def validate_clip_reference(self):
+        if not (self.to_clip_id if self.placement == "in" else self.from_clip_id):
+            raise ValueError("旧片段转场缺少所属片段")
+        return self
+
+
+class LegacyAddTransition(BaseModel):
+    type: Literal["addTransition"]
+    transition: LegacyEdgeTransition
+
+
+class StoredVideoTimelineBatch(VideoEditorTimelineBatchIn):
+    operations: list[VideoEditorTimelineOperation | LegacyAddTransition] = Field(
+        min_length=1, max_length=200
+    )
+
+
 class VideoOperationRecord(OperationRecord):
     @model_validator(mode="after")
     def validate_receipt(self):
-        VideoEditorTimelineBatchIn.model_validate(
+        StoredVideoTimelineBatch.model_validate(
             {
                 "expectedRevision": self.base_revision,
                 "requestId": self.request_id,

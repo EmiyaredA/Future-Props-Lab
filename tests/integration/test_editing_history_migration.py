@@ -254,6 +254,31 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
                SET result_detail = json_remove(result_detail, '$.importRequested')
                WHERE kind = 'segment_export' AND status = 'completed'"""
         )
+        db.execute(
+            """INSERT INTO video_editor_operation_batches
+               (id, owner_user_id, project_id, request_id, base_revision, result_revision,
+                operations, created_at) VALUES (?, ?, ?, ?, 0, 1, ?, '2025-01-01 00:00:00')""",
+            (
+                str(uuid4()),
+                str(owner),
+                paths[1].rsplit("/", 1)[-1],
+                "legacy-edge-transition",
+                json.dumps(
+                    [
+                        {
+                            "type": "addTransition",
+                            "transition": {
+                                "id": "legacy-edge",
+                                "placement": "in",
+                                "toClipId": "retained-source",
+                                "kind": "fade-black",
+                                "durationUs": 50_000,
+                            },
+                        }
+                    ]
+                ),
+            ),
+        )
     derived = (
         runtime
         / "accounts"
@@ -339,11 +364,20 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
 
         for service, spec, expected in (
             ("motion", MOTION, (1, 1, 1, 1)),
-            ("video", VIDEO, (1, 1, 3, 2, 4)),
+            ("video", VIDEO, (1, 1, 3, 3, 4)),
         ):
             reports = transfer_history(client, plan, *endpoints[service], spec)
             assert tuple(report["record_count"] for report in reports) == expected
             assert transfer_history(client, plan, *endpoints[service], spec) == reports
+        video_operations = next(
+            pages(client, endpoints["video"][1], headers, plan, owner, VIDEO[3])
+        )
+        legacy_operation = next(
+            record
+            for record in video_operations.batch.records
+            if record.request_id == "legacy-edge-transition"
+        )
+        assert legacy_operation.operations[0]["transition"]["placement"] == "in"
         scopes = transfer(client, plan, assets_source, assets_target, ASSET_SCOPES)
         assert scopes["record_count"] == 2
         assert transfer(client, plan, assets_source, assets_target, ASSET_SCOPES) == scopes
