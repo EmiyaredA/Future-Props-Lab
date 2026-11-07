@@ -316,3 +316,72 @@ test("programming CLI controls have room and admins have no per-CLI grant switch
     path: info.outputPath("cli-connection-controls.png"),
   });
 });
+
+test("remote app tabs scroll locally and keep the Mac-only add action visible", async ({
+  page,
+}) => {
+  test.setTimeout(60_000);
+  await page.setViewportSize({ width: 390, height: 900 });
+  let local = true;
+  await page.route("**/v1/cloud-control/status", (route) =>
+    route.fulfill({
+      json: {
+        enabled: true,
+        local,
+        host_label: "Fixture Mac",
+        remote_apps_enabled: true,
+        desktop_configured: true,
+        desktop_authorized: local,
+        idle_minutes: 30,
+        idle_revision: 0,
+        unlocked_until: 0,
+        happier_available: false,
+      },
+    }),
+  );
+  await page.route("**/v1/cloud-control/apps", (route) =>
+    route.fulfill({
+      json: {
+        apps: Array.from({ length: 12 }, (_, index) => ({
+          id: index.toString(16).padStart(64, "0"),
+          name: `Mac 测试应用 ${index + 1}`,
+        })),
+      },
+    }),
+  );
+  await page.goto("/cloud-control");
+  const pane = page.getByRole("region", { name: "远程应用" });
+  await expect(pane).toBeVisible({ timeout: 25_000 });
+  const header = page.locator(".cloud-page-header");
+  const toolbar = header.getByRole("group", { name: "远控操作" });
+  const tabs = toolbar.getByRole("group", { name: "可远控的应用" });
+  await expect(tabs.getByRole("button")).toHaveCount(12);
+  const add = toolbar.getByRole("button", { name: "添加应用" });
+  await expect(add).toBeInViewport();
+  expect(
+    await tabs.evaluate((node) => node.scrollWidth > node.clientWidth),
+  ).toBe(true);
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.setViewportSize({ width: 1470, height: 900 });
+  const heading = await header
+    .getByRole("heading", { name: "云控" })
+    .boundingBox();
+  const toolbarBox = await toolbar.boundingBox();
+  expect(
+    heading && toolbarBox && Math.abs(heading.y - toolbarBox.y),
+  ).toBeLessThan(12);
+  const screen = await pane.locator(".cloud-app-viewport").boundingBox();
+  const frame = await pane.boundingBox();
+  expect(screen && frame && screen.height).toBeCloseTo(frame!.height - 2, 0);
+  local = false;
+  await page.reload();
+  await expect(add).toHaveCount(0);
+  await expect(tabs.getByRole("button")).toHaveCount(0);
+  await expect(
+    pane.getByRole("button", { name: "验证访问权限" }),
+  ).toBeVisible();
+});

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Check, Plus, X } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { reauthenticate } from "@features/accounts";
 import {
@@ -15,7 +15,7 @@ function CatalogForm({
   close,
 }: {
   initial: InstalledRemoteApps;
-  changed: () => void;
+  changed: (catalog: InstalledRemoteApps) => void;
   close: () => void;
 }) {
   const [ids, setIds] = useState(initial.allowed_ids);
@@ -38,8 +38,11 @@ function CatalogForm({
     try {
       await reauthenticate(password);
       setPassword("");
-      await saveRemoteApps({ revision: initial.revision, app_ids: ids });
-      changed();
+      const saved = await saveRemoteApps({
+        revision: initial.revision,
+        app_ids: ids,
+      });
+      changed(saved);
       close();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "无法保存应用名单");
@@ -95,8 +98,8 @@ function CatalogForm({
                   )
                 }
               >
-                {added ? <Check size={15} /> : <Plus size={15} />}{" "}
-                {added ? "已添加" : "添加"}
+                {added ? <X size={15} /> : <Plus size={15} />}{" "}
+                {added ? "移除" : "添加"}
               </button>
             </li>
           );
@@ -146,7 +149,7 @@ export function RemoteAppCatalogDialog({
   close,
 }: {
   owner: string;
-  changed: () => void;
+  changed: (catalog: InstalledRemoteApps) => void;
   close: () => void;
 }) {
   const catalog = useQuery({

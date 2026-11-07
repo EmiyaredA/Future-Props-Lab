@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { createPortal } from "react-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AppWindow,
   LoaderCircle,
@@ -7,6 +8,7 @@ import {
   Plus,
   Scan,
   Timer,
+  Unplug,
 } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { DesktopIdle } from "./DesktopDialogs";
@@ -29,6 +31,7 @@ export function RemoteApps({
   paneId,
   status,
   visible,
+  toolbarHost,
   onUnlock,
   onChange,
 }: {
@@ -36,6 +39,7 @@ export function RemoteApps({
   paneId: string;
   status: CloudStatus;
   visible: boolean;
+  toolbarHost?: HTMLElement | null;
   onUnlock: () => void;
   onChange: () => void;
 }) {
@@ -47,9 +51,11 @@ export function RemoteApps({
   const viewport = useRef<HTMLDivElement>(null);
   const disconnectButton = useRef<HTMLButtonElement>(null);
   const remote = useRemoteApp();
+  const queryClient = useQueryClient();
+  const key = ["cloud-control", owner, "allowed-apps"] as const;
   const { disconnect } = remote;
   const apps = useQuery({
-    queryKey: ["cloud-control", owner, "allowed-apps"],
+    queryKey: key,
     queryFn: ({ signal }) => readRemoteApps(signal),
     enabled: status.desktop_authorized,
     refetchInterval: 15_000,
@@ -98,17 +104,9 @@ export function RemoteApps({
     }
   }
 
-  return (
-    <section
-      id={paneId}
-      className="cloud-pane cloud-app-pane"
-      hidden={!visible}
-      aria-label="远程应用"
-    >
-      <header className="cloud-pane-bar">
-        <h2>
-          <AppWindow size={19} aria-hidden="true" /> 远程应用
-        </h2>
+  const toolbar = (
+    <div className="cloud-app-toolbar" role="group" aria-label="远控操作">
+      <div className="cloud-app-toolbar-apps">
         <span className="cloud-host">{status.host_label}</span>
         <span
           className="cloud-connection"
@@ -117,74 +115,119 @@ export function RemoteApps({
         >
           {statusText[remote.state]}
         </span>
-        <div className="cloud-pane-actions">
-          <button
-            className="btn"
-            type="button"
-            aria-pressed={fit}
-            onClick={() => setFit(!fit)}
-            disabled={!connected}
+        <div className="cloud-app-tabs">
+          <div
+            className="cloud-app-tab-list"
+            role="group"
+            aria-label="可远控的应用"
           >
-            <Scan size={15} aria-hidden="true" /> 适应窗口
-          </button>
-          <button
-            className="btn"
-            type="button"
-            disabled={!connected}
-            onClick={() => void fullscreen()}
-          >
-            <Maximize size={15} aria-hidden="true" /> 全屏
-          </button>
-          <div className="cloud-idle-anchor">
-            <button
-              className="btn"
-              type="button"
-              aria-expanded={idleOpen}
-              onClick={() => setIdleOpen(!idleOpen)}
-            >
-              <Timer size={15} aria-hidden="true" /> 自动锁定 ·{" "}
-              {status.idle_minutes} 分钟
-            </button>
-            {idleOpen && (
-              <DesktopIdle
-                remoteApps
-                minutes={status.idle_minutes}
-                revision={status.idle_revision}
-                changed={onChange}
-                close={() => setIdleOpen(false)}
-              />
-            )}
+            {items.map((item) => (
+              <button
+                className="btn"
+                type="button"
+                key={item.id}
+                aria-pressed={item.id === active?.id}
+                onClick={() => switchApp(item.id)}
+              >
+                <AppWindow size={15} aria-hidden="true" /> {item.name}
+              </button>
+            ))}
           </div>
-        </div>
-      </header>
-      <div className="cloud-app-tabs">
-        <div
-          className="cloud-app-tab-list"
-          role="group"
-          aria-label="可远控的应用"
-        >
-          {items.map((item) => (
+          {status.local && (
             <button
               className="btn"
               type="button"
-              key={item.id}
-              aria-pressed={item.id === active?.id}
-              onClick={() => switchApp(item.id)}
+              onClick={() => setManager(true)}
             >
-              <AppWindow size={15} aria-hidden="true" /> {item.name}
+              <Plus size={15} aria-hidden="true" /> 添加应用
             </button>
-          ))}
+          )}
         </div>
-        {status.local && (
+      </div>
+      <div className="cloud-pane-actions cloud-app-toolbar-actions">
+        {remote.windows.length > 0 && (
+          <CustomSelect
+            className="cloud-app-window-select"
+            ariaLabel="远程应用窗口"
+            value={String(remote.selected ?? "")}
+            options={remote.windows.map((item) => ({
+              value: String(item.id),
+              label: item.title,
+            }))}
+            onChange={(value) =>
+              active && void remote.connect(active.id, Number(value))
+            }
+          />
+        )}
+        <button
+          className="btn cloud-app-icon-button"
+          type="button"
+          aria-label="适应窗口"
+          title="适应窗口"
+          aria-pressed={fit}
+          onClick={() => setFit(!fit)}
+          disabled={!connected}
+        >
+          <Scan size={15} aria-hidden="true" />
+        </button>
+        <button
+          className="btn cloud-app-icon-button"
+          type="button"
+          aria-label="全屏"
+          title="全屏"
+          disabled={!connected}
+          onClick={() => void fullscreen()}
+        >
+          <Maximize size={15} aria-hidden="true" />
+        </button>
+        <div className="cloud-idle-anchor">
           <button
-            className="btn"
+            className="btn cloud-idle-trigger"
             type="button"
-            onClick={() => setManager(true)}
+            aria-label={`自动锁定 · ${status.idle_minutes} 分钟`}
+            title="自动锁定"
+            aria-expanded={idleOpen}
+            onClick={() => setIdleOpen(!idleOpen)}
           >
-            <Plus size={15} aria-hidden="true" /> 添加应用
+            <Timer size={15} aria-hidden="true" /> {status.idle_minutes} 分钟
+          </button>
+          {idleOpen && (
+            <DesktopIdle
+              remoteApps
+              minutes={status.idle_minutes}
+              revision={status.idle_revision}
+              changed={onChange}
+              close={() => setIdleOpen(false)}
+            />
+          )}
+        </div>
+        {remote.state !== "idle" && (
+          <button
+            className="btn cloud-app-icon-button"
+            ref={disconnectButton}
+            type="button"
+            aria-label="断开连接"
+            title="断开连接"
+            onClick={disconnect}
+          >
+            <Unplug size={15} aria-hidden="true" />
           </button>
         )}
       </div>
+    </div>
+  );
+
+  return (
+    <section
+      id={paneId}
+      className="cloud-pane cloud-app-pane"
+      hidden={!visible}
+      aria-label="远程应用"
+    >
+      {visible &&
+        (toolbarHost
+          ? createPortal(toolbar, toolbarHost)
+          : toolbarHost === undefined && toolbar)}
       <div
         className="cloud-viewport cloud-app-viewport"
         ref={viewport}
@@ -220,7 +263,7 @@ export function RemoteApps({
                 取消连接
               </button>
             ) : remote.state === "paused" && remote.windows.length ? (
-              <p>请从下方选择其他窗口。</p>
+              <p>请从页头选择其他窗口。</p>
             ) : !status.desktop_authorized && status.desktop_configured ? (
               <button
                 className="btn cloud-primary"
@@ -245,37 +288,21 @@ export function RemoteApps({
           </div>
         )}
       </div>
-      <footer className="cloud-pane-footer">
-        {remote.windows.length > 0 && (
-          <CustomSelect
-            ariaLabel="远程应用窗口"
-            value={String(remote.selected ?? "")}
-            options={remote.windows.map((item) => ({
-              value: String(item.id),
-              label: item.title,
-            }))}
-            onChange={(value) =>
-              active && void remote.connect(active.id, Number(value))
-            }
-          />
-        )}
-        {connected && <span>点击画面接管键鼠 · Shift + Esc 释放焦点</span>}
-        {fullscreenError && connected && <p role="alert">{fullscreenError}</p>}
-        {remote.state !== "idle" && (
-          <button
-            className="btn cloud-app-disconnect"
-            ref={disconnectButton}
-            type="button"
-            onClick={disconnect}
-          >
-            断开连接
-          </button>
-        )}
-      </footer>
+      {fullscreenError && connected && <p role="alert">{fullscreenError}</p>}
       {manager && (
         <RemoteAppCatalogDialog
           owner={owner}
-          changed={() => void apps.refetch()}
+          changed={(catalog) => {
+            const installed = new Map(
+              catalog.apps.map((item) => [item.id, item]),
+            );
+            const approved = catalog.allowed_ids.flatMap((id) => {
+              const item = installed.get(id);
+              return item ? [item] : [];
+            });
+            void queryClient.cancelQueries({ queryKey: key });
+            queryClient.setQueryData(key, { apps: approved });
+          }}
           close={() => setManager(false)}
         />
       )}

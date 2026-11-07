@@ -1,0 +1,158 @@
+.knowledge-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 224px), 1fr));
+  gap: 18px 14px;
+}
+
+@media (max-width: 800px) {
+  .knowledge-library-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  }
+}
+
+.knowledge-library-grid .workshop-project-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  box-shadow: var(--shadow);
+}
+
+.knowledge-library-grid .workshop-project-cover {
+  flex-shrink: 0;
+  height: 108px;
+}
+
+.knowledge-library-grid .workshop-project-cover-label {
+  align-items: center;
+  text-align: center;
+}
+
+.knowledge-card-image {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.knowledge-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.knowledge-card-image img:not([data-load-state="ready"]) {
+  visibility: hidden;
+}
+
+.knowledge-library-grid
+  .workshop-project-cover:focus-visible
+  .knowledge-card-image {
+  inset: 3px;
+}
+
+.knowledge-library-grid .workshop-project-copy {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.knowledge-card-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.knowledge-card-count svg {
+  flex-shrink: 0;
+}
+
+.knowledge-library-grid .workshop-project-meta > small {
+  text-align: end;
+}
+
+.knowledge-library-grid .workshop-project-copy > :is(h2, p) {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  block-size: 2lh;
+  min-block-size: 2lh;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+.knowledge-library-grid .workshop-project-copy > h2 {
+  margin: 8px 0 2px;
+}
+
+.knowledge-library-grid .workshop-project-copy > p {
+  margin: 0 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.knowledge-library-grid .workshop-project-actions {
+  gap: 6px;
+  margin-top: auto;
+  padding-inline: 8px;
+}
+
+.knowledge-library-grid
+  .workshop-project-actions
+  button:not([role="menuitem"]) {
+  border-color: var(--border);
+}
+
+.knowledge-library-grid
+  .workshop-project-actions
+  button:not([role="menuitem"]):hover {
+  border-color: var(--accent-line);
+}
+
+.knowledge-library-grid .workshop-project-actions button.danger:hover {
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+}
+
+.knowledge-library-grid
+  .workshop-project-actions
+  .knowledge-topbar-menu-trigger {
+  height: 30px;
+  min-height: 30px;
+}
+
+.knowledge-library-grid
+  .workshop-project-actions
+  .knowledge-topbar-menu
+  button {
+  width: 100%;
+  min-height: 38px;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 7px 10px;
+  font: inherit;
+  box-shadow: none;
+}
+
+.knowledge-library-grid .workshop-project-actions .knowledge-topbar-menu svg {
+  width: 17px;
+  height: 17px;
+}
+
+@media (pointer: coarse) {
+  .knowledge-library-grid
+    .workshop-project-actions
+    button:not([role="menuitem"]) {
+    min-height: 44px;
+  }
+  .knowledge-library-grid .workshop-project-secondary-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+  .knowledge-library-grid
+    .workshop-project-secondary-actions
+    button:not([role="menuitem"]) {
+    width: 44px;
+  }
+}

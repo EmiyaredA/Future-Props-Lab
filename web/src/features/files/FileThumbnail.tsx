@@ -9,7 +9,13 @@ import { fileQueryKeys } from "./queryKeys";
 import "./styles/file-content-preview.css";
 import { filePreviewKind, previewTime } from "./filePreview";
 
-export function FileThumbnail({ file }: { file: ManagedFile }) {
+export function FileThumbnail({
+  file,
+  compact = false,
+}: {
+  file: ManagedFile;
+  compact?: boolean;
+}) {
   const [failedSource, setFailedSource] = useState("");
   const kind = filePreviewKind(file);
   const visual = ["image", "video", "audio", "pdf"].includes(kind);
@@ -41,6 +47,10 @@ export function FileThumbnail({ file }: { file: ManagedFile }) {
             decoding="async"
             onError={() => setFailedSource(url)}
           />
+        ) : compact ? (
+          loading ? (
+            <span className="file-thumbnail-spinner" aria-hidden="true" />
+          ) : null
         ) : (
           <span className="file-thumbnail-message">
             <LoadingScene />

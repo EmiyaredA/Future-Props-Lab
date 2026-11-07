@@ -1,18 +1,101 @@
+.cloud-page-header.cloud-page-header-with-apps {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  column-gap: clamp(12px, 1.4vw, 22px);
+}
+
+.cloud-app-toolbar-host {
+  min-width: 0;
+}
+
+.cloud-app-toolbar,
+.cloud-app-toolbar-apps,
 .cloud-app-tabs {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--border);
+  min-width: 0;
+}
+
+.cloud-app-toolbar {
+  position: relative;
+}
+
+.cloud-app-toolbar-apps,
+.cloud-app-tabs,
+.cloud-app-tab-list {
+  flex: 1;
 }
 
 .cloud-app-tab-list {
   display: flex;
-  flex: 1;
   min-width: 0;
   gap: 6px;
+  padding: 4px;
   overflow-x: auto;
   scrollbar-width: thin;
+}
+
+.cloud-app-toolbar-actions {
+  flex: none;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.cloud-app-icon-button.btn {
+  justify-content: center;
+  padding-inline: 8px;
+}
+
+.cloud-app-window-select {
+  min-width: 0;
+  max-width: 8rem;
+}
+
+@container (max-width: 1050px) {
+  .cloud-page-header.cloud-page-header-with-apps {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .cloud-page-header-with-apps .cloud-header-controls {
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: flex-end;
+  }
+
+  .cloud-app-toolbar-host {
+    grid-column: 1 / -1;
+  }
+}
+
+@container (max-width: 560px) {
+  .cloud-app-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .cloud-app-toolbar-apps {
+    flex-basis: 100%;
+  }
+
+  .cloud-app-toolbar-apps .cloud-host {
+    display: none;
+  }
+}
+
+@container (max-width: 360px) {
+  .cloud-page-header.cloud-page-header-with-apps {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cloud-page-header-with-apps .cloud-header-controls {
+    grid-column: 1;
+    grid-row: 2;
+    justify-content: flex-start;
+  }
+
+  .cloud-app-toolbar-host {
+    grid-row: 3;
+  }
 }
 
 .cloud-app-tabs .btn,
@@ -46,19 +129,6 @@
 
 .cloud-app-viewport[data-frame-ready="true"] .cloud-app-video {
   visibility: visible;
-}
-
-.cloud-app-pane .cloud-pane-footer {
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.cloud-app-pane .cloud-pane-footer > :nth-child(2) {
-  margin-left: 0;
-}
-
-.cloud-app-pane .cloud-pane-footer > .cloud-app-disconnect {
-  margin-left: auto;
 }
 
 .cloud-app-source {

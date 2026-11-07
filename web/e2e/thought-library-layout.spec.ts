@@ -6,13 +6,13 @@ const examples = [
   { title: "短标题", description: "简短说明。" },
   { title: "空简介", description: "" },
   {
-    title: "四行简介",
+    title: "多行简介",
     description:
       "用知识库整理研究资料、记录阅读心得、归纳实践经验，并通过目录组织相关文档，让每次阅读与写作都有清晰的起点，也让后续补充与回顾更加方便。",
   },
   {
     title: "长简介",
-    description: "这是很长的简介，保留全文但在卡片中只显示四行。".repeat(20),
+    description: "这是很长的简介，用于检查卡片如何截断预览。".repeat(20),
   },
   {
     title: "需要自动换行并省略的知识库长标题".repeat(5),
@@ -40,11 +40,13 @@ async function write(
   return response.status() === 204 ? null : response.json();
 }
 
-async function expectAlignedCards(page: Page, columns: number) {
+async function expectAlignedCards(page: Page, columns: number, trash = false) {
   // Measure the rendered layout rather than relying on CSS property assertions.
   await page.mouse.move(0, 0);
   const cards = await page
-    .locator(".knowledge-cards .workshop-project-card")
+    .locator(
+      `${trash ? ".knowledge-cards" : ".knowledge-library-grid"} .workshop-project-card`,
+    )
     .evaluateAll((nodes) =>
       nodes.map((card) => {
         const bounds = card.getBoundingClientRect();
@@ -61,10 +63,8 @@ async function expectAlignedCards(page: Page, columns: number) {
           top: bounds.top,
           height: bounds.height,
           cover: measure(".workshop-project-cover"),
-          title: measure("h2"),
           description: measure("p"),
           actions: measure(".workshop-project-actions"),
-          button: measure(".workshop-project-actions > button"),
         };
       }),
     );
@@ -74,10 +74,11 @@ async function expectAlignedCards(page: Page, columns: number) {
   );
   for (const card of cards) {
     expect(Math.abs(card.height - cards[0].height)).toBeLessThan(1);
-    expect(
-      Math.abs(card.cover.width / card.cover.height - 16 / 9),
-    ).toBeLessThan(0.01);
-    for (const part of ["title", "description", "actions", "button"] as const) {
+    if (trash)
+      expect(
+        Math.abs(card.cover.width / card.cover.height - 16 / 9),
+      ).toBeLessThan(0.01);
+    for (const part of ["cover", "description", "actions"] as const) {
       expect(Math.abs(card[part].top - cards[0][part].top)).toBeLessThan(1);
       expect(Math.abs(card[part].height - cards[0][part].height)).toBeLessThan(
         1,
@@ -91,7 +92,7 @@ async function expectAlignedCards(page: Page, columns: number) {
   ).toBeTruthy();
 }
 
-test("knowledge library cards align with four-line previews across screen sizes and themes", async ({
+test("knowledge library shows five compact cards on wide screens and wraps on narrow screens", async ({
   page,
 }, info) => {
   test.setTimeout(90_000);
@@ -108,7 +109,7 @@ test("knowledge library cards align with four-line previews across screen sizes 
   await page
     .getByRole("textbox", { name: "搜索知识库", exact: true })
     .fill(marker);
-  const cards = page.locator(".knowledge-cards .workshop-project-card");
+  const cards = page.locator(".knowledge-library-grid .workshop-project-card");
   await expect(cards).toHaveCount(examples.length);
   const longCard = cards.filter({
     has: page.getByRole("heading", { name: libraries[3].title, exact: true }),
@@ -119,8 +120,8 @@ test("knowledge library cards align with four-line previews across screen sizes 
   );
 
   for (const { width, columns } of [
-    { width: 1600, columns: 4 },
-    { width: 1280, columns: 3 },
+    { width: 1470, columns: 5 },
+    { width: 1280, columns: 4 },
     { width: 768, columns: 2 },
     { width: 390, columns: 1 },
   ]) {
@@ -133,7 +134,7 @@ test("knowledge library cards align with four-line previews across screen sizes 
         lineHeight: parseFloat(getComputedStyle(el).lineHeight),
         fullHeight: el.scrollHeight,
       }));
-      expect(Math.abs(preview.height - preview.lineHeight * 4)).toBeLessThan(1);
+      expect(Math.abs(preview.height - preview.lineHeight * 2)).toBeLessThan(1);
       expect(preview.fullHeight).toBeGreaterThan(preview.height);
       const title = cards.filter({ hasText: libraries[4].title }).locator("h2");
       await expect(title).toHaveText(libraries[4].title);
@@ -154,15 +155,17 @@ test("knowledge library cards align with four-line previews across screen sizes 
         animations: "disabled",
       });
 
-      const more = cards.filter({ hasText: "短标题" }).getByRole("combobox");
+      const more = cards.filter({ hasText: "短标题" }).getByRole("button", {
+        name: `${libraries[0].title}更多操作`,
+      });
       await more.focus();
       await page.keyboard.press("ArrowDown");
-      const menu = page.getByRole("listbox", {
-        name: `${libraries[0].title}操作`,
+      const menu = page.getByRole("menu", {
+        name: `${libraries[0].title}更多操作`,
         exact: true,
       });
       await expect(
-        menu.getByRole("option", { name: "重命名", exact: true }),
+        menu.getByRole("menuitem", { name: "修改简介", exact: true }),
       ).toBeFocused();
       const box = (await menu.boundingBox())!;
       expect(box.x).toBeGreaterThanOrEqual(0);
@@ -175,9 +178,21 @@ test("knowledge library cards align with four-line previews across screen sizes 
     }
   }
 
-  await cards
-    .filter({ hasText: "短标题" })
-    .getByRole("button", { name: "进入知识库", exact: true })
+  const shortCard = cards.filter({ hasText: "短标题" });
+  await shortCard
+    .getByRole("button", { name: `重命名 ${libraries[0].title}`, exact: true })
+    .click();
+  const renameDialog = page.getByRole("dialog", { name: "重命名知识库" });
+  await expect(renameDialog.getByRole("textbox")).toHaveValue(
+    libraries[0].title,
+  );
+  await renameDialog.getByRole("button", { name: "取消", exact: true }).click();
+
+  await shortCard
+    .getByRole("button", {
+      name: `打开知识库：${libraries[0].title}`,
+      exact: true,
+    })
     .click();
   await expect(page).toHaveURL(
     new RegExp(`/knowledge-bases/${libraries[0].id}$`),
@@ -197,17 +212,18 @@ test("knowledge library cards align with four-line previews across screen sizes 
   await page
     .getByRole("textbox", { name: "搜索知识库", exact: true })
     .fill(marker);
-  await expect(cards).toHaveCount(examples.length);
-  await expectAlignedCards(page, 4);
+  const trashCards = page.locator(".knowledge-cards .workshop-project-card");
+  await expect(trashCards).toHaveCount(examples.length);
+  await expectAlignedCards(page, 4, true);
   await page.setViewportSize({ width: 390, height: 1000 });
-  await expectAlignedCards(page, 1);
+  await expectAlignedCards(page, 1, true);
   await page.screenshot({
     path: info.outputPath("library-trash-390-dark.png"),
     animations: "disabled",
   });
-  await cards
+  await trashCards
     .filter({ hasText: "短标题" })
     .getByRole("button", { name: "恢复知识库", exact: true })
     .click();
-  await expect(cards).toHaveCount(examples.length - 1);
+  await expect(trashCards).toHaveCount(examples.length - 1);
 });

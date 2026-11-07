@@ -103,6 +103,11 @@ Playwright E2E，按 Playwright 的安装说明单独准备，不参与正式视
 `guacd_port` 默认 4822，FPL 始终连接本机 IPv4 回环。VNC 由 guacd 连接，`vnc_host` 默认
 `host.docker.internal`，`vnc_port` 默认 5900。连接时在网页中输入 VNC 密码；旧的 `vnc_password` 只保留解析兼容。
 
+兼容网站通过局域网和公网验收后可设置 `apps_enabled = true`，以单窗口远控替换 VNC。将
+`apps_host` 指向 Mac 辅助程序的绝对路径。`apps_allowed` 默认是空数组，由本机管理员在云控中
+维护。公网中继使用 `apps_turn_urls` 和 `apps_turn_secret` 签发短时 TURN 凭据。构建、权限
+与网络验收见[远程应用](cloud-control.md#远程应用)。
+
 `[cloud_control.projects.<id>]` 保留旧会话和已开放公网 Agent 的项目配置，包含
 `label`、已存在的绝对路径 `root` 和 `user_ids`。本机可直接在工作台选择具体目录，最近项目保存在 SQLite。Agent 工作台自动读取已启用的 CLI 连接。
 `[cloud_control.projects.<id>.commands.<preset>]` 可配置 `label` 与固定的 `argv`，首项是

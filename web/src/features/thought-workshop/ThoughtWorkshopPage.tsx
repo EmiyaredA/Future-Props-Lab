@@ -43,6 +43,7 @@ import {
 } from "./knowledgeApi";
 import { KnowledgeTree } from "./KnowledgeTree";
 import { KnowledgeCover } from "./KnowledgeCover";
+import { KnowledgeLibraryCard } from "./KnowledgeLibraryCard";
 import { KnowledgeDocumentResults } from "./KnowledgeDocumentResults";
 import { DeleteDocumentDialog } from "./DeleteDocumentDialog";
 import { KnowledgeTopbar } from "./KnowledgeTopbar";
@@ -333,15 +334,6 @@ export function ThoughtWorkshopPage({
       open();
     }
   };
-  const projectOptions = [
-    { value: "", label: "更多", disabled: true },
-    { value: "rename", label: "重命名" },
-    { value: "description", label: "修改简介" },
-    { value: "cover", label: "更换封面" },
-    { value: "clear-cover", label: "恢复默认封面" },
-    { value: "export", label: "导出知识库" },
-    { value: "trash", label: "移入回收站" },
-  ];
   const noteMode = !browsing && (!!noteId || !!projectId);
   const noteMoreAction = (value: string) => {
     if (value === "library-html") libraryHtml();
@@ -594,41 +586,38 @@ export function ThoughtWorkshopPage({
             </div>
 
             <h2>{trash ? "已删除的知识库" : "我的知识库"}</h2>
-            <div className="knowledge-cards">
-              {projects.data?.map((p) => (
-                <ProjectLibraryCard
-                  key={p.id}
-                  project={p}
-                  cover="canvas"
-                  coverTitle={p.title}
-                  coverDescription=""
-                  coverContent={<KnowledgeCover assetId={p.cover_asset_id} />}
-                  metadata={<span>{p.document_count} 篇文档</span>}
-                  description={p.description || "一个属于你的知识空间"}
-                  onOpen={() => !trash && onNavigate(p.id)}
-                >
-                  {trash ? (
+            <div
+              className={trash ? "knowledge-cards" : "knowledge-library-grid"}
+            >
+              {projects.data?.map((p) =>
+                trash ? (
+                  <ProjectLibraryCard
+                    key={p.id}
+                    project={p}
+                    cover="canvas"
+                    coverTitle={p.title}
+                    coverDescription=""
+                    coverContent={<KnowledgeCover assetId={p.cover_asset_id} />}
+                    metadata={<span>{p.document_count} 篇文档</span>}
+                    description={p.description || "一个属于你的知识空间"}
+                    onOpen={() => {}}
+                  >
                     <button
                       className="btn"
                       onClick={() => void run(() => restoreKnowledge(p))}
                     >
                       恢复知识库
                     </button>
-                  ) : (
-                    <>
-                      <button className="btn" onClick={() => onNavigate(p.id)}>
-                        进入知识库
-                      </button>
-                      <CustomSelect
-                        ariaLabel={`${p.title}操作`}
-                        value=""
-                        options={projectOptions}
-                        onChange={(v) => projectAction(v, p)}
-                      />
-                    </>
-                  )}
-                </ProjectLibraryCard>
-              ))}
+                  </ProjectLibraryCard>
+                ) : (
+                  <KnowledgeLibraryCard
+                    key={p.id}
+                    project={p}
+                    onOpen={() => onNavigate(p.id)}
+                    onAction={(value) => projectAction(value, p)}
+                  />
+                ),
+              )}
             </div>
             {projects.isLoading && (
               <LoadingState label="正在加载知识库…" variant="region" />

@@ -58,6 +58,7 @@ final class Session {
         do {
             target = try await open()
             guard app.matches(target) else { throw SessionError.application }
+            _ = target?.activate()
             try await refresh()
         } catch {
             Wire.send(["type": "error", "message": "无法启动应用或读取其窗口"])
@@ -196,14 +197,14 @@ final class Session {
 enum RemoteAppCapture {
     static func main() async {
         let args = CommandLine.arguments
-        if args.count == 1 || (args.count == 2 && args[1] == "permissions") {
+        if args.count == 1 {
             _ = CGRequestScreenCaptureAccess()
             let options = ["AXTrustedCheckOptionPrompt": true] as CFDictionary
             _ = AXIsProcessTrustedWithOptions(options)
         } else if args.count == 2, args[1] == "catalog" {
             guard let data = try? JSONSerialization.data(withJSONObject: MacApp.installed().map(\.descriptor)) else { exit(1) }
             FileHandle.standardOutput.write(data + Data([10]))
-        } else if args.count == 2, args[1] == "status" {
+        } else if args.count == 3, args[1] == "status", NativeChannel.attach(to: args[2]) {
             let status = [
                 "unlocked": Session.isUnlocked,
                 "screen_capture": CGPreflightScreenCaptureAccess(),
@@ -212,7 +213,7 @@ enum RemoteAppCapture {
             if let data = try? JSONSerialization.data(withJSONObject: status, options: .sortedKeys) {
                 FileHandle.standardOutput.write(data + Data([10]))
             }
-        } else if args.count == 3, args[1] == "session",
+        } else if args.count == 4, args[1] == "session", NativeChannel.attach(to: args[3]),
                   let app = MacApp.installed().first(where: { $0.id == args[2] }) {
             await Session(app).run()
         } else {

@@ -43,6 +43,7 @@ function CloudWorkspace({
   hideUnavailableAgent?: boolean;
 }) {
   const paneId = useId();
+  const [toolbarHost, setToolbarHost] = useState<HTMLDivElement | null>(null);
   const [selected, setView] = useState<View>(() =>
     savedView(owner, preferAgent),
   );
@@ -71,6 +72,8 @@ function CloudWorkspace({
     !status.data?.happier_studio_url;
   const view = desktopOnly ? "desktop" : selected;
   const [now, setNow] = useState(() => Date.now());
+  const showRemoteToolbar =
+    status.data?.remote_apps_enabled && view === "desktop";
   const desktopLabel = status.data?.remote_apps_enabled
     ? "远程应用"
     : "远程桌面";
@@ -84,11 +87,20 @@ function CloudWorkspace({
       className="page cloud-control-page cloud-workspace-page"
       aria-labelledby="cloud-control-title"
     >
-      <header className="cloud-page-header">
+      <header
+        className={`cloud-page-header${showRemoteToolbar ? " cloud-page-header-with-apps" : ""}`}
+      >
         <div>
           <h1 id="cloud-control-title">云控</h1>
-          <p>{desktopOnly ? desktopLabel : `${desktopLabel}与 Agent 工作台`}</p>
+          {!showRemoteToolbar && (
+            <p>
+              {desktopOnly ? desktopLabel : `${desktopLabel}与 Agent 工作台`}
+            </p>
+          )}
         </div>
+        {showRemoteToolbar && (
+          <div className="cloud-app-toolbar-host" ref={setToolbarHost} />
+        )}
         <div className="cloud-header-controls">
           <div
             className="cloud-layout-switch"
@@ -124,6 +136,7 @@ function CloudWorkspace({
       <div className="cloud-workspace">
         {status.data?.remote_apps_enabled ? (
           <RemoteApps
+            toolbarHost={toolbarHost}
             owner={owner}
             paneId={`${paneId}-desktop`}
             status={status.data}

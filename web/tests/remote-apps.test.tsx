@@ -72,7 +72,11 @@ it("adds a recommended and a searched app from the trusted Mac", async () => {
     revision: "revision",
   });
   reauthenticate.mockResolvedValue(undefined);
-  saveRemoteApps.mockResolvedValue({});
+  saveRemoteApps.mockResolvedValue({
+    apps: [chrome, text, code],
+    allowed_ids: [chrome.id, code.id],
+    revision: "saved",
+  });
   show({});
   fireEvent.click(screen.getByRole("button", { name: "添加应用" }));
   const dialog = await screen.findByRole("dialog");

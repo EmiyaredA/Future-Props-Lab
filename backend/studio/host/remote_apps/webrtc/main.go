@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -200,7 +201,7 @@ func run(ctx context.Context, helper, app string) error {
 
 	codec := webrtc.RTPCodecCapability{
 		MimeType: webrtc.MimeTypeH264, ClockRate: 90000,
-		SDPFmtpLine: "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f",
+		SDPFmtpLine:  "level-asymmetry-allowed=1;packetization-mode=1;profile-level-id=42e01f",
 		RTCPFeedback: []webrtc.RTCPFeedback{{Type: "nack"}, {Type: "nack", Parameter: "pli"}},
 	}
 	track, err := webrtc.NewTrackLocalStaticSample(codec, "window", "fpl-app")
@@ -217,38 +218,16 @@ func run(ctx context.Context, helper, app string) error {
 	}
 	defer conn.Close()
 
-	capture := exec.Command(helper, "session", app)
-	stdout, err := capture.StdoutPipe()
+	capture, err := openNativeChannel(ctx, helper, "session", app)
 	if err != nil {
 		return err
 	}
-	stdin, err := capture.StdinPipe()
-	if err != nil {
-		return err
-	}
-	if err = capture.Start(); err != nil {
-		return err
-	}
-	defer func() {
-		stop()
-		_ = stdin.Close()
-		done := make(chan struct{})
-		go func() {
-			_ = capture.Wait()
-			close(done)
-		}()
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			_ = capture.Process.Kill()
-			<-done
-		}
-	}()
-	p := &peer{ctx: ctx, stop: stop, native: stdin, track: track, ready: make(chan struct{})}
+	defer capture.Close()
+	p := &peer{ctx: ctx, stop: stop, native: capture, track: track, ready: make(chan struct{})}
 	if err = p.attach(conn); err != nil {
 		return err
 	}
-	go p.capture(stdout)
+	go p.capture(capture)
 	offered, selected := false, false
 	for {
 		select {
@@ -291,10 +270,18 @@ func main() {
 	defer stop()
 	args := os.Args[1:]
 	switch {
-	case len(args) == 1 && (args[0] == "catalog" || args[0] == "permissions" || args[0] == "status"):
+	case len(args) == 1 && args[0] == "catalog":
 		child := exec.CommandContext(ctx, helper, args[0])
 		child.Stdout = os.Stdout
 		err = child.Run()
+	case len(args) == 1 && args[0] == "status":
+		var native *net.UnixConn
+		native, err = openNativeChannel(ctx, helper, "status")
+		if err == nil {
+			defer native.Close()
+			_ = native.SetReadDeadline(time.Now().Add(2 * time.Second))
+			_, err = io.Copy(os.Stdout, native)
+		}
 	case len(args) == 2 && args[0] == "session":
 		err = run(ctx, helper, args[1])
 	default:

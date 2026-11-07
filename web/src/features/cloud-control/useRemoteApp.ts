@@ -113,7 +113,10 @@ export function useRemoteApp() {
         iceServers: handshake.ice_servers,
       });
       peer = connection;
-      connection.addTransceiver("video", { direction: "recvonly" });
+      const { receiver } = connection.addTransceiver("video", {
+        direction: "recvonly",
+      });
+      if ("jitterBufferTarget" in receiver) receiver.jitterBufferTarget = 0;
       input.current = connection.createDataChannel("input");
       connection.onconnectionstatechange = () => {
         if (["failed", "disconnected"].includes(connection.connectionState))

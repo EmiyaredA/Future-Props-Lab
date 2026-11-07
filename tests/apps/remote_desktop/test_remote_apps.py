@@ -1,9 +1,12 @@
+import asyncio
 from contextlib import aclosing
 from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from cryptography.fernet import Fernet
 
+from studio.apps.remote_desktop.transport.app_signaling import bridge
 from studio.apps.remote_desktop.use_cases.app_sessions import AppSessions, turn_servers
 from studio.assembly.website import remote_apps
 from studio.contracts.remote_desktop.apps import RemoteApp
@@ -44,6 +47,19 @@ def test_ice_configuration_uses_own_stun_and_expiring_turn_credentials():
     assert turn.username.startswith("3723:")
     assert turn.credential and "fixture" not in turn.model_dump_json()
     assert not turn_servers(urls, "")
+
+
+async def test_signaling_stops_when_the_app_authorization_is_revoked():
+    blocked = asyncio.Event()
+    socket = SimpleNamespace(receive=blocked.wait, close=AsyncMock())
+    process = SimpleNamespace(
+        stdin=SimpleNamespace(write=Mock(), drain=AsyncMock()),
+        stdout=asyncio.StreamReader(),
+    )
+    await asyncio.wait_for(
+        bridge(socket, process, access=AsyncMock(return_value=None), ice_servers=[]), 1
+    )
+    socket.close.assert_awaited_once_with(4403, "应用授权已失效")
 
 
 @pytest.mark.real_auth

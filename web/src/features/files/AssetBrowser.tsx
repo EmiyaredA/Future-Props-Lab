@@ -816,7 +816,7 @@ export function AssetBrowser({
                     onClick={() => setPreviewFile(file)}
                   >
                     <span className={`file-item-preview ${file.media_kind}`}>
-                      <AssetPreview file={file} />
+                      <AssetPreview file={file} compact={view === "list"} />
                     </span>
                     <span className="file-item-copy">
                       <strong title={displayName}>{displayName}</strong>
