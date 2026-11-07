@@ -37,7 +37,14 @@ def _mount(app, plan, sessions, *, source=None, database=None):
 
 def create_export_app(*, plan, source_path):
     app, sessions, source = export_app(plan, source_path)
-    mount_avatars(app, plan, sessions, source.path.parent / "profiles", source=source)
+    mount_avatars(
+        app,
+        plan,
+        sessions,
+        source.path.parent / "profiles",
+        source=source,
+        legacy_host_directory="codex-app-server",
+    )
     return _mount(app, plan, sessions, source=source)
 
 

@@ -384,9 +384,13 @@ async def test_import_keeps_account_scope_and_existing_credentials(tmp_path, mon
         staging = target / "profiles/.staging"
         staging.mkdir(parents=True)
         (staging / ".import-interrupted").write_bytes(b"partial stage")
+        host_profile = legacy.parent / "profiles/codex-app-server"
+        host_profile.mkdir()
+        (host_profile / "auth.json").write_bytes(b"private host state")
         report = transfer_avatars(client, plan, source, dest)
         assert report["record_count"] == 1 and report["byte_count"] == len(avatar)
         assert transfer_avatars(client, plan, source, dest) == report
+        assert not (target / "profiles/codex-app-server").exists()
         unexpected = legacy.parent / "profiles" / owner / "unassigned.png"
         unexpected.write_bytes(avatar)
         assert client.get(f"{source}{AVATAR_PATH}/inventory", headers=headers).status_code == 409

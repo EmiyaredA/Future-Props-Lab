@@ -97,13 +97,17 @@ def store_file(path, digest, data):
     sync_directories(path.parent, path.parent.parent, path.parent.parent.parent)
 
 
-def file_inventory(root: Path, expected):
+def file_inventory(root: Path, expected, *, legacy_host_directory=None):
     if root.is_symlink() or (root.exists() and not root.is_dir()):
         raise ValueError("头像根目录无效")
     found = set()
     if root.is_dir():
         for folder in root.iterdir():
-            if folder.name == ".staging" and folder.is_dir() and not folder.is_symlink():
+            if (
+                folder.name in {".staging", legacy_host_directory}
+                and folder.is_dir()
+                and not folder.is_symlink()
+            ):
                 continue
             if folder.is_symlink() or not folder.is_dir():
                 raise ValueError("存在未登记的头像文件")
@@ -115,7 +119,7 @@ def file_inventory(root: Path, expected):
     return found
 
 
-async def inventory_files(sessions, root, *, require_all):
+async def inventory_files(sessions, root, *, require_all, legacy_host_directory=None):
     async with sessions() as session:
         paths = set(
             await session.scalars(
@@ -123,7 +127,9 @@ async def inventory_files(sessions, root, *, require_all):
             )
         )
     try:
-        found = await asyncio.to_thread(file_inventory, root, paths)
+        found = await asyncio.to_thread(
+            file_inventory, root, paths, legacy_host_directory=legacy_host_directory
+        )
     except (ValueError, OSError):
         raise HTTPException(409, {"code": "migration_avatar_inventory_conflict"}) from None
     if require_all and found != paths:

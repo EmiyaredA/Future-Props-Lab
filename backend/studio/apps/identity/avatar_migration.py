@@ -23,7 +23,7 @@ class AvatarReceipt(BaseModel):
     byte_size: int
 
 
-def mount_avatars(app, plan, sessions, root, *, source=None):
+def mount_avatars(app, plan, sessions, root, *, source=None, legacy_host_directory=None):
     admission = MigrationAdmission(plan)
 
     def source_check():
@@ -36,7 +36,12 @@ def mount_avatars(app, plan, sessions, root, *, source=None):
     @app.get(f"{AVATAR_PATH}/inventory")
     async def inventory():
         source_check()
-        count = await inventory_files(sessions, root, require_all=source is not None)
+        count = await inventory_files(
+            sessions,
+            root,
+            require_all=source is not None,
+            legacy_host_directory=legacy_host_directory,
+        )
         source_check()
         return {"record_count": count}
 

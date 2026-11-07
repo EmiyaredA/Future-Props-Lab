@@ -26,3 +26,7 @@ Status: implemented
 ## Verification
 
 隔离 SQLite 覆盖相对路径、错误根目录拒绝、配置字节保留、已知旧工作台授权归档和未知设置拒绝。
+
+兼容站的 `profiles/codex-app-server/` 由 Host 使用。头像导出只登记账号头像，允许旧站保留这个
+已知的真实目录。Identity 导入仍拒绝未登记路径，原账号头像继续校验文件归属及 SHA256。主机
+目录及其凭据由完整快照保全，正式装配按 Host 状态恢复。
