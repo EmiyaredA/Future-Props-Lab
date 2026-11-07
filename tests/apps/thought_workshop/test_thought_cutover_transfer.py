@@ -6,8 +6,10 @@ import io
 import json
 import os
 import secrets
+import sqlite3
 import subprocess
 import sys
+from contextlib import closing
 from pathlib import Path
 from uuid import UUID, uuid4
 
@@ -440,6 +442,15 @@ def sealed_thought(tmp_path_factory):
         published = result(client.get(publication_path))
         updated_book = result(client.get(book_path))
         cookies = dict(client.cookies)
+    legacy_request_id = f"legacy:{request_id}"
+    with closing(sqlite3.connect(runtime / legacy_snapshot.DATABASE)) as db, db:
+        db.execute(
+            """INSERT INTO thought_official_import_receipts
+               (owner_user_id, user_id, request_id, package_version, result, created_at)
+               SELECT owner_user_id, user_id, ?, package_version, result, created_at
+               FROM thought_official_import_receipts WHERE owner_user_id = ? AND request_id = ?""",
+            (legacy_request_id, account, request_id),
+        )
     bundle = run / "sealed"
     seal = legacy_snapshot.create(runtime, config, bundle, revision)
     target = run / "restored"
@@ -501,6 +512,7 @@ def sealed_thought(tmp_path_factory):
         "community_upload_id": uploaded,
         "community_upload_sha256": hashlib.sha256(community_bytes).hexdigest(),
         "official_receipt_id": request_id,
+        "legacy_official_receipt_id": legacy_request_id,
         "official_receipt": official_receipt,
         "official_package_version": preview["package_version"],
         "revision": revision,
@@ -614,7 +626,7 @@ def test_document_relay_resume_and_verify(tmp_path, sealed_thought):
             assert state_reports["thought.community-favorites"] == 1
             assert state_reports["thought.community-uploads"] == 1
             assert state_reports["thought.official-sources"] > 0
-            assert state_reports["thought.official-import-receipts"] == 1
+            assert state_reports["thought.official-import-receipts"] == 2
             favorites = datasets["thought.community-favorites"]
             assert not next(pages(client, target, headers, plan, owner, favorites)).batch.records
             (favorite,) = next(
@@ -641,11 +653,17 @@ def test_document_relay_resume_and_verify(tmp_path, sealed_thought):
             assert not next(pages(client, target, headers, plan, editor, uploads)).batch.records
 
             receipts = datasets["thought.official-import-receipts"]
-            (receipt,) = next(pages(client, target, headers, plan, owner, receipts)).batch.records
-            assert (receipt.request_id, receipt.package_version, receipt.result) == (
+            copied_receipts = next(
+                pages(client, target, headers, plan, owner, receipts)
+            ).batch.records
+            assert {receipt.request_id for receipt in copied_receipts} == {
                 fixture["official_receipt_id"],
-                fixture["official_package_version"],
-                fixture["official_receipt"],
+                fixture["legacy_official_receipt_id"],
+            }
+            assert all(
+                (receipt.package_version, receipt.result)
+                == (fixture["official_package_version"], fixture["official_receipt"])
+                for receipt in copied_receipts
             )
             assert not next(pages(client, target, headers, plan, editor, receipts)).batch.records
 

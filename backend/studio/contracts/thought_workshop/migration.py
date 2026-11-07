@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import Field
 
+from studio.contracts.asset_library.descriptions import ID
 from studio.contracts.management.migration_batches import MigrationBatch, MigrationPage
 from studio.contracts.management.project_history import HistoryRecord, Identifier
 
@@ -13,7 +14,7 @@ PIN_KINDS = {
     "thought.template-pins": "template",
     "thought.publication-pins": "publication",
 }
-PIN_CURSOR = r"^[a-f0-9-]{36}$"
+PIN_CURSOR = rf"^{ID}$"
 
 
 def pin_path(dataset):

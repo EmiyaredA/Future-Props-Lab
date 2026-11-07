@@ -103,7 +103,7 @@ class OfficialSource(HistoryRecord):
 class OfficialImportReceipt(HistoryRecord):
     cursor: str
     user_id: Identifier
-    request_id: Identifier
+    request_id: str = Field(min_length=1, max_length=64)
     package_version: str = Field(pattern=r"^[a-f0-9]{64}$")
     result: dict
     created_at: datetime

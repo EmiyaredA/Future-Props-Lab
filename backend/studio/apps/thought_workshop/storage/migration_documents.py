@@ -96,7 +96,7 @@ from .migration_workspace_records import (
 )
 
 ROOTS, NOTES, HISTORY = "knowledge-bases", "notes", "note-history"
-NOTE_CURSOR = r"^[0-9]{8}:[a-f0-9-]{36}$"
+NOTE_CURSOR = rf"^[0-9]{{8}}:{PIN_CURSOR[1:-1]}$"
 PAGE = 8
 
 
@@ -195,20 +195,20 @@ class Dataset:
 
 
 @dataclass(frozen=True)
-class NoteReceiptDataset(Dataset):
+class RequestReceiptDataset(Dataset):
     @property
     def cursor_pattern(self):
         return PIN_CURSOR[:-1] + r":[0-9A-F]{2,512}$"
 
     @property
     def key_column(self):
-        return self.orm.resource_id + literal(":") + func.hex(self.orm.request_id)
+        return getattr(self.orm, self.primary[0]) + literal(":") + func.hex(self.orm.request_id)
 
     def cursor(self, row):
-        return f"{row.resource_id}:{row.request_id.encode().hex().upper()}"
+        return f"{getattr(row, self.primary[0])}:{row.request_id.encode().hex().upper()}"
 
 
-NOTE_RECEIPTS = NoteReceiptDataset(
+NOTE_RECEIPTS = RequestReceiptDataset(
     "operation-receipts",
     ProjectOperationReceipt,
     NoteOperationReceipt,
@@ -259,7 +259,7 @@ DATASETS = (
         primary=("note_id", "asset_id"),
     ),
     Dataset("official-sources", OfficialSourceRow, OfficialSource, primary=("note_id",)),
-    Dataset(
+    RequestReceiptDataset(
         "official-import-receipts",
         OfficialReceiptRow,
         OfficialImportReceipt,
