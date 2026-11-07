@@ -3,10 +3,11 @@
 import asyncio
 import json
 import os
+import sqlite3
 import subprocess
 import sys
 import time
-from contextlib import AsyncExitStack, ExitStack
+from contextlib import AsyncExitStack, ExitStack, closing
 from io import BytesIO
 from uuid import UUID, uuid4
 from zipfile import ZipFile
@@ -247,6 +248,22 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
     with website(config, original_port) as (client, origin):
         owner, paths, documents, originals, outputs = create_editor_history(client, origin, image)
         cookies = dict(client.cookies)
+    with closing(sqlite3.connect(runtime / legacy_snapshot.DATABASE)) as db, db:
+        db.execute(
+            """UPDATE video_editor_tasks
+               SET result_detail = json_remove(result_detail, '$.importRequested')
+               WHERE kind = 'segment_export' AND status = 'completed'"""
+        )
+    derived = (
+        runtime
+        / "accounts"
+        / str(owner)
+        / "applications/video-editor/projects"
+        / paths[1].rsplit("/", 1)[-1]
+        / "derived"
+    )
+    (derived / "frame-v2-chroma2-r1-t0-w960-rawnone.png").write_bytes(image)
+    (derived / f"{uuid4()}-thumbnail.png").write_bytes(image)
 
     snapshot = tmp_path / "snapshot"
     proof = legacy_snapshot.create(runtime, config, snapshot, REVISION)

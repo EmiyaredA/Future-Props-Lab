@@ -101,7 +101,7 @@ def outputs_for(task):
     if (
         not isinstance(segments, list)
         or not segments
-        or type(library) is not bool
+        or ("importRequested" in detail and type(library) is not bool)
         or any(item.get("status") != "completed" for item in segments)
     ):
         raise ValueError("历史分段结果缺失")
@@ -148,13 +148,16 @@ class OutputHistory:
             )
         )
         by_id = {row.id: row for row in items}
+        if library is None:
+            # Older segment jobs stored their outputs before recording the import flag.
+            library = all(is_library_asset(row) for row in items)
         if len(ids) != len(by_id) or any(
             not (is_library_asset(row) if library else row.video_editor_project_id == project)
             or row.media_kind != "video"
             for row in items
         ):
             raise conflict("migration_video_output_owner_conflict")
-        return [by_id[identity] for identity in ids]
+        return [by_id[identity] for identity in ids], library
 
     async def measure(self, rows):
         files = []
@@ -185,7 +188,9 @@ class OutputHistory:
                     task = rows[0]
                     try:
                         ids, library = outputs_for(task)
-                        assets = await self.selected_files(db, owner, task.project_id, library, ids)
+                        assets, library = await self.selected_files(
+                            db, owner, task.project_id, library, ids
+                        )
                         records = (
                             LegacyOutput(
                                 id=task.id,
@@ -233,7 +238,7 @@ class OutputHistory:
         )
 
     async def rebuild_receipt(self, db, owner, record):
-        rows = await self.selected_files(
+        rows, _ = await self.selected_files(
             db, owner, record.project_id, record.library, [file.id for file in record.files]
         )
         if await self.measure(rows) != record.files:

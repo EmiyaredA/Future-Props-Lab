@@ -1,6 +1,7 @@
 """Export exact compatibility-site proxy, thumbnail and waveform files."""
 
 import asyncio
+import re
 from functools import partial
 
 from fastapi import HTTPException
@@ -24,6 +25,11 @@ from studio.runtime.database.artifact_migration_source import artifact_page, mou
 from studio.runtime.files.migration_files import checked_path, inspect_blob, inventory_directory
 
 VARIANTS = ("proxy", "thumbnail", "waveform")
+FRAME_CACHE = re.compile(
+    r"frame-(?:v[0-9]+-(?:composite[0-9]+-)?(?:chroma[0-9]+-(?:sample[0-9]+-)?)?)?"
+    r"r[0-9]+-t[0-9]+-w[0-9]+(?:-raw(?:none|[a-f0-9]{16}))?\.png"
+)
+MEDIA_CACHE = re.compile(r"[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}-(thumbnail\.png|proxy\.mp4)")
 
 
 def invalid():
@@ -74,6 +80,16 @@ def measure(root, owner, row):
     )
 
 
+def is_preview_cache(path):
+    if not (FRAME_CACHE.fullmatch(path.name) or MEDIA_CACHE.fullmatch(path.name)):
+        return False
+    with path.open("rb") as source:
+        signature = source.read(12)
+    if path.suffix == ".png":
+        return signature.startswith(b"\x89PNG\r\n\x1a\n")
+    return signature[4:8] == b"ftyp"
+
+
 def check_inventory(root, owners, rows):
     expected = {
         locate(root, owner, row, key)
@@ -100,6 +116,8 @@ def check_inventory(root, owners, rows):
             for path in inventory_directory(derived):
                 if path.is_symlink() or not path.is_file():
                     raise ValueError("剪辑派生目录存在未知文件")
+                if path not in expected and is_preview_cache(path):
+                    continue
                 found.add(path)
     if found != expected:
         raise ValueError("剪辑派生文件存在遗漏或未登记内容")
