@@ -29,6 +29,7 @@ from studio.contracts.management.migration_batches import BatchReceipt, Migratio
 from .migrate_assets import verify_originals as verify_originals
 from .migration_transfer import (
     DatasetTransfer,
+    connection_failure,
     http_failure,
     loopback,
     pages,
@@ -135,8 +136,8 @@ def main():
             )
     except httpx.HTTPStatusError as exc:
         parser.exit(1, http_failure(exc.response))
-    except httpx.RequestError:
-        parser.exit(1, "迁移维护服务连接失败\n")
+    except httpx.RequestError as exc:
+        parser.exit(1, connection_failure(exc))
     except ValueError:
         parser.exit(1, "迁移校验失败，保留已持久化的批次回执\n")
     print(

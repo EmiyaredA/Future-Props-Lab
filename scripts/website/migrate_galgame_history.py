@@ -19,6 +19,7 @@ from studio.runtime.database.edit_receipt_migration import SUFFIX
 from .migrate_assets import verify_originals
 from .migration_transfer import (
     DatasetTransfer,
+    connection_failure,
     http_failure,
     inventory,
     loopback,
@@ -60,7 +61,9 @@ def main():
             report = migrate(client, plan, *peers)
     except httpx.HTTPStatusError as exc:
         parser.exit(1, http_failure(exc.response))
-    except (OSError, ValueError, httpx.RequestError):
+    except httpx.RequestError as exc:
+        parser.exit(1, connection_failure(exc))
+    except (OSError, ValueError):
         parser.exit(1, "迁移校验失败，保留已持久化的批次回执\n")
     print(json.dumps(report, sort_keys=True))
 

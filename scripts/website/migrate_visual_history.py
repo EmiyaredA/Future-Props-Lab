@@ -23,7 +23,13 @@ from studio.contracts.visual_workshop.visual_migration import (
 from studio.runtime.database.edit_receipt_migration import SUFFIX
 
 from .migrate_assets import verify_originals
-from .migration_transfer import DatasetTransfer, loopback, project_datasets, transfer
+from .migration_transfer import (
+    DatasetTransfer,
+    connection_failure,
+    loopback,
+    project_datasets,
+    transfer,
+)
 
 RECORDS = (
     *project_datasets(PREFIX, DATASETS),
@@ -72,7 +78,9 @@ def main():
             report = migrate(client, plan, *peers)
     except httpx.HTTPStatusError as exc:
         parser.exit(1, f"迁移请求失败（HTTP {exc.response.status_code}）\n")
-    except (OSError, ValueError, httpx.RequestError):
+    except httpx.RequestError as exc:
+        parser.exit(1, connection_failure(exc))
+    except (OSError, ValueError):
         parser.exit(1, "迁移校验失败，保留已持久化的批次回执\n")
     print(json.dumps(report, sort_keys=True))
 

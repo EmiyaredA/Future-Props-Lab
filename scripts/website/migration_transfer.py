@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import re
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -17,6 +18,25 @@ from studio.contracts.management.migration_batches import (
     MigrationPage,
     MigrationPlan,
 )
+
+
+class MigrationConnectionError(httpx.RequestError):
+    """Connection failure annotated with an operator-facing phase, without URL or credentials."""
+
+
+@contextmanager
+def request_stage(stage):
+    try:
+        yield
+    except MigrationConnectionError:
+        raise
+    except httpx.RequestError as exc:
+        raise MigrationConnectionError(f"{stage}：{type(exc).__name__}") from None
+
+
+def connection_failure(exc):
+    detail = str(exc) if isinstance(exc, MigrationConnectionError) else type(exc).__name__
+    return f"迁移维护服务连接失败（{detail}）\n"
 
 
 @dataclass(frozen=True)
@@ -190,16 +210,16 @@ def run_cli(description, datasets, *, followup=None):
         parser.error("迁移计划无法读取或格式无效")
     try:
         with httpx.Client(trust_env=False, timeout=30, follow_redirects=False) as client:
-            report = [
-                transfer(client, plan, options.source, options.target, dataset)
-                for dataset in datasets
-            ]
+            report = []
+            for dataset in datasets:
+                with request_stage(f"{dataset.name} 记录传输"):
+                    report.append(transfer(client, plan, options.source, options.target, dataset))
             if followup is not None:
                 report.append(followup(client, plan, options.source, options.target))
     except httpx.HTTPStatusError as exc:
         parser.exit(1, http_failure(exc.response))
-    except httpx.RequestError:
-        parser.exit(1, "迁移维护服务连接失败\n")
+    except httpx.RequestError as exc:
+        parser.exit(1, connection_failure(exc))
     except ValueError:
         parser.exit(1, "迁移校验失败，保留已持久化的批次回执\n")
     print(json.dumps(report[0] if len(report) == 1 else report, sort_keys=True))
