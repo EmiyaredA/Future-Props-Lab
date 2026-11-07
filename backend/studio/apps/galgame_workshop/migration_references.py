@@ -80,7 +80,7 @@ async def export_pins(sessions, plan, owner, after):
                     )
                 )
             )
-            if current != saved:
+            if not current <= saved:
                 raise blocked("migration_galgame_reference_index_conflict")
             retained = set(saved)
             for snapshot in await db.scalars(
