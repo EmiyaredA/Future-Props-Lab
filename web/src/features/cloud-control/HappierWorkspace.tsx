@@ -50,7 +50,6 @@ export function HappierWorkspace({
 
 function HappierFrame({ visible }: { visible: boolean }) {
   const [source, setSource] = useState<string>();
-  const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string>();
 
   useEffect(() => {
@@ -82,36 +81,33 @@ function HappierFrame({ visible }: { visible: boolean }) {
     return () => controller.abort();
   }, [visible, source, error]);
 
+  if (source) {
+    return (
+      <iframe
+        title="Happier Agent 工作台"
+        src={source}
+        allow="clipboard-read; clipboard-write"
+        referrerPolicy="strict-origin"
+      />
+    );
+  }
+
   return (
-    <>
-      {source && (
-        <iframe
-          title="Happier Agent 工作台"
-          src={source}
-          allow="clipboard-read; clipboard-write"
-          hidden={!loaded}
-          referrerPolicy="strict-origin"
-          onLoad={() => setLoaded(true)}
-        />
+    <div className="cloud-happier-state">
+      {error ? (
+        <>
+          <p role="alert">{error}</p>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => setError(undefined)}
+          >
+            重试
+          </button>
+        </>
+      ) : (
+        <p role="status">正在打开 Happier…</p>
       )}
-      {!loaded && (
-        <div className="cloud-happier-state">
-          {error ? (
-            <>
-              <p role="alert">{error}</p>
-              <button
-                type="button"
-                className="btn"
-                onClick={() => setError(undefined)}
-              >
-                重试
-              </button>
-            </>
-          ) : (
-            <p role="status">正在打开 Happier…</p>
-          )}
-        </div>
-      )}
-    </>
+    </div>
   );
 }

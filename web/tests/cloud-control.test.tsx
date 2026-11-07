@@ -84,8 +84,9 @@ it("retries an unavailable relay and preserves the same frame across cloud view 
         "https://happier.example.test/?server=https%3A%2F%2Fhappier.example.test",
       ),
     );
-    fireEvent.load(frame);
+    // A remote subresource can delay the iframe's load event after the app renders.
     expect(frame).toBeVisible();
+    expect(screen.queryByText("正在打开 Happier…")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^远程桌面$/ }));
     expect(frame).not.toBeVisible();
     fireEvent.click(screen.getByRole("button", { name: /^Agent 工作台$/ }));

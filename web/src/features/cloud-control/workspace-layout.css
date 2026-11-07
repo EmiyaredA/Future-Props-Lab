@@ -66,9 +66,6 @@
   display: block;
   border: 0;
 }
-.cloud-happier iframe[hidden] {
-  visibility: hidden;
-}
 .cloud-happier-state {
   position: absolute;
   inset: 0;
