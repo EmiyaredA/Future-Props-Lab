@@ -21,7 +21,12 @@ from studio.apps.model_service.playground.generation_runner import ModelTestGene
 from studio.apps.model_service.playground.recovery import recover_interrupted_model_test_runs
 from studio.apps.model_service.playground.service import ModelTestService
 from studio.apps.model_service.playground.transcription_runner import ModelTestTranscriptionRunner
-from studio.apps.model_service.storage.migration_originals import ATTACHMENTS, PLAYGROUND_TASKS
+from studio.apps.model_service.storage.migration_originals import (
+    ATTACHMENTS,
+    PLAYGROUND_TASKS,
+    LegacyTranscriptionInputs,
+    ModelOriginals,
+)
 from studio.apps.model_service.storage.migrations.registry import MIGRATIONS
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
 from studio.apps.model_service.storage.models.model_test import (
@@ -221,6 +226,35 @@ async def verify_task_recovery(target, owner, source_root, tasks):
     finally:
         await generation.stop()
         await database.close()
+
+
+def test_transcription_inventory_requires_all_unapproved_originals(tmp_path):
+    owner, missing, recovered = (str(uuid4()) for _ in range(3))
+    source = tmp_path / "source"
+    destination = tmp_path / "destination"
+    source.mkdir()
+    destination.mkdir()
+    original = source / "library-original"
+    original.write_bytes(b"audio")
+    records = [(missing, uuid4().hex, 5), (recovered, uuid4().hex, 5)]
+    approval = LegacyTranscriptionInputs({recovered: original}, frozenset({missing}))
+    strict = ModelOriginals(None, None, source, PLAYGROUND_TASKS, legacy=True)
+    with pytest.raises(ValueError, match="缺少原件"):
+        strict.scan(owner, "references", records, complete=True)
+    exporter = ModelOriginals(
+        None, None, source, PLAYGROUND_TASKS, legacy=True, transcription_inputs=approval
+    )
+    exported = exporter.scan(owner, "references", records, complete=True)
+    assert [(item.id, item.sha256) for item in exported] == [(recovered, digest(original))]
+    importer = ModelOriginals(
+        None, None, destination, PLAYGROUND_TASKS, legacy=False, transcription_inputs=approval
+    )
+    with pytest.raises(ValueError, match="缺少原件"):
+        importer.scan(owner, "references", records, complete=True)
+    path = importer.path(owner, "references", records[1][1])
+    path.parent.mkdir(parents=True)
+    path.write_bytes(original.read_bytes())
+    assert importer.scan(owner, "references", records, complete=True) == exported
 
 
 def test_playground_migration_preserves_drafts_and_recovers_partial_message(tmp_path):

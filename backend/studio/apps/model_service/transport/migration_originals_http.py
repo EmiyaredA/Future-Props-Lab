@@ -46,8 +46,15 @@ def mount_relationships(app, sessions, *, source=None):
         return result
 
 
-def mount_originals(app, plan, sessions, scope, *, root, source=None):
-    originals = ModelOriginals(plan, sessions, root, scope, legacy=source is not None)
+def mount_originals(app, plan, sessions, scope, *, root, source=None, transcription_inputs=None):
+    originals = ModelOriginals(
+        plan,
+        sessions,
+        root,
+        scope,
+        legacy=source is not None,
+        transcription_inputs=transcription_inputs,
+    )
     admission = MigrationAdmission(plan)
     prefix = scope.prefix
     file_route = prefix + "/{owner}/{kind}/{identifier}/{size}/{digest}"

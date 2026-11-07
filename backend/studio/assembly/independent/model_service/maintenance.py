@@ -69,21 +69,38 @@ def mount_catalog(app, plan, sessions, *, source=None, cipher=None):
     return app
 
 
-def mount_history(app, plan, sessions, *, root, source=None, cipher=None):
+def mount_history(
+    app, plan, sessions, *, root, source=None, cipher=None, transcription_inputs=None
+):
     datasets = maintenance_datasets(plan, legacy=source is not None, cipher=cipher)
     mount_project_history(app, plan, sessions, PREFIX, datasets, ModelsImportReceipt, source=source)
     mount_relationships(app, sessions, source=source)
     for scope in (INFERENCE, ATTACHMENTS, PLAYGROUND_TASKS):
-        mount_originals(app, plan, sessions, scope, root=root, source=source)
+        mount_originals(
+            app,
+            plan,
+            sessions,
+            scope,
+            root=root,
+            source=source,
+            transcription_inputs=transcription_inputs if scope is PLAYGROUND_TASKS else None,
+        )
 
 
-def create_export_app(*, plan, source_path):
+def create_export_app(*, plan, source_path, transcription_inputs=None):
     app, sessions, source = export_app(plan, source_path, **TRANSPORT)
-    mount_history(app, plan, sessions, root=source.path.parent, source=source)
+    mount_history(
+        app,
+        plan,
+        sessions,
+        root=source.path.parent,
+        source=source,
+        transcription_inputs=transcription_inputs,
+    )
     return mount_catalog(app, plan, sessions, source=source)
 
 
-def create_import_app(*, plan, state_root, secret_key):
+def create_import_app(*, plan, state_root, secret_key, transcription_inputs=None):
     cipher = SecretCipher(secret_key)
     models = (
         *(dataset.model for dataset in (*DATASETS, *HISTORY)),
@@ -94,5 +111,12 @@ def create_import_app(*, plan, state_root, secret_key):
     app, database = import_app(
         plan, state_root, "models", models, MIGRATIONS, account_models=account_models, **TRANSPORT
     )
-    mount_history(app, plan, database.sessions, root=database.root, cipher=cipher)
+    mount_history(
+        app,
+        plan,
+        database.sessions,
+        root=database.root,
+        cipher=cipher,
+        transcription_inputs=transcription_inputs,
+    )
     return mount_catalog(app, plan, database.sessions, cipher=cipher)

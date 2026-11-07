@@ -2,7 +2,9 @@
 
 import asyncio
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Annotated, Literal
 from uuid import uuid5
 
@@ -56,6 +58,12 @@ class OriginalSet:
 INFERENCE = OriginalSet("inference", "model-inference", ("inputs", "outputs"))
 ATTACHMENTS = OriginalSet("test-attachment", "model-test", ("attachments",))
 PLAYGROUND_TASKS = OriginalSet("test-task", "model-test", ("generated", "references"))
+
+
+@dataclass(frozen=True)
+class LegacyTranscriptionInputs:
+    recovered: Mapping[str, Path]
+    unavailable: frozenset[str]
 
 
 class Original(HistoryRecord):
@@ -113,9 +121,10 @@ def records_for(kind, owner):
 
 
 class ModelOriginals:
-    def __init__(self, plan, sessions, root, scope, *, legacy):
+    def __init__(self, plan, sessions, root, scope, *, legacy, transcription_inputs=None):
         self.plan, self.sessions, self.root, self.scope = plan, sessions, root, scope
         self.legacy = legacy
+        self.transcription_inputs = transcription_inputs
 
     def account_root(self, owner):
         return checked_path(self.root, "accounts", str(owner), self.scope.folder)
@@ -147,6 +156,14 @@ class ModelOriginals:
             raise ValueError("模型文件记录不存在或大小不符")
         return self.path(owner, item.kind, rows[0][1])
 
+    def recovered_path(self, kind, identifier):
+        if not self.legacy or kind != "references" or self.transcription_inputs is None:
+            return None
+        recovered = self.transcription_inputs.recovered.get(identifier)
+        if recovered is not None:
+            return checked_path(self.root, *recovered.relative_to(self.root).parts)
+        return None
+
     def scan(self, owner, kind, records, *, complete):
         root = self.account_root(owner)
         expected = {
@@ -157,6 +174,7 @@ class ModelOriginals:
         if len({identifier for identifier, _, _ in records}) != len(records):
             raise ValueError("模型文件清单存在重复标识")
         found = []
+        remaining = expected.copy()
         for path in inventory_directory(checked_path(root, kind)):
             if path not in expected:
                 if self.legacy and self.is_staging(kind, path):
@@ -165,8 +183,18 @@ class ModelOriginals:
             identifier, size = expected[path]
             _, sha256 = inspect_blob(path, exact_size=size)
             found.append(Original(kind=kind, id=identifier, size=size, sha256=sha256))
-        if complete and len(found) != len(records):
-            raise ValueError("模型目录缺少原件")
+            remaining.pop(path)
+        for identifier, size in remaining.values():
+            recovered = self.recovered_path(kind, identifier)
+            if recovered is not None:
+                _, sha256 = inspect_blob(recovered, exact_size=size)
+                found.append(Original(kind=kind, id=identifier, size=size, sha256=sha256))
+            elif complete and not (
+                kind == "references"
+                and self.transcription_inputs is not None
+                and identifier in self.transcription_inputs.unavailable
+            ):
+                raise ValueError("模型目录缺少原件")
         return found
 
     @staticmethod
@@ -208,6 +236,8 @@ class ModelOriginals:
 
     async def read(self, owner, item):
         path = await self.find(owner, item)
+        if not path.exists():
+            path = self.recovered_path(item.kind, item.id) or path
         _, digest = await asyncio.to_thread(inspect_blob, path, exact_size=item.size)
         if digest != item.sha256:
             raise ValueError("模型文件摘要不一致")
