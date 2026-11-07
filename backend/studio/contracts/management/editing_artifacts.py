@@ -88,7 +88,7 @@ class VideoDerivativeHistory(BaseModel):
     def validate_outputs(self):
         keys = [file.key for file in self.files]
         variants = {
-            "proxy": r"\.(?:mp4|webm|wav)$",
+            "proxy": r"\.(?:mp4|webm|wav|m4a)$",
             "thumbnail": r"\.png$",
             "waveform": r"\.png$",
         }

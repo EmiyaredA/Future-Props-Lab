@@ -27,7 +27,14 @@ from studio.contracts.management.editing_artifacts import VIDEO_PREFIX as VIDEO_
 from studio.contracts.management.migration_batches import BatchReceipt, MigrationPlan
 
 from .migrate_assets import verify_originals as verify_originals
-from .migration_transfer import DatasetTransfer, loopback, pages, project_datasets, transfer
+from .migration_transfer import (
+    DatasetTransfer,
+    http_failure,
+    loopback,
+    pages,
+    project_datasets,
+    transfer,
+)
 
 MOTION = project_datasets(MOTION_PREFIX, MOTION_DATASETS)
 VIDEO = project_datasets(VIDEO_PREFIX, VIDEO_DATASETS)
@@ -127,7 +134,7 @@ def main():
                 client, plan, options.video_source, options.rendering_target, VIDEO_VARIANTS
             )
     except httpx.HTTPStatusError as exc:
-        parser.exit(1, f"迁移请求失败（HTTP {exc.response.status_code}）\n")
+        parser.exit(1, http_failure(exc.response))
     except httpx.RequestError:
         parser.exit(1, "迁移维护服务连接失败\n")
     except ValueError:

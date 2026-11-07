@@ -162,6 +162,22 @@ def transfer(client, plan, source, target, dataset, *, source_pages=None):
     }
 
 
+def http_failure(response):
+    code = ""
+    try:
+        body = response.json()
+        if isinstance(body, dict):
+            detail = body.get("detail")
+            candidate = body.get("code") or (
+                detail.get("code") if isinstance(detail, dict) else None
+            )
+            if isinstance(candidate, str) and re.fullmatch(r"migration_[a-z0-9_]{1,80}", candidate):
+                code = f"，{candidate}"
+    except ValueError:
+        pass
+    return f"迁移请求失败（HTTP {response.status_code}{code}）\n"
+
+
 def run_cli(description, datasets, *, followup=None):
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--plan", required=True, type=Path)
@@ -181,21 +197,7 @@ def run_cli(description, datasets, *, followup=None):
             if followup is not None:
                 report.append(followup(client, plan, options.source, options.target))
     except httpx.HTTPStatusError as exc:
-        code = ""
-        try:
-            body = exc.response.json()
-            if isinstance(body, dict):
-                detail = body.get("detail")
-                candidate = body.get("code") or (
-                    detail.get("code") if isinstance(detail, dict) else None
-                )
-                if isinstance(candidate, str) and re.fullmatch(
-                    r"migration_[a-z0-9_]{1,80}", candidate
-                ):
-                    code = f"，{candidate}"
-        except ValueError:
-            pass
-        parser.exit(1, f"迁移请求失败（HTTP {exc.response.status_code}{code}）\n")
+        parser.exit(1, http_failure(exc.response))
     except httpx.RequestError:
         parser.exit(1, "迁移维护服务连接失败\n")
     except ValueError:
