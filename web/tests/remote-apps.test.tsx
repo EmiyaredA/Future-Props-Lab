@@ -123,3 +123,16 @@ it("does not expose app discovery or the allowlist to the locked public browser"
   expect(unlock).toHaveBeenCalledOnce();
   expect(readRemoteApps).not.toHaveBeenCalled();
 });
+
+it("shows authorized remote users where to add an app without reading the Mac catalog", async () => {
+  readRemoteApps.mockResolvedValue({ apps: [] });
+  readInstalledRemoteApps.mockClear();
+  show({ local: false });
+  fireEvent.click(screen.getByRole("button", { name: "添加应用" }));
+  const dialog = screen.getByRole("dialog", { name: "添加远程应用" });
+  expect(within(dialog).getByText(/请在 Mac 上打开本机/)).toBeVisible();
+  expect(within(dialog).queryByLabelText("FPL 管理员密码")).toBeNull();
+  expect(readInstalledRemoteApps).not.toHaveBeenCalled();
+  fireEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
+  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+});

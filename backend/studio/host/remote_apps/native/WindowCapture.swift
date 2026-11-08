@@ -7,6 +7,7 @@ final class WindowCapture: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
     private let queue = DispatchQueue(label: "fpl.remote-app.capture")
     private let available = DispatchSemaphore(value: 1)
     private var encoder: VTCompressionSession?
+    private var frameCrop: WindowFrameCrop?
     private var stream: SCStream?
     private var forceKeyframe = true
     private var stopped = false
@@ -31,7 +32,10 @@ final class WindowCapture: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         config.minimumFrameInterval = CMTime(value: 1, timescale: 30)
         config.queueDepth = 3
         config.showsCursor = false
-        config.pixelFormat = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange
+        // Keep alpha until we have separated the window from capture padding.
+        config.pixelFormat = kCVPixelFormatType_32BGRA
+        config.shouldBeOpaque = false
+        frameCrop = WindowFrameCrop(width: config.width, height: config.height, windowSize: window.frame.size)
         try prepareEncoder(config.width, config.height)
         let next = SCStream(filter: filter, configuration: config, delegate: self)
         stream = next
@@ -46,6 +50,7 @@ final class WindowCapture: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         queue.sync { stopped = true }
         try? await current?.stopCapture()
         queue.sync {
+            frameCrop = nil
             if let encoder {
                 VTCompressionSessionInvalidate(encoder)
                 self.encoder = nil
@@ -93,8 +98,10 @@ final class WindowCapture: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
               available.wait(timeout: .now()) == .success else { return }
         let properties = forceKeyframe ? [kVTEncodeFrameOptionKey_ForceKeyFrame: true] as CFDictionary : nil
         forceKeyframe = false
+        let pixelsPerPoint = (metadata[.scaleFactor] as? CGFloat ?? 0) * (metadata[.contentScale] as? CGFloat ?? 0)
+        let frame = frameCrop?.normalize(image, pixelsPerPoint: pixelsPerPoint) ?? image
         let result = VTCompressionSessionEncodeFrame(
-            encoder, imageBuffer: image, presentationTimeStamp: sample.presentationTimeStamp,
+            encoder, imageBuffer: frame, presentationTimeStamp: sample.presentationTimeStamp,
             duration: .invalid, frameProperties: properties, infoFlagsOut: nil
         ) { [self] status, _, output in
             defer { available.signal() }

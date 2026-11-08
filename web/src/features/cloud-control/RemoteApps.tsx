@@ -142,7 +142,7 @@ export function RemoteApps({
               </button>
             ))}
           </div>
-          {status.local && (
+          {(status.desktop_authorized || status.local) && (
             <button
               className="btn"
               type="button"
@@ -313,9 +313,10 @@ export function RemoteApps({
         )}
       </div>
       {fullscreenError && connected && <p role="alert">{fullscreenError}</p>}
-      {manager && (
+      {visible && manager && (status.desktop_authorized || status.local) && (
         <RemoteAppCatalogDialog
           owner={owner}
+          local={status.local}
           changed={(catalog) => {
             const installed = new Map(
               catalog.apps.map((item) => [item.id, item]),

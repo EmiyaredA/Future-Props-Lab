@@ -145,16 +145,19 @@ function CatalogForm({
 
 export function RemoteAppCatalogDialog({
   owner,
+  local,
   changed,
   close,
 }: {
   owner: string;
+  local: boolean;
   changed: (catalog: InstalledRemoteApps) => void;
   close: () => void;
 }) {
   const catalog = useQuery({
     queryKey: ["cloud-control", owner, "installed-apps"],
     queryFn: ({ signal }) => readInstalledRemoteApps(signal),
+    enabled: local,
     gcTime: 0,
   });
 
@@ -164,17 +167,33 @@ export function RemoteAppCatalogDialog({
         <Dialog.Overlay className="cloud-dialog-overlay" />
         <Dialog.Content className="cloud-dialog cloud-app-catalog-dialog">
           <Dialog.Title>添加远程应用</Dialog.Title>
-          <Dialog.Description>选定允许远程连接的 Mac 应用。</Dialog.Description>
-          {catalog.isPending && <p role="status">正在读取 Mac 应用…</p>}
-          {catalog.error && <p role="alert">{catalog.error.message}</p>}
-          {catalog.data && (
+          <Dialog.Description>
+            {local
+              ? "选定允许远程连接的 Mac 应用。"
+              : "应用名单由运行云控的 Mac 管理。"}
+          </Dialog.Description>
+          {!local && (
+            <p>
+              请在 Mac
+              上打开本机的「云控」，点击「添加应用」，选择已安装的应用并验证管理员密码。保存后，回到这里即可看到新应用。
+            </p>
+          )}
+          {local && catalog.isPending && (
+            <p role="status">正在读取 Mac 应用…</p>
+          )}
+          {local && catalog.error && (
+            <p role="alert">{catalog.error.message}</p>
+          )}
+          {local && catalog.data && (
             <CatalogForm
               initial={catalog.data}
               changed={changed}
               close={close}
             />
           )}
-          {!catalog.data && <Dialog.Close className="btn">关闭</Dialog.Close>}
+          {(!local || !catalog.data) && (
+            <Dialog.Close className="btn">关闭</Dialog.Close>
+          )}
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
