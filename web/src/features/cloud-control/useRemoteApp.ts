@@ -8,6 +8,7 @@ type HostMessage =
   | { type: "windows"; windows: RemoteWindow[] }
   | { type: "answer"; sdp: string }
   | { type: "error" | "paused"; message: string }
+  | { type: "input-state"; ready: boolean }
   | { type: "waiting" };
 
 async function gather(peer: RTCPeerConnection, signal: AbortSignal) {
@@ -37,12 +38,16 @@ export function useRemoteApp() {
   const [selected, setSelected] = useState<number>();
   const [error, setError] = useState("");
   const [generation, setGeneration] = useState(0);
+  const [channelOpen, setChannelOpen] = useState(false);
+  const [hostInputBlocked, setHostInputBlocked] = useState(false);
   const disconnect = useCallback(() => {
     cleanup.current?.();
     cleanup.current = null;
     setState("idle");
     setWindows([]);
     setSelected(undefined);
+    setChannelOpen(false);
+    setHostInputBlocked(false);
   }, []);
 
   useEffect(() => () => cleanup.current?.(), []);
@@ -73,8 +78,14 @@ export function useRemoteApp() {
     let waitingFor: number | undefined;
     let offered = false;
     let selectionSent = false;
+    let frameReady = false;
     const timeout = window.setTimeout(
-      () => fail("等待应用画面超时，请重新连接"),
+      () =>
+        fail(
+          frameReady
+            ? "远程键鼠通道连接超时，请重新连接"
+            : "等待应用画面超时，请重新连接",
+        ),
       32_000,
     );
 
@@ -117,7 +128,15 @@ export function useRemoteApp() {
         direction: "recvonly",
       });
       if ("jitterBufferTarget" in receiver) receiver.jitterBufferTarget = 0;
-      input.current = connection.createDataChannel("input");
+      const channel = connection.createDataChannel("input");
+      input.current = channel;
+      channel.onopen = () => {
+        if (signal.aborted) return;
+        setChannelOpen(true);
+        if (frameReady) window.clearTimeout(timeout);
+      };
+      channel.onclose = () => fail("远程键鼠通道已断开，请重新连接");
+      channel.onerror = () => fail("远程键鼠通道连接失败，请重新连接");
       connection.onconnectionstatechange = () => {
         if (["failed", "disconnected"].includes(connection.connectionState))
           fail("媒体连接已断开，请检查网络后重新连接");
@@ -128,7 +147,8 @@ export function useRemoteApp() {
         surface.srcObject = new MediaStream([track]);
         const visible = () => {
           if (signal.aborted || !surface?.srcObject) return;
-          window.clearTimeout(timeout);
+          frameReady = true;
+          if (channel.readyState === "open") window.clearTimeout(timeout);
           setState("connected");
         };
         if (surface.requestVideoFrameCallback)
@@ -192,6 +212,9 @@ export function useRemoteApp() {
                 sdp: message.sdp,
               });
               break;
+            case "input-state":
+              setHostInputBlocked(!message.ready);
+              break;
             case "paused":
               window.clearTimeout(timeout);
               clearSurface();
@@ -221,6 +244,8 @@ export function useRemoteApp() {
     windows,
     selected,
     generation,
+    channelOpen,
+    hostInputBlocked,
     connect,
     disconnect,
     send,

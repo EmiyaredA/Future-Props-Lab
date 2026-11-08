@@ -9,7 +9,7 @@ from functools import partial
 from starlette.websockets import WebSocketDisconnect
 
 MAX_MESSAGE = 128 * 1024
-HOST_MESSAGES = {"windows", "waiting", "answer", "error", "paused"}
+HOST_MESSAGES = {"windows", "waiting", "answer", "error", "paused", "input-state"}
 
 
 class SignalingError(ValueError):

@@ -36,13 +36,13 @@ function point(video: HTMLVideoElement, x: number, y: number) {
 
 export function RemoteAppSurface({
   video,
-  connected,
+  inputReady,
   fit,
   send,
   releaseFocus,
 }: {
   video: RefObject<HTMLVideoElement | null>;
-  connected: boolean;
+  inputReady: boolean;
   fit: boolean;
   send: (event: object, allowDrop?: boolean) => void;
   releaseFocus: () => void;
@@ -73,7 +73,7 @@ export function RemoteAppSurface({
   }, [video]);
 
   wheelHandler.current = (event) => {
-    if (!connected || !video.current) return;
+    if (!inputReady || !video.current) return;
     const at = point(video.current, event.clientX, event.clientY);
     if (!at) return;
     event.preventDefault();
@@ -102,7 +102,12 @@ export function RemoteAppSurface({
         aria-label="远程应用画面"
         onContextMenu={(event) => event.preventDefault()}
         onPointerDown={(event) => {
-          if (!connected || (event.button !== 0 && event.button !== 2)) return;
+          if (
+            !inputReady ||
+            pointer.current !== undefined ||
+            (event.button !== 0 && event.button !== 2)
+          )
+            return;
           const at = point(event.currentTarget, event.clientX, event.clientY);
           if (!at) return;
           event.preventDefault();
@@ -129,6 +134,7 @@ export function RemoteAppSurface({
         }}
         onPointerMove={(event) => {
           if (
+            !inputReady ||
             pointer.current !== event.pointerId ||
             performance.now() - lastMove.current < 16
           )
@@ -161,8 +167,8 @@ export function RemoteAppSurface({
         className="cloud-remote-keyboard"
         aria-label="应用键盘，按 Shift 加 Escape 释放焦点"
         autoComplete="off"
-        tabIndex={connected ? 0 : -1}
-        disabled={!connected}
+        tabIndex={inputReady ? 0 : -1}
+        disabled={!inputReady}
         onBlur={release}
         onKeyDown={(event) => {
           if (event.shiftKey && event.key === "Escape") {

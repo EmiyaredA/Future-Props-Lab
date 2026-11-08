@@ -43,7 +43,7 @@ class Peer {
   iceGatheringState = "complete";
   localDescription = { sdp: "v=0" };
   addTransceiver = vi.fn(() => ({ receiver: { jitterBufferTarget: null } }));
-  createDataChannel = vi.fn();
+  createDataChannel = vi.fn(() => ({}));
   createOffer = vi.fn();
   setLocalDescription = vi.fn();
   setRemoteDescription = vi.fn();

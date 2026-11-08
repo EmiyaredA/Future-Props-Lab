@@ -63,6 +63,15 @@ export function RemoteApps({
   const items = status.desktop_authorized ? (apps.data?.apps ?? []) : [];
   const active = items.find((item) => item.id === selected) ?? items[0];
   const connected = remote.state === "connected";
+  const inputReady =
+    connected && remote.channelOpen && !remote.hostInputBlocked;
+  const connectionText = connected
+    ? !remote.channelOpen
+      ? "画面已连接，等待键鼠"
+      : remote.hostInputBlocked
+        ? "画面已连接，键鼠已暂停"
+        : statusText.connected
+    : statusText[remote.state];
   const starting = remote.state === "starting" || remote.state === "waiting";
 
   useEffect(() => {
@@ -110,10 +119,10 @@ export function RemoteApps({
         <span className="cloud-host">{status.host_label}</span>
         <span
           className="cloud-connection"
-          data-connected={connected}
+          data-connected={inputReady}
           role="status"
         >
-          {statusText[remote.state]}
+          {connectionText}
         </span>
         <div className="cloud-app-tabs">
           <div
@@ -237,11 +246,26 @@ export function RemoteApps({
         <RemoteAppSurface
           key={remote.generation}
           video={remote.video}
-          connected={connected}
+          inputReady={inputReady}
           fit={fit}
           send={remote.send}
           releaseFocus={() => disconnectButton.current?.focus()}
         />
+        {connected && !inputReady && (
+          <div className="cloud-app-input-status">
+            <span>{connectionText}</span>
+            {remote.channelOpen && remote.hostInputBlocked && active && (
+              <button
+                className="btn cloud-app-refocus"
+                type="button"
+                title="将所选窗口切回 Mac 前台并恢复远程键鼠"
+                onClick={() => void remote.connect(active.id, remote.selected)}
+              >
+                恢复键鼠
+              </button>
+            )}
+          </div>
+        )}
         {!connected && (
           <div className="cloud-desktop-empty">
             {starting ? (

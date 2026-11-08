@@ -30,7 +30,7 @@
 
 2. 正式部署时将签名后的应用安装到运行网站的 Mac 账号的 `~/Applications/FPLRemoteApps.app`。在访达中打开安装后的应用，在系统设置中为它授予「屏幕与系统音频录制」和「辅助功能」。运行 `~/Applications/FPLRemoteApps.app/Contents/MacOS/fpl-remote-apps status`，检查 `unlocked`、`screen_capture` 与 `accessibility`。检查与采集都以辅助应用的身份运行。可设置 `FPL_REMOTE_APPS_SIGNING_IDENTITY`，使更新后的构建沿用签名身份。权限须在运行网站的 Mac 用户登录会话中验证。
 3. 在 `[cloud_control]` 设置 `apps_enabled = true`，将 `apps_host` 设为安装后的 `fpl-remote-apps` 可执行文件的绝对路径。用本机入口登录已获准的管理员，打开「远程应用」和「添加应用」。在「常用应用」选 Chrome 和文本编辑，或在「已安装应用」搜索。输入管理员密码保存，应用会出现在标签栏。
-4. 点击页头的应用标签和画面中的「连接应用」。应用有多个可见窗口时，用页头的窗口菜单切换。点击画面接管输入，用 Shift + Esc 释放。窗口关闭、最小化或尺寸变化后重新选择窗口。Mac 锁屏时在主机解锁再连接。
+4. 点击页头的应用标签和画面中的「连接应用」。连接优先选择 Mac 上最近聚焦的可识别窗口。应用有多个可见窗口时，用页头的窗口菜单切换。键鼠通道就绪后，点击画面接管输入，用 Shift + Esc 释放。目标窗口失焦时，画面下方显示「键鼠已暂停」，点「恢复键鼠」可将所选窗口重新切到 Mac 前台。窗口关闭、最小化或尺寸变化后重新选择窗口。Mac 锁屏时在主机解锁再连接。
 5. 在受信本机「云控设置」显式允许公网访问。从另一台设备打开现有 HTTPS 入口并验证 FPL 管理员密码。浏览器经同源 WebSocket 交换 WebRTC 信令，媒体和键鼠走 WebRTC。公网配置自托管 coturn 的 `apps_turn_urls`，例如 `turn:turn.example.com:3478?transport=udp` 和 `turns:turn.example.com:5349`，以及与中继匹配的 `apps_turn_secret`。为 TURN 单独配置 DNS、TLS 证书及中继端口范围。
 
 使用临时签名重新构建后，如果「辅助功能」开关已打开，但 `status` 返回

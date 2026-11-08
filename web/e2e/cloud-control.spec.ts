@@ -385,3 +385,171 @@ test("remote app tabs scroll locally and keep the Mac-only add action visible", 
     pane.getByRole("button", { name: "验证访问权限" }),
   ).toBeVisible();
 });
+
+test("remote app gates input and maps bounded video coordinates", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1470, height: 900 });
+  await page.addInitScript(() => {
+    // Keep the browser's video and fullscreen behavior, while using a local
+    // canvas track instead of connecting to the Mac capture helper.
+    class FixturePeer {
+      iceGatheringState = "complete";
+      localDescription = { type: "offer", sdp: "fixture" };
+      ontrack?: (event: { track: MediaStreamTrack }) => void;
+      stream?: MediaStream;
+      drawing?: number;
+      addTransceiver() {
+        return { receiver: {} };
+      }
+      createDataChannel() {
+        const channel = {
+          readyState: "connecting",
+          bufferedAmount: 0,
+          onopen: () => {},
+          send(message: string) {
+            if (JSON.parse(message).type === "down")
+              document.body.dataset.fixtureClick = message;
+          },
+        };
+        window.addEventListener(
+          "fixture-input-open",
+          () => {
+            channel.readyState = "open";
+            channel.onopen();
+          },
+          { once: true },
+        );
+        return channel;
+      }
+      async createOffer() {
+        return this.localDescription;
+      }
+      async setLocalDescription() {}
+      async setRemoteDescription() {
+        const canvas = document.createElement("canvas");
+        canvas.width = 320;
+        canvas.height = 200;
+        const context = canvas.getContext("2d")!;
+        this.stream = canvas.captureStream(10);
+        this.drawing = window.setInterval(() => {
+          context.fillStyle = "#24354b";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+        }, 80);
+        this.ontrack?.({ track: this.stream.getVideoTracks()[0] });
+      }
+      close() {
+        window.clearInterval(this.drawing);
+        this.stream?.getTracks().forEach((track) => track.stop());
+      }
+    }
+    Object.defineProperty(window, "RTCPeerConnection", { value: FixturePeer });
+  });
+  await page.route("**/v1/cloud-control/status", (route) =>
+    route.fulfill({
+      json: {
+        enabled: true,
+        local: true,
+        host_label: "Fixture Mac",
+        remote_apps_enabled: true,
+        desktop_configured: true,
+        desktop_authorized: true,
+        idle_minutes: 30,
+        idle_revision: 0,
+        unlocked_until: 0,
+        happier_available: false,
+      },
+    }),
+  );
+  const app = { id: "a".repeat(64), name: "Codex" };
+  await page.route("**/v1/cloud-control/apps", (route) =>
+    route.fulfill({ json: { apps: [app] } }),
+  );
+  await page.route("**/v1/cloud-control/apps/connect", (route) =>
+    route.fulfill({ json: { ticket: "fixture", ice_servers: [] } }),
+  );
+  let setHostInputReady!: (ready: boolean) => void;
+  const selections: number[] = [];
+  await page.routeWebSocket("**/v1/cloud-control/apps/socket", (socket) => {
+    setHostInputReady = (ready) =>
+      socket.send(JSON.stringify({ type: "input-state", ready }));
+    socket.onMessage((data) => {
+      const message = JSON.parse(data.toString());
+      if (message.type === "offer") {
+        socket.send(
+          JSON.stringify({
+            type: "windows",
+            windows: [{ id: 1, title: "Fixture window" }],
+          }),
+        );
+      }
+      if (message.type === "select") {
+        selections.push(message.window);
+        socket.send(JSON.stringify({ type: "answer", sdp: "fixture" }));
+      }
+    });
+  });
+  await page.goto("/cloud-control");
+  await page.getByRole("button", { name: "连接应用", exact: true }).click();
+  const heading = page.getByRole("group", { name: "远控操作" });
+  await expect(heading.getByRole("status")).toHaveText("画面已连接，等待键鼠");
+  await expect(
+    heading.getByRole("combobox", { name: "远程应用窗口" }),
+  ).toHaveText("Fixture window");
+  const viewport = page.locator(".cloud-app-viewport");
+  const video = viewport.locator("video");
+  const remoteKeyboard = viewport.getByRole("textbox", { name: /^应用键盘/ });
+  await expect(remoteKeyboard).toBeDisabled();
+  setHostInputReady(false);
+  await page.evaluate(() =>
+    window.dispatchEvent(new Event("fixture-input-open")),
+  );
+  await expect(heading.getByRole("status")).toHaveText(
+    "画面已连接，键鼠已暂停",
+  );
+  const refocus = viewport.getByRole("button", { name: "恢复键鼠" });
+  await expect(refocus).toBeVisible();
+  await expect(remoteKeyboard).toBeDisabled();
+  setHostInputReady(true);
+  await expect(heading.getByRole("status")).toHaveText("已连接");
+  await expect(remoteKeyboard).toBeEnabled();
+
+  for (const size of [
+    { width: 1470, height: 900 },
+    { width: 390, height: 510 },
+  ]) {
+    await page.setViewportSize(size);
+    const screen = (await viewport.boundingBox())!;
+    const picture = (await video.boundingBox())!;
+    expect(picture.x).toBeCloseTo(screen.x);
+    expect(picture.y).toBeCloseTo(screen.y);
+    expect(picture.width).toBeCloseTo(screen.width);
+    expect(picture.height).toBeCloseTo(screen.height);
+    const scale = Math.min(picture.width / 320, picture.height / 200);
+    await page.mouse.click(
+      picture.x + picture.width / 2 - 80 * scale,
+      picture.y + picture.height / 2 + 50 * scale,
+    );
+    await expect(remoteKeyboard).toBeFocused();
+    const click = await page.evaluate(() =>
+      JSON.parse(document.body.dataset.fixtureClick!),
+    );
+    expect(click.x).toBeCloseTo(0.25);
+    expect(click.y).toBeCloseTo(0.75);
+    expect(
+      await viewport.evaluate(
+        (node) => getComputedStyle(node, "::after").borderTopWidth,
+      ),
+    ).toBe("2px");
+  }
+  setHostInputReady(false);
+  await refocus.click();
+  await expect(heading.getByRole("status")).toHaveText("画面已连接，等待键鼠");
+  expect(selections).toEqual([1, 1]);
+  await page.evaluate(() =>
+    window.dispatchEvent(new Event("fixture-input-open")),
+  );
+  await expect(heading.getByRole("status")).toHaveText("已连接");
+  await heading.getByRole("button", { name: "断开连接" }).click();
+  await expect(heading.getByRole("status")).toHaveText("未连接");
+});

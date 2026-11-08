@@ -1,7 +1,7 @@
 import asyncio
 from contextlib import aclosing
 from types import SimpleNamespace
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, call
 
 import pytest
 from cryptography.fernet import Fernet
@@ -60,6 +60,20 @@ async def test_signaling_stops_when_the_app_authorization_is_revoked():
         bridge(socket, process, access=AsyncMock(return_value=None), ice_servers=[]), 1
     )
     socket.close.assert_awaited_once_with(4403, "应用授权已失效")
+
+
+async def test_signaling_forwards_window_input_availability():
+    blocked = asyncio.Event()
+    socket = SimpleNamespace(receive=blocked.wait, send_json=AsyncMock(), close=AsyncMock())
+    stdout = asyncio.StreamReader()
+    stdout.feed_data(b'{"type":"input-state","ready":false}\n{"type":"input-state","ready":true}\n')
+    stdout.feed_eof()
+    process = SimpleNamespace(stdin=SimpleNamespace(write=Mock(), drain=AsyncMock()), stdout=stdout)
+    await asyncio.wait_for(bridge(socket, process, access=blocked.wait, ice_servers=[]), 1)
+    assert socket.send_json.await_args_list[:2] == [
+        call({"type": "input-state", "ready": False}),
+        call({"type": "input-state", "ready": True}),
+    ]
 
 
 @pytest.mark.real_auth

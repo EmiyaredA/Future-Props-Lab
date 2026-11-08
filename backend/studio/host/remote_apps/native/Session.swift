@@ -30,6 +30,7 @@ final class Session {
     private var starting = false
     private var capture: WindowCapture?
     private var input: WindowInput?
+    private var inputReady: Bool?
     private var listing = Data()
     private var lastActivity = ContinuousClock.now
     private var ended = false
@@ -120,9 +121,26 @@ final class Session {
             return
         }
         let windows = try await availableWindows()
-        let descriptions: [[String: Any]] = windows.enumerated().map { index, item in
-            let title = item.title.flatMap { $0.isEmpty ? nil : $0 } ?? "窗口 \(index + 1)"
-            return ["id": item.windowID, "title": String(title.prefix(160))]
+        guard let target else { throw SessionError.application }
+        let accessibility = WindowInput.Windows(pid: target.processIdentifier)
+        let captured = windows.map { window in
+            (window: window, ax: accessibility.matching(window.frame))
+        }
+        // ScreenCaptureKit can list auxiliary surfaces before the real app windows.
+        var candidates = captured.filter { $0.ax != nil }
+        if candidates.isEmpty {
+            candidates = captured
+        } else if let focused = accessibility.focused,
+                  let index = candidates.firstIndex(where: {
+                      $0.ax.map { CFEqual($0, focused) } == true
+                  }), index > 0 {
+            candidates.insert(candidates.remove(at: index), at: 0)
+        }
+        let descriptions: [[String: Any]] = candidates.enumerated().map { index, item in
+            let title = item.window.title.flatMap { $0.isEmpty ? nil : $0 }
+                ?? item.ax.flatMap(accessibility.title).flatMap { $0.isEmpty ? nil : $0 }
+                ?? "窗口 \(index + 1)"
+            return ["id": item.window.windowID, "title": String(title.prefix(160))]
         }
         let snapshot = try JSONSerialization.data(withJSONObject: descriptions, options: .sortedKeys)
         if snapshot != listing {
@@ -140,8 +158,17 @@ final class Session {
             capture = nil
             await previous?.stop()
             Wire.send(["type": "paused", "message": "窗口已关闭、最小化或尺寸已变化，请重新选择窗口"])
-        } else if NSWorkspace.shared.frontmostApplication?.processIdentifier != target?.processIdentifier {
-            input?.release()
+        }
+        reportInputState()
+    }
+
+    private func reportInputState() {
+        guard let input else { return }
+        let ready = input.hasFocus
+        if !ready { input.release() }
+        if ready != inputReady {
+            inputReady = ready
+            Wire.send(["type": "input-state", "ready": ready])
         }
     }
 
@@ -162,6 +189,7 @@ final class Session {
             _ = target.activate()
             nextInput.raise(window.frame)
             input = nextInput
+            reportInputState()
             let next = WindowCapture { [weak self] in
                 Task { @MainActor in await self?.fail("窗口采集已停止，请重连") }
             }

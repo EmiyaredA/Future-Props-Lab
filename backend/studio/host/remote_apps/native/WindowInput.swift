@@ -10,6 +10,8 @@ final class WindowInput {
     private var keys: Set<CGKeyCode> = []
     private var button: CGMouseButton?
     private var location: CGPoint = .zero
+    private var lastBounds: CGRect?
+    private var eventNumber = 0
 
     init(app: MacApp, pid: pid_t, window: CGWindowID, size: CGSize) {
         self.app = app
@@ -18,30 +20,60 @@ final class WindowInput {
         self.size = size
     }
 
-    private func attribute(_ element: AXUIElement, _ key: String) -> CFTypeRef? {
+    private static func attribute(_ element: AXUIElement, _ key: String) -> CFTypeRef? {
         var result: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, key as CFString, &result) == .success else { return nil }
         return result
     }
 
-    private func element(_ parent: AXUIElement, _ key: String) -> AXUIElement? {
+    private static func element(_ parent: AXUIElement, _ key: String) -> AXUIElement? {
         guard let value = attribute(parent, key), CFGetTypeID(value) == AXUIElementGetTypeID() else { return nil }
         return value as! AXUIElement?
     }
 
-    private func matchesBounds(_ element: AXUIElement, _ bounds: CGRect) -> Bool {
+    private static func bounds(_ element: AXUIElement) -> CGRect? {
         guard let point = attribute(element, kAXPositionAttribute),
               let size = attribute(element, kAXSizeAttribute),
-              CFGetTypeID(point) == AXValueGetTypeID(), CFGetTypeID(size) == AXValueGetTypeID() else { return false }
+              CFGetTypeID(point) == AXValueGetTypeID(), CFGetTypeID(size) == AXValueGetTypeID() else { return nil }
         var origin = CGPoint.zero
         var dimensions = CGSize.zero
         guard AXValueGetValue(point as! AXValue, .cgPoint, &origin),
-              AXValueGetValue(size as! AXValue, .cgSize, &dimensions) else { return false }
-        return abs(origin.x - bounds.minX) <= 2 && abs(origin.y - bounds.minY) <= 2
-            && abs(dimensions.width - bounds.width) <= 2 && abs(dimensions.height - bounds.height) <= 2
+              AXValueGetValue(size as! AXValue, .cgSize, &dimensions) else { return nil }
+        return CGRect(origin: origin, size: dimensions)
     }
 
-    private func liveBounds() -> CGRect? {
+    @MainActor
+    struct Windows {
+        let focused: AXUIElement?
+        private let entries: [(element: AXUIElement, bounds: CGRect)]
+
+        init(pid: pid_t) {
+            let target = AXUIElementCreateApplication(pid)
+            AXUIElementSetMessagingTimeout(target, 0.12)
+            focused = WindowInput.element(target, kAXFocusedWindowAttribute)
+            let windows = WindowInput.attribute(target, kAXWindowsAttribute) as? [AXUIElement] ?? []
+            entries = windows.compactMap { window in
+                WindowInput.bounds(window).map { (window, $0) }
+            }
+        }
+
+        func matching(_ bounds: CGRect) -> AXUIElement? {
+            // AX exposes geometry for windows but no public CGWindowID attribute.
+            let matches = entries.filter {
+                abs($0.bounds.minX - bounds.minX) <= 2 && abs($0.bounds.minY - bounds.minY) <= 2
+                    && abs($0.bounds.width - bounds.width) <= 2 && abs($0.bounds.height - bounds.height) <= 2
+            }
+            return matches.count == 1 ? matches[0].element : nil
+        }
+
+        func title(_ window: AXUIElement) -> String? {
+            WindowInput.attribute(window, kAXTitleAttribute) as? String
+        }
+    }
+
+    var hasFocus: Bool { focusedWindow() != nil }
+
+    private func focusedWindow() -> (bounds: CGRect, element: AXUIElement)? {
         guard Session.isUnlocked, AXIsProcessTrusted(),
               app.matches(NSRunningApplication(processIdentifier: pid)),
               NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
@@ -52,40 +84,38 @@ final class WindowInput {
               let rect = CGRect(dictionaryRepresentation: raw as CFDictionary),
               !rect.isEmpty,
               abs(rect.width - size.width) <= 2, abs(rect.height - size.height) <= 2 else { return nil }
-        // AX has no public window-number attribute. Require a unique AX bounds match,
-        // and require that window to be focused before posting process-targeted events.
-        let target = AXUIElementCreateApplication(pid)
-        AXUIElementSetMessagingTimeout(target, 0.12)
-        guard let focused = element(target, kAXFocusedWindowAttribute),
-              let all = attribute(target, kAXWindowsAttribute) as? [AXUIElement],
-              matchesBounds(focused, rect),
-              all.filter({ matchesBounds($0, rect) }).count == 1 else { return nil }
-        return rect
+        let windows = Windows(pid: pid)
+        guard let focused = windows.focused,
+              let match = windows.matching(rect), CFEqual(match, focused) else { return nil }
+        return (rect, focused)
     }
 
     func raise(_ bounds: CGRect) {
-        let target = AXUIElementCreateApplication(pid)
-        AXUIElementSetMessagingTimeout(target, 0.12)
-        guard let all = attribute(target, kAXWindowsAttribute) as? [AXUIElement] else { return }
-        let matches = all.filter { matchesBounds($0, bounds) }
-        if matches.count == 1 {
-            AXUIElementPerformAction(matches[0], kAXRaiseAction as CFString)
+        if let match = Windows(pid: pid).matching(bounds) {
+            AXUIElementPerformAction(match, kAXRaiseAction as CFString)
         }
     }
 
-    private func hitTarget(_ point: CGPoint) -> Bool {
+    private func hitTarget(_ point: CGPoint, focused: AXUIElement) -> AXUIElement? {
         let system = AXUIElementCreateSystemWide()
         AXUIElementSetMessagingTimeout(system, 0.12)
         var hit: AXUIElement?
         guard AXUIElementCopyElementAtPosition(system, Float(point.x), Float(point.y), &hit) == .success,
-              let hit else { return false }
+              let hit else { return nil }
         var owner: pid_t = 0
-        guard AXUIElementGetPid(hit, &owner) == .success, owner == pid,
-              let hitWindow = element(hit, kAXWindowAttribute)
-                ?? ((attribute(hit, kAXRoleAttribute) as? String == kAXWindowRole) ? hit : nil),
-              let focused = element(AXUIElementCreateApplication(pid), kAXFocusedWindowAttribute)
-        else { return false }
-        return CFEqual(hitWindow, focused)
+        guard AXUIElementGetPid(hit, &owner) == .success, owner == pid else { return nil }
+        var current = hit
+        for _ in 0..<32 {
+            if CFEqual(current, focused) { return hit }
+            if let hitWindow = Self.element(current, kAXWindowAttribute) {
+                return CFEqual(hitWindow, focused) ? hit : nil
+            }
+            // Web content may expose its window only through the AX parent chain.
+            guard let parent = Self.element(current, kAXParentAttribute),
+                  !CFEqual(parent, current) else { return nil }
+            current = parent
+        }
+        return nil
     }
 
     func release() {
@@ -93,26 +123,32 @@ final class WindowInput {
             for key in keys {
                 CGEvent(keyboardEventSource: nil, virtualKey: key, keyDown: false)?.postToPid(pid)
             }
-            if let button {
-                postMouse(button == .left ? .leftMouseUp : .rightMouseUp, button, location)
+            if let button, let bounds = lastBounds {
+                postMouse(button == .left ? .leftMouseUp : .rightMouseUp, button, location, bounds: bounds)
             }
         }
         keys.removeAll()
         button = nil
     }
 
-    private func postMouse(_ type: CGEventType, _ button: CGMouseButton, _ point: CGPoint, clicks: Int64 = 1) {
-        let event = CGEvent(mouseEventSource: nil, mouseType: type, mouseCursorPosition: point, mouseButton: button)
-        event?.setIntegerValueField(.mouseEventWindowUnderMousePointer, value: Int64(window))
-        event?.setIntegerValueField(.mouseEventWindowUnderMousePointerThatCanHandleThisEvent, value: Int64(window))
-        event?.setIntegerValueField(.mouseEventClickState, value: clicks)
-        event?.postToPid(pid)
+    @discardableResult
+    private func postMouse(
+        _ type: CGEventType, _ button: CGMouseButton, _ point: CGPoint,
+        bounds: CGRect, clicks: Int64 = 1
+    ) -> Bool {
+        guard let screen = NSScreen.screens.first,
+              let event = WindowMouseEvent.make(
+                type: type, point: point, bounds: bounds, window: window,
+                screenHeight: screen.frame.height, number: eventNumber, clicks: clicks
+              ) else { return false }
+        event.postToPid(pid)
+        return true
     }
 
     func handle(_ message: [String: Any]) -> Bool {
         guard let kind = message["type"] as? String else { return false }
         if kind == "release" { release(); return false }
-        guard let bounds = liveBounds() else { release(); return false }
+        guard let (bounds, focused) = focusedWindow() else { release(); return false }
 
         if kind == "text", let text = message["text"] as? String {
             let units = Array(text.utf16)
@@ -147,8 +183,9 @@ final class WindowInput {
         guard let x = message["x"] as? Double, let y = message["y"] as? Double,
               (0..<1).contains(x), (0..<1).contains(y) else { return false }
         let point = CGPoint(x: bounds.minX + x * bounds.width, y: bounds.minY + y * bounds.height)
-        guard hitTarget(point) else { release(); return false }
+        guard hitTarget(point, focused: focused) != nil else { release(); return false }
         location = point
+        lastBounds = bounds
         if kind == "scroll", let dx = message["dx"] as? Int32, let dy = message["dy"] as? Int32,
            abs(Int64(dx)) <= 1500, abs(Int64(dy)) <= 1500 {
             let event = CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: -dy, wheel2: -dx, wheel3: 0)
@@ -157,21 +194,22 @@ final class WindowInput {
             return event != nil
         }
         if kind == "move", let button {
-            postMouse(button == .left ? .leftMouseDragged : .rightMouseDragged, button, point)
-            return true
+            return postMouse(button == .left ? .leftMouseDragged : .rightMouseDragged, button, point, bounds: bounds)
         }
         guard let raw = message["button"] as? Int, raw == 0 || raw == 2 else { return false }
         let next: CGMouseButton = raw == 0 ? .left : .right
         let clicks = message["clicks"] as? Int64 == 2 ? Int64(2) : 1
         if kind == "down", button == nil {
+            eventNumber = eventNumber == Int32.max ? 1 : eventNumber + 1
+            guard postMouse(next == .left ? .leftMouseDown : .rightMouseDown, next, point,
+                            bounds: bounds, clicks: clicks) else { return false }
             button = next
-            postMouse(next == .left ? .leftMouseDown : .rightMouseDown, next, point, clicks: clicks)
             return true
         }
         if kind == "up", next == button {
             button = nil
-            postMouse(next == .left ? .leftMouseUp : .rightMouseUp, next, point, clicks: clicks)
-            return true
+            return postMouse(next == .left ? .leftMouseUp : .rightMouseUp, next, point,
+                             bounds: bounds, clicks: clicks)
         }
         return false
     }

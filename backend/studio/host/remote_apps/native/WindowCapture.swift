@@ -23,6 +23,11 @@ final class WindowCapture: NSObject, SCStreamOutput, SCStreamDelegate, @unchecke
         let scale = min(CGFloat(filter.pointPixelScale), 1280 / window.frame.width, 720 / window.frame.height)
         config.width = max(2, Int(window.frame.width * scale) / 2 * 2)
         config.height = max(2, Int(window.frame.height * scale) / 2 * 2)
+        // The encoded rectangle must describe the same window bounds as input.
+        config.ignoreShadowsSingleWindow = true
+        config.ignoreGlobalClipSingleWindow = true
+        config.scalesToFit = true
+        config.preservesAspectRatio = false
         config.minimumFrameInterval = CMTime(value: 1, timescale: 30)
         config.queueDepth = 3
         config.showsCursor = false
