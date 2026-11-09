@@ -28,7 +28,6 @@ LABELS = {
     "tools": "工具导航",
     "visual": "视觉工坊",
     "generation": "工坊生成任务",
-    "visual_assistant": "视觉助手",
     "galgame": "Galgame 工坊",
     "video": "视频剪辑",
     "thought": "思绪工坊",

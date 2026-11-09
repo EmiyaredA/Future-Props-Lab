@@ -1,4 +1,4 @@
-<!-- docs: {"group":"visual","order":0,"title":"视觉创作工坊快速开始","lead":"用一个项目承载画布、私有素材、生成任务和创作助手对话。","evidence":["web/src/features/visual-workshop"]} -->
+<!-- docs: {"group":"visual","order":0,"title":"视觉创作工坊快速开始","lead":"用一个项目承载画布、私有素材、生成任务和 Amadeus 项目上下文。","evidence":["web/src/features/visual-workshop"]} -->
 
 # 视觉创作工坊快速开始
 
@@ -6,7 +6,7 @@
 
 面向视觉创作工坊用户。先打开当前空间中的画布项目；编辑需要写权限，涉及生成时还需启用相应能力的模型。
 
-用一个项目承载画布、私有素材、生成任务和创作助手对话。
+用一个项目承载画布、私有素材、生成任务和 Amadeus 项目上下文。
 
 ## 创建并进入项目 {#create-project}
 
