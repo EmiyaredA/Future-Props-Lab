@@ -30,6 +30,7 @@
 | [files_open_folder](#files-open-folder) | `POST /v1/amadeus/conversations/{conversation_id}/files/open-folder` |
 | [import_file](#import-file) | `POST /v1/amadeus/conversations/{conversation_id}/imports` |
 | [append_message](#append-message) | `POST /v1/amadeus/conversations/{conversation_id}/messages` |
+| [fork_message](#fork-message) | `POST /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork` |
 | [answer_question](#answer-question) | `POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer` |
 | [create_run](#create-run) | `POST /v1/amadeus/conversations/{conversation_id}/runs` |
 | [cancel_run](#cancel-run) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/cancel` |
@@ -43,6 +44,7 @@
 | [model_turn_stream](#model-turn-stream) | `POST /v1/amadeus/model-turn/stream` |
 | [read_registered_operation](#read-registered-operation) | `POST /v1/amadeus/operations/read` |
 | [file_write](#file-write) | `PUT /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}` |
+| [pin_message](#pin-message) | `PUT /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin` |
 
 ## delete_conversation {#delete-conversation}
 
@@ -470,6 +472,28 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## fork_message {#fork-message}
+
+`client.amadeus.fork_message(...)`
+
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork`。**鉴权**：浏览器 Session；不接受 Management API Key。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `conversation_id` | path | string | 是 |
+| `message_id` | path | string | 是 |
+| `body` | application/json | MessageForkIn | 是 |
+| `body.request_id` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ConversationOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## answer_question {#answer-question}
 
 `client.amadeus.answer_question(...)`
@@ -511,9 +535,13 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.agent_model` | 请求体 | string | 否 |
 | `body.capabilities` | 请求体 | array | 否 |
 | `body.context` | 请求体 | array | 否 |
+| `body.harness_effort` | 请求体 | string / null | 否 |
 | `body.mode` | 请求体 | agent / plan | 否 |
 | `body.model_id` | 请求体 | string | 否 |
+| `body.model_variant` | 请求体 | string / null | 否 |
+| `body.reasoning_effort` | 请求体 | none / minimal / low / medium / high / xhigh / max / ultra / null | 否 |
 | `body.references` | 请求体 | array | 否 |
+| `body.service_tier` | 请求体 | string / null | 否 |
 | `body.source_run_id` | 请求体 | string / null | 否 |
 
 **响应**：
@@ -557,7 +585,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `run_id` | path | string | 是 |
 | `body` | application/json | RunEventIn | 是 |
 | `body.idempotency_key` | 请求体 | string | 是 |
-| `body.kind` | 请求体 | assistant_delta / assistant_message / tool_call / tool_result / status / error / question / subagent_start / subagent_finish | 是 |
+| `body.kind` | 请求体 | assistant_delta / assistant_message / reasoning_summary / run_usage / tool_call / tool_result / status / error / question / subagent_start / subagent_finish | 是 |
 | `body.payload` | 请求体 | object | 否 |
 
 **响应**：
@@ -763,5 +791,27 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `FileOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## pin_message {#pin-message}
+
+`client.amadeus.pin_message(...)`
+
+**接口**：`PUT /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin`。**鉴权**：浏览器 Session；不接受 Management API Key。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `conversation_id` | path | string | 是 |
+| `message_id` | path | string | 是 |
+| `body` | application/json | MessagePinIn | 是 |
+| `body.pinned` | 请求体 | boolean | 是 |
+
+**响应**：
+- `200` · `application/json` · `MessageOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
