@@ -32,8 +32,8 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 
 | 文件 | 用途 | 来源与版本 | 许可证 | SHA-256 | 生产构建 |
 | --- | --- | --- | --- | --- | --- |
-| `web/public/brand/amadeus/amadeus.fpllive2d` | Amadeus 内置只读案例与动态头像的 FPL 原生工程 | 用户选定的角色原画，经确定性分层、骨骼和网格打包；[制作说明](amadeus-native-avatar.md) | 仅限内部开发交接，角色无独立再分发授权 | `9cd9d77c781fbe6d96e878cd48a5ac0709deeeb2b7e5ac876bc3d44d0ca97aac` | Web 需要 |
-| `web/public/brand/amadeus/amadeus-poster.png` | 头像相机位定帧回退 | 从同一 `.fpllive2d` 工程确定性渲染；[制作说明](amadeus-native-avatar.md) | 同上 | `80cd7211b946667667dc527536b25a8dee536896e887dcae1d280c20e524f441` | Web 需要 |
+| `web/public/brand/amadeus/amadeus.fpllive2d` | Amadeus 内置只读案例与动态头像的 FPL 原生工程 | 用户选定的角色原画，经确定性分层、骨骼和网格打包；[制作说明](amadeus-native-avatar.md) | 仅限内部开发交接，角色无独立再分发授权 | `7534b1f77bdb46e7678f7a7916f1ce8066c07cd386ed84b84ab5a9eda5bfc9f1` | Web 需要 |
+| `web/public/brand/amadeus/amadeus-poster.png` | 头像相机位定帧回退 | 从同一 `.fpllive2d` 工程确定性渲染；[制作说明](amadeus-native-avatar.md) | 同上 | `5d3f0d7bd01441f6b7cd7da8dc0ec7c12e909d4466b3da00f2cb184973b9c657` | Web 需要 |
 | `web/public/brand/amadeus/amadeus-stage-poster.png` | 半身舞台相机位定帧回退 | 从同一 `.fpllive2d` 工程确定性渲染；[制作说明](amadeus-native-avatar.md) | 同上 | `59baef48c4953e79f32fcbc9c86e9306fecb65ae554e50349048c41c3ab17465` | Web 需要 |
 | `backend/studio/apps/media_rendering/local/assets/NotoSansSC-Regular.ttf` | 确定性中文对白及剪辑文字渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b` | 后端需要 |
 | `backend/studio/apps/media_rendering/local/assets/NotoSansSC-Medium.ttf` | 确定性中文标题渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `ca094f6b0001fb048ca39ddd797a0cdb0179e1e55c6561e111c49c3e6a61d7b7` | 后端需要 |

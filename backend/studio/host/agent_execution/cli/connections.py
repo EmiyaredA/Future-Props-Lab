@@ -20,10 +20,16 @@ async def resolve_connection(agent_id, *, settings, probe=True, app_server=True)
     return path
 
 
-async def catalog(*, settings, can_enable=False):
+async def catalog(*, settings, can_enable=False, harness_model=None):
     connections = await asyncio.gather(
         *(
-            inspect_connection(settings, identity, probe_disabled=can_enable)
+            inspect_connection(
+                settings,
+                identity,
+                probe_disabled=can_enable,
+                discover_models=not harness_model or identity == "dsh",
+                harness_model=harness_model if identity == "dsh" else None,
+            )
             for identity in DEFINITIONS
         )
     )

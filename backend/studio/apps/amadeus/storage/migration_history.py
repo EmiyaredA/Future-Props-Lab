@@ -90,6 +90,7 @@ class Message(DialogueChild):
     content: str
     references_json: list[dict]
     status: str
+    pinned: bool = False
 
 
 class Action(DialogueChild):

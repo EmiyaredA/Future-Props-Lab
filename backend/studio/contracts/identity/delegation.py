@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from studio.contracts.amadeus.amadeus_native import RUN_SOURCE
 from studio.contracts.amadeus.amadeus_skills import skill_pin_grant
+from studio.contracts.amadeus.message_forks import FORK_SOURCE, is_fork_read
 from studio.contracts.asset_library.annotation import audio_asset_grant
 from studio.contracts.asset_library.reveal import reveal_grant
 from studio.contracts.audio_annotation.task_sources import task_read_grant, task_upload_grant
@@ -329,6 +330,14 @@ def permitted(grant, catalog):
         return False
     if _automation_lookup(grant):
         return True
+    if grant.purpose == "amadeus.fork.read":
+        return (
+            grant.caller == "amadeus"
+            and grant.source_method == "POST"
+            and FORK_SOURCE.fullmatch(grant.source_path) is not None
+            and grant.target_method == "GET"
+            and is_fork_read(automation_manifest()["operations"].get("GET " + destination.path))
+        )
     if grant.purpose in {"amadeus.operation.read", "amadeus.dialogue.read"}:
         return (
             grant.caller == "amadeus"

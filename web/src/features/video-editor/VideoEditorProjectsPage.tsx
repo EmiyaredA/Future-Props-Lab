@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { useState } from "react";
-import { Maximize2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { Maximize2, Pencil, Plus, Trash2, X } from "lucide-react";
 import { ApiError } from "@platform/api/client";
 import {
   ProjectEditorDialog,
@@ -11,7 +12,10 @@ import {
   ProjectSnapshotImportButton,
   useProjectLibraryController,
 } from "@shared/ui/project-library";
-import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
+import {
+  WorkshopAppChrome,
+  WorkshopSearch,
+} from "@shared/ui/WorkshopAppChrome";
 import {
   createVideoEditorProject,
   deleteVideoEditorProject,
@@ -33,8 +37,10 @@ function errorMessage(error: unknown) {
 }
 
 export function VideoEditorProjectsPage({
+  utilities,
   onOpenProject,
 }: {
+  utilities?: ReactNode;
   onOpenProject: (projectId: string) => void;
 }) {
   const { run: runTransfer, progress: activeTransferProgress } =
@@ -79,10 +85,18 @@ export function VideoEditorProjectsPage({
       <TransferFeedback progress={activeTransferProgress} />
 
       <WorkshopAppChrome
+        utilities={utilities}
+        showThemeToggle={false}
         title="我的视频剪辑工程"
-        description="管理剪辑工程，从素材组织进入时间轴、分段与成片导出。"
         actions={
           <>
+            <WorkshopSearch
+              label="搜索剪辑项目"
+              placeholder="搜索剪辑工程…"
+              value={query}
+              onChange={setQuery}
+            />
+
             <ProjectSnapshotImportButton
               pending={importSnapshot.isPending}
               onImport={(file) => importSnapshot.mutate(file)}
@@ -97,17 +111,6 @@ export function VideoEditorProjectsPage({
           </>
         }
       />
-      <div className="workshop-toolbar workshop-toolbar-simple">
-        <label>
-          <Search aria-hidden />
-          <input
-            aria-label="搜索剪辑项目"
-            placeholder="搜索剪辑工程…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-      </div>
       {notice ? (
         <div className="workshop-notice" role="status">
           {notice}
@@ -138,7 +141,6 @@ export function VideoEditorProjectsPage({
               }}
               cover="video"
               coverTitle="剪辑工程"
-              coverDescription="打开时间轴、分段与导出"
               onOpen={() => onOpenProject(project.id)}
             >
               <div className="workshop-project-primary-actions">

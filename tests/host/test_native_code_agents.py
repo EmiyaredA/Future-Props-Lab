@@ -82,18 +82,65 @@ async def test_opencode_distinguishes_missing_credentials_from_probe_error(
 
 
 @pytest.mark.parametrize("kind", NATIVE)
+async def test_native_model_catalog_uses_isolated_profile(native_cli, kind, monkeypatch):
+    status = await inspect_connection(get_settings(), kind)
+    assert status["available"]
+    assert status["executable"] == native_cli
+    assert status["model_catalog"] == "discovered"
+    assert [row["id"] for row in status["models"]] == ["fixture/model"]
+    if kind == "pi":
+        assert status["models"][0]["reasoning_efforts"] == ["low", "medium", "high", "xhigh"]
+
+    async def unavailable(*_args, **_kwargs):
+        raise CliError("fixture catalog unavailable")
+
+    monkeypatch.setattr("studio.host.agent_execution.cli.catalog.read_model_catalog", unavailable)
+    status = await inspect_connection(get_settings(), kind)
+    assert status["available"]
+    assert status["models"] == []
+    assert status["model_catalog"] == "unavailable"
+
+
+@pytest.mark.parametrize("kind", NATIVE)
 async def test_native_amadeus_calls_backend_tools_and_records_events(native_cli, kind):
     assert native_cli
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
         catalog = (await client.get("/v1/code-agents")).json()
-        assert next(item for item in catalog["items"] if item["id"] == kind)["available"]
+        agent = next(item for item in catalog["items"] if item["id"] == kind)
+        assert agent["available"]
+        model = agent["models"][0]["id"]
+        if kind == "opencode":
+            assert agent["models"][0]["variants"] == [
+                {"id": "provider_high", "label": "provider_high"}
+            ]
+        if kind == "dsh":
+            assert agent["harness_efforts"] == []
+            query = await client.get("/v1/code-agents", params={"harness_model": model})
+            scoped = next(item for item in query.json()["items"] if item["id"] == "dsh")
+            assert scoped["harness_options_model"] == model
+            assert scoped["harness_efforts"] == [{"id": "max", "label": "Max"}]
         conversation = (await client.post("/v1/amadeus/conversations")).json()
         root = f"/v1/amadeus/conversations/{conversation['id']}"
         await client.post(
-            root + "/messages", json={"role": "user", "content": "核对目录", "expected_revision": 0}
+            root + "/messages",
+            json={
+                "role": "user",
+                "content": {
+                    "pi": "PI_EFFORT_FIXTURE",
+                    "dsh": "DSH_EFFORT_FIXTURE",
+                    "opencode": "OPENCODE_VARIANT_FIXTURE",
+                }[kind],
+                "expected_revision": 0,
+            },
         )
-        response = await client.post(root + "/runs", json={"agent_id": kind})
+        option, value = {
+            "pi": ("reasoning_effort", "high"),
+            "dsh": ("harness_effort", "max"),
+            "opencode": ("model_variant", "provider_high"),
+        }[kind]
+        options = {"agent_model": model, option: value}
+        response = await client.post(root + "/runs", json={"agent_id": kind, **options})
         assert response.status_code == 200, response.text
         result = await wait_run(client, root, response.json()["run"]["id"])
         assert result["run"]["status"] == "completed", (
@@ -101,6 +148,30 @@ async def test_native_amadeus_calls_backend_tools_and_records_events(native_cli,
             result["events"],
         )
         assert "已核对项目" in result["run"]["partial_text"]
+        assert result["run"][option] == value
+        usage = {key: value for key, value in result["run"]["usage"].items() if value is not None}
+        assert (
+            usage
+            == {
+                "pi": {
+                    "input_tokens": 13,
+                    "output_tokens": 3,
+                    "cached_input_tokens": 4,
+                    "total_tokens": 20,
+                },
+                "dsh": {"context_used": 25, "context_limit": 1000},
+                "opencode": {"input_tokens": 22, "output_tokens": 5, "cached_input_tokens": 0},
+            }[kind]
+        )
+        if kind != "pi":
+            expired = await client.post(
+                root + "/runs",
+                json={"agent_id": kind, **options, option: "expired"},
+            )
+            failed = await wait_run(client, root, expired.json()["run"]["id"])
+            assert failed["run"]["status"] == "failed"
+            assert "重新选择" in failed["run"]["error_message"]
+            assert not failed["events"]
         assert any(event["kind"] == "tool_call" for event in result["events"])
         assert any(event["kind"] == "tool_result" for event in result["events"])
 

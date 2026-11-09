@@ -1,33 +1,6 @@
 .mc-projects {
   padding-bottom: 36px;
 }
-.mc-project-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  margin: 20px 0 15px;
-  color: var(--muted, #8b8078);
-  font-size: 13px;
-}
-.mc-project-toolbar label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: min(420px, 100%);
-  padding: 0 14px;
-  border: 1px solid var(--border, #eaded3);
-  border-radius: 12px;
-  background: var(--surface, #fff);
-}
-.mc-project-toolbar input {
-  width: 100%;
-  height: 38px;
-  border: 0;
-  outline: none;
-  background: none;
-  color: var(--text, #302824);
-}
 .mc-project-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
@@ -290,13 +263,6 @@
   cursor: pointer;
 }
 @media (max-width: 620px) {
-  .mc-project-toolbar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-  .mc-project-toolbar label {
-    width: 100%;
-  }
   .mc-form-row {
     grid-template-columns: 1fr;
   }
@@ -306,8 +272,7 @@
 }
 
 @media (pointer: coarse) {
-  .mc-projects button,
-  .mc-project-toolbar input {
+  .mc-projects button {
     min-height: 44px;
   }
 }

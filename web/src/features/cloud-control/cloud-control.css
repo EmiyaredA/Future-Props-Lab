@@ -517,6 +517,21 @@
   min-height: 0;
   gap: 0;
 }
+.cloud-setup-content {
+  display: contents;
+}
+.cloud-setup-content-with-idle {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.cloud-setup-idle {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--border);
+}
 .cloud-setup-section {
   display: flex;
   flex-direction: column;
@@ -668,6 +683,7 @@
   }
   .cloud-setup-header,
   .cloud-setup-section,
+  .cloud-setup-idle,
   .cloud-setup-footer {
     padding: 12px;
   }

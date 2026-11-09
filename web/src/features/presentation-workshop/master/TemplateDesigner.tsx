@@ -1,3 +1,4 @@
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
@@ -81,6 +82,7 @@ import { useTemplateHistory } from "./canvas/useTemplateHistory";
 import { CanvasInspector } from "./canvas/CanvasInspector";
 
 export function TemplateDesigner({
+  showAmadeus = false,
   initial,
   onClose,
   onSaved,
@@ -88,6 +90,7 @@ export function TemplateDesigner({
   readOnly,
   onSaveDefinition,
 }: {
+  showAmadeus?: boolean;
   initial: Template | null;
   onClose: () => void;
   onSaved: (t: Template) => void;
@@ -456,6 +459,12 @@ export function TemplateDesigner({
               )}
             </span>
           </button>
+        )}
+        {showAmadeus && (
+          <AmadeusButton
+            className="btn"
+            source={{ application: "演示工坊", projectId: undefined }}
+          />
         )}
       </header>
       {error && (

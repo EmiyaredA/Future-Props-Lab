@@ -27,7 +27,7 @@ function snapshot(
   };
 }
 
-test("shows real readiness and reveals details without nesting controls", async () => {
+test("shows readiness details while hovering over the status", async () => {
   const user = userEvent.setup();
   const opened = vi.fn();
   render(
@@ -41,10 +41,13 @@ test("shows real readiness and reveals details without nesting controls", async 
     name: "查看思绪工坊服务状态：运行中",
   });
   expect(status.parentElement!.closest("button")).toBeNull();
-  await user.click(status);
+  expect(screen.queryByRole("region", { name: "思绪工坊服务状态" })).toBeNull();
+  await user.hover(status);
   const details = screen.getByRole("region", { name: "思绪工坊服务状态" });
   expect(within(details).getByText("服务已就绪")).toBeInTheDocument();
   expect(status).toHaveAttribute("aria-expanded", "true");
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("region", { name: "思绪工坊服务状态" })).toBeNull();
   await user.click(screen.getByRole("button", { name: "打开思绪工坊" }));
   expect(opened).toHaveBeenCalledWith("/apps/thought-workshop");
 });
@@ -66,7 +69,11 @@ test("shows stopped and dependency failures as separate explanations", async () 
   expect(
     screen.getByRole("button", { name: "查看思绪工坊服务状态：已停止" }),
   ).toBeInTheDocument();
+  await user.hover(
+    screen.getByRole("button", { name: "查看思绪工坊服务状态：已停止" }),
+  );
   expect(screen.getByText("服务已停止，请等待管理员启动")).toBeInTheDocument();
+  await user.keyboard("{Escape}");
   rerender(
     <ApplicationCenterPage
       applications={applications}
@@ -74,9 +81,10 @@ test("shows stopped and dependency failures as separate explanations", async () 
       services={value}
     />,
   );
-  await user.click(
-    screen.getByRole("button", { name: "查看思绪工坊服务状态：功能受限" }),
-  );
+  screen
+    .getByRole("button", { name: "查看思绪工坊服务状态：功能受限" })
+    .focus();
+  await user.keyboard("{Enter}");
   expect(screen.getByText("模型服务：已停止")).toBeInTheDocument();
 });
 
@@ -93,11 +101,12 @@ test("a failed refresh never presents cached running status as current", async (
   expect(
     screen.queryByRole("button", { name: "查看思绪工坊服务状态：运行中" }),
   ).not.toBeInTheDocument();
-  await user.click(
-    screen.getByRole("button", {
+  screen
+    .getByRole("button", {
       name: "查看思绪工坊服务状态：状态暂不可读",
-    }),
-  );
+    })
+    .focus();
+  await user.keyboard("{Enter}");
   const region = screen.getByRole("region", { name: "思绪工坊服务状态" });
   expect(within(region).getByText("上次结果：运行中")).toBeInTheDocument();
   expect(within(region).getByText(/无法读取最新服务状态/)).toBeInTheDocument();

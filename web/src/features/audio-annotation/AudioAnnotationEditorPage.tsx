@@ -1,6 +1,10 @@
+import {
+  assistantElementSource,
+  useAssistantElements,
+} from "@platform/assistantElements";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { openAmadeus } from "@platform/assistant";
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { useEffect, useState } from "react";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import {
@@ -110,6 +114,40 @@ export function AudioAnnotationEditorPage({
     onBack,
     registerNavigationGuard,
   });
+  useAssistantElements(
+    controller.status === "ready"
+      ? assistantElementSource(
+          {
+            resource: "annotation",
+            projectId,
+            application: "录音标注工坊",
+            unsaved:
+              controller.dirty ||
+              controller.save.isPending ||
+              Boolean(controller.conflict),
+            locate: ({ element_id }) => {
+              const segment = controller.document.segments.find(
+                (segment) => segment.id === element_id,
+              );
+              if (!segment) return false;
+              controller.setSearch("");
+              controller.setStatusFilter("all");
+              controller.setLanguageFilter("all");
+              controller.setSelectedId(element_id);
+              controller.setCurrentMs(segment.start_ms);
+              return true;
+            },
+          },
+          controller.document.segments.map((segment) => ({
+            id: segment.id,
+            kind: "segment",
+            name: "标注片段",
+            value: `${formatTimestamp(segment.start_ms)} – ${formatTimestamp(segment.end_ms)}`,
+          })),
+          controller.selectedId ? [controller.selectedId] : [],
+        )
+      : undefined,
+  );
   if (controller.status === "error")
     return (
       <section
@@ -218,15 +256,7 @@ export function AudioAnnotationEditorPage({
           </div>
         </div>
         <div className="annotation-editor-actions">
-          {
-            <button
-              type="button"
-              className="btn"
-              onClick={() => void openAmadeus()}
-            >
-              ✦ Amadeus
-            </button>
-          }
+          <AmadeusButton className="btn" />
           <button
             type="button"
             className="btn"

@@ -1,3 +1,4 @@
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
@@ -284,6 +285,7 @@ export function ProjectBoard({
               看板
             </button>
           </div>
+          <AmadeusButton />
           {onAcceptance && (
             <button onClick={() => onAcceptance()}>
               <SlidersHorizontal size={15} /> 项目验收

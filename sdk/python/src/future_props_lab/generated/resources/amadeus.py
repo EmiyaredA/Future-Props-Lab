@@ -75,6 +75,14 @@ class Amadeus:
         'Append Message. POST /v1/amadeus/conversations/{conversation_id}/messages'
         return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/messages', parameters=[('conversation_id', 'path', conversation_id)], body=body, media_type='application/json', response_type=models.ConversationDetailOut)
 
+    def fork_message(self, *, conversation_id: str, message_id: str, body: models.MessageForkIn | dict) -> models.ConversationOut:
+        'Fork Message. POST /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork', parameters=[('conversation_id', 'path', conversation_id), ('message_id', 'path', message_id)], body=body, media_type='application/json', response_type=models.ConversationOut)
+
+    def pin_message(self, *, conversation_id: str, message_id: str, body: models.MessagePinIn | dict) -> models.MessageOut:
+        'Pin Message. PUT /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin'
+        return self._client._call('PUT', '/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin', parameters=[('conversation_id', 'path', conversation_id), ('message_id', 'path', message_id)], body=body, media_type='application/json', response_type=models.MessageOut)
+
     def answer_question(self, *, conversation_id: str, question_id: str, body: models.QuestionAnswerIn | dict) -> models.QuestionOut:
         'Answer Question. POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer'
         return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer', parameters=[('conversation_id', 'path', conversation_id), ('question_id', 'path', question_id)], body=body, media_type='application/json', response_type=models.QuestionOut)
@@ -214,6 +222,14 @@ class AsyncAmadeus:
     async def append_message(self, *, conversation_id: str, body: models.MessageIn | dict) -> models.ConversationDetailOut:
         'Append Message. POST /v1/amadeus/conversations/{conversation_id}/messages'
         return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/messages', parameters=[('conversation_id', 'path', conversation_id)], body=body, media_type='application/json', response_type=models.ConversationDetailOut)
+
+    async def fork_message(self, *, conversation_id: str, message_id: str, body: models.MessageForkIn | dict) -> models.ConversationOut:
+        'Fork Message. POST /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork', parameters=[('conversation_id', 'path', conversation_id), ('message_id', 'path', message_id)], body=body, media_type='application/json', response_type=models.ConversationOut)
+
+    async def pin_message(self, *, conversation_id: str, message_id: str, body: models.MessagePinIn | dict) -> models.MessageOut:
+        'Pin Message. PUT /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin'
+        return await self._client._call('PUT', '/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin', parameters=[('conversation_id', 'path', conversation_id), ('message_id', 'path', message_id)], body=body, media_type='application/json', response_type=models.MessageOut)
 
     async def answer_question(self, *, conversation_id: str, question_id: str, body: models.QuestionAnswerIn | dict) -> models.QuestionOut:
         'Answer Question. POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer'

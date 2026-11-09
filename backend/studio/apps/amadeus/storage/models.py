@@ -47,7 +47,20 @@ class AmadeusMessage(Base):
         String(36), ForeignKey("amadeus_runs.id", ondelete="SET NULL"), nullable=True
     )
     status: Mapped[str] = mapped_column(String(24), default="completed")
+    pinned: Mapped[bool] = mapped_column(default=False, server_default="0")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class AmadeusForkReceipt(Base):
+    __tablename__ = "amadeus_fork_receipts"
+
+    conversation_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("amadeus_conversations.id", ondelete="CASCADE"), primary_key=True
+    )
+    request_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    message_id: Mapped[str] = mapped_column(String(36))
+    branch_id: Mapped[str] = mapped_column(String(36))
 
 
 class AmadeusAction(Base):

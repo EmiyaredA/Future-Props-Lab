@@ -1,3 +1,4 @@
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -149,6 +150,13 @@ export function GalgameWorkshopOverviewPage({
         </div>
         {project ? (
           <div className="galgame-overview-toolbar">
+            <AmadeusButton
+              source={{
+                application: "Galgame 工坊",
+                projectId,
+                title: project.title,
+              }}
+            />
             <button
               type="button"
               className="galgame-overview-primary"

@@ -1,13 +1,13 @@
 .application-service-status {
-  display: contents;
-}
-.application-status-toggle {
   grid-column: 3;
   grid-row: 1;
   position: relative;
   z-index: 1;
   align-self: center;
   justify-self: end;
+}
+.application-status-toggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -54,37 +54,26 @@
   .application-status-dot {
   background: #d76d57;
 }
-.application-status-summary,
-.application-status-detail {
-  grid-column: 2 / -1;
-  grid-row: 3;
-  color: var(--muted);
-}
-.application-status-summary,
 .application-status-detail > p {
-  margin: 5px 0 0;
+  margin: 0;
   font-size: 11px;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
-.application-status-summary {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
 .application-status-detail {
-  position: relative;
-  z-index: 1;
-  margin-top: 7px;
-  padding: 8px;
+  overflow: auto;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: var(--shadow-lift);
 }
 .application-status-detail ul {
   margin: 6px 0;
   padding-left: 15px;
   font-size: 11px;
+  overflow-wrap: anywhere;
 }
 .application-status-detail small {
   display: block;

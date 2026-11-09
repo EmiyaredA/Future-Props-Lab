@@ -1,16 +1,23 @@
+import type { AmadeusMutation } from "@platform/assistant";
 import { createContext, useContext } from "react";
+import type {
+  AssistantElementSource,
+  RegisterAssistantElements,
+} from "@platform/assistantElements";
 import type { Context, Reference } from "./protocol";
+
+export type ReferenceLocation =
+  "found" | "wrong-project" | "missing" | "failed";
 
 export type AmadeusPageBridge = {
   hideAmadeus: () => Promise<void>;
   amadeusContexts: () => Promise<Context[]>;
   publishAmadeusContext: (value: Partial<Context>) => Promise<void>;
   onAmadeusContexts: (callback: (value: Context[]) => void) => () => void;
-  addAmadeusReference: (
-    value: Omit<Reference, "windowId"> & {
-      rect?: { x: number; y: number; width: number; height: number };
-    },
-  ) => Promise<void>;
+  registerElementSource: RegisterAssistantElements;
+  currentElementSource: () => AssistantElementSource | undefined;
+  selectedAmadeusElements: () => Reference[];
+  addAmadeusReference: (value: Reference) => Promise<void>;
   onAmadeusReference: (callback: (value: Reference) => void) => () => void;
   setAmadeusPickMode: (enabled: boolean, index?: number) => Promise<boolean>;
   onAmadeusPickCommand: (
@@ -18,10 +25,12 @@ export type AmadeusPageBridge = {
   ) => () => void;
   finishAmadeusPick: () => Promise<void>;
   onAmadeusPickFinished: (callback: () => void) => () => void;
-  locateAmadeusReference: (value: unknown) => Promise<boolean>;
-  onAmadeusLocate: (callback: (value: unknown) => void) => () => void;
-  publishAmadeusMutation: (value: unknown) => Promise<void>;
-  onAmadeusMutation: (callback: (value: unknown) => void) => () => void;
+  locateAmadeusReference: (value: Reference) => Promise<ReferenceLocation>;
+  onAmadeusLocate: (
+    callback: (value: Reference) => Promise<ReferenceLocation>,
+  ) => () => void;
+  publishAmadeusMutation: (value: AmadeusMutation) => Promise<void>;
+  onAmadeusMutation: (callback: (value: AmadeusMutation) => void) => () => void;
 };
 
 export const AmadeusPageContext = createContext<AmadeusPageBridge | null>(null);

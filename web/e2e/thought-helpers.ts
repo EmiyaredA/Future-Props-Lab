@@ -22,7 +22,13 @@ export async function newDocument(page: Page) {
   );
 }
 export async function setThoughtTheme(page: Page, theme: string) {
-  if (page.viewportSize()!.width <= 1200) {
+  const toggle = page.getByRole("button", {
+    name: theme === "light" ? "浅色" : "深色",
+    exact: true,
+  });
+  const openDirectory =
+    page.viewportSize()!.width <= 1200 && !(await toggle.isVisible());
+  if (openDirectory) {
     const noteDirectory = page.getByRole("button", {
       name: "笔记目录",
       exact: true,
@@ -31,13 +37,8 @@ export async function setThoughtTheme(page: Page, theme: string) {
       await noteDirectory.click();
     else await page.getByRole("button", { name: "目录", exact: true }).click();
   }
-  await page
-    .getByRole("button", {
-      name: theme === "light" ? "浅色" : "深色",
-      exact: true,
-    })
-    .click();
-  if (page.viewportSize()!.width <= 1200) await page.keyboard.press("Escape");
+  await toggle.click();
+  if (openDirectory) await page.keyboard.press("Escape");
 }
 export async function openNoteMore(page: Page) {
   const more = page.getByRole("button", {

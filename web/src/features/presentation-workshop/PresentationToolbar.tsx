@@ -1,4 +1,4 @@
-import { openAmadeus } from "@platform/assistant";
+import { AmadeusButton } from "@platform/AmadeusButton";
 import {
   BoxSelect,
   ChevronDown,
@@ -21,6 +21,7 @@ import { layouts } from "./templates";
 import type { SlideElement } from "./types";
 
 export function PresentationToolbar({
+  projectId,
   readOnly,
   canAdd,
   canUndo,
@@ -45,6 +46,7 @@ export function PresentationToolbar({
   infoAction,
   sceneActions = [],
 }: {
+  projectId?: string;
   readOnly: boolean;
   canAdd: boolean;
   canUndo: boolean;
@@ -76,11 +78,10 @@ export function PresentationToolbar({
       role="toolbar"
       aria-label="幻灯片工具栏"
     >
-      {
-        <button className="btn" onClick={() => void openAmadeus()}>
-          ✦ Amadeus
-        </button>
-      }
+      <AmadeusButton
+        className="btn"
+        source={{ application: "演示工坊", projectId }}
+      />
       <div className="presentation-toolbar-group presentation-split-button">
         <button
           className="btn"

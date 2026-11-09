@@ -7,11 +7,8 @@ export const readCloudStatus = async (signal?: AbortSignal) =>
   unwrap(await api.GET("/v1/cloud-control/status", { signal }));
 export type CloudStatus = Awaited<ReturnType<typeof readCloudStatus>>;
 export type CloudSetup = Schemas["CloudSetup"];
-export const launchHappier = async (signal: AbortSignal) =>
-  unwrap(await api.POST("/v1/cloud-control/happier/launch", { signal }));
-
-export type CloudUnlockPurpose = Schemas["CloudUnlockRequest"]["purpose"];
-export const unlockCloud = async (purpose: CloudUnlockPurpose) =>
+export type IdlePreference = Schemas["IdlePreference"];
+export const unlockCloud = async (purpose: "desktop") =>
   unwrap(await api.POST("/v1/cloud-control/unlock", { body: { purpose } }));
 export const requestDesktop = async (password: string, signal?: AbortSignal) =>
   unwrap(

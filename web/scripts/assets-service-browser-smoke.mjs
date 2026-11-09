@@ -37,8 +37,13 @@ try {
   await page.getByLabel("密码", { exact: true }).fill(options.password);
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "文件管理", exact: true }),
+    page
+      .getByRole("main")
+      .getByRole("button", { name: "文件管理", exact: true }),
   ).toBeVisible();
+  await expect(
+    page.locator(".studio-sidebar").getByRole("button", { name: "文件管理" }),
+  ).toHaveAttribute("aria-current", "page");
   await expect(
     page.getByText("container-fixture", { exact: true }).first(),
   ).toBeVisible();

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+from pydantic import ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -16,6 +17,7 @@ from studio.apps.amadeus.storage.models import (
     AmadeusRun,
     AmadeusRunEvent,
 )
+from studio.contracts.agent_runtime.catalog import TokenUsage, TurnOptions, accepts_reasoning_effort
 from studio.contracts.amadeus.conversations import (
     RunCreateIn,
     RunDetailOut,
@@ -53,6 +55,8 @@ def _run(row: AmadeusRun) -> RunOut:
         model_id=row.model_id,
         agent_id=row.agent_id,
         agent_model=row.agent_model,
+        **{key: row.execution_config.get(key) for key in TurnOptions.model_fields},
+        usage=row.execution_config.get("usage"),
         execution_config=row.execution_config,
         mode=row.mode,
         source_run_id=row.source_run_id,
@@ -128,6 +132,21 @@ class RunRecords:
             raise OperationError("旧内核对话只读，请新建会话", "legacy_readonly", 409)
         if conversation.agent_id and conversation.agent_id != body.agent_id:
             raise OperationError("切换 Agent 请新建会话", "agent_changed", 409)
+        if body.reasoning_effort and not accepts_reasoning_effort(
+            body.agent_id, body.agent_model, body.reasoning_effort
+        ):
+            raise OperationError("所选 Agent 或模型不支持此推理强度", "reasoning_unavailable", 422)
+
+        if any(
+            option is not None
+            and (body.agent_id != agent or not body.agent_model or body.agent_model == "default")
+            for agent, option in (
+                ("opencode", body.model_variant),
+                ("dsh", body.harness_effort),
+                ("codex", body.service_tier),
+            )
+        ):
+            raise OperationError("此选项需要兼容的明确模型", "model_option_unavailable", 422)
 
         if self.resolve_agent is None:
             raise OperationError("Agent 连接尚未就绪", "agent_unavailable", 503)
@@ -189,7 +208,11 @@ class RunRecords:
             execution_config={
                 self.connection_field: connection,
                 "agent_id": body.agent_id,
-                "messages": [m.model_dump(mode="json") for m in detail_snapshot.messages[-60:]],
+                **body.cli_options(),
+                "messages": [
+                    m.model_dump(mode="json", exclude={"pinned"})
+                    for m in detail_snapshot.messages[-60:]
+                ],
                 "actions": [a.model_dump(mode="json") for a in detail_snapshot.actions],
                 "questions": [q.model_dump(mode="json") for q in detail_snapshot.questions],
             },
@@ -198,7 +221,9 @@ class RunRecords:
             status="running",
             active_owner_key=f"{self.principal.owner_user_id}:{self.principal.user_id}",
             context_json=body.context,
-            references_json=[item.model_dump(mode="json") for item in body.references],
+            references_json=[
+                item.model_dump(mode="json", exclude_none=True) for item in body.references
+            ],
             capabilities_json=body.capabilities,
             heartbeat_at=now,
             created_at=now,
@@ -263,6 +288,14 @@ class RunRecords:
             if len(row.partial_text) + len(text) > MAX_PARTIAL_TEXT:
                 raise OperationError("回复超过 100000 字", "event_too_large", 422)
             row.partial_text += text
+        if body.kind == "run_usage":
+            try:
+                usage = TokenUsage.model_validate(body.payload).model_dump(exclude_none=True)
+            except ValidationError:
+                raise OperationError("用量事件无效", "invalid_event", 422) from None
+            if not usage:
+                raise OperationError("用量事件为空", "invalid_event", 422)
+            row.execution_config = {**row.execution_config, "usage": usage}
         now = utc_now()
         row.last_event_sequence += 1
         row.heartbeat_at = now

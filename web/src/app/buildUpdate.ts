@@ -1,4 +1,5 @@
 import "./buildUpdate.css";
+import { recoverPage } from "./recovery";
 
 const build = document.querySelector<HTMLMetaElement>(
   'meta[name="fpl-build"]',
@@ -30,7 +31,7 @@ if (build) {
     const refresh = document.createElement("button");
     refresh.type = "button";
     refresh.textContent = "刷新页面";
-    refresh.onclick = () => window.location.reload();
+    refresh.onclick = () => recoverPage();
     notice.append(message, refresh);
     document.body.append(notice);
   };

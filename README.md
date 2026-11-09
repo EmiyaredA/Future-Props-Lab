@@ -1,6 +1,6 @@
 # Future Props Lab
 
-「云控 → Agent 工作台」在日常网站嵌入自托管 Happier。FPL 管理员通过密码解锁进入，随后使用 Happier 原生设备密钥登录。部署、项目挂载与旧工作台归档见 [Happier 部署与切换](docs/operations/happier.md)。
+顶栏「Amadeus」打开跨工坊项目助手，工坊也可就地打开侧栏。云控提供远程应用或桌面。整机编程使用独立 [Happier](https://agents.futurepropslab.cn/)，FPL 历史实例见 [Happier 部署与恢复](docs/operations/happier.md)。
 
 未来道具研究所的模型基础设施管理台。项目从 Sayflow 的工程边界中提取了模型目录、模型调用日志、管理端主题与文档中心壳，不包含 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展和多实例部署；实时语音仅作为模型测试能力，文件语音识别、录音分段标注与 Galgame 配音流程仍是正式能力。
 

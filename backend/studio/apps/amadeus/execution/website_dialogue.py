@@ -155,6 +155,7 @@ class CodeAgentRuns:
                     emit,
                     root=root,
                     runtime_path=self.settings.runtime_path,
+                    **run.cli_options(),
                 )
             )
             paused = asyncio.create_task(bridge.paused.wait())

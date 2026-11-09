@@ -6,7 +6,7 @@ import {
 import type { NavigationGuard } from "@features/integrations/interaction";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useNavigationProtection } from "@shared/ui/navigationGuards";
-import { IndependentShell } from "./IndependentShell";
+import { StudioServiceShell } from "./StudioServiceShell";
 import { guardedNavigation } from "./navigation";
 
 const kinds = ["tool-apis", "mcp", "skills", "external-connections"] as const;
@@ -50,8 +50,8 @@ function IntegrationsContent() {
 
 export default function IntegrationsApplication() {
   return (
-    <IndependentShell title="集成中心">
+    <StudioServiceShell title="集成中心">
       <IntegrationsContent />
-    </IndependentShell>
+    </StudioServiceShell>
   );
 }

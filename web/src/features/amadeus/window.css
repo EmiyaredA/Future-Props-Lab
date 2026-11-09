@@ -254,26 +254,6 @@
   margin: 9px 0;
   font-size: 12px;
 }
-.amadeus-message {
-  margin: 8px 0 20px;
-  font-size: 13px;
-  line-height: 1.65;
-}
-.amadeus-message-name {
-  font-weight: 600;
-  margin-bottom: 7px;
-  font-size: 12px;
-  color: #d56041;
-}
-.amadeus-message.user {
-  background: #fbede4;
-  border: 1px solid #f0d9c9;
-  padding: 12px 14px;
-  border-radius: 13px;
-}
-.amadeus-message.user .amadeus-message-name {
-  color: #6b5549;
-}
 .amadeus-message p {
   margin: 0 0 8px;
   overflow-wrap: anywhere;
@@ -293,32 +273,58 @@
   padding-bottom: 5px;
 }
 .amadeus-ref {
-  display: flex;
+  display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 8px;
-  min-width: 170px;
-  max-width: 240px;
-  padding: 6px;
-  border: 1px solid #ead9ce;
-  border-radius: 9px;
-  background: white;
-}
-.amadeus-ref-content {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  max-width: min(180px, 100%);
   min-width: 0;
-  flex: 1;
-  text-align: left;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  padding: 0;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 999px;
+  background: var(--amadeus-surface);
 }
-.amadeus-message-refs > button {
-  color: inherit;
-  text-align: left;
+.amadeus-ref .amadeus-ref-content {
+  gap: 5px;
+  min-width: 0;
+  padding: 3px 7px;
+  min-height: 24px;
+  font-size: 11px;
+  line-height: 1.2;
+  border-radius: 999px;
+}
+.amadeus-ref-content svg {
+  flex: none;
+  color: var(--amadeus-accent);
+}
+.amadeus-ref-content span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.amadeus-ref .amadeus-ref-remove {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border-radius: 999px;
+}
+.amadeus-ref-tooltip {
+  z-index: 2147483620;
+  display: grid;
+  gap: 3px;
+  max-width: min(280px, calc(100vw - 16px));
+  padding: 8px 10px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 8px;
+  background: var(--amadeus-surface-raised);
+  box-shadow: var(--amadeus-shadow);
+  color: var(--amadeus-muted);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.amadeus-ref-tooltip strong {
+  color: var(--amadeus-ink);
+  font-size: 12px;
 }
 .amadeus-reference-backdrop {
   position: fixed;
@@ -358,36 +364,6 @@
 .amadeus-reference-detail p {
   color: #7c6a5e;
   font-size: 12px;
-}
-.amadeus-ref-thumb {
-  width: 35px;
-  height: 35px;
-  flex: none;
-  border-radius: 6px;
-  background: #f7ebe4;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  color: #d56041;
-}
-.amadeus-ref-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-.amadeus-ref strong,
-.amadeus-ref small {
-  display: block;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.amadeus-ref strong {
-  font-size: 11px;
-}
-.amadeus-ref small {
-  font-size: 10px;
-  color: #9b8b80;
 }
 .amadeus-steps {
   font-size: 12px;
@@ -559,7 +535,9 @@
   box-shadow: 0 6px 23px #9c5e3519;
 }
 .amadeus-composer textarea {
+  display: block;
   width: 100%;
+  box-sizing: border-box;
   min-height: 50px;
   max-height: 130px;
   resize: vertical;
@@ -582,10 +560,29 @@
   white-space: nowrap;
 }
 .amadeus-toolbar {
-  height: 35px;
   display: flex;
+  min-height: 32px;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
+  gap: 6px 8px;
+}
+.amadeus-toolbar-tools,
+.amadeus-toolbar-run {
+  display: flex;
+  min-width: 0;
+  max-width: 100%;
+  align-items: center;
+}
+.amadeus-toolbar-tools {
+  flex-wrap: wrap;
   gap: 1px;
+}
+.amadeus-toolbar-run {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-inline-start: auto;
 }
 .amadeus-toolbar button {
   gap: 3px;
@@ -597,13 +594,19 @@
   opacity: 0.42;
   cursor: default;
 }
-.amadeus-spacer {
-  flex: 1;
-  min-width: 2px;
-}
 .amadeus-model-control {
   position: relative;
+  min-width: 0;
   max-width: 135px;
+}
+.amadeus-model-control .custom-select {
+  min-width: 0;
+}
+.amadeus-model-status {
+  display: block;
+  margin-block-start: 4px;
+  color: var(--amadeus-muted);
+  font-size: 11px;
 }
 .amadeus-model-control > button {
   max-width: 135px;
@@ -644,7 +647,6 @@
   flex: none;
   background: #d96243;
   color: white;
-  margin-left: 5px;
 }
 button:focus-visible,
 textarea:focus-visible,
@@ -659,8 +661,5 @@ select:focus-visible {
   }
   .amadeus-header {
     padding-left: 82px;
-  }
-  .amadeus-toolbar button span {
-    display: none;
   }
 }

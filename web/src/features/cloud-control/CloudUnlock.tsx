@@ -1,15 +1,13 @@
 import { useState, type FormEvent } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { reauthenticate } from "@features/accounts";
-import { unlockCloud, type CloudUnlockPurpose } from "./cloudApi";
+import { unlockCloud } from "./cloudApi";
 
 export function CloudUnlock({
-  purpose,
   remoteApps,
   close,
   unlocked,
 }: {
-  purpose: CloudUnlockPurpose;
   remoteApps?: boolean;
   close: () => void;
   unlocked: () => void;
@@ -24,7 +22,7 @@ export function CloudUnlock({
     setPending(true);
     try {
       await reauthenticate(password);
-      await unlockCloud(purpose);
+      await unlockCloud("desktop");
       unlocked();
     } catch (failure) {
       setPassword("");
@@ -40,18 +38,12 @@ export function CloudUnlock({
         <Dialog.Overlay className="cloud-dialog-overlay" />
         <Dialog.Content className="cloud-dialog">
           <Dialog.Title>
-            {purpose === "desktop"
-              ? remoteApps
-                ? "验证应用访问权限"
-                : "验证桌面访问权限"
-              : "解锁云控操作"}
+            {remoteApps ? "验证应用访问权限" : "验证桌面访问权限"}
           </Dialog.Title>
           <Dialog.Description>
-            {purpose === "desktop"
-              ? remoteApps
-                ? "验证 FPL 管理员密码后，即可选择允许的远程应用。"
-                : "验证 FPL 管理员密码后，即可输入 VNC 密码连接桌面。"
-              : "输入 FPL 管理员密码，解锁 Agent 工作台 15 分钟。"}
+            {remoteApps
+              ? "验证 FPL 管理员密码后，即可选择允许的远程应用。"
+              : "验证 FPL 管理员密码后，即可输入 VNC 密码连接桌面。"}
           </Dialog.Description>
           <form onSubmit={(event) => void submit(event)}>
             <label>

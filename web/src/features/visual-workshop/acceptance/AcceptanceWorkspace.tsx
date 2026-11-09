@@ -1,3 +1,4 @@
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useState } from "react";
@@ -83,6 +84,10 @@ export function AcceptanceWorkspace({
             <SlidersHorizontal size={16} />
             项目验收
           </button>
+          <AmadeusButton
+            className="btn"
+            source={{ application: "视觉创作工坊", projectId, title }}
+          />
           <ThemeToggle />
           {onConversation && (
             <button onClick={onConversation}>

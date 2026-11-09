@@ -1,5 +1,11 @@
 import { lazy, useCallback, useEffect, useRef, useState } from "react";
-import { useAccountId } from "@platform/auth/AccountAccess";
+import { useStudioSession } from "@app/StudioSession";
+import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
+import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
+import {
+  useAccountId,
+  useAccountPermission,
+} from "@platform/auth/AccountAccess";
 import { RuntimeAccessProvider } from "@features/accounts/RuntimeAccessProvider";
 import type { KnowledgeSection } from "@features/thought-workshop/KnowledgeSections";
 import type { NavigationGuard } from "@features/thought-workshop/NoteEditorPane";
@@ -8,8 +14,14 @@ import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { useNavigationProtection } from "@shared/ui/navigationGuards";
 import { ApplicationUpdate } from "./ApplicationUpdate";
 import { guardedNavigation } from "./navigation";
+import "@app/layout/workshop-shell.css";
 
 const ThoughtWorkshopPage = lazy(thought.pages.notes);
+const ReadOnly = lazy(() =>
+  import("@features/thought-workshop/ThoughtReadOnlyPage").then((module) => ({
+    default: module.ThoughtReadOnlyPage,
+  })),
+);
 const Community = lazy(() =>
   import("@features/thought-workshop/community/KnowledgeCommunityPage").then(
     (module) => ({ default: module.KnowledgeCommunityPage }),
@@ -33,6 +45,7 @@ function currentPath() {
 
 function ThoughtContent() {
   const owner = useAccountId();
+  const writable = useAccountPermission("content.write");
   const protection = useNavigationProtection();
   const removeGuard = useRef<(() => void) | undefined>(undefined);
   const [path, setPath] = useState(currentPath);
@@ -76,6 +89,10 @@ function ThoughtContent() {
       </section>
     );
   const { page, projectId, documentId } = route;
+  const utilityBar =
+    page === sectionPages.private ? (
+      <WorkshopUtilities application={thought.definition.name} />
+    ) : undefined;
   const communitySection =
     page === sectionPages.community
       ? "community"
@@ -111,12 +128,37 @@ function ThoughtContent() {
         onBack={() => section("community")}
       />
     );
+  if (!writable)
+    return (
+      <ReadOnly
+        key={owner}
+        projectId={projectId}
+        documentId={documentId}
+        utilityBar={
+          <WorkshopUtilities
+            application={thought.definition.name}
+            projectId={projectId}
+          />
+        }
+        onBack={back}
+        onNavigateSection={section}
+        onOpenOfficial={(id) => navigate("thought-workshop-official", id)}
+        onOpen={(project, document) =>
+          navigate(
+            project ? "thought-workshop-editor" : sectionPages.private,
+            project,
+            document,
+          )
+        }
+      />
+    );
   return (
     <ThoughtWorkshopPage
       key={owner}
       page={page}
       projectId={projectId}
       noteId={documentId}
+      utilityBar={utilityBar}
       onNavigateSection={section}
       onOpenOfficial={(id) => navigate("thought-workshop-official", id)}
       onNavigate={(project, document, replace) => {
@@ -138,12 +180,15 @@ function ThoughtContent() {
 }
 
 export default function ThoughtApplication() {
+  const session = useStudioSession();
   return (
     <RuntimeAccessProvider>
-      <NavigationProtection>
-        <ApplicationUpdate />
-        <ThoughtContent />
-      </NavigationProtection>
+      <AmadeusPageProvider key={session.me.user.id} session={session}>
+        <NavigationProtection>
+          <ApplicationUpdate />
+          <ThoughtContent />
+        </NavigationProtection>
+      </AmadeusPageProvider>
     </RuntimeAccessProvider>
   );
 }

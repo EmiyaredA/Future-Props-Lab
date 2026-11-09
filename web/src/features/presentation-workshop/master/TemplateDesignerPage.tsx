@@ -39,6 +39,7 @@ export function TemplateDesignerPage({
     );
   return (
     <TemplateDesigner
+      showAmadeus
       key={id}
       initial={id === "new" ? null : (query.data ?? null)}
       readOnly={readOnly}

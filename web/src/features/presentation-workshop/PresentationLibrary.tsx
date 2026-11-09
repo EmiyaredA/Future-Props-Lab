@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { ImportButton } from "./exchange/ImportButton";
 import { useState } from "react";
@@ -5,7 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Presentation,
-  Search,
   Copy,
   Pencil,
   Trash2,
@@ -13,7 +13,10 @@ import {
 } from "lucide-react";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
+import {
+  WorkshopAppChrome,
+  WorkshopSearch,
+} from "@shared/ui/WorkshopAppChrome";
 import {
   createProject,
   deleteProject,
@@ -28,9 +31,11 @@ import { PresentationPreviewCard } from "./PresentationPreviewCard";
 import type { ProjectSummary } from "./types";
 
 export function PresentationLibrary({
+  utilities,
   onOpen,
   readOnly,
 }: {
+  utilities?: ReactNode;
   onOpen: (id: string) => void;
   readOnly: boolean;
 }) {
@@ -66,48 +71,37 @@ export function PresentationLibrary({
   return (
     <div className="presentation-library workshop-page workshop-projects-page">
       <WorkshopAppChrome
+        utilities={utilities}
+        showThemeToggle={false}
         title="我的演示文稿"
-        description="把想法整理成清晰的表达。"
         actions={
-          !readOnly ? (
-            <>
-              <ImportButton onOpen={onOpen} />
-              <button
-                type="button"
-                className="workshop-primary"
-                disabled={busy}
-                onClick={() => startNew()}
-              >
-                <Plus aria-hidden />
-                新建演示文稿
-              </button>
-            </>
-          ) : null
-        }
-      />
-      <div className="presentation-library-content">
-        <div className="presentation-library-intro">
-          <h2>让想法，成为精彩的演示</h2>
-          <p>从一个清晰的想法开始，构建你的下一次表达。</p>
-        </div>
-
-        <div className="presentation-library-tools">
-          <h3>
-            我的文稿 <span>{query.data?.total ?? 0}</span>
-          </h3>
-          <label className="presentation-search">
-            <Search size={16} aria-hidden />
-            <input
-              placeholder="搜索文稿"
-              aria-label="搜索文稿"
+          <>
+            <WorkshopSearch
+              label="搜索文稿"
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
+              onChange={(value) => {
+                setSearch(value);
                 setOffset(0);
               }}
             />
-          </label>
-        </div>
+            {!readOnly ? (
+              <>
+                <ImportButton onOpen={onOpen} />
+                <button
+                  type="button"
+                  className="workshop-primary"
+                  disabled={busy}
+                  onClick={() => startNew()}
+                >
+                  <Plus aria-hidden />
+                  新建演示文稿
+                </button>
+              </>
+            ) : null}
+          </>
+        }
+      />
+      <div className="presentation-library-content">
         {error ? (
           <p role="alert" className="presentation-error">
             {error}

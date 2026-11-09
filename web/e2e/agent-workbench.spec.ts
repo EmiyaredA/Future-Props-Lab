@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("retired workbench links open the Happier pane without a session ID", async ({
+test("retired workbench links open Amadeus without a session ID", async ({
   page,
 }) => {
   await page.goto("/cloud-control");
@@ -9,13 +9,14 @@ test("retired workbench links open the Happier pane without a session ID", async
   ).toBeVisible({ timeout: 15_000 });
   for (const path of [
     "/agents",
+    "/cloud-control?view=agent",
     "/agents/sources",
     "/apps/agent-workbench/sessions/private",
   ]) {
     await page.goto(path);
-    await expect(page).toHaveURL(/\/cloud-control\?view=agent$/);
+    await expect(page).toHaveURL(/\/amadeus$/);
     await expect(
-      page.getByRole("region", { name: "Agent 工作台" }),
+      page.getByRole("region", { name: "Amadeus", exact: true }),
     ).toBeVisible();
   }
 });

@@ -7,7 +7,7 @@ import {
   SlidersHorizontal,
   Timer,
 } from "lucide-react";
-import { saveIdle } from "./cloudApi";
+import { saveIdle, type IdlePreference } from "./cloudApi";
 import "./desktop-idle.css";
 
 export function DesktopPassword({
@@ -101,15 +101,17 @@ const presets = [15, 30, 60];
 
 export function DesktopIdle({
   remoteApps = false,
+  inline = false,
   minutes,
   revision,
   changed,
   close,
 }: {
   remoteApps?: boolean;
+  inline?: boolean;
   minutes: number;
   revision: number;
-  changed: () => void;
+  changed: (saved?: IdlePreference) => void;
   close: () => void;
 }) {
   const title = useId();
@@ -138,8 +140,7 @@ export function DesktopIdle({
     setBusy(true);
     setError("");
     try {
-      await saveIdle(duration, revision);
-      changed();
+      changed(await saveIdle(duration, revision));
       close();
     } catch (failure) {
       setError(failure instanceof Error ? failure.message : "保存失败");
@@ -151,14 +152,14 @@ export function DesktopIdle({
   return (
     <form
       ref={form}
-      className="cloud-idle-popover"
-      role="dialog"
+      className={inline ? "cloud-idle-inline" : "cloud-idle-popover"}
+      role={inline ? undefined : "dialog"}
       aria-labelledby={title}
       aria-describedby={`${title}-description`}
       noValidate
       onSubmit={(event) => void submit(event)}
       onKeyDown={(event) => {
-        if (event.key === "Escape") {
+        if (!inline && event.key === "Escape") {
           event.stopPropagation();
           close();
         }

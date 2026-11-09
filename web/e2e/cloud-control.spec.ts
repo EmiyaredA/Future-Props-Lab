@@ -1,26 +1,11 @@
 import { expect, test } from "@playwright/test";
 
-test("cloud control switches full-width views and shows the Happier workspace", async ({
+test("cloud control keeps the remote desktop and Amadeus entry across themes", async ({
   page,
 }) => {
   await page.goto("/apps");
-  await expect(
-    page.getByRole("button", { name: "打开Agent 工作台", exact: true }),
-  ).toHaveCount(0);
   await page.getByRole("button", { name: "云控", exact: true }).click();
   await expect(page).toHaveURL(/\/cloud-control$/);
-  const switcher = page.getByRole("group", { name: "云控视图" });
-  const desktopTab = switcher.getByRole("button", {
-    name: "远程桌面",
-    exact: true,
-  });
-  const agentTab = switcher.getByRole("button", {
-    name: "Agent 工作台",
-    exact: true,
-  });
-  const desktop = page.getByRole("region", { name: "远程桌面", exact: true });
-  const chat = page.getByRole("region", { name: "Agent 工作台", exact: true });
-  await expect(desktopTab).toHaveAttribute("aria-pressed", "true");
   for (const width of [390, 768, 1280, 1616]) {
     await page.setViewportSize({ width, height: 973 });
     for (const theme of ["浅色", "深色"]) {
@@ -31,30 +16,19 @@ test("cloud control switches full-width views and shows the Happier workspace", 
         ),
       ).toBe(true);
     }
-    await desktopTab.press("Enter");
-    await expect(desktop).toBeVisible();
-    await expect(chat).toBeHidden();
-    await agentTab.press("Space");
-    await expect(agentTab).toBeFocused();
-    await expect(chat).toBeVisible();
-    await expect(desktop).toBeHidden();
-    const workspace = await page.locator(".cloud-workspace").boundingBox();
-    expect((await chat.boundingBox())!.width).toBeCloseTo(workspace!.width, 0);
+    await expect(
+      page.getByRole("region", { name: "远程桌面", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "打开 Amadeus" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Agent 工作台" }),
+    ).toHaveCount(0);
   }
-  await expect(
-    page.getByRole("separator", { name: "调整远程桌面宽度" }),
-  ).toHaveCount(0);
-  await page.reload();
-  await expect(agentTab).toHaveAttribute("aria-pressed", "true");
-  await page.goto("/agents/sessions/private-id");
-  await expect(page).toHaveURL(/\/cloud-control\?view=agent$/);
-  await expect(agentTab).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByText("此账号或入口尚未启用 Happier。")).toBeVisible();
 });
 
-test("ordinary accounts cannot mount cloud control or workbench requests", async ({
-  page,
-}) => {
+test("ordinary accounts cannot mount cloud control", async ({ page }) => {
   await page.route("**/v1/auth/me", async (route) => {
     const response = await route.fetch();
     const me = await response.json();
@@ -67,23 +41,16 @@ test("ordinary accounts cannot mount cloud control or workbench requests", async
   });
   const requests: string[] = [];
   page.on("request", (request) => {
-    if (request.url().includes("/v1/agent-workbench/"))
+    if (request.url().includes("/v1/cloud-control/"))
       requests.push(request.url());
   });
-  for (const path of [
-    "/cloud-control",
-    "/agents",
-    "/agents/sources",
-    "/agents/sessions/private",
-  ]) {
-    await page.goto(path);
-    await expect(
-      page.getByRole("heading", { name: "云控仅限管理员访问" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "云控", exact: true }),
-    ).toHaveCount(0);
-  }
+  await page.goto("/cloud-control");
+  await expect(
+    page.getByRole("heading", { name: "云控仅限管理员访问" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "云控", exact: true }),
+  ).toHaveCount(0);
   expect(requests).toEqual([]);
 });
 
@@ -354,29 +321,40 @@ test("remote app tabs scroll locally and keep the Mac-only add action visible", 
   await expect(pane).toBeVisible({ timeout: 25_000 });
   const header = page.locator(".cloud-page-header");
   const toolbar = header.getByRole("group", { name: "远控操作" });
-  const tabs = toolbar.getByRole("group", { name: "可远控的应用" });
+  const tabs = pane.getByRole("group", { name: "可远控的应用" });
   await expect(tabs.getByRole("button")).toHaveCount(12);
-  const add = toolbar.getByRole("button", { name: "添加应用" });
+  const add = pane.getByRole("button", { name: "添加应用" });
   await expect(add).toBeInViewport();
   expect(
     await tabs.evaluate((node) => node.scrollWidth > node.clientWidth),
   ).toBe(true);
-  expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= innerWidth + 1,
-    ),
-  ).toBe(true);
-  await page.setViewportSize({ width: 1470, height: 900 });
-  const heading = await header
+  await tabs
+    .getByRole("button", { name: "Mac 测试应用 12", exact: true })
+    .focus();
+  await expect(add).toBeInViewport();
+  for (const width of [390, 768, 1470]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const theme of ["浅色", "深色"]) {
+      await page.getByRole("button", { name: theme, exact: true }).click();
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth + 1,
+        ),
+      ).toBe(true);
+      const row = (await pane.locator(".cloud-app-tabs").boundingBox())!;
+      const screen = (await pane.locator(".cloud-app-viewport").boundingBox())!;
+      expect(screen.y).toBeCloseTo(row.y + row.height, 0);
+      expect(
+        (await tabs.getByRole("button").first().boundingBox())!.height,
+      ).toBeCloseTo(32, 0);
+    }
+  }
+  const heading = (await header
     .getByRole("heading", { name: "云控" })
-    .boundingBox();
-  const toolbarBox = await toolbar.boundingBox();
-  expect(
-    heading && toolbarBox && Math.abs(heading.y - toolbarBox.y),
-  ).toBeLessThan(12);
-  const screen = await pane.locator(".cloud-app-viewport").boundingBox();
-  const frame = await pane.boundingBox();
-  expect(screen && frame && screen.height).toBeCloseTo(frame!.height - 2, 0);
+    .boundingBox())!;
+  const connection = (await toolbar.getByRole("status").boundingBox())!;
+  expect(connection.x).toBeGreaterThan(heading.x + heading.width);
+  expect(Math.abs(connection.y - heading.y)).toBeLessThan(12);
   local = false;
   await page.reload();
   await expect(add).toHaveCount(0);
@@ -386,9 +364,95 @@ test("remote app tabs scroll locally and keep the Mac-only add action visible", 
   ).toBeVisible();
 });
 
-test("remote app gates input and maps bounded video coordinates", async ({
+test("remote app idle preference is saved in settings with host controls restricted to local use", async ({
   page,
 }) => {
+  let local = true;
+  let idle = { idle_minutes: 30, revision: 0 };
+  let hostRequests = 0;
+  await page.route("**/v1/cloud-control/status", (route) =>
+    route.fulfill({
+      json: {
+        enabled: true,
+        local,
+        host_label: "Fixture Mac",
+        remote_apps_enabled: true,
+        desktop_configured: true,
+        desktop_authorized: local,
+        idle_minutes: idle.idle_minutes,
+        idle_revision: idle.revision,
+        unlocked_until: 0,
+        happier_available: false,
+      },
+    }),
+  );
+  await page.route("**/v1/cloud-control/apps", (route) =>
+    route.fulfill({ json: { apps: [] } }),
+  );
+  await page.route("**/v1/cloud-control/settings", (route) => {
+    hostRequests += 1;
+    return route.fulfill({
+      json: {
+        revision: "a".repeat(64),
+        host_label: "Fixture Mac",
+        enabled: true,
+        remote_apps_enabled: true,
+        remote_apps_host_ready: true,
+      },
+    });
+  });
+  await page.route("**/v1/cloud-control/desktop/idle", (route) => {
+    expect(route.request().method()).toBe("PUT");
+    expect(route.request().postDataJSON()).toEqual({
+      idle_minutes: local ? 60 : 120,
+      revision: idle.revision,
+    });
+    idle = { idle_minutes: local ? 60 : 120, revision: idle.revision + 1 };
+    return route.fulfill({ json: idle });
+  });
+  await page.goto("/cloud-control");
+  const settings = page.getByRole("button", { name: "云控设置" });
+  const dialog = page.getByRole("dialog", { name: "云控设置" });
+  const preference = dialog.getByRole("form", { name: "自动锁定" });
+  const idleEntry = dialog.getByRole("button", { name: /^自动锁定 ·/ });
+  await expect(page.getByRole("button", { name: /^自动锁定 ·/ })).toHaveCount(
+    0,
+  );
+  await settings.click();
+  await expect(dialog.getByLabel("主机显示名")).toBeVisible();
+  await expect(idleEntry).toHaveText(/30 分钟/);
+  await idleEntry.click();
+  await preference.getByRole("button", { name: "60 分钟" }).click();
+  await preference.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(idleEntry).toHaveText(/60 分钟/);
+  await expect(idleEntry).toBeFocused();
+  await dialog.getByRole("button", { name: "关闭云控设置" }).click();
+  await expect(settings).toBeFocused();
+  expect(hostRequests).toBe(1);
+
+  local = false;
+  await page.reload();
+  await settings.click();
+  await expect(dialog.getByLabel("主机显示名")).toHaveCount(0);
+  await expect(idleEntry).toHaveText(/60 分钟/);
+  await idleEntry.click();
+  await preference.getByRole("button", { name: "自定义" }).click();
+  await preference.getByLabel("自定义时长").fill("121");
+  await preference.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(preference.getByRole("alert")).toContainText("5–120");
+  await preference.getByLabel("自定义时长").fill("120");
+  await preference.getByRole("button", { name: "保存", exact: true }).click();
+  await expect(idleEntry).toHaveText(/120 分钟/);
+  await dialog.getByRole("button", { name: "关闭云控设置" }).click();
+  await settings.click();
+  await expect(idleEntry).toHaveText(/120 分钟/);
+  expect(hostRequests).toBe(1);
+});
+
+test("connected remote app controls overlay the viewer and remain usable in fullscreen", async ({
+  page,
+  browserName,
+}, info) => {
   await page.setViewportSize({ width: 1470, height: 900 });
   await page.addInitScript(() => {
     // Keep the browser's video and fullscreen behavior, while using a local
@@ -542,6 +606,57 @@ test("remote app gates input and maps bounded video coordinates", async ({
       ),
     ).toBe("2px");
   }
+  await page.setViewportSize({ width: 1470, height: 900 });
+  const tools = viewport.getByRole("group", { name: "画面操作" });
+  const fit = tools.getByRole("button", { name: "适应窗口" });
+  const disconnect = heading.getByRole("button", { name: "断开连接" });
+  const fullscreen = tools.getByRole("button", { name: "全屏", exact: true });
+
+  await page.mouse.move(0, 0);
+  await expect(tools).toHaveCSS("opacity", "0");
+  await viewport.hover();
+  await expect(tools).toHaveCSS("opacity", "1");
+  await page.screenshot({ path: info.outputPath("remote-app-hover.png") });
+  await page.mouse.move(0, 0);
+  await fit.focus();
+  await expect(tools).toHaveCSS("opacity", "1");
+  await fit.press("Space");
+  await expect(fit).toHaveAttribute("aria-pressed", "false");
+  await expect(viewport).toHaveAttribute("data-fit", "false");
+
+  await fullscreen.click();
+  const exit = tools.getByRole("button", { name: "退出全屏" });
+  await expect(exit).toBeVisible();
+  await expect
+    .poll(() =>
+      viewport.evaluate((node) => document.fullscreenElement === node),
+    )
+    .toBe(true);
+  setHostInputReady(false);
+  await expect(viewport.getByRole("status")).toHaveText(
+    "画面已连接，键鼠已暂停",
+  );
+  await expect(refocus).toBeVisible();
+  setHostInputReady(true);
+  await expect(remoteKeyboard).toBeEnabled();
+  await remoteKeyboard.focus();
+  await remoteKeyboard.press("Shift+Escape");
+  await expect(exit).toBeFocused();
+  await exit.press("Enter");
+  await expect(fullscreen).toBeVisible();
+  await remoteKeyboard.focus();
+  await remoteKeyboard.press("Shift+Escape");
+  await expect(disconnect).toBeFocused();
+
+  if (browserName === "chromium") {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: true });
+    await page.mouse.move(0, 0);
+    await expect(tools).toHaveCSS("opacity", "1");
+    await expect(fit).toHaveCSS("min-height", "44px");
+    await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false });
+    await cdp.detach();
+  }
   setHostInputReady(false);
   await refocus.click();
   await expect(heading.getByRole("status")).toHaveText("画面已连接，等待键鼠");
@@ -550,6 +665,7 @@ test("remote app gates input and maps bounded video coordinates", async ({
     window.dispatchEvent(new Event("fixture-input-open")),
   );
   await expect(heading.getByRole("status")).toHaveText("已连接");
-  await heading.getByRole("button", { name: "断开连接" }).click();
+  await disconnect.click();
   await expect(heading.getByRole("status")).toHaveText("未连接");
+  await expect(tools).toHaveCount(0);
 });

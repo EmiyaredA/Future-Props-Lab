@@ -9,7 +9,8 @@ const defaults: Layout = {
 const storageKey = "director-layout-v1";
 
 export function bindResizableLayout(signal: AbortSignal) {
-  const root = document.documentElement;
+  const root = document.querySelector<HTMLElement>(".director-desk-root")!;
+  const workspace = root.querySelector<HTMLElement>(".workspace")!;
   let cancelActiveDrag: (() => void) | undefined;
   let layout = { ...defaults };
   try {
@@ -21,28 +22,30 @@ export function bindResizableLayout(signal: AbortSignal) {
   }
   const clamp = (x: number, low: number, high: number) =>
     Math.max(low, Math.min(x, Math.max(low, high)));
+  let rendered = { ...layout };
   const limits = (key: Boundary): [number, number] => {
-    const width = document.querySelector(".workspace")!.clientWidth;
+    const width = workspace.clientWidth;
     if (key === "sidebar")
-      return [180, Math.min(500, width - layout.inspector - 420)];
+      return [180, Math.min(500, width - rendered.inspector - 420)];
     if (key === "inspector")
-      return [260, Math.min(520, width - layout.sidebar - 420)];
+      return [260, Math.min(520, width - rendered.sidebar - 420)];
     if (key === "timeline")
       return [150, document.querySelector("#app")!.clientHeight - 89 - 420];
     return [20, 80];
   };
   const apply = () => {
+    rendered = { ...layout };
     for (const key of Object.keys(defaults) as Boundary[])
-      layout[key] = clamp(layout[key], ...limits(key));
-    root.style.setProperty("--sidebar-width", layout.sidebar + "px");
-    root.style.setProperty("--inspector-width", layout.inspector + "px");
-    root.style.setProperty("--timeline-height", layout.timeline + "px");
-    root.style.setProperty("--stage-share", String(layout.split));
-    root.style.setProperty("--shot-share", String(100 - layout.split));
+      rendered[key] = clamp(layout[key], ...limits(key));
+    root.style.setProperty("--sidebar-width", rendered.sidebar + "px");
+    root.style.setProperty("--inspector-width", rendered.inspector + "px");
+    root.style.setProperty("--timeline-height", rendered.timeline + "px");
+    root.style.setProperty("--stage-share", String(rendered.split));
+    root.style.setProperty("--shot-share", String(100 - rendered.split));
     document.querySelectorAll<HTMLElement>("[data-boundary]").forEach((el) => {
       const key = el.dataset.boundary as Boundary,
         [min, max] = limits(key);
-      el.setAttribute("aria-valuenow", String(Math.round(layout[key])));
+      el.setAttribute("aria-valuenow", String(Math.round(rendered[key])));
       el.setAttribute("aria-valuemin", String(min));
       el.setAttribute("aria-valuemax", String(max));
     });
@@ -98,7 +101,10 @@ export function bindResizableLayout(signal: AbortSignal) {
           layout[key] =
             event.key === "Home"
               ? defaults[key]
-              : layout[key] + (grow.includes(event.key) ? step : -step);
+              : clamp(
+                  rendered[key] + (grow.includes(event.key) ? step : -step),
+                  ...limits(key),
+                );
           apply();
           save();
         }
@@ -112,6 +118,7 @@ export function bindResizableLayout(signal: AbortSignal) {
         event.preventDefault();
         event.stopPropagation();
         const original = layout[key],
+          initial = rendered[key],
           x = event.clientX,
           y = event.clientY;
         handle.setPointerCapture(event.pointerId);
@@ -128,7 +135,7 @@ export function bindResizableLayout(signal: AbortSignal) {
                       document.querySelector("#viewports")!.clientWidth) *
                     100
                   : ev.clientX - x;
-          layout[key] = original + delta;
+          layout[key] = clamp(initial + delta, ...limits(key));
           apply();
         };
         const finish = (ev?: PointerEvent) => {
@@ -168,6 +175,8 @@ export function bindResizableLayout(signal: AbortSignal) {
     },
     { signal },
   );
-  window.addEventListener("resize", apply, { signal });
+  const observer = new ResizeObserver(apply);
+  observer.observe(workspace);
+  signal.addEventListener("abort", () => observer.disconnect(), { once: true });
   apply();
 }

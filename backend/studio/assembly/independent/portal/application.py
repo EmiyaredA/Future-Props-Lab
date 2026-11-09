@@ -86,6 +86,8 @@ def create_app(
                 "/apps/",
                 "/cloud-control",
                 "/cloud-control/",
+                "/amadeus",
+                "/amadeus/",
                 "/docs.html",
             ),
             resource_aliases={"/docs/{path:path}": "docs/"},

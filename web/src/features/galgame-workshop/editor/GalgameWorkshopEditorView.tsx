@@ -1,6 +1,11 @@
+import {
+  assistantElementSource,
+  useAssistantElements,
+} from "@platform/assistantElements";
+import { BLOCK_REGISTRY } from "./blockRegistry";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { openAmadeus } from "@platform/assistant";
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import "../styles/compact-workspaces.css";
 import { Suspense, useEffect, useState } from "react";
@@ -14,7 +19,6 @@ import {
   Save,
   Search,
   Settings2,
-  Sparkles,
 } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
@@ -93,6 +97,42 @@ function AmadeusEditorContext({
   return null;
 }
 
+function galgameElements(
+  model: Extract<EditorPageViewModel, { status: "ready" }>,
+) {
+  const entries = (model.document.chapters ?? []).flatMap((chapter) =>
+    (chapter.fragments ?? []).flatMap((fragment) =>
+      (fragment.blocks ?? []).map((block) => ({ chapter, fragment, block })),
+    ),
+  );
+  return assistantElementSource(
+    {
+      resource: "galgame",
+      projectId: model.projectId,
+      application: "Galgame 工坊",
+      unsaved: model.saveState !== "saved",
+      locate: ({ element_id }) => {
+        const target = entries.find(({ block }) => block.id === element_id);
+        if (!target) return false;
+        model.setSelectedChapterId(target.chapter.id);
+        model.setSelectedFragmentId(target.fragment.id);
+        model.setSelectedBlockId(target.block.id);
+        model.setSelectedTimelineGapId(undefined);
+        model.setWorkspace("script");
+        model.setInspectorTab("properties");
+        return true;
+      },
+    },
+    entries.map(({ fragment, block }) => ({
+      id: block.id,
+      kind: "story_block",
+      name: BLOCK_REGISTRY[block.type].label,
+      value: fragment.title,
+    })),
+    model.selectedBlockId ? [model.selectedBlockId] : [],
+  );
+}
+
 export function GalgameWorkshopEditorView({
   model,
 }: {
@@ -100,6 +140,11 @@ export function GalgameWorkshopEditorView({
 }) {
   const [mobilePanel, setMobilePanel] = useState("script");
   const segmentPreview = useEditorSegmentPreviewController(model);
+  useAssistantElements(
+    model.status === "ready" && !segmentPreview.fastPreview
+      ? galgameElements(model)
+      : undefined,
+  );
   if (model.status === "loading")
     return (
       <div className="workshop-state galgame-editor-state">
@@ -259,16 +304,7 @@ export function GalgameWorkshopEditorView({
             <kbd>{navigator.platform.includes("Mac") ? "⌘K" : "Ctrl K"}</kbd>
           </button>
           <div className="galgame-editor-actions">
-            {
-              <button
-                type="button"
-                className="galgame-editor-amadeus"
-                aria-label="打开 Amadeus"
-                onClick={() => void openAmadeus()}
-              >
-                <Sparkles aria-hidden /> Amadeus
-              </button>
-            }
+            <AmadeusButton className="galgame-editor-amadeus" />
             <ThemeToggle compact />
             <button
               type="button"

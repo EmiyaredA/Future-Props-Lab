@@ -41,6 +41,7 @@ export default defineConfig(({ mode }) => {
     // Desktop defers full reloads for unsaved drafts. A late optimizer rebuild would
     // otherwise mix React generations and crash newly loaded NodeViews.
     optimizeDeps: {
+      entries: ["*.html"],
       exclude: [
         "@mathjax/src",
         "@mathjax/mathjax-newcm-font",
@@ -50,6 +51,7 @@ export default defineConfig(({ mode }) => {
         "react",
         "react-dom/client",
         "@radix-ui/react-dialog",
+        "@radix-ui/react-tooltip",
         "@tiptap/extension-code-block",
         "lowlight",
         "echarts/core",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
 import { FileThumbnail } from "./FileThumbnail";
@@ -9,9 +9,11 @@ import { fileQueryKeys } from "./queryKeys";
 export function ReadOnlyFiles({
   projectId,
   initialKind,
+  utilities,
 }: {
   projectId?: string;
   initialKind?: string;
+  utilities?: ReactNode;
 }) {
   const [mediaKind, setMediaKind] = useState<MediaKind | undefined>(() =>
     ["image", "video", "audio", "document"].includes(initialKind ?? "")
@@ -38,6 +40,7 @@ export function ReadOnlyFiles({
   });
   return (
     <ReadOnlyPage
+      utilities={utilities}
       title={projectId ? "项目素材" : "文件管理"}
       loading={files.isPending}
       error={files.error || folders.error}

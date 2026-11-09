@@ -5,6 +5,8 @@ import asyncio
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
 
+from studio.apps.amadeus.fork_references import project_reader
+from studio.apps.amadeus.operation_calls import call_registered
 from studio.apps.amadeus.storage.action_records import ActionRecords
 from studio.apps.amadeus.storage.conversations import Conversations
 from studio.apps.amadeus.storage.questions import Questions
@@ -18,7 +20,10 @@ from studio.contracts.amadeus.conversations import (
     ConversationOut,
     ConversationPatchIn,
     ConversationRevisionConflictOut,
+    MessageForkIn,
     MessageIn,
+    MessageOut,
+    MessagePinIn,
     ModelTurnIn,
     ModelTurnOut,
     QuestionAnswerIn,
@@ -169,6 +174,44 @@ async def append_message(
     session: SessionDep, principal: StudioAuth, conversation_id: str, body: MessageIn
 ) -> ConversationDetailOut:
     return await Conversations(session, principal).add_message(conversation_id, body)
+
+
+@router.put("/conversations/{conversation_id}/messages/{message_id}/pin")
+async def pin_message(
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    message_id: str,
+    body: MessagePinIn,
+) -> MessageOut:
+    return await Conversations(session, principal).pin_message(
+        conversation_id, message_id, body.pinned
+    )
+
+
+@router.post("/conversations/{conversation_id}/messages/{message_id}/fork")
+async def fork_message(
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    message_id: str,
+    body: MessageForkIn,
+) -> ConversationOut:
+    async def read(operation, arguments):
+        return await call_registered(
+            request.app.state.capabilities,
+            request.state.service_assertion,
+            request.url.path,
+            operation,
+            arguments,
+            approved=False,
+            status_only=True,
+        )
+
+    return await Conversations(session, principal).fork_message(
+        conversation_id, message_id, body.request_id, project_reader(read)
+    )
 
 
 @router.post("/conversations/{conversation_id}/actions", response_model=ActionOut)

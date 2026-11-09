@@ -1,6 +1,11 @@
+import type { ReactNode } from "react";
 import { ReadOnlyAssetList } from "@shared/ui/ReadOnlyAssetList";
 import { useQuery } from "@tanstack/react-query";
-import { ReadOnlyCollection, ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
+import {
+  ReadOnlyCollection,
+  ReadOnlyPage,
+  ReadOnlyWorkshopLibrary,
+} from "@shared/ui/ReadOnlyPage";
 import {
   getGalgameWorkshopProjects,
   getGalgameProjectAssets,
@@ -11,10 +16,12 @@ import { galgameQueryKeys } from "./queryKeys";
 import { StoryPlayer } from "./editor/StoryPlayer";
 import "./styles/assets-and-player.css";
 export function ReadOnlyGalgame({
+  utilities,
   projectId,
   onOpen,
   onBack,
 }: {
+  utilities?: ReactNode;
   projectId?: string;
   onOpen: (id: string) => void;
   onBack: () => void;
@@ -39,8 +46,22 @@ export function ReadOnlyGalgame({
     queryFn: () => getGalgameStoryDocument(projectId!),
     enabled: !!projectId,
   });
+  if (!projectId && utilities) {
+    return (
+      <ReadOnlyWorkshopLibrary
+        title="我的 Galgame 工程"
+        utilities={utilities}
+
+        error={projects.error}
+        loading={projects.isPending}
+        items={projects.data?.items ?? []}
+        onOpen={onOpen}
+      />
+    );
+  }
   return (
     <ReadOnlyPage
+      utilities={utilities}
       title={project.data?.title || "Galgame 工坊"}
       error={projects.error || story.error}
       loading={projectId ? story.isPending : projects.isPending}

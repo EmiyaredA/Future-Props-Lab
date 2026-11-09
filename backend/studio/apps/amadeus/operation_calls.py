@@ -8,8 +8,10 @@ from studio.apps.amadeus.clients.website_operations import (
     RESPONSE_LIMIT,
     operation_request,
     operation_result,
+    operation_status,
 )
 from studio.contracts.amadeus.amadeus_native import RUN_SOURCE
+from studio.contracts.amadeus.message_forks import FORK_SOURCE
 from studio.contracts.identity.approved_operations import MAX_BODY, PURPOSE, request_digest
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
@@ -17,7 +19,9 @@ from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 
-async def call_registered(capabilities, assertion, source_path, operation, arguments, *, approved):
+async def call_registered(
+    capabilities, assertion, source_path, operation, arguments, *, approved, status_only=False
+):
     method, template, encoded, query, body = operation_request(
         operation, arguments, allow_write=approved
     )
@@ -41,6 +45,8 @@ async def call_registered(capabilities, assertion, source_path, operation, argum
     read_purpose = (
         "amadeus.dialogue.read" if RUN_SOURCE.fullmatch(source_path) else "amadeus.operation.read"
     )
+    if FORK_SOURCE.fullmatch(source_path):
+        read_purpose = "amadeus.fork.read"
     grant = RequestGrant(
         "amadeus",
         PURPOSE if approved else read_purpose,
@@ -67,6 +73,8 @@ async def call_registered(capabilities, assertion, source_path, operation, argum
         async with capabilities.client.stream(
             method, target, headers=headers, content=content, timeout=httpx.Timeout(120, connect=5)
         ) as response:
+            if status_only:
+                return operation_status(response.status_code)
             if approved and response.status_code >= 500:
                 raise OperationError("业务操作结果待核实", "operation_unconfirmed", 503)
             if response.headers.get("Content-Encoding", "identity") != "identity":

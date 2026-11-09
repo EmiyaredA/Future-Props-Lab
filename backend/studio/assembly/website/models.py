@@ -19,6 +19,7 @@ from studio.apps.agent_workbench.storage.models import (
 from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
+    AmadeusForkReceipt,
     AmadeusMessage,
     AmadeusQuestion,
     AmadeusRun,
@@ -284,6 +285,7 @@ TENANT_MODELS = (
     OfficialSource,
     OfficialImportReceipt,
     AmadeusConversation,
+    AmadeusForkReceipt,
     AmadeusMessage,
     AmadeusAction,
     AmadeusRun,

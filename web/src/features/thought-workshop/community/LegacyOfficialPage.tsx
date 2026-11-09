@@ -1,3 +1,4 @@
+import { AmadeusButton } from "@platform/AmadeusButton";
 import "../thought-workshop.css";
 import "../knowledge.css";
 import "./community.css";
@@ -35,6 +36,10 @@ export function LegacyOfficialPage({
         <button className="btn" onClick={onBack}>
           返回知识社区
         </button>
+        <AmadeusButton
+          className="btn"
+          source={{ application: "思绪工坊", projectId: undefined }}
+        />
       </header>
       <section className="community-content">
         {targets.isPending && libraryId && (

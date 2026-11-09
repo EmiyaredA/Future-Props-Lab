@@ -4,7 +4,6 @@
   padding: 0;
   margin: 0;
 }
-.interview-assistant .ia-room-toolbar,
 .interview-assistant .ia-preparation-toolbar,
 .interview-assistant .ia-executor-status,
 .interview-assistant .ia-practice-context {
@@ -15,7 +14,6 @@
   margin: 18px 0;
   min-width: 0;
 }
-.interview-assistant .ia-room-toolbar .field,
 .interview-assistant .ia-preparation-toolbar .field {
   min-width: 200px;
   max-width: 100%;
@@ -122,8 +120,12 @@
   .interview-assistant .ia-practice.interview-theme {
     padding: 10px;
   }
-  .interview-assistant .ia-room-toolbar > label,
   .interview-assistant .ia-preparation-toolbar > label {
     width: 100%;
   }
+}
+
+.interview-assistant .ia-executor-status {
+  margin: 10px 0;
+  padding: 8px 12px;
 }

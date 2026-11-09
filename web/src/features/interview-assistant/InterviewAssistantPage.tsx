@@ -1,18 +1,14 @@
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
-import { useEffect, useRef, useState } from "react";
-import {
-  Check,
-  ChevronRight,
-  CircleHelp,
-  Plus,
-  RefreshCw,
-  ShieldCheck,
-} from "lucide-react";
+import { useNavigationProtection } from "@shared/ui/navigationGuards";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Check, ChevronRight, CircleHelp, Plus, RefreshCw } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { Materials } from "./Prepare";
 import { DeviceCheck } from "./Interview";
 import { Practice } from "./Practice";
+import { RoomMaterials } from "./RoomMaterials";
 import { PreparationPanel } from "./PreparationPanel";
 import { usePreparation } from "./usePreparation";
 import { activeTask } from "./api";
@@ -33,9 +29,11 @@ import "./preparation-live.css";
 export function InterviewAssistantPage({
   registerNavigationGuard,
   scopeKey,
+  utilities,
 }: {
   registerNavigationGuard: RegisterNavigationGuard;
   scopeKey: string;
+  utilities?: ReactNode;
 }) {
   const prep = usePreparation(scopeKey);
   const [help, setHelp] = useState(false);
@@ -50,7 +48,22 @@ export function InterviewAssistantPage({
   const [practiceStep, setPracticeStep] = useState(2);
   const [pending, setPending] = useState<(() => void) | null>(null);
   const top = useRef<HTMLElement>(null);
+  const navigation = useNavigationProtection();
   const dirty = prep.dirty || !!practice || prep.busy;
+  const roomId = prep.room?.id;
+  const roomTitle = prep.room?.title;
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("future-props:amadeus-context", {
+        detail: {
+          application: "面试助手",
+          projectId: roomId,
+          title: roomTitle || "面试助手",
+          unsaved: dirty,
+        },
+      }),
+    );
+  }, [dirty, roomId, roomTitle]);
   useEffect(() => {
     if (!dirty) {
       registerNavigationGuard(null);
@@ -62,6 +75,7 @@ export function InterviewAssistantPage({
       return true;
     });
     const unload = (event: BeforeUnloadEvent) => {
+      if (navigation?.allowsUnload()) return;
       event.preventDefault();
       event.returnValue = "";
     };
@@ -70,7 +84,7 @@ export function InterviewAssistantPage({
       registerNavigationGuard(null);
       window.removeEventListener("beforeunload", unload);
     };
-  }, [dirty, registerNavigationGuard]);
+  }, [dirty, navigation, registerNavigationGuard]);
   function navigate(next: () => void) {
     if (dirty) setPending(() => next);
     else next();
@@ -92,57 +106,54 @@ export function InterviewAssistantPage({
     >
       <TransferFeedback progress={prep.transferProgress} />
 
-      <header className="ia-app-header">
-        <div>
-          <strong>面试助手</strong>
-          <Badge tone="success">
-            <ShieldCheck size={14} />
-            Codex 资料准备
-          </Badge>
-        </div>
-        <Button onClick={() => setHelp(true)}>
-          <CircleHelp size={16} />
-          流程说明
-        </Button>
-      </header>
-      <div className="ia-room-toolbar">
-        <Select
-          label="已保存的面试"
-          value={prep.room?.id || "new"}
-          onChange={(id) =>
-            navigate(() => {
-              const room = prep.rooms.data?.items.find(
-                (item) => item.id === id,
-              );
-              if (room) {
-                setPractice(null);
-                prep.select(room);
+      <WorkshopAppChrome
+        className="ia-entry-toolbar"
+        utilities={utilities}
+        showThemeToggle={false}
+        actions={
+          <>
+            <Select
+              label="已保存的面试"
+              value={prep.room?.id || "new"}
+              onChange={(id) =>
+                navigate(() => {
+                  const room = prep.rooms.data?.items.find(
+                    (item) => item.id === id,
+                  );
+                  if (room) {
+                    setPractice(null);
+                    prep.select(room);
+                  }
+                })
               }
-            })
-          }
-          options={[
-            { value: "new", label: "新面试" },
-            ...(prep.rooms.data?.items || []).map((room) => ({
-              value: room.id,
-              label: room.title,
-            })),
-          ]}
-        />
-        <Button
-          disabled={prep.busy}
-          onClick={() =>
-            navigate(() => {
-              setPractice(null);
-              prep.newRoom();
-            })
-          }
-        >
-          <Plus size={16} />
-          新建面试
-        </Button>
-      </div>
+              options={[
+                { value: "new", label: "新面试" },
+                ...(prep.rooms.data?.items || []).map((room) => ({
+                  value: room.id,
+                  label: room.title,
+                })),
+              ]}
+            />
+            <Button
+              disabled={prep.busy}
+              onClick={() =>
+                navigate(() => {
+                  setPractice(null);
+                  prep.newRoom();
+                })
+              }
+            >
+              <Plus size={16} />
+              新建面试
+            </Button>
+            <Button onClick={() => setHelp(true)}>
+              <CircleHelp size={16} />
+              流程说明
+            </Button>
+          </>
+        }
+      />
       <div className="flow-header">
-        <span className="room-title">INTERVIEW ROOM</span>
         <ol className="flow-steps" aria-label="面试流程">
           {["提交材料", "准备资料", "正式面试", "复盘改进"].map((label, i) => (
             <li
@@ -181,6 +192,9 @@ export function InterviewAssistantPage({
         <p className="inline-message" role="alert">
           {prep.error}
         </p>
+      )}
+      {!loading && !practice && prep.room && (
+        <RoomMaterials key={prep.room.id} room={prep.room} />
       )}
       {loading ? (
         <div className="evaluating" role="status">

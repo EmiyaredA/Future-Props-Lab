@@ -20,6 +20,8 @@ Status: implemented
 
 管理员需要保存 Happier 恢复密钥并配对独立 Runner。旧工作台停止提供生产入口，已登记迁移及数据归属供离线恢复。正式切换前封存运行目录和配置，当前数据留在原地。
 
+当前产品入口见[Amadeus 跨工坊工作区](../architecture/2026-11-08-amadeus-cross-workshop-workspace.md)。历史加密会话仍沿用此处的恢复边界。
+
 ## Verification
 
 入口测试验证授权、单次兑换、加密策略检查和撤权。Web 测试验证重试、旧链接和切换视图。真实会话与上线门槛见[部署与切换](../../../../docs/operations/happier.md)。

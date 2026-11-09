@@ -64,6 +64,7 @@ export function KnowledgeDocumentResults({
               <button
                 type="button"
                 className="knowledge-doc-open"
+                data-amadeus-id={note.deleted_at ? undefined : note.id}
                 aria-label={note.title}
                 onClick={() => onOpen(note.id)}
               >

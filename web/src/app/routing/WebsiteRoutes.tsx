@@ -1,4 +1,4 @@
-import { useWebsiteNavigation } from "./useWebsiteNavigation";
+import type { useWebsiteNavigation } from "./useWebsiteNavigation";
 import { useRuntimeAccess } from "@features/accounts";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { PresentationWorkshopRoute } from "./PresentationWorkshopRoute";
@@ -10,13 +10,16 @@ import { isWorkshopPage, hasReadOnlyRoute } from "@app/routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { accountAllows } from "@features/accounts/permissions";
 import { CloudControlPage } from "@features/cloud-control/CloudControlPage";
+import { AmadeusWorkspace } from "@features/amadeus/PageProvider";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { StudioShell } from "@app/layout/StudioSidebar";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
+import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
 import { useStudioSession } from "@app/StudioSession";
 import { galgameSpeakerImportSource } from "@app/integrations/galgameSpeakerImport";
 import {
   APPLICATION_DEFINITIONS,
+  APPLICATION_MODULES,
   AUDIO_ANNOTATION_MODULE,
   DIRECTOR_DESK_MODULE,
   THOUGHT_WORKSHOP_MODULE,
@@ -138,7 +141,11 @@ function PageBoundary({ children }: { children: ReactNode }) {
   );
 }
 
-export default function WebsiteRoutes() {
+export default function WebsiteRoutes({
+  navigation,
+}: {
+  navigation: ReturnType<typeof useWebsiteNavigation>;
+}) {
   const session = useStudioSession();
   const { me } = session;
   const localBrowser = useRuntimeAccess();
@@ -148,7 +155,7 @@ export default function WebsiteRoutes() {
     navigatePath,
     replaceRoute,
     registerNavigationGuard,
-  } = useWebsiteNavigation();
+  } = navigation;
   const [catalogTestModel, setCatalogTestModel] = useState<string | null>(null);
   const [focusModelTab, setFocusModelTab] = useState(false);
   const page = route.page;
@@ -162,7 +169,7 @@ export default function WebsiteRoutes() {
       "galgame-workshop": "Galgame 工坊",
       "video-editor": "视频剪辑工坊",
       "motion-compositor": "特效制作工坊",
-      "audio-annotation": "音频标注工坊",
+      "audio-annotation": "录音标注工坊",
       "director-desk": "导演台",
       "creative-workshop": "创意工坊",
     };
@@ -170,6 +177,9 @@ export default function WebsiteRoutes() {
       Object.entries(applications).find(([prefix]) =>
         key.startsWith(prefix),
       )?.[1] || (page === "apps" ? "应用首页" : "研究所");
+    const isWorkshopProject =
+      page !== "presentation-workshop-template-editor" &&
+      (!isThoughtWorkshopPage(page) || page === "thought-workshop-editor");
     queueMicrotask(() =>
       window.dispatchEvent(
         new CustomEvent("future-props:amadeus-context", {
@@ -177,7 +187,7 @@ export default function WebsiteRoutes() {
             path: location.pathname,
             title: document.title,
             application,
-            projectId: route.projectId,
+            projectId: isWorkshopProject ? route.projectId : undefined,
             userId: me.user.id,
             accountId: me.user.id,
           },
@@ -199,6 +209,17 @@ export default function WebsiteRoutes() {
             ? "thought-workshop-published"
             : "thought-workshop-community",
     );
+  if (page === "amadeus") {
+    return (
+      <PageBoundary>
+        {accountAllows(me, "content.read") ? (
+          <AmadeusWorkspace session={session} />
+        ) : (
+          <p role="alert">当前账号没有 Amadeus 访问权限。</p>
+        )}
+      </PageBoundary>
+    );
+  }
   if (
     [
       "thought-workshop-community",
@@ -254,6 +275,11 @@ export default function WebsiteRoutes() {
       >
         <PageBoundary>
           <InterviewAssistantPage
+            utilities={
+              <WorkshopUtilities
+                application={INTERVIEW_ASSISTANT_MODULE.definition.name}
+              />
+            }
             key={`${me.user.id}:${me.user.id}`}
             scopeKey={`${me.user.id}:${me.user.id}`}
             registerNavigationGuard={registerNavigationGuard}
@@ -298,6 +324,11 @@ export default function WebsiteRoutes() {
       >
         <PageBoundary>
           <MotionCompositorProjectsPage
+            utilities={
+              <WorkshopUtilities
+                application={MOTION_COMPOSITOR_MODULE.definition.name}
+              />
+            }
             readOnly={!accountAllows(me, "content.write")}
             onOpen={(projectId) =>
               navigate("motion-compositor-editor", projectId)
@@ -312,6 +343,46 @@ export default function WebsiteRoutes() {
     (!accountAllows(me, "configuration.manage") && page === "model-service") ||
     (!accountAllows(me, "logs.read") && page === "model-call-logs")
   ) {
+    if (isThoughtWorkshopPage(page))
+      return (
+        <PageBoundary>
+          <ReadOnlyRoutes
+            route={route}
+            navigate={navigate}
+            utilityBar={
+              <WorkshopUtilities
+                application={THOUGHT_WORKSHOP_MODULE.definition.name}
+                projectId={route.projectId}
+              />
+            }
+          />
+        </PageBoundary>
+      );
+    const workshop = APPLICATION_MODULES.find(
+      (module) => module.matchPath(location.pathname)?.page === page,
+    );
+    if (workshop)
+      return (
+        <WorkshopShell
+          module={workshop}
+          page={page}
+          navigate={(next) => navigate(next as WorkshopPage)}
+          onBack={() => navigate("apps")}
+        >
+          <PageBoundary>
+            <ReadOnlyRoutes
+              route={route}
+              navigate={navigate}
+              utilityBar={
+                <WorkshopUtilities
+                  application={workshop.definition.name}
+                  projectId={route.projectId}
+                />
+              }
+            />
+          </PageBoundary>
+        </WorkshopShell>
+      );
     return (
       <StudioShell
         page={isWorkshopPage(page) ? "apps" : (page as StudioPage)}
@@ -351,6 +422,13 @@ export default function WebsiteRoutes() {
           onNavigateSection={navigateKnowledgeSection}
           projectId={route.projectId}
           noteId={route.documentId}
+          utilityBar={
+            page === "thought-workshop-notes" ? (
+              <WorkshopUtilities
+                application={THOUGHT_WORKSHOP_MODULE.definition.name}
+              />
+            ) : undefined
+          }
           onOpenOfficial={(library) =>
             navigate("thought-workshop-official", library)
           }
@@ -436,6 +514,11 @@ export default function WebsiteRoutes() {
       >
         <PageBoundary>
           <AudioAnnotationProjectsPage
+            utilities={
+              <WorkshopUtilities
+                application={AUDIO_ANNOTATION_MODULE.definition.name}
+              />
+            }
             onOpen={(projectId) =>
               navigate("audio-annotation-editor", projectId)
             }
@@ -464,6 +547,11 @@ export default function WebsiteRoutes() {
       >
         <PageBoundary>
           <DirectorDeskProjectsPage
+            utilities={
+              <WorkshopUtilities
+                application={DIRECTOR_DESK_MODULE.definition.name}
+              />
+            }
             readOnly={!accountAllows(me, "content.write")}
             onOpen={(projectId) => navigate("director-desk-editor", projectId)}
           />
@@ -482,12 +570,22 @@ export default function WebsiteRoutes() {
         <PageBoundary>
           {page === "video-editor-tasks" ? (
             <VideoEditorTasksPage
+              utilities={
+                <WorkshopUtilities
+                  application={VIDEO_EDITOR_MODULE.definition.name}
+                />
+              }
               onOpenProject={(projectId) =>
                 navigate("video-editor-editor", projectId)
               }
             />
           ) : (
             <VideoEditorProjectsPage
+              utilities={
+                <WorkshopUtilities
+                  application={VIDEO_EDITOR_MODULE.definition.name}
+                />
+              }
               onOpenProject={(projectId) =>
                 navigate("video-editor-editor", projectId)
               }
@@ -517,6 +615,11 @@ export default function WebsiteRoutes() {
             />
           ) : (
             <GalgameWorkshopProjectsPage
+              utilities={
+                <WorkshopUtilities
+                  application={GALGAME_WORKSHOP_MODULE.definition.name}
+                />
+              }
               onOpenProject={(projectId) =>
                 navigate("galgame-workshop-overview", projectId)
               }
@@ -538,6 +641,11 @@ export default function WebsiteRoutes() {
         <PageBoundary>
           {page === "visual-workshop-projects" ? (
             <VisualWorkshopProjectsPage
+              utilities={
+                <WorkshopUtilities
+                  application={VISUAL_WORKSHOP_MODULE.definition.name}
+                />
+              }
               onOpenProject={(projectId) =>
                 navigate("visual-workshop-canvas", projectId)
               }
@@ -547,6 +655,12 @@ export default function WebsiteRoutes() {
             />
           ) : page === "visual-workshop-assets" && route.projectId ? (
             <VisualWorkshopAssetsPage
+              utilities={
+                <WorkshopUtilities
+                  application={VISUAL_WORKSHOP_MODULE.definition.name}
+                  projectId={route.projectId}
+                />
+              }
               projectId={route.projectId}
               onCanvas={() =>
                 navigate("visual-workshop-canvas", route.projectId)
@@ -555,6 +669,11 @@ export default function WebsiteRoutes() {
             />
           ) : page === "visual-workshop-tasks" ? (
             <VisualWorkshopTasksPage
+              utilities={
+                <WorkshopUtilities
+                  application={VISUAL_WORKSHOP_MODULE.definition.name}
+                />
+              }
               onOpenProject={(projectId) =>
                 navigate("visual-workshop-canvas", projectId)
               }
@@ -609,12 +728,7 @@ export default function WebsiteRoutes() {
             onOpen={navigatePath}
           />
         ) : page === "cloud-control" ? (
-          <CloudControlPage
-            owner={me.user.id}
-            preferAgent={
-              new URLSearchParams(route.search).get("view") === "agent"
-            }
-          />
+          <CloudControlPage owner={me.user.id} />
         ) : page === "files" ? (
           <FileManagementPage
             canOpenLocalFolder={localBrowser}

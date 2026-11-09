@@ -1,6 +1,7 @@
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { LoadingScene } from "@shared/ui/LoadingScene";
-import { openAmadeus } from "@platform/assistant";
-import { Fragment, type Ref } from "react";
+import { AmadeusButton } from "@platform/AmadeusButton";
+import { Fragment, type ReactNode, type Ref } from "react";
 import {
   BookOpen,
   Check,
@@ -16,7 +17,6 @@ import {
   Plus,
   RotateCcw,
   Save,
-  Sparkles,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -137,6 +137,7 @@ function ProjectActionMenu({
 
 export function KnowledgeTopbar({
   noteMode,
+  showAssistant = true,
   reading,
   canPublish,
   onToggleReading,
@@ -144,7 +145,8 @@ export function KnowledgeTopbar({
   busy,
   projectTitle,
   libraryTitle,
-  libraryDescription,
+  librarySearch,
+  utilityBar,
   currentLabel,
   currentId,
   documents,
@@ -162,6 +164,7 @@ export function KnowledgeTopbar({
   documentToolsRef,
 }: {
   noteMode: boolean;
+  showAssistant?: boolean;
   canPublish?: boolean;
   reading?: boolean;
   onToggleReading?: () => void;
@@ -169,7 +172,8 @@ export function KnowledgeTopbar({
   busy: boolean;
   projectTitle?: string;
   libraryTitle?: string;
-  libraryDescription?: string;
+  librarySearch?: ReactNode;
+  utilityBar?: ReactNode;
   currentLabel: string;
   currentId?: string;
   documents: NoteSummary[];
@@ -200,20 +204,63 @@ export function KnowledgeTopbar({
     }
   }
   const libraryMode = !noteMode && !projectTitle && !!libraryTitle;
+  const directoryButton = (
+    <button className="btn knowledge-mobile" onClick={onOpenDirectory}>
+      目录
+    </button>
+  );
+  const libraryActions = (
+    <>
+      <KnowledgeActionMenu
+        ariaLabel="知识库列表更多操作"
+        groups={[
+          [
+            {
+              value: "import",
+              label: "导入知识库",
+              icon: Upload,
+              disabled: busy,
+            },
+            { value: "backup", label: "完整备份", icon: Download },
+          ],
+        ]}
+        onAction={(value) => (value === "import" ? onImport() : onBackup())}
+      />
+      <button
+        className="btn primary"
+        disabled={busy}
+        onClick={onCreateKnowledge}
+      >
+        <Plus size={16} aria-hidden="true" />
+        创建知识库
+      </button>
+    </>
+  );
+  if (libraryMode && utilityBar) {
+    return (
+      <WorkshopAppChrome
+        className="knowledge-library-toolbar"
+        title={libraryTitle}
+        utilities={utilityBar}
+        actions={
+          <>
+            {directoryButton}
+            {librarySearch}
+            {libraryActions}
+          </>
+        }
+      />
+    );
+  }
   return (
     <header
       className={`knowledge-topbar${noteMode ? " is-note" : projectTitle ? " is-project" : libraryMode ? " is-library" : ""}`}
     >
-      {!noteMode ? (
-        <button className="btn knowledge-mobile" onClick={onOpenDirectory}>
-          目录
-        </button>
-      ) : null}
+      {!noteMode ? directoryButton : null}
       <div className="knowledge-topbar-start">
         {libraryMode ? (
           <div className="knowledge-topbar-copy">
             <h1>{libraryTitle}</h1>
-            {libraryDescription ? <p>{libraryDescription}</p> : null}
           </div>
         ) : null}
         {noteMode ? (
@@ -300,16 +347,7 @@ export function KnowledgeTopbar({
           </button>
         )}
         <div className="knowledge-document-tools" ref={documentToolsRef} />
-        {
-          <button
-            type="button"
-            className="btn"
-            aria-label="打开 Amadeus"
-            onClick={() => void openAmadeus()}
-          >
-            <Sparkles size={16} aria-hidden="true" /> Amadeus
-          </button>
-        }
+        {showAssistant && <AmadeusButton className="btn" />}
         {onToggleReading && (
           <button className="btn" onClick={onToggleReading}>
             {reading ? "编辑文档" : "返回阅读"}
@@ -382,31 +420,8 @@ export function KnowledgeTopbar({
               </>
             ) : (
               <>
-                <KnowledgeActionMenu
-                  ariaLabel="知识库列表更多操作"
-                  groups={[
-                    [
-                      {
-                        value: "import",
-                        label: "导入知识库",
-                        icon: Upload,
-                        disabled: busy,
-                      },
-                      { value: "backup", label: "完整备份", icon: Download },
-                    ],
-                  ]}
-                  onAction={(value) =>
-                    value === "import" ? onImport() : onBackup()
-                  }
-                />
-                <button
-                  className="btn primary"
-                  disabled={busy}
-                  onClick={onCreateKnowledge}
-                >
-                  <Plus size={16} aria-hidden="true" />
-                  创建知识库
-                </button>
+                {librarySearch}
+                {libraryActions}
               </>
             )}
           </>

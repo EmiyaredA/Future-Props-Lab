@@ -139,6 +139,29 @@ describe("Amadeus runtime avatar", () => {
     ).toHaveAttribute("src", "data:image/png;base64,YW1hZGV1cw==");
   });
 
+  it("keeps the bundled idle portrait through WebGL initialization and failure", async () => {
+    control.fail = true;
+    const view = render(<AmadeusAvatar state="idle" />);
+    const avatar = view.getByRole("img", { name: "Amadeus：待命" });
+    const poster = view.container.querySelector(".amadeus-avatar-poster");
+    expect(poster?.getAttribute("src")).toMatch(/amadeus-poster\.png$/);
+    await waitFor(() =>
+      expect(avatar).toHaveAttribute("data-avatar-renderer", "poster"),
+    );
+    expect(poster?.getAttribute("src")).toMatch(/amadeus-poster\.png$/);
+    expect(control.staticRenders).toBe(0);
+
+    view.rerender(<AmadeusAvatar state="error" />);
+    await waitFor(() =>
+      expect(poster).toHaveAttribute(
+        "src",
+        "data:image/png;base64,YW1hZGV1cw==",
+      ),
+    );
+    view.rerender(<AmadeusAvatar state="idle" />);
+    expect(poster?.getAttribute("src")).toMatch(/amadeus-poster\.png$/);
+  });
+
   it("pauses rendering while hidden and resumes on visibility", async () => {
     let hidden = true;
     const hiddenSpy = vi

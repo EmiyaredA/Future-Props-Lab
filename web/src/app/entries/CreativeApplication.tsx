@@ -1,6 +1,6 @@
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { CreativeWorkshopPage } from "@features/creative-workshop/CreativeWorkshopPage";
-import { IndependentShell } from "./IndependentShell";
+import { StudioServiceShell } from "./StudioServiceShell";
 import { creativePath, creativeRoute } from "./creativeRoutes";
 import { guardedNavigation } from "./navigation";
 
@@ -33,8 +33,8 @@ function CreativeContent() {
 
 export default function CreativeApplication() {
   return (
-    <IndependentShell title="创意工坊">
+    <StudioServiceShell title="创意工坊">
       <CreativeContent />
-    </IndependentShell>
+    </StudioServiceShell>
   );
 }

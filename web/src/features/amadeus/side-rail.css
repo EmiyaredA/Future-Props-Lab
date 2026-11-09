@@ -111,8 +111,79 @@
 }
 
 .amadeus-history .amadeus-history-title {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 34px;
   text-align: left;
+}
+
+.amadeus-history h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.amadeus-history h3 > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amadeus-history-workshop-avatar {
+  flex: none;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.amadeus-history h3 small {
+  margin-inline-start: 6px;
+  color: var(--amadeus-muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.amadeus-history-title > svg,
+.amadeus-history-meta {
+  flex: none;
+}
+
+.amadeus-history-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.amadeus-history-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--amadeus-muted);
+  font-size: 10px;
+}
+
+.amadeus-history-status {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.amadeus-history-status[data-status="completed"] {
+  color: var(--amadeus-success, #518061);
+}
+.amadeus-history-status[data-status="failed"],
+.amadeus-history-status[data-status="interrupted"] {
+  color: var(--amadeus-danger, #c15344);
+}
+.amadeus-history-status[data-status="running"],
+.amadeus-history-status[data-status="waiting_approval"],
+.amadeus-history-status[data-status="waiting_question"] {
+  color: var(--amadeus-accent);
 }
 
 .amadeus-history-row:hover,
@@ -146,6 +217,11 @@
 .amadeus-history-row:hover .amadeus-history-title,
 .amadeus-history-row:focus-within .amadeus-history-title {
   padding-right: 66px;
+}
+
+.amadeus-history-row:hover .amadeus-history-meta,
+.amadeus-history-row:focus-within .amadeus-history-meta {
+  display: none;
 }
 
 @media (hover: none), (pointer: coarse) {
@@ -285,20 +361,5 @@
 
   .amadeus-bottom {
     padding: 4px 7px 9px;
-  }
-
-  .amadeus-toolbar {
-    height: auto;
-    flex-wrap: wrap;
-  }
-
-  .amadeus-spacer {
-    flex-basis: 100%;
-    height: 0;
-  }
-
-  .amadeus-model-control,
-  .amadeus-model-control > button {
-    max-width: 96px;
   }
 }

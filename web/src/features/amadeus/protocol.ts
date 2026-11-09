@@ -1,3 +1,5 @@
+import type { ElementTarget } from "@platform/assistantElements";
+
 export type Conversation = {
   executor_kind?: string;
   agent_id?: string | null;
@@ -7,6 +9,8 @@ export type Conversation = {
   revision: number;
   created_at: string;
   updated_at: string;
+  projects?: { resource: string; id: string; title: string }[];
+  latest_run_status?: string | null;
 };
 
 export type Reference = {
@@ -18,6 +22,7 @@ export type Reference = {
   value: string;
   source: string;
   thumbnail?: string;
+  target?: ElementTarget | null;
 };
 
 export type ChatMessage = {
@@ -28,6 +33,7 @@ export type ChatMessage = {
   created_at: string;
   run_id?: string | null;
   status?: string;
+  pinned?: boolean;
 };
 
 export type SavedAction = {
@@ -67,6 +73,7 @@ export type Context = {
   application?: string;
   title?: string;
   projectId?: string;
+  projectResource?: string;
   selection?: { name: string; value: string };
   unsaved?: boolean;
   focused: boolean;
@@ -75,7 +82,21 @@ export type Context = {
   accountId?: string;
 };
 
-export type ModelOption = { id: string; label: string };
+export type NamedOption = { id: string; label: string };
+
+export type ModelOption = {
+  variants?: NamedOption[];
+  fast_available?: boolean;
+  id: string;
+  label: string;
+  reasoning_efforts?: string[];
+};
+export type FilePreview = {
+  conversationId: string;
+  name: string;
+  text: string;
+};
+
 export type WorkFile = {
   kind: string;
   name: string;
@@ -129,9 +150,28 @@ export type WorkerEvent = {
   arguments?: Record<string, unknown>;
 };
 
+export type TokenUsage = Partial<
+  Record<
+    | "input_tokens"
+    | "output_tokens"
+    | "cached_input_tokens"
+    | "cache_write_tokens"
+    | "reasoning_tokens"
+    | "total_tokens"
+    | "context_used"
+    | "context_limit",
+    number | null
+  >
+>;
+
 export type Run = {
+  model_variant?: string | null;
+  harness_effort?: string | null;
+  service_tier?: "fast" | null;
+  usage?: TokenUsage | null;
   agent_id?: string | null;
   agent_model?: string;
+  reasoning_effort?: string | null;
   id: string;
   conversation_id: string;
   model_id: string;
@@ -139,6 +179,10 @@ export type Run = {
   source_run_id?: string | null;
   status: string;
   partial_text: string;
+  created_at?: string;
+  updated_at?: string;
+  finished_at?: string | null;
+  context?: Context[];
   error_message?: string | null;
 };
 
@@ -164,14 +208,6 @@ export const avatarStateLabels: Record<AvatarState, string> = {
   error: "需要关注",
   paused: "已暂停",
 };
-
-export function dateGroup(value: string) {
-  const today = new Date();
-  const item = new Date(value);
-  if (item.toDateString() === today.toDateString()) return "今天";
-  today.setDate(today.getDate() - 1);
-  return item.toDateString() === today.toDateString() ? "昨天" : "更早";
-}
 
 export function safeReadPath(value: unknown) {
   const path = String((value as { path?: string })?.path || "");

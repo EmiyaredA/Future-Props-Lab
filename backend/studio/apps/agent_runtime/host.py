@@ -170,9 +170,11 @@ class ConnectionHost:
                 )
                 await session.commit()
 
-    async def catalog(self, request, *, can_enable):
+    async def catalog(self, request, *, can_enable, harness_model=None):
         operation = CATALOG if request.method == "GET" else DETECT
-        data = CatalogRequest(show_paths=can_enable).model_dump()
+        data = CatalogRequest(show_paths=can_enable, harness_model=harness_model).model_dump(
+            exclude_none=True
+        )
         try:
             job = await self.run(request, operation, data)
         except HTTPException as exc:

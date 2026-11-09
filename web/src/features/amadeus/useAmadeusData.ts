@@ -1,3 +1,10 @@
+import { approvalTarget } from "./approval";
+import {
+  amadeusTabKey,
+  readDraft,
+  readTabState,
+  writeTabState,
+} from "./tabState";
 import {
   useCallback,
   useEffect,
@@ -7,6 +14,7 @@ import {
   type SetStateAction,
 } from "react";
 import { fetchApiJson } from "@platform/api/client";
+import { mergeReferences } from "./elementReferences";
 import type { AmadeusPageBridge } from "./PageContext";
 import type { AccountSessionContext } from "@features/accounts";
 import type {
@@ -14,7 +22,6 @@ import type {
   Context,
   Conversation,
   Detail,
-  ModelOption,
   Reference,
   Run,
   RunDetail,
@@ -34,11 +41,20 @@ function clearAvatarTimer(ref: RefObject<number | undefined>) {
 
 type Options = {
   session: AccountSessionContext;
+  initialConversationId?: string;
   bridge: AmadeusPageBridge;
   detail: Detail | null;
+  standalone: boolean;
+  draft: string;
+  references: Reference[];
+  setDraft: Dispatch<SetStateAction<string>>;
   detailRef: RefObject<Detail | null>;
   contextRef: RefObject<Context[]>;
   avatarTimerRef: RefObject<number | undefined>;
+  activeActionRef: RefObject<{
+    conversationId: string;
+    actionId: string;
+  } | null>;
   loaded: string[];
   loadedConversationId: string | null;
   setConversations: Dispatch<SetStateAction<Conversation[]>>;
@@ -47,14 +63,9 @@ type Options = {
   setActiveRun: Dispatch<SetStateAction<Run | null>>;
   setBusy: Dispatch<SetStateAction<boolean>>;
   setReferences: Dispatch<SetStateAction<Reference[]>>;
-  setAttachments: Dispatch<
-    SetStateAction<Array<{ name: string; bytes: number }>>
-  >;
   setFilesOpen: Dispatch<SetStateAction<boolean>>;
   setWorkFiles: Dispatch<SetStateAction<import("./protocol").WorkFile[]>>;
   setError: Dispatch<SetStateAction<string>>;
-  setModels: Dispatch<SetStateAction<ModelOption[]>>;
-  setModelId: Dispatch<SetStateAction<string>>;
   setContexts: Dispatch<SetStateAction<Context[]>>;
   setAvatarState: Dispatch<SetStateAction<AvatarState>>;
   setLoaded: Dispatch<SetStateAction<string[]>>;
@@ -65,11 +76,17 @@ type Options = {
 export function useAmadeusData(options: Options) {
   const {
     session,
+    initialConversationId,
     bridge,
     detail,
+    standalone,
+    draft,
+    references,
+    setDraft,
     detailRef,
     contextRef,
     avatarTimerRef,
+    activeActionRef,
     loaded,
     loadedConversationId,
     setConversations,
@@ -78,18 +95,17 @@ export function useAmadeusData(options: Options) {
     setActiveRun,
     setBusy,
     setReferences,
-    setAttachments,
     setFilesOpen,
     setWorkFiles,
     setError,
-    setModels,
-    setModelId,
     setContexts,
     setAvatarState,
     setLoaded,
     setLoadedConversationId,
   } = options;
-  const owner = `${session.me.user.id}:${session.me.user.id}`;
+  const owner = session.me.user.id;
+  const tabKey = amadeusTabKey(owner, standalone ? "standalone" : "embedded");
+  const hydrated = useRef(false);
   const readsRef = useRef<Reads>({ owner, selection: 0 });
   if (readsRef.current.owner !== owner) {
     readsRef.current.list?.abort();
@@ -123,15 +139,16 @@ export function useAmadeusData(options: Options) {
         setDetail(null);
         detailRef.current = null;
         setRuns([]);
-        setReferences([]);
-        setAttachments([]);
+        const saved = readDraft(`${tabKey}:draft:${id}`);
+        setDraft(saved.text);
+        setReferences(saved.references);
+        reads.selection++;
         setFilesOpen(false);
         setWorkFiles([]);
       }
       reads.selectedId = id;
       const controller = new AbortController();
       reads.detail = controller;
-      reads.selection++;
       let next: Detail;
       let history: RunDetail[];
       try {
@@ -151,17 +168,15 @@ export function useAmadeusData(options: Options) {
       setDetail(next);
       setRuns(history);
       detailRef.current = next;
-      setReferences([]);
-      setAttachments([]);
-      setFilesOpen(false);
-      setWorkFiles([]);
+      return history;
     },
     [
       detailRef,
       setDetail,
       setRuns,
       setReferences,
-      setAttachments,
+      setDraft,
+      tabKey,
       setFilesOpen,
       setWorkFiles,
     ],
@@ -177,8 +192,9 @@ export function useAmadeusData(options: Options) {
     setRuns([]);
     setActiveRun(null);
     setBusy(false);
-    setReferences([]);
-    setAttachments([]);
+    const saved = readDraft(`${tabKey}:draft:new`);
+    setReferences(saved.references);
+    setDraft(saved.text);
     setFilesOpen(false);
     setWorkFiles([]);
     void refreshList()
@@ -189,8 +205,18 @@ export function useAmadeusData(options: Options) {
           reads.selection !== selection
         )
           return;
-        const saved = localStorage.getItem(`amadeus-current:${owner}`);
-        const selected = items.find((item) => item.id === saved) || items[0];
+        if (
+          initialConversationId &&
+          !items.some((item) => item.id === initialConversationId)
+        ) {
+          setError("此对话不存在或已无法访问。");
+          return;
+        }
+        const saved = readTabState<{ id: string | null }>(tabKey);
+        if (!initialConversationId && saved?.id === null) return;
+        const selectedId = initialConversationId || saved?.id;
+        const selected =
+          items.find((item) => item.id === selectedId) || items[0];
         if (selected)
           void open(selected.id).catch((cause) => {
             if (alive && (cause as Error)?.name !== "AbortError")
@@ -206,7 +232,12 @@ export function useAmadeusData(options: Options) {
         if (!alive || !running) return;
         setActiveRun(running.run);
         setBusy(true);
-        if (readsRef.current === reads && reads.selection === selection)
+        if (
+          !initialConversationId &&
+          !readTabState<{ id: string | null }>(tabKey) &&
+          readsRef.current === reads &&
+          reads.selection === selection
+        )
           await open(running.run.conversation_id);
       })
       .catch((cause) => {
@@ -229,7 +260,7 @@ export function useAmadeusData(options: Options) {
         origin?.userId === session.me.user.id &&
         origin.accountId === session.me.user.id
       )
-        setReferences((previous) => [...previous, reference].slice(0, 20));
+        setReferences((previous) => mergeReferences(previous, [reference]));
     });
     const offPickFinished = bridge.onAmadeusPickFinished?.(() => {
       if (!alive) return;
@@ -237,6 +268,7 @@ export function useAmadeusData(options: Options) {
     });
     return () => {
       alive = false;
+      reads.selection++;
       reads.list?.abort();
       reads.detail?.abort();
       offContexts();
@@ -246,11 +278,14 @@ export function useAmadeusData(options: Options) {
     };
   }, [
     session.me.user.id,
+    initialConversationId,
 
     bridge,
     open,
     refreshList,
     owner,
+    tabKey,
+    setDraft,
     detailRef,
     contextRef,
     avatarTimerRef,
@@ -260,24 +295,106 @@ export function useAmadeusData(options: Options) {
     setActiveRun,
     setBusy,
     setReferences,
-    setAttachments,
     setFilesOpen,
     setWorkFiles,
     setError,
-    setModels,
-    setModelId,
     setContexts,
     setAvatarState,
   ]);
 
   const conversationId = detail?.conversation.id;
+  const settlingActionId = detail?.actions.find(
+    (action) => action.status === "running",
+  )?.id;
   useEffect(() => {
-    if (!conversationId) return;
-    localStorage.setItem(
-      `amadeus-current:${session.me.user.id}:${session.me.user.id}`,
-      conversationId,
-    );
-  }, [conversationId, session.me.user.id]);
+    if (!conversationId || !settlingActionId) return;
+    const controller = new AbortController();
+    let timer: number;
+    const poll = async () => {
+      const onScreen = () =>
+        !controller.signal.aborted &&
+        readsRef.current.selectedId === conversationId;
+      if (!onScreen()) return;
+      if (activeActionRef.current?.actionId !== settlingActionId) {
+        try {
+          const snapshot = await fetchApiJson<Detail>(
+            `/v1/amadeus/conversations/${conversationId}`,
+            { signal: controller.signal },
+          );
+          if (!onScreen()) return;
+          const action = snapshot.actions.find(
+            (item) => item.id === settlingActionId,
+          );
+          detailRef.current = snapshot;
+          setDetail(snapshot);
+          if (action?.status === "completed") {
+            const target = approvalTarget(action);
+            if (target) void bridge.publishAmadeusMutation(target);
+          }
+          if (action?.status !== "running") return;
+        } catch {
+          if (!onScreen()) return;
+        }
+      }
+      timer = window.setTimeout(() => void poll(), 1200);
+    };
+    timer = window.setTimeout(() => void poll(), 1200);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [
+    activeActionRef,
+    bridge,
+    conversationId,
+    detailRef,
+    settlingActionId,
+    setDetail,
+  ]);
+
+  useEffect(() => {
+    if (!hydrated.current) {
+      hydrated.current = true;
+      return;
+    }
+    if (readsRef.current.selectedId !== conversationId) return;
+    if (conversationId) writeTabState(tabKey, { id: conversationId });
+    else if (!readTabState<{ id: string | null }>(tabKey) && draft.trim())
+      writeTabState(tabKey, { id: null });
+    writeTabState(`${tabKey}:draft:${conversationId ?? "new"}`, {
+      text: draft,
+      references,
+    });
+  }, [conversationId, draft, references, tabKey]);
+
+  const captureSelection = () => {
+    const reads = readsRef.current;
+    const selection = reads.selection;
+    return () => reads === readsRef.current && reads.selection === selection;
+  };
+  const clearSelection = () => {
+    const reads = readsRef.current;
+    reads.detail?.abort();
+    reads.selectedId = undefined;
+    reads.selection++;
+    detailRef.current = null;
+    setDetail(null);
+    setDraft("");
+    setReferences([]);
+    setRuns([]);
+    setFilesOpen(false);
+    setWorkFiles([]);
+    writeTabState(tabKey, { id: null });
+  };
+  const selectionPending = () =>
+    Boolean(readsRef.current.selectedId && !detailRef.current);
+  const adopt = (next: Detail) => {
+    readsRef.current.selection++;
+    readsRef.current.selectedId = next.conversation.id;
+    detailRef.current = next;
+    setDetail(next);
+    writeTabState(`${tabKey}:draft:new`, { text: "", references: [] });
+  };
 
   useEffect(() => {
     if (!conversationId) {
@@ -305,5 +422,12 @@ export function useAmadeusData(options: Options) {
     );
   }, [loaded, conversationId, loadedConversationId]);
 
-  return { refreshList, open };
+  return {
+    refreshList,
+    open,
+    captureSelection,
+    adopt,
+    selectionPending,
+    clearSelection,
+  };
 }

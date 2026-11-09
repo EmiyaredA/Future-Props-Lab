@@ -8,8 +8,7 @@
   height: 100dvh;
   width: 100%;
   overflow: hidden;
-  position: fixed;
-  inset: 0;
+  position: relative;
 }
 @scope (.director-desk-root) {
   /* Shared control rhythm and working areas. Content editors own their own fields. */

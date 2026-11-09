@@ -23,6 +23,7 @@ export const responsiveOwners = {
   "creative-workshop-detail": "shell",
   apps: "shell",
   "cloud-control": "shell",
+  amadeus: "shell",
   files: "shell",
   tools: "shell",
   "integrations-tool-apis": "shell",
@@ -113,7 +114,7 @@ export const independentApplications = {
   interview: ["/apps/interview-assistant"],
   director: ["/apps/director-desk", "/apps/director-desk/projects/:id"],
   tools: ["/tools", "/tools/video-frame-exporter", "/tools/video-downloader"],
-  portal: ["/", "/home", "/apps", "/docs.html"],
+  portal: ["/", "/home", "/apps", "/amadeus", "/docs.html"],
 } as const;
 
 export const staticPaths = [

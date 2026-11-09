@@ -22,6 +22,7 @@ from studio.host.agent_execution.cli.catalog import (
     inspect_connection,
 )
 from studio.host.agent_execution.cli.dialogue import run_dialogue
+from studio.host.agent_execution.cli.transport import CliError
 from studio.host.transport import LeaseEnded, ProtocolConflict
 from studio.runtime.database.operation_receipts import OperationError
 
@@ -134,6 +135,7 @@ class DialogueWorker:
                 turn.emit,
                 root=root,
                 runtime_path=self.connections.runtime_root,
+                **scope.cli_options(),
             )
         )
         watcher = asyncio.create_task(watch())
@@ -146,7 +148,15 @@ class DialogueWorker:
                 if paused not in done:
                     if watcher in done:
                         await watcher
-                    await process
+                    try:
+                        await process
+                    except CliError as exc:
+                        await turn.flush()
+                        return NativeOutcome(
+                            status="failed",
+                            error_code="agent_execution_failed",
+                            message=str(exc)[:1000],
+                        )
                     await turn.flush()
             return NativeOutcome(status="completed")
         except (

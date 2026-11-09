@@ -75,7 +75,12 @@ class ConnectionWorker:
                 return (await self.acceptance_status(probe=query.probe)).model_dump()
             if operation in READ_OPERATIONS:
                 query = CatalogRequest.model_validate(payload)
-                return (await self.catalog(can_enable=query.show_paths)).model_dump()
+                return (
+                    await self.catalog(
+                        can_enable=query.show_paths,
+                        **({"harness_model": query.harness_model} if query.harness_model else {}),
+                    )
+                ).model_dump()
             agent = EnableRequest.model_validate(payload).agent_id
             try:
                 await self.enable(agent, before_publish=before_publish)
@@ -178,7 +183,7 @@ async def serve(args, credential):
     worker = ConnectionWorker(
         transport,
         args.state_root,
-        catalog=lambda *, can_enable: catalog(settings=get_cloud_settings(), can_enable=can_enable),
+        catalog=lambda **options: catalog(settings=get_cloud_settings(), **options),
         enable=lambda agent, *, before_publish: enable_connection(
             agent,
             config_file=CONFIG_FILE,

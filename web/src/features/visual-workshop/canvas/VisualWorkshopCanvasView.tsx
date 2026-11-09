@@ -197,33 +197,6 @@ export function VisualWorkshopCanvasView({
   useEffect(() => {
     if (!connection) setConnectionHoverTargetId(undefined);
   }, [connection]);
-  useEffect(() => {
-    const selected = nodes.find((node) => node.id === selectedId);
-    window.dispatchEvent(
-      new CustomEvent("future-props:amadeus-context", {
-        detail: {
-          application: "视觉创作工坊",
-          projectId,
-          title: title || projectQuery.data?.title || "视觉创作工坊",
-          selection: selected
-            ? {
-                id: selected.id,
-                name: selected.title || nodeLabel(selected.kind),
-                value: nodeLabel(selected.kind),
-              }
-            : undefined,
-          unsaved: saveState !== "saved",
-        },
-      }),
-    );
-  }, [
-    projectId,
-    projectQuery.data?.title,
-    title,
-    nodes,
-    selectedId,
-    saveState,
-  ]);
   const registerVideo = useCallback(
     (nodeId: string, video: HTMLVideoElement | null) => {
       if (video) videoElements.current.set(nodeId, video);
@@ -246,7 +219,7 @@ export function VisualWorkshopCanvasView({
         <LoadingState label="正在打开画布…" variant="inline" />
       </div>
     );
-  if (projectQuery.isError || !projectQuery.data || canvasQuery.isError)
+  if (!projectQuery.data || (!canvasQuery.data && canvasQuery.isError))
     return (
       <div className="canvas-state">
         <TransferFeedback progress={activeTransferProgress} />

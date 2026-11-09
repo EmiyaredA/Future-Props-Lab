@@ -12,7 +12,6 @@ export type VisualWorkshopProject =
   components["schemas"]["VisualWorkshopProjectOut"];
 export type VisualWorkshopProjectKind =
   components["schemas"]["VisualWorkshopProjectCreateIn"]["kind"];
-export type VisualWorkshopProjectStatus = VisualWorkshopProject["status"];
 export type VisualProjectSnapshotImport =
   components["schemas"]["VisualProjectSnapshotImportOut"];
 type CanvasDocumentContract = components["schemas"]["VisualCanvasDocumentOut"];

@@ -9,8 +9,8 @@ vi.mock("@platform/auth/AccountAccess", () => ({
   useAccountPermission: (name: string) =>
     name === "content.write" ? access.canWrite : access.canInstall,
 }));
-vi.mock("@app/entries/IndependentShell", () => ({
-  IndependentShell: ({ children }: { children: ReactNode }) => (
+vi.mock("@app/entries/StudioServiceShell", () => ({
+  StudioServiceShell: ({ children }: { children: ReactNode }) => (
     <main>{children}</main>
   ),
 }));

@@ -180,21 +180,6 @@
   max-width: 1360px;
 }
 
-.galgame-library-page .workshop-toolbar {
-  display: block;
-  margin: 0 0 20px;
-}
-
-.galgame-library-page .workshop-toolbar > label {
-  border-color: var(--gal-line);
-  background: var(--gal-surface);
-  color: var(--gal-muted);
-}
-
-.galgame-library-page .workshop-toolbar input {
-  color: var(--gal-text);
-}
-
 .galgame-library-page .workshop-project-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;

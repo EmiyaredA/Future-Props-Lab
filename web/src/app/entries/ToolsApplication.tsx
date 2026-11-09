@@ -1,6 +1,6 @@
 import { lazy } from "react";
 import { ToolNavigationPage } from "@features/tools/ToolNavigationPage";
-import { IndependentShell } from "./IndependentShell";
+import { StudioServiceShell } from "./StudioServiceShell";
 import { guardedNavigation } from "./navigation";
 
 const VideoFrameExporterPage = lazy(() =>
@@ -40,8 +40,8 @@ function ToolsContent() {
 
 export default function ToolsApplication() {
   return (
-    <IndependentShell title="工具导航">
+    <StudioServiceShell title="工具导航">
       <ToolsContent />
-    </IndependentShell>
+    </StudioServiceShell>
   );
 }

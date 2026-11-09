@@ -281,6 +281,14 @@
       "method": "tool_api",
       "resource": "integrations"
     },
+    "GET /v1/interview-assistant/rooms": {
+      "method": "list_interview_rooms",
+      "resource": "interview"
+    },
+    "GET /v1/interview-assistant/rooms/{room_id}": {
+      "method": "get_interview_room",
+      "resource": "interview"
+    },
     "GET /v1/llm-call-logs": {
       "method": "list_logs",
       "resource": "logs"
@@ -312,6 +320,18 @@
     "GET /v1/model-inference/tasks/{task_id}/content": {
       "method": "download_result",
       "resource": "inference"
+    },
+    "GET /v1/motion-compositor/projects": {
+      "method": "list_projects",
+      "resource": "motion_compositor"
+    },
+    "GET /v1/motion-compositor/projects/{project_id}": {
+      "method": "get_project",
+      "resource": "motion_compositor"
+    },
+    "GET /v1/motion-compositor/projects/{project_id}/document": {
+      "method": "get_document",
+      "resource": "motion_compositor"
     },
     "GET /v1/presentation-workshop/examples": {
       "method": "list_examples",
@@ -824,6 +844,10 @@
     "POST /v1/model-inference/text/stream": {
       "method": "stream_text",
       "resource": "inference"
+    },
+    "POST /v1/motion-compositor/projects/{project_id}/document/operations": {
+      "method": "edit_document",
+      "resource": "motion_compositor"
     },
     "POST /v1/presentation-workshop/examples": {
       "method": "create_example",

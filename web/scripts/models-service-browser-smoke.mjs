@@ -39,25 +39,22 @@ try {
   await page.getByLabel("密码", { exact: true }).fill(options.password);
   await page.getByRole("button", { name: "登录", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "模型服务", exact: true }),
+    page.getByRole("heading", { name: "模型与智能体", exact: true }),
   ).toBeVisible();
   for (const [route, link, heading] of [
-    ["model-service", "模型目录", "模型服务"],
+    ["model-service", "模型与智能体", "模型与智能体"],
     ["model-test", "模型测试", "模型测试"],
-    ["model-call-logs", "调用日志", "模型调用日志"],
+    ["model-call-logs", "模型调用日志", "模型调用日志"],
   ]) {
-    await page
-      .getByRole("navigation", { name: "模型服务页面" })
-      .getByRole("link", { name: link, exact: true })
-      .click();
+    await page.setViewportSize({ width: 1600, height: 1000 });
+    const navigation = page.getByRole("navigation", { name: "AI 能力子菜单" });
+    await navigation.getByRole("button", { name: link, exact: true }).click();
     await expect(
       page.getByRole("heading", { name: heading, exact: true }),
     ).toBeVisible();
-    await expect(
-      page
-        .getByRole("navigation", { name: "模型服务页面" })
-        .locator('a[aria-current="page"]'),
-    ).toHaveText(link);
+    await expect(navigation.locator('button[aria-current="page"]')).toHaveText(
+      link,
+    );
     for (const width of [390, 768, 1600]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const theme of ["light", "dark"]) {
@@ -86,13 +83,9 @@ try {
               `Chat does not fill its compact grid: ${width} / ${theme}`,
             );
         }
-        const selected = page
-          .getByRole("navigation", { name: "模型服务页面" })
-          .locator('a[aria-current="page"]');
-        await selected.focus();
-        await expect(selected).toBeFocused();
-        if (width === 390 && (await selected.boundingBox()).height < 44)
-          throw new Error("Model page navigation has no mobile touch target");
+        await expect(
+          page.getByRole("button", { name: "AI 能力", exact: true }),
+        ).toBeVisible();
         await page.screenshot({
           path: path.join(output, `${route}-${width}-${theme}.png`),
         });

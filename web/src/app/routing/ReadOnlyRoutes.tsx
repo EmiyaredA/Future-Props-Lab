@@ -1,4 +1,4 @@
-import { lazy } from "react";
+import { lazy, type ReactNode } from "react";
 import type { AppPage, AppRoute } from "@app/routes";
 const Files = lazy(() =>
   import("@features/files/ReadOnlyFiles").then((m) => ({
@@ -48,9 +48,11 @@ const VideoTasks = lazy(() =>
 export function ReadOnlyRoutes({
   route,
   navigate,
+  utilityBar,
 }: {
   route: AppRoute;
   navigate: (page: AppPage, id?: string, documentId?: string) => void;
+  utilityBar?: ReactNode;
 }) {
   const { page, projectId, documentId } = route;
   if (page === "files")
@@ -60,10 +62,12 @@ export function ReadOnlyRoutes({
         initialKind={new URLSearchParams(route.search).get("kind") ?? undefined}
       />
     );
-  if (page === "visual-workshop-assets") return <Files projectId={projectId} />;
+  if (page === "visual-workshop-assets")
+    return <Files projectId={projectId} utilities={utilityBar} />;
   if (page === "visual-workshop-tasks")
     return (
       <VisualTasks
+        utilities={utilityBar}
         onOpenProject={(id) => navigate("visual-workshop-canvas", id)}
         onOpenAssets={(id) => navigate("visual-workshop-assets", id)}
       />
@@ -71,23 +75,34 @@ export function ReadOnlyRoutes({
   if (page.startsWith("visual-workshop-"))
     return (
       <>
-        <div className="readonly-page button-row">
-          <button
-            className="btn"
-            onClick={() => navigate("visual-workshop-tasks")}
-          >
-            已有生成任务
-          </button>
-          {projectId ? (
+        {!utilityBar && (
+          <div className="readonly-page button-row">
             <button
               className="btn"
-              onClick={() => navigate("visual-workshop-assets", projectId)}
+              onClick={() => navigate("visual-workshop-tasks")}
             >
-              项目素材
+              已有生成任务
             </button>
-          ) : null}
-        </div>
+            {projectId ? (
+              <button
+                className="btn"
+                onClick={() => navigate("visual-workshop-assets", projectId)}
+              >
+                项目素材
+              </button>
+            ) : null}
+          </div>
+        )}
         <Visual
+          utilities={utilityBar}
+          libraryActions={
+            <button
+              className="btn"
+              onClick={() => navigate("visual-workshop-tasks")}
+            >
+              已有生成任务
+            </button>
+          }
           projectId={projectId}
           onOpen={(id) => navigate("visual-workshop-canvas", id)}
           onBack={() => navigate("visual-workshop-projects")}
@@ -99,6 +114,8 @@ export function ReadOnlyRoutes({
       <Thought
         projectId={projectId}
         documentId={documentId}
+        utilityBar={utilityBar}
+        onBack={utilityBar ? () => navigate("apps") : undefined}
         onNavigateSection={(section) =>
           navigate(
             section === "private"
@@ -123,6 +140,7 @@ export function ReadOnlyRoutes({
   if (page.startsWith("galgame-workshop-"))
     return (
       <Galgame
+        utilities={utilityBar}
         projectId={projectId}
         onOpen={(id) => navigate("galgame-workshop-overview", id)}
         onBack={() => navigate("galgame-workshop-projects")}
@@ -130,20 +148,34 @@ export function ReadOnlyRoutes({
     );
   if (page === "video-editor-tasks")
     return (
-      <VideoTasks onOpenProject={(id) => navigate("video-editor-editor", id)} />
+      <VideoTasks
+        utilities={utilityBar}
+        onOpenProject={(id) => navigate("video-editor-editor", id)}
+      />
     );
   if (page.startsWith("video-editor-"))
     return (
       <>
-        <div className="readonly-page">
-          <button
-            className="btn"
-            onClick={() => navigate("video-editor-tasks")}
-          >
-            已有渲染与导出
-          </button>
-        </div>
+        {!utilityBar && (
+          <div className="readonly-page">
+            <button
+              className="btn"
+              onClick={() => navigate("video-editor-tasks")}
+            >
+              已有渲染与导出
+            </button>
+          </div>
+        )}
         <Video
+          utilities={utilityBar}
+          libraryActions={
+            <button
+              className="btn"
+              onClick={() => navigate("video-editor-tasks")}
+            >
+              已有渲染与导出
+            </button>
+          }
           projectId={projectId}
           onOpen={(id) => navigate("video-editor-editor", id)}
           onBack={() => navigate("video-editor-projects")}
@@ -153,6 +185,7 @@ export function ReadOnlyRoutes({
   if (page.startsWith("audio-annotation-"))
     return (
       <Audio
+        utilities={utilityBar}
         projectId={projectId}
         onOpen={(id) => navigate("audio-annotation-editor", id)}
         onBack={() => navigate("audio-annotation-projects")}

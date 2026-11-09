@@ -1,11 +1,15 @@
-import { cloudAgentPath, legacyAgentPath } from "@app/routing/legacyAgent";
+import { amadeusPath, legacyAgentPath } from "@app/routing/legacyAgent";
 import { recoverPage } from "@app/recovery";
 import { startBootLoading } from "@app/bootLoading";
 import "@app/recovery.css";
 
 // Keep this entry independent of React and feature modules: import failures must stay visible.
-if (legacyAgentPath.test(window.location.pathname)) {
-  window.history.replaceState({}, "", cloudAgentPath);
+if (
+  legacyAgentPath.test(window.location.pathname) ||
+  (/^\/cloud-control\/?$/.test(window.location.pathname) &&
+    new URLSearchParams(window.location.search).get("view") === "agent")
+) {
+  window.history.replaceState({}, "", amadeusPath);
 }
 const stopBootLoading = startBootLoading();
 void import("./website").then(stopBootLoading).catch((error: unknown) => {

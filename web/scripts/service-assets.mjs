@@ -2,6 +2,18 @@ import fs from "node:fs";
 import { imageVariants as variants } from "../src/shared/lib/imageVariants.ts";
 import { fileURLToPath } from "node:url";
 
+const workshopMarks = [
+  "brand/presentation-workshop-mark.png",
+  "brand/thought-workshop-mark.png",
+  "brand/interview-assistant-mark.png",
+  "brand/visual-workshop-mark.png",
+  "brand/galgame-workshop-mark.png",
+  "brand/video-editor-mark.png",
+  "brand/motion-compositor-mark.png",
+  "brand/audio-annotation-mark.png",
+  "brand/director-desk-mark.png",
+];
+
 export const serviceAssets = {
   thought: [
     "brand/brand-mark.png",
@@ -32,6 +44,7 @@ export const serviceAssets = {
     "brand/brand-mark.png",
     "brand/favicon.png",
     "brand/visual-workshop-mark.png",
+    "brand/visual-workshop-mark-cutout.png",
     "providers/codex-logo.svg",
     "providers/claudecode-logo.svg",
     "providers/opencode-logo.svg",
@@ -44,6 +57,7 @@ export const serviceAssets = {
     "brand/brand-mark.png",
     "brand/favicon.png",
     "brand/galgame-workshop-mark.png",
+    "brand/galgame-workshop-mark-cutout.png",
   ],
   motion: [
     "brand/brand-mark.png",
@@ -96,15 +110,7 @@ export const serviceAssets = {
     "providers/opencode-logo.svg",
     "providers/deepseek-logo.svg",
     "providers/pi-logo.svg",
-    "brand/presentation-workshop-mark.png",
-    "brand/thought-workshop-mark.png",
-    "brand/interview-assistant-mark.png",
-    "brand/visual-workshop-mark.png",
-    "brand/galgame-workshop-mark.png",
-    "brand/video-editor-mark.png",
-    "brand/motion-compositor-mark.png",
-    "brand/audio-annotation-mark.png",
-    "brand/director-desk-mark.png",
+    ...workshopMarks,
     ...fs
       .readdirSync(fileURLToPath(new URL("../public/docs/", import.meta.url)))
       .filter((name) => /\.(?:jpg|png|svg|webp)$/.test(name))
@@ -129,6 +135,15 @@ const loadingAssets = [
   "time-machine.webp",
 ].map((name) => "brand/loading/" + name);
 
+const amadeusAssets = [
+  "brand/amadeus/HAPPIER-LICENSE.txt",
+  "brand/amadeus/REMEND-LICENSE.txt",
+  "brand/amadeus/amadeus-poster.png",
+  "brand/amadeus/amadeus-stage-poster.png",
+  "brand/amadeus/amadeus.fpllive2d",
+  ...workshopMarks.map((name) => variants["/" + name]["64"].slice(1)),
+];
+
 for (const [service, originals] of Object.entries(serviceAssets)) {
   const related = originals.flatMap((name) =>
     Object.values(variants["/" + name] || {}).map((value) =>
@@ -136,6 +151,11 @@ for (const [service, originals] of Object.entries(serviceAssets)) {
     ),
   );
   serviceAssets[service] = [
-    ...new Set([...originals, ...related, ...loadingAssets]),
+    ...new Set([
+      ...originals,
+      ...related,
+      ...loadingAssets,
+      ...(service === "management" ? [] : amadeusAssets),
+    ]),
   ].sort();
 }

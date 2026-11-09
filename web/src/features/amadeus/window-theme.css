@@ -29,10 +29,19 @@
 }
 
 .amadeus-brand {
+  min-width: 0;
   gap: 11px;
 }
 
+.amadeus-brand > div {
+  min-width: 0;
+}
+
 .amadeus-brand strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--amadeus-ink);
   font-size: 16px;
 }
@@ -227,11 +236,13 @@
 .amadeus-welcome {
   width: min(100%, 350px);
   padding: 14px 0 4px;
+  text-align: center;
 }
 
 .amadeus-welcome-avatar {
   width: 82px;
   height: 82px;
+  margin-inline: auto;
   margin-bottom: 14px;
   padding: 3px;
   border-radius: 22px;
@@ -282,15 +293,6 @@
   transform: translateY(-1px);
 }
 
-.amadeus-message {
-  margin: 7px 0 15px;
-}
-
-.amadeus-message.user {
-  border-color: #f1d6c8;
-  background: #fff1e8;
-}
-
 .amadeus-bottom {
   padding: 4px 15px 12px;
   background: transparent;
@@ -306,10 +308,6 @@
 .amadeus-composer textarea {
   min-height: 44px;
   font-size: 12px;
-}
-
-.amadeus-toolbar {
-  height: 32px;
 }
 
 .amadeus-toolbar button {
@@ -409,12 +407,6 @@ html[data-theme="dark"] #root {
   color: var(--amadeus-accent);
 }
 
-:root[data-theme="dark"] .amadeus-ref-thumb {
-  background: var(--amadeus-surface-soft, #2a302b);
-  color: var(--amadeus-accent);
-}
-
-:root[data-theme="dark"] .amadeus-message.user,
 :root[data-theme="dark"] .amadeus-history-row.active,
 :root[data-theme="dark"] .amadeus-welcome button {
   background: var(--amadeus-accent-soft);
@@ -422,9 +414,7 @@ html[data-theme="dark"] #root {
   color: var(--amadeus-ink);
 }
 
-:root[data-theme="dark"] .amadeus-message.user .amadeus-message-name,
 :root[data-theme="dark"] .amadeus-reference-detail p,
-:root[data-theme="dark"] .amadeus-message.user,
 :root[data-theme="dark"] .amadeus-composer textarea,
 :root[data-theme="dark"] .amadeus-search input {
   color: var(--amadeus-ink);

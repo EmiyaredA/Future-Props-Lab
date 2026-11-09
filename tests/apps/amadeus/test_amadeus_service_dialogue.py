@@ -1,6 +1,7 @@
 """Exercise owned CLI dialogue tools, approval, continuation and cancellation."""
 
 import asyncio
+import json
 
 import httpx
 
@@ -62,9 +63,47 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
     )
     connections = Connections(tmp_path / "agent-profiles")
     provider_started, provider_stopped = asyncio.Event(), asyncio.Event()
+    target = {
+        "project_resource": "presentation",
+        "project_id": "fixture-project",
+        "element_kind": "slide_element",
+        "element_id": "text-object",
+        "parent_id": "slide-2",
+        "unsaved": True,
+    }
+    reference = {
+        "id": "text-object",
+        "application": "演示工坊",
+        "name": "文本框",
+        "target": target,
+    }
 
-    async def runner(agent, executable, model, prompt, tools, call, emit, *, root, runtime_path):
-        assert (agent, executable, model) == ("codex", "sealed-codex-fixture", "")
+    async def runner(
+        agent,
+        executable,
+        model,
+        prompt,
+        tools,
+        call,
+        emit,
+        *,
+        root,
+        runtime_path,
+        reasoning_effort=None,
+        service_tier=None,
+    ):
+        assert (agent, executable) == ("codex", "sealed-codex-fixture")
+        assert (model, reasoning_effort, service_tier) in {
+            ("fixture-model", "high", "fast"),
+            ("", None, None),
+        }
+        if model == "fixture-model":
+            snapshot = json.loads(prompt.split("\n", 1)[1])
+            assert snapshot["context"] == [{"projectId": "fixture-project"}]
+            assert snapshot["references"][0]["target"] == target
+            assert snapshot["references"] == snapshot["messages"][-1]["references"]
+            assert snapshot["messages"][-2]["references"][0]["target"] is None
+        await emit("run_usage", {"input_tokens": 7, "context_used": 11})
         assert runtime_path == connections.runtime_root and root.is_dir()
         assert {item["name"] for item in tools} == set(SCHEMAS)
         if "block-fixture" in prompt:
@@ -115,9 +154,55 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
         created = await send("POST", conversations)
         path = conversations + "/" + created.json()["id"]
         runs = path + "/runs"
-        started = await send("POST", runs, json={"agent_id": "codex"})
+        old = await send(
+            "POST",
+            path + "/messages",
+            json={
+                "expected_revision": 0,
+                "role": "user",
+                "content": "Legacy reference",
+                "references": [{"id": "legacy", "application": "工坊", "name": "旧控件"}],
+            },
+        )
+        assert old.status_code == 200, old.text
+        malformed = await send(
+            "POST",
+            path + "/messages",
+            json={
+                "expected_revision": old.json()["conversation"]["revision"],
+                "role": "user",
+                "content": "Bad target",
+                "references": [{**reference, "target": {**target, "project_resource": "visual"}}],
+            },
+        )
+        assert malformed.status_code == 422, malformed.text
+        attached = await send(
+            "POST",
+            path + "/messages",
+            json={
+                "expected_revision": old.json()["conversation"]["revision"],
+                "role": "user",
+                "content": "Inspect this element",
+                "references": [reference],
+            },
+        )
+        assert attached.status_code == 200, attached.text
+        started = await send(
+            "POST",
+            runs,
+            json={
+                "agent_id": "codex",
+                "agent_model": "fixture-model",
+                "reasoning_effort": "high",
+                "service_tier": "fast",
+                "references": [reference],
+                "context": [{"projectId": "fixture-project", "selection": {"name": "not sent"}}],
+            },
+        )
         assert started.status_code == 200, started.text
         run = started.json()["run"]
+        assert run["reasoning_effort"] == "high"
+        assert run["service_tier"] == "fast"
         assert "executable" not in run["execution_config"]
         assert (
             run["execution_config"]["agent_connection_signature"]

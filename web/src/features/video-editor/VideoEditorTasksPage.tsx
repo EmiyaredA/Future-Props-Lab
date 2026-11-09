@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { LoadingScene } from "@shared/ui/LoadingScene";
 import { ProgressBar } from "@shared/ui/LoadingState";
 import { LoadingState } from "@shared/ui/LoadingState";
@@ -72,8 +73,10 @@ function taskDate(value: string) {
 }
 
 export function VideoEditorTasksPage({
+  utilities,
   onOpenProject,
 }: {
+  utilities?: ReactNode;
   onOpenProject: (projectId: string) => void;
 }) {
   const [filter, setFilter] = useState<(typeof filters)[number]["id"]>("all");
@@ -169,6 +172,7 @@ export function VideoEditorTasksPage({
   return (
     <section className="workshop-page ve-tasks-page">
       <WorkshopAppChrome
+        utilities={utilities}
         eyebrow={
           <div className="ve-tasks-eyebrow">
             <Film aria-hidden /> 导出中心

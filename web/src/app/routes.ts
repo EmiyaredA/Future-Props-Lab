@@ -1,4 +1,5 @@
 import { legacyAgentPath } from "./routing/legacyAgent";
+import { studioPaths } from "./routing/studioNavigation";
 export type StudioPage =
   | "thought-workshop-community"
   | "thought-workshop-favorites"
@@ -11,6 +12,7 @@ export type StudioPage =
   | "creative-workshop-detail"
   | "apps"
   | "cloud-control"
+  | "amadeus"
   | "files"
   | "tools"
   | "integrations-tool-apis"
@@ -124,12 +126,17 @@ export function parseRoute(
   path = window.location.pathname + window.location.search,
 ): AppRoute {
   const url = new URL(path, window.location.origin);
-  if (legacyAgentPath.test(url.pathname))
-    return { page: "cloud-control", search: "?view=agent" };
+  if (legacyAgentPath.test(url.pathname)) return { page: "amadeus" };
+  if (
+    /^\/cloud-control\/?$/.test(url.pathname) &&
+    url.searchParams.get("view") === "agent"
+  )
+    return { page: "amadeus" };
   return { ...parsePathRoute(url.pathname), search: url.search || undefined };
 }
 
 function parsePathRoute(pathname: string): AppRoute {
+  if (/^\/amadeus\/?$/.test(pathname)) return { page: "amadeus" };
   if (/^\/cloud-control\/?$/.test(pathname)) return { page: "cloud-control" };
   const application = matchApplicationPath(pathname);
   if (application) return application as AppRoute;
@@ -197,6 +204,7 @@ export function pathFor(
   const applicationPath = applicationPathFor(page, projectId, documentId);
   if (applicationPath) return applicationPath;
   const paths: Record<AppPage, string> = {
+    ...studioPaths,
     "interview-assistant-session": "/apps/interview-assistant",
     "presentation-workshop-projects": "/apps/presentation-workshop",
     "presentation-workshop-templates": "/apps/presentation-workshop/templates",
@@ -208,32 +216,12 @@ export function pathFor(
     "thought-workshop-legacy": "/apps/thought-workshop",
     "thought-workshop-official": "/apps/thought-workshop",
     "thought-workshop-community": `/apps/thought-workshop/community${projectId ? `/${encodeURIComponent(projectId)}${documentId ? `/documents/${encodeURIComponent(documentId)}` : ""}` : ""}`,
-    "thought-workshop-favorites": "/apps/thought-workshop/favorites",
-    "thought-workshop-published": "/apps/thought-workshop/published",
-    home: "/home",
-    "creative-workshop": "/creative-workshop",
-    "creative-workshop-mine": "/creative-workshop/mine",
-    "creative-workshop-new": "/creative-workshop/new",
     "creative-workshop-editor": projectId
       ? `/creative-workshop/edit/${encodeURIComponent(projectId)}`
-      : "/creative-workshop/mine",
+      : studioPaths["creative-workshop-editor"],
     "creative-workshop-detail": projectId
       ? `/creative-workshop/item/${encodeURIComponent(projectId)}`
-      : "/creative-workshop",
-    apps: "/apps",
-    "cloud-control": "/cloud-control",
-    files: "/files",
-    tools: "/tools",
-    "integrations-tool-apis": "/integrations/tool-apis",
-    "integrations-mcp": "/integrations/mcp",
-    "integrations-skills": "/integrations/skills",
-    "integrations-external-connections": "/integrations/external-connections",
-    "video-frame-exporter": "/tools/video-frame-exporter",
-    "video-downloader": "/tools/video-downloader",
-    "model-test": "/model-test",
-    "code-agents": "/code-agents",
-    "model-service": "/model-service",
-    "model-call-logs": "/model-call-logs",
+      : studioPaths["creative-workshop-detail"],
     "visual-workshop-projects": "/apps/visual-workshop",
     "visual-workshop-canvas": "/apps/visual-workshop",
     "visual-workshop-assets": "/apps/visual-workshop",

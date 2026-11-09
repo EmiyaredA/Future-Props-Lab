@@ -132,6 +132,8 @@ export function PresentationEditor(props: EditorProps) {
           deck={draft.draft.document}
           active={slide.id}
           onSelect={chooseSlide}
+          pageSelection={session.pageSelection}
+          setPageSelection={session.setPageSelection}
           onMove={moveSlide}
           onCopy={addSlide}
           onAdd={() => addSlide()}
@@ -143,6 +145,7 @@ export function PresentationEditor(props: EditorProps) {
         />
         <main className="presentation-center">
           <PresentationToolbar
+            projectId={props.initial.id}
             readOnly={readOnly || !!cropSession}
             canAdd={draft.draft.document.slides.length < 100}
             canUndo={!commands.get("undo").disabled}

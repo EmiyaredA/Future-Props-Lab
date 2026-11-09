@@ -1,3 +1,4 @@
+import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
 import { lazy } from "react";
 import { PRESENTATION_WORKSHOP_MODULE } from "@features/presentation-workshop/module";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
@@ -25,6 +26,13 @@ export function PresentationWorkshopRoute({
   const editor = page === "presentation-workshop-template-editor";
   const content = (
     <Page
+      utilities={
+        !editing ? (
+          <WorkshopUtilities
+            application={PRESENTATION_WORKSHOP_MODULE.definition.name}
+          />
+        ) : undefined
+      }
       templates={page === "presentation-workshop-templates"}
       templateId={editor ? projectId : undefined}
       projectId={

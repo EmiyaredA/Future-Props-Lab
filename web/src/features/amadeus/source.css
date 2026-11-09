@@ -39,7 +39,7 @@
 .amadeus-mutation-banner {
   position: fixed;
   z-index: 2147483639;
-  right: 20px;
+  left: 20px;
   bottom: 20px;
   max-width: min(420px, calc(100vw - 40px));
   display: flex;
@@ -52,6 +52,9 @@
   color: var(--text);
   box-shadow: 0 12px 30px #43251624;
   font-size: 13px;
+}
+.amadeus-mutation-banner a {
+  color: var(--accent);
 }
 .amadeus-mutation-banner button {
   flex: none;

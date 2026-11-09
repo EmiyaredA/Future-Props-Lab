@@ -1893,6 +1893,26 @@
             "title": "Executable",
             "type": "string"
           },
+          "harness_efforts": {
+            "items": {
+              "$ref": "#/components/schemas/NamedOption"
+            },
+            "maxItems": 100,
+            "title": "Harness Efforts",
+            "type": "array"
+          },
+          "harness_options_model": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:/@-]{0,159}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harness Options Model"
+          },
           "id": {
             "enum": [
               "codex",
@@ -1906,6 +1926,17 @@
           },
           "message": {
             "title": "Message",
+            "type": "string"
+          },
+          "model_catalog": {
+            "default": "not_checked",
+            "enum": [
+              "not_checked",
+              "discovered",
+              "preset",
+              "unavailable"
+            ],
+            "title": "Model Catalog",
             "type": "string"
           },
           "models": {
@@ -6224,11 +6255,92 @@
         "title": "ConversationDetailOut",
         "type": "object"
       },
+      "ConversationListItemOut": {
+        "properties": {
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "executor_kind": {
+            "default": "legacy-pi",
+            "title": "Executor Kind",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "latest_run_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latest Run Status"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "projects": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationProjectSummary"
+            },
+            "title": "Projects",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "model_id",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ConversationListItemOut",
+        "type": "object"
+      },
       "ConversationListOut": {
         "properties": {
           "items": {
             "items": {
-              "$ref": "#/components/schemas/ConversationOut"
+              "$ref": "#/components/schemas/ConversationListItemOut"
             },
             "title": "Items",
             "type": "array"
@@ -6340,6 +6452,29 @@
           "expected_revision"
         ],
         "title": "ConversationPatchIn",
+        "type": "object"
+      },
+      "ConversationProjectSummary": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "resource": {
+            "title": "Resource",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "resource",
+          "id",
+          "title"
+        ],
+        "title": "ConversationProjectSummary",
         "type": "object"
       },
       "ConversationRevisionConflictOut": {
@@ -8194,6 +8329,80 @@
           "revisions"
         ],
         "title": "DuplicateSnapshot",
+        "type": "object"
+      },
+      "ElementTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "element_id": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Element Id",
+            "type": "string"
+          },
+          "element_kind": {
+            "enum": [
+              "node",
+              "clip",
+              "slide",
+              "slide_element",
+              "note",
+              "story_block",
+              "layer",
+              "segment",
+              "entity",
+              "material"
+            ],
+            "title": "Element Kind",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "project_id": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Project Id",
+            "type": "string"
+          },
+          "project_resource": {
+            "enum": [
+              "visual",
+              "video",
+              "presentation",
+              "thought",
+              "galgame",
+              "motion_compositor",
+              "annotation",
+              "director",
+              "interview"
+            ],
+            "title": "Project Resource",
+            "type": "string"
+          },
+          "unsaved": {
+            "default": false,
+            "title": "Unsaved",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "project_resource",
+          "project_id",
+          "element_kind",
+          "element_id"
+        ],
+        "title": "ElementTarget",
         "type": "object"
       },
       "EndpointState": {
@@ -21275,6 +21484,21 @@
         "title": "MemberOut",
         "type": "object"
       },
+      "MessageForkIn": {
+        "additionalProperties": false,
+        "properties": {
+          "request_id": {
+            "format": "uuid",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "title": "MessageForkIn",
+        "type": "object"
+      },
       "MessageIn": {
         "additionalProperties": false,
         "properties": {
@@ -21330,6 +21554,11 @@
             "title": "Id",
             "type": "string"
           },
+          "pinned": {
+            "default": false,
+            "title": "Pinned",
+            "type": "boolean"
+          },
           "references": {
             "items": {
               "$ref": "#/components/schemas/Reference"
@@ -21371,6 +21600,20 @@
           "created_at"
         ],
         "title": "MessageOut",
+        "type": "object"
+      },
+      "MessagePinIn": {
+        "additionalProperties": false,
+        "properties": {
+          "pinned": {
+            "title": "Pinned",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "pinned"
+        ],
+        "title": "MessagePinIn",
         "type": "object"
       },
       "MockCompletionIn": {
@@ -21763,6 +22006,11 @@
       },
       "ModelOption": {
         "properties": {
+          "fast_available": {
+            "default": false,
+            "title": "Fast Available",
+            "type": "boolean"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -21770,6 +22018,31 @@
           "label": {
             "title": "Label",
             "type": "string"
+          },
+          "reasoning_efforts": {
+            "items": {
+              "enum": [
+                "none",
+                "minimal",
+                "low",
+                "medium",
+                "high",
+                "xhigh",
+                "max",
+                "ultra"
+              ],
+              "type": "string"
+            },
+            "title": "Reasoning Efforts",
+            "type": "array"
+          },
+          "variants": {
+            "items": {
+              "$ref": "#/components/schemas/NamedOption"
+            },
+            "maxItems": 100,
+            "title": "Variants",
+            "type": "array"
           }
         },
         "required": [
@@ -24453,6 +24726,26 @@
           "timelineStartUs"
         ],
         "title": "MoveClipOperation",
+        "type": "object"
+      },
+      "NamedOption": {
+        "properties": {
+          "id": {
+            "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.+-]{0,79}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 160,
+            "title": "Label",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "NamedOption",
         "type": "object"
       },
       "NodeAcceptanceCatalogOut": {
@@ -28985,6 +29278,16 @@
             "title": "Source",
             "type": "string"
           },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ElementTarget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "thumbnail": {
             "anyOf": [
               {
@@ -29850,6 +30153,18 @@
             "title": "Context",
             "type": "array"
           },
+          "harness_effort": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.+-]{0,79}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harness Effort"
+          },
           "mode": {
             "default": "agent",
             "enum": [
@@ -29865,6 +30180,39 @@
             "title": "Model Id",
             "type": "string"
           },
+          "model_variant": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.+-]{0,79}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Variant"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max",
+                  "ultra"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort"
+          },
           "references": {
             "items": {
               "$ref": "#/components/schemas/Reference"
@@ -29872,6 +30220,18 @@
             "maxItems": 20,
             "title": "References",
             "type": "array"
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "const": "fast",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Tier"
           },
           "source_run_id": {
             "anyOf": [
@@ -29924,6 +30284,8 @@
             "enum": [
               "assistant_delta",
               "assistant_message",
+              "reasoning_summary",
+              "run_usage",
               "tool_call",
               "tool_result",
               "status",
@@ -30095,6 +30457,18 @@
             ],
             "title": "Finished At"
           },
+          "harness_effort": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.+-]{0,79}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Harness Effort"
+          },
           "heartbeat_at": {
             "format": "date-time",
             "title": "Heartbeat At",
@@ -30116,9 +30490,42 @@
             "title": "Model Id",
             "type": "string"
           },
+          "model_variant": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_][A-Za-z0-9_.+-]{0,79}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Variant"
+          },
           "partial_text": {
             "title": "Partial Text",
             "type": "string"
+          },
+          "reasoning_effort": {
+            "anyOf": [
+              {
+                "enum": [
+                  "none",
+                  "minimal",
+                  "low",
+                  "medium",
+                  "high",
+                  "xhigh",
+                  "max",
+                  "ultra"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Effort"
           },
           "references": {
             "items": {
@@ -30126,6 +30533,18 @@
             },
             "title": "References",
             "type": "array"
+          },
+          "service_tier": {
+            "anyOf": [
+              {
+                "const": "fast",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Tier"
           },
           "source_run_id": {
             "anyOf": [
@@ -30146,6 +30565,16 @@
             "format": "date-time",
             "title": "Updated At",
             "type": "string"
+          },
+          "usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenUsage"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -34954,6 +35383,109 @@
           "expected_revision"
         ],
         "title": "ThoughtRevisionIn",
+        "type": "object"
+      },
+      "TokenUsage": {
+        "additionalProperties": false,
+        "properties": {
+          "cache_write_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cache Write Tokens"
+          },
+          "cached_input_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cached Input Tokens"
+          },
+          "context_limit": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Limit"
+          },
+          "context_used": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Context Used"
+          },
+          "input_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Output Tokens"
+          },
+          "reasoning_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reasoning Tokens"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens"
+          }
+        },
+        "title": "TokenUsage",
         "type": "object"
       },
       "ToolApiCatalogOut": {
@@ -43165,6 +43697,128 @@
         ]
       }
     },
+    "/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork": {
+      "post": {
+        "operationId": "fork_message_v1_amadeus_conversations__conversation_id__messages__message_id__fork_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessageForkIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Fork Message",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin": {
+      "put": {
+        "operationId": "pin_message_v1_amadeus_conversations__conversation_id__messages__message_id__pin_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "message_id",
+            "required": true,
+            "schema": {
+              "title": "Message Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MessagePinIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Pin Message",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
     "/v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer": {
       "post": {
         "operationId": "answer_question_v1_amadeus_conversations__conversation_id__questions__question_id__answer_post",
@@ -45528,6 +46182,25 @@
     "/v1/code-agents": {
       "get": {
         "operationId": "list_code_agents_v1_code_agents_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "harness_model",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._+:/@-]{0,159}$",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Harness Model"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -45538,6 +46211,16 @@
               }
             },
             "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
           }
         },
         "summary": "List Code Agents",

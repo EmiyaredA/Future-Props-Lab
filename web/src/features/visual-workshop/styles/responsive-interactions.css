@@ -61,9 +61,6 @@
   .workshop-page {
     padding: 24px 18px 40px;
   }
-  .workshop-toolbar {
-    grid-template-columns: 1fr;
-  }
   .generation-task-filters {
     grid-template-columns: 1fr;
   }
@@ -77,14 +74,10 @@
   .generation-task-placeholder {
     width: 150px;
   }
-  .workshop-filters button {
-    min-height: 34px;
-    flex: 1;
-  }
 }
 
 @media (max-width: 620px) {
-  .workshop-app-chrome {
+  .workshop-app-chrome:not(.workshop-app-chrome--compact) {
     align-items: flex-start;
     flex-direction: column;
   }

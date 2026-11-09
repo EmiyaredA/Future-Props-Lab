@@ -59,6 +59,8 @@ it("abandons the first connection and its callbacks when a different app is sele
   vi.stubGlobal("RTCPeerConnection", Peer);
   connectRemoteApp.mockResolvedValue({ ticket: "one-time", ice_servers: [] });
   const client = new QueryClient();
+  const titleHost = document.createElement("div");
+  document.body.append(titleHost);
   try {
     render(
       <QueryClientProvider client={client}>
@@ -66,8 +68,8 @@ it("abandons the first connection and its callbacks when a different app is sele
           owner="fixture"
           paneId="apps"
           visible
+          titleHost={titleHost}
           onUnlock={vi.fn()}
-          onChange={vi.fn()}
           status={{
             enabled: true,
             local: true,
@@ -115,6 +117,7 @@ it("abandons the first connection and its callbacks when a different app is sele
     ).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("正在启动应用");
   } finally {
+    titleHost.remove();
     vi.unstubAllGlobals();
   }
 });

@@ -98,7 +98,7 @@ async def test_cli_worker_live_admission_and_lost_receipt(scenario, tmp_path):  
     )
     enabled = []
 
-    async def catalog(*, can_enable):
+    async def catalog(*, can_enable, harness_model=None):
         return CatalogOut(
             items=[
                 AgentOut(
@@ -110,6 +110,12 @@ async def test_cli_worker_live_admission_and_lost_receipt(scenario, tmp_path):  
                     available=True,
                     status="ready",
                     message="fixture",
+                    harness_options_model=harness_model if definition.id == "dsh" else None,
+                    harness_efforts=(
+                        [{"id": "max", "label": "Max"}]
+                        if definition.id == "dsh" and harness_model == "fixture/model"
+                        else []
+                    ),
                 )
                 for definition in DEFINITIONS.values()
             ]
@@ -189,6 +195,16 @@ async def test_cli_worker_live_admission_and_lost_receipt(scenario, tmp_path):  
         hidden = (await asyncio.wait_for(read, 5)).json()
         assert hidden["can_enable"] is False
         assert not any(item["executable"] for item in hidden["items"])
+
+        scoped = asyncio.create_task(
+            api.get(PREFIX, headers={HEADER: public}, params={"harness_model": "fixture/model"})
+        )
+        await worker.poll_once()
+        scoped_catalog = (await asyncio.wait_for(scoped, 5)).json()
+        harness = next(item for item in scoped_catalog["items"] if item["id"] == "dsh")
+        assert harness["harness_options_model"] == "fixture/model"
+        assert harness["harness_efforts"] == [{"id": "max", "label": "Max"}]
+        assert not any(item["executable"] for item in scoped_catalog["items"])
 
         headers = await authorize(case, SERVICE, "POST", ENABLE)
         bridge.lose_next_receipt = True

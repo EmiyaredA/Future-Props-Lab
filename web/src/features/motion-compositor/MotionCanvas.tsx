@@ -5,6 +5,7 @@ import {
   Assets,
   Container,
   Graphics,
+  Point,
   Sprite,
   Text,
   Texture,
@@ -79,6 +80,7 @@ export function MotionCanvas({
   selectedId,
   precise,
   savedRevision,
+  hitTestRef,
   onSelect,
   onMove,
   onDragStart,
@@ -91,6 +93,9 @@ export function MotionCanvas({
   selectedId: string | null;
   precise: boolean;
   savedRevision: number;
+  hitTestRef: React.RefObject<
+    ((event: MouseEvent) => string | undefined) | undefined
+  >;
   onSelect: (id: string | null) => void;
   onMove: (id: string, x: number, y: number) => void;
   onDragStart: () => void;
@@ -157,6 +162,26 @@ export function MotionCanvas({
   }, []);
 
   useEffect(() => {
+    hitTestRef.current = (event) => {
+      const app = appRef.current;
+      if (!app || event.target !== app.canvas) return undefined;
+      const events = app.renderer.events;
+      const point = new Point();
+      events.mapPositionToPoint(point, event.clientX, event.clientY);
+      let target: Container | null = events.rootBoundary.hitTest(
+        point.x,
+        point.y,
+      );
+      while (target && !target.label.startsWith("amadeus-layer:"))
+        target = target.parent;
+      return target?.label.slice("amadeus-layer:".length);
+    };
+    return () => {
+      hitTestRef.current = undefined;
+    };
+  }, [hitTestRef]);
+
+  useEffect(() => {
     const app = appRef.current;
     if (!ready || !app) return;
     let disposed = false;
@@ -177,7 +202,7 @@ export function MotionCanvas({
     for (const layer of document.layers) {
       if (!layer.visible || frame < layer.startFrame || frame >= layer.endFrame)
         continue;
-      const wrapper = new Container();
+      const wrapper = new Container({ label: `amadeus-layer:${layer.id}` });
       wrapper.position.set(
         valueAt(layer, "x", frame),
         valueAt(layer, "y", frame),

@@ -1,3 +1,4 @@
+import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
 import { lazy, useCallback, useEffect, useRef } from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
@@ -55,6 +56,7 @@ function MotionWorkspace() {
       onBack={() => go("/apps")}
     >
       <Projects
+        utilities={<WorkshopUtilities application={motion.definition.name} />}
         readOnly={!writable}
         onOpen={(id) => {
           const target = motion.pathFor("motion-compositor-editor", id);

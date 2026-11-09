@@ -1,6 +1,8 @@
-# 云控 Happier 部署与切换
+# Happier 部署与恢复
 
-日常网站的 Agent 工作台使用自托管 Happier Web、SQLite Relay 与 CLI Runner。FPL 管理员通过云控解锁进入工作台，再用 Happier 原生设备密钥登录。Happier 保存加密会话，Runner 使用独立凭据执行。独立 Compose 的云控提供远程桌面。
+整机编程入口为 [独立 Happier](https://agents.futurepropslab.cn/)，会话、设备配对与运行权限归该实例。FPL 项目助手从 `/amadeus` 进入。旧 FPL 内嵌实例的 Relay 卷、恢复密钥和 Runner 凭据单独保管。
+
+以下步骤用于在隔离环境复现或恢复历史内嵌部署，浏览器端使用移除云控页签前的 Portal 构建。恢复前先核对实际 Compose 项目、数据卷与 SSH 隧道归属。
 
 ## 隔离构建与配对
 

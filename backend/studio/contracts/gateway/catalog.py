@@ -22,7 +22,11 @@ SERVICES = (
         ("deployment", "public_access"),
     ),
     Service("identity", "账号与登录", ("/login", "/account")),
-    Service("portal", "FPL 门户", ("/", "/home", "/apps", "/cloud-control", "/docs.html", "/docs")),
+    Service(
+        "portal",
+        "FPL 门户",
+        ("/", "/home", "/apps", "/cloud-control", "/amadeus", "/docs.html", "/docs"),
+    ),
     Service(
         "remote", "远程桌面", dependencies=("identity",), host_capabilities=("remote_desktop",)
     ),

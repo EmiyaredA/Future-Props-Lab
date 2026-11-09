@@ -1,15 +1,14 @@
+import type { ReactNode } from "react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ProjectCertification } from "@features/accounts";
 import { useState } from "react";
 import {
-  Check,
   FolderOpen,
   Maximize2,
   Pencil,
   Plus,
-  RefreshCcw,
   Search,
   Trash2,
   X,
@@ -22,7 +21,10 @@ import {
   ProjectSnapshotImportButton,
   useProjectLibraryController,
 } from "@shared/ui/project-library";
-import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
+import {
+  WorkshopAppChrome,
+  WorkshopSearch,
+} from "@shared/ui/WorkshopAppChrome";
 import {
   createVisualWorkshopProject,
   deleteVisualWorkshopProject,
@@ -32,7 +34,6 @@ import {
   openVisualWorkshopProjectFolder,
   patchVisualWorkshopProject,
   type VisualWorkshopProject,
-  type VisualWorkshopProjectStatus,
 } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import "@features/visual-workshop/visual-workshop.css";
@@ -44,9 +45,11 @@ function errorMessage(error: unknown) {
 }
 
 export function VisualWorkshopProjectsPage({
+  utilities,
   onOpenProject = () => undefined,
   onOpenAssets = () => undefined,
 }: {
+  utilities?: ReactNode;
   onOpenProject?: (projectId: string) => void;
   onOpenAssets?: (projectId: string) => void;
 }) {
@@ -54,9 +57,6 @@ export function VisualWorkshopProjectsPage({
     useTransferProgress();
 
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<"all" | VisualWorkshopProjectStatus>(
-    "all",
-  );
   const {
     projectsQuery,
     editor,
@@ -86,22 +86,27 @@ export function VisualWorkshopProjectsPage({
     onOpenProject,
     errorMessage,
   });
-  const filtered = (projectsQuery.data?.items ?? []).filter((project) => {
-    if (status !== "all" && project.status !== status) return false;
-    return project.title
-      .toLocaleLowerCase("zh-CN")
-      .includes(query.trim().toLocaleLowerCase("zh-CN"));
-  });
+  const search = query.trim().toLocaleLowerCase("zh-CN");
+  const filtered = (projectsQuery.data?.items ?? []).filter((project) =>
+    project.title.toLocaleLowerCase("zh-CN").includes(search),
+  );
 
   return (
     <section className="workshop-page workshop-projects-page">
       <TransferFeedback progress={activeTransferProgress} />
 
       <WorkshopAppChrome
+        utilities={utilities}
+        showThemeToggle={false}
         title="我的创作项目"
-        description="所有项目统一使用沉浸式创作画布。"
         actions={
           <>
+            <WorkshopSearch
+              label="搜索项目"
+              placeholder="搜索项目名称…"
+              value={query}
+              onChange={setQuery}
+            />
             <ProjectSnapshotImportButton
               pending={importMutation.isPending}
               onImport={(file) => importMutation.mutate(file)}
@@ -117,28 +122,6 @@ export function VisualWorkshopProjectsPage({
           </>
         }
       />
-      <div className="workshop-toolbar workshop-toolbar-simple">
-        <label>
-          <Search aria-hidden />
-          <input
-            aria-label="搜索项目"
-            placeholder="搜索项目名称…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-        <div className="workshop-filters" aria-label="项目状态">
-          {(["all", "draft", "completed"] as const).map((value) => (
-            <button
-              key={value}
-              className={status === value ? "active" : ""}
-              onClick={() => setStatus(value)}
-            >
-              {value === "all" ? "全部" : value === "draft" ? "草稿" : "已完成"}
-            </button>
-          ))}
-        </div>
-      </div>
       {notice ? (
         <div className="workshop-notice" role="status">
           {notice}
@@ -161,7 +144,11 @@ export function VisualWorkshopProjectsPage({
           {filtered.map((project) => (
             <ProjectLibraryCard
               key={project.id}
-              project={project}
+              project={{
+                id: project.id,
+                title: project.title,
+                updated_at: project.updated_at,
+              }}
               metadata={
                 project.is_official ? (
                   <span className="workshop-status completed">官方作品</span>
@@ -169,7 +156,6 @@ export function VisualWorkshopProjectsPage({
               }
               cover="canvas"
               coverTitle="创作画布"
-              coverDescription="点击进入项目"
               onOpen={() => onOpenProject(project.id)}
             >
               <div className="workshop-project-primary-actions">
@@ -216,27 +202,6 @@ export function VisualWorkshopProjectsPage({
                   }
                 >
                   <Pencil aria-hidden />
-                </button>
-                <button
-                  aria-label={project.status === "draft" ? "完成" : "恢复"}
-                  title={
-                    project.status === "draft" ? "标记为已完成" : "恢复为草稿"
-                  }
-                  onClick={() =>
-                    patchMutation.mutate({
-                      project,
-                      changes: {
-                        status:
-                          project.status === "draft" ? "completed" : "draft",
-                      },
-                    })
-                  }
-                >
-                  {project.status === "draft" ? (
-                    <Check aria-hidden />
-                  ) : (
-                    <RefreshCcw aria-hidden />
-                  )}
                 </button>
                 <button
                   className="danger"

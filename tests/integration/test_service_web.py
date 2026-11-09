@@ -166,3 +166,84 @@ async def test_portal_docs_alias_only_redirects_verified_program_resources(tmp_p
     (tmp_path / "build.json").write_text(json.dumps(manifest))
     with pytest.raises(ValueError):
         load_release(tmp_path, "thought")
+
+
+async def test_frontend_publication_retains_live_tabs_and_rolls_back_without_restart(tmp_path):
+    from studio.host.deployment.web_release import activate, seed, stage
+
+    apps = []
+    for service, initial_id in [("thought", "a" * 20), ("visual", "c" * 20)]:
+        baked = tmp_path / service
+        directory = tmp_path / (service + "-versions")
+        write_release(baked, service=service, build_id=initial_id)
+        release = seed(baked, directory, service)
+        app = FastAPI()
+
+        @app.post("/v1/example")
+        async def write():
+            return {"saved": True}
+
+        attach_web(app, release, pages=("/page",), release_root=directory)
+        apps.append(
+            (
+                httpx.AsyncClient(transport=httpx.ASGITransport(app), base_url="http://test"),
+                service,
+                release,
+                directory,
+            )
+        )
+
+    async with apps[0][0] as old_tab, apps[1][0] as second:
+        _, service, baked, directory = apps[0]
+        assert (await old_tab.get("/page")).headers["x-application-build"] == baked.build_id
+        assert (await second.get("/page")).headers["x-application-build"] == "c" * 20
+        candidate = tmp_path / "candidate"
+        next_id = "d" * 20
+        write_release(candidate, build_id=next_id)
+        stage(candidate, directory, service)
+        activate(directory, service, next_id, expected=baked.build_id, api_sha256=baked.api_sha256)
+        assert (await old_tab.get("/page")).headers["x-application-build"] == next_id
+        assert (await second.get("/page")).headers["x-application-build"] == "c" * 20
+        _, second_service, second_baked, second_dir = apps[1]
+        second_candidate = tmp_path / "second-candidate"
+        second_id = "b" * 20
+        write_release(second_candidate, service=second_service, build_id=second_id)
+        stage(second_candidate, second_dir, second_service)
+        activate(
+            second_dir,
+            second_service,
+            second_id,
+            expected=second_baked.build_id,
+            api_sha256=second_baked.api_sha256,
+        )
+        assert (await second.get("/page")).headers["x-application-build"] == second_id
+        assert (await second.get(second_baked.prefix + "/assets/main.js")).status_code == 200
+        assert (await old_tab.get(baked.prefix + "/assets/main.js")).status_code == 200
+        assert (await old_tab.get("/_apps/thought/current/build.json")).json()[
+            "build_id"
+        ] == next_id
+        old_headers = {"X-Application-Id": service, "X-Application-Build": baked.build_id}
+        assert (await old_tab.post("/v1/example", headers=old_headers)).status_code == 200
+
+        incompatible = tmp_path / "incompatible"
+        incompatible_id = "e" * 20
+        write_release(incompatible, build_id=incompatible_id, api_sha256="f" * 64)
+        stage(incompatible, directory, service)
+        with pytest.raises(ValueError, match="契约不同"):
+            activate(
+                directory, service, incompatible_id, expected=next_id, api_sha256=baked.api_sha256
+            )
+        assert (
+            await old_tab.get(f"/_apps/thought/{incompatible_id}/assets/main.js")
+        ).status_code == 200
+        blocked = await old_tab.post(
+            "/v1/example",
+            headers={
+                **old_headers,
+                "X-Application-Build": incompatible_id,
+            },
+        )
+        assert blocked.status_code == 409 and blocked.headers["x-application-update"] == "required"
+        activate(directory, service, baked.build_id, expected=next_id, api_sha256=baked.api_sha256)
+        assert (await old_tab.get("/page")).headers["x-application-build"] == baked.build_id
+        assert (await old_tab.get(f"/_apps/thought/{next_id}/assets/main.js")).status_code == 200

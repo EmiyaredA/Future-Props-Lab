@@ -121,7 +121,7 @@ class AmadeusHost:
             job = await self.queue.enqueue(
                 owner=owner,
                 operation=operation,
-                payload=scope.model_dump(mode="json"),
+                payload=scope.model_dump(mode="json", exclude_none=True),
                 request_id=request_id,
             )
             outcome = await self.queue.wait(owner=owner, job_id=job["id"], timeout=timeout)

@@ -1,9 +1,15 @@
+import { subscribeAmadeusMutation } from "@platform/assistant";
+import {
+  assistantElementSource,
+  useAssistantElements,
+} from "@platform/assistantElements";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import type { VisualWorkshopCanvasPageProps } from "@features/visual-workshop/canvas/visualCanvasTypes";
 import { useVisualCanvasController } from "@features/visual-workshop/canvas/useVisualCanvasController";
 import { VisualWorkshopCanvasView } from "@features/visual-workshop/canvas/VisualWorkshopCanvasView";
 import { AcceptanceWorkspace } from "../acceptance/AcceptanceWorkspace";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { nodeLabel } from "./geometry";
 import { ProjectBoard } from "@features/visual-workshop/board/ProjectBoard";
 import { getNodeOutput, type VisualNodeOutput } from "../api";
 
@@ -25,6 +31,74 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
       ? "board"
       : "canvas",
   );
+  const { projectId, projectQuery, title, nodes, selectedId, saveState } =
+    controller;
+  const { refetch: refetchProject } = projectQuery;
+  const { refetch: refetchCanvas } = controller.canvasQuery;
+  const dirty = saveState !== "saved" || controller.editingTitle;
+  useEffect(
+    () =>
+      subscribeAmadeusMutation({ resource: "visual", projectId }, async () => {
+        if (dirty) return "dirty";
+        await Promise.all([
+          refetchProject({ throwOnError: true }),
+          refetchCanvas({ throwOnError: true }),
+        ]);
+        return "updated";
+      }),
+    [projectId, dirty, refetchProject, refetchCanvas],
+  );
+  const projectTitle = title || projectQuery.data?.title || "视觉创作工坊";
+  const selected =
+    nodes.find((node) => node.id === selectedId) ??
+    (view === "board" ? nodes[0] : undefined);
+  useAssistantElements(
+    assistantElementSource(
+      {
+        resource: "visual",
+        projectId,
+        application: "视觉创作工坊",
+        unsaved: dirty,
+        locate: ({ element_id }) => {
+          const node = nodes.find((item) => item.id === element_id);
+          if (!node) return false;
+          controller.setSelectedId(element_id);
+          if (view === "canvas") controller.revealNodes([node]);
+          return true;
+        },
+      },
+      nodes.map((node) => ({
+        id: node.id,
+        kind: "node",
+        name: node.title || nodeLabel(node.kind),
+        value: nodeLabel(node.kind),
+      })),
+      view === "canvas" && controller.selectedNodeIds.length
+        ? controller.selectedNodeIds
+        : selected
+          ? [selected.id]
+          : [],
+    ),
+  );
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("future-props:amadeus-context", {
+        detail: {
+          application: "视觉创作工坊",
+          projectId,
+          title: projectTitle,
+          selection: selected
+            ? {
+                id: selected.id,
+                name: selected.title || nodeLabel(selected.kind),
+                value: nodeLabel(selected.kind),
+              }
+            : undefined,
+          unsaved: dirty,
+        },
+      }),
+    );
+  }, [projectId, projectTitle, selected, dirty]);
   const switchView = (next: "canvas" | "board") => {
     localStorage.setItem(`visual-project-view:${props.projectId}`, next);
     setView(next);

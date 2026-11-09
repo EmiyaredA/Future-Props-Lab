@@ -45,6 +45,8 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("PATCH", "/v1/amadeus/conversations/{conversation_id}"),
         ("DELETE", "/v1/amadeus/conversations/{conversation_id}"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/messages"),
+        ("PUT", "/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin"),
+        ("POST", "/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/actions"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/decision"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute"),

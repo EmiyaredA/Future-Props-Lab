@@ -46,7 +46,7 @@ export function createTimeline(ctx: AppContext) {
     for (const e of ctx.project.entities.filter(
       (e) => e.kind !== "prop" || e.path || e.clips.length,
     )) {
-      html += `<div data-track-key="entity:${escape(e.id)}" class="timeline-row ${e.id === ctx.selected ? "selected" : ""}"><button class="track-label" data-select="${e.id}"><i style="background:${e.kind === "camera" ? "#a1aab8" : e.color}"></i>${escape(e.name)}<small>${e.kind === "camera" ? "运镜" : "动作"}</small></button><div class="track-lane">`;
+      html += `<div data-track-key="entity:${escape(e.id)}" class="timeline-row ${e.id === ctx.selected ? "selected" : ""}"><button class="track-label" data-select="${escape(e.id)}" data-amadeus-id="${escape(e.id)}"><i style="background:${e.kind === "camera" ? "#a1aab8" : e.color}"></i>${escape(e.name)}<small>${e.kind === "camera" ? "运镜" : "动作"}</small></button><div class="track-lane">`;
       if (e.kind === "camera" && e.camera!.mode !== "free")
         html += `<div class="timeline-clip camera" style="left:0;width:${left(ctx.project.duration)}">${e.camera!.mode === "pov" ? "POV · 绑定" : "跟随对象"}</div>`;
       else if (e.kind === "camera" || (e.kind === "prop" && !e.clips.length)) {

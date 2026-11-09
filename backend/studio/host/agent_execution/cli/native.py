@@ -3,9 +3,15 @@
 import asyncio
 import json
 import re
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
+from studio.contracts.agent_runtime.catalog import PI_REASONING_EFFORTS
 
 from .isolation import launch
+from .opencode_models import MODEL_ID, read_opencode_models
 from .transport import MAX_BYTES, CliError, close_transport, spawn_transport
+from .usage import UsageAccumulator, opencode_usage, pi_usage, token_counts
 
 
 class JsonLines:
@@ -48,15 +54,80 @@ class JsonLines:
         raise CliError("ACP 连接提前结束")
 
 
-async def acp(protocol, root, model, prompt, config, emit, allowed):
+async def initialize_acp(protocol, event):
+    await protocol.rpc(
+        "initialize",
+        {
+            "protocolVersion": 1,
+            "clientCapabilities": {},
+            "clientInfo": {"name": "future_props_lab", "version": "1"},
+        },
+        event,
+    )
+
+
+def acp_option(result, identity):
+    options = result.get("configOptions")
+    if not isinstance(options, list):
+        return {}
+    selectors = [
+        row
+        for row in options
+        if isinstance(row, dict)
+        and isinstance(row.get("id"), str)
+        and row.get("type", "select") == "select"
+    ]
+    option = next((row for row in selectors if row["id"] == identity), None)
+    if option is None and identity == "model":
+        option = next((row for row in selectors if row.get("category") == "model"), None)
+    return option or {}
+
+
+def acp_choices(option):
+    options = option.get("options")
+    if not isinstance(options, list):
+        return {}
+    choices = {}
+    for row in options:
+        if not isinstance(row, dict):
+            continue
+        group = row.get("options")
+        for choice in group if isinstance(group, list) else [row]:
+            if isinstance(choice, dict) and isinstance(choice.get("value"), str):
+                label = choice.get("name")
+                value = choice["value"]
+                choices.setdefault(
+                    value, label[:160] if isinstance(label, str) and label.isprintable() else value
+                )
+    return choices
+
+
+async def set_acp_option(protocol, event, session_id, result, key, value, *, confirm=True):
+    selector = acp_option(result, key)
+    if not selector or (confirm and value not in acp_choices(selector)):
+        raise CliError("DeepSeek Harness 已不提供所选模型或推理档位，请重新选择")
+    updated = await protocol.rpc(
+        "session/set_config_option",
+        {"sessionId": session_id, "configId": selector["id"], "value": value},
+        event,
+    )
+    if confirm and acp_option(updated, key).get("currentValue") != value:
+        raise CliError("DeepSeek Harness 未确认所选配置，请重新选择")
+    return updated
+
+
+async def acp(protocol, root, model, prompt, config, emit, allowed, *, harness_effort=None):
     session_id = None
     titles = {}
     parts = []
 
     async def event(value):
         method, params = value.get("method"), value.get("params") or {}
-        if method == "session/update" and params.get("sessionId") == session_id:
+        if method == "session/update" and session_id and params.get("sessionId") == session_id:
             update = params.get("update") or {}
+            if update.get("sessionUpdate") == "usage_update":
+                if usage := token_counts(update, context_used="used", context_limit="size"):
+                    await emit("run_usage", usage)
             if update.get("sessionUpdate") == "tool_call":
                 titles[update.get("toolCallId")] = update.get("title")
             if update.get("sessionUpdate") == "agent_message_chunk":
@@ -85,15 +156,7 @@ async def acp(protocol, root, model, prompt, config, emit, allowed):
                 }
             await protocol.send(response)
 
-    await protocol.rpc(
-        "initialize",
-        {
-            "protocolVersion": 1,
-            "clientCapabilities": {},
-            "clientInfo": {"name": "future_props_lab", "version": "1"},
-        },
-        event,
-    )
+    await initialize_acp(protocol, event)
     servers = [
         {
             "name": name,
@@ -108,17 +171,15 @@ async def acp(protocol, root, model, prompt, config, emit, allowed):
     if not isinstance(session_id, str) or not session_id:
         raise CliError("ACP 未返回会话 ID")
     if model:
-        choices = created.get("configOptions", [])
-        selector = next(
-            (x for x in choices if x.get("category") == "model" or x.get("id") == "model"), None
+        created = await set_acp_option(
+            protocol, event, session_id, created, "model", model, confirm=harness_effort is not None
         )
-        if not selector:
-            raise CliError("此 CLI 未提供模型选择，清空覆盖后使用默认模型")
-        await protocol.rpc(
-            "session/set_config_option",
-            {"sessionId": session_id, "configId": selector["id"], "value": model},
-            event,
+    if harness_effort is not None:
+        configured = await set_acp_option(
+            protocol, event, session_id, created, "reasoning_effort", harness_effort
         )
+        if acp_option(configured, "model").get("currentValue") != model:
+            raise CliError("DeepSeek Harness 未保持所选模型，请重新选择")
     result = await protocol.rpc(
         "session/prompt",
         {"sessionId": session_id, "prompt": [{"type": "text", "text": prompt}]},
@@ -133,6 +194,7 @@ async def acp(protocol, root, model, prompt, config, emit, allowed):
 async def pi(protocol, prompt, emit, instructions=None):
     await protocol.send({"id": "fpl-prompt", "type": "prompt", "message": prompt})
     parts = []
+    usage = UsageAccumulator(emit)
 
     async def steer(identity, message):
         await protocol.send({"id": identity, "type": "steer", "message": message})
@@ -160,11 +222,12 @@ async def pi(protocol, prompt, emit, instructions=None):
                 if delta.get("type") == "text_delta" and isinstance(delta.get("delta"), str):
                     parts.append(delta["delta"])
                     await emit("assistant_delta", {"text": delta["delta"]})
-            if kind == "message_end" and value.get("message", {}).get("stopReason") in {
-                "error",
-                "aborted",
-            }:
-                raise CliError("Pi 任务失败，请检查登录和模型连接")
+            if kind == "message_end":
+                message = value.get("message") or {}
+                if message.get("role") == "assistant":
+                    await usage.add(message.get("id"), pi_usage(message))
+                if message.get("stopReason") in {"error", "aborted"}:
+                    raise CliError("Pi 任务失败，请检查登录和模型连接")
             if kind == "agent_end" and instructions:
                 instructions.close()
             if kind == "agent_settled":
@@ -177,11 +240,41 @@ async def pi(protocol, prompt, emit, instructions=None):
             instructions.close()
 
 
+def pi_model_id(provider, model):
+    prefix = f"{provider}/"
+    return model if model.startswith(prefix) else f"{prefix}{model}"
+
+
+async def verify_pi_thinking(protocol, model, effort):
+    # Pi reports the effective model and level, which can differ from its startup flags.
+    identity = "fpl-thinking-check"
+    await protocol.send({"id": identity, "type": "get_state"})
+    async with asyncio.timeout(10):
+        while value := await protocol.read():
+            if value.get("id") != identity:
+                continue
+            state = value.get("data")
+            if value.get("success") is True and isinstance(state, dict):
+                selected = state.get("model")
+                if isinstance(selected, dict):
+                    provider, model_id = selected.get("provider"), selected.get("id")
+                    if (
+                        isinstance(provider, str)
+                        and isinstance(model_id, str)
+                        and pi_model_id(provider, model_id) == model
+                        and state.get("thinkingLevel") == effort
+                    ):
+                        return
+            break
+    raise CliError("Pi 未应用所选模型与推理强度，请重新选择")
+
+
 async def opencode(protocol, prompt, emit):
     protocol.process.stdin.write(prompt.encode())
     await protocol.process.stdin.drain()
     protocol.process.stdin.close()
     parts, completed = [], False
+    usage = UsageAccumulator(emit)
     while value := await protocol.read():
         kind = value.get("type")
         if kind == "error":
@@ -192,7 +285,9 @@ async def opencode(protocol, prompt, emit):
                 parts.append(text)
                 await emit("assistant_delta", {"text": text})
         if kind == "step_finish":
-            completed = value.get("part", {}).get("reason") in {"stop", "end_turn"}
+            part = value.get("part", {})
+            await usage.add(part.get("id"), opencode_usage(part))
+            completed = part.get("reason") in {"stop", "end_turn"}
     await protocol.process.wait()
     if protocol.process.returncode or not completed:
         raise CliError("OpenCode 未返回完整的完成事件")
@@ -200,11 +295,42 @@ async def opencode(protocol, prompt, emit):
 
 
 async def converse(
-    kind, executable, root, model, prompt, tool_config, emit, *, watchdog=(), instructions=None
+    kind,
+    executable,
+    root,
+    model,
+    prompt,
+    tool_config,
+    emit,
+    *,
+    watchdog=(),
+    instructions=None,
+    reasoning_effort=None,
+    model_variant=None,
+    harness_effort=None,
 ):
+    if model_variant:
+        provider, _, model_name = model.partition("/")
+        if kind != "opencode" or not model_name or not MODEL_ID.fullmatch(model):
+            raise CliError("OpenCode 模型变体需要明确的模型")
+        with TemporaryDirectory(prefix="fpl-opencode-variants-") as directory:
+            catalog_root = Path(directory)
+            async with launch(kind, executable, catalog_root, {}) as (_, catalog_env):
+                models = await read_opencode_models(
+                    executable, catalog_env, catalog_root, require_metadata=True, provider=provider
+                )
+        selected = next((entry for entry in models if entry["id"] == model), None)
+        if not selected or model_variant not in {item["id"] for item in selected["variants"]}:
+            raise CliError("OpenCode 模型已不提供所选变体，请重新选择")
     async with launch(kind, executable, root, tool_config) as (args, env):
+        if model_variant:
+            args += ["--variant", model_variant]
         if model and kind != "dsh":
             args += ["--model", model]
+        if reasoning_effort:
+            if kind != "pi" or not model or reasoning_effort not in PI_REASONING_EFFORTS:
+                raise CliError("此 Agent 不支持所选推理强度")
+            args += ["--thinking", reasoning_effort]
         process = await spawn_transport(
             *watchdog,
             *args,
@@ -227,8 +353,11 @@ async def converse(
                     tool_config,
                     emit,
                     set(json.loads(env["FPL_CLI_ALLOWED_TOOLS"])),
+                    harness_effort=harness_effort,
                 )
             if kind == "pi":
+                if reasoning_effort:
+                    await verify_pi_thinking(protocol, model, reasoning_effort)
                 return await pi(protocol, prompt, emit, instructions)
             return await opencode(protocol, prompt, emit)
         finally:

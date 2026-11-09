@@ -11,9 +11,9 @@ class CodeAgents:
     def __init__(self, client):
         self._client = client
 
-    def list_code_agents(self) -> models.CatalogOut:
+    def list_code_agents(self, *, harness_model: str | None | Unset = UNSET) -> models.CatalogOut:
         'List Code Agents. GET /v1/code-agents'
-        return self._client._call('GET', '/v1/code-agents', parameters=[], response_type=models.CatalogOut)
+        return self._client._call('GET', '/v1/code-agents', parameters=[('harness_model', 'query', harness_model)], response_type=models.CatalogOut)
 
     def detect_code_agents(self) -> models.CatalogOut:
         'Detect Code Agents. POST /v1/code-agents/detect'
@@ -27,9 +27,9 @@ class AsyncCodeAgents:
     def __init__(self, client):
         self._client = client
 
-    async def list_code_agents(self) -> models.CatalogOut:
+    async def list_code_agents(self, *, harness_model: str | None | Unset = UNSET) -> models.CatalogOut:
         'List Code Agents. GET /v1/code-agents'
-        return await self._client._call('GET', '/v1/code-agents', parameters=[], response_type=models.CatalogOut)
+        return await self._client._call('GET', '/v1/code-agents', parameters=[('harness_model', 'query', harness_model)], response_type=models.CatalogOut)
 
     async def detect_code_agents(self) -> models.CatalogOut:
         'Detect Code Agents. POST /v1/code-agents/detect'

@@ -39,6 +39,7 @@ const codex: Agent = {
   status: "ready",
   message: "已连接",
   models: [],
+  model_catalog: "not_checked",
 };
 const claude: Agent = {
   ...codex,

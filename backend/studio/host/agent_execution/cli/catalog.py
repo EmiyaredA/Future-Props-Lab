@@ -14,6 +14,7 @@ from studio.contracts.agent_runtime.definitions import AgentId as AgentId
 
 from .codex_profile import AUTH_ARGS, CodexLoginRequired, profile_environment, profile_path
 from .conversation import codex_models, probe_codex
+from .model_catalog import discover_models as read_model_catalog
 from .transport import CliError, _stop, environment, read_control_output
 
 logger = logging.getLogger(__name__)
@@ -151,7 +152,13 @@ async def inspect_executable(agent_id, path, *, codex_profile=None):
 
 
 async def inspect_connection(
-    settings, agent_id, *, discover_models=True, app_server=True, probe_disabled=False
+    settings,
+    agent_id,
+    *,
+    discover_models=True,
+    app_server=True,
+    probe_disabled=False,
+    harness_model=None,
 ):
     definition = DEFINITIONS[agent_id]
     result = dict(
@@ -189,13 +196,30 @@ async def inspect_connection(
             if result["available"]:
                 result.update(status="ready_to_enable", message="安装和登录已验证，等待启用连接")
             return {**result, "enabled": False, "available": False}
-        if profile is not None and result["available"]:
+
+        async def populate_models(read):
+            try:
+                async with asyncio.timeout(10):
+                    options = await read()
+                if harness_model:
+                    result.update(harness_options_model=harness_model, harness_efforts=options)
+                else:
+                    result["models"] = options
+                result["model_catalog"] = "preset" if agent_id == "claude-code" else "discovered"
+            except (OSError, ValueError, TimeoutError) as exc:
+                result["model_catalog"] = "unavailable"
+                logger.warning("%s model discovery failed (%s)", agent_id, type(exc).__name__)
+
+        if result["available"] and profile is not None:
             async with probe_codex(path, profile) as request:
                 if discover_models:
-                    try:
-                        result["models"] = await asyncio.wait_for(codex_models(request), 10)
-                    except (CliError, OSError, ValueError, TimeoutError) as exc:
-                        logger.warning("Codex model discovery failed (%s)", type(exc).__name__)
+                    await populate_models(lambda: codex_models(request))
+        elif result["available"] and discover_models and agent_id != "codex":
+            await populate_models(
+                lambda: read_model_catalog(
+                    agent_id, path, **({"harness_model": harness_model} if harness_model else {})
+                )
+            )
         return result
     except Exception as exc:
         logger.warning("CLI detection failed for %s (%s)", agent_id, type(exc).__name__)

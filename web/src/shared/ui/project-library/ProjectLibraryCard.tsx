@@ -25,7 +25,7 @@ export function ProjectLibraryCard({
   project: ProjectLibraryItem;
   cover: "canvas" | "galgame" | "video" | "audio" | "director" | "knowledge";
   coverTitle: string;
-  coverDescription: string;
+  coverDescription?: string;
   onOpen: () => void;
   children: ReactNode;
 }) {
@@ -40,7 +40,7 @@ export function ProjectLibraryCard({
         <span className="workshop-project-cover-content">
           <span className="workshop-project-cover-label">
             <strong>{coverTitle}</strong>
-            <small>{coverDescription}</small>
+            {coverDescription && <small>{coverDescription}</small>}
           </span>
         </span>
       </button>

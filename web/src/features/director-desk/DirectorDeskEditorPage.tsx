@@ -1,3 +1,6 @@
+import { useAssistantElementRegistration } from "@platform/assistantElements";
+import { useAssistantSplitMinimum } from "@platform/assistantLayout";
+import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { openAmadeus } from "@platform/assistant";
 import { useEffect, useRef, useState } from "react";
@@ -20,6 +23,9 @@ export function DirectorDeskEditorPage({
   projectId: string;
   onBack: () => void;
 }) {
+  useAssistantSplitMinimum(880);
+  const registerElements = useAssistantElementRegistration();
+  const canRead = useAccountPermission("content.read");
   const onBackRef = useRef(onBack);
   onBackRef.current = onBack;
   const revision = useRef(0);
@@ -54,6 +60,7 @@ export function DirectorDeskEditorPage({
         dispose = mountDirectorEditor({
           name: data.title,
           projectId,
+          registerElements,
           document: scene as SceneDocument,
           onSave: async (document) => {
             try {
@@ -71,7 +78,7 @@ export function DirectorDeskEditorPage({
             }
           },
         });
-        {
+        if (canRead) {
           const actions = document.querySelector<HTMLElement>(
             ".director-desk-root .header-actions",
           );
@@ -81,7 +88,15 @@ export function DirectorDeskEditorPage({
             trigger.className = "subtle";
             trigger.setAttribute("aria-label", "打开 Amadeus");
             trigger.textContent = "✦ Amadeus";
-            trigger.addEventListener("click", () => void openAmadeus());
+            trigger.addEventListener(
+              "click",
+              () =>
+                void openAmadeus({
+                  application: "导演台",
+                  projectId,
+                  title: data.title,
+                }),
+            );
             actions.prepend(trigger);
           }
         }
@@ -99,7 +114,7 @@ export function DirectorDeskEditorPage({
       cancelled = true;
       dispose();
     };
-  }, [project.data, projectId]);
+  }, [project.data, projectId, canRead, registerElements]);
 
   if (project.isError || openError) {
     const text =

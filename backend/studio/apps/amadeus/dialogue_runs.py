@@ -113,6 +113,7 @@ class DialogueRuns:
                 run_id=UUID(run.id),
                 agent=run.agent_id,
                 model=run.agent_model,
+                **run.cli_options(),
                 signature=run.execution_config["agent_connection_signature"],
             )
             outcome = await self.host.dialogue(principal.user_id, scope, assertion, path, turn)

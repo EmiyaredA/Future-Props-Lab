@@ -36,6 +36,10 @@ async def run_dialogue(
     root=None,
     tool_timeout=120,
     instructions=None,
+    reasoning_effort=None,
+    model_variant=None,
+    harness_effort=None,
+    service_tier=None,
 ):
     supervisor = watchdog()
     if agent == "codex":
@@ -49,6 +53,8 @@ async def run_dialogue(
             emit,
             watchdog=supervisor,
             instructions=instructions,
+            reasoning_effort=reasoning_effort,
+            service_tier=service_tier,
         )
     with ExitStack() as cleanup:
         if root is None:
@@ -58,7 +64,14 @@ async def run_dialogue(
             config = await relay.start()
             if agent == "claude-code":
                 return await claude(
-                    executable, root, model, prompt, config, emit, watchdog=supervisor
+                    executable,
+                    root,
+                    model,
+                    prompt,
+                    config,
+                    emit,
+                    watchdog=supervisor,
+                    reasoning_effort=reasoning_effort,
                 )
             return await converse(
                 agent,
@@ -70,6 +83,9 @@ async def run_dialogue(
                 emit,
                 watchdog=supervisor,
                 instructions=instructions,
+                reasoning_effort=reasoning_effort,
+                model_variant=model_variant,
+                harness_effort=harness_effort,
             )
         finally:
             await relay.close()

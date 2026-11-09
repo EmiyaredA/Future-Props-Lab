@@ -1,5 +1,10 @@
+import {
+  assistantElementSource,
+  useAssistantElements,
+} from "@platform/assistantElements";
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { subscribeAmadeusMutation, openAmadeus } from "@platform/assistant";
+import { subscribeAmadeusMutation } from "@platform/assistant";
 import { VideoEditorProjectTitle } from "./VideoEditorProjectTitle";
 import { VideoEditorClipMergeDialog } from "./VideoEditorClipMergeDialog";
 import { VideoEditorGapPanel } from "./VideoEditorGapPanel";
@@ -109,10 +114,39 @@ export function VideoEditorPage({
     zoom: editorZoom,
     setZoom: editorSetZoom,
     saving: editorSaving,
-    setNotice: editorSetNotice,
     selectedClipIds: editorSelectedClipIds,
   } = editor;
   const { data: timelineData, refetch: timelineRefetch } = editor.timeline;
+  const referenceClips =
+    timelineData?.document.tracks?.flatMap((track) => track.clips ?? []) ?? [];
+  useAssistantElements(
+    timelineData && editor.project.data
+      ? assistantElementSource(
+          {
+            resource: "video",
+            projectId,
+            application: "视频剪辑工坊",
+            unsaved: editorSaving,
+            locate: ({ element_id }) => {
+              const clip = referenceClips.find(
+                (item) => item.id === element_id,
+              );
+              if (!clip) return false;
+              selectClip(clip.id);
+              setMobilePanel("timeline");
+              return true;
+            },
+          },
+          referenceClips.map((clip) => ({
+            id: clip.id,
+            kind: "clip",
+            name: clip.name,
+            value: `${clip.kind} · ${(clip.durationUs / 1_000_000).toFixed(2)} 秒`,
+          })),
+          editorSelectedClipIds,
+        )
+      : undefined,
+  );
   const contentDurationSeconds = Math.max(1, editor.durationUs / 1_000_000);
   const zoomMin = timelineZoomMinimum(
     contentViewportWidthPx,
@@ -159,20 +193,12 @@ export function VideoEditorPage({
   }, [projectId, timelineData, editorSelectedClipIds, editorSaving]);
   useEffect(
     () =>
-      subscribeAmadeusMutation((value) => {
-        const changed = value as { application?: string; projectId?: string };
-        if (
-          changed.application !== "video-editor" ||
-          changed.projectId !== projectId
-        )
-          return;
-        if (editorSaving) {
-          editorSetNotice("Amadeus 已修改时间线；请先处理当前保存，再刷新项目");
-          return;
-        }
-        void timelineRefetch();
+      subscribeAmadeusMutation({ resource: "video", projectId }, async () => {
+        if (editorSaving) return "dirty";
+        await timelineRefetch({ throwOnError: true });
+        return "updated";
       }),
-    [projectId, editorSaving, timelineRefetch, editorSetNotice],
+    [projectId, editorSaving, timelineRefetch],
   );
   const audioSeamQuery = useQuery({
     queryKey: videoEditorQueryKeys.audioSeam(
@@ -501,11 +527,7 @@ export function VideoEditorPage({
             />
           </div>
           <div className="ve-top-actions">
-            {
-              <button type="button" onClick={() => void openAmadeus()}>
-                ✦ Amadeus
-              </button>
-            }
+            <AmadeusButton />
             <VideoEditorFitActions
               tracks={tracks}
               saving={editor.saving}

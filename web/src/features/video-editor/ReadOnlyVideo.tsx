@@ -1,6 +1,11 @@
+import type { ReactNode } from "react";
 import { ReadOnlyAssetList } from "@shared/ui/ReadOnlyAssetList";
 import { useQuery } from "@tanstack/react-query";
-import { ReadOnlyCollection, ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
+import {
+  ReadOnlyCollection,
+  ReadOnlyPage,
+  ReadOnlyWorkshopLibrary,
+} from "@shared/ui/ReadOnlyPage";
 import { listVideoEditorProjects } from "./api";
 import { videoEditorQueryKeys } from "./queryKeys";
 import { useVideoEditor } from "./useVideoEditor";
@@ -8,10 +13,14 @@ import { VideoEditorPreview } from "./VideoEditorPreview";
 import "./video-editor.css";
 import "./video-editor-workspace.css";
 export function ReadOnlyVideo({
+  utilities,
+  libraryActions,
   projectId,
   onOpen,
   onBack,
 }: {
+  utilities?: ReactNode;
+  libraryActions?: ReactNode;
   projectId?: string;
   onOpen: (id: string) => void;
   onBack: () => void;
@@ -22,7 +31,26 @@ export function ReadOnlyVideo({
     enabled: !projectId,
   });
   if (projectId)
-    return <ReadOnlyTimeline projectId={projectId} onBack={onBack} />;
+    return (
+      <ReadOnlyTimeline
+        projectId={projectId}
+        onBack={onBack}
+        utilities={utilities}
+      />
+    );
+  if (!projectId && utilities) {
+    return (
+      <ReadOnlyWorkshopLibrary
+        title="我的视频剪辑工程"
+        utilities={utilities}
+        actions={libraryActions}
+        error={projects.error}
+        loading={projects.isPending}
+        items={projects.data?.items ?? []}
+        onOpen={onOpen}
+      />
+    );
+  }
   return (
     <ReadOnlyPage
       title="视频剪辑"
@@ -34,15 +62,18 @@ export function ReadOnlyVideo({
   );
 }
 function ReadOnlyTimeline({
+  utilities,
   projectId,
   onBack,
 }: {
+  utilities?: ReactNode;
   projectId: string;
   onBack: () => void;
 }) {
   const editor = useVideoEditor(projectId);
   return (
     <ReadOnlyPage
+      utilities={utilities}
       title={editor.project.data?.title || "视频剪辑"}
       onBack={onBack}
       loading={editor.timeline.isPending}

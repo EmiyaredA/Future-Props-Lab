@@ -1,3 +1,8 @@
+import {
+  assistantElementSource,
+  useAssistantElements,
+} from "@platform/assistantElements";
+import { WorkshopSearch } from "@shared/ui/WorkshopAppChrome";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { LoadingState } from "@shared/ui/LoadingState";
@@ -10,12 +15,13 @@ import {
   useState,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Search } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { useAccountId } from "@platform/auth/AccountAccess";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { KnowledgeSidebar } from "./KnowledgeSidebar";
+import type { ReactNode } from "react";
 import { PublicationDialog } from "./community/PublicationDialog";
 import { KnowledgeSections, type KnowledgeSection } from "./KnowledgeSections";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
@@ -82,6 +88,7 @@ export function ThoughtWorkshopPage({
   onBack,
   registerNavigationGuard,
   onNavigateSection,
+  utilityBar,
 }: {
   page: string;
   projectId?: string;
@@ -91,6 +98,7 @@ export function ThoughtWorkshopPage({
   registerNavigationGuard: NavigationGuard;
   onOpenOfficial: (libraryId: string) => void;
   onNavigateSection?: (section: KnowledgeSection) => void;
+  utilityBar?: ReactNode;
 }) {
   const { run: runTransfer, progress: activeTransferProgress } =
     useTransferProgress();
@@ -225,6 +233,41 @@ export function ThoughtWorkshopPage({
       setDrawer(false);
       onNavigate(projectId, id === project?.home_note_id ? undefined : id);
     });
+  const notes = directory.data?.documents ?? [];
+  useAssistantElements(
+    projectId && directory.data
+      ? assistantElementSource(
+          {
+            resource: "thought",
+            projectId,
+            application: "思绪工坊",
+            locate: ({ element_id }) => {
+              if (!notes.some((item) => item.id === element_id)) return false;
+              if (!browsing && currentId === element_id) return true;
+              if (noteChrome && noteChrome.state !== "saved") return "failed";
+              open(element_id);
+              return true;
+            },
+          },
+          notes.map((item) => ({
+            id: item.id,
+            kind: "note",
+            name: item.title,
+            value: "知识库文档",
+            unsaved:
+              item.id === currentId &&
+              !!noteChrome &&
+              noteChrome.state !== "saved",
+          })),
+          !browsing &&
+            note.data &&
+            !note.data.deleted_at &&
+            note.data.knowledge_base_id === projectId
+            ? [note.data.id]
+            : [],
+        )
+      : undefined,
+  );
   const save = (saved: Note) => {
     void client.invalidateQueries({ queryKey: thoughtKeys.referenceLists() });
     client.setQueryData(thoughtKeys.note(saved.id), saved);
@@ -360,6 +403,7 @@ export function ThoughtWorkshopPage({
       new CustomEvent("future-props:amadeus-context", {
         detail: {
           application: "思绪工坊",
+          path: location.pathname,
           projectId,
           title: project?.title || "思绪工坊",
           selection: currentId
@@ -388,6 +432,7 @@ export function ThoughtWorkshopPage({
         />
       )}
       <KnowledgeSidebar
+        showThemeToggle={!utilityBar}
         sidebarRef={focus}
         drawer={drawer}
         close={() => setDrawer(false)}
@@ -487,6 +532,7 @@ export function ThoughtWorkshopPage({
           />
         )}
         <KnowledgeTopbar
+          showAssistant={!utilityBar}
           onExternalSync={
             canSync && noteMode && note.data?.kind === "note"
               ? () => {
@@ -511,12 +557,16 @@ export function ThoughtWorkshopPage({
                 : "我的知识库"
               : undefined
           }
-          libraryDescription={
-            !projectId && page !== "thought-workshop-legacy"
-              ? trash
-                ? "恢复或彻底清理已删除的知识库。"
-                : "为想法建立一个空间，让知识有序生长。"
-              : undefined
+          utilityBar={utilityBar}
+          librarySearch={
+            !projectId && page !== "thought-workshop-legacy" ? (
+              <WorkshopSearch
+                label="搜索知识库"
+                placeholder="搜索知识库…"
+                value={query}
+                onChange={setQuery}
+              />
+            ) : undefined
           }
           currentLabel={note.data?.title || (noteId ? "文档" : "首页")}
           currentId={currentId}
@@ -573,19 +623,6 @@ export function ThoughtWorkshopPage({
         )}
         {!projectId && page !== "thought-workshop-legacy" ? (
           <section className="knowledge-library">
-            <div className="knowledge-library-heading">
-              <label className="knowledge-search">
-                <Search size={17} />
-                <input
-                  aria-label="搜索知识库"
-                  placeholder="搜索知识库…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </label>
-            </div>
-
-            <h2>{trash ? "已删除的知识库" : "我的知识库"}</h2>
             <div
               className={trash ? "knowledge-cards" : "knowledge-library-grid"}
             >
@@ -596,10 +633,9 @@ export function ThoughtWorkshopPage({
                     project={p}
                     cover="canvas"
                     coverTitle={p.title}
-                    coverDescription=""
                     coverContent={<KnowledgeCover assetId={p.cover_asset_id} />}
                     metadata={<span>{p.document_count} 篇文档</span>}
-                    description={p.description || "一个属于你的知识空间"}
+                    description={p.description}
                     onOpen={() => {}}
                   >
                     <button

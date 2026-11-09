@@ -150,6 +150,7 @@ export function MotionTimeline({
                 <div className="mc-timeline-label">
                   <button
                     className="mc-layer-name"
+                    data-amadeus-id={layer.id}
                     onClick={() => onSelect(layer.id)}
                   >
                     {layer.kind === "text"
@@ -188,6 +189,7 @@ export function MotionTimeline({
                 >
                   <div
                     className={`mc-layer-bar mc-bar-${layer.kind}`}
+                    data-amadeus-id={layer.id}
                     style={{
                       left: layer.startFrame * pxPerFrame,
                       width: (layer.endFrame - layer.startFrame) * pxPerFrame,

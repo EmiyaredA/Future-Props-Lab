@@ -63,7 +63,7 @@ async function expectAlignedCards(page: Page, columns: number, trash = false) {
           top: bounds.top,
           height: bounds.height,
           cover: measure(".workshop-project-cover"),
-          description: measure("p"),
+          description: card.querySelector("p") ? measure("p") : null,
           actions: measure(".workshop-project-actions"),
         };
       }),
@@ -73,16 +73,25 @@ async function expectAlignedCards(page: Page, columns: number, trash = false) {
     columns,
   );
   for (const card of cards) {
-    expect(Math.abs(card.height - cards[0].height)).toBeLessThan(1);
+    const rowStart = cards.find((item) => Math.abs(item.top - card.top) < 1)!;
+    expect(Math.abs(card.height - rowStart.height)).toBeLessThan(1);
     if (trash)
       expect(
         Math.abs(card.cover.width / card.cover.height - 16 / 9),
       ).toBeLessThan(0.01);
-    for (const part of ["cover", "description", "actions"] as const) {
-      expect(Math.abs(card[part].top - cards[0][part].top)).toBeLessThan(1);
-      expect(Math.abs(card[part].height - cards[0][part].height)).toBeLessThan(
+    for (const part of ["cover", "actions"] as const) {
+      expect(Math.abs(card[part].top - rowStart[part].top)).toBeLessThan(1);
+      expect(Math.abs(card[part].height - rowStart[part].height)).toBeLessThan(
         1,
       );
+    }
+    if (card.description && rowStart.description) {
+      expect(
+        Math.abs(card.description.top - rowStart.description.top),
+      ).toBeLessThan(1);
+      expect(
+        Math.abs(card.description.height - rowStart.description.height),
+      ).toBeLessThan(1);
     }
   }
   expect(
@@ -115,9 +124,7 @@ test("knowledge library shows five compact cards on wide screens and wraps on na
     has: page.getByRole("heading", { name: libraries[3].title, exact: true }),
   });
   await expect(longCard.locator("p")).toHaveText(examples[3].description);
-  await expect(cards.filter({ hasText: "空简介" }).locator("p")).toHaveText(
-    "一个属于你的知识空间",
-  );
+  await expect(cards.filter({ hasText: "空简介" }).locator("p")).toHaveCount(0);
 
   for (const { width, columns } of [
     { width: 1470, columns: 5 },

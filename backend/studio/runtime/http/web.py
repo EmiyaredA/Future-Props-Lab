@@ -6,13 +6,18 @@ import mimetypes
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from threading import Lock
 from urllib.parse import quote
 
+from starlette.concurrency import run_in_threadpool
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from starlette.routing import Route
 
 from studio.contracts.gateway.catalog import service_by_id
+
+RELEASE_MOUNT = Path("/run/fpl/web-releases")
+BUILD_ID = re.compile(r"[a-f0-9]{20}")
 
 
 @dataclass(frozen=True)
@@ -31,7 +36,7 @@ class WebRelease:
 
 def load_release(root, service):
     root = Path(root)
-    if root.is_symlink():
+    if root.is_symlink() or (root / "build.json").is_symlink():
         raise ValueError("应用程序目录不能是符号链接")
     service_by_id(service)
     try:
@@ -113,32 +118,78 @@ def load_release(root, service):
     )
 
 
+class WebReleaseStore:
+    """Select from immutable, verified builds without restarting the service."""
+
+    def __init__(self, baked, root):
+        self.baked, self.root = baked, Path(root)
+        self._verified = {baked.build_id: baked}
+        self._lock = Lock()
+
+    def get(self, build_id):
+        if not BUILD_ID.fullmatch(build_id or ""):
+            return None
+        with self._lock:
+            cached = self._verified.get(build_id)
+            if cached is not None and cached.root.is_dir():
+                return cached
+            if self.root.is_symlink():
+                return None
+            try:
+                release = load_release(self.root / build_id, self.baked.service)
+            except ValueError:
+                return None
+            if release.build_id != build_id:
+                return None
+            self._verified[build_id] = release
+            return release
+
+    def current(self):
+        try:
+            pointer = self.root / "current"
+            if self.root.is_symlink() or pointer.is_symlink():
+                return self.baked
+            with pointer.open() as file:
+                release = self.get(file.read(32).strip())
+            if release and release.api_sha256 == self.baked.api_sha256:
+                return release
+        except (OSError, UnicodeError):
+            pass
+        return self.baked
+
+    def compatible(self, build_id):
+        release = self.get(build_id)
+        return bool(release and release.api_sha256 == self.baked.api_sha256)
+
+
 class ProgramCompatibility:
-    def __init__(self, app, *, release):
-        self.app, self.release = app, release
+    def __init__(self, app, *, store):
+        self.app, self.store = app, store
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http" or not scope["path"].startswith("/v1/"):
             await self.app(scope, receive, send)
             return
+        release = await run_in_threadpool(self.store.current)
         headers = Headers(scope=scope)
         if (
             scope["method"] in {"POST", "PUT", "PATCH", "DELETE"}
-            and headers.get("x-application-id") == self.release.service
+            and headers.get("x-application-id") == release.service
             and headers.get("x-application-build")
-            and headers.get("x-application-build") != self.release.build_id
+            and not await run_in_threadpool(self.store.compatible, headers["x-application-build"])
         ):
             await JSONResponse(
                 {
                     "code": "application_update_required",
-                    "service": self.release.service,
-                    "build_id": self.release.build_id,
+                    "service": release.service,
+                    "build_id": release.build_id,
                 },
                 409,
                 headers={
                     "Cache-Control": "no-store",
-                    "X-Application-Id": self.release.service,
-                    "X-Application-Build": self.release.build_id,
+                    "X-Application-Id": release.service,
+                    "X-Application-Build": release.build_id,
+                    "X-Application-Update": "required",
                 },
             )(scope, receive, send)
             return
@@ -146,15 +197,26 @@ class ProgramCompatibility:
         async def versioned(message):
             if message["type"] == "http.response.start":
                 outgoing = MutableHeaders(scope=message)
-                outgoing["X-Application-Id"] = self.release.service
-                outgoing["X-Application-Build"] = self.release.build_id
+                outgoing["X-Application-Id"] = release.service
+                outgoing["X-Application-Build"] = release.build_id
             await send(message)
 
         await self.app(scope, receive, versioned)
 
 
-def attach_web(app, release, *, pages, resource_aliases=None):
+def attach_web(app, release, *, pages, resource_aliases=None, release_root=RELEASE_MOUNT):
+    store = WebReleaseStore(release, release_root)
+    service = release.service
+
+    async def current_build(_request):
+        active = await run_in_threadpool(store.current)
+        return JSONResponse(
+            {"service": service, "build_id": active.build_id, "api_sha256": active.api_sha256},
+            headers={"Cache-Control": "no-store"},
+        )
+
     async def entry(_request):
+        release = await run_in_threadpool(store.current)
         return FileResponse(
             release.root / release.entry,
             media_type="text/html",
@@ -162,7 +224,10 @@ def attach_web(app, release, *, pages, resource_aliases=None):
         )
 
     async def resource(request):
-        name = request.path_params["path"]
+        build_id, _, name = request.path_params["resource"].partition("/")
+        release = await run_in_threadpool(store.get, build_id)
+        if release is None:
+            return JSONResponse({"code": "not_found"}, 404)
         if name == "build.json":
             return FileResponse(release.root / name, headers={"Cache-Control": "no-cache"})
         if name not in release.files or name.endswith((".gz", ".br")):
@@ -206,13 +271,17 @@ def attach_web(app, release, *, pages, resource_aliases=None):
         return response
 
     app.router.routes.append(
-        Route(release.prefix + "/{path:path}", resource, methods=["GET", "HEAD"])
+        Route(f"/_apps/{service}/current/build.json", current_build, methods=["GET", "HEAD"])
+    )
+    app.router.routes.append(
+        Route(f"/_apps/{service}/{{resource:path}}", resource, methods=["GET", "HEAD"])
     )
     for page in pages:
         app.router.routes.append(Route(page, entry, methods=["GET", "HEAD"]))
 
     def alias(prefix):
         async def redirect(request):
+            release = await run_in_threadpool(store.current)
             name = prefix + request.path_params["path"]
             if name not in release.files or name.endswith((".gz", ".br")):
                 return JSONResponse({"code": "not_found"}, 404)
@@ -227,4 +296,4 @@ def attach_web(app, release, *, pages, resource_aliases=None):
     for path, prefix in (resource_aliases or {}).items():
         app.router.routes.append(Route(path, alias(prefix), methods=["GET", "HEAD"]))
     app.state.web_build = release.build_id
-    app.add_middleware(ProgramCompatibility, release=release)
+    app.add_middleware(ProgramCompatibility, store=store)

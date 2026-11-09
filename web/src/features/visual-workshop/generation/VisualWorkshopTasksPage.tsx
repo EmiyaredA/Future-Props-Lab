@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ImagePreview } from "@shared/ui/ImagePreview";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
@@ -81,9 +82,11 @@ function TaskPreview({ task }: { task: GenerationTask }) {
 }
 
 export function VisualWorkshopTasksPage({
+  utilities,
   onOpenProject,
   onOpenAssets,
 }: {
+  utilities?: ReactNode;
   onOpenProject: (projectId: string) => void;
   onOpenAssets: (projectId: string) => void;
 }) {
@@ -140,6 +143,7 @@ export function VisualWorkshopTasksPage({
   return (
     <section className="workshop-page generation-tasks-page">
       <WorkshopAppChrome
+        utilities={utilities}
         eyebrow="GENERATION QUEUE"
         title="生成任务"
         description="跟踪图片和视频生成进度，完成的结果会自动保存到对应项目素材库。"

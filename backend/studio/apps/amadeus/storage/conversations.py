@@ -4,13 +4,16 @@ import asyncio
 import hashlib
 import json
 import shutil
+from datetime import timedelta
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, select, tuple_, update
+from sqlalchemy.exc import IntegrityError
 
 from studio.apps.amadeus.storage.files import work_root
 from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
+    AmadeusForkReceipt,
     AmadeusMessage,
     AmadeusQuestion,
     AmadeusRun,
@@ -20,12 +23,15 @@ from studio.contracts.amadeus.conversations import (
     ActionIn,
     ActionOut,
     ConversationDetailOut,
+    ConversationListItemOut,
     ConversationOut,
+    ConversationProjectSummary,
     MessageIn,
     MessageOut,
     QuestionOut,
 )
 from studio.runtime.database.operation_receipts import OperationError
+from studio.runtime.ids import new_id
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 
@@ -40,6 +46,27 @@ def _conversation(row: AmadeusConversation) -> ConversationOut:
     return ConversationOut.model_validate(row, from_attributes=True)
 
 
+def _project_summaries(contexts: list[dict] | None) -> list[ConversationProjectSummary]:
+    projects = {}
+    for context in contexts or []:
+        resource = context.get("projectResource")
+        project_id = context.get("projectId")
+        if (
+            not isinstance(resource, str)
+            or not resource
+            or not isinstance(project_id, str)
+            or not project_id
+        ):
+            continue
+        title = context.get("title")
+        projects[(resource, project_id)] = ConversationProjectSummary(
+            resource=resource,
+            id=project_id,
+            title=title.strip() if isinstance(title, str) and title.strip() else project_id,
+        )
+    return list(projects.values())
+
+
 def _message(row: AmadeusMessage) -> MessageOut:
     return MessageOut(
         id=row.id,
@@ -48,6 +75,7 @@ def _message(row: AmadeusMessage) -> MessageOut:
         references=row.references_json,
         run_id=row.run_id,
         status=row.status,
+        pinned=row.pinned,
         created_at=row.created_at,
     )
 
@@ -69,18 +97,36 @@ class Conversations:
             raise OperationError("对话不存在", "not_found", 404)
         return row
 
-    async def list(self) -> list[ConversationOut]:
-        rows = (
-            await self.session.scalars(
-                select(AmadeusConversation)
-                .where(
-                    AmadeusConversation.owner_user_id == self.principal.owner_user_id,
-                    AmadeusConversation.user_id == self.principal.user_id,
-                )
-                .order_by(AmadeusConversation.updated_at.desc())
+    async def list(self) -> list[ConversationListItemOut]:
+        latest_run_id = (
+            select(AmadeusRun.id)
+            .where(
+                AmadeusRun.conversation_id == AmadeusConversation.id,
+                AmadeusRun.owner_user_id == AmadeusConversation.owner_user_id,
+                AmadeusRun.user_id == AmadeusConversation.user_id,
             )
-        ).all()
-        return [_conversation(row) for row in rows]
+            .order_by(AmadeusRun.created_at.desc(), AmadeusRun.id.desc())
+            .limit(1)
+            .correlate(AmadeusConversation)
+            .scalar_subquery()
+        )
+        rows = await self.session.execute(
+            select(AmadeusConversation, AmadeusRun.context_json, AmadeusRun.status)
+            .outerjoin(AmadeusRun, AmadeusRun.id == latest_run_id)
+            .where(
+                AmadeusConversation.owner_user_id == self.principal.owner_user_id,
+                AmadeusConversation.user_id == self.principal.user_id,
+            )
+            .order_by(AmadeusConversation.updated_at.desc(), AmadeusConversation.id)
+        )
+        return [
+            ConversationListItemOut(
+                **_conversation(row).model_dump(),
+                projects=_project_summaries(contexts),
+                latest_run_status=status,
+            )
+            for row, contexts, status in rows
+        ]
 
     async def create(self) -> ConversationOut:
         row = AmadeusConversation(
@@ -92,16 +138,148 @@ class Conversations:
         await self.session.commit()
         return _conversation(row)
 
+    def _messages(self, conversation_id):
+        return select(AmadeusMessage).where(
+            AmadeusMessage.conversation_id == conversation_id,
+            AmadeusMessage.owner_user_id == self.principal.owner_user_id,
+        )
+
+    async def _message_anchor(self, conversation_id, message_id):
+        message = await self.session.scalar(
+            self._messages(conversation_id).where(AmadeusMessage.id == message_id)
+        )
+        if message is None or message.role not in {"user", "assistant"}:
+            raise OperationError("找不到可操作的已保存消息", "not_found", 404)
+        return message
+
+    async def pin_message(self, conversation_id, message_id, pinned):
+        source = await self._get(conversation_id)
+        if source.executor_kind == "legacy-pi":
+            raise OperationError("旧内核对话只读", "legacy_readonly", 409)
+        message = await self._message_anchor(conversation_id, message_id)
+        result = _message(message).model_copy(update={"pinned": pinned})
+        changed = await self.session.execute(
+            update(AmadeusMessage)
+            .where(
+                AmadeusMessage.id == message_id,
+                AmadeusMessage.conversation_id == conversation_id,
+                AmadeusMessage.owner_user_id == self.principal.owner_user_id,
+            )
+            .values(pinned=pinned)
+        )
+        if changed.rowcount != 1:
+            raise OperationError("找不到可操作的已保存消息", "not_found", 404)
+        await self.session.commit()
+        return result
+
+    async def _fork_replay(self, receipt, message_id):
+        if receipt.message_id != message_id:
+            raise OperationError("请求 ID 已用于其他消息", "idempotency_conflict", 409)
+        return _conversation(await self._get(receipt.branch_id))
+
+    async def fork_message(self, conversation_id, message_id, request_id, can_read_project):
+        source = _conversation(await self._get(conversation_id))
+        key = (conversation_id, str(request_id))
+        receipt = await self.session.get(AmadeusForkReceipt, key)
+        if receipt is not None:
+            return await self._fork_replay(receipt, message_id)
+        anchor = await self._message_anchor(conversation_id, message_id)
+        rows = await self.session.scalars(
+            self._messages(conversation_id)
+            .where(
+                AmadeusMessage.role.in_(("user", "assistant")),
+                tuple_(AmadeusMessage.created_at, AmadeusMessage.id)
+                <= (anchor.created_at, anchor.id),
+            )
+            .order_by(AmadeusMessage.created_at, AmadeusMessage.id)
+        )
+        messages = [_message(row) for row in rows]
+        await self.session.rollback()
+
+        projects = {
+            (ref.target.project_resource, ref.target.project_id)
+            for message in messages
+            for ref in message.references
+            if ref.target and not ref.target.unsaved
+        }
+        concurrency = asyncio.Semaphore(4)
+
+        async def check(project):
+            async with concurrency:
+                return await can_read_project(*project)
+
+        ordered_projects = sorted(projects)
+        accessible = {
+            project
+            for project, allowed in zip(
+                ordered_projects,
+                await asyncio.gather(*(check(project) for project in ordered_projects)),
+                strict=True,
+            )
+            if allowed
+        }
+
+        branch_id = new_id()
+        self.session.add(
+            AmadeusForkReceipt(
+                conversation_id=conversation_id,
+                request_id=key[1],
+                owner_user_id=self.principal.owner_user_id,
+                message_id=message_id,
+                branch_id=branch_id,
+            )
+        )
+        try:
+            await self.session.flush()
+        except IntegrityError:
+            await self.session.rollback()
+            await self._get(conversation_id)
+            receipt = await self.session.get(AmadeusForkReceipt, key)
+            if receipt is not None:
+                return await self._fork_replay(receipt, message_id)
+            raise
+
+        branch = AmadeusConversation(
+            id=branch_id,
+            owner_user_id=self.principal.owner_user_id,
+            user_id=self.principal.user_id,
+            title=f"{source.title[:115]} · 分叉",
+            agent_id=source.agent_id,
+            model_id=source.model_id,
+        )
+        self.session.add(branch)
+        await self.session.flush()
+        previous_time = None
+        for message in messages:
+            created_at = message.created_at
+            if previous_time is not None and created_at <= previous_time:
+                created_at = previous_time + timedelta(microseconds=1)
+            previous_time = created_at
+            self.session.add(
+                AmadeusMessage(
+                    owner_user_id=self.principal.owner_user_id,
+                    conversation_id=branch_id,
+                    role=message.role,
+                    content=message.content,
+                    created_at=created_at,
+                    references_json=[
+                        ref.model_dump(mode="json", exclude_none=True)
+                        for ref in message.references
+                        if ref.target
+                        and not ref.target.unsaved
+                        and (ref.target.project_resource, ref.target.project_id) in accessible
+                    ],
+                )
+            )
+        result = _conversation(branch)
+        await self.session.commit()
+        return result
+
     async def detail(self, identity: str) -> ConversationDetailOut:
         row = await self._get(identity)
         messages = (
             await self.session.scalars(
-                select(AmadeusMessage)
-                .where(
-                    AmadeusMessage.conversation_id == row.id,
-                    AmadeusMessage.owner_user_id == self.principal.owner_user_id,
-                )
-                .order_by(AmadeusMessage.created_at, AmadeusMessage.id)
+                self._messages(row.id).order_by(AmadeusMessage.created_at, AmadeusMessage.id)
             )
         ).all()
         actions = (
@@ -244,7 +422,9 @@ class Conversations:
                 owner_user_id=self.principal.owner_user_id,
                 role=body.role,
                 content=body.content,
-                references_json=[item.model_dump(mode="json") for item in body.references],
+                references_json=[
+                    item.model_dump(mode="json", exclude_none=True) for item in body.references
+                ],
             )
         )
         await self.session.commit()

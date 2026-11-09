@@ -1,50 +1,33 @@
+.cloud-control-page.cloud-workspace-page.cloud-workspace-page-with-apps {
+  gap: 8px;
+  min-height: 0;
+  padding-block: 10px;
+}
+
 .cloud-page-header.cloud-page-header-with-apps {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  column-gap: clamp(12px, 1.4vw, 22px);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
 }
 
-.cloud-app-toolbar-host {
-  min-width: 0;
-}
-
-.cloud-app-toolbar,
-.cloud-app-toolbar-apps,
-.cloud-app-tabs {
+.cloud-app-title,
+.cloud-app-connection {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.cloud-app-toolbar {
-  position: relative;
-}
-
-.cloud-app-toolbar-apps,
-.cloud-app-tabs,
-.cloud-app-tab-list {
-  flex: 1;
-}
-
-.cloud-app-tab-list {
-  display: flex;
-  min-width: 0;
-  gap: 6px;
-  padding: 4px;
-  overflow-x: auto;
-  scrollbar-width: thin;
-}
-
-.cloud-app-toolbar-actions {
-  flex: none;
   flex-wrap: wrap;
-  max-width: 100%;
+  gap: 6px 8px;
+  min-width: 0;
+}
+
+.cloud-app-title h1 {
+  font-size: clamp(22px, 1.8vw, 26px);
 }
 
 .cloud-app-icon-button.btn {
   justify-content: center;
-  padding-inline: 8px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
 }
 
 .cloud-app-window-select {
@@ -52,65 +35,66 @@
   max-width: 8rem;
 }
 
-@container (max-width: 1050px) {
-  .cloud-page-header.cloud-page-header-with-apps {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .cloud-page-header-with-apps .cloud-header-controls {
-    grid-column: 2;
-    grid-row: 1;
-    justify-content: flex-end;
-  }
-
-  .cloud-app-toolbar-host {
-    grid-column: 1 / -1;
-  }
+.cloud-app-pane.cloud-pane {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
-@container (max-width: 560px) {
-  .cloud-app-toolbar {
-    flex-wrap: wrap;
-  }
-
-  .cloud-app-toolbar-apps {
-    flex-basis: 100%;
-  }
-
-  .cloud-app-toolbar-apps .cloud-host {
-    display: none;
-  }
+.cloud-app-tabs,
+.cloud-app-tab-list {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
 }
 
-@container (max-width: 360px) {
-  .cloud-page-header.cloud-page-header-with-apps {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .cloud-page-header-with-apps .cloud-header-controls {
-    grid-column: 1;
-    grid-row: 2;
-    justify-content: flex-start;
-  }
-
-  .cloud-app-toolbar-host {
-    grid-row: 3;
-  }
+.cloud-app-tabs {
+  flex: none;
+  gap: 4px;
 }
 
-.cloud-app-tabs .btn,
-.cloud-app-source .btn {
+.cloud-app-tab-list {
+  gap: 2px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.cloud-app-tab.btn {
   display: inline-flex;
   flex: none;
   align-items: center;
   gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--border);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--surface);
+  font-size: 13px;
   white-space: nowrap;
 }
 
-.cloud-app-tabs .btn[aria-pressed="true"],
-.cloud-app-source .btn[aria-pressed="true"] {
-  border-color: var(--accent);
+.cloud-app-tab.btn:hover {
   background: var(--surface-soft);
+}
+
+.cloud-app-tab.btn[aria-pressed="true"] {
+  border-top-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+.cloud-app-tab.btn:focus-visible {
+  outline-offset: -3px;
+}
+
+.cloud-app-viewport {
+  border-radius: 10px;
+}
+
+.cloud-app-viewport:fullscreen {
+  border-radius: 0;
 }
 
 .cloud-viewport.cloud-app-viewport:focus-within {
@@ -149,6 +133,63 @@
   min-height: 32px;
   padding: 0 8px;
   font-size: inherit;
+}
+
+.cloud-app-viewport-tools {
+  position: absolute;
+  z-index: 2;
+  inset: 8px 8px auto auto;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid #fff3;
+  border-radius: 8px;
+  background: #171b19ed;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cloud-app-viewport:hover .cloud-app-viewport-tools,
+.cloud-app-viewport-tools:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.cloud-app-viewport-tools .btn {
+  border-color: transparent;
+  background: transparent;
+  color: #f3f4f1;
+}
+
+.cloud-app-viewport-tools .btn:hover {
+  background: #fff2;
+}
+
+.cloud-app-viewport-tools .btn:focus-visible {
+  outline-offset: -2px;
+}
+
+.cloud-app-fullscreen-error {
+  margin: 4px 0 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cloud-app-viewport-tools {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .cloud-app-icon-button.btn,
+  .cloud-app-tab.btn,
+  .cloud-app-refocus.btn {
+    min-height: 44px;
+  }
+
+  .cloud-app-icon-button.btn {
+    min-width: 44px;
+  }
 }
 
 .cloud-app-viewport .cloud-app-video {

@@ -8,6 +8,7 @@ export function useSelectPopover(
   heightLimit = 280,
   widthLimit = 180,
   align: "start" | "end" | "center" = "end",
+  placement: "auto" | "top" = "auto",
 ) {
   useLayoutEffect(() => {
     const element = menu.current;
@@ -60,7 +61,7 @@ export function useSelectPopover(
       );
       const below = visibleBottom - rect.bottom - 17;
       const above = rect.top - visibleTop - 17;
-      const upwards = below < 180 && above > below;
+      const upwards = placement === "top" || (below < 180 && above > below);
       Object.assign(element.style, {
         position: "fixed",
         margin: "0",
@@ -87,5 +88,5 @@ export function useSelectPopover(
       window.removeEventListener("scroll", scroll, true);
       if (element.isConnected) element.hidePopover?.();
     };
-  }, [heightLimit, widthLimit, menu, open, trigger, align]);
+  }, [heightLimit, widthLimit, menu, open, trigger, align, placement]);
 }

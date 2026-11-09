@@ -118,7 +118,7 @@ export function useVisualCanvasController({
     queryKey: visualWorkshopQueryKeys.canvas(projectId),
     queryFn: () => getVisualCanvas(projectId),
   });
-  const canvasReady = projectQuery.isSuccess && canvasQuery.isSuccess;
+  const canvasReady = Boolean(projectQuery.data && canvasQuery.data);
   const {
     revisionRef,
     nodesRef,
@@ -149,8 +149,8 @@ export function useVisualCanvasController({
   } = useCanvasPersistence(projectId, canvasQuery.data);
 
   useEffect(() => {
-    if (projectQuery.data) setTitle(projectQuery.data.title);
-  }, [projectQuery.data]);
+    if (projectQuery.data && !editingTitle) setTitle(projectQuery.data.title);
+  }, [editingTitle, projectQuery.data]);
   useEffect(() => {
     window.localStorage.setItem(
       `fpl_canvas_viewport_${projectId}`,

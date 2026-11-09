@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import {
   studioDefinition,
@@ -33,10 +34,12 @@ import {
 } from "./model";
 
 export function TemplateLibrary({
+  utilities,
   onOpen,
   readOnly,
   onEdit,
 }: {
+  utilities?: ReactNode;
   onOpen: (id: string) => void;
   readOnly: boolean;
   onEdit: (id: string) => void;
@@ -87,6 +90,7 @@ export function TemplateLibrary({
   return (
     <div className="presentation-library master-library workshop-page">
       <WorkshopAppChrome
+        utilities={utilities}
         title="模板与示例"
         description="用模板统一规范，用完整示例开启下一份演示。"
         actions={

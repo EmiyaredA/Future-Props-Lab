@@ -1,6 +1,11 @@
+import { workshopProjects } from "./projectScope";
+import { refreshAmadeusProject } from "@platform/assistant";
 import { useEffect, useRef } from "react";
+import { NAVIGATION_COMMITTED } from "@shared/ui/navigationGuards";
 import "./source.css";
 import { useAmadeusBridge } from "./PageContext";
+import { elementReference } from "./elementReferences";
+import type { Reference } from "./protocol";
 
 type SourceContext = {
   path: string;
@@ -68,14 +73,19 @@ export function AmadeusSourceHost() {
   useEffect(() => {
     let picking = false;
     let pickIndex = 1;
-    let target: HTMLElement | null = null;
+    let target: {
+      anchor: Element;
+      reference: Reference;
+      point?: { x: number; y: number };
+    } | null = null;
     const outline = document.createElement("div");
     outline.className = "amadeus-picker-outline";
     const label = document.createElement("div");
     label.className = "amadeus-picker-label";
     const tip = document.createElement("div");
     tip.className = "amadeus-picker-tip";
-    tip.textContent = "点击添加 · Esc 退出";
+    tip.setAttribute("role", "status");
+    tip.textContent = "点击元素添加 · Esc 退出";
     document.body.append(outline, label, tip);
     const draw = () => {
       if (!picking || !target) {
@@ -83,7 +93,9 @@ export function AmadeusSourceHost() {
         label.hidden = true;
         return;
       }
-      const rect = target.getBoundingClientRect();
+      const rect = target.point
+        ? new DOMRect(target.point.x - 9, target.point.y - 9, 18, 18)
+        : target.anchor.getBoundingClientRect();
       Object.assign(outline.style, {
         left: `${rect.x}px`,
         top: `${rect.y}px`,
@@ -94,7 +106,7 @@ export function AmadeusSourceHost() {
         left: `${rect.x}px`,
         top: `${Math.max(0, rect.y - 28)}px`,
       });
-      label.textContent = `${pickIndex}. ${description(target).name}`;
+      label.textContent = `${pickIndex}. ${target.reference.name}`;
       outline.hidden = false;
       label.hidden = false;
     };
@@ -112,78 +124,216 @@ export function AmadeusSourceHost() {
       target = null;
       draw();
     });
-    const locate = bridge.onAmadeusLocate?.((value) => {
-      const id = (value as { id?: string }).id;
+    let highlighted: HTMLElement | undefined;
+    let clearHighlightTimer: number | undefined;
+    const clearHighlight = () => {
+      window.clearTimeout(clearHighlightTimer);
+      highlighted?.classList.remove("amadeus-located");
+      highlighted = undefined;
+    };
+    const locate = bridge.onAmadeusLocate(async (value) => {
+      const { target: destination, id, source } = value;
+      if (destination) {
+        const editor = bridge.currentElementSource();
+        if (
+          !editor ||
+          editor.resource !== destination.project_resource ||
+          editor.projectId !== destination.project_id
+        )
+          return "wrong-project";
+        if (editor.locate) {
+          const result = editor.locate(destination);
+          if (result !== true)
+            return result === "failed" ? "failed" : "missing";
+          await new Promise<void>((resolve) =>
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+          );
+          const currentEditor = bridge.currentElementSource();
+          if (
+            currentEditor?.resource !== destination.project_resource ||
+            currentEditor.projectId !== destination.project_id
+          )
+            return "wrong-project";
+        } else if (
+          !editor.resolve(
+            destination.element_id,
+            destination.element_kind,
+            destination.parent_id ?? undefined,
+          )
+        ) {
+          return "missing";
+        }
+      } else if (source?.startsWith("/") && source !== location.pathname)
+        return "wrong-project";
+
+      const candidates = document.querySelectorAll<HTMLElement>(
+        ".website-page [data-amadeus-id], .website-page [data-block-id], .website-page [data-node-id]",
+      );
       const element =
-        [
-          ...document.querySelectorAll<HTMLElement>(
-            "[data-amadeus-id],[data-block-id],[data-node-id]",
-          ),
-        ].find(
-          (candidate) =>
-            candidate.dataset.amadeusId === id ||
-            candidate.dataset.blockId === id ||
-            candidate.dataset.nodeId === id,
-        ) || (id ? document.getElementById(id) : null);
-      if (!element) return;
+        [...candidates].find((candidate) => {
+          const elementId =
+            candidate.dataset.amadeusId ||
+            candidate.dataset.blockId ||
+            candidate.dataset.nodeId;
+          return (
+            elementId === (destination?.element_id ?? id) &&
+            (!destination?.parent_id ||
+              !candidate.dataset.amadeusParent ||
+              candidate.dataset.amadeusParent === destination.parent_id) &&
+            (!destination ||
+              !candidate.dataset.amadeusKind ||
+              candidate.dataset.amadeusKind === destination.element_kind) &&
+            candidate.getClientRects().length > 0
+          );
+        }) || (!destination ? document.getElementById(id) : null);
+      if (!element)
+        return destination && bridge.currentElementSource()?.locate
+          ? "found"
+          : "missing";
+      clearHighlight();
+      highlighted = element;
+      element.classList.add("amadeus-located");
       element.scrollIntoView({
         behavior: "smooth",
         block: "center",
         inline: "center",
       });
-      element.classList.add("amadeus-located");
-      window.setTimeout(
-        () => element.classList.remove("amadeus-located"),
-        2200,
-      );
+      clearHighlightTimer = window.setTimeout(clearHighlight, 2200);
+      return "found";
     });
-    const context = (event: Event) => {
-      const detail = (event as CustomEvent<SourceContext>).detail;
+    const publishContext = (detail: Partial<SourceContext>) => {
+      const path = detail.path ?? location.pathname;
+      const changedPath = path !== current.current.path;
       const changedSource =
-        (detail.path !== undefined && detail.path !== current.current.path) ||
+        changedPath ||
         ("projectId" in detail &&
           detail.projectId !== current.current.projectId);
+      if (changedSource) stop();
       current.current = {
         ...current.current,
+        ...(changedPath ? { projectId: undefined } : {}),
+        ...(changedSource ? { title: document.title } : {}),
         ...(changedSource ? { selection: undefined, unsaved: false } : {}),
         ...detail,
+        path,
       };
       void bridge.publishAmadeusContext?.(current.current);
     };
+    const context = (event: Event) =>
+      publishContext((event as CustomEvent<Partial<SourceContext>>).detail);
     let conflictBanner: HTMLElement | null = null;
-    const mutation = bridge.onAmadeusMutation?.((value) => {
-      const changed = value as { application?: string; projectId?: string };
-      if (
-        changed.application !== "*" ||
-        (changed.projectId && changed.projectId !== current.current.projectId)
-      )
-        return;
-      if (!current.current.unsaved) {
-        window.location.reload();
-        return;
+    const navigated = () => {
+      conflictBanner?.remove();
+      conflictBanner = null;
+      publishContext({ path: location.pathname });
+    };
+    let mounted = true;
+    const mutation = bridge.onAmadeusMutation(
+      ({ resource, projectId, elementId }) => {
+        const path = location.pathname;
+        const editor = bridge.currentElementSource();
+        const currentProject = editor?.projectId ?? current.current.projectId;
+        const currentResource =
+          editor?.resource ??
+          workshopProjects.find((item) => path.split("/")[2] === item.app)
+            ?.resource;
+        const sameElement = Boolean(
+          elementId &&
+          (path.split("/").includes(elementId) ||
+            editor?.selected().some((element) => element.id === elementId)),
+        );
+        if (
+          currentResource !== resource ||
+          (currentProject && currentProject !== projectId && !sameElement)
+        )
+          return;
+        const refresh = projectId
+          ? refreshAmadeusProject({ resource, projectId })
+          : undefined;
+
+        const showNotice = (message: string) => {
+          if (!mounted || location.pathname !== path) return;
+          conflictBanner?.remove();
+          const banner = document.createElement("div");
+          banner.className = "amadeus-mutation-banner";
+          banner.setAttribute("role", "status");
+          const link = document.createElement("a");
+          link.href = window.location.href;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "在新标签页查看最新内容";
+          const dismiss = document.createElement("button");
+          dismiss.type = "button";
+          dismiss.textContent = "关闭提示";
+          dismiss.addEventListener("click", () => {
+            banner.remove();
+            conflictBanner = null;
+          });
+          banner.append(message, link, dismiss);
+          document.body.append(banner);
+          conflictBanner = banner;
+        };
+        if (!refresh) {
+          showNotice("Amadeus 已更新项目。");
+          return;
+        }
+        void refresh.then(
+          (result) => {
+            if (result === "dirty")
+              showNotice("Amadeus 已更新项目；当前页面有未保存的编辑。");
+          },
+          () => showNotice("操作已执行，但此页面暂时无法读取最新项目数据。"),
+        );
+      },
+    );
+    const identify = (event: MouseEvent) => {
+      const origin = event.target instanceof Element ? event.target : null;
+      if (!origin?.closest(".website-page")) return null;
+      const editor = bridge.currentElementSource();
+      if (editor) {
+        const path = event
+          .composedPath()
+          .filter((node): node is HTMLElement => node instanceof HTMLElement);
+        const mark = path.find((node) =>
+          node.matches("[data-amadeus-id], [data-block-id]"),
+        );
+        const elementId = mark?.dataset.amadeusId ?? mark?.dataset.blockId;
+        const control = path.find((node) =>
+          node.matches("button,input,textarea,select,a,[role=button]"),
+        );
+        if (control && (!mark || path.indexOf(control) < path.indexOf(mark)))
+          return null;
+        const item = elementId
+          ? editor.resolve(
+              elementId,
+              mark?.dataset.amadeusKind,
+              mark?.dataset.amadeusParent,
+            )
+          : editor.hitTest?.(event);
+        return item
+          ? {
+              anchor: mark ?? origin,
+              reference: elementReference(editor, item),
+              point: mark ? undefined : { x: event.clientX, y: event.clientY },
+            }
+          : null;
       }
-      if (conflictBanner) return;
-      const banner = document.createElement("div");
-      banner.className = "amadeus-mutation-banner";
-      banner.setAttribute("role", "alert");
-      banner.textContent =
-        "Amadeus 已更新项目；此窗口有未保存编辑，请先处理冲突再刷新。";
-      const dismiss = document.createElement("button");
-      dismiss.type = "button";
-      dismiss.textContent = "关闭提示";
-      dismiss.addEventListener("click", () => {
-        banner.remove();
-        conflictBanner = null;
-      });
-      banner.append(dismiss);
-      document.body.append(banner);
-      conflictBanner = banner;
-    });
+      if (current.current.projectId) return null;
+      const anchor = selectable(origin);
+      return anchor
+        ? {
+            anchor,
+            reference: {
+              ...description(anchor),
+              application: current.current.application,
+              source: current.current.path,
+            },
+          }
+        : null;
+    };
     const move = (event: MouseEvent) => {
       if (!picking) return;
-      target = selectable(
-        event.target instanceof Element ? event.target : null,
-      );
+      target = identify(event);
       draw();
     };
     const click = (event: MouseEvent) => {
@@ -196,23 +346,9 @@ export function AmadeusSourceHost() {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      target =
-        selectable(event.target instanceof Element ? event.target : null) ||
-        target;
+      target = identify(event);
       if (!target) return;
-      const rect = target.getBoundingClientRect();
-      const item = description(target);
-      void bridge.addAmadeusReference?.({
-        ...item,
-        application: current.current.application,
-        source: current.current.path,
-        rect: {
-          x: Math.max(0, rect.x),
-          y: Math.max(0, rect.y),
-          width: Math.min(rect.width, 900),
-          height: Math.min(rect.height, 700),
-        },
-      });
+      void bridge.addAmadeusReference(target.reference);
       stop();
     };
     const block = (event: Event) => {
@@ -229,11 +365,13 @@ export function AmadeusSourceHost() {
     const key = (event: KeyboardEvent) => {
       if (picking && event.key === "Escape") {
         event.preventDefault();
+        event.stopImmediatePropagation();
         stop();
       }
     };
     tip.hidden = true;
     window.addEventListener("future-props:amadeus-context", context);
+    window.addEventListener(NAVIGATION_COMMITTED, navigated);
     document.addEventListener("mousemove", move, true);
     document.addEventListener("click", click, true);
     for (const type of [
@@ -249,12 +387,15 @@ export function AmadeusSourceHost() {
     return () => {
       unsubscribe();
       locate?.();
-      mutation?.();
+      mounted = false;
+      mutation();
       conflictBanner?.remove();
+      clearHighlight();
       outline.remove();
       label.remove();
       tip.remove();
       window.removeEventListener("future-props:amadeus-context", context);
+      window.removeEventListener(NAVIGATION_COMMITTED, navigated);
       document.removeEventListener("mousemove", move, true);
       document.removeEventListener("click", click, true);
       for (const type of [

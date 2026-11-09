@@ -1,4 +1,5 @@
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { useNavigationProtection } from "@shared/ui/navigationGuards";
 import { useIntegrationInteraction } from "./interaction";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
@@ -26,6 +27,7 @@ export function IntegrationModal({
   headerIcon?: ReactNode;
 }) {
   const { register } = useIntegrationInteraction();
+  const navigation = useNavigationProtection();
   const [dirty, setDirty] = useState(false);
   useEffect(() => setDirty(false), [resetKey]);
   const [continuation, setContinuation] = useState<(() => void) | null>(null);
@@ -50,6 +52,16 @@ export function IntegrationModal({
       return true;
     });
   }, [register, protect, dirty, pending]);
+  useEffect(() => {
+    if (!navigation || !protect || (!dirty && !pending)) return;
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (navigation.allowsUnload()) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    return () => window.removeEventListener("beforeunload", beforeUnload);
+  }, [navigation, protect, dirty, pending]);
   useEffect(() => {
     if (pending || !deferredNavigation.current) return;
     const frame = requestAnimationFrame(() => {

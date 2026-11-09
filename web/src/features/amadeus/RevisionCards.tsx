@@ -1,6 +1,8 @@
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
+import { ChevronRight } from "lucide-react";
 import type { ArtifactStep, ToolStep } from "./displayTimeline";
+import { workshopProjects } from "./projectScope";
+import { TranscriptMarkdown } from "./TranscriptMarkdown";
 
 const sensitiveKey = /password|token|secret|api.?key|authorization/i;
 
@@ -50,6 +52,18 @@ function proposedChanges(arguments_: Record<string, unknown>): string[] {
     return document.operations.slice(0, 3).map((item) => {
       if (!item || typeof item !== "object") return "更新一项内容";
       const operation = item as Record<string, unknown>;
+      if (typeof operation.type === "string") {
+        const patch = operation.patch;
+        const fields =
+          patch && typeof patch === "object"
+            ? Object.keys(patch)
+                .filter((key) => !sensitiveKey.test(key))
+                .join("、")
+            : "";
+        return [operation.type, operation.layerId, fields]
+          .filter(Boolean)
+          .join(" · ");
+      }
       const value = operation.value;
       const title =
         value && typeof value === "object" && "title" in value
@@ -118,7 +132,7 @@ export function ArtifactCard({
   const [error, setError] = useState("");
   const renderedContent = (
     <div className="amadeus-artifact-content">
-      <ReactMarkdown>{artifact.body}</ReactMarkdown>
+      <TranscriptMarkdown text={artifact.body} streaming={false} />
       {artifact.kind === "plan" && (
         <ol className="amadeus-plan-steps">
           {artifact.steps.map((step, index) => (
@@ -366,12 +380,22 @@ export function ApprovalCard({
   const [error, setError] = useState("");
   const pathParams = parameters.path_params;
   const projectId =
-    pathParams && typeof pathParams === "object" && "project_id" in pathParams
-      ? pathParams.project_id
+    pathParams && typeof pathParams === "object"
+      ? "project_id" in pathParams
+        ? pathParams.project_id
+        : "room_id" in pathParams
+          ? pathParams.room_id
+          : undefined
       : undefined;
   const operation = action?.tool_name.startsWith("fpl_operation:")
     ? action.tool_name.slice("fpl_operation:".length)
     : parameters.operation;
+  const workshop =
+    typeof operation === "string"
+      ? workshopProjects.find((entry) =>
+          operation.startsWith(`${entry.resource}.`),
+        )
+      : undefined;
   const target = String(
     parameters.project_id ||
       projectId ||
@@ -391,32 +415,15 @@ export function ApprovalCard({
             : tool.name;
   const status = tool.displayStatus;
   const changes = proposedChanges(action?.arguments || tool.arguments);
-  return (
-    <section
-      className={`amadeus-action-card ${status === "failed" || status === "unknown" ? "is-risk" : ""}`}
-      aria-label="写入操作"
-    >
-      <header>
-        <span className="amadeus-card-kicker">
-          {status === "pending"
-            ? "待批准 · 未执行"
-            : status === "completed"
-              ? "已执行 · 收到回执"
-              : status === "unknown"
-                ? "结果待核实"
-                : status === "rejected"
-                  ? "已撤回"
-                  : status === "failed"
-                    ? "执行失败"
-                    : status === "approved"
-                      ? "已批准 · 待执行"
-                      : status === "cancelled"
-                        ? "已取消"
-                        : "执行中"}
-        </span>
-        <h3>{title}</h3>
-      </header>
+  const facts = (
+    <>
       <div className="amadeus-action-summary">
+        {workshop && (
+          <>
+            <span>工坊</span>
+            <strong>{workshop.title}</strong>
+          </>
+        )}
         <span>目标</span>
         <strong>{target}</strong>
         <span>操作</span>
@@ -442,6 +449,60 @@ export function ApprovalCard({
           })}
         </pre>
       </details>
+    </>
+  );
+  const continueButton = canContinue && action?.run_id && (
+    <button
+      type="button"
+      onClick={() =>
+        void onContinue(
+          action.run_id!,
+          "agent",
+          "根据已保存的工具结果继续。先核对当前项目状态。",
+        )
+      }
+    >
+      继续对话
+    </button>
+  );
+  if (status === "completed")
+    return (
+      <section className="amadeus-history-receipt" aria-label="写入操作">
+        <details>
+          <summary>
+            <ChevronRight size={14} aria-hidden />
+            <strong>已执行 · 收到回执</strong>
+            <span title={title}>{title}</span>
+          </summary>
+          <div className="amadeus-history-receipt-body">{facts}</div>
+        </details>
+        {continueButton}
+      </section>
+    );
+  return (
+    <section
+      className={`amadeus-action-card ${status === "failed" || status === "unknown" ? "is-risk" : ""}`}
+      aria-label="写入操作"
+    >
+      <header>
+        <span className="amadeus-card-kicker">
+          {status === "pending"
+            ? "待批准 · 未执行"
+            : status === "unknown"
+              ? "结果待核实"
+              : status === "rejected"
+                ? "已撤回"
+                : status === "failed"
+                  ? "执行失败"
+                  : status === "approved"
+                    ? "已批准 · 待执行"
+                    : status === "cancelled"
+                      ? "已取消"
+                      : "执行中"}
+        </span>
+        <h3>{title}</h3>
+      </header>
+      {facts}
       {status === "unknown" && (
         <p className="amadeus-card-muted">
           外部操作可能已经执行。请先核实实际状态；这里不会自动重试。
@@ -604,21 +665,8 @@ export function ApprovalCard({
           </div>
         </div>
       )}
-      {canContinue && action?.run_id && (
-        <div className="amadeus-card-controls">
-          <button
-            type="button"
-            onClick={() =>
-              void onContinue(
-                action.run_id!,
-                "agent",
-                "根据已保存的工具结果继续。先核对当前项目状态。",
-              )
-            }
-          >
-            继续对话
-          </button>
-        </div>
+      {continueButton && (
+        <div className="amadeus-card-controls">{continueButton}</div>
       )}
     </section>
   );

@@ -2,11 +2,6 @@
   max-width: 1360px;
 }
 
-.dd-projects .workshop-toolbar {
-  display: block;
-  margin: 0 0 20px;
-}
-
 .dd-projects .workshop-project-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;

@@ -505,6 +505,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Fork Message */
+        post: operations["fork_message_v1_amadeus_conversations__conversation_id__messages__message_id__fork_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Pin Message */
+        put: operations["pin_message_v1_amadeus_conversations__conversation_id__messages__message_id__pin_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer": {
         parameters: {
             query?: never;
@@ -8794,6 +8828,10 @@ export interface components {
             enabled: boolean;
             /** Executable */
             executable: string;
+            /** Harness Efforts */
+            harness_efforts?: components["schemas"]["NamedOption"][];
+            /** Harness Options Model */
+            harness_options_model?: string | null;
             /**
              * Id
              * @enum {string}
@@ -8801,6 +8839,12 @@ export interface components {
             id: "codex" | "claude-code" | "opencode" | "dsh" | "pi";
             /** Message */
             message: string;
+            /**
+             * Model Catalog
+             * @default not_checked
+             * @enum {string}
+             */
+            model_catalog: "not_checked" | "discovered" | "preset" | "unavailable";
             /** Models */
             models?: components["schemas"]["ModelOption"][];
             /** Name */
@@ -10297,10 +10341,42 @@ export interface components {
             /** Questions */
             questions?: components["schemas"]["QuestionOut"][];
         };
+        /** ConversationListItemOut */
+        ConversationListItemOut: {
+            /** Agent Id */
+            agent_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Executor Kind
+             * @default legacy-pi
+             */
+            executor_kind: string;
+            /** Id */
+            id: string;
+            /** Latest Run Status */
+            latest_run_status?: string | null;
+            /** Model Id */
+            model_id: string | null;
+            /** Projects */
+            projects?: components["schemas"]["ConversationProjectSummary"][];
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
         /** ConversationListOut */
         ConversationListOut: {
             /** Items */
-            items: components["schemas"]["ConversationOut"][];
+            items: components["schemas"]["ConversationListItemOut"][];
         };
         /** ConversationOut */
         ConversationOut: {
@@ -10338,6 +10414,15 @@ export interface components {
             model_id?: string | null;
             /** Title */
             title?: string | null;
+        };
+        /** ConversationProjectSummary */
+        ConversationProjectSummary: {
+            /** Id */
+            id: string;
+            /** Resource */
+            resource: string;
+            /** Title */
+            title: string;
         };
         /** ConversationRevisionConflictOut */
         ConversationRevisionConflictOut: {
@@ -11070,6 +11155,30 @@ export interface components {
             revisions: {
                 [key: string]: number;
             };
+        };
+        /** ElementTarget */
+        ElementTarget: {
+            /** Element Id */
+            element_id: string;
+            /**
+             * Element Kind
+             * @enum {string}
+             */
+            element_kind: "node" | "clip" | "slide" | "slide_element" | "note" | "story_block" | "layer" | "segment" | "entity" | "material";
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Project Id */
+            project_id: string;
+            /**
+             * Project Resource
+             * @enum {string}
+             */
+            project_resource: "visual" | "video" | "presentation" | "thought" | "galgame" | "motion_compositor" | "annotation" | "director" | "interview";
+            /**
+             * Unsaved
+             * @default false
+             */
+            unsaved: boolean;
         };
         /** EndpointState */
         EndpointState: {
@@ -16059,6 +16168,14 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** MessageForkIn */
+        MessageForkIn: {
+            /**
+             * Request Id
+             * Format: uuid
+             */
+            request_id: string;
+        };
         /** MessageIn */
         MessageIn: {
             /** Content */
@@ -16084,6 +16201,11 @@ export interface components {
             created_at: string;
             /** Id */
             id: string;
+            /**
+             * Pinned
+             * @default false
+             */
+            pinned: boolean;
             /** References */
             references: components["schemas"]["Reference"][];
             /**
@@ -16098,6 +16220,11 @@ export interface components {
              * @default completed
              */
             status: string;
+        };
+        /** MessagePinIn */
+        MessagePinIn: {
+            /** Pinned */
+            pinned: boolean;
         };
         /** MockCompletionIn */
         MockCompletionIn: {
@@ -16237,10 +16364,19 @@ export interface components {
         };
         /** ModelOption */
         ModelOption: {
+            /**
+             * Fast Available
+             * @default false
+             */
+            fast_available: boolean;
             /** Id */
             id: string;
             /** Label */
             label: string;
+            /** Reasoning Efforts */
+            reasoning_efforts?: ("none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra")[];
+            /** Variants */
+            variants?: components["schemas"]["NamedOption"][];
         };
         /** ModelSupplierIn */
         ModelSupplierIn: {
@@ -17224,6 +17360,13 @@ export interface components {
              * @enum {string}
              */
             type: "moveClip";
+        };
+        /** NamedOption */
+        NamedOption: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
         };
         /** NodeAcceptanceCatalogOut */
         NodeAcceptanceCatalogOut: {
@@ -18996,6 +19139,7 @@ export interface components {
              * @default
              */
             source: string;
+            target?: components["schemas"]["ElementTarget"] | null;
             /** Thumbnail */
             thumbnail?: string | null;
             /**
@@ -19326,6 +19470,8 @@ export interface components {
             context?: {
                 [key: string]: unknown;
             }[];
+            /** Harness Effort */
+            harness_effort?: string | null;
             /**
              * Mode
              * @default agent
@@ -19337,8 +19483,14 @@ export interface components {
              * @default code-agent
              */
             model_id: string;
+            /** Model Variant */
+            model_variant?: string | null;
+            /** Reasoning Effort */
+            reasoning_effort?: ("none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra") | null;
             /** References */
             references?: components["schemas"]["Reference"][];
+            /** Service Tier */
+            service_tier?: "fast" | null;
             /** Source Run Id */
             source_run_id?: string | null;
         };
@@ -19356,7 +19508,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "assistant_delta" | "assistant_message" | "tool_call" | "tool_result" | "status" | "error" | "question" | "subagent_start" | "subagent_finish";
+            kind: "assistant_delta" | "assistant_message" | "reasoning_summary" | "run_usage" | "tool_call" | "tool_result" | "status" | "error" | "question" | "subagent_start" | "subagent_finish";
             /** Payload */
             payload?: {
                 [key: string]: unknown;
@@ -19424,6 +19576,8 @@ export interface components {
             };
             /** Finished At */
             finished_at: string | null;
+            /** Harness Effort */
+            harness_effort?: string | null;
             /**
              * Heartbeat At
              * Format: date-time
@@ -19438,10 +19592,16 @@ export interface components {
             mode: "agent" | "plan";
             /** Model Id */
             model_id: string;
+            /** Model Variant */
+            model_variant?: string | null;
             /** Partial Text */
             partial_text: string;
+            /** Reasoning Effort */
+            reasoning_effort?: ("none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max" | "ultra") | null;
             /** References */
             references: components["schemas"]["Reference"][];
+            /** Service Tier */
+            service_tier?: "fast" | null;
             /** Source Run Id */
             source_run_id: string | null;
             /** Status */
@@ -19451,6 +19611,7 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            usage?: components["schemas"]["TokenUsage"] | null;
         };
         /** RuntimeContext */
         RuntimeContext: {
@@ -21306,6 +21467,25 @@ export interface components {
         ThoughtRevisionIn: {
             /** Expected Revision */
             expected_revision: number;
+        };
+        /** TokenUsage */
+        TokenUsage: {
+            /** Cache Write Tokens */
+            cache_write_tokens?: number | null;
+            /** Cached Input Tokens */
+            cached_input_tokens?: number | null;
+            /** Context Limit */
+            context_limit?: number | null;
+            /** Context Used */
+            context_used?: number | null;
+            /** Input Tokens */
+            input_tokens?: number | null;
+            /** Output Tokens */
+            output_tokens?: number | null;
+            /** Reasoning Tokens */
+            reasoning_tokens?: number | null;
+            /** Total Tokens */
+            total_tokens?: number | null;
         };
         /** ToolApiCatalogOut */
         ToolApiCatalogOut: {
@@ -24808,6 +24988,78 @@ export interface operations {
             };
         };
     };
+    fork_message_v1_amadeus_conversations__conversation_id__messages__message_id__fork_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessageForkIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pin_message_v1_amadeus_conversations__conversation_id__messages__message_id__pin_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                message_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MessagePinIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     answer_question_v1_amadeus_conversations__conversation_id__questions__question_id__answer_post: {
         parameters: {
             query?: never;
@@ -26510,7 +26762,9 @@ export interface operations {
     };
     list_code_agents_v1_code_agents_get: {
         parameters: {
-            query?: never;
+            query?: {
+                harness_model?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -26524,6 +26778,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

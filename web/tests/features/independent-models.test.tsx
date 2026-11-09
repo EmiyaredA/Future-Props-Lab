@@ -17,11 +17,8 @@ vi.mock("@app/StudioSession", () => ({
     me: { user: { id: "owner-a", display_name: "原账号" } },
   }),
 }));
-vi.mock("@features/accounts/RuntimeAccessProvider", () => ({
-  RuntimeAccessProvider: ({ children }: { children: ReactNode }) => children,
-}));
-vi.mock("@app/entries/IndependentShell", () => ({
-  IndependentShell: ({ children }: { children: ReactNode }) => (
+vi.mock("@app/entries/StudioServiceShell", () => ({
+  StudioServiceShell: ({ children }: { children: ReactNode }) => (
     <main>{children}</main>
   ),
 }));
@@ -30,11 +27,15 @@ vi.mock("@features/models/catalog/ModelServicePage", () => ({
   ModelServicePage: ({
     canWrite,
     canTest,
+    renderHeader,
   }: {
     canWrite: boolean;
     canTest: boolean;
+    renderHeader: (actions: ReactNode) => ReactNode;
   }) => (
-    <section aria-label="目录页面" data-write={canWrite} data-test={canTest} />
+    <section aria-label="目录页面" data-write={canWrite} data-test={canTest}>
+      {renderHeader(null)}
+    </section>
   ),
 }));
 vi.mock("@features/models/conversation/ModelTestPage", () => ({
@@ -87,10 +88,10 @@ test("independent catalogue keeps read/write/test permissions separate", async (
   access.permissions.add("models.use");
   view.rerender(<ModelsApplication />);
   expect(catalog).toHaveAttribute("data-test", "true");
-  const navigation = screen.getByRole("navigation", { name: "模型服务页面" });
+  const tabs = screen.getByRole("tablist", { name: "模型与智能体视图" });
   expect(
-    within(navigation).getByRole("link", { current: "page" }),
-  ).toHaveAttribute("href", "/model-service");
+    within(tabs).getByRole("tab", { name: "模型服务", selected: true }),
+  ).toBeVisible();
 });
 
 test("read-only model test exposes existing results and preserves model deep links for authorized users", async () => {
@@ -132,7 +133,7 @@ test("document navigation participates in unsaved and active-work protection", a
   window.history.replaceState({}, "", "/model-service");
   render(<ModelsApplication />);
   const user = userEvent.setup();
-  await user.click(screen.getByRole("link", { name: "模型测试" }));
+  await user.click(await screen.findByRole("tab", { name: "编程智能体" }));
   expect(access.guard).toHaveBeenCalledWith(expect.any(Function), true);
   expect(location.pathname).toBe("/model-service");
 });

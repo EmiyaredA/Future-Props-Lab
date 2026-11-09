@@ -1,0 +1,13 @@
+# Both Agent owners see the same pause flag and in-flight request reservations.
+services:
+  amadeus:
+    volumes:
+      - &agent-admission
+        type: bind
+        source: ${FPL_AGENT_ADMISSION_DIR:?Select a shared Agent admission directory}
+        target: /run/fpl/agent-admission
+        bind:
+          create_host_path: false
+  agent-runtime:
+    volumes:
+      - *agent-admission

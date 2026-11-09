@@ -299,11 +299,13 @@ export const SlideSurface = memo(function SlideSurface({
   onMoveConnectionKey,
   size = defaultPageSize,
   playMedia = false,
+  referenceable = true,
   assetUrls,
   onNavigateSlide,
 }: {
   onNavigateSlide?: (id: string) => void;
   playMedia?: boolean;
+  referenceable?: boolean;
   assetUrls?: Record<string, string>;
   slide: Slide;
   size?: PageSize;
@@ -321,6 +323,8 @@ export const SlideSurface = memo(function SlideSurface({
   return (
     <div
       className="presentation-slide"
+      data-amadeus-id={referenceable ? slide.id : undefined}
+      data-amadeus-kind="slide"
       style={{
         background: slide.background,
         width: size.width,
@@ -412,7 +416,9 @@ export const SlideSurface = memo(function SlideSurface({
               }
             }}
             data-element-id={element.id}
-            data-amadeus-id={element.id}
+            data-amadeus-id={referenceable ? element.id : undefined}
+            data-amadeus-kind="slide_element"
+            data-amadeus-parent={slide.id}
             data-amadeus-name={element.kind}
             data-amadeus-value={`幻灯片元素 · ${element.kind}`}
             data-transparent-shape={
@@ -513,7 +519,12 @@ export function SlidePreview({
             transformOrigin: "top left",
           }}
         >
-          <SlideSurface slide={slide} size={size} assetUrls={assetUrls} />
+          <SlideSurface
+            slide={slide}
+            size={size}
+            assetUrls={assetUrls}
+            referenceable={false}
+          />
         </div>
       ) : null}
     </div>

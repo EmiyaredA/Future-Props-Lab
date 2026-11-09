@@ -1,4 +1,11 @@
-import { setSelectedEntities } from "./editor/timeline-selection.ts";
+import {
+  assistantElementSource,
+  type RegisterAssistantElements,
+} from "@platform/assistantElements";
+import {
+  editorSelection,
+  setSelectedEntities,
+} from "./editor/timeline-selection.ts";
 import { mountApplicationMenu } from "./ui/application-menu.ts";
 import { saveProjectFile } from "./ui/project-save.ts";
 import { mountFileLocations } from "./ui/file-locations.ts";
@@ -85,6 +92,7 @@ export function mountDirectorEditor(
     name?: string;
     document?: unknown;
     projectId?: string;
+    registerElements?: RegisterAssistantElements | null;
     onSave?: (document: SceneDocument) => Promise<void>;
   } = {},
 ): () => void {
@@ -978,7 +986,59 @@ export function mountDirectorEditor(
     editingTools.applyFraming(name);
   }
 
+  const projectId = host.projectId;
+  const releaseElements = projectId
+    ? host.registerElements?.(() => {
+        const sceneId = history.context.sceneId;
+        const elements = project.entities.map((entity) => ({
+          id: entity.id,
+          parentId: sceneId,
+          kind: "entity" as const,
+          name: entity.name,
+          value: entity.kind,
+        }));
+        return assistantElementSource(
+          {
+            resource: "director",
+            projectId,
+            application: "导演台",
+            unsaved: dirty || !!draft || !!history.pending,
+            hitTest: (event) => {
+              const id = engine.pickEntityAt(event);
+              return elements.find((item) => item.id === id);
+            },
+            locate: ({ element_id, parent_id }) => {
+              if (
+                draft ||
+                history.pending ||
+                engine.dragging ||
+                engine.exporting ||
+                busy
+              )
+                return "failed";
+              const sourceScene = parent_id || sceneId;
+              if (!history.list().some((item) => item.id === sourceScene))
+                return false;
+              const source =
+                sourceScene === sceneId
+                  ? project
+                  : history.projectFor(sourceScene);
+              if (!source.entities.some((entity) => entity.id === element_id))
+                return false;
+              if (sourceScene !== sceneId)
+                switchScene(sourceScene, history.context);
+              selectEntity(element_id);
+              engine.focus(element_id);
+              return true;
+            },
+          },
+          elements,
+          editorSelection(project, selected).entityIds,
+        );
+      })
+    : undefined;
   return () => {
+    releaseElements?.();
     alive = false;
     lifecycle.abort();
     recoverySave.dispose();

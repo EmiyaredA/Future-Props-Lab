@@ -1,5 +1,5 @@
 import { ArrowUp, ArrowDown, Copy, Trash2, Plus } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { SlidePreview } from "./SlideSurface";
 import type { Deck } from "./types";
 
@@ -7,6 +7,8 @@ export function PresentationFilmstrip({
   deck,
   active,
   onSelect,
+  pageSelection,
+  setPageSelection,
   onMove,
   onCopy,
   onAdd,
@@ -19,6 +21,8 @@ export function PresentationFilmstrip({
   deck: Deck;
   active: string;
   onSelect: (id: string) => void;
+  pageSelection: string[];
+  setPageSelection: (ids: string[]) => void;
   onMove: (id: string, index: number) => void;
   onCopy: (id: string) => void;
   onAdd: () => void;
@@ -29,7 +33,6 @@ export function PresentationFilmstrip({
   onBatchMove?: (ids: string[], index: number) => void;
 }) {
   const dragged = useRef<string | null>(null);
-  const [pageSelection, setPageSelection] = useState<string[]>([]);
   const anchor = useRef(active);
   const initialActive = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -158,6 +161,8 @@ export function PresentationFilmstrip({
           <button
             ref={slide.id === active ? initialActive : undefined}
             className="presentation-slide-select"
+            data-amadeus-id={slide.id}
+            data-amadeus-kind="slide"
             aria-label={`幻灯片 ${index + 1}`}
             aria-current={slide.id === active ? "true" : undefined}
             onClick={(event) => choose(slide.id, event)}

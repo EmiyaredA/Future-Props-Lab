@@ -590,7 +590,8 @@ def build() -> None:
         "stateBindings": state_bindings,
         "cameras": {
             "avatar": {
-                "x": round(220 * SX),
+                # Frame the head silhouette around x=510 in the original artwork coordinates.
+                "x": round(185 * SX),
                 "y": 0,
                 "width": round(650 * SX),
                 "height": round(650 * SX),

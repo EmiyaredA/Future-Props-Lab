@@ -6,3 +6,14 @@
 .portal-scroll > .page {
   margin-inline: auto;
 }
+
+.portal-amadeus {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.portal-amadeus > .amadeus-workspace {
+  flex: 1;
+  height: auto;
+}

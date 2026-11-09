@@ -14,6 +14,12 @@ const Documents = lazy(() => import("@app/entries/PortalDocuments"));
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 10000, retry: 1 } },
 });
+if (
+  /^\/cloud-control\/?$/.test(location.pathname) &&
+  new URLSearchParams(location.search).get("view") === "agent"
+) {
+  history.replaceState({}, "", "/amadeus");
+}
 const documents = location.pathname === "/docs.html";
 
 createRoot(document.getElementById("root")!).render(

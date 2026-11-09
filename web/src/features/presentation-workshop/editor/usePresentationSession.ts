@@ -1,7 +1,12 @@
+import {
+  assistantElementSource,
+  useAssistantElements,
+} from "@platform/assistantElements";
+import type { AssistantElement } from "@platform/assistantElements";
 import { applyPageStyle } from "./pageStyle";
 import { applyFormat } from "./formatBrush";
 import { removePages, duplicatePages, movePages } from "./pageOperations";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/react";
 import { editorCommands } from "./commands";
@@ -11,6 +16,7 @@ import { usePresentationHistory } from "../usePresentationHistory";
 import { download, imageBlob } from "../api";
 import { presentationKeys } from "../queryKeys";
 import { copySlide, newSlide, newId } from "../templates";
+import { shapeCatalog } from "../shapeCatalog";
 import { effectiveDefinition } from "../master/model";
 import { defaultPage } from "../master/nativeScenes";
 import { boundedElement } from "../geometry";
@@ -73,6 +79,7 @@ export function usePresentationSession({
     }),
     [selected, select] = useState<string[]>([]),
     [editing, setEditing] = useState<string | null>(null);
+  const [pageSelection, setPageSelection] = useState<string[]>([]);
   const [editor, setEditor] = useState<Editor | null>(null),
     [zoom, setZoom] = useState<number | null>(null),
     [scale, setScale] = useState(0.5);
@@ -323,6 +330,69 @@ export function usePresentationSession({
     setCodeSlide(null);
     setActive(id);
   };
+  const pages = draft.draft.document.slides;
+  const elements = useMemo(
+    () =>
+      pages.flatMap((page, index): AssistantElement[] => {
+        const title = `第 ${index + 1} 页`;
+        return [
+          { id: page.id, kind: "slide", name: title, value: "幻灯片" },
+          ...page.elements.map((element): AssistantElement => ({
+            id: element.id,
+            kind: "slide_element",
+            parentId: page.id,
+            name:
+              shapeCatalog.find((shape) => shape.kind === element.kind)
+                ?.label ??
+              (
+                { text: "文本框", image: "图片", video: "视频" } as Record<
+                  string,
+                  string
+                >
+              )[element.kind] ??
+              "页内元素",
+            value: title,
+          })),
+        ];
+      }),
+    [pages],
+  );
+  const source = assistantElementSource(
+    {
+      resource: "presentation",
+      projectId: initial.id,
+      application: "演示工坊",
+      unsaved: draft.state !== "saved",
+      locate: ({ element_kind, element_id, parent_id }) => {
+        if (editor?.view.composing) return false;
+        const page = draft.draft.document.slides.find((page) =>
+          element_kind === "slide"
+            ? page.id === element_id
+            : page.id === parent_id &&
+              page.elements.some((element) => element.id === element_id),
+        );
+        if (!page) return false;
+        chooseSlide(page.id);
+        setPageSelection([page.id]);
+        if (element_kind === "slide_element") select([element_id]);
+        return true;
+      },
+    },
+    elements,
+    [],
+  );
+  useAssistantElements({
+    ...source,
+    selected: () =>
+      elements.filter((item) =>
+        selected.length
+          ? item.parentId === slide.id && selected.includes(item.id)
+          : item.kind === "slide" &&
+            (pageSelection.length
+              ? pageSelection.includes(item.id)
+              : item.id === slide.id),
+      ),
+  });
   const insert = (elements: SlideElement[]) => {
     setBoxSelect(false);
     if (slide.elements.length + elements.length > 200) {
@@ -607,6 +677,8 @@ export function usePresentationSession({
     downloadMedia,
     onText,
     chooseSlide,
+    pageSelection,
+    setPageSelection,
     insert,
     deleteSelected,
     insertFragment,

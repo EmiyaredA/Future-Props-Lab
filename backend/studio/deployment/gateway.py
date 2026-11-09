@@ -199,6 +199,15 @@ def render_gateway(
                 ]
             )
         if audience == "studio":
+            lines.extend(
+                [
+                    "    @retired_agent {",
+                    "      method GET HEAD",
+                    "      path /agents /agents/* /apps/agent-workbench /apps/agent-workbench/*",
+                    "    }",
+                    "    redir @retired_agent /amadeus 302",
+                ]
+            )
             for index, operation in enumerate(catalog.websockets):
                 name = f"{matcher}_socket_{index}"
                 lines.extend(

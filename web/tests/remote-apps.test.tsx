@@ -55,8 +55,8 @@ function show(overrides: Partial<CloudStatus>, unlock = vi.fn()) {
         paneId="apps"
         status={{ ...status, ...overrides }}
         visible
+        titleHost={null}
         onUnlock={unlock}
-        onChange={() => undefined}
       />
     </QueryClientProvider>,
   );

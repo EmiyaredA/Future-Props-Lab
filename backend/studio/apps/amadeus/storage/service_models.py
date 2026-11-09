@@ -6,6 +6,7 @@ from sqlalchemy.orm import DeclarativeBase
 from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
+    AmadeusForkReceipt,
     AmadeusMessage,
     AmadeusQuestion,
     AmadeusRun,
@@ -26,6 +27,7 @@ class AmadeusNativeJob(NativeJobFields, AmadeusNativeBase):
 MODELS = (
     AmadeusNativeJob,
     AmadeusConversation,
+    AmadeusForkReceipt,
     AmadeusRun,
     AmadeusMessage,
     AmadeusAction,

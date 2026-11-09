@@ -100,4 +100,16 @@ def resolve_files(base: Path, environment: dict[str, str]) -> tuple[Path, ...]:
             if not all(environment.get(service_env(service, "IMAGE")) for service in services):
                 raise ValueError(f"{name} 缺少配套服务镜像")
             add(name)
+    if environment.get("FPL_AGENT_ADMISSION_DIR"):
+        if not all(
+            environment.get(service_env(service, "IMAGE"))
+            for service in ("amadeus", "agent-runtime")
+        ):
+            raise ValueError("发布保护需要 Amadeus 和 Agent Runtime 镜像")
+        add("agent-admission")
+    if value := environment.get("FPL_WEB_RELEASES_COMPOSE"):
+        override = Path(value)
+        if not override.is_absolute() or not override.is_file() or override.is_symlink():
+            raise ValueError("独立前端发布挂载清单不可用")
+        selected.append(override)
     return tuple(selected)

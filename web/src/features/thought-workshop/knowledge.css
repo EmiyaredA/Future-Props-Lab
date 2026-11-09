@@ -242,13 +242,6 @@ body.knowledge-sidebar-resizing {
   margin: 0 auto;
   padding: 14px 24px 32px;
 }
-.knowledge-library-heading {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 16px;
-  margin-bottom: 14px;
-}
 .knowledge-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
@@ -510,14 +503,6 @@ body.knowledge-sidebar-resizing {
   .knowledge-library {
     padding: 16px;
   }
-  .knowledge-library-heading {
-    display: flex;
-    justify-content: stretch;
-  }
-  .knowledge-library-heading .knowledge-search {
-    margin-top: 0;
-    width: 100%;
-  }
   .knowledge-cover {
     height: 160px;
   }
@@ -577,4 +562,8 @@ body.knowledge-sidebar-resizing {
   color: var(--text);
   background: var(--surface);
   border-color: var(--border);
+}
+
+.knowledge-main > .knowledge-library-toolbar {
+  margin-inline: 0;
 }

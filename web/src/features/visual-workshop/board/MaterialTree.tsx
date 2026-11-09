@@ -50,6 +50,7 @@ export function MaterialTree({
     >
       <button
         className="board-material"
+        data-amadeus-id={node.id}
         aria-pressed={selectedId === node.id}
         draggable={Boolean(projectId && node.kind !== "text" && node.asset_id)}
         title={

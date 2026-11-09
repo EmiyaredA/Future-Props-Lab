@@ -149,14 +149,16 @@
   opacity: 0.55;
   cursor: default;
 }
-.studio-global-header .account-menu-trigger {
+:is(.studio-global-header, .studio-workshop-utilities) .account-menu-trigger {
   min-height: 32px;
   padding: 2px 8px;
   border-radius: 999px;
   box-shadow: none;
 }
-.studio-global-header .account-menu-trigger:hover,
-.studio-global-header .account-menu-trigger[aria-expanded="true"] {
+:is(.studio-global-header, .studio-workshop-utilities)
+  .account-menu-trigger:hover,
+:is(.studio-global-header, .studio-workshop-utilities)
+  .account-menu-trigger[aria-expanded="true"] {
   box-shadow: var(--shadow-lift);
 }
 @media (max-width: 767px) {
@@ -186,7 +188,8 @@
   }
 }
 
-.studio-global-header .account-identity-avatar {
+:is(.studio-global-header, .studio-workshop-utilities)
+  .account-identity-avatar {
   width: 30px;
   height: 30px;
   flex-basis: 30px;
@@ -194,10 +197,58 @@
 }
 
 @media (pointer: coarse) {
-  .studio-global-header .studio-header-theme .theme-toggle button,
-  .studio-global-header .account-menu-trigger,
-  .studio-global-header button,
-  .studio-global-header .studio-docs-link {
+  :is(.studio-global-header, .studio-workshop-utilities)
+    .studio-header-theme
+    .theme-toggle
+    button,
+  :is(.studio-global-header, .studio-workshop-utilities) .account-menu-trigger,
+  :is(.studio-global-header, .studio-workshop-utilities) button,
+  :is(.studio-global-header, .studio-workshop-utilities) .studio-docs-link {
     min-height: 44px;
+  }
+}
+
+.studio-workshop-utilities {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-inline-start: auto;
+}
+
+.studio-workshop-utilities .studio-header-actions {
+  flex-wrap: nowrap;
+  gap: 4px;
+}
+
+.studio-workshop-utilities .theme-toggle {
+  width: auto;
+}
+
+.studio-workshop-utilities .studio-header-theme .theme-toggle button {
+  padding-inline: 6px;
+}
+
+.studio-workshop-utilities :is(.studio-header-chip, .studio-docs-link) {
+  padding-inline: 7px;
+}
+
+@media (max-width: 1000px) {
+  .studio-workshop-utilities :is(.studio-docs-link, .studio-header-chip) span {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .studio-workshop-utilities .theme-toggle button span {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .studio-workshop-utilities :is(.studio-header-chip, .studio-docs-link),
+  .studio-workshop-utilities .theme-toggle button {
+    min-width: 44px;
+    justify-content: center;
   }
 }

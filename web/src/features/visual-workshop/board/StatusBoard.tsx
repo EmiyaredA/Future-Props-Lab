@@ -93,6 +93,7 @@ function StatusCard({
     >
       <button
         className="board-card-open"
+        data-amadeus-id={node.id}
         aria-label={`打开任务 ${node.title}`}
         onClick={() => onSelect(node.id)}
       >

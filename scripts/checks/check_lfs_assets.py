@@ -102,10 +102,10 @@ EXPECTED_SHA256 = {
         "94a126bece0c8a7593905347156abc800fa25ee946f16a3a17bba5f7dfba6074"
     ),
     Path("web/public/brand/amadeus/amadeus.fpllive2d"): (
-        "9cd9d77c781fbe6d96e878cd48a5ac0709deeeb2b7e5ac876bc3d44d0ca97aac"
+        "7534b1f77bdb46e7678f7a7916f1ce8066c07cd386ed84b84ab5a9eda5bfc9f1"
     ),
     Path("web/public/brand/amadeus/amadeus-poster.png"): (
-        "80cd7211b946667667dc527536b25a8dee536896e887dcae1d280c20e524f441"
+        "5d3f0d7bd01441f6b7cd7da8dc0ec7c12e909d4466b3da00f2cb184973b9c657"
     ),
     Path("web/public/brand/amadeus/amadeus-stage-poster.png"): (
         "59baef48c4953e79f32fcbc9c86e9306fecb65ae554e50349048c41c3ab17465"

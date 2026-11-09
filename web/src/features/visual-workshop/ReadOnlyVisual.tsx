@@ -1,9 +1,14 @@
+import type { ReactNode } from "react";
 import { useState } from "react";
 import { NodeAcceptancePanel } from "./acceptance/NodeAcceptancePanel";
 import { AcceptanceWorkspace } from "./acceptance/AcceptanceWorkspace";
 import { ReadOnlyVisualConversation } from "./ReadOnlyVisualConversation";
 import { useQuery } from "@tanstack/react-query";
-import { ReadOnlyCollection, ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
+import {
+  ReadOnlyCollection,
+  ReadOnlyPage,
+  ReadOnlyWorkshopLibrary,
+} from "@shared/ui/ReadOnlyPage";
 import { ReadOnlyMedia } from "@shared/ui/ReadOnlyMedia";
 import {
   getVisualWorkshopProjects,
@@ -12,10 +17,14 @@ import {
 } from "./api";
 import { visualWorkshopQueryKeys } from "./queryKeys";
 export function ReadOnlyVisual({
+  utilities,
+  libraryActions,
   projectId,
   onOpen,
   onBack,
 }: {
+  utilities?: ReactNode;
+  libraryActions?: ReactNode;
   projectId?: string;
   onOpen: (id: string) => void;
   onBack: () => void;
@@ -43,6 +52,7 @@ export function ReadOnlyVisual({
   if (inspection && projectId)
     return (
       <ReadOnlyPage
+        utilities={utilities}
         title={`${project.data?.title ?? "视觉工坊"} · 节点验收`}
         onBack={() => setInspection(undefined)}
       >
@@ -72,8 +82,22 @@ export function ReadOnlyVisual({
         onBack={() => setAcceptance(false)}
       />
     );
+  if (!projectId && utilities) {
+    return (
+      <ReadOnlyWorkshopLibrary
+        title="我的创作项目"
+        utilities={utilities}
+        actions={libraryActions}
+        error={projects.error}
+        loading={projects.isPending}
+        items={projects.data?.items ?? []}
+        onOpen={onOpen}
+      />
+    );
+  }
   return (
     <ReadOnlyPage
+      utilities={utilities}
       title={project.data?.title || "视觉工坊"}
       loading={projectId ? canvas.isPending : projects.isPending}
       error={projects.error || project.error || canvas.error}

@@ -5,6 +5,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from studio.contracts.agent_runtime.catalog import ModelId
 from studio.contracts.agent_runtime.definitions import DEFINITIONS, AgentId
 
 CATALOG = "code_agents.catalog"
@@ -20,6 +21,7 @@ class CatalogRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
     show_paths: bool = False
+    harness_model: ModelId | None = None
 
 
 class AcceptanceProbe(BaseModel):

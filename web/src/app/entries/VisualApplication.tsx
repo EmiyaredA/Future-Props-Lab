@@ -1,3 +1,4 @@
+import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
 import { lazy } from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
@@ -50,6 +51,12 @@ function VisualWorkspace() {
   const route = visual.matchPath(location.pathname);
   const page = route?.page ?? "visual-workshop-projects";
   const projectId = route?.projectId;
+  const utilities = (
+    <WorkshopUtilities
+      application={visual.definition.name}
+      projectId={projectId}
+    />
+  );
 
   if (writable && page === "visual-workshop-canvas" && projectId) {
     return <Canvas projectId={projectId} onBack={openProjects} />;
@@ -63,19 +70,28 @@ function VisualWorkspace() {
       onBack={() => go("/apps")}
     >
       {page === "visual-workshop-tasks" ? (
-        <Tasks onOpenProject={openCanvas} onOpenAssets={openAssets} />
+        <Tasks
+          utilities={utilities}
+          onOpenProject={openCanvas}
+          onOpenAssets={openAssets}
+        />
       ) : page === "visual-workshop-assets" && projectId ? (
         writable ? (
           <Assets
+            utilities={utilities}
             projectId={projectId}
             onCanvas={() => openCanvas(projectId)}
             onProjects={openProjects}
           />
         ) : (
-          <ReadOnlyFiles projectId={projectId} />
+          <ReadOnlyFiles utilities={utilities} projectId={projectId} />
         )
       ) : writable ? (
-        <Projects onOpenProject={openCanvas} onOpenAssets={openAssets} />
+        <Projects
+          utilities={utilities}
+          onOpenProject={openCanvas}
+          onOpenAssets={openAssets}
+        />
       ) : (
         <>
           {projectId && (
@@ -86,6 +102,7 @@ function VisualWorkspace() {
             </div>
           )}
           <ReadOnlyVisual
+            utilities={utilities}
             projectId={projectId}
             onOpen={openCanvas}
             onBack={openProjects}

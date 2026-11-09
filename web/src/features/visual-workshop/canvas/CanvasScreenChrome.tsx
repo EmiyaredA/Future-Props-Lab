@@ -1,6 +1,6 @@
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { openAmadeus } from "@platform/assistant";
+import { AmadeusButton } from "@platform/AmadeusButton";
 import type { ComponentProps } from "react";
 import {
   AppWindow,
@@ -10,7 +10,6 @@ import {
   Pencil,
   Plus,
   Save,
-  Sparkles,
 } from "lucide-react";
 import { CanvasViewControls } from "@features/visual-workshop/canvas/CanvasViewControls";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
@@ -80,6 +79,7 @@ export function CanvasScreenChrome({
               }}
             >
               <input
+                aria-label="项目名称"
                 autoFocus
                 maxLength={120}
                 value={title}
@@ -121,15 +121,7 @@ export function CanvasScreenChrome({
               </button>
             </div>
           )}
-          {
-            <button
-              type="button"
-              aria-label="打开 Amadeus"
-              onClick={() => void openAmadeus()}
-            >
-              <Sparkles aria-hidden /> Amadeus
-            </button>
-          }
+          <AmadeusButton />
           <button
             type="button"
             aria-label="新建窗口"

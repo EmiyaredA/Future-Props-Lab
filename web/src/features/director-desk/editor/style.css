@@ -12,8 +12,7 @@
   height: 100dvh;
   width: 100%;
   overflow: hidden;
-  position: fixed;
-  inset: 0;
+  position: relative;
 }
 .director-desk-root[data-timeline-drag="move"],
 .director-desk-root[data-timeline-drag="move"] * {

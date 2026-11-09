@@ -1,4 +1,5 @@
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { useSelectPopover } from "@shared/ui/useSelectPopover";
 import {
   servicePhaseLabels,
   serviceStatusTime,
@@ -17,8 +18,31 @@ export function ApplicationServiceStatus({
   checking?: boolean;
   unavailable?: boolean;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [open, setOpen] = useState(false);
+  const wrapper = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const popover = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const id = useId();
+  useSelectPopover(open, trigger, popover, 220, 224);
+  useEffect(() => {
+    if (!open) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!wrapper.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", dismiss);
+    return () => {
+      clearTimeout(closeTimer.current);
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", dismiss);
+    };
+  }, [open]);
   const phase = unavailable ? "unknown" : (value?.phase ?? "unknown");
   const label =
     checking && !value && !unavailable ? "检查中…" : servicePhaseLabels[phase];
@@ -26,27 +50,51 @@ export function ApplicationServiceStatus({
     ? "无法读取最新服务状态，正在等待连接恢复。"
     : (value?.detail ?? "尚未取得服务状态，请稍后刷新。");
   return (
-    <div className="application-service-status" data-phase={phase}>
+    <div
+      ref={wrapper}
+      className="application-service-status"
+      data-phase={phase}
+      onPointerEnter={(event) => {
+        if (event.pointerType !== "mouse") return;
+        clearTimeout(closeTimer.current);
+        setOpen(true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType !== "mouse" || !open) return;
+        closeTimer.current = setTimeout(() => setOpen(false), 150);
+      }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
+      }}
+    >
       <button
+        ref={trigger}
         type="button"
         className="application-status-toggle"
         aria-label={`查看${name}服务状态：${label}`}
-        aria-expanded={expanded}
-        aria-controls={id}
-        onClick={() => setExpanded((current) => !current)}
+        aria-expanded={open}
+        aria-controls={open ? id : undefined}
+        onClick={(event) => {
+          if (
+            event.detail &&
+            "pointerType" in event.nativeEvent &&
+            event.nativeEvent.pointerType === "mouse"
+          )
+            return;
+          setOpen((current) => !current);
+        }}
       >
         <span className="application-status-dot" aria-hidden />
         <span>{label}</span>
       </button>
-      {phase !== "running" &&
-        (!checking || !!value || unavailable) &&
-        !expanded && <p className="application-status-summary">{detail}</p>}
-      {expanded && (
+      {open && (
         <div
+          ref={popover}
           id={id}
           role="region"
           aria-label={`${name}服务状态`}
           className="application-status-detail"
+          popover="manual"
         >
           <p>{detail}</p>
           {!!value?.dependencies?.length && (

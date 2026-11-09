@@ -1,5 +1,6 @@
+import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
 import { lazy } from "react";
-import "@app/layout/workshop-shell.css";
+import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { useStudioSession } from "@app/StudioSession";
 import { RuntimeAccessProvider } from "@features/accounts";
 import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
@@ -7,7 +8,6 @@ import { DIRECTOR_DESK_MODULE as director } from "@features/director-desk/module
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { IndependentShell } from "./IndependentShell";
 import { guardedNavigation } from "./navigation";
 
 const Editor = lazy(director.pages.editor);
@@ -29,23 +29,34 @@ function DirectorContent() {
       </NavigationProtection>
     );
 
+  if (route?.page === "director-desk-projects")
+    return (
+      <NavigationProtection>
+        <WorkshopShell
+          module={director}
+          page={route.page}
+          navigate={() => {}}
+          onBack={() => go("/apps")}
+        >
+          <ApplicationUpdate />
+          <Projects
+            utilities={
+              <WorkshopUtilities application={director.definition.name} />
+            }
+            readOnly={!writable}
+            onOpen={(id) => {
+              const url = director.pathFor("director-desk-editor", id);
+              if (url) go(url);
+            }}
+          />
+        </WorkshopShell>
+      </NavigationProtection>
+    );
   return (
-    <IndependentShell title="导演台">
-      {route?.page === "director-desk-projects" ? (
-        <Projects
-          readOnly={!writable}
-          onOpen={(id) => {
-            const url = director.pathFor("director-desk-editor", id);
-            if (url) go(url);
-          }}
-        />
-      ) : (
-        <section className="independent-not-found">
-          <h1>页面不存在</h1>
-          <a href={index}>返回导演台</a>
-        </section>
-      )}
-    </IndependentShell>
+    <section className="independent-not-found">
+      <h1>页面不存在</h1>
+      <a href={index}>返回导演台</a>
+    </section>
   );
 }
 

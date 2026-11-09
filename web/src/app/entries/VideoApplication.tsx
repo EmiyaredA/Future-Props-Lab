@@ -1,3 +1,4 @@
+import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
 import { lazy, useCallback, useEffect, useRef } from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
@@ -45,6 +46,12 @@ function VideoWorkspace() {
   );
   useEffect(() => () => unregister.current?.(), []);
   const route = video.matchPath(location.pathname);
+  const utilities = (
+    <WorkshopUtilities
+      application={video.definition.name}
+      projectId={route?.projectId}
+    />
+  );
   const openProject = (id: string) => navigate("video-editor-editor", id);
   const back = () => navigate("video-editor-projects");
   if (writable && route?.page === "video-editor-editor" && route.projectId)
@@ -68,11 +75,12 @@ function VideoWorkspace() {
       onBack={() => go("/apps")}
     >
       {page === "video-editor-tasks" ? (
-        <Tasks onOpenProject={openProject} />
+        <Tasks utilities={utilities} onOpenProject={openProject} />
       ) : writable ? (
-        <Projects onOpenProject={openProject} />
+        <Projects utilities={utilities} onOpenProject={openProject} />
       ) : (
         <ReadOnlyVideo
+          utilities={utilities}
           projectId={route?.projectId}
           onOpen={openProject}
           onBack={back}

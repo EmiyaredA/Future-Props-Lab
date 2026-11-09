@@ -1,5 +1,10 @@
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ReadOnlyCollection, ReadOnlyPage } from "@shared/ui/ReadOnlyPage";
+import {
+  ReadOnlyCollection,
+  ReadOnlyPage,
+  ReadOnlyWorkshopLibrary,
+} from "@shared/ui/ReadOnlyPage";
 import { ReadOnlyMedia } from "@shared/ui/ReadOnlyMedia";
 import {
   getAudioAnnotationDocument,
@@ -8,10 +13,12 @@ import {
 } from "./api";
 import { audioAnnotationQueryKeys as keys } from "./queryKeys";
 export function ReadOnlyAnnotation({
+  utilities,
   projectId,
   onOpen,
   onBack,
 }: {
+  utilities?: ReactNode;
   projectId?: string;
   onOpen: (id: string) => void;
   onBack: () => void;
@@ -31,8 +38,22 @@ export function ReadOnlyAnnotation({
     queryFn: () => getAudioAnnotationDocument(projectId!),
     enabled: !!projectId,
   });
+  if (!projectId && utilities) {
+    return (
+      <ReadOnlyWorkshopLibrary
+        title="我的标注任务"
+        utilities={utilities}
+
+        error={projects.error}
+        loading={projects.isPending}
+        items={projects.data?.items ?? []}
+        onOpen={onOpen}
+      />
+    );
+  }
   return (
     <ReadOnlyPage
+      utilities={utilities}
       title={project.data?.title || "录音标注"}
       error={projects.error || project.error || document.error}
       loading={projectId ? document.isPending : projects.isPending}

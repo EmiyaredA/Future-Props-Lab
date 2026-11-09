@@ -28,16 +28,25 @@ try {
   for (const section of ["home", "apps"]) {
     await page.goto(new URL(section === "home" ? "/" : "/apps", origin).href);
     await expect(page.getByRole("heading", {name: section === "home" ? "今天想从哪里开始？" : "应用", exact: true})).toBeVisible();
+    await expect(page.locator('.studio-sidebar button[aria-current="page"]')).toHaveText(section === "home" ? "首页" : "应用");
     if (section === "apps" && options.checkUndeployedApplication) {
       const status = page.getByRole("button", {name: "查看演示工坊服务状态：未部署", exact: true});
       await expect(status).toBeVisible({timeout: 15000});
+      const card = page.locator(".application-card").filter({has: status});
+      const cardHeight = (await card.boundingBox()).height;
+      const details = page.getByRole("region", {name: "演示工坊服务状态", exact: true});
+      await status.hover();
+      await expect(details).toBeVisible();
+      if ((await card.boundingBox()).height !== cardHeight)
+        throw new Error("Application status details changed the card height");
+      await page.getByRole("heading", {name: "应用", exact: true}).hover();
+      await expect(details).toBeHidden();
       await status.focus();
       await page.keyboard.press("Enter");
-      const details = page.getByRole("region", {name: "演示工坊服务状态", exact: true});
       await expect(details).toContainText("此服务尚未部署");
       await expect(details).toContainText("最近检查");
       await expect(page).toHaveURL(new URL("/apps", origin).href);
-      checks.push("an undeployed application's observed status expands by keyboard without navigating the card");
+      checks.push("application status appears on hover and by keyboard without changing card height or navigation");
     }
     for (const width of [390, 768, 1600]) {
       await page.setViewportSize({width, height: 1000});
@@ -50,8 +59,9 @@ try {
       }
     }
   }
-  await page.getByRole("link", {name: "云控", exact: true}).click();
+  await page.locator(".studio-sidebar").getByRole("button", {name: "云控", exact: true}).click();
   await expect(page).toHaveURL(new URL("/cloud-control", origin).href);
+  await expect(page.locator('.studio-sidebar button[aria-current="page"]')).toHaveText("云控");
   await expect(page.getByRole("heading", {name: "云控", exact: true})).toBeVisible();
   await expect(page.getByRole("region", {name: "远程桌面"})).toBeVisible();
   await expect(page.getByRole("button", {name: "Agent 工作台"})).toHaveCount(0);

@@ -17,7 +17,12 @@ export function observeApplicationBuild(response: Response) {
     response.headers.get("X-Application-Build") !== build
   ) {
     window.dispatchEvent(
-      new CustomEvent("future-props:application-update", { detail: service }),
+      new CustomEvent("future-props:application-update", {
+        detail: {
+          service,
+          required: response.headers.get("X-Application-Update") === "required",
+        },
+      }),
     );
   }
 }

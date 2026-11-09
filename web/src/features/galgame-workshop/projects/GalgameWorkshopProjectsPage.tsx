@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
@@ -8,8 +9,8 @@ import {
   Maximize2,
   Pencil,
   Plus,
-  RefreshCcw,
   Search,
+  RefreshCcw,
   Trash2,
   X,
 } from "lucide-react";
@@ -21,7 +22,10 @@ import {
   ProjectSnapshotImportButton,
   useProjectLibraryController,
 } from "@shared/ui/project-library";
-import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
+import {
+  WorkshopAppChrome,
+  WorkshopSearch,
+} from "@shared/ui/WorkshopAppChrome";
 import {
   createGalgameWorkshopProject,
   deleteGalgameWorkshopProject,
@@ -42,8 +46,10 @@ function errorMessage(error: unknown) {
 }
 
 export function GalgameWorkshopProjectsPage({
+  utilities,
   onOpenProject = () => undefined,
 }: {
+  utilities?: ReactNode;
   onOpenProject?: (projectId: string) => void;
 }) {
   const { run: runTransfer, progress: activeTransferProgress } =
@@ -91,10 +97,18 @@ export function GalgameWorkshopProjectsPage({
       <TransferFeedback progress={activeTransferProgress} />
 
       <WorkshopAppChrome
+        utilities={utilities}
+        showThemeToggle={false}
         title="我的 Galgame 工程"
-        description="管理故事工程，从剧本结构进入分支试玩与线路检查。"
         actions={
           <>
+            <WorkshopSearch
+              label="搜索工程"
+              placeholder="搜索工程名称…"
+              value={query}
+              onChange={setQuery}
+            />
+
             <ProjectSnapshotImportButton
               pending={importMutation.isPending}
               onImport={(file) => importMutation.mutate(file)}
@@ -110,17 +124,6 @@ export function GalgameWorkshopProjectsPage({
           </>
         }
       />
-      <div className="workshop-toolbar workshop-toolbar-simple">
-        <label>
-          <Search aria-hidden />
-          <input
-            aria-label="搜索工程"
-            placeholder="搜索工程名称…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-      </div>
       {notice ? (
         <div className="workshop-notice" role="status">
           {notice}
@@ -151,7 +154,6 @@ export function GalgameWorkshopProjectsPage({
               }
               cover="galgame"
               coverTitle="故事工程"
-              coverDescription="打开结构、试玩与检查"
               onOpen={() => onOpenProject(project.id)}
             >
               <div className="workshop-project-primary-actions">

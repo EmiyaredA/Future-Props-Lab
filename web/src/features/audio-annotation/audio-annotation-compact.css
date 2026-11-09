@@ -56,9 +56,6 @@
   .annotation-project-actions button {
     white-space: nowrap;
   }
-  .annotation-projects-page .annotation-projects-toolbar {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .annotation-project-stats {
     flex-wrap: wrap;
     gap: 12px;

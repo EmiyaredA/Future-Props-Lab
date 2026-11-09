@@ -365,6 +365,7 @@ export function NoteEditorPane({
                   <input
                     ref={titleInput}
                     className="thought-title-input"
+                    data-amadeus-id={note.id}
                     aria-label="笔记标题"
                     disabled={recoveryPending}
                     maxLength={240}

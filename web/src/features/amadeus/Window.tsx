@@ -1,5 +1,7 @@
+import { clipboardAttachments } from "./attachmentImport";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
+import { imageVariants } from "@shared/lib/imageVariants";
 import { useRuntimeAccess } from "@features/accounts";
 import "./window.css";
 import "./window-theme.css";
@@ -8,47 +10,79 @@ import "./side-rail.css";
 import "./activity-feed.css";
 import "./conversation-layout.css";
 import "./capability-dialog.css";
-import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
   History,
   Plus,
   Search,
   X,
-  Paperclip,
-  FolderOpen,
-  MousePointer2,
-  Boxes,
-  Send,
-  Square,
   ChevronDown,
   ChevronUp,
   ScrollText,
   UserRound,
-  MoreHorizontal,
-  Trash2,
-  Check,
+  ArrowLeft,
+  PanelRight,
+  AppWindow,
+  ExternalLink,
 } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { useEffect, useId, useRef, useState } from "react";
+import * as Tooltip from "@radix-ui/react-tooltip";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { AccountSessionContext } from "@features/accounts";
 import { fetchApiJson } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import { avatarStateLabels } from "./protocol";
+import { ConversationHistoryRow } from "./ConversationHistoryRow";
+import { avatarStateLabels, type Reference } from "./protocol";
+import { ReferenceChip } from "./ReferenceChip";
 import { AmadeusAvatar } from "./Avatar";
-import { ActivityFeed, ExecutionInspector } from "./ActivityFeed";
+import {
+  ActivityFeed,
+  ExecutionInspector,
+  FileInspector,
+} from "./ActivityFeed";
 import { buildDisplayTimeline } from "./displayTimeline";
+import {
+  mergeReferences,
+  referenceKey,
+  referenceLimit,
+} from "./elementReferences";
 import { CapabilityDialog } from "./CapabilityDialog";
 import { ContextPanel } from "./ContextPanel";
 import { useAppearance } from "./useAppearance";
 import { useAmadeusController } from "./useAmadeusController";
+import { ProjectPicker } from "./ProjectPicker";
+import { TranscriptViewport } from "./TranscriptViewport";
+import { ComposerAttachments } from "./ComposerAttachments";
+import { ComposerTools } from "./ComposerTools";
+import { ComposerModels } from "./ComposerModels";
+import { UsageIndicators } from "./UsageIndicators";
+import { MessageSelection } from "./MessageActions";
+import { useMessageActions } from "./useMessageActions";
+import "./transcript.css";
+import "./message-controls.css";
 
-export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
+type WindowProps = {
+  session: AccountSessionContext;
+  standalone?: boolean;
+  splitLayout?: { active: boolean; toggle: () => void };
+};
+
+export function AmadeusWindow(props: WindowProps) {
+  return (
+    <Tooltip.Provider delayDuration={260} disableHoverableContent>
+      <AmadeusWindowContent {...props} />
+    </Tooltip.Provider>
+  );
+}
+
+function AmadeusWindowContent({
+  session,
+  standalone = false,
+  splitLayout,
+}: WindowProps) {
   const localBrowser = useRuntimeAccess();
   const [stageOpen, setStageOpen] = useState(false);
   const [railOpen, setRailOpen] = useState(() => window.innerWidth >= 700);
-  const [inspectorOpen, setInspectorOpen] = useState(
-    () => window.innerWidth >= 1120,
-  );
+  const [inspectorConversation, setInspectorConversation] = useState<string>();
   const [selectedTool, setSelectedTool] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [renaming, setRenaming] = useState(false);
@@ -56,21 +90,15 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
   const historyListRef = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLDivElement>(null);
   const railFits = useRef(window.innerWidth >= 700);
-  const inspectorFits = useRef(window.innerWidth >= 1120);
   useEffect(() => {
     const element = frame.current;
     if (!element) return;
     const onResize = () => {
       const width = element.clientWidth || window.innerWidth;
       const nextRail = width >= 700;
-      const nextInspector = width >= 1120;
       if (railFits.current !== nextRail) {
         railFits.current = nextRail;
         setRailOpen(nextRail);
-      }
-      if (inspectorFits.current !== nextInspector) {
-        inspectorFits.current = nextInspector;
-        if (!nextInspector) setInspectorOpen(false);
       }
     };
     onResize();
@@ -84,6 +112,16 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
   }, []);
   const historyRegionId = useId();
   const appearance = useAppearance(session);
+  const [initialConversation] = useState(() =>
+    standalone
+      ? new URLSearchParams(location.search).get("conversation") || undefined
+      : undefined,
+  );
+  const controller = useAmadeusController(
+    session,
+    initialConversation,
+    standalone,
+  );
   const {
     bridge,
     detail,
@@ -103,12 +141,6 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     activeRun,
     error,
     setError,
-    agents,
-    agentId,
-    setAgentId,
-    models,
-    modelId,
-    setModelId,
     capabilitiesOpen,
     setCapabilitiesOpen,
     toolApis,
@@ -122,12 +154,12 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     setRenameTitle,
     deleteItem,
     setDeleteItem,
-    attachments,
+    importing,
     filesOpen,
     setFilesOpen,
     workFiles,
     filePreview,
-    setFilePreview,
+    closeFilePreview,
     scriptAvailable,
     registeredOperations,
     previewReference,
@@ -142,11 +174,10 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     reviseArtifact,
     answerQuestion,
     continueRun,
-    stop,
     create,
     rename,
     remove,
-    importAttachment,
+    importAttachments,
     showFiles,
     previewFile,
     downloadFile,
@@ -154,9 +185,109 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
     startFromHistory,
     scopedContexts,
     groups,
-  } = useAmadeusController(session);
-  const display = detail ? buildDisplayTimeline(detail, runs) : null;
+    projects,
+    setProjects,
+  } = controller;
+  const messageActions = useMessageActions({
+    detail,
+    busy,
+    writable: session.me.permission_keys?.includes("content.write") ?? false,
+    frame,
+    onPin: controller.pinMessage,
+    onFork: async (source, message, request) => {
+      const branch = await controller.forkMessage(source, message, request);
+      if (standalone && branch) {
+        const url = new URL(window.location.href);
+        url.searchParams.set("conversation", branch);
+        window.history.replaceState(window.history.state, "", url);
+      }
+    },
+  });
+  const display = useMemo(
+    () => (detail ? buildDisplayTimeline(detail, runs) : null),
+    [detail, runs],
+  );
   const hasExecution = !!display?.tools.length;
+  const attachSelection = () => {
+    const selected = bridge.selectedAmadeusElements();
+    if (!selected.length) {
+      setError("请先在工坊中选中要引用的元素");
+      return false;
+    }
+    const next = mergeReferences(references, selected);
+    setReferences(next);
+    setError(
+      next.length < new Set([...references, ...selected].map(referenceKey)).size
+        ? `本轮最多引用 ${referenceLimit} 个元素`
+        : "",
+    );
+    return true;
+  };
+  const locateReference = async (reference: Reference) => {
+    const result = await bridge
+      .locateAmadeusReference(reference)
+      .catch(() => "failed" as const);
+    setError(
+      result === "found"
+        ? ""
+        : result === "wrong-project"
+          ? "请先打开引用的来源项目"
+          : result === "missing"
+            ? "找不到这个元素，可能已经删除或移动"
+            : "暂时无法定位这个元素，请检查来源项目后重试",
+    );
+  };
+  const openReference = (reference: Reference) => {
+    if (reference.target) void locateReference(reference);
+    else setPreviewReference(reference);
+  };
+  const conversationId = detail?.conversation.id;
+  const activeSnapshot =
+    activeRun && runs.find((entry) => entry.run.id === activeRun.id);
+  const activeStatus = activeSnapshot?.run.status ?? activeRun?.status;
+  let composerStatus = "";
+  let thinking = false;
+  if (busy && (!activeRun || activeRun.conversation_id === conversationId)) {
+    if (activeStatus === "cancelling") composerStatus = "正在停止…";
+    else if (!activeStatus || activeStatus === "running") {
+      if (
+        activeRun &&
+        display?.entries.some(
+          (entry) =>
+            entry.kind === "message" &&
+            entry.streaming &&
+            entry.message.run_id === activeRun.id,
+        )
+      )
+        composerStatus = "正在输出…";
+      else if (
+        activeRun &&
+        display?.tools.some(
+          (tool) =>
+            tool.runId === activeRun.id && tool.displayStatus === "running",
+        )
+      )
+        composerStatus = "正在执行工具…";
+      else {
+        const answered = activeSnapshot?.events.reduce((hasReply, event) => {
+          if (
+            event.kind === "assistant_message" &&
+            typeof event.payload.text === "string" &&
+            event.payload.text.trim()
+          )
+            return true;
+          if (event.kind === "tool_call" || event.kind === "reasoning_summary")
+            return false;
+          return hasReply;
+        }, false);
+        thinking = !answered;
+      }
+    }
+  }
+  const inspectorOpen =
+    !!conversationId &&
+    inspectorConversation === conversationId &&
+    !filePreview;
   const renameId = renameItem?.id;
   useEffect(() => {
     if (!renameId) return;
@@ -209,31 +340,46 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             camera="avatar"
           />
           <div>
-            <strong>Amadeus</strong>
+            <strong title={standalone ? detail?.conversation.title : undefined}>
+              {(standalone && detail?.conversation.title) || "Amadeus"}
+            </strong>
             <small>
               <span
                 className={`amadeus-status-dot amadeus-status-${avatarState}`}
               />
-              {avatarStateLabels[avatarState]} ·{" "}
+              {standalone && detail && "Amadeus · "}
+              {busy ? "运行中" : avatarStateLabels[avatarState]}
               {saving ? (
-                <LoadingState variant="inline" label="正在保存" />
-              ) : busy ? (
-                <LoadingState variant="inline" label="正在生成" />
+                <>
+                  {" "}
+                  · <LoadingState variant="inline" label="正在保存" />
+                </>
               ) : (
-                "已保存到本机"
+                !busy && " · 已保存到本机"
               )}
             </small>
           </div>
         </div>
         <div className="amadeus-header-actions">
+          {standalone && (
+            <a className="amadeus-header-link" href="/">
+              <ArrowLeft size={16} aria-hidden />
+              返回 Studio
+            </a>
+          )}
           {hasExecution && (
             <button
               title={inspectorOpen ? "收起执行详情" : "查看执行详情"}
               aria-label={inspectorOpen ? "收起执行详情" : "查看执行详情"}
               aria-pressed={inspectorOpen}
               onClick={() => {
-                setInspectorOpen(!inspectorOpen);
-                if (!inspectorOpen) setStageOpen(false);
+                setInspectorConversation(
+                  inspectorOpen ? undefined : conversationId,
+                );
+                if (!inspectorOpen) {
+                  setStageOpen(false);
+                  closeFilePreview();
+                }
               }}
             >
               <ScrollText size={17} />
@@ -246,7 +392,10 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             onClick={() => {
               const next = !stageOpen;
               setStageOpen(next);
-              if (next) setInspectorOpen(false);
+              if (next) {
+                setInspectorConversation(undefined);
+                closeFilePreview();
+              }
             }}
           >
             <UserRound size={17} />
@@ -269,13 +418,54 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
           >
             <Plus size={18} />
           </button>
-          <button
-            title="关闭 Amadeus"
-            aria-label="关闭 Amadeus"
-            onClick={() => void bridge.hideAmadeus()}
-          >
-            <X size={18} />
-          </button>
+          {!standalone && (
+            <div
+              className="amadeus-window-actions"
+              role="group"
+              aria-label="窗口显示"
+            >
+              {splitLayout && (
+                <button
+                  type="button"
+                  className="amadeus-header-link amadeus-layout-switch"
+                  title={splitLayout.active ? "切换为右侧弹窗" : "切换为分屏"}
+                  aria-label={
+                    splitLayout.active ? "切换为右侧弹窗" : "切换为分屏"
+                  }
+                  onClick={splitLayout.toggle}
+                >
+                  {splitLayout.active ? (
+                    <AppWindow size={16} aria-hidden />
+                  ) : (
+                    <PanelRight size={16} aria-hidden />
+                  )}
+                  {splitLayout.active ? "弹窗" : "分屏"}
+                </button>
+              )}
+              <a
+                className="amadeus-header-link"
+                href={
+                  detail
+                    ? `/amadeus?conversation=${encodeURIComponent(detail.conversation.id)}`
+                    : "/amadeus"
+                }
+                title="在新标签页打开 Amadeus"
+                aria-label="在新标签页打开 Amadeus"
+                target="_blank"
+                rel="noopener"
+              >
+                <ExternalLink size={16} aria-hidden />
+                新标签页
+              </a>
+              <button
+                title="关闭 Amadeus"
+                aria-label="关闭 Amadeus"
+                onClick={() => void bridge.hideAmadeus()}
+              >
+                <X size={18} />
+              </button>
+            </div>
+          )}
         </div>
       </header>
       {appearance.notice && (
@@ -340,120 +530,69 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                 <input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="搜索本地对话"
+                  placeholder="搜索对话或项目"
                 />
               </label>
               <div className="amadeus-history-list" ref={historyListRef}>
                 {groups.map((group) => (
-                  <section key={group.name}>
-                    <h3>{group.name}</h3>
+                  <section key={group.id}>
+                    <h3
+                      title={
+                        group.workshop
+                          ? `${group.workshop.name} · ${group.name}`
+                          : group.name
+                      }
+                    >
+                      {group.workshop && (
+                        <ResponsiveImage
+                          className="amadeus-history-workshop-avatar"
+                          src={imageVariants[group.workshop.brandImage]?.["64"]}
+                          alt=""
+                          width={18}
+                          height={18}
+                          loading="lazy"
+                        />
+                      )}
+                      <span>
+                        {group.name}
+                        {group.workshop && <small>{group.workshop.name}</small>}
+                      </span>
+                    </h3>
                     {group.items.map((item) => (
-                      <div
-                        className={`amadeus-history-row ${detail?.conversation.id === item.id ? "active" : ""}`}
+                      <ConversationHistoryRow
                         key={item.id}
-                        data-conversation-id={item.id}
-                      >
-                        {renameItem?.id === item.id ? (
-                          <form
-                            className="amadeus-history-rename"
-                            aria-label={`重命名对话「${item.title}」`}
-                            onSubmit={(event) => {
-                              event.preventDefault();
-                              void saveRename();
-                            }}
-                          >
-                            <input
-                              ref={renameInputRef}
-                              aria-label="对话名称"
-                              aria-describedby={
-                                error
-                                  ? `${historyRegionId}-rename-error`
-                                  : undefined
+                        item={item}
+                        current={detail?.conversation.id === item.id}
+                        status={
+                          activeRun?.conversation_id === item.id
+                            ? activeRun.status
+                            : item.latest_run_status
+                        }
+                        busy={busy}
+                        saving={renaming}
+                        onOpen={() => void open(item.id)}
+                        onRename={() => {
+                          setError("");
+                          setRenameItem(item);
+                          setRenameTitle(item.title);
+                        }}
+                        onDelete={() => {
+                          setError("");
+                          setDeleteItem(item);
+                        }}
+                        rename={
+                          renameItem?.id === item.id
+                            ? {
+                                input: renameInputRef,
+                                title: renameTitle,
+                                error,
+                                setTitle: setRenameTitle,
+                                save: () => void saveRename(),
+                                cancel: cancelRename,
                               }
-                              value={renameTitle}
-                              maxLength={120}
-                              disabled={renaming}
-                              onChange={(event) =>
-                                setRenameTitle(event.target.value)
-                              }
-                              onKeyDown={(event) => {
-                                if (
-                                  event.nativeEvent.isComposing ||
-                                  event.keyCode === 229
-                                ) {
-                                  if (event.key === "Enter")
-                                    event.preventDefault();
-                                  return;
-                                }
-                                if (event.key === "Escape") {
-                                  event.preventDefault();
-                                  event.stopPropagation();
-                                  cancelRename();
-                                }
-                              }}
-                            />
-                            <button
-                              type="submit"
-                              aria-label="保存对话名称"
-                              title={renaming ? "正在保存" : "保存"}
-                              disabled={renaming || !renameTitle.trim()}
-                            >
-                              <Check size={15} aria-hidden />
-                            </button>
-                            <button
-                              type="button"
-                              aria-label="取消重命名"
-                              title="取消"
-                              disabled={renaming}
-                              onClick={cancelRename}
-                            >
-                              <X size={15} aria-hidden />
-                            </button>
-                            {error && (
-                              <small
-                                id={`${historyRegionId}-rename-error`}
-                                role="alert"
-                              >
-                                {error}
-                              </small>
-                            )}
-                          </form>
-                        ) : (
-                          <>
-                            <button
-                              className="amadeus-history-title"
-                              onClick={() => void open(item.id)}
-                            >
-                              {item.title}
-                            </button>
-                            <div className="amadeus-history-actions">
-                              <button
-                                title="重命名"
-                                aria-label={`重命名对话「${item.title}」`}
-                                disabled={renaming}
-                                onClick={() => {
-                                  setError("");
-                                  setRenameItem(item);
-                                  setRenameTitle(item.title);
-                                }}
-                              >
-                                <MoreHorizontal size={15} aria-hidden />
-                              </button>
-                              <button
-                                title={busy ? "请先停止当前任务" : "删除"}
-                                aria-label={`删除对话「${item.title}」`}
-                                disabled={busy || renaming}
-                                onClick={() => {
-                                  setError("");
-                                  setDeleteItem(item);
-                                }}
-                              >
-                                <Trash2 size={14} aria-hidden />
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                            : undefined
+                        }
+                      />
                     ))}
                   </section>
                 ))}
@@ -461,7 +600,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             </div>
           </section>
         </aside>
-        <main className="amadeus-chat">
+        <main className="amadeus-chat" data-popover-boundary>
           {detail?.conversation.executor_kind === "legacy-pi" && (
             <div className="amadeus-running-banner">
               旧内核历史只读。新对话使用 Code Agent。
@@ -529,7 +668,7 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
               </Dialog.Content>
             </Dialog.Portal>
           </Dialog.Root>
-          <div className="amadeus-messages">
+          <TranscriptViewport key={detail?.conversation.id}>
             {!detail?.messages.length && (
               <div className="amadeus-welcome">
                 <div className="amadeus-welcome-avatar">
@@ -547,7 +686,11 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                   <button onClick={() => setDraft("帮我看看当前窗口里的项目")}>
                     看看当前窗口里的项目
                   </button>
-                  <button onClick={() => setDraft("解释一下我选中的对象")}>
+                  <button
+                    onClick={() => {
+                      if (attachSelection()) setDraft("解释一下我选中的对象");
+                    }}
+                  >
                     解释选中的对象
                   </button>
                   <button onClick={() => setDraft("列出当前可用的工具能力")}>
@@ -559,121 +702,119 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             {detail && (
               <ActivityFeed
                 detail={detail}
+                owner={session.me.user.id}
                 runs={runs}
                 display={display || undefined}
-                onReference={setPreviewReference}
+                messageActions={messageActions}
+                onReference={openReference}
                 onApproval={decideApproval}
                 onReviseApproval={reviseApproval}
                 onReviseArtifact={reviseArtifact}
                 onAnswer={answerQuestion}
                 onContinue={continueRun}
-                onInspect={(runId) => {
-                  const selected = display?.tools.find(
-                    (item) => item.runId === runId,
-                  );
-                  setSelectedTool(
-                    selected ? `${selected.runId}:${selected.callId}` : null,
-                  );
+                selectedTool={inspectorOpen ? selectedTool : null}
+                onInspect={(key) => {
+                  setSelectedTool(key);
+                  closeFilePreview();
                   setStageOpen(false);
-                  setInspectorOpen(true);
+                  setInspectorConversation(conversationId);
                 }}
               />
             )}
-          </div>
+            <div className="amadeus-thinking-status" role="status">
+              {thinking ? "正在思考…" : null}
+            </div>
+          </TranscriptViewport>
           <div className="amadeus-bottom">
             {error && (
               <div className="amadeus-error" role="alert">
                 {error}
               </div>
             )}
-            <div className="amadeus-composer">
-              <input
-                ref={fileInputRef}
-                type="file"
-                hidden
-                multiple
-                onChange={(event) => {
-                  void Promise.all(
-                    [...(event.target.files || [])].map(importAttachment),
-                  );
-                  event.target.value = "";
-                }}
+            <div className="amadeus-composer-meta">
+              <div className="amadeus-composer-status" role="status">
+                {composerStatus}
+              </div>
+              <MessageSelection actions={messageActions} />
+              <UsageIndicators
+                key={conversationId}
+                conversationId={conversationId}
+                runs={runs}
+                active={activeRun}
               />
-              {attachments.length > 0 && (
-                <div className="amadeus-attachments">
-                  已导入：{attachments.map((item) => item.name).join("、")}
-                </div>
-              )}
+            </div>
+            <div className="amadeus-composer">
+              <div className="amadeus-project-controls">
+                <ProjectPicker
+                  owner={session.me.user.id}
+                  selected={projects}
+                  onChange={setProjects}
+                  disabled={busy}
+                />
+              </div>
+              <ComposerAttachments
+                input={fileInputRef}
+                importing={importing}
+                importFiles={importAttachments}
+              />
               {references.length > 0 && (
                 <div className="amadeus-pending-refs">
                   {references.map((item, index) => (
-                    <div className="amadeus-ref" key={`${item.id}-${index}`}>
-                      <button
-                        className="amadeus-ref-content"
-                        onClick={() => setPreviewReference(item)}
-                      >
-                        <span className="amadeus-ref-thumb">
-                          {item.thumbnail ? (
-                            <ResponsiveImage src={item.thumbnail} alt="" />
-                          ) : (
-                            "▧"
-                          )}
-                        </span>
-                        <span>
-                          <strong>
-                            {index + 1}. {item.name}
-                          </strong>
-                          <small>
-                            {item.application}
-                            {item.value ? ` · ${item.value}` : ""}
-                          </small>
-                        </span>
-                      </button>
-                      <button
-                        title="移除引用"
-                        onClick={() =>
-                          setReferences(
-                            references.filter((_, at) => at !== index),
-                          )
-                        }
-                      >
-                        <X size={13} />
-                      </button>
-                    </div>
+                    <ReferenceChip
+                      key={referenceKey(item)}
+                      reference={item}
+                      onOpen={openReference}
+                      onRemove={() =>
+                        setReferences((previous) =>
+                          previous.filter((_, at) => at !== index),
+                        )
+                      }
+                    />
                   ))}
                 </div>
               )}
               <textarea
                 aria-label="向 Amadeus 提问"
-                placeholder="描述你的想法，或选取应用中的控件…"
+                placeholder={
+                  standalone
+                    ? "描述你想在工坊项目里完成的工作…"
+                    : "描述你的想法，或引用工坊里的项目元素…"
+                }
                 value={draft}
                 onChange={(event) => setDraft(event.target.value)}
+                onPaste={(event) => {
+                  const files = clipboardAttachments(event.clipboardData);
+                  if (!files.length) return;
+                  event.preventDefault();
+                  if (busy || importing) {
+                    setError("请等当前任务或附件导入完成后再粘贴。");
+                    return;
+                  }
+                  void importAttachments(files);
+                }}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.shiftKey) {
+                  if (
+                    event.key === "Enter" &&
+                    !event.shiftKey &&
+                    !event.nativeEvent.isComposing
+                  ) {
                     event.preventDefault();
                     void send();
                   }
                 }}
               />
               <div className="amadeus-toolbar">
-                <button
-                  title="导入会话文件"
-                  aria-label="导入会话文件"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Paperclip size={17} />
-                </button>
-                <button
-                  title="会话文件"
-                  aria-label="会话文件"
-                  onClick={() => void showFiles()}
-                >
-                  <FolderOpen size={17} />
-                </button>
-                <button
-                  title="选取控件"
-                  aria-label="选取控件"
-                  onClick={() => {
+                <ComposerTools
+                  busy={busy || importing}
+                  standalone={standalone}
+                  atReferenceLimit={references.length >= referenceLimit}
+                  mode={mode}
+                  setMode={setMode}
+                  loaded={loaded.length}
+                  attachFile={() => fileInputRef.current?.click()}
+                  showFiles={() => void showFiles()}
+                  attachSelection={attachSelection}
+                  pick={() => {
                     showAvatarState("listening");
                     void bridge
                       .setAmadeusPickMode(true, references.length + 1)
@@ -682,94 +823,25 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
                       })
                       .catch(() => showAvatarState("idle"));
                   }}
-                >
-                  <MousePointer2 size={17} />
-                  <span>选取控件</span>
-                </button>
-                <button
-                  title="能力"
-                  aria-label="能力"
-                  onClick={() => void openCapabilities()}
-                >
-                  <Boxes size={17} />
-                  <span>能力 {loaded.length || ""}</span>
-                </button>
-                <div
-                  className="amadeus-mode-switch"
-                  role="group"
-                  aria-label="运行模式"
-                >
-                  <button
-                    type="button"
-                    aria-pressed={mode === "agent"}
-                    onClick={() => setMode("agent")}
-                  >
-                    Agent
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={mode === "plan"}
-                    onClick={() => setMode("plan")}
-                  >
-                    Plan
-                  </button>
-                </div>
-                <div className="amadeus-spacer" />
-                <div className="amadeus-model-control">
-                  <CustomSelect
-                    ariaLabel="选择 Code Agent"
-                    value={agentId}
-                    disabled={busy}
-                    options={agents.map((item) => ({
-                      value: item.id,
-                      label: item.name,
-                      description: item.message,
-                      disabled: !item.available,
-                    }))}
-                    onChange={(value) => {
-                      if (
-                        detail?.conversation.agent_id &&
-                        detail.conversation.agent_id !== value
-                      )
-                        void create().then(() => setAgentId(value));
-                      else setAgentId(value);
-                    }}
-                  />
-                </div>
-                <div className="amadeus-model-control">
-                  <CustomSelect
-                    ariaLabel="选择模型"
-                    value={modelId}
-                    disabled={busy}
-                    options={models.map((item) => ({
-                      value: item.id,
-                      label: item.label,
-                    }))}
-                    onChange={setModelId}
-                  />
-                </div>
-                <button
-                  className="amadeus-send"
-                  title={busy ? "停止" : "发送"}
-                  aria-label={busy ? "停止" : "发送"}
-                  onClick={() => (busy ? stop() : void send())}
-                >
-                  {busy ? <Square size={16} /> : <Send size={16} />}
-                </button>
+                  openCapabilities={() => void openCapabilities()}
+                />
+                <ComposerModels controls={controller} />
               </div>
             </div>
           </div>
         </main>
+        {filePreview && (
+          <FileInspector file={filePreview} onClose={closeFilePreview} />
+        )}
         {hasExecution && inspectorOpen && (
           <ExecutionInspector
             tools={display!.tools}
-            runs={runs}
             selected={selectedTool}
             onSelect={setSelectedTool}
-            onClose={() => setInspectorOpen(false)}
+            onClose={() => setInspectorConversation(undefined)}
           />
         )}
-        {stageOpen && (
+        {stageOpen && !filePreview && (
           <aside className="amadeus-stage" aria-label="红莉栖数字人舞台">
             <div className="amadeus-stage-head">
               <strong>{appearance.name}</strong>
@@ -844,47 +916,14 @@ export function AmadeusWindow({ session }: { session: AccountSessionContext }) {
             </p>
             {(previewReference.windowId || previewReference.window_id) && (
               <button
-                onClick={() =>
-                  void bridge
-                    .locateAmadeusReference({
-                      windowId:
-                        previewReference.windowId || previewReference.window_id,
-                      id: previewReference.id,
-                    })
-                    .then((found) => {
-                      if (!found) setError("来源窗口已关闭");
-                      else setPreviewReference(null);
-                    })
-                }
+                onClick={() => {
+                  setPreviewReference(null);
+                  void locateReference(previewReference);
+                }}
               >
                 定位来源
               </button>
             )}
-          </section>
-        </div>
-      )}
-      {filePreview && (
-        <div
-          className="amadeus-reference-backdrop"
-          role="presentation"
-          onClick={() => setFilePreview(null)}
-        >
-          <section
-            className="amadeus-reference-detail"
-            role="dialog"
-            aria-label="文件预览"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div>
-              <strong>{filePreview.name}</strong>
-              <button
-                aria-label="关闭文件预览"
-                onClick={() => setFilePreview(null)}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <pre>{filePreview.text}</pre>
           </section>
         </div>
       )}

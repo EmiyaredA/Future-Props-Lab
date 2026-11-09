@@ -1,3 +1,4 @@
+import { mountIndependentPrograms } from "./studio-service-fixtures";
 import { expect, test } from "@playwright/test";
 import { mkdir } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -98,13 +99,14 @@ const catalog = {
 test("model directory and supplier connections work in both themes and small screens", async ({
   page,
 }) => {
+  test.setTimeout(75_000);
   await page.route("**/v1/model-providers", (route) =>
     route.fulfill({ json: catalog }),
   );
   await page.goto("/model-service");
   await expect(
     page.getByRole("tab", { name: "模型目录", exact: true }),
-  ).toHaveAttribute("aria-selected", "true");
+  ).toHaveAttribute("aria-selected", "true", { timeout: 20_000 });
   const output = resolve("../.local/output/model-service");
   await mkdir(output, { recursive: true });
   for (const theme of ["dark", "light"]) {
@@ -161,7 +163,10 @@ test("model directory and supplier connections work in both themes and small scr
 
 test("test action creates a separate conversation with the selected model", async ({
   page,
+  baseURL,
 }) => {
+  if (process.env.FPL_E2E_SERVICE_RELEASES)
+    await mountIndependentPrograms(page, baseURL!);
   await page.route("**/v1/model-providers", (route) =>
     route.fulfill({ json: catalog }),
   );

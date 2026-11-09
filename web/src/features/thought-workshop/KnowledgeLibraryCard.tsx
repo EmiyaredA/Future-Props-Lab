@@ -38,7 +38,6 @@ export function KnowledgeLibraryCard({
       project={project}
       cover="knowledge"
       coverTitle="知识库"
-      coverDescription="打开目录、阅读与编辑"
       coverContent={<KnowledgeCover assetId={cover_asset_id} imageOnly />}
       metadata={
         <span className="knowledge-card-count">
@@ -46,7 +45,7 @@ export function KnowledgeLibraryCard({
           {document_count} 篇文档
         </span>
       }
-      description={description || "一个属于你的知识空间"}
+      description={description}
       onOpen={onOpen}
     >
       <div className="workshop-project-primary-actions">

@@ -1,13 +1,13 @@
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { openAmadeus } from "@platform/assistant";
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { useState } from "react";
 import {
   useInfiniteQuery,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { BookOpen, Compass, FileCode2, Star, Sparkles } from "lucide-react";
+import { BookOpen, Compass, FileCode2, Star } from "lucide-react";
 import {
   useAccountId,
   useAccountPermission,
@@ -156,15 +156,10 @@ export function CommunityPage({
             <p>发现文档，分享知识，让想法继续生长。</p>
           </div>
           <div className="knowledge-top-actions">
-            {
-              <button
-                className="btn"
-                aria-label="打开 Amadeus"
-                onClick={() => void openAmadeus()}
-              >
-                <Sparkles size={16} aria-hidden /> Amadeus
-              </button>
-            }
+            <AmadeusButton
+              className="btn"
+              source={{ application: "思绪工坊", projectId: undefined }}
+            />
             {seed.data && (
               <button className="btn" onClick={() => setImporting(true)}>
                 导入现有官方文档

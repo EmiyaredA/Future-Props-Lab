@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
@@ -8,13 +9,15 @@ import {
   Download,
   Film,
   Plus,
-  Search,
   Sparkles,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
-import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
+import {
+  WorkshopAppChrome,
+  WorkshopSearch,
+} from "@shared/ui/WorkshopAppChrome";
 import { downloadProjectSnapshot } from "@shared/ui/project-library";
 import {
   createProject,
@@ -41,9 +44,11 @@ const INITIAL: FormState = {
 };
 
 export function ProjectsPage({
+  utilities,
   onOpen,
   readOnly = false,
 }: {
+  utilities?: ReactNode;
   onOpen: (id: string) => void;
   readOnly?: boolean;
 }) {
@@ -127,72 +132,69 @@ export function ProjectsPage({
       <TransferFeedback progress={activeTransferProgress} />
 
       <WorkshopAppChrome
+        utilities={utilities}
+        showThemeToggle={false}
         title="我的特效项目"
-        description="制作镜头特效、蒙版和风格化视觉效果，再交给视频剪辑工坊。"
         actions={
-          !readOnly && (
-            <>
-              <input
-                ref={fileInput}
-                hidden
-                type="file"
-                accept=".zip"
-                aria-label="导入特效工程包"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (!file) return;
-                  setBusy(true);
-                  void runTransfer((onProgress) =>
-                    importSnapshot(file, { onProgress }),
-                  )
-                    .then(async (project) => {
-                      await refresh();
-                      onOpen(project.id);
-                    })
-                    .catch((caught: unknown) =>
-                      setError(
-                        caught instanceof Error ? caught.message : "导入失败",
-                      ),
+          <>
+            <WorkshopSearch
+              label="搜索特效项目"
+              placeholder="搜索特效项目…"
+              value={query}
+              onChange={setQuery}
+            />
+            {!readOnly && (
+              <>
+                <input
+                  ref={fileInput}
+                  hidden
+                  type="file"
+                  accept=".zip"
+                  aria-label="导入特效工程包"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (!file) return;
+                    setBusy(true);
+                    void runTransfer((onProgress) =>
+                      importSnapshot(file, { onProgress }),
                     )
-                    .finally(() => {
-                      setBusy(false);
-                      event.target.value = "";
-                    });
-                }}
-              />
-              <button
-                className="mc-secondary"
-                onClick={() => fileInput.current?.click()}
-                disabled={busy}
-              >
-                <Upload size={16} /> 导入项目
-              </button>
-              <button
-                className="workshop-primary"
-                onClick={() => {
-                  setForm(INITIAL);
-                  setEditing(null);
-                  setOpen(true);
-                }}
-              >
-                <Plus size={18} /> 新建项目
-              </button>
-            </>
-          )
+                      .then(async (project) => {
+                        await refresh();
+                        onOpen(project.id);
+                      })
+                      .catch((caught: unknown) =>
+                        setError(
+                          caught instanceof Error ? caught.message : "导入失败",
+                        ),
+                      )
+                      .finally(() => {
+                        setBusy(false);
+                        event.target.value = "";
+                      });
+                  }}
+                />
+                <button
+                  className="mc-secondary"
+                  onClick={() => fileInput.current?.click()}
+                  disabled={busy}
+                >
+                  <Upload size={16} /> 导入项目
+                </button>
+                <button
+                  className="workshop-primary"
+                  onClick={() => {
+                    setForm(INITIAL);
+                    setEditing(null);
+                    setOpen(true);
+                  }}
+                >
+                  <Plus size={18} /> 新建项目
+                </button>
+              </>
+            )}
+          </>
         }
       />
-      <div className="mc-project-toolbar">
-        <label>
-          <Search size={18} />
-          <input
-            aria-label="搜索特效项目"
-            placeholder="搜索特效项目…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-        <span>共 {filtered.length} 个项目</span>
-      </div>
       {error && (
         <div className="mc-error" role="alert">
           {error}

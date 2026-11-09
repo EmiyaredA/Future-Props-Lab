@@ -35,7 +35,9 @@ export function NoteReaderPane({
             onReady={() => {}}
             beforeContent={
               <div className="thought-note-heading">
-                <h1 className="community-note-title">{note.title}</h1>
+                <h1 className="community-note-title" data-amadeus-id={note.id}>
+                  {note.title}
+                </h1>
                 {!!note.tags.length && (
                   <p className="community-meta">{note.tags.join(" · ")}</p>
                 )}

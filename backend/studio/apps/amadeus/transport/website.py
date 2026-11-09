@@ -13,6 +13,7 @@ from studio.apps.amadeus.execution.website_actions import (
     cancel_actions_for_run,
     execute_action,
 )
+from studio.apps.amadeus.fork_references import project_reader
 from studio.apps.amadeus.storage.conversations import Conversations
 from studio.apps.amadeus.storage.files import (
     MAX_FILE_BYTES,
@@ -37,7 +38,10 @@ from studio.contracts.amadeus.conversations import (
     FileListOut,
     FileOut,
     FileWriteIn,
+    MessageForkIn,
     MessageIn,
+    MessageOut,
+    MessagePinIn,
     ModelTurnIn,
     ModelTurnOut,
     QuestionAnswerIn,
@@ -323,6 +327,49 @@ async def append_message(
 ) -> ConversationDetailOut:
     try:
         return await Conversations(session, principal).add_message(conversation_id, body)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.put("/conversations/{conversation_id}/messages/{message_id}/pin")
+async def pin_message(
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    message_id: str,
+    body: MessagePinIn,
+) -> MessageOut:
+    try:
+        return await Conversations(session, principal).pin_message(
+            conversation_id, message_id, body.pinned
+        )
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.post("/conversations/{conversation_id}/messages/{message_id}/fork")
+async def fork_message(
+    request: Request,
+    session: SessionDep,
+    principal: StudioAuth,
+    conversation_id: str,
+    message_id: str,
+    body: MessageForkIn,
+) -> ConversationOut:
+    async def read(operation, arguments):
+        return await call_operation(
+            request.app,
+            request.headers,
+            operation,
+            arguments,
+            allow_write=False,
+            status_only=True,
+        )
+
+    try:
+        return await Conversations(session, principal).fork_message(
+            conversation_id, message_id, body.request_id, project_reader(read)
+        )
     except OperationError as exc:
         raise _error(exc) from None
 

@@ -131,12 +131,16 @@ async def call_operation(
     arguments: dict[str, Any],
     *,
     allow_write: bool,
+    status_only: bool = False,
 ) -> dict[str, Any]:
     method, _, path, query, body = operation_request(identity, arguments, allow_write=allow_write)
     headers = {"accept": "application/json", "origin": "http://fpl-internal"}
     for header in ("cookie", "x-csrf-token"):
         if request_headers.get(header):
             headers[header] = request_headers[header]
+    # A message fork can also arrive through the SDK's private account API.
+    if status_only and request_headers.get("authorization"):
+        headers["authorization"] = request_headers["authorization"]
     # Re-enter the registered routes with the authenticated browser credentials.
     # This in-process adapter is never exposed as a network listener and does not
     # acquire host-management privileges from either public or local ingress.
@@ -155,7 +159,13 @@ async def call_operation(
         timeout=120.0,
     ) as client:
         response = await client.request(method, path, params=query, json=body, headers=headers)
-    return operation_result(response)
+    return operation_status(response.status_code) if status_only else operation_result(response)
+
+
+def operation_status(status):
+    if not 200 <= status < 300:
+        raise OperationError(f"业务操作返回 HTTP {status}", "operation_failed", status)
+    return {"status_code": status}
 
 
 class RegisteredRevisionConflict(OperationError):

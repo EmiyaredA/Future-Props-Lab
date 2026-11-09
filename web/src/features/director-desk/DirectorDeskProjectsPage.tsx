@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -6,7 +7,6 @@ import {
   Maximize2,
   Pencil,
   Plus,
-  Search,
   Trash2,
   Upload,
   X,
@@ -17,7 +17,10 @@ import {
   ProjectEditorDialog,
   ProjectLibraryCard,
 } from "@shared/ui/project-library";
-import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
+import {
+  WorkshopAppChrome,
+  WorkshopSearch,
+} from "@shared/ui/WorkshopAppChrome";
 import {
   createDirectorProject,
   deleteDirectorProject,
@@ -42,9 +45,11 @@ type DirectorListItem = {
 };
 
 export function DirectorDeskProjectsPage({
+  utilities,
   readOnly,
   onOpen,
 }: {
+  utilities?: ReactNode;
   readOnly: boolean;
   onOpen: (projectId: string) => void;
 }) {
@@ -117,56 +122,54 @@ export function DirectorDeskProjectsPage({
   return (
     <section className="workshop-page workshop-projects-page dd-projects">
       <WorkshopAppChrome
+        utilities={utilities}
+        showThemeToggle={false}
         title="我的预演工程"
-        description="建立预演工程，打开后排布场景、走位和运镜。"
         actions={
-          readOnly ? null : (
-            <>
-              <button
-                type="button"
-                className="workshop-secondary"
-                disabled={importing.isPending}
-                onClick={() => fileRef.current?.click()}
-              >
-                <Upload aria-hidden />
-                {importing.isPending ? "正在导入…" : "导入"}
-              </button>
-              <button
-                type="button"
-                className="workshop-primary"
-                disabled={create.isPending}
-                onClick={() => create.mutate()}
-              >
-                <Plus aria-hidden />
-                {create.isPending ? "正在创建…" : "新建预演"}
-              </button>
-              <input
-                ref={fileRef}
-                className="project-snapshot-file-input"
-                type="file"
-                accept=".director,.json,application/json"
-                aria-label="导入预演工程"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (file) importing.mutate(file);
-                }}
-              />
-            </>
-          )
+          <>
+            <WorkshopSearch
+              label="搜索预演工程"
+              placeholder="搜索预演工程…"
+              value={query}
+              onChange={setQuery}
+            />
+            {readOnly ? null : (
+              <>
+                <button
+                  type="button"
+                  className="workshop-secondary"
+                  disabled={importing.isPending}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <Upload aria-hidden />
+                  {importing.isPending ? "正在导入…" : "导入"}
+                </button>
+                <button
+                  type="button"
+                  className="workshop-primary"
+                  disabled={create.isPending}
+                  onClick={() => create.mutate()}
+                >
+                  <Plus aria-hidden />
+                  {create.isPending ? "正在创建…" : "新建预演"}
+                </button>
+                <input
+                  ref={fileRef}
+                  className="project-snapshot-file-input"
+                  type="file"
+                  accept=".director,.json,application/json"
+                  aria-label="导入预演工程"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) importing.mutate(file);
+                  }}
+                />
+              </>
+            )}
+          </>
         }
       />
-      <div className="workshop-toolbar workshop-toolbar-simple">
-        <label>
-          <Search aria-hidden />
-          <input
-            aria-label="搜索预演工程"
-            placeholder="搜索预演工程…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-      </div>
       {notice ? (
         <div className="workshop-notice" role="status">
           {notice}
@@ -203,7 +206,6 @@ export function DirectorDeskProjectsPage({
               metadata={<span className="workshop-status draft">预演</span>}
               cover="director"
               coverTitle="三维预演"
-              coverDescription="点击进入布景"
               onOpen={() => onOpen(project.id)}
             >
               <div className="workshop-project-primary-actions">

@@ -1,7 +1,11 @@
+import type { ReactNode } from "react";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
-import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
+import {
+  WorkshopAppChrome,
+  WorkshopSearch,
+} from "@shared/ui/WorkshopAppChrome";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -303,8 +307,10 @@ function ProjectDialog({
 }
 
 export function AudioAnnotationProjectsPage({
+  utilities,
   onOpen,
 }: {
+  utilities?: ReactNode;
   onOpen: (projectId: string) => void;
 }) {
   const client = useQueryClient();
@@ -370,59 +376,56 @@ export function AudioAnnotationProjectsPage({
   return (
     <section className="page workshop-page workshop-projects-page annotation-projects-page">
       <WorkshopAppChrome
+        utilities={utilities}
         showThemeToggle={false}
         title="我的标注任务"
-        description="管理账号中的录音切分、说话人和逐段文本。"
         actions={
-          <div className="annotation-project-actions">
-            <input
-              ref={importInput}
-              hidden
-              type="file"
-              accept="application/json,.json"
-              aria-label="导入项目 JSON"
-              onChange={(event) => void readImport(event)}
+          <>
+            <WorkshopSearch
+              label="搜索标注任务"
+              placeholder="搜索任务名称…"
+              value={query}
+              onChange={setQuery}
             />
-            <button
-              type="button"
-              className="workshop-secondary"
-              onClick={() => importInput.current?.click()}
-            >
-              <FileJson aria-hidden /> 导入项目
-            </button>
-            <button
-              type="button"
-              className="workshop-primary"
-              onClick={() => {
-                setImported(null);
-                setDialogOpen(true);
-              }}
-            >
-              <Plus aria-hidden /> 新建任务
-            </button>
-          </div>
+            <div className="annotation-project-stats" aria-label="任务统计">
+              <span>
+                <strong>{summary.projects}</strong> 个任务
+              </span>
+              <span>
+                <strong>{summary.segments}</strong> 个片段
+              </span>
+            </div>
+
+            <div className="annotation-project-actions">
+              <input
+                ref={importInput}
+                hidden
+                type="file"
+                accept="application/json,.json"
+                aria-label="导入项目 JSON"
+                onChange={(event) => void readImport(event)}
+              />
+              <button
+                type="button"
+                className="workshop-secondary"
+                onClick={() => importInput.current?.click()}
+              >
+                <FileJson aria-hidden /> 导入项目
+              </button>
+              <button
+                type="button"
+                className="workshop-primary"
+                onClick={() => {
+                  setImported(null);
+                  setDialogOpen(true);
+                }}
+              >
+                <Plus aria-hidden /> 新建任务
+              </button>
+            </div>
+          </>
         }
       />
-
-      <div className="workshop-toolbar workshop-toolbar-simple annotation-projects-toolbar">
-        <div className="annotation-project-stats" aria-label="任务统计">
-          <span>
-            <strong>{summary.projects}</strong> 个任务
-          </span>
-          <span>
-            <strong>{summary.segments}</strong> 个片段
-          </span>
-        </div>
-        <label>
-          <Search aria-hidden />
-          <input
-            aria-label="搜索标注任务"
-            placeholder="搜索任务名称…"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </label>
-      </div>
       {notice ? (
         <p className="annotation-error" role="alert">
           {notice}
@@ -453,7 +456,7 @@ export function AudioAnnotationProjectsPage({
                 }}
                 cover="audio"
                 coverTitle={formatDuration(project.duration_ms)}
-                coverDescription={`${project.segment_count} 个片段 · 点击进入标注`}
+                coverDescription={`${project.segment_count} 个片段`}
                 description={project.original_filename}
                 metadata={
                   <span

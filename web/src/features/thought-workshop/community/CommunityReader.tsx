@@ -1,15 +1,8 @@
 import { LoadingState } from "@shared/ui/LoadingState";
-import { openAmadeus } from "@platform/assistant";
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { lazy, Suspense, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowLeft,
-  FileCode2,
-  FileText,
-  Save,
-  Shield,
-  Sparkles,
-} from "lucide-react";
+import { ArrowLeft, FileCode2, FileText, Save, Shield } from "lucide-react";
 import { useAccountId } from "@platform/auth/AccountAccess";
 import { ApiError } from "@platform/api/client";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
@@ -356,15 +349,10 @@ export function CommunityReader({
                 className="knowledge-document-tools"
                 ref={documentUI.toolsRef}
               />
-              {
-                <button
-                  className="btn"
-                  aria-label="打开 Amadeus"
-                  onClick={() => void openAmadeus()}
-                >
-                  <Sparkles size={16} aria-hidden /> Amadeus
-                </button>
-              }
+              <AmadeusButton
+                className="btn"
+                source={{ application: "思绪工坊", projectId: undefined }}
+              />
               {directory.data?.publication.is_official && (
                 <span className="official-badge">官方</span>
               )}

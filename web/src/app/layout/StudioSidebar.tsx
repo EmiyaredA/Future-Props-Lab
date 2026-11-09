@@ -167,12 +167,15 @@ function StudioChrome({
   page,
   navigate,
   children,
+  assistant,
 }: {
   page: StudioPage;
   navigate: (page: StudioPage) => void;
   children?: ReactNode;
+  assistant?: (() => void) | null;
 }) {
   const canReadLogs = useAccountPermission("logs.read");
+  const canRead = useAccountPermission("content.read");
   const canAccessCloud = useAccountPermission("cloud-control.access");
   const narrow = useNarrowViewport();
   const [secondaryCollapsed, setSecondaryCollapsed] = useState(
@@ -411,7 +414,9 @@ function StudioChrome({
     <div className={`studio-shell${showSecondary ? " has-secondary" : ""}`}>
       {leftPanel}
       <div className="studio-stage">
-        <StudioGlobalHeader />
+        <StudioGlobalHeader
+          assistant={canRead && page !== "amadeus" ? assistant : null}
+        />
         <main className="studio-panel studio-main">{children}</main>
       </div>
     </div>
@@ -422,13 +427,15 @@ export function StudioShell({
   page,
   navigate,
   children,
+  assistant,
 }: {
   page: StudioPage;
   navigate: (page: StudioPage) => void;
   children: ReactNode;
+  assistant?: (() => void) | null;
 }) {
   return (
-    <StudioChrome page={page} navigate={navigate}>
+    <StudioChrome page={page} navigate={navigate} assistant={assistant}>
       {children}
     </StudioChrome>
   );

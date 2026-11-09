@@ -5,34 +5,6 @@
   justify-content: flex-end;
   gap: 10px;
 }
-.cloud-layout-switch {
-  display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface-soft);
-}
-.cloud-layout-switch button {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 0;
-  border-radius: 6px;
-  color: var(--muted);
-  background: transparent;
-  font: inherit;
-  font-size: 12px;
-  cursor: pointer;
-}
-.cloud-layout-switch button:hover {
-  color: var(--text);
-}
-.cloud-layout-switch button[aria-pressed="true"] {
-  background: var(--surface-raised);
-  color: var(--text);
-  box-shadow: 0 1px 3px #0000000c;
-}
 .cloud-workspace {
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr);
@@ -49,31 +21,4 @@
   .cloud-header-controls {
     justify-content: flex-start;
   }
-}
-
-.cloud-happier {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--surface);
-}
-.cloud-happier iframe {
-  width: 100%;
-  height: 100%;
-  display: block;
-  border: 0;
-}
-.cloud-happier-state {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  align-content: center;
-  gap: 8px;
-  padding: 16px;
 }

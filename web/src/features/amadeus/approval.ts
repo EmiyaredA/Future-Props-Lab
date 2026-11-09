@@ -20,6 +20,31 @@ type ApprovalOptions = {
   setScriptOutput: Dispatch<SetStateAction<string>>;
 };
 
+export function approvalTarget(
+  action: Pick<Approval, "tool_name" | "arguments">,
+) {
+  const pathParams = action.arguments.path_params;
+  const path =
+    pathParams && typeof pathParams === "object"
+      ? (pathParams as Record<string, unknown>)
+      : {};
+  const projectId =
+    path.project_id ?? path.room_id ?? action.arguments.project_id;
+  const elementId = typeof path.note_id === "string" ? path.note_id : undefined;
+  const resource =
+    action.tool_name === "video_timeline_batch"
+      ? "video"
+      : /^fpl_operation:([a-z_]+)\./.exec(action.tool_name)?.[1];
+  return resource
+    ? {
+        resource,
+        projectId:
+          typeof projectId === "string" && projectId ? projectId : undefined,
+        elementId,
+      }
+    : undefined;
+}
+
 export async function decideAmadeusApproval({
   allow,
   current,
@@ -32,14 +57,10 @@ export async function decideAmadeusApproval({
   setError,
   setScriptOutput,
 }: ApprovalOptions) {
-  if (!current) return;
+  if (!current || activeActionRef.current) return false;
   const conversationId = current.conversationId;
-  const pathParams = current.arguments.path_params;
-  const projectId =
-    current.arguments.project_id ??
-    (pathParams && typeof pathParams === "object" && "project_id" in pathParams
-      ? pathParams.project_id
-      : undefined);
+  const target = approvalTarget(current);
+  const projectId = target?.projectId;
   if (
     allow &&
     typeof projectId === "string" &&
@@ -54,34 +75,38 @@ export async function decideAmadeusApproval({
     setError("目标项目有未保存的编辑。请先在原窗口保存，再确认这项操作。");
     return false;
   }
+  const actionPath = `/v1/amadeus/conversations/${conversationId}/actions/${current.id}`;
+  const reconcile = async () => {
+    const snapshot = await fetchApiJson<Detail>(
+      `/v1/amadeus/conversations/${conversationId}`,
+    );
+    if (detailRef.current?.conversation.id === conversationId) {
+      detailRef.current = snapshot;
+      setDetail(snapshot);
+    }
+    return snapshot.actions.find((item) => item.id === current.id)?.status;
+  };
+  const notifyProject = () => {
+    if (target) void bridge.publishAmadeusMutation(target);
+  };
+  let receipt: string | undefined;
+  activeActionRef.current = { conversationId, actionId: current.id };
   try {
     if (current.status === "pending")
-      await fetchApiJson(
-        `/v1/amadeus/conversations/${conversationId}/actions/${current.id}/decision`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            arguments_sha256: current.arguments_sha256,
-            approve: allow,
-          }),
-        },
-      );
-    if (!allow) {
-      const snapshot = await fetchApiJson<Detail>(
-        `/v1/amadeus/conversations/${conversationId}`,
-      );
-      if (detailRef.current?.conversation.id === conversationId)
-        setDetail(snapshot);
-      return true;
-    }
-    activeActionRef.current = { conversationId, actionId: current.id };
+      await fetchApiJson(`${actionPath}/decision`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          arguments_sha256: current.arguments_sha256,
+          approve: allow,
+        }),
+      });
+    if (!allow) return (await reconcile()) === "rejected";
     let outcome: { status: string; result?: Record<string, unknown> };
     if (current.tool_name === "run_script") {
-      const response = await requestApi(
-        `/v1/amadeus/conversations/${conversationId}/actions/${current.id}/execute/stream`,
-        { method: "POST" },
-      );
+      const response = await requestApi(`${actionPath}/execute/stream`, {
+        method: "POST",
+      });
       const reader = response.body?.getReader();
       if (!reader) throw new Error("脚本输出流不可用");
       const decoder = new TextDecoder();
@@ -115,42 +140,43 @@ export async function decideAmadeusApproval({
       outcome = await fetchApiJson<{
         status: string;
         result?: Record<string, unknown>;
-      }>(
-        `/v1/amadeus/conversations/${conversationId}/actions/${current.id}/execute`,
-        { method: "POST" },
-      );
+      }>(`${actionPath}/execute`, { method: "POST" });
     }
-    if (
-      outcome.status === "completed" &&
-      current.tool_name === "video_timeline_batch"
-    )
-      await bridge.publishAmadeusMutation({
-        application: "video-editor",
-        projectId,
-        userId: session.me.user.id,
-        accountId: session.me.user.id,
-      });
-    if (
-      outcome.status === "completed" &&
-      current.tool_name.startsWith("fpl_operation:")
-    )
-      await bridge.publishAmadeusMutation({
-        application: "*",
-        projectId,
-        userId: session.me.user.id,
-        accountId: session.me.user.id,
-      });
-    const snapshot = await fetchApiJson<Detail>(
-      `/v1/amadeus/conversations/${conversationId}`,
-    );
-    if (detailRef.current?.conversation.id === conversationId)
-      setDetail(snapshot);
-    if (outcome.status === "unknown") {
+    receipt = outcome.status;
+    if (receipt === "completed") notifyProject();
+    const status = await reconcile();
+    if (status === "unknown") {
       setError("操作结果待核实；不会自动重试。");
       return false;
     }
-    return true;
+    return status === "completed" || status === "failed";
   } catch (cause) {
+    try {
+      let status: string | undefined;
+      for (let attempt = 0; attempt < 6; attempt++) {
+        try {
+          status = await reconcile();
+          if (status !== "running") break;
+        } catch (error) {
+          if (attempt === 5) throw error;
+        }
+        if (attempt < 5)
+          await new Promise((resolve) => window.setTimeout(resolve, 1200));
+      }
+      if (status === "completed" && allow) {
+        if (receipt !== "completed") notifyProject();
+        return true;
+      }
+      if (status === "rejected" && !allow) return true;
+      if (status === "failed" && allow) return true;
+      if (status === "running" || status === "unknown") {
+        setError("操作结果待核实；不会自动重试。");
+        return false;
+      }
+    } catch {
+      setError("无法读取审批回执；请恢复连接后重新打开对话查看结果。");
+      return false;
+    }
     setError(cause instanceof Error ? cause.message : String(cause));
     return false;
   } finally {

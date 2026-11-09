@@ -1,11 +1,16 @@
+import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
 import { lazy, useCallback, useEffect, useRef } from "react";
 import { useStudioSession } from "@app/StudioSession";
-import { INTERVIEW_ASSISTANT_MODULE } from "@features/interview-assistant/module";
+import { WorkshopShell } from "@app/layout/WorkshopShell";
+import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
+import { INTERVIEW_ASSISTANT_MODULE as interview } from "@features/interview-assistant/module";
 import type { RegisterNavigationGuard } from "@features/interview-assistant/types";
+import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { useNavigationProtection } from "@shared/ui/navigationGuards";
-import { IndependentShell } from "./IndependentShell";
+import { ApplicationUpdate } from "./ApplicationUpdate";
+import { guardedNavigation } from "./navigation";
 
-const InterviewPage = lazy(INTERVIEW_ASSISTANT_MODULE.pages.workspace);
+const InterviewPage = lazy(interview.pages.workspace);
 
 function InterviewContent() {
   const { me } = useStudioSession();
@@ -23,6 +28,7 @@ function InterviewContent() {
   const scopeKey = `${me.user.id}:${me.user.id}`;
   return (
     <InterviewPage
+      utilities={<WorkshopUtilities application={interview.definition.name} />}
       key={scopeKey}
       scopeKey={scopeKey}
       registerNavigationGuard={registerNavigationGuard}
@@ -31,9 +37,20 @@ function InterviewContent() {
 }
 
 export default function InterviewApplication() {
+  const session = useStudioSession();
   return (
-    <IndependentShell title="面试助手">
-      <InterviewContent />
-    </IndependentShell>
+    <AmadeusPageProvider key={session.me.user.id} session={session}>
+      <NavigationProtection>
+        <WorkshopShell
+          module={interview}
+          page="interview-assistant-session"
+          navigate={() => {}}
+          onBack={() => guardedNavigation(() => location.assign("/apps"), true)}
+        >
+          <ApplicationUpdate />
+          <InterviewContent />
+        </WorkshopShell>
+      </NavigationProtection>
+    </AmadeusPageProvider>
   );
 }

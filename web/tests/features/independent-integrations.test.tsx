@@ -14,8 +14,8 @@ vi.mock("@platform/auth/AccountAccess", () => ({
 vi.mock("@shared/ui/navigationGuards", () => ({
   useNavigationProtection: () => ({ register: access.register }),
 }));
-vi.mock("@app/entries/IndependentShell", () => ({
-  IndependentShell: ({ children }: { children: ReactNode }) => (
+vi.mock("@app/entries/StudioServiceShell", () => ({
+  StudioServiceShell: ({ children }: { children: ReactNode }) => (
     <main>{children}</main>
   ),
 }));

@@ -167,8 +167,8 @@ def bind_components(app, settings, database, *, read_cloud_settings):
     app.state.annotation_staging = None
     app.state.director_editor = DirectorEditorSessions(sessions)
     app.state.director_storage = DirectorStorage(settings.runtime_path)
-    app.state.code_agent_catalog = lambda _request, *, can_enable: code_agent_catalog(
-        settings=read_cloud_settings(), can_enable=can_enable
+    app.state.code_agent_catalog = lambda _request, **options: code_agent_catalog(
+        settings=read_cloud_settings(), **options
     )
     app.state.code_agent_enable = lambda _request, agent_id: enable_connection(
         agent_id, config_file=CONFIG_FILE, read_settings=read_cloud_settings

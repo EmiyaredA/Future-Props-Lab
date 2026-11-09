@@ -314,8 +314,11 @@ class AgentOut(WireModel):
     available: bool = Field(default=..., alias='available')
     enabled: bool = Field(default=..., alias='enabled')
     executable: str = Field(default=..., alias='executable')
+    harness_efforts: list[NamedOption] | None = Field(default=None, alias='harness_efforts', max_length=100)
+    harness_options_model: str | None = Field(default=None, alias='harness_options_model')
     id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='id')
     message: str = Field(default=..., alias='message')
+    model_catalog: Literal['not_checked', 'discovered', 'preset', 'unavailable'] = Field(default='not_checked', alias='model_catalog')
     models: list[ModelOption] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name')
     status: str = Field(default=..., alias='status')
@@ -1014,8 +1017,20 @@ class ConversationDetailOut(WireModel):
     messages: list[MessageOut] = Field(default=..., alias='messages')
     questions: list[QuestionOut] | None = Field(default=None, alias='questions')
 
+class ConversationListItemOut(WireModel):
+    agent_id: str | None = Field(default=None, alias='agent_id')
+    created_at: datetime = Field(default=..., alias='created_at')
+    executor_kind: str = Field(default='legacy-pi', alias='executor_kind')
+    id: str = Field(default=..., alias='id')
+    latest_run_status: str | None = Field(default=None, alias='latest_run_status')
+    model_id: str | None = Field(default=..., alias='model_id')
+    projects: list[ConversationProjectSummary] | None = Field(default=None, alias='projects')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
 class ConversationListOut(WireModel):
-    items: list[ConversationOut] = Field(default=..., alias='items')
+    items: list[ConversationListItemOut] = Field(default=..., alias='items')
 
 class ConversationOut(WireModel):
     agent_id: str | None = Field(default=None, alias='agent_id')
@@ -1031,6 +1046,11 @@ class ConversationPatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     model_id: str | None = Field(default=None, alias='model_id')
     title: str | None = Field(default=None, alias='title')
+
+class ConversationProjectSummary(WireModel):
+    id: str = Field(default=..., alias='id')
+    resource: str = Field(default=..., alias='resource')
+    title: str = Field(default=..., alias='title')
 
 class ConversationRevisionConflictOut(WireModel):
     code: Literal['revision_conflict'] = Field(default=..., alias='code')
@@ -1349,6 +1369,14 @@ class DuplicateOut(WireModel):
 class DuplicateSnapshot(WireModel):
     knowledge_revision: int = Field(default=..., alias='knowledge_revision')
     revisions: dict[str, int] = Field(default=..., alias='revisions')
+
+class ElementTarget(WireModel):
+    element_id: str = Field(default=..., alias='element_id', min_length=1, max_length=120)
+    element_kind: Literal['node', 'clip', 'slide', 'slide_element', 'note', 'story_block', 'layer', 'segment', 'entity', 'material'] = Field(default=..., alias='element_kind')
+    parent_id: str | None = Field(default=None, alias='parent_id')
+    project_id: str = Field(default=..., alias='project_id', min_length=1, max_length=120)
+    project_resource: Literal['visual', 'video', 'presentation', 'thought', 'galgame', 'motion_compositor', 'annotation', 'director', 'interview'] = Field(default=..., alias='project_resource')
+    unsaved: bool = Field(default=False, alias='unsaved')
 
 class EndpointState(WireModel):
     build_id: str = Field(default='', alias='build_id', max_length=100)
@@ -3321,6 +3349,9 @@ class MemberOut(WireModel):
     user_id: str = Field(default=..., alias='user_id')
     username: str = Field(default=..., alias='username', min_length=1, max_length=64)
 
+class MessageForkIn(WireModel):
+    request_id: str = Field(default=..., alias='request_id')
+
 class MessageIn(WireModel):
     content: str = Field(default=..., alias='content', min_length=1, max_length=100000)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -3331,10 +3362,14 @@ class MessageOut(WireModel):
     content: str = Field(default=..., alias='content')
     created_at: datetime = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
+    pinned: bool = Field(default=False, alias='pinned')
     references: list[Reference] = Field(default=..., alias='references')
     role: Literal['user', 'assistant', 'tool'] = Field(default=..., alias='role')
     run_id: str | None = Field(default=None, alias='run_id')
     status: str = Field(default='completed', alias='status')
+
+class MessagePinIn(WireModel):
+    pinned: bool = Field(default=..., alias='pinned')
 
 class MockCompletionIn(WireModel):
     messages: list[dict[str, Any]] | None = Field(default=None, alias='messages', max_length=100)
@@ -3390,8 +3425,11 @@ class ModelMutationOut(WireModel):
     revision: int = Field(default=..., alias='revision')
 
 class ModelOption(WireModel):
+    fast_available: bool = Field(default=False, alias='fast_available')
     id: str = Field(default=..., alias='id')
     label: str = Field(default=..., alias='label')
+    reasoning_efforts: list[Literal['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra']] | None = Field(default=None, alias='reasoning_efforts')
+    variants: list[NamedOption] | None = Field(default=None, alias='variants', max_length=100)
 
 class ModelSupplierIn(WireModel):
     expected_catalog_revision: int = Field(default=..., alias='expected_catalog_revision', ge=0.0)
@@ -3803,6 +3841,10 @@ class MoveClipOperation(WireModel):
     timeline_start_us: int = Field(default=..., alias='timelineStartUs', ge=0.0)
     track_id: str = Field(default=..., alias='trackId')
     type: Literal['moveClip'] = Field(default=..., alias='type')
+
+class NamedOption(WireModel):
+    id: str = Field(default=..., alias='id')
+    label: str = Field(default=..., alias='label', max_length=160)
 
 class NodeAcceptanceCatalogOut(WireModel):
     items: list[NodeAcceptanceTemplateOut] = Field(default=..., alias='items')
@@ -4501,6 +4543,7 @@ class Reference(WireModel):
     id: str = Field(default=..., alias='id', max_length=120)
     name: str = Field(default=..., alias='name', max_length=200)
     source: str = Field(default='', alias='source', max_length=500)
+    target: ElementTarget | None = Field(default=None, alias='target')
     thumbnail: str | None = Field(default=None, alias='thumbnail')
     value: str = Field(default='', alias='value', max_length=2000)
     window_id: int | None = Field(default=None, alias='window_id')
@@ -4648,9 +4691,13 @@ class RunCreateIn(WireModel):
     agent_model: str = Field(default='', alias='agent_model', max_length=160)
     capabilities: list[str] | None = Field(default=None, alias='capabilities', max_length=100)
     context: list[dict[str, Any]] | None = Field(default=None, alias='context', max_length=32)
+    harness_effort: str | None = Field(default=None, alias='harness_effort')
     mode: Literal['agent', 'plan'] = Field(default='agent', alias='mode')
     model_id: str = Field(default='code-agent', alias='model_id', max_length=160)
+    model_variant: str | None = Field(default=None, alias='model_variant')
+    reasoning_effort: Literal['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'] | None = Field(default=None, alias='reasoning_effort')
     references: list[Reference] | None = Field(default=None, alias='references', max_length=20)
+    service_tier: Literal['fast'] | None = Field(default=None, alias='service_tier')
     source_run_id: str | None = Field(default=None, alias='source_run_id')
 
 class RunDetailOut(WireModel):
@@ -4659,7 +4706,7 @@ class RunDetailOut(WireModel):
 
 class RunEventIn(WireModel):
     idempotency_key: str = Field(default=..., alias='idempotency_key', min_length=1, max_length=120)
-    kind: Literal['assistant_delta', 'assistant_message', 'tool_call', 'tool_result', 'status', 'error', 'question', 'subagent_start', 'subagent_finish'] = Field(default=..., alias='kind')
+    kind: Literal['assistant_delta', 'assistant_message', 'reasoning_summary', 'run_usage', 'tool_call', 'tool_result', 'status', 'error', 'question', 'subagent_start', 'subagent_finish'] = Field(default=..., alias='kind')
     payload: dict[str, Any] | None = Field(default=None, alias='payload')
 
 class RunEventOut(WireModel):
@@ -4685,15 +4732,20 @@ class RunOut(WireModel):
     error_message: str | None = Field(default=..., alias='error_message')
     execution_config: dict[str, Any] | None = Field(default=None, alias='execution_config')
     finished_at: datetime | None = Field(default=..., alias='finished_at')
+    harness_effort: str | None = Field(default=None, alias='harness_effort')
     heartbeat_at: datetime = Field(default=..., alias='heartbeat_at')
     id: str = Field(default=..., alias='id')
     mode: Literal['agent', 'plan'] = Field(default=..., alias='mode')
     model_id: str = Field(default=..., alias='model_id')
+    model_variant: str | None = Field(default=None, alias='model_variant')
     partial_text: str = Field(default=..., alias='partial_text')
+    reasoning_effort: Literal['none', 'minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'] | None = Field(default=None, alias='reasoning_effort')
     references: list[Reference] = Field(default=..., alias='references')
+    service_tier: Literal['fast'] | None = Field(default=None, alias='service_tier')
     source_run_id: str | None = Field(default=..., alias='source_run_id')
     status: str = Field(default=..., alias='status')
     updated_at: datetime = Field(default=..., alias='updated_at')
+    usage: TokenUsage | None = Field(default=None, alias='usage')
 
 class RuntimeContext(WireModel):
     local_browser: bool = Field(default=..., alias='local_browser')
@@ -5447,6 +5499,16 @@ class ThoughtOperationsIn(WireModel):
 
 class ThoughtRevisionIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+
+class TokenUsage(WireModel):
+    cache_write_tokens: int | None = Field(default=None, alias='cache_write_tokens', repr=False)
+    cached_input_tokens: int | None = Field(default=None, alias='cached_input_tokens', repr=False)
+    context_limit: int | None = Field(default=None, alias='context_limit')
+    context_used: int | None = Field(default=None, alias='context_used')
+    input_tokens: int | None = Field(default=None, alias='input_tokens', repr=False)
+    output_tokens: int | None = Field(default=None, alias='output_tokens', repr=False)
+    reasoning_tokens: int | None = Field(default=None, alias='reasoning_tokens', repr=False)
+    total_tokens: int | None = Field(default=None, alias='total_tokens', repr=False)
 
 class ToolApiCatalogOut(WireModel):
     items: list[ToolApiOut] = Field(default=..., alias='items')
@@ -6545,9 +6607,11 @@ CommunityNotePut.model_rebuild()
 CommunityReferenceTarget.model_rebuild()
 CommunitySnapshot.model_rebuild()
 ConversationDetailOut.model_rebuild()
+ConversationListItemOut.model_rebuild()
 ConversationListOut.model_rebuild()
 ConversationOut.model_rebuild()
 ConversationPatchIn.model_rebuild()
+ConversationProjectSummary.model_rebuild()
 ConversationRevisionConflictOut.model_rebuild()
 ConversionIn.model_rebuild()
 ConversionIssue.model_rebuild()
@@ -6603,6 +6667,7 @@ DocumentOut.model_rebuild()
 DuplicateIn.model_rebuild()
 DuplicateOut.model_rebuild()
 DuplicateSnapshot.model_rebuild()
+ElementTarget.model_rebuild()
 EndpointState.model_rebuild()
 EndpointStatus.model_rebuild()
 Experience.model_rebuild()
@@ -6875,8 +6940,10 @@ McpUpdateIn.model_rebuild()
 McpValidationOut.model_rebuild()
 MemberInput.model_rebuild()
 MemberOut.model_rebuild()
+MessageForkIn.model_rebuild()
 MessageIn.model_rebuild()
 MessageOut.model_rebuild()
+MessagePinIn.model_rebuild()
 MockCompletionIn.model_rebuild()
 ModelCatalogOut.model_rebuild()
 ModelCategoryListOut.model_rebuild()
@@ -6939,6 +7006,7 @@ MotionPoint.model_rebuild()
 MotionSettings.model_rebuild()
 MotionTransform.model_rebuild()
 MoveClipOperation.model_rebuild()
+NamedOption.model_rebuild()
 NodeAcceptanceCatalogOut.model_rebuild()
 NodeAcceptanceOut.model_rebuild()
 NodeAcceptanceSelectIn.model_rebuild()
@@ -7172,6 +7240,7 @@ ThoughtNoteSummary.model_rebuild()
 ThoughtNoteTransitionIn.model_rebuild()
 ThoughtOperationsIn.model_rebuild()
 ThoughtRevisionIn.model_rebuild()
+TokenUsage.model_rebuild()
 ToolApiCatalogOut.model_rebuild()
 ToolApiCreateIn.model_rebuild()
 ToolApiOut.model_rebuild()

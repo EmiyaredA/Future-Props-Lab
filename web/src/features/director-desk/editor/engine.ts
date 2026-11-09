@@ -844,14 +844,7 @@ export class Engine {
       ) > 5
     )
       return;
-    const rect = this.editorRenderer.domElement.getBoundingClientRect();
-    const mouse = new T.Vector2(
-      ((e.clientX - rect.left) / rect.width) * 2 - 1,
-      (-(e.clientY - rect.top) / rect.height) * 2 + 1,
-    );
-    const ray = new T.Raycaster();
-    ray.layers.enable(1);
-    ray.setFromCamera(mouse, this.editorCamera);
+    const ray = this.pointerRay(e);
     this.prepareView(true);
     try {
       if (this.drawingPath) {
@@ -899,17 +892,46 @@ export class Engine {
         this.cb.point(points.object.userData.pointIndex);
         return;
       }
-      const hit = ray
-        .intersectObjects([...this.models.values()], true)
-        .find((x) => {
-          let o: T.Object3D | null = x.object;
-          while (o) {
-            if (!o.visible) return false;
-            o = o.parent;
-          }
-          return true;
-        });
-      if (hit) this.cb.select(hit.object.userData.entityId);
+      const entityId = this.entityUnderRay(ray);
+      if (entityId) this.cb.select(entityId);
+    } finally {
+      this.prepareView(false);
+    }
+  }
+  private pointerRay(e: MouseEvent) {
+    const rect = this.editorRenderer.domElement.getBoundingClientRect();
+    const mouse = new T.Vector2(
+      ((e.clientX - rect.left) / rect.width) * 2 - 1,
+      (-(e.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    const ray = new T.Raycaster();
+    ray.layers.enable(1);
+    ray.setFromCamera(mouse, this.editorCamera);
+    return ray;
+  }
+  private entityUnderRay(ray: T.Raycaster) {
+    const hit = ray
+      .intersectObjects([...this.models.values()], true)
+      .find((x) => {
+        let o: T.Object3D | null = x.object;
+        while (o) {
+          if (!o.visible) return false;
+          o = o.parent;
+        }
+        return true;
+      });
+    return hit?.object.userData.entityId as string | undefined;
+  }
+  pickEntityAt(event: MouseEvent) {
+    if (
+      event.target !== this.editorRenderer.domElement ||
+      !this.pickingEnabled ||
+      this.dragging
+    )
+      return undefined;
+    this.prepareView(true);
+    try {
+      return this.entityUnderRay(this.pointerRay(event));
     } finally {
       this.prepareView(false);
     }

@@ -1,5 +1,6 @@
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useState, type ReactNode } from "react";
+import { WorkshopAppChrome, WorkshopSearch } from "./WorkshopAppChrome";
 import "./read-only-page.css";
 export function ReadOnlyPage({
   title,
@@ -7,12 +8,14 @@ export function ReadOnlyPage({
   error,
   loading = false,
   onBack,
+  utilities,
 }: {
   title: string;
   children?: ReactNode;
   error?: unknown;
   loading?: boolean;
   onBack?: () => void;
+  utilities?: ReactNode;
 }) {
   return (
     <section className="readonly-page">
@@ -28,6 +31,7 @@ export function ReadOnlyPage({
             只读成员 · 可浏览、播放和下载已有内容
           </p>
         </div>
+        {utilities}
       </header>
       {loading ? <LoadingState label="正在加载…" variant="region" /> : null}
       {error ? (
@@ -40,12 +44,62 @@ export function ReadOnlyPage({
     </section>
   );
 }
+type ReadOnlyCollectionProps = {
+  items: readonly { id: string; title: string; description?: string }[];
+  onOpen: (id: string) => void;
+};
+
+export function ReadOnlyWorkshopLibrary({
+  title,
+  utilities,
+  actions,
+  error,
+  loading,
+  ...collection
+}: ReadOnlyCollectionProps & {
+  title: string;
+  utilities: ReactNode;
+  actions?: ReactNode;
+  error?: Error | null;
+  loading: boolean;
+}) {
+  return (
+    <section className="workshop-page">
+      <ReadOnlyCollection
+        {...collection}
+        renderSearch={(search) => (
+          <WorkshopAppChrome
+            title={title}
+            utilities={utilities}
+            actions={
+              <>
+                {search}
+                {actions}
+                <span className="readonly-badge">只读</span>
+              </>
+            }
+          />
+        )}
+        feedback={
+          error ? (
+            <p role="alert">{error.message}</p>
+          ) : loading ? (
+            <LoadingState label="正在加载…" variant="region" />
+          ) : null
+        }
+      />
+    </section>
+  );
+}
+
 export function ReadOnlyCollection({
   items,
   onOpen,
-}: {
-  items: readonly { id: string; title: string; description?: string }[];
-  onOpen: (id: string) => void;
+  renderSearch,
+  feedback,
+}: ReadOnlyCollectionProps & {
+  renderSearch?: (search: ReactNode) => ReactNode;
+  feedback?: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const filtered = items.filter((i) =>
@@ -53,27 +107,42 @@ export function ReadOnlyCollection({
   );
   return (
     <>
-      <input
-        className="readonly-search"
-        aria-label="搜索内容"
-        placeholder="搜索名称…"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <div className="readonly-collection">
-        {filtered.map((i) => (
-          <button
-            className="readonly-card"
-            key={i.id}
-            onClick={() => onOpen(i.id)}
-          >
-            <strong>{i.title || "未命名"}</strong>
-            {i.description ? <span>{i.description}</span> : null}
-            <small>查看内容 →</small>
-          </button>
-        ))}
-      </div>
-      {!filtered.length ? <p>暂无匹配的内容。</p> : null}
+      {renderSearch ? (
+        renderSearch(
+          <WorkshopSearch
+            label="搜索内容"
+            placeholder="搜索名称…"
+            value={query}
+            onChange={setQuery}
+          />,
+        )
+      ) : (
+        <input
+          className="readonly-search"
+          aria-label="搜索内容"
+          placeholder="搜索名称…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      )}
+      {feedback ?? (
+        <>
+          <div className="readonly-collection">
+            {filtered.map((i) => (
+              <button
+                className="readonly-card"
+                key={i.id}
+                onClick={() => onOpen(i.id)}
+              >
+                <strong>{i.title || "未命名"}</strong>
+                {i.description ? <span>{i.description}</span> : null}
+                <small>查看内容 →</small>
+              </button>
+            ))}
+          </div>
+          {!filtered.length ? <p>暂无匹配的内容。</p> : null}
+        </>
+      )}
     </>
   );
 }

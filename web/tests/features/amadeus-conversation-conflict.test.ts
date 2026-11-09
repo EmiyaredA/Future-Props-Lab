@@ -33,6 +33,7 @@ describe("Amadeus conversation conflict", () => {
       setReferences: vi.fn(),
       setFilesOpen: vi.fn(),
       setWorkFiles: vi.fn(),
+      filePreviewRequestRef: { current: 0 },
       setFilePreview: vi.fn(),
     } as unknown as Parameters<typeof conversationActions>[0]);
     await actions.rename(item, "尚未发送的新标题");

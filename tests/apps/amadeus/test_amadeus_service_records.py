@@ -8,6 +8,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import httpx
+from fastapi import FastAPI, Request, Response
 from sqlalchemy import select
 
 from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
@@ -17,8 +18,11 @@ from studio.apps.amadeus.storage.models import (
     AmadeusMessage,
     AmadeusRun,
 )
+from studio.apps.amadeus.storage.runs import RunRecords
 from studio.assembly.independent.amadeus.application import create_app
+from studio.contracts.amadeus.conversations import RunCreateIn
 from studio.contracts.identity.claims import HEADER, issue_context, verify_context
+from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.database.migrations import apply
 from tests.apps.thought_workshop.test_community_asset_protocol import (  # noqa: F401
     CATALOG,
@@ -27,6 +31,161 @@ from tests.apps.thought_workshop.test_community_asset_protocol import (  # noqa:
 from tests.integration.test_independent_project_catalog import authorize
 
 SOURCE = "/v1/amadeus/conversations"
+
+
+async def test_message_pin_and_fork_are_owned_atomic_and_idempotent(scenario, tmp_path):  # noqa: F811
+    case = scenario
+    root = tmp_path / "amadeus"
+    root.mkdir()
+    apply(root / "service.db", "amadeus", MIGRATIONS[:-1])
+    apply(root / "service.db", "amadeus", MIGRATIONS)
+    credential = "isolated-amadeus-service-credential-" * 2
+    case.identity.state.identity_options["service_credentials"]["amadeus"] = credential
+    visual = FastAPI()
+    checked = []
+
+    @visual.get("/v1/visual-workshop/projects/{project_id}")
+    async def read(project_id: str, request: Request):
+        actor = verify_context(
+            request.headers[HEADER],
+            service="visual",
+            method="GET",
+            path=request.url.path,
+            public_key=case.key.public_key(),
+        )
+        assert actor.user_id == case.viewer
+        checked.append(project_id)
+        return Response("{}", status_code=200 if project_id == "owned" else 404)
+
+    case.mesh.apps["visual"] = visual
+    app = create_app(
+        state_root=root,
+        catalog=CATALOG,
+        public_key=case.key.public_key(),
+        credential=credential,
+        transport=case.mesh,
+    )
+
+    async with (
+        app.router.lifespan_context(app),
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://amadeus") as api,
+    ):
+
+        async def send(method, path, **kwargs):
+            return await api.request(
+                method, path, headers=await authorize(case, "amadeus", method, path), **kwargs
+            )
+
+        created = await send("POST", SOURCE)
+        path = SOURCE + "/" + created.json()["id"]
+
+        def reference(project):
+            return {
+                "id": project,
+                "application": "视觉创作",
+                "name": "节点",
+                "target": {
+                    "project_resource": "visual",
+                    "project_id": project,
+                    "element_kind": "node",
+                    "element_id": "node",
+                },
+            }
+
+        for revision, (role, content) in enumerate(
+            [
+                ("user", "开始"),
+                ("assistant", "分叉点"),
+                ("user", "后续"),
+            ]
+        ):
+            result = await send(
+                "POST",
+                path + "/messages",
+                json={
+                    "expected_revision": revision,
+                    "role": role,
+                    "content": content,
+                    "references": [reference("owned"), reference("other")] if not revision else [],
+                },
+            )
+            assert result.status_code == 200, result.text
+        messages = result.json()["messages"]
+        anchor = path + "/messages/" + messages[1]["id"]
+        pinned = await send("PUT", anchor + "/pin", json={"pinned": True})
+        assert pinned.json()["pinned"] is True
+        assert (await send("GET", path)).json()["messages"][1]["pinned"] is True
+
+        request = {"request_id": str(uuid4())}
+        first, second = await asyncio.gather(
+            *(send("POST", anchor + "/fork", json=request) for _ in range(2))
+        )
+        assert first.status_code == second.status_code == 200, (first.text, second.text)
+        assert first.json()["id"] == second.json()["id"]
+        assert set(checked) == {"owned", "other"}
+        branch = SOURCE + "/" + first.json()["id"]
+        copied = (await send("GET", branch)).json()
+        assert [item["content"] for item in copied["messages"]] == ["开始", "分叉点"]
+        assert [item["id"] for item in copied["messages"][0]["references"]] == ["owned"]
+        assert copied["messages"][1]["pinned"] is False
+        assert copied["actions"] == copied["questions"] == []
+        assert (await send("GET", branch + "/runs")).json() == []
+        assert (await send("GET", path)).json()["messages"][-1]["content"] == "后续"
+
+        for verb, action, body in (("PUT", "/pin", {"pinned": False}), ("POST", "/fork", request)):
+            url = anchor + action
+            proof = await authorize(case, "amadeus", verb, url)
+            actor = verify_context(
+                proof[HEADER],
+                service="amadeus",
+                method=verb,
+                path=url,
+                public_key=case.key.public_key(),
+            )
+            other = issue_context(
+                replace(actor, user_id=case.owner),
+                service="amadeus",
+                method=verb,
+                path=url,
+                private_key=case.key,
+                key_id="fixture",
+            )
+            assert (
+                await api.request(verb, url, headers={HEADER: other}, json=body)
+            ).status_code == 404
+        wrong_anchor = path + "/messages/" + messages[2]["id"] + "/fork"
+        assert (await send("POST", wrong_anchor, json=request)).status_code == 409
+        assert (await send("PUT", anchor + "/pin", json={"pinned": False})).json()[
+            "pinned"
+        ] is False
+
+        async def resolve_agent(agent_id):
+            assert agent_id == "codex"
+            return "isolated-fixture"
+
+        async with app.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+            original = await db.get(AmadeusConversation, created.json()["id"])
+            original.executor_kind = "legacy-pi"
+            await db.commit()
+            principal = StudioPrincipal(
+                user_id=case.viewer,
+                platform_role="user",
+                must_change_password=False,
+                auth_kind="session",
+                scopes=frozenset({"studio:private_read", "studio:write"}),
+            )
+            run = await RunRecords(db, principal, resolve_agent=resolve_agent).create(
+                first.json()["id"],
+                RunCreateIn(agent_id="codex"),
+            )
+            assert [item["content"] for item in run.run.execution_config["messages"]] == [
+                "开始",
+                "分叉点",
+            ]
+        assert (await send("PUT", anchor + "/pin", json={"pinned": True})).status_code == 409
+        legacy_fork = await send("POST", anchor + "/fork", json={"request_id": str(uuid4())})
+        assert legacy_fork.status_code == 200, legacy_fork.text
+        assert legacy_fork.json()["executor_kind"] == "code-agent"
 
 
 async def test_amadeus_record_contracts_ownership_and_recovery(
@@ -101,6 +260,12 @@ async def test_amadeus_record_contracts_ownership_and_recovery(
                     status="running",
                     active_owner_key=case.viewer + ":" + case.viewer,
                     partial_text="Saved partial",
+                    context_json=[
+                        {"projectResource": "visual", "projectId": "canvas", "title": "Canvas"},
+                        {"projectResource": "visual", "projectId": "canvas", "title": "Canvas"},
+                        {"projectResource": "video", "projectId": "timeline", "title": "Timeline"},
+                        {"application": "Portal", "title": "Homepage"},
+                    ],
                 )
             )
             await db.flush()
@@ -118,6 +283,21 @@ async def test_amadeus_record_contracts_ownership_and_recovery(
             )
             await db.commit()
         assert (await send("GET", path + "/runs/" + run_id)).json()["run"]["status"] == "running"
+        listed = (await send("GET", SOURCE)).json()["items"]
+        assert listed[0]["latest_run_status"] == "running"
+        assert listed[0]["projects"] == [
+            {"resource": "visual", "id": "canvas", "title": "Canvas"},
+            {"resource": "video", "id": "timeline", "title": "Timeline"},
+        ]
+        list_as_other = issue_context(
+            replace(actor, user_id=case.owner),
+            service="amadeus",
+            method="GET",
+            path=SOURCE,
+            private_key=case.key,
+            key_id="fixture",
+        )
+        assert (await api.get(SOURCE, headers={HEADER: list_as_other})).json()["items"] == []
 
     restarted = application()
     async with restarted.router.lifespan_context(restarted):

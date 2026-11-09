@@ -1,0 +1,252 @@
+.amadeus-action-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  min-height: 32px;
+  gap: 4px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--amadeus-muted);
+  cursor: pointer;
+}
+
+.amadeus-action-icon:is(
+    :hover,
+    :focus-visible,
+    [aria-pressed="true"],
+    [aria-expanded="true"]
+  ):not(:disabled) {
+  color: var(--amadeus-ink);
+  background: var(--amadeus-accent-soft);
+}
+
+.amadeus-action-icon:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.amadeus-action-tooltip,
+.amadeus-pin-menu {
+  z-index: 20000;
+  max-width: min(320px, calc(100vw - 24px));
+  border: 1px solid var(--amadeus-line);
+  border-radius: 9px;
+  background: var(--amadeus-surface);
+  color: var(--amadeus-ink);
+  box-shadow: var(--amadeus-shadow);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.amadeus-action-tooltip {
+  padding: 6px 9px;
+}
+
+.amadeus-pin-menu {
+  max-height: min(280px, var(--radix-dropdown-menu-content-available-height));
+  padding: 5px;
+  overflow: auto;
+}
+
+.amadeus-pin-menu [role="menuitem"],
+.amadeus-pin-menu > div:first-child {
+  padding: 7px 9px;
+}
+
+.amadeus-pin-menu [data-highlighted] {
+  border-radius: 5px;
+  background: var(--amadeus-accent-soft);
+  outline: 0;
+}
+
+.amadeus-composer-meta,
+.amadeus-usage-indicators,
+.amadeus-selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.amadeus-composer-meta {
+  flex-wrap: wrap;
+  min-width: 0;
+  margin-bottom: 3px;
+}
+
+.amadeus-usage-indicators,
+.amadeus-composer-models {
+  min-width: 0;
+  max-width: 100%;
+  margin-inline-start: auto;
+}
+
+.amadeus-composer-models .amadeus-toolbar-run {
+  flex-wrap: nowrap;
+}
+
+.amadeus-model-choices {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.amadeus-usage-trigger {
+  position: relative;
+}
+
+.amadeus-context-ring {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  color: var(--amadeus-ink);
+  font-size: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.amadeus-context-ring > * {
+  grid-area: 1 / 1;
+}
+
+.amadeus-context-ring svg {
+  width: 100%;
+  transform: rotate(-90deg);
+}
+
+.amadeus-context-ring circle {
+  fill: none;
+  stroke: var(--amadeus-line);
+  stroke-width: 2.5;
+}
+
+.amadeus-context-ring circle:last-child {
+  stroke: var(--amadeus-accent);
+}
+
+.amadeus-usage-popover {
+  z-index: 90;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 12px;
+  background: var(--amadeus-surface);
+  color: var(--amadeus-ink);
+  box-shadow: var(--amadeus-shadow);
+  font-size: 12px;
+}
+
+.amadeus-usage-popover > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.amadeus-usage-popover h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.amadeus-usage-popover p {
+  margin: 5px 0;
+}
+
+.amadeus-usage-popover table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.amadeus-usage-popover :is(th, td) {
+  padding: 4px 3px;
+  border-top: 1px solid var(--amadeus-line-soft);
+  text-align: right;
+}
+
+.amadeus-usage-popover :is(th, td):first-child {
+  text-align: start;
+}
+
+.amadeus-usage-popover td small {
+  display: block;
+  color: var(--amadeus-muted);
+}
+
+.amadeus-message-action-row,
+.amadeus-message-action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.amadeus-message-action-row {
+  align-self: flex-end;
+  margin-top: 2px;
+}
+
+.amadeus-message-action-row .amadeus-action-icon {
+  min-height: 27px;
+  min-width: 27px;
+}
+
+.amadeus-message-more {
+  display: none;
+}
+
+.amadeus-message-action-buttons {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.amadeus-message:is(:hover, :focus-within) .amadeus-message-action-buttons,
+.amadeus-message-action-row[data-visible="true"]
+  .amadeus-message-action-buttons {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (any-pointer: coarse) {
+  .amadeus-message-more {
+    display: inline-flex;
+  }
+
+  .amadeus-message-action-row .amadeus-action-icon {
+    min-width: 36px;
+    min-height: 36px;
+  }
+
+  .amadeus-message-action-row[data-visible="false"]
+    .amadeus-message-action-buttons {
+    display: none;
+  }
+}
+
+.amadeus-selection-bar {
+  flex-wrap: wrap;
+  min-width: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 9px;
+  color: var(--amadeus-ink);
+  font-size: 12px;
+}
+
+.amadeus-selection-bar button {
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.amadeus-message-feedback {
+  font-size: 12px;
+  color: var(--amadeus-muted);
+}

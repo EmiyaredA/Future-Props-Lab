@@ -6,8 +6,10 @@ import type {
   Conversation,
   Detail,
   RunDetail,
+  Reference,
 } from "@features/amadeus/protocol";
 import { fetchApiJson } from "@platform/api/client";
+import { amadeusTabKey, writeTabState } from "@features/amadeus/tabState";
 
 vi.mock("@platform/api/client", () => ({ fetchApiJson: vi.fn() }));
 
@@ -32,15 +34,15 @@ function useFixture(workspace: string) {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
   const [runs, setRuns] = useState<RunDetail[]>([]);
+  const [draft, setDraft] = useState("");
+  const [references, setReferences] = useState<Reference[]>([]);
   const [loaded, setLoaded] = useState<string[]>([]);
   const [loadedConversationId, setLoadedConversationId] = useState<
     string | null
   >(null);
   const detailRef = useRef<Detail | null>(null);
   const contextRef = useRef([]);
-  const modelAbortRef = useRef<AbortController | undefined>(undefined);
-  const workerRef = useRef<Worker | undefined>(undefined);
-  const activeRunRef = useRef(null);
+  const activeActionRef = useRef(null);
   const avatarTimerRef = useRef<number | undefined>(undefined);
   const actions = useAmadeusData({
     session: { me: { user: { id: workspace } } },
@@ -48,9 +50,11 @@ function useFixture(workspace: string) {
     detail,
     detailRef,
     contextRef,
-    modelAbortRef,
-    workerRef,
-    activeRunRef,
+    standalone: false,
+    draft,
+    references,
+    setDraft,
+    activeActionRef,
     avatarTimerRef,
     loaded,
     loadedConversationId,
@@ -61,18 +65,14 @@ function useFixture(workspace: string) {
     setLoadedConversationId,
     setActiveRun: noop,
     setBusy: noop,
-    setReferences: noop,
-    setAttachments: noop,
+    setReferences,
     setFilesOpen: noop,
     setWorkFiles: noop,
     setError: noop,
-    setModels: noop,
-    setModelId: noop,
     setContexts: noop,
-    setAlwaysOnTop: noop,
     setAvatarState: noop,
   } as unknown as Parameters<typeof useAmadeusData>[0]);
-  return { conversations, detail, runs, ...actions };
+  return { conversations, detail, runs, draft, ...actions };
 }
 
 describe("Amadeus scoped reads", () => {
@@ -80,6 +80,15 @@ describe("Amadeus scoped reads", () => {
     const first = deferred<Detail>();
     const second = deferred<Detail>();
     const staleWorkspace = deferred<Detail>();
+    const tabKey = amadeusTabKey("one", "embedded");
+    writeTabState(`${tabKey}:draft:first`, {
+      text: "first draft",
+      references: [],
+    });
+    writeTabState(`${tabKey}:draft:second`, {
+      text: "second draft",
+      references: [],
+    });
     vi.mocked(fetchApiJson).mockImplementation(async (path) => {
       if (path === "/v1/amadeus/conversations") return { items: [] } as never;
       if (path === "/v1/amadeus/runs/active") return null as never;
@@ -93,8 +102,8 @@ describe("Amadeus scoped reads", () => {
     const view = renderHook(({ workspace }) => useFixture(workspace), {
       initialProps: { workspace: "one" },
     });
-    let readFirst!: Promise<void>;
-    let readSecond!: Promise<void>;
+    let readFirst!: Promise<RunDetail[] | undefined>;
+    let readSecond!: Promise<RunDetail[] | undefined>;
     act(() => {
       readFirst = view.result.current.open("first");
       readSecond = view.result.current.open("second");
@@ -104,7 +113,15 @@ describe("Amadeus scoped reads", () => {
     await act(async () => {
       second.resolve({
         conversation: conversation("second"),
-        messages: [],
+        messages: [
+          {
+            id: "second-reply",
+            role: "assistant",
+            content: "second reply",
+            created_at: "2026-11-09",
+            references: [],
+          },
+        ],
         actions: [],
       });
       await readSecond;
@@ -118,7 +135,9 @@ describe("Amadeus scoped reads", () => {
       await readFirst;
     });
     expect(view.result.current.detail?.conversation.id).toBe("second");
-    let staleRead!: Promise<void>;
+    expect(view.result.current.detail?.messages[0].id).toBe("second-reply");
+    expect(view.result.current.draft).toBe("second draft");
+    let staleRead!: Promise<RunDetail[] | undefined>;
     act(() => {
       staleRead = view.result.current.open("stale");
     });

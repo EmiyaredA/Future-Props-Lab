@@ -98,6 +98,8 @@ export function AmadeusAvatar({
   const [reduced, setReduced] = useState(
     () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
+  const bundledPortrait =
+    camera === "avatar" && sourceUrl === AMADEUS_PACKAGE_URL;
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -113,32 +115,35 @@ export function AmadeusAvatar({
       transition: 0,
       from: lastValues.current ? { ...lastValues.current } : null,
     };
-    if (reduced || failed)
-      void loadCharacterModel(sourceUrl)
-        .then(async ({ document: model, urls }) => {
-          const { motion, expressionId } = boundPose(model, state);
-          const frame =
-            model.stateBindings[state]?.playback === "onceHold"
-              ? motion.duration
-              : 0;
-          const pose = evaluate(
-            model,
-            parameterValues(model, frame, motion.id, expressionId),
-          );
-          const width = camera === "avatar" ? 256 : 360;
-          const height = camera === "avatar" ? 256 : 720;
-          setFallback(
-            await renderStaticPose(
-              pose.parts,
-              urls,
-              viewCamera(model, camera, width, height),
-              width,
-              height,
-            ),
-          );
-        })
-        .catch(() => {});
-  }, [state, reduced, failed, sourceUrl, camera]);
+    if ((!reduced && !failed) || (bundledPortrait && state === "idle")) return;
+    let current = true;
+    void loadCharacterModel(sourceUrl)
+      .then(async ({ document: model, urls }) => {
+        const { motion, expressionId } = boundPose(model, state);
+        const frame =
+          model.stateBindings[state]?.playback === "onceHold"
+            ? motion.duration
+            : 0;
+        const pose = evaluate(
+          model,
+          parameterValues(model, frame, motion.id, expressionId),
+        );
+        const width = camera === "avatar" ? 256 : 360;
+        const height = camera === "avatar" ? 256 : 720;
+        const image = await renderStaticPose(
+          pose.parts,
+          urls,
+          viewCamera(model, camera, width, height),
+          width,
+          height,
+        );
+        if (current) setFallback(image);
+      })
+      .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [state, reduced, failed, sourceUrl, camera, bundledPortrait]);
 
   useEffect(() => {
     const element = canvasHost.current;
@@ -165,20 +170,25 @@ export function AmadeusAvatar({
     );
 
     void (async () => {
+      if (reduced && bundledPortrait && playback.current.state === "idle")
+        return;
       const { document: model, urls } = await loadCharacterModel(sourceUrl);
       if (stopped) return;
-      const fallbackWidth = camera === "avatar" ? 256 : 360;
-      const fallbackHeight = camera === "avatar" ? 256 : 720;
-      const stillPose = statePose(model, playback.current.state, 0, true);
-      const stillImage = await renderStaticPose(
-        evaluate(model, stillPose.values).parts,
-        urls,
-        viewCamera(model, camera, fallbackWidth, fallbackHeight),
-        fallbackWidth,
-        fallbackHeight,
-      );
-      if (stopped) return;
-      setFallback(stillImage);
+      const fallbackState = playback.current.state;
+      if (!bundledPortrait || fallbackState !== "idle") {
+        const fallbackWidth = camera === "avatar" ? 256 : 360;
+        const fallbackHeight = camera === "avatar" ? 256 : 720;
+        const stillPose = statePose(model, fallbackState, 0, true);
+        const stillImage = await renderStaticPose(
+          evaluate(model, stillPose.values).parts,
+          urls,
+          viewCamera(model, camera, fallbackWidth, fallbackHeight),
+          fallbackWidth,
+          fallbackHeight,
+        );
+        if (stopped) return;
+        if (playback.current.state === fallbackState) setFallback(stillImage);
+      }
       if (reduced) return;
 
       const application = new Application();
@@ -272,7 +282,7 @@ export function AmadeusAvatar({
       if (app?.renderer) app.destroy(true, { children: true });
       element.replaceChildren();
     };
-  }, [sourceUrl, camera, reduced]);
+  }, [sourceUrl, camera, reduced, bundledPortrait]);
 
   const visible = ready && !failed && !reduced;
   return (
@@ -288,7 +298,9 @@ export function AmadeusAvatar({
       }
     >
       <ResponsiveImage
-        src={fallback}
+        src={
+          bundledPortrait && state === "idle" ? AMADEUS_POSTER_URL : fallback
+        }
         alt=""
         className="amadeus-avatar-poster"
       />

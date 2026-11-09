@@ -397,6 +397,7 @@ export function KnowledgeTree<T extends TreeEntry>({
             <button
               type="button"
               className="knowledge-tree-name"
+              data-amadeus-id={item.id}
               title={item.title}
               aria-current={activeId === item.id ? "page" : undefined}
               onClick={() => open(item.id)}

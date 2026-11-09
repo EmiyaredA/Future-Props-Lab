@@ -415,6 +415,31 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await page.goto("/home");
   await page.getByRole("button", { name: /全部应用/ }).click();
   await expect(page).toHaveURL(/\/apps$/);
+  const status = page.getByRole("button", {
+    name: /^查看视觉创作工坊服务状态/,
+  });
+  const details = page.getByRole("region", { name: "视觉创作工坊服务状态" });
+  const appCard = page.locator(".application-card").filter({ has: status });
+  await expect(status).toBeVisible();
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const before = await appCard.boundingBox();
+    await status.hover();
+    await expect(details).toContainText("最近检查");
+    const panel = (await details.boundingBox())!;
+    const anchor = (await status.boundingBox())!;
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(width);
+    expect(
+      Math.min(
+        Math.abs(panel.y - anchor.y - anchor.height),
+        Math.abs(anchor.y - panel.y - panel.height),
+      ),
+    ).toBeLessThan(12);
+    expect((await appCard.boundingBox())?.height).toBe(before?.height);
+    await page.mouse.move(0, 0);
+    await expect(details).toBeHidden();
+  }
   await page.getByRole("button", { name: "打开视觉创作工坊" }).click();
   await expect(page).toHaveURL(/\/apps\/visual-workshop$/);
   await expect(page.locator(".studio-sidebar")).toHaveCount(0);
@@ -430,6 +455,10 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
     /\/apps\/visual-workshop\/projects\/e2e-project\/canvas$/,
   );
   await expect(page.getByText("未命名项目")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".canvas-brand-mark")).toHaveAttribute(
+    "data-load-state",
+    "ready",
+  );
   const zoom = page.locator(".canvas-zoom-value");
   await zoom.click();
   await expect(zoom).toHaveText("100%");
@@ -707,9 +736,31 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await expect(assistantPanel).not.toHaveClass(/is-open/);
   await page.setViewportSize({ width: 1440, height: 900 });
 
+  projects.push({
+    id: "legacy-completed-project",
+    title: "历史作品",
+    kind: "canvas",
+    status: "completed",
+    revision: 0,
+    updated_at: "2026-08-03T08:00:00Z",
+  });
   await page.getByRole("button", { name: "返回项目列表" }).click();
   await expect(page).toHaveURL(/\/apps\/visual-workshop$/);
-  await expect(page.getByText("未命名项目")).toBeVisible();
+  const cards = page.locator(".workshop-project-card");
+  await expect(cards).toHaveCount(2);
+  await expect(cards.getByText("未命名项目", { exact: true })).toBeVisible();
+  await expect(cards.getByText("历史作品", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "草稿", exact: true }),
+  ).toHaveCount(0);
+  await expect(cards.getByText(/^(草稿|已完成)$/)).toHaveCount(0);
+  await expect(
+    cards.getByRole("button", { name: /^(完成|恢复)$/ }),
+  ).toHaveCount(0);
+  const search = page.getByRole("textbox", { name: "搜索项目" });
+  await search.fill("历史作品");
+  await expect(cards).toHaveCount(1);
+  await expect(cards.getByText("历史作品", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: /返回应用中心/ }).click();
   await expect(page).toHaveURL(/\/apps$/);
   await expect(page.locator(".studio-sidebar")).toBeVisible();

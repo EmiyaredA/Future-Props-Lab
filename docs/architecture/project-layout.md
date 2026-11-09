@@ -179,7 +179,7 @@ docs/
 
 本机 Happier 可使用独立回环 TLS 监听器。`scripts/website/application.py` 绑定 Studio 与 Happier 两个同站来源，`WebsiteTransport` 依据实际监听 socket 标记本机 Happier 入口，仅 Agent 解锁使用该标记。
 
-日常网站的云控页由 `web/src/features/cloud-control/` 嵌入 Happier 原生 Web。`studio/assembly/website/happier.py` 与 `happier_ingress.py` 在独立 HTTPS 来源管理浏览器授权并转发网页、API 和实时连接。Identity 的 `happier_access.py` 持有短期凭证与浏览器授权。Happier 原生账号、设备配对、会话加密和 CLI 生命周期由固定版本的上游实现提供。
+历史部署使用云控嵌入 Happier 原生 Web。当前云控提供远程应用或桌面，旧工作台页面链接进入 `/amadeus`。`studio/assembly/website/happier.py` 与 `happier_ingress.py` 在独立 HTTPS 来源管理浏览器授权并转发网页、API 和实时连接。Identity 的 `happier_access.py` 持有短期凭证与浏览器授权。Happier 原生账号、设备配对、会话加密和 CLI 生命周期由固定版本的上游实现提供。
 
 旧工作台的数据归属及迁移仍在 `studio/apps/agent_workbench/`。旧站启动、公开 API、独立 Compose 和 Gateway 均不装配此工作台。归档及回退使用原部署版本，详见 [Happier 部署与切换](../operations/happier.md)。
 
@@ -505,7 +505,9 @@ Future-Props-Lab/
   `accounts/<user-id>/amadeus/<conversation-id>/{imports,scripts,outputs,tmp}/`，按账号
   读取隔离，文件访问拒绝符号链接和目录穿越。新运行通过 `execution.py` 持有官方 CLI，`tool_bridge.py` 以短期任务工具授权连接正式 API；旧模型轮次与浏览器事件写接口返回 410。
   `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Code Agent 选择、运行状态重连、对话时间线与控件选取；
-  `useAmadeusData.ts` 管理账号和会话范围内的读取与订阅，`revisionConflict.ts` 解释会话 CAS 冲突；
+  工坊通过 `web/src/platform/assistantElements.ts` 登记原生选区、命中和定位，`features/amadeus/SourceHost.tsx` 负责点选高亮和取消。
+  `elementReferences.ts` 负责显式引用的去重、上限与快照构造。
+  Portal 提供 `/amadeus` 独立工作区，与工坊侧栏共用会话组件。项目选择经 FPL 操作目录读取各业务服务，`useAmadeusData.ts` 管理账号和会话范围内的读取与订阅，`revisionConflict.ts` 解释会话 CAS 冲突；
   `vendor/pi/` 仅保留历史来源快照，不参与 Amadeus 构建。进程监督由桌面独立工具入口提供，
   不复用携带后端凭据的服务进程。
 
@@ -559,7 +561,7 @@ Future-Props-Lab/
   `studio/contracts/tools/`。网站临时下载生命周期归 `apps/tools/video_downloads/local_jobs.py`，关闭时等待已接受任务；
   独立服务使用现有持久任务及回执。素材入库由 `assembly/website/video_library.py` 显式连接素材所有者，
   两种下载状态实现尚待后续统一端口，不因目录迁移视为完成。
-- `web/src/features/cloud-control/` 拥有云控页面、远程画面、验证界面和 Happier 嵌入容器。Identity 管理按用途分离的云控权限，Remote Desktop 管理空闲偏好与桌面连接。网站组合入口归 `studio/assembly/website/cloud_control.py`。
+- `web/src/features/cloud-control/` 拥有云控页面、远程画面和验证界面。Identity 管理按用途分离的云控权限，Remote Desktop 管理空闲偏好与桌面连接。网站组合入口归 `studio/assembly/website/cloud_control.py`。
   API、SSE 与后台采集同时检查 `cloud-control.access`，身份降级后保留原账号副本和检查点。
   当前网站保留兼容装配，独立服务实现保留在服务化分支并由其统一验收切换。
 `web/src/features/applications/ApplicationCard.tsx` 拥有应用目录的紧凑入口卡片；布局、品牌图、简介和能力标签沿用应用目录样式，入口元数据由各装配入口显式传入。

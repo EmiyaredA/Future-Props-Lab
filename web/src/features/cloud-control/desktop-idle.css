@@ -13,11 +13,19 @@
   width: min(344px, calc(100% - 20px));
   max-height: 60dvh;
   overflow: auto;
+  box-shadow: 0 16px 40px #0004;
+}
+.cloud-idle-popover,
+.cloud-idle-inline {
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface-raised);
   color: var(--text);
-  box-shadow: 0 16px 40px #0004;
+}
+.cloud-dialog .cloud-idle-inline {
+  gap: 0;
+  width: min(100%, 344px);
+  min-width: 0;
 }
 .cloud-idle-heading {
   display: flex;
@@ -85,7 +93,7 @@
   background: var(--accent-soft);
   color: var(--accent);
 }
-.cloud-idle-popover .cloud-idle-option:focus-visible {
+:is(.cloud-idle-popover, .cloud-idle-inline) .cloud-idle-option:focus-visible {
   outline-offset: 1px;
 }
 .cloud-idle-custom,
@@ -143,6 +151,7 @@
   gap: 8px;
   padding: 10px 14px;
   border-top: 1px solid var(--border);
+  border-radius: 0 0 14px 14px;
   background: var(--surface);
 }
 .cloud-idle-actions .btn {

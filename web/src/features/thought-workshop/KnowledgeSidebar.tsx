@@ -21,6 +21,7 @@ export function KnowledgeSidebar({
   content,
   sections,
   readOnly = false,
+  showThemeToggle = true,
   onBack,
   onNavigate,
   inside,
@@ -42,6 +43,7 @@ export function KnowledgeSidebar({
   content?: ReactNode;
   sections?: ReactNode;
   readOnly?: boolean;
+  showThemeToggle?: boolean;
   onBack: () => void;
   onNavigate: (id?: string) => void;
   inside: boolean;
@@ -91,7 +93,7 @@ export function KnowledgeSidebar({
             <X size={18} />
           </button>
         }
-        footer={<ThemeToggle />}
+        footer={showThemeToggle ? <ThemeToggle /> : undefined}
       >
         {!inside && sections}
         {!inside && discover && (

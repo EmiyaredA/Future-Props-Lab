@@ -6,6 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from studio.contracts.agent_runtime.catalog import TurnOptions
+
 FINDER = "amadeus.conversation.reveal"
 SCRIPT = "amadeus.script.run"
 DIALOGUE = "amadeus.dialogue.run"
@@ -66,7 +68,7 @@ class ScriptResult(BaseModel):
     truncated: Annotated[bool, Field(strict=True)]
 
 
-class DialogueScope(BaseModel):
+class DialogueScope(TurnOptions):
     model_config = ConfigDict(extra="forbid", frozen=True)
     conversation_id: UUID
     run_id: UUID

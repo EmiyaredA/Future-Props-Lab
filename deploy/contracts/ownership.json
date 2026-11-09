@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "19dbe90dc54b573ca0caf99d9df2b5cacb8332ac1fe48edcb32c60c0f2b6ca0a",
+  "openapi_sha256": "78a23dc1874e88539cd128ffcd4832e263fd84c424de74bd34ab0bff87ee7fcd",
   "operations": [
     {
       "service": "identity",
@@ -211,6 +211,18 @@
       "method": "POST",
       "path": "/v1/amadeus/conversations/{conversation_id}/messages",
       "operation_id": "append_message_v1_amadeus_conversations__conversation_id__messages_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork",
+      "operation_id": "fork_message_v1_amadeus_conversations__conversation_id__messages__message_id__fork_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "PUT",
+      "path": "/v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin",
+      "operation_id": "pin_message_v1_amadeus_conversations__conversation_id__messages__message_id__pin_put"
     },
     {
       "service": "amadeus",
@@ -3688,6 +3700,12 @@
       "model": "AmadeusMessage"
     },
     {
+      "table": "amadeus_fork_receipts",
+      "service": "amadeus",
+      "module": "studio.apps.amadeus.storage.models",
+      "model": "AmadeusForkReceipt"
+    },
+    {
       "table": "amadeus_actions",
       "service": "amadeus",
       "module": "studio.apps.amadeus.storage.models",
@@ -5263,6 +5281,10 @@
     },
     {
       "path": "/cloud-control",
+      "service": "portal"
+    },
+    {
+      "path": "/amadeus",
       "service": "portal"
     },
     {

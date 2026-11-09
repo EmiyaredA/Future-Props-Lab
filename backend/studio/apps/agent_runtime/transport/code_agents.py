@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from studio.assembly.http_dependencies import StudioAuth, require_recent_reauthentication
-from studio.contracts.agent_runtime.catalog import CatalogOut
+from studio.contracts.agent_runtime.catalog import CatalogOut, ModelId
 from studio.contracts.agent_runtime.definitions import AgentId
 from studio.runtime.http.website import require_local_browser
 
@@ -26,9 +26,13 @@ router = APIRouter(
 
 
 @router.get("", response_model=CatalogOut)
-async def list_code_agents(request: Request, principal: StudioAuth):
+async def list_code_agents(
+    request: Request, principal: StudioAuth, harness_model: ModelId | None = None
+):
     return await request.app.state.code_agent_catalog(
-        request, can_enable=can_manage_connections(request, principal)
+        request,
+        can_enable=can_manage_connections(request, principal),
+        **({"harness_model": harness_model} if harness_model else {}),
     )
 
 

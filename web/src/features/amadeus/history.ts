@@ -18,7 +18,20 @@ export type AgentHistoryItem = {
 };
 
 export type TimelineItem =
-  | { kind: "message"; at: string; sequence: number; message: ChatMessage }
+  | {
+      kind: "message";
+      at: string;
+      sequence: number;
+      message: ChatMessage;
+      streaming?: boolean;
+    }
+  | {
+      kind: "reasoning";
+      at: string;
+      sequence: number;
+      runId: string;
+      text: string;
+    }
   | {
       kind: "tool";
       at: string;
@@ -44,17 +57,29 @@ export function conversationTimeline(
   runs: RunDetail[],
   actions: SavedAction[],
   questions: SavedQuestion[],
+  replies: ReadonlyMap<
+    string,
+    Extract<TimelineItem, { kind: "message" }>[]
+  > = new Map(),
 ): TimelineItem[] {
   const eventMessageRuns = new Set(
     runs
-      .filter((run) =>
-        run.events.some((event) => event.kind === "assistant_message"),
+      .filter(
+        (run) =>
+          !replies.has(run.run.id) &&
+          run.events.some(
+            (event) => event.kind === "assistant_message" && event.payload.text,
+          ),
       )
       .map((run) => run.run.id),
   );
   const items: TimelineItem[] = messages
     .filter(
-      (message) => !message.run_id || !eventMessageRuns.has(message.run_id),
+      (message) =>
+        message.role !== "assistant" ||
+        !message.run_id ||
+        (!eventMessageRuns.has(message.run_id) &&
+          !replies.get(message.run_id)?.length),
     )
     .map((message) => ({
       kind: "message",
@@ -63,16 +88,64 @@ export function conversationTimeline(
       message,
     }));
   const actionById = new Map(actions.map((action) => [action.id, action]));
-  const actionByRun = new Map(
-    actions
-      .filter((action) => action.run_id)
-      .map((action) => [action.run_id, action]),
+  const questionByCall = new Map(
+    questions.map((question) => [
+      `${question.run_id}:${question.tool_call_id}`,
+      question,
+    ]),
   );
-  const questionCalls = new Set(
-    questions.map((question) => question.tool_call_id),
-  );
+  const placedQuestions = new Set<string>();
   const calls = new Map<string, Extract<TimelineItem, { kind: "tool" }>>();
   for (const run of runs) {
+    items.push(...(replies.get(run.run.id) ?? []));
+    const toolCalls = run.events
+      .filter(
+        (event) => event.kind === "tool_call" && event.payload.tool_call_id,
+      )
+      .sort((a, b) => b.sequence - a.sequence);
+    const inferredActions = new Map<number, SavedAction>();
+    const explicitActionIds = new Set(
+      toolCalls.map(({ payload }) => payload.action_id),
+    );
+    for (const action of actions) {
+      if (action.run_id !== run.run.id || explicitActionIds.has(action.id))
+        continue;
+      const call = toolCalls.find(({ sequence, payload }) => {
+        if (payload.action_id || inferredActions.has(sequence)) return false;
+        const name = payload.tool_name;
+        const args = payload.arguments as Record<string, unknown> | undefined;
+        return (
+          name === action.tool_name ||
+          (typeof args?.operation === "string" &&
+            action.tool_name === `fpl_operation:${args.operation}`) ||
+          (typeof args?.id === "string" &&
+            ((args.id.startsWith("toolapi:") &&
+              action.tool_name === `tool_api:${args.id.slice(8)}`) ||
+              (args.id.startsWith("mcp:") &&
+                action.tool_name === `${args.id}:${args.tool}`))) ||
+          (name === "write_file" && action.tool_name === "write_work_file")
+        );
+      });
+      if (call) inferredActions.set(call.sequence, action);
+    }
+    const inferredQuestions = new Map<number, SavedQuestion>();
+    for (const question of questions) {
+      if (
+        question.run_id !== run.run.id ||
+        toolCalls.some(
+          ({ payload }) => payload.tool_call_id === question.tool_call_id,
+        )
+      )
+        continue;
+      const call = toolCalls.find(
+        ({ sequence, payload }) =>
+          payload.tool_name === "ask_user" &&
+          (payload.arguments as Record<string, unknown> | undefined)?.prompt ===
+            question.prompt &&
+          !inferredQuestions.has(sequence),
+      );
+      if (call) inferredQuestions.set(call.sequence, question);
+    }
     const fallbackTime = new Date(
       new Date(
         messages.find((message) => message.run_id === run.run.id)?.created_at ||
@@ -82,7 +155,24 @@ export function conversationTimeline(
     for (const event of run.events) {
       const payload = event.payload;
       const callId = String(payload.tool_call_id || "");
-      if (event.kind === "assistant_message" && payload.text) {
+      const question =
+        questionByCall.get(`${run.run.id}:${callId}`) ??
+        inferredQuestions.get(event.sequence);
+      if (event.kind === "tool_call" && question) {
+        if (!placedQuestions.has(question.id)) {
+          items.push({
+            kind: "question",
+            at: event.created_at || fallbackTime,
+            sequence: event.sequence,
+            question,
+          });
+          placedQuestions.add(question.id);
+        }
+      } else if (
+        event.kind === "assistant_message" &&
+        payload.text &&
+        !replies.has(run.run.id)
+      ) {
         items.push({
           kind: "message",
           at: event.created_at || fallbackTime,
@@ -97,12 +187,19 @@ export function conversationTimeline(
           },
         });
       } else if (
-        event.kind === "tool_call" &&
-        callId &&
-        !questionCalls.has(callId)
+        event.kind === "reasoning_summary" &&
+        typeof payload.text === "string" &&
+        payload.text.trim()
       ) {
+        items.push({
+          kind: "reasoning",
+          at: event.created_at || fallbackTime,
+          sequence: event.sequence,
+          runId: run.run.id,
+          text: payload.text,
+        });
+      } else if (event.kind === "tool_call" && callId) {
         const name = String(payload.tool_name || "工具");
-        const runAction = actionByRun.get(run.run.id);
         const item: Extract<TimelineItem, { kind: "tool" }> = {
           kind: "tool",
           at: event.created_at || fallbackTime,
@@ -116,13 +213,7 @@ export function conversationTimeline(
               : {},
           action:
             actionById.get(String(payload.action_id || "")) ||
-            (runAction &&
-            (runAction.tool_name === name ||
-              name === "fpl_operation_write" ||
-              name.startsWith("amadeus_api_") ||
-              name.startsWith("amadeus_mcp_"))
-              ? runAction
-              : undefined),
+            inferredActions.get(event.sequence),
           children: [],
         };
         items.push(item);
@@ -156,13 +247,15 @@ export function conversationTimeline(
       }
     }
   }
-  for (const question of questions)
+  for (const question of questions) {
+    if (placedQuestions.has(question.id)) continue;
     items.push({
       kind: "question",
       at: question.created_at,
       sequence: 0,
       question,
     });
+  }
   const linkedActions = new Set(
     items.filter((item) => item.kind === "tool").map((item) => item.action?.id),
   );
@@ -180,10 +273,15 @@ export function conversationTimeline(
       children: [],
     });
   }
-  return items.sort(
-    (a, b) =>
-      (Date.parse(a.at) || 0) - (Date.parse(b.at) || 0) ||
-      a.sequence - b.sequence,
+  return items.sort(compareTimelinePosition);
+}
+
+export function compareTimelinePosition(
+  a: Pick<TimelineItem, "at" | "sequence">,
+  b: Pick<TimelineItem, "at" | "sequence">,
+) {
+  return (
+    (Date.parse(a.at) || 0) - (Date.parse(b.at) || 0) || a.sequence - b.sequence
   );
 }
 
@@ -229,7 +327,7 @@ export function buildAgentHistory(
           tool_call_id: question.tool_call_id,
           tool_name: "ask_user",
         });
-    } else {
+    } else if (item.kind === "tool") {
       transcript.push({
         role: "assistant",
         content: "",

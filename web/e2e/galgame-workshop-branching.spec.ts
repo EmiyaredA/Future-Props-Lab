@@ -435,6 +435,8 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   await expect(page).toHaveURL(/\/editor$/);
   await expect(page.locator(".workshop-sidebar")).toHaveCount(0);
   await expect(page.locator(".galgame-editor-grid")).toBeVisible();
+  const editorMark = page.locator(".galgame-editor-project img");
+  await expect(editorMark).toHaveAttribute("data-load-state", "ready");
 
   includeOverviewLayoutFixtures = true;
   await openAssetSection(page, "资源总览");

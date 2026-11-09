@@ -1,3 +1,5 @@
+import { importConversationFile } from "./attachmentImport";
+import { mergeReferences, referenceLimit } from "./elementReferences";
 import { getAgents, type Agent as AgentOption } from "@features/code-agents";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchApiJson } from "@platform/api/client";
@@ -8,6 +10,8 @@ import { submitAmadeusAnswer } from "./answerQuestion";
 import { conversationActions } from "./conversationActions";
 import { useAmadeusData } from "./useAmadeusData";
 import { groupConversations } from "./conversationGroups";
+import { selectedProjectContexts } from "./projectScope";
+import { useProjectSelection } from "./useProjectSelection";
 import {
   conversationConflict,
   CONVERSATION_CONFLICT_MESSAGE,
@@ -19,7 +23,9 @@ import {
   type Context,
   type Conversation,
   type Detail,
+  type FilePreview,
   type ModelOption,
+  type NamedOption,
   type Reference,
   type Run,
   type RunDetail,
@@ -27,7 +33,11 @@ import {
   type WorkFile,
 } from "./protocol";
 
-export function useAmadeusController(session: AccountSessionContext) {
+export function useAmadeusController(
+  session: AccountSessionContext,
+  initialConversationId?: string,
+  standalone = false,
+) {
   const bridge = useAmadeusBridge();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [detail, setDetail] = useState<Detail | null>(null);
@@ -42,8 +52,15 @@ export function useAmadeusController(session: AccountSessionContext) {
   const saving = false;
   const [activeRun, setActiveRun] = useState<Run | null>(null);
   const [error, setError] = useState("");
-  const [models, setModels] = useState<ModelOption[]>([]);
   const [modelId, setModelId] = useState("default");
+  const [reasoningEffort, setReasoningEffort] = useState("");
+  const [modelVariant, setModelVariant] = useState("");
+  const [harnessEffort, setHarnessEffort] = useState("");
+  const [fast, setFast] = useState(false);
+  const [harnessCatalog, setHarnessCatalog] = useState<{
+    model: string;
+    options?: NamedOption[];
+  } | null>(null);
   const [agentId, setAgentId] = useState("codex");
   const [agents, setAgents] = useState<AgentOption[]>([]);
   const [toolSteps, setToolSteps] = useState<
@@ -61,15 +78,13 @@ export function useAmadeusController(session: AccountSessionContext) {
   const [renameItem, setRenameItem] = useState<Conversation | null>(null);
   const [renameTitle, setRenameTitle] = useState("");
   const [deleteItem, setDeleteItem] = useState<Conversation | null>(null);
-  const [attachments, setAttachments] = useState<
-    Array<{ name: string; bytes: number }>
-  >([]);
+  const [importing, setImporting] = useState(false);
+  const importingRef = useRef(false);
+  const submittingRef = useRef(false);
   const [filesOpen, setFilesOpen] = useState(false);
   const [workFiles, setWorkFiles] = useState<WorkFile[]>([]);
-  const [filePreview, setFilePreview] = useState<{
-    name: string;
-    text: string;
-  } | null>(null);
+  const [filePreview, setFilePreview] = useState<FilePreview | null>(null);
+  const filePreviewRequestRef = useRef(0);
   const [scriptAvailable, setScriptAvailable] = useState(false);
   const [registeredOperations, setRegisteredOperations] = useState(0);
   const [previewReference, setPreviewReference] = useState<Reference | null>(
@@ -103,13 +118,26 @@ export function useAmadeusController(session: AccountSessionContext) {
     [],
   );
 
-  const { refreshList, open } = useAmadeusData({
+  const {
+    refreshList,
+    open,
+    captureSelection,
+    adopt,
+    selectionPending,
+    clearSelection,
+  } = useAmadeusData({
     session,
+    initialConversationId,
+    standalone,
+    draft,
+    references,
+    setDraft,
     bridge,
     detail,
     detailRef,
     contextRef,
     avatarTimerRef,
+    activeActionRef,
     loaded,
     loadedConversationId,
     setConversations,
@@ -118,16 +146,28 @@ export function useAmadeusController(session: AccountSessionContext) {
     setActiveRun,
     setBusy,
     setReferences,
-    setAttachments,
     setFilesOpen,
     setWorkFiles,
     setError,
-    setModels,
-    setModelId,
     setContexts,
     setAvatarState,
     setLoaded,
     setLoadedConversationId,
+  });
+
+  const owner = session.me.user.id;
+  const scopedContexts = contexts.filter(
+    (item) => item.userId === owner && item.accountId === owner,
+  );
+  const conversationId = detail?.conversation.id;
+  const { projects, setProjects } = useProjectSelection({
+    owner,
+    conversationId,
+    pageContexts: scopedContexts,
+    lastRunContexts:
+      runs.filter(({ run }) => run.conversation_id === conversationId).at(-1)
+        ?.run.context ?? [],
+    standalone,
   });
 
   const refreshCapabilities = useCallback(async () => {
@@ -184,16 +224,67 @@ export function useAmadeusController(session: AccountSessionContext) {
       window.removeEventListener("focus", refresh);
     };
   }, [session.me.user.id]);
+  const selectedAgent = agents.find((item) => item.id === agentId);
+  const models: ModelOption[] = [
+    { id: "default", label: "CLI 默认模型" },
+    ...(selectedAgent?.models || []),
+  ];
+  if (!models.some((item) => item.id === modelId))
+    models.push({ id: modelId, label: `${modelId} · 上次使用` });
+  const selectedModel = models.find((item) => item.id === modelId);
+  const reasoningEfforts = selectedModel?.reasoning_efforts ?? [];
+  const modelVariants = selectedModel?.variants ?? [];
+  const fastAvailable = selectedModel?.fast_available === true;
+  const harnessModel =
+    agentId === "dsh" && modelId !== "default" ? modelId : null;
+  const currentHarnessCatalog =
+    harnessCatalog?.model === harnessModel ? harnessCatalog : null;
+  const harnessEfforts = currentHarnessCatalog?.options ?? [];
+  const harnessCatalogStatus = !harnessModel
+    ? null
+    : !currentHarnessCatalog
+      ? "loading"
+      : currentHarnessCatalog.options
+        ? "available"
+        : "unavailable";
   useEffect(() => {
-    const options = [
-      { id: "default", label: "CLI 默认模型" },
-      ...(agents.find((a) => a.id === agentId)?.models || []),
-    ];
-    setModels(options);
-    setModelId((previous) =>
-      options.some((item) => item.id === previous) ? previous : "default",
-    );
-  }, [agentId, agents]);
+    setHarnessCatalog(null);
+    if (!harnessModel) return;
+    let latestRequest: AbortController | undefined;
+    const refresh = () => {
+      latestRequest?.abort();
+      const request = new AbortController();
+      latestRequest = request;
+      void fetchApiJson<{ items: AgentOption[] }>(
+        `/v1/code-agents?harness_model=${encodeURIComponent(harnessModel)}`,
+        { signal: request.signal },
+      )
+        .then(({ items }) => {
+          if (request.signal.aborted) return;
+          const harness = items.find((item) => item.id === "dsh");
+          setHarnessCatalog({
+            model: harnessModel,
+            options:
+              harness?.harness_options_model === harnessModel
+                ? (harness.harness_efforts ?? [])
+                : undefined,
+          });
+        })
+        .catch(() => {
+          if (!request.signal.aborted)
+            setHarnessCatalog({ model: harnessModel });
+        });
+    };
+    refresh();
+    window.addEventListener("focus", refresh);
+    return () => {
+      latestRequest?.abort();
+      window.removeEventListener("focus", refresh);
+    };
+  }, [harnessModel, session.me.user.id]);
+  const effectiveReasoningEffort = reasoningEfforts.includes(reasoningEffort)
+    ? reasoningEffort
+    : "";
   const selectedConversationRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     const conversation = detail?.conversation;
@@ -202,8 +293,15 @@ export function useAmadeusController(session: AccountSessionContext) {
     selectedConversationRef.current = conversation.id;
     if (conversation.agent_id) {
       setAgentId(conversation.agent_id);
-      setModelId(runs.at(-1)?.run.agent_model || "default");
     }
+    const latest = runs
+      .filter((item) => item.run.conversation_id === conversation.id)
+      .at(-1)?.run;
+    setModelId(latest?.agent_model || "default");
+    setReasoningEffort(latest?.reasoning_effort || "");
+    setModelVariant(latest?.model_variant || "");
+    setHarnessEffort(latest?.harness_effort || "");
+    setFast(latest?.service_tier === "fast");
   }, [detail?.conversation, runs]);
 
   useEffect(() => {
@@ -229,30 +327,6 @@ export function useAmadeusController(session: AccountSessionContext) {
                 name: String(event.payload.tool_name || "工具"),
                 status: "running",
               })),
-          );
-          setDetail((previous) =>
-            previous
-              ? {
-                  ...previous,
-                  messages: [
-                    ...previous.messages.filter(
-                      (message) => message.id !== `stream:${run.id}`,
-                    ),
-                    ...(value.run.partial_text
-                      ? [
-                          {
-                            id: `stream:${run.id}`,
-                            role: "assistant",
-                            content: value.run.partial_text,
-                            references: [],
-                            created_at: new Date().toISOString(),
-                            run_id: run.id,
-                          },
-                        ]
-                      : []),
-                  ],
-                }
-              : previous,
           );
         }
         if (!["running", "cancelling"].includes(value.run.status)) {
@@ -284,9 +358,10 @@ export function useAmadeusController(session: AccountSessionContext) {
 
   const {
     create,
+    pinMessage,
+    forkMessage,
     rename,
     remove,
-    importAttachment,
     showFiles,
     previewFile,
     downloadFile,
@@ -296,16 +371,90 @@ export function useAmadeusController(session: AccountSessionContext) {
     filesOpen,
     refreshList,
     open,
+    clearSelection,
     setDetail,
     setError,
     setRenameItem,
     setDeleteItem,
-    setAttachments,
-    setReferences,
     setFilesOpen,
     setWorkFiles,
+    filePreviewRequestRef,
     setFilePreview,
   });
+
+  const importAttachments = async (files: File[]) => {
+    if (!files.length || busy || importingRef.current || submittingRef.current)
+      return;
+    if (selectionPending()) {
+      setError("正在打开对话，请稍后重新导入附件。");
+      return;
+    }
+    let available = referenceLimit - references.length;
+    if (available <= 0) {
+      setError(`每轮最多引用 ${referenceLimit} 项。`);
+      return;
+    }
+    importingRef.current = true;
+    setImporting(true);
+    setError("");
+    let isCurrent = captureSelection();
+    const failures: string[] = [];
+    try {
+      let current = detailRef.current;
+      for (const file of files) {
+        if (!isCurrent()) break;
+        if (file.size > 50 * 1024 * 1024) {
+          failures.push(`${file.name}：单个文件不能超过 50 MiB`);
+          continue;
+        }
+        if (available <= 0) {
+          failures.push(`${file.name}：已达到引用上限`);
+          continue;
+        }
+        try {
+          if (!current) {
+            const created = await fetchApiJson<Conversation>(
+              "/v1/amadeus/conversations",
+              { method: "POST" },
+            );
+            if (!isCurrent()) break;
+            selectedConversationRef.current = created.id;
+            current = { conversation: created, messages: [], actions: [] };
+            adopt(current);
+            isCurrent = captureSelection();
+            void refreshList().catch(() => {});
+          }
+          const reference = await importConversationFile(
+            current.conversation.id,
+            file,
+          );
+          if (!isCurrent()) break;
+          setReferences((previous) => mergeReferences(previous, [reference]));
+          available--;
+        } catch (cause) {
+          failures.push(
+            `${file.name}：${cause instanceof Error ? cause.message : String(cause)}`,
+          );
+          if (!current) break;
+        }
+      }
+      if (current && filesOpen && isCurrent()) {
+        try {
+          const listing = await fetchApiJson<{ items: WorkFile[] }>(
+            `/v1/amadeus/conversations/${current.conversation.id}/files`,
+          );
+          if (isCurrent()) setWorkFiles(listing.items);
+        } catch {
+          if (isCurrent())
+            failures.push("会话文件列表读取失败，请重新打开列表。");
+        }
+      }
+      if (failures.length && isCurrent()) setError(failures.join("；"));
+    } finally {
+      importingRef.current = false;
+      setImporting(false);
+    }
+  };
 
   const startFromHistory = async () => {
     const previous = detailRef.current;
@@ -327,15 +476,38 @@ export function useAmadeusController(session: AccountSessionContext) {
     feedback?: string;
   }) => {
     const prompt = options?.prompt || draft.trim();
-    if (!prompt || busy) return;
+    if (
+      !prompt ||
+      busy ||
+      importingRef.current ||
+      submittingRef.current ||
+      selectionPending()
+    )
+      return;
     if (!agents.find((a) => a.id === agentId)?.available) {
       setError("请先在 AI 能力 → 模型与智能体 → 编程智能体 配置并授权此 Agent");
+      return;
+    }
+    if (
+      (modelVariant &&
+        !modelVariants.some((option) => option.id === modelVariant)) ||
+      (harnessEffort &&
+        !harnessEfforts.some((option) => option.id === harnessEffort)) ||
+      (fast && !fastAvailable)
+    ) {
+      setError(
+        harnessEffort && harnessCatalogStatus === "loading"
+          ? "正在读取所选模型的推理档位，请稍后再试"
+          : "上次选择的运行选项当前不可用，请重新选择或使用 CLI 默认选项",
+      );
       return;
     }
     if (detailRef.current?.conversation.executor_kind === "legacy-pi") {
       setError("旧对话只读；请复制需要的上下文并新建 Code Agent 对话");
       return;
     }
+    submittingRef.current = true;
+    const isCurrent = captureSelection();
     setBusy(true);
     setError("");
     showAvatarState("thinking");
@@ -354,13 +526,22 @@ export function useAmadeusController(session: AccountSessionContext) {
           "/v1/amadeus/conversations",
           { method: "POST" },
         );
+        if (!isCurrent()) {
+          setBusy(false);
+          return;
+        }
+        // A first send already has a local model selection. History restoration
+        // applies when opening a saved conversation, not when allocating its ID.
+        selectedConversationRef.current = created.id;
         current = {
           conversation: created,
           messages: [],
           actions: [],
           questions: [],
         };
+        adopt(current);
       }
+      const isSubmittingToSelection = captureSelection();
       const refs = options
         ? []
         : references.map(({ windowId, ...item }) => ({
@@ -381,8 +562,10 @@ export function useAmadeusController(session: AccountSessionContext) {
             }),
           },
         );
-      setDetail(current);
-      detailRef.current = current;
+      if (isSubmittingToSelection()) {
+        setDetail(current);
+        detailRef.current = current;
+      }
       const value = await fetchApiJson<RunDetail>(
         `/v1/amadeus/conversations/${current.conversation.id}/runs`,
         {
@@ -391,22 +574,32 @@ export function useAmadeusController(session: AccountSessionContext) {
           body: JSON.stringify({
             agent_id: agentId,
             agent_model: modelId === "default" ? "" : modelId,
+            reasoning_effort: effectiveReasoningEffort || undefined,
+            model_variant: modelVariant || undefined,
+            harness_effort: harnessEffort || undefined,
+            service_tier: fast ? "fast" : undefined,
             mode: options?.mode || mode,
             source_run_id: options?.sourceRunId,
-            context: contexts.filter(
-              (item) =>
-                item.userId === session.me.user.id &&
-                item.accountId === session.me.user.id,
-            ),
+            context: selectedProjectContexts(
+              scopedContexts,
+              projects,
+              owner,
+            ).map((context) => {
+              const visibleContext = { ...context };
+              delete visibleContext.selection;
+              return visibleContext;
+            }),
             references: refs,
             capabilities: loaded,
           }),
         },
       );
+      if (fast) setFast(false);
       setActiveRun(value.run);
       activeRunRef.current = value.run;
-      setRuns((previous) => [...previous, value]);
-      if (!options) {
+      if (isSubmittingToSelection())
+        setRuns((previous) => [...previous, value]);
+      if (!options && isSubmittingToSelection()) {
         setDraft("");
         setReferences([]);
       }
@@ -417,6 +610,8 @@ export function useAmadeusController(session: AccountSessionContext) {
       setBusy(false);
       showAvatarState("error", 3200);
       if (options?.feedback) throw cause;
+    } finally {
+      submittingRef.current = false;
     }
   };
 
@@ -429,8 +624,18 @@ export function useAmadeusController(session: AccountSessionContext) {
     const id = detailRef.current?.conversation.id;
     if (!id || busy) return;
     setMode(nextMode);
-    await open(id);
-    await send({ sourceRunId, mode: nextMode, prompt, feedback });
+    const history = await open(id);
+    const source = history?.find((item) => item.run.id === sourceRunId)?.run;
+    const resolvedInteraction =
+      source &&
+      ["waiting_approval", "waiting_question"].includes(source.status);
+    if (
+      resolvedInteraction &&
+      history?.some((item) => item.run.source_run_id === sourceRunId)
+    )
+      return;
+    if (detailRef.current?.conversation.id === id)
+      await send({ sourceRunId, mode: nextMode, prompt, feedback });
   };
 
   const reviseArtifact = async (
@@ -486,6 +691,7 @@ export function useAmadeusController(session: AccountSessionContext) {
       setScriptOutput,
     });
     if (!withdrawn) throw new Error("撤回旧审批失败");
+    if (detailRef.current?.conversation.id !== current.conversationId) return;
     await continueRun(saved.run_id, "agent", feedback, feedback);
   };
 
@@ -515,8 +721,10 @@ export function useAmadeusController(session: AccountSessionContext) {
       setError,
       setScriptOutput,
     });
-    await open(current.conversationId);
-    if (handled)
+    if (
+      handled &&
+      detailRef.current?.conversation.id === current.conversationId
+    )
       await continueRun(
         current.runId,
         "agent",
@@ -534,6 +742,7 @@ export function useAmadeusController(session: AccountSessionContext) {
     const id = detailRef.current?.conversation.id;
     if (!id || busy) return;
     await submitAmadeusAnswer(id, question, answer, note);
+    if (detailRef.current?.conversation.id !== id) return;
     await continueRun(
       question.run_id,
       runs.find((item) => item.run.id === question.run_id)?.run.mode || "agent",
@@ -541,11 +750,6 @@ export function useAmadeusController(session: AccountSessionContext) {
     );
   };
 
-  const scopedContexts = contexts.filter(
-    (item) =>
-      item.userId === session.me.user.id &&
-      item.accountId === session.me.user.id,
-  );
   const groups = useMemo(
     () => groupConversations(conversations, search, renameItem?.id),
     [conversations, search, renameItem?.id],
@@ -566,6 +770,7 @@ export function useAmadeusController(session: AccountSessionContext) {
     setMode,
     runs,
     busy,
+    importing,
     saving,
     activeRun,
     error,
@@ -574,8 +779,28 @@ export function useAmadeusController(session: AccountSessionContext) {
     agentId,
     setAgentId,
     models,
+    modelCatalog: selectedAgent?.model_catalog,
     modelId,
-    setModelId,
+    setModelId: (value: string) => {
+      setModelId(value);
+      setReasoningEffort("");
+      setModelVariant("");
+      setHarnessEffort("");
+      setFast(false);
+    },
+    modelVariants,
+    modelVariant,
+    setModelVariant,
+    harnessEfforts,
+    harnessEffort,
+    harnessCatalogStatus,
+    setHarnessEffort,
+    fastAvailable,
+    fast,
+    setFast,
+    reasoningEfforts,
+    reasoningEffort: effectiveReasoningEffort,
+    setReasoningEffort,
     toolSteps,
     scriptOutput,
     capabilitiesOpen,
@@ -591,12 +816,15 @@ export function useAmadeusController(session: AccountSessionContext) {
     setRenameTitle,
     deleteItem,
     setDeleteItem,
-    attachments,
     filesOpen,
     setFilesOpen,
     workFiles,
-    filePreview,
-    setFilePreview,
+    filePreview:
+      filePreview?.conversationId === conversationId ? filePreview : null,
+    closeFilePreview: () => {
+      filePreviewRequestRef.current += 1;
+      setFilePreview(null);
+    },
     scriptAvailable,
     registeredOperations,
     previewReference,
@@ -613,15 +841,19 @@ export function useAmadeusController(session: AccountSessionContext) {
     continueRun,
     stop,
     create,
+    pinMessage,
+    forkMessage,
     rename,
     remove,
-    importAttachment,
+    importAttachments,
     showFiles,
     previewFile,
     downloadFile,
     send,
     startFromHistory,
     scopedContexts,
+    projects,
+    setProjects,
     groups,
   };
 }

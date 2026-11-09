@@ -500,8 +500,11 @@ export const AudioWaveform = forwardRef<
           drag: !focusSelectionMode,
           resize: !focusSelectionMode,
         });
-        if (focusSelectionMode && renderedRegion?.element)
-          renderedRegion.element.style.pointerEvents = "none";
+        if (renderedRegion?.element) {
+          renderedRegion.element.dataset.amadeusId = segment.id;
+          if (focusSelectionMode)
+            renderedRegion.element.style.pointerEvents = "none";
+        }
       });
     syncing.current = false;
   }, [

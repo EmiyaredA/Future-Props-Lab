@@ -35,6 +35,9 @@ import sys, json, os, subprocess, re
 if "--version" in sys.argv:
     print("fake 2.163.300")
     raise SystemExit
+if "--help" in sys.argv:
+    print("--effort <level>   Effort level for the session")
+    raise SystemExit
 if sys.argv[-2:] in (["login", "status"], ["auth", "status"]):
     raise SystemExit
 assert "FPL_SECRETS_KEY" not in os.environ
@@ -70,11 +73,21 @@ if "app-server" in sys.argv:
                     "skill_search": False,
                 },
             }}})
+        elif method == "account/read":
+            assert x["params"]["refreshToken"] is False
+            api_key_fixture = os.path.basename(sys.argv[0]) == "fixture-api-key"
+            account_type = "apiKey" if api_key_fixture else "chatgpt"
+            send({"id": x["id"], "result": {"account": {"type": account_type}}})
         elif method == "model/list":
             send(
                 {
                     "id": x["id"],
-                    "result": {"data": [{"model": "fake-model", "displayName": "Fake model"}]},
+                    "result": {"data": [{"model": "fake-model", "displayName": "Fake model",
+                                        "serviceTiers": [{"id": "priority"}],
+                                        "supportedReasoningEfforts": [
+                                            {"reasoningEffort": "medium"},
+                                            {"reasoningEffort": "high"},
+                                        ]}]},
                 }
             )
         elif method == "thread/start":
@@ -90,6 +103,24 @@ if "app-server" in sys.argv:
                 marker = next(m["content"] for m in reversed(history) if m["role"] == "user")
             except (ValueError, KeyError, StopIteration):
                 marker = prompt
+            if "EFFORT_FAKE" in marker:
+                assert x["params"]["effort"] == "high"
+                assert x["params"]["serviceTier"] == "fast"
+                for total in (13, 20):
+                    send({"method": "thread/tokenUsage/updated", "params": {
+                        "threadId": "fake-thread",
+                        "tokenUsage": {
+                            "total": {
+                                "inputTokens": total - 3, "outputTokens": 3, "totalTokens": total
+                            },
+                            "last": {"totalTokens": 11},
+                            "modelContextWindow": 100,
+                        },
+                    }})
+                send({"method": "item/completed", "params": {"item": {
+                    "type": "reasoning", "id": "fixture-summary",
+                    "summary": ["核对授权范围"], "content": ["raw-fixture-text"],
+                }}})
             if "BIG_FAKE" in marker:
                 send({"method": "item/agentMessage/delta", "params": {"delta": "x" * 100001}})
                 send({"method": "turn/completed", "params": {"turn": {"status": "completed"}}})
@@ -138,6 +169,9 @@ if "app-server" in sys.argv:
 else:
     assert "--restricted" in sys.argv and sys.argv[sys.argv.index("--tools") + 1] == ""
     prompt = sys.stdin.read()
+    if "CLAUDE_EFFORT_FAKE" in prompt:
+        assert sys.argv[sys.argv.index("--model") + 1] == "claude-sonnet-4-6"
+        assert sys.argv[sys.argv.index("--effort") + 1] == "high"
     config = json.loads(sys.argv[sys.argv.index("--mcp-config") + 1])["mcpServers"]["fpl"]
     child = subprocess.Popen(
         [config["command"], *config["args"]],
@@ -166,7 +200,8 @@ else:
             "event": {"delta": {"type": "text_delta", "text": "假 Claude 已核对项目"}},
         }
     )
-    send({"type": "result", "subtype": "success", "is_error": False})
+    send({"type": "result", "subtype": "success", "is_error": False,
+          "usage": {"input_tokens": 7, "output_tokens": 2, "cache_read_input_tokens": 3}})
 """
     )
     path.chmod(0o700)
@@ -217,6 +252,8 @@ async def test_codex_startup_failure_does_not_hide_other_agents(tmp_path, monkey
             assert not agents["codex"]["available"]
             assert agents["codex"]["models"] == []
             assert agents["claude-code"]["available"]
+            assert agents["claude-code"]["model_catalog"] == "preset"
+            assert "claude-sonnet-4-6" in {row["id"] for row in agents["claude-code"]["models"]}
     status = await inspect_connection(get_settings(), "codex", discover_models=False)
     assert not status["available"] and status["status"] == "probe_failed"
     with pytest.raises(OperationError) as failure:
@@ -260,14 +297,26 @@ async def test_backend_owned_native_run_and_event_tombstones(
     client, _, user_id, _ = await client_account(admin=True)
     async with aclosing(client):
         status = (await client.get("/v1/code-agents")).json()
-        assert next(a for a in status["items"] if a["id"] == agent)["available"]
+        connection_status = next(a for a in status["items"] if a["id"] == agent)
+        assert connection_status["available"]
+        options = {}
+        if agent == "claude-code":
+            model = next(
+                row for row in connection_status["models"] if row["id"] == "claude-sonnet-4-6"
+            )
+            assert model["reasoning_efforts"] == ["low", "medium", "high"]
+            options = {"agent_model": model["id"], "reasoning_effort": "high"}
         conversation = (await client.post("/v1/amadeus/conversations")).json()
         root = f"/v1/amadeus/conversations/{conversation['id']}"
         await client.post(
             root + "/messages",
-            json={"role": "user", "content": "读取项目目录", "expected_revision": 0},
+            json={
+                "role": "user",
+                "content": "CLAUDE_EFFORT_FAKE" if agent == "claude-code" else "读取项目目录",
+                "expected_revision": 0,
+            },
         )
-        started = await client.post(root + "/runs", json={"agent_id": agent})
+        started = await client.post(root + "/runs", json={"agent_id": agent, **options})
         assert started.status_code == 200, started.text
         identity = started.json()["run"]["id"]
         assert (
@@ -279,6 +328,9 @@ async def test_backend_owned_native_run_and_event_tombstones(
             result["events"],
         )
         assert "已核对项目" in result["run"]["partial_text"]
+        if agent == "claude-code":
+            assert result["run"]["usage"]["cached_input_tokens"] == 3
+            assert result["run"]["usage"]["total_tokens"] is None
         sequences = [e["sequence"] for e in result["events"]]
         assert sequences == sorted(set(sequences))
         changed = await client.post(
@@ -286,6 +338,77 @@ async def test_backend_owned_native_run_and_event_tombstones(
         )
         assert changed.status_code == 409
         assert (await client.get(root)).json()["messages"][-1]["run_id"] == identity
+
+
+@pytest.mark.usefixtures("configured")
+async def test_amadeus_applies_codex_model_effort_and_saves_only_summary():
+    client, *_ = await client_account(admin=True)
+    async with aclosing(client):
+        catalog = (await client.get("/v1/code-agents")).json()
+        model = next(a for a in catalog["items"] if a["id"] == "codex")["models"][0]
+        assert model["reasoning_efforts"] == ["medium", "high"]
+        assert model["fast_available"]
+        conversation = (await client.post("/v1/amadeus/conversations")).json()
+        root = f"/v1/amadeus/conversations/{conversation['id']}"
+        message = await client.post(
+            root + "/messages",
+            json={"role": "user", "content": "EFFORT_FAKE", "expected_revision": 0},
+        )
+        assert message.status_code == 200
+        unsupported = await client.post(
+            root + "/runs",
+            json={"agent_id": "claude-code", "agent_model": "fixture", "reasoning_effort": "high"},
+        )
+        assert unsupported.status_code == 422
+        started = await client.post(
+            root + "/runs",
+            json={
+                "agent_id": "codex",
+                "agent_model": model["id"],
+                "reasoning_effort": "high",
+                "service_tier": "fast",
+            },
+        )
+        assert started.status_code == 200, started.text
+        result = await wait_run(client, root, started.json()["run"]["id"])
+        assert result["run"]["status"] == "completed", result
+        assert result["run"]["reasoning_effort"] == "high"
+        assert result["run"]["service_tier"] == "fast"
+        assert {
+            key: value for key, value in result["run"]["usage"].items() if value is not None
+        } == {
+            "input_tokens": 17,
+            "output_tokens": 3,
+            "total_tokens": 20,
+            "context_used": 11,
+            "context_limit": 100,
+        }
+        assert [
+            event["payload"] for event in result["events"] if event["kind"] == "reasoning_summary"
+        ] == [{"text": "核对授权范围"}]
+        assert "raw-fixture-text" not in str(result)
+
+
+@pytest.mark.usefixtures("configured")
+async def test_codex_fast_refuses_api_key_login_before_sending_prompt(tmp_path, monkeypatch):
+    cli = fake_cli(tmp_path, "fixture-api-key")
+    monkeypatch.setattr(get_settings(), "fpl_code_agents_codex_executable", cli)
+    client, *_ = await client_account(admin=True)
+    async with aclosing(client):
+        catalog = (await client.get("/v1/code-agents")).json()
+        model = next(agent for agent in catalog["items"] if agent["id"] == "codex")["models"][0]
+        assert model["id"] == "fake-model" and not model["fast_available"]
+        conversation = (await client.post("/v1/amadeus/conversations")).json()
+        root = f"/v1/amadeus/conversations/{conversation['id']}"
+        started = await client.post(
+            root + "/runs",
+            json={"agent_id": "codex", "agent_model": model["id"], "service_tier": "fast"},
+        )
+        assert started.status_code == 200
+        result = await wait_run(client, root, started.json()["run"]["id"])
+        assert result["run"]["status"] == "failed"
+        assert "重新选择" in result["run"]["error_message"]
+        assert result["events"] == []
 
 
 @pytest.mark.asyncio

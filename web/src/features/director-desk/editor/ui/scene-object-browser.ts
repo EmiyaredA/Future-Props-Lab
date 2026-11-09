@@ -83,7 +83,7 @@ export function createSceneObjectBrowser(ctx: AppContext, refresh: () => void) {
           .slice(page * rows, (page + 1) * rows)
           .map(
             (e) =>
-              `<div class="object-row ${e.id === ctx.selected ? "selected" : ""} ${e.visible ? "" : "dimmed"}" data-select="${e.id}"><span class="object-symbol" style="color:${e.kind === "actor" || e.kind === "crowd" ? e.color : "#aaa"}">${e.kind === "camera" ? icon("camera") : e.kind === "prop" ? "◇" : "●"}</span><span class="object-name" title="${escape(e.name)}">${escape(e.name)}</span><small>${labels[e.kind]}</small><button class="mini-button ${e.visible ? "" : "off"}" data-act="visibility" data-id="${e.id}" title="参与拍摄 / 隐藏（影响导出）">${icon("eye")}</button></div>`,
+              `<div class="object-row ${e.id === ctx.selected ? "selected" : ""} ${e.visible ? "" : "dimmed"}" data-select="${escape(e.id)}" data-amadeus-id="${escape(e.id)}"><span class="object-symbol" style="color:${e.kind === "actor" || e.kind === "crowd" ? e.color : "#aaa"}">${e.kind === "camera" ? icon("camera") : e.kind === "prop" ? "◇" : "●"}</span><span class="object-name" title="${escape(e.name)}">${escape(e.name)}</span><small>${labels[e.kind]}</small><button class="mini-button ${e.visible ? "" : "off"}" data-act="visibility" data-id="${e.id}" title="参与拍摄 / 隐藏（影响导出）">${icon("eye")}</button></div>`,
           )
           .join("") || '<div class="empty-state">没有匹配的对象</div>'
       }</div><div class="object-pager"><button data-object-page="-1" aria-label="上一页对象" ${page === 0 ? "disabled" : ""}>‹</button><span>${page + 1} / ${pages} · ${filtered.length} 个</span><button data-object-page="1" aria-label="下一页对象" ${page + 1 === pages ? "disabled" : ""}>›</button></div></div>`;

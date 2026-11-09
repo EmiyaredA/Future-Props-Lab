@@ -125,9 +125,3 @@
   padding: 3px 5px;
   border-radius: 6px;
 }
-
-@media (max-width: 600px) {
-  .amadeus-mode-switch {
-    order: 1;
-  }
-}

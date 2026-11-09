@@ -1,9 +1,63 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any, Literal, Self
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from studio.contracts.agent_runtime.catalog import TokenUsage, TurnOptions
+
+_ELEMENT_KINDS = {
+    "visual": {"node"},
+    "video": {"clip"},
+    "presentation": {"slide", "slide_element"},
+    "thought": {"note"},
+    "galgame": {"story_block"},
+    "motion_compositor": {"layer"},
+    "annotation": {"segment"},
+    "director": {"entity"},
+    "interview": {"material"},
+}
+
+
+class ElementTarget(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    project_resource: Literal[
+        "visual",
+        "video",
+        "presentation",
+        "thought",
+        "galgame",
+        "motion_compositor",
+        "annotation",
+        "director",
+        "interview",
+    ]
+    project_id: str = Field(min_length=1, max_length=120)
+    element_kind: Literal[
+        "node",
+        "clip",
+        "slide",
+        "slide_element",
+        "note",
+        "story_block",
+        "layer",
+        "segment",
+        "entity",
+        "material",
+    ]
+    element_id: str = Field(min_length=1, max_length=120)
+    parent_id: str | None = Field(default=None, min_length=1, max_length=120)
+    unsaved: bool = False
+
+    @model_validator(mode="after")
+    def validate_location(self) -> Self:
+        if self.element_kind not in _ELEMENT_KINDS[self.project_resource]:
+            raise ValueError("元素类型与工坊不匹配")
+        if self.element_kind in {"slide_element", "entity"} and self.parent_id is None:
+            raise ValueError("缺少元素所在的页面或场景 ID")
+        return self
 
 
 class Reference(BaseModel):
@@ -15,6 +69,7 @@ class Reference(BaseModel):
     value: str = Field(default="", max_length=2000)
     source: str = Field(default="", max_length=500)
     thumbnail: str | None = Field(default=None, max_length=400_000)
+    target: ElementTarget | None = None
 
 
 class ConversationOut(BaseModel):
@@ -28,8 +83,19 @@ class ConversationOut(BaseModel):
     updated_at: datetime
 
 
+class ConversationProjectSummary(BaseModel):
+    resource: str
+    id: str
+    title: str
+
+
+class ConversationListItemOut(ConversationOut):
+    projects: list[ConversationProjectSummary] = Field(default_factory=list)
+    latest_run_status: str | None = None
+
+
 class ConversationListOut(BaseModel):
-    items: list[ConversationOut]
+    items: list[ConversationListItemOut]
 
 
 class ConversationRevisionConflictOut(BaseModel):
@@ -58,7 +124,18 @@ class MessageOut(BaseModel):
     references: list[Reference]
     run_id: str | None = None
     status: str = "completed"
+    pinned: bool = False
     created_at: datetime
+
+
+class MessagePinIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    pinned: bool
+
+
+class MessageForkIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    request_id: UUID
 
 
 class ConversationDetailOut(BaseModel):
@@ -111,7 +188,7 @@ class ModelTurnIn(BaseModel):
     subagent_id: str | None = Field(default=None, max_length=120)
 
 
-class RunCreateIn(BaseModel):
+class RunCreateIn(TurnOptions):
     model_config = ConfigDict(extra="forbid")
     agent_id: Literal["codex", "claude-code", "opencode", "dsh", "pi"]
     agent_model: str = Field(default="", max_length=160)
@@ -128,6 +205,8 @@ class RunEventIn(BaseModel):
     kind: Literal[
         "assistant_delta",
         "assistant_message",
+        "reasoning_summary",
+        "run_usage",
         "tool_call",
         "tool_result",
         "status",
@@ -156,9 +235,10 @@ class RunEventOut(BaseModel):
     created_at: datetime
 
 
-class RunOut(BaseModel):
+class RunOut(TurnOptions):
     agent_id: str | None = None
     agent_model: str = ""
+    usage: TokenUsage | None = None
     execution_config: dict[str, Any] = Field(default_factory=dict)
     id: str
     conversation_id: str

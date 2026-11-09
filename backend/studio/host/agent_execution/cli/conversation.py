@@ -6,9 +6,12 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from studio.contracts.agent_runtime.catalog import REASONING_EFFORTS, accepts_reasoning_effort
+
 from .codex_profile import AUTH_ARGS, profile_environment
 from .model_connection import toml_value
 from .transport import MAX_BYTES, CliError, close_transport, environment, spawn_transport
+from .usage import claude_usage, codex_usage
 
 
 def recorded_result(result):
@@ -110,16 +113,48 @@ def verify_codex_policy(value):
 
 
 async def codex(
-    executable, profile, model, prompt, tools, call_tool, emit, *, watchdog=(), instructions=None
+    executable,
+    profile,
+    model,
+    prompt,
+    tools,
+    call_tool,
+    emit,
+    *,
+    watchdog=(),
+    instructions=None,
+    reasoning_effort=None,
+    service_tier=None,
 ):
     async with codex_process(executable, profile, model, watchdog=watchdog) as (
         process,
         thread_params,
     ):
-        await codex_turn(process, thread_params, prompt, tools, call_tool, emit, instructions)
+        await codex_turn(
+            process,
+            thread_params,
+            prompt,
+            tools,
+            call_tool,
+            emit,
+            instructions,
+            reasoning_effort=reasoning_effort,
+            service_tier=service_tier,
+        )
 
 
-async def codex_turn(process, thread_params, prompt, tools, call_tool, emit, instructions=None):
+async def codex_turn(
+    process,
+    thread_params,
+    prompt,
+    tools,
+    call_tool,
+    emit,
+    instructions=None,
+    *,
+    reasoning_effort=None,
+    service_tier=None,
+):
     sequence = 0
     total = 0
 
@@ -193,6 +228,21 @@ async def codex_turn(process, thread_params, prompt, tools, call_tool, emit, ins
         method, params = item.get("method"), item.get("params", {})
         if method == "item/agentMessage/delta":
             await emit("assistant_delta", {"text": params.get("delta", "")})
+        elif (
+            method == "thread/tokenUsage/updated"
+            and thread_id is not None
+            and params.get("threadId", params.get("thread_id")) == thread_id
+        ):
+            if usage := codex_usage(params):
+                await emit("run_usage", usage)
+        elif method == "item/completed":
+            completed_item = params.get("item", {})
+            if completed_item.get("type") == "reasoning":
+                summary = completed_item.get("summary")
+                if isinstance(summary, list):
+                    text = "\n\n".join(part for part in summary if isinstance(part, str))
+                    if text.strip():
+                        await emit("reasoning_summary", {"text": text[:12000]})
         elif method == "item/tool/call" and "id" in item:
             await emit(
                 "tool_call",
@@ -239,19 +289,40 @@ async def codex_turn(process, thread_params, prompt, tools, call_tool, emit, ins
     tool_lock = asyncio.Lock()
     tool_tasks = set()
     turn_id = None
+    thread_id = None
     completed = None
 
     try:
         await initialize_codex(rpc, send)
+        if reasoning_effort or service_tier:
+            model = next(
+                (
+                    item
+                    for item in await codex_models(rpc, include_fast=bool(service_tier))
+                    if item["id"] == thread_params["model"]
+                ),
+                None,
+            )
+            if reasoning_effort and (
+                not model or reasoning_effort not in model["reasoning_efforts"]
+            ):
+                raise CliError("当前 Codex 模型不支持所选推理强度，请重新选择")
+            if service_tier and (
+                service_tier != "fast" or not model or not model["fast_available"]
+            ):
+                raise CliError("当前 Codex 模型或登录不支持快档，请重新选择")
         thread_params["dynamicTools"] = [
             {"name": t["name"], "description": t["description"], "inputSchema": t["inputSchema"]}
             for t in tools
         ]
         thread = await rpc("thread/start", thread_params)
         thread_id = thread["thread"]["id"]
-        started = await rpc(
-            "turn/start", {"threadId": thread_id, "input": [{"type": "text", "text": prompt}]}
-        )
+        turn_params = {"threadId": thread_id, "input": [{"type": "text", "text": prompt}]}
+        if reasoning_effort:
+            turn_params["effort"] = reasoning_effort
+        if service_tier:
+            turn_params["serviceTier"] = "fast"
+        started = await rpc("turn/start", turn_params)
         turn_id = started.get("turn", {}).get("id")
 
         async def steer(identity, message):
@@ -324,21 +395,75 @@ async def probe_codex(executable, profile):
         yield request
 
 
-async def codex_models(request):
+async def codex_models(request, *, include_fast=True):
     value = await request("model/list", {"limit": 100})
     if not isinstance(value.get("data"), list):
         raise CliError("Codex app-server 未返回模型列表")
-    return [
-        {
-            "id": m["model"],
-            "label": m["displayName"] if isinstance(m.get("displayName"), str) else m["model"],
-        }
+    models = [
+        m
         for m in value["data"]
         if isinstance(m, dict) and isinstance(m.get("model"), str) and not m.get("hidden")
     ]
+    fast_login = False
+    if include_fast and any(codex_fast_model(model) for model in models):
+        try:
+            async with asyncio.timeout(3):
+                account = (await request("account/read", {"refreshToken": False})).get("account")
+            fast_login = isinstance(account, dict) and account.get("type") in {
+                "chatgpt",
+                "chatgptAuthTokens",
+            }
+        except (CliError, TimeoutError):
+            pass
+    return [
+        {
+            "id": model["model"],
+            "label": model["displayName"]
+            if isinstance(model.get("displayName"), str)
+            else model["model"],
+            "reasoning_efforts": codex_reasoning_efforts(model),
+            "fast_available": fast_login and codex_fast_model(model),
+        }
+        for model in models
+    ]
 
 
-async def claude(executable, root, model, prompt, tool_config, emit, *, watchdog=()):
+def codex_fast_model(model):
+    # Happier speedEligibility.ts at a2c45c86804b (MIT).
+    def tier_id(value):
+        return value.strip().lower() if isinstance(value, str) else ""
+
+    tiers = model.get("serviceTiers", model.get("service_tiers"))
+    legacy = model.get("additionalSpeedTiers", model.get("additional_speed_tiers"))
+    return (
+        isinstance(tiers, list)
+        and any(
+            isinstance(tier, dict) and tier_id(tier.get("id")) in ("priority", "fast")
+            for tier in tiers
+        )
+    ) or (isinstance(legacy, list) and any(tier_id(tier) == "fast" for tier in legacy))
+
+
+def codex_reasoning_efforts(model):
+    # Happier app-server session controls support both spellings of this model metadata.
+    options = model.get("supportedReasoningEfforts", model.get("supported_reasoning_efforts"))
+    if not isinstance(options, list):
+        return []
+    efforts = (
+        option.get("reasoningEffort", option.get("reasoning_effort"))
+        for option in options
+        if isinstance(option, dict)
+    )
+    return list(
+        dict.fromkeys(
+            effort for effort in efforts if isinstance(effort, str) and effort in REASONING_EFFORTS
+        )
+    )
+
+
+async def claude(
+    executable, root, model, prompt, tool_config, emit, *, watchdog=(), reasoning_effort=None
+):
     args = [
         executable,
         "--restricted",
@@ -366,6 +491,10 @@ async def claude(executable, root, model, prompt, tool_config, emit, *, watchdog
     ]
     if model:
         args += ["--model", model]
+    if reasoning_effort:
+        if not accepts_reasoning_effort("claude-code", model, reasoning_effort):
+            raise CliError("当前 Claude Code 模型不支持所选推理强度")
+        args += ["--effort", reasoning_effort]
     process = await spawn_transport(
         *watchdog,
         *args,
@@ -398,6 +527,8 @@ async def claude(executable, root, model, prompt, tool_config, emit, *, watchdog
                         await emit("assistant_delta", {"text": part.get("text", "")})
                 streamed = False
             elif item.get("type") == "result":
+                if usage := claude_usage(item):
+                    await emit("run_usage", usage)
                 if item.get("is_error") or item.get("subtype") != "success":
                     raise CliError("Claude Code 任务失败，请检查登录、配额与 CLI 状态")
                 completed = True

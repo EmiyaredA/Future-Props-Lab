@@ -43,7 +43,13 @@ export function useCanvasPersistence(
     if (initialized.current && loaded.revision <= revisionRef.current) return;
     const externalRevision =
       initialized.current && loaded.revision !== revisionRef.current;
-    if (externalRevision && (autoSave.current || pendingSaves.current > 0)) {
+    if (
+      externalRevision &&
+      (autoSave.current ||
+        pendingSaves.current > 0 ||
+        conflictRef.current ||
+        saveFailureRef.current)
+    ) {
       conflictRef.current = true;
       setConflict(loaded);
       setSaveState("conflict");

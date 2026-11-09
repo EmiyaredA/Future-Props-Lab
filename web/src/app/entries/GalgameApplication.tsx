@@ -1,3 +1,4 @@
+import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
 import { lazy } from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
@@ -65,6 +66,12 @@ function GalgameWorkspace() {
     >
       {!writable ? (
         <ReadOnly
+          utilities={
+            <WorkshopUtilities
+              application={galgame.definition.name}
+              projectId={projectId}
+            />
+          }
           projectId={projectId}
           onOpen={openOverview}
           onBack={openProjects}
@@ -76,7 +83,12 @@ function GalgameWorkspace() {
           onOpenEditor={() => navigate("galgame-workshop-editor", projectId)}
         />
       ) : (
-        <Projects onOpenProject={openOverview} />
+        <Projects
+          utilities={
+            <WorkshopUtilities application={galgame.definition.name} />
+          }
+          onOpenProject={openOverview}
+        />
       )}
     </WorkshopShell>
   );

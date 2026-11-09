@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { TemplateDesignerPage } from "./master/TemplateDesignerPage";
 import { TemplateLibrary } from "./master/TemplateLibrary";
@@ -17,6 +18,7 @@ import "./master/master.css";
 import "./master/master-studio.css";
 
 export function PresentationWorkshopPage({
+  utilities,
   projectId,
   templateId,
   onEditTemplate,
@@ -26,6 +28,7 @@ export function PresentationWorkshopPage({
   readOnly = false,
   registerNavigationGuard,
 }: {
+  utilities?: ReactNode;
   projectId?: string;
   templateId?: string;
   onEditTemplate?: (id: string) => void;
@@ -58,13 +61,20 @@ export function PresentationWorkshopPage({
   if (templates)
     return (
       <TemplateLibrary
+        utilities={utilities}
         onOpen={onOpen}
         readOnly={readOnly}
         onEdit={onEditTemplate!}
       />
     );
   if (!projectId)
-    return <PresentationLibrary onOpen={onOpen} readOnly={readOnly} />;
+    return (
+      <PresentationLibrary
+        utilities={utilities}
+        onOpen={onOpen}
+        readOnly={readOnly}
+      />
+    );
   if (project.isPending)
     return <LoadingState label="正在打开演示文稿…" variant="page" />;
   if (project.isError || !project.data)

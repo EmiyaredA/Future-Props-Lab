@@ -1,7 +1,11 @@
+import {
+  assistantElementSource,
+  useAssistantElements,
+} from "@platform/assistantElements";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { openAmadeus } from "@platform/assistant";
+import { AmadeusButton } from "@platform/AmadeusButton";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
@@ -14,7 +18,6 @@ import {
   Plus,
   Redo2,
   Save,
-  Sparkles,
   Undo2,
   Upload,
 } from "lucide-react";
@@ -67,6 +70,8 @@ export function EditorPage({
   const [project, setProject] = useState<MotionProject | null>(null);
   const [doc, setDoc] = useState<ResolvedDocument | null>(null);
   const docRef = useRef<ResolvedDocument | null>(null);
+  const canvasHitTest =
+    useRef<(event: MouseEvent) => string | undefined>(undefined);
   const [assets, setAssets] = useState<MotionAsset[]>([]);
   const [sources, setSources] = useState<
     {
@@ -307,6 +312,36 @@ export function EditorPage({
     );
   };
   const selected = doc?.layers.find((layer) => layer.id === selectedId) ?? null;
+  const elements = (doc?.layers ?? []).map((layer) => ({
+    id: layer.id,
+    kind: "layer" as const,
+    name: layer.name,
+    value: layer.kind,
+  }));
+  useAssistantElements(
+    assistantElementSource(
+      {
+        resource: "motion_compositor",
+        projectId,
+        application: "特效制作工坊",
+        unsaved: dirty || saving,
+        hitTest: (event) => {
+          const id = canvasHitTest.current?.(event);
+          return elements.find((item) => item.id === id);
+        },
+        locate: ({ element_id }) => {
+          const layer = doc?.layers.find((layer) => layer.id === element_id);
+          if (!layer) return false;
+          setSelectedId(layer.id);
+          if (frame < layer.startFrame || frame >= layer.endFrame)
+            setFrame(layer.startFrame);
+          return true;
+        },
+      },
+      elements,
+      selectedId ? [selectedId] : [],
+    ),
+  );
   useEffect(() => {
     window.dispatchEvent(
       new CustomEvent("future-props:amadeus-context", {
@@ -547,14 +582,7 @@ export function EditorPage({
           <Redo2 size={16} />
           重做
         </button>
-        <button
-          className="mc-toolbar-button"
-          onClick={() => void openAmadeus()}
-          title="打开 Amadeus"
-        >
-          <Sparkles size={16} />
-          Amadeus
-        </button>
+        <AmadeusButton className="mc-toolbar-button" />
         <button
           className="mc-toolbar-button"
           aria-pressed={precise}
@@ -721,6 +749,7 @@ export function EditorPage({
               selectedId={selectedId}
               precise={precise && !dirty && !playing}
               savedRevision={savedRevision}
+              hitTestRef={canvasHitTest}
               onSelect={setSelectedId}
               onMove={(id, x, y) => {
                 const layer = docRef.current?.layers.find(

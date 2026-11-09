@@ -1,6 +1,12 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { fetchApiJson, requestApi } from "@platform/api/client";
-import type { Conversation, Detail, Reference, WorkFile } from "./protocol";
+import type {
+  ChatMessage,
+  Conversation,
+  Detail,
+  FilePreview,
+  WorkFile,
+} from "./protocol";
 import {
   conversationConflict,
   CONVERSATION_CONFLICT_MESSAGE,
@@ -11,20 +17,16 @@ type Options = {
   busy: boolean;
   filesOpen: boolean;
   refreshList: () => Promise<Conversation[]>;
-  open: (id: string) => Promise<void>;
+  open: (id: string) => Promise<unknown>;
+  clearSelection: () => void;
   setDetail: Dispatch<SetStateAction<Detail | null>>;
   setError: Dispatch<SetStateAction<string>>;
   setRenameItem: Dispatch<SetStateAction<Conversation | null>>;
   setDeleteItem: Dispatch<SetStateAction<Conversation | null>>;
-  setAttachments: Dispatch<
-    SetStateAction<Array<{ name: string; bytes: number }>>
-  >;
-  setReferences: Dispatch<SetStateAction<Reference[]>>;
   setFilesOpen: Dispatch<SetStateAction<boolean>>;
   setWorkFiles: Dispatch<SetStateAction<WorkFile[]>>;
-  setFilePreview: Dispatch<
-    SetStateAction<{ name: string; text: string } | null>
-  >;
+  filePreviewRequestRef: MutableRefObject<number>;
+  setFilePreview: Dispatch<SetStateAction<FilePreview | null>>;
 };
 
 export function conversationActions(options: Options) {
@@ -34,14 +36,14 @@ export function conversationActions(options: Options) {
     filesOpen,
     refreshList,
     open,
+    clearSelection,
     setDetail,
     setError,
     setRenameItem,
     setDeleteItem,
-    setAttachments,
-    setReferences,
     setFilesOpen,
     setWorkFiles,
+    filePreviewRequestRef,
     setFilePreview,
   } = options;
   const create = async () => {
@@ -50,6 +52,50 @@ export function conversationActions(options: Options) {
     });
     await refreshList();
     await open(next.id);
+  };
+  const pinMessage = async (
+    conversationId: string,
+    messageId: string,
+    pinned: boolean,
+  ) => {
+    const saved = await fetchApiJson<ChatMessage>(
+      `/v1/amadeus/conversations/${conversationId}/messages/${messageId}/pin`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinned }),
+      },
+    );
+    setDetail((current) =>
+      current?.conversation.id === conversationId
+        ? {
+            ...current,
+            messages: current.messages.map((message) =>
+              message.id === saved.id
+                ? { ...message, pinned: saved.pinned }
+                : message,
+            ),
+          }
+        : current,
+    );
+  };
+  const forkMessage = async (
+    conversationId: string,
+    messageId: string,
+    requestId: string,
+  ) => {
+    const branch = await fetchApiJson<Conversation>(
+      `/v1/amadeus/conversations/${conversationId}/messages/${messageId}/fork`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ request_id: requestId }),
+      },
+    );
+    await refreshList();
+    if (detailRef.current?.conversation.id !== conversationId) return;
+    await open(branch.id);
+    if (detailRef.current?.conversation.id === branch.id) return branch.id;
   };
   const rename = async (item: Conversation, title: string) => {
     title = title.trim();
@@ -118,54 +164,9 @@ export function conversationActions(options: Options) {
     const next = await refreshList();
     if (detailRef.current?.conversation.id === item.id) {
       if (next[0]) await open(next[0].id);
-      else setDetail(null);
+      else clearSelection();
     }
     setDeleteItem(null);
-  };
-  const importAttachment = async (file: File) => {
-    if (file.size > 50 * 1024 * 1024) {
-      setError("单个文件不能超过 50 MiB");
-      return;
-    }
-    try {
-      let current = detailRef.current;
-      if (!current) {
-        const created = await fetchApiJson<Conversation>(
-          "/v1/amadeus/conversations",
-          { method: "POST" },
-        );
-        current = { conversation: created, messages: [], actions: [] };
-        setDetail(current);
-        detailRef.current = current;
-        await refreshList();
-      }
-      const form = new FormData();
-      form.append("upload", file, file.name);
-      await fetchApiJson(
-        `/v1/amadeus/conversations/${current.conversation.id}/imports`,
-        { method: "POST", body: form },
-      );
-      setAttachments((previous) => [
-        ...previous,
-        { name: file.name, bytes: file.size },
-      ]);
-      setReferences((previous) => [
-        ...previous,
-        {
-          id: `file:${file.name}`,
-          application: "会话文件",
-          name: file.name,
-          value: `${Math.ceil(file.size / 1024)} KiB`,
-          source: "imports",
-        },
-      ]);
-      const listing = await fetchApiJson<{ items: WorkFile[] }>(
-        `/v1/amadeus/conversations/${current.conversation.id}/files`,
-      );
-      setWorkFiles(listing.items);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    }
   };
   const showFiles = async () => {
     setFilesOpen(!filesOpen);
@@ -186,11 +187,20 @@ export function conversationActions(options: Options) {
       setError("预览文件不能超过 1 MiB");
       return;
     }
+    const conversationId = detailRef.current?.conversation.id;
+    if (!conversationId) return;
+    const request = ++filePreviewRequestRef.current;
+    const isCurrent = () =>
+      request === filePreviewRequestRef.current &&
+      conversationId === detailRef.current?.conversation.id;
     try {
       const response = await requestApi(fileUrl(item));
-      setFilePreview({ name: item.name, text: await response.text() });
+      const text = await response.text();
+      if (isCurrent())
+        setFilePreview({ conversationId, name: item.name, text });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      if (isCurrent())
+        setError(cause instanceof Error ? cause.message : String(cause));
     }
   };
   const downloadFile = async (item: WorkFile) => {
@@ -208,9 +218,10 @@ export function conversationActions(options: Options) {
   };
   return {
     create,
+    pinMessage,
+    forkMessage,
     rename,
     remove,
-    importAttachment,
     showFiles,
     previewFile,
     downloadFile,

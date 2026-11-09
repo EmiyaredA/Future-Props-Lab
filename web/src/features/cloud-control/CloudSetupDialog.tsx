@@ -1,9 +1,16 @@
 import { useRef, useState, type FormEvent, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useQuery } from "@tanstack/react-query";
-import { Check, Monitor, RefreshCw, ShieldCheck, X } from "lucide-react";
+import { Check, Monitor, RefreshCw, ShieldCheck, Timer, X } from "lucide-react";
 import { reauthenticate } from "@features/accounts";
-import { getSetup, saveSetup, type CloudSetup } from "./cloudApi";
+import {
+  getSetup,
+  saveSetup,
+  type CloudSetup,
+  type CloudStatus,
+  type IdlePreference,
+} from "./cloudApi";
+import { DesktopIdle } from "./DesktopDialogs";
 
 function SetupCheckbox({
   checked,
@@ -215,20 +222,35 @@ function SetupForm({
 
 export function CloudSetupDialog({
   owner,
+  local,
+  idle,
   close,
+  restoreFocus,
   changed,
 }: {
   owner: string;
+  local: boolean;
+  idle?: Pick<CloudStatus, "idle_minutes" | "idle_revision">;
   close: () => void;
-  changed: () => void;
+  restoreFocus: () => void;
+  changed: (saved?: IdlePreference) => void;
 }) {
   const [epoch, setEpoch] = useState(0);
+  const [idleOpen, setIdleOpen] = useState(false);
   const title = useRef<HTMLHeadingElement>(null);
+  const idleButton = useRef<HTMLButtonElement>(null);
   const setup = useQuery({
     queryKey: ["cloud-control", owner, "setup"],
     queryFn: ({ signal }) => getSetup(signal),
     staleTime: 0,
+    enabled: local,
   });
+
+  function closeIdle() {
+    setIdleOpen(false);
+    idleButton.current?.focus();
+  }
+
   return (
     <Dialog.Root open onOpenChange={(open) => !open && close()}>
       <Dialog.Portal>
@@ -239,6 +261,16 @@ export function CloudSetupDialog({
             event.preventDefault();
             title.current?.focus();
           }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            restoreFocus();
+          }}
+          onEscapeKeyDown={(event) => {
+            if (idle && idleOpen) {
+              event.preventDefault();
+              closeIdle();
+            }
+          }}
         >
           <header className="cloud-setup-header">
             <div>
@@ -246,7 +278,11 @@ export function CloudSetupDialog({
                 云控设置
               </Dialog.Title>
               <Dialog.Description>
-                管理这台 Mac 的远程桌面连接
+                {idle
+                  ? local
+                    ? "管理这台 Mac 的远程应用连接"
+                    : "管理当前账号的远程应用偏好"
+                  : "管理这台 Mac 的远程桌面连接"}
               </Dialog.Description>
             </div>
             <Dialog.Close asChild>
@@ -259,24 +295,55 @@ export function CloudSetupDialog({
               </button>
             </Dialog.Close>
           </header>
-          {setup.data ? (
-            <SetupForm
-              key={epoch}
-              initial={setup.data}
-              changed={changed}
-              refresh={async () => {
-                const result = await setup.refetch();
-                if (result.isSuccess) setEpoch((value) => value + 1);
-              }}
-            />
-          ) : (
-            <p
-              className="cloud-setup-empty"
-              role={setup.error ? "alert" : "status"}
-            >
-              {setup.error?.message ?? "正在读取本机配置…"}
-            </p>
-          )}
+          <div
+            className={
+              idle ? "cloud-setup-content-with-idle" : "cloud-setup-content"
+            }
+          >
+            {idle && (
+              <div className="cloud-setup-idle">
+                <button
+                  ref={idleButton}
+                  className="btn"
+                  type="button"
+                  aria-expanded={idleOpen}
+                  onClick={() => setIdleOpen((value) => !value)}
+                >
+                  <Timer size={15} aria-hidden="true" /> 自动锁定 ·{" "}
+                  {idle.idle_minutes} 分钟
+                </button>
+                {idleOpen && (
+                  <DesktopIdle
+                    inline
+                    remoteApps
+                    minutes={idle.idle_minutes}
+                    revision={idle.idle_revision}
+                    changed={changed}
+                    close={closeIdle}
+                  />
+                )}
+              </div>
+            )}
+            {local &&
+              (setup.data ? (
+                <SetupForm
+                  key={epoch}
+                  initial={setup.data}
+                  changed={changed}
+                  refresh={async () => {
+                    const result = await setup.refetch();
+                    if (result.isSuccess) setEpoch((value) => value + 1);
+                  }}
+                />
+              ) : (
+                <p
+                  className="cloud-setup-empty"
+                  role={setup.error ? "alert" : "status"}
+                >
+                  {setup.error?.message ?? "正在读取本机配置…"}
+                </p>
+              ))}
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

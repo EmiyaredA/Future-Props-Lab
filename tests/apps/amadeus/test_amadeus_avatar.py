@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+from statistics import median
 
 from PIL import Image
 
@@ -35,6 +36,11 @@ def test_bundled_amadeus_has_editable_layers_and_seven_distinct_poses(tmp_path: 
         assert poster.size == (512, 512)
         assert poster.mode == "RGBA"
         assert poster.getpixel((0, 0))[3] == 0
+        alpha = poster.getchannel("A").point(lambda value: 255 if value >= 128 else 0)
+        head_rows = [alpha.crop((0, y, poster.width, y + 1)).getbbox() for y in range(65, 225)]
+        centers = [(bounds[0] + bounds[2]) / 2 for bounds in head_rows if bounds]
+        assert len(centers) == len(head_rows)
+        assert abs(median(centers) - poster.width / 2) <= 2
     with Image.open(STAGE) as stage:
         assert stage.size == (512, 768)
         assert stage.getbbox()

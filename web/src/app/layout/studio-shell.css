@@ -22,6 +22,18 @@
   overflow: visible;
 }
 
+.website-workspace[data-assistant-layout="split"]:has(
+    > .website-page > .studio-shell
+  ) {
+  background: var(--studio-shell-bg);
+}
+
+.website-workspace[data-assistant-layout="split"]
+  > .website-page
+  > .studio-shell {
+  padding-right: 0;
+}
+
 .studio-panel {
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: var(--studio-panel-radius);

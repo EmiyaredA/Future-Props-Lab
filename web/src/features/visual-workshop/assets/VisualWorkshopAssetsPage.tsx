@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Boxes, FolderOpen, Folders } from "lucide-react";
@@ -7,10 +8,12 @@ import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 
 export function VisualWorkshopAssetsPage({
+  utilities,
   projectId,
   onCanvas,
   onProjects,
 }: {
+  utilities?: ReactNode;
   projectId: string;
   onCanvas: () => void;
   onProjects: () => void;
@@ -32,6 +35,7 @@ export function VisualWorkshopAssetsPage({
   return (
     <section className="workshop-page workshop-assets-page">
       <WorkshopAppChrome
+        utilities={utilities}
         eyebrow="项目资源"
         title="项目素材库"
         description="管理本项目素材与总文件公共库，从其他项目复制导入，或引用文件管理中的公共文件。"

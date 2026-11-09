@@ -138,6 +138,7 @@
   padding: 10px 20px;
   border-bottom: 1px solid var(--board-border);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -148,6 +149,13 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+.board-header-actions {
+  flex-wrap: wrap;
+  margin-inline-start: auto;
+}
+.board-identity > div {
   min-width: 0;
 }
 .board-identity img {

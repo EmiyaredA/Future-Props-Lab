@@ -329,6 +329,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/fork",
+    "sdk": "client.amadeus.fork_message",
+    "document": "/docs.html?page=sdk-reference-amadeus#fork-message",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/amadeus/conversations/{conversation_id}/questions/{question_id}/answer",
     "sdk": "client.amadeus.answer_question",
     "document": "/docs.html?page=sdk-reference-amadeus#answer-question",
@@ -416,6 +423,13 @@
     "http": "PUT /v1/amadeus/conversations/{conversation_id}/files/{kind}/{name}",
     "sdk": "client.amadeus.file_write",
     "document": "/docs.html?page=sdk-reference-amadeus#file-write",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/amadeus/conversations/{conversation_id}/messages/{message_id}/pin",
+    "sdk": "client.amadeus.pin_message",
+    "document": "/docs.html?page=sdk-reference-amadeus#pin-message",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

@@ -126,6 +126,7 @@ from db.migrations.versions import (
     r0122_workbench_projects,
     r0123_workbench_turns,
     r0124_management_api_key_secrets,
+    r0125_amadeus_message_actions,
 )
 
 
@@ -581,6 +582,10 @@ MIGRATIONS += (Migration(r0123_workbench_turns.MIGRATION_ID, r0123_workbench_tur
 
 MIGRATIONS += (
     Migration(r0124_management_api_key_secrets.MIGRATION_ID, r0124_management_api_key_secrets.SQL),
+)
+
+MIGRATIONS += (
+    Migration(r0125_amadeus_message_actions.MIGRATION_ID, r0125_amadeus_message_actions.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id
