@@ -1,11 +1,16 @@
 import { beforeEach, vi } from "vitest";
-import { act, fireEvent, screen } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { getVisualCanvas } from "@features/visual-workshop/api";
+import {
+  getVisualCanvas,
+  patchVisualWorkshopProject,
+} from "@features/visual-workshop/api";
 import {
   primeCanvasMocks,
   renderCanvas,
 } from "../support/visual-workshop-canvas-harness";
+
+import { canvasProject } from "../support/visual-workshop-canvas-fixtures";
 
 vi.mock("@features/files/AssetBrowser", () => ({
   AssetBrowser: ({
@@ -39,22 +44,14 @@ vi.mock("@features/visual-workshop/api", async () => {
   >("@features/visual-workshop/api");
   return {
     ...actual,
-    createVisualAssistantConversation: vi.fn(),
     createGenerationTask: vi.fn(),
-    deleteVisualAssistantConversation: vi.fn(),
     getGenerationOptions: vi.fn(),
     getGenerationTask: vi.fn(),
     getGenerationTasks: vi.fn(),
-    getVisualAssistantConversation: vi.fn(),
-    getVisualAssistantConversations: vi.fn(),
-    getVisualAssistantModels: vi.fn(),
     getVisualCanvas: vi.fn(),
     getVisualWorkshopProject: vi.fn(),
-    patchVisualAssistantConversation: vi.fn(),
     patchVisualWorkshopProject: vi.fn(),
     putVisualCanvas: vi.fn(),
-    resolveVisualAssistantApproval: vi.fn(),
-    streamVisualAssistant: vi.fn(),
   };
 });
 vi.mock("@platform/api/client", async () => {
@@ -299,4 +296,50 @@ test("canvas chrome opens the current website in a browser window", async () => 
     "_blank",
     "noopener,noreferrer",
   );
+});
+
+test("zooms, opens project assets, and renames", async () => {
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+
+  const surface = container.querySelector(".visual-canvas-surface")!;
+  expect(surface).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "对话" })).toBeNull();
+  expect(screen.getByRole("group", { name: "外观模式" })).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "深色" }));
+  expect(document.documentElement.dataset.theme).toBe("dark");
+  expect(window.localStorage.getItem("future_props_theme")).toBe("dark");
+  await user.click(screen.getByRole("button", { name: "浅色" }));
+  expect(document.documentElement.dataset.theme).toBe("light");
+  await user.click(screen.getByRole("button", { name: "放大" }));
+  expect(screen.getByRole("button", { name: "110%" })).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "素材库" }));
+  expect(screen.getByText("项目素材内容")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "列表视图" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await user.click(screen.getByRole("tab", { name: "总文件" }));
+  expect(screen.getByText("文件管理内容")).toBeInTheDocument();
+  await user.click(screen.getByRole("tab", { name: "跨项目" }));
+  expect(screen.getByText("跨项目内容")).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: /未命名项目/ }));
+  const title = screen.getByDisplayValue("未命名项目");
+  await user.clear(title);
+  await user.type(title, "秋季主视觉");
+  fireEvent.blur(title);
+  await waitFor(() =>
+    expect(patchVisualWorkshopProject).toHaveBeenCalledWith(
+      { ...canvasProject, is_official: false },
+      {
+        title: "秋季主视觉",
+      },
+    ),
+  );
+  expect(
+    screen.queryByRole("button", { name: "进入全屏" }),
+  ).not.toBeInTheDocument();
 });

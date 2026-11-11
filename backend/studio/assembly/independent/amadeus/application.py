@@ -1,6 +1,8 @@
 """Amadeus-owned records, lifecycle recovery and verified account requests."""
 
+import json
 from contextlib import asynccontextmanager
+from functools import partial
 from weakref import WeakValueDictionary
 
 from fastapi import FastAPI, HTTPException, Request
@@ -10,10 +12,15 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from studio.apps.amadeus.action_execution import ActionExecution
+from studio.apps.amadeus.clients.website_operations import catalog_from_schema, operation_request
 from studio.apps.amadeus.dialogue_runs import DialogueRuns
+from studio.apps.amadeus.dialogue_tools import DialogueTools
 from studio.apps.amadeus.native_host import AmadeusHost
+from studio.apps.amadeus.operation_calls import call_registered
 from studio.apps.amadeus.request_limits import AmadeusNativeRequestLimits, AmadeusRequestLimits
 from studio.apps.amadeus.storage.action_records import recover_actions
+from studio.apps.amadeus.storage.dialogue_files import DialogueFiles
+from studio.apps.amadeus.storage.dialogue_records import DialogueRecords
 from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
 from studio.apps.amadeus.storage.models import AmadeusAction, AmadeusRun
 from studio.apps.amadeus.storage.recovery import recover_runs
@@ -25,11 +32,11 @@ from studio.apps.amadeus.transport.dialogue_http import router as dialogue_route
 from studio.apps.amadeus.transport.file_http import router as file_router
 from studio.apps.amadeus.transport.native_http import native as native_router
 from studio.apps.amadeus.transport.native_http import public as host_router
-from studio.apps.amadeus.transport.operation_http import published_catalog
 from studio.apps.amadeus.transport.operation_http import router as operation_router
 from studio.apps.amadeus.transport.record_http import router
 from studio.apps.amadeus.transport.skill_http import router as skill_router
 from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.config import REPO_ROOT
 from studio.contracts.gateway.protocol_hash import public_contract
 from studio.runtime.database.migrations import check
 from studio.runtime.database.operation_receipts import OperationError
@@ -82,7 +89,31 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
     file_locks = WeakValueDictionary()
     tools = ToolCalls(capabilities, credential, transport)
     actions = ActionExecution(database, identity, capabilities, file_locks, tools, host)
-    runs = DialogueRuns(database, identity, capabilities, host, actions, file_locks)
+    installed_schema = REPO_ROOT / "deploy/contracts/openapi.json"
+    schema_path = (
+        installed_schema
+        if installed_schema.is_file()
+        else REPO_ROOT / "web/src/generated/openapi.json"
+    )
+    published_schema = json.loads(schema_path.read_text())
+    operation_catalog = partial(catalog_from_schema, published_schema)
+
+    def turn_tools(principal, run, assertion, path, skills):
+        conversation = run.conversation_id
+        return DialogueTools(
+            run,
+            skills,
+            may_write=principal.allows("content.write"),
+            records=DialogueRecords(database.sessions, principal, conversation, run.id),
+            files=DialogueFiles(principal.user_id, conversation, database.root),
+            catalog=operation_catalog,
+            operation_method=lambda operation, arguments: operation_request(
+                operation, arguments, allow_write=True
+            )[0],
+            read_operation=partial(call_registered, capabilities, assertion, path, approved=False),
+        )
+
+    runs = DialogueRuns(database, identity, capabilities, host, actions, file_locks, turn_tools)
 
     @asynccontextmanager
     async def lifespan(_app):
@@ -106,6 +137,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
     )
     app.state.database = database
     app.state.capabilities = capabilities
+    app.state.operation_catalog = operation_catalog
     app.state.file_locks = file_locks
     app.state.actions = actions
     app.state.runs = runs
@@ -157,7 +189,7 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
         (item.method, item.path) for item in catalog.operations if item.service == "amadeus"
     }
     if actual != expected or public_contract(schema, "amadeus", catalog) != public_contract(
-        published_catalog(), "amadeus", catalog
+        published_schema, "amadeus", catalog
     ):
         raise ValueError("Amadeus 公开接口与安装契约不匹配")
     return app

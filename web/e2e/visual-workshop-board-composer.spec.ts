@@ -53,6 +53,12 @@ for (const theme of ["light", "dark"] as const) {
       expect(saved.ok(), await saved.text()).toBeTruthy();
       await page.goto(`/apps/visual-workshop/projects/${id}/canvas`);
       await page.getByRole("button", { name: "看板", exact: true }).click();
+      await expect(
+        page.getByRole("button", { name: "对话", exact: true }),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole("button", { name: "打开 Amadeus", exact: true }),
+      ).toBeVisible();
       await setResponsiveTheme(page, theme);
       const inputs = page.getByRole("region", { name: "输入引用" });
       const toggle = inputs.getByRole("button", { name: "输入素材 7" });

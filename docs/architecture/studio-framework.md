@@ -40,7 +40,8 @@ Future Props Lab 是单机部署的模型基础设施管理台。单机可运行
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证
   基础设施，`generated/` 只保存生成契约。
 - Web 的 `app/routing/` 负责页面组合与浏览器导航控制器，`app/layout/` 保留展示壳；
-  未保存拦截、历史回退和 Agent 导航共享 `useWebsiteNavigation`，生命周期结束必须移除监听。
+  兼容网站的 `SignedInApp` 唯一创建 `useWebsiteNavigation` 并传给路由组合。
+  未保存拦截、历史回退和 Agent 导航共用此实例，生命周期结束必须移除监听。
   URL 类型与解析契约继续由 `app/routes.ts` 拥有，不将导航控制器放入业务 feature。
 - 浏览器启动入口归 `app/entries/`；兼容网站先通过 `website-bootstrap.ts` 建立加载失败反馈，
   再加载 `website.tsx` 的 React 装配。通用 UI 与浏览器 API 测试分别归 `web/tests/shared/` 与 `web/tests/platform/`。

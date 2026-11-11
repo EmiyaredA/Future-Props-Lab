@@ -40,4 +40,9 @@ async def require_ready(session, model_id, *, readiness: ModelReadiness | None =
 
 
 def credential_ready(provider):
-    return provider.kind in {"local_qwen_tts", "zealman_video"} or bool(provider.api_key_ciphertext)
+    return provider.kind in {
+        "local_qwen_tts",
+        "local_relayvsr",
+        "local_ffmpeg",
+        "zealman_video",
+    } or bool(provider.api_key_ciphertext)

@@ -98,7 +98,7 @@ test("creates an unnamed canvas project and opens it without a dialog", async ()
   expect(onOpenProject).toHaveBeenCalledWith("project-1");
 });
 
-test("renames, completes, restores, filters, and deletes projects", async () => {
+test("renames, searches, and deletes projects", async () => {
   vi.mocked(getVisualWorkshopProjects).mockResolvedValueOnce({
     items: [project],
   });
@@ -111,14 +111,11 @@ test("renames, completes, restores, filters, and deletes projects", async () => 
   await user.type(name, "新版主视觉");
   await user.click(screen.getByRole("button", { name: "保存名称" }));
   expect(await screen.findByText("新版主视觉")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "完成" }));
-  expect(
-    await screen.findByRole("button", { name: "恢复" }),
-  ).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "已完成" }));
+  const search = screen.getByRole("textbox", { name: "搜索项目" });
+  await user.type(search, "不存在的名称");
+  expect(screen.queryByText("新版主视觉")).not.toBeInTheDocument();
+  await user.clear(search);
   expect(screen.getByText("新版主视觉")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "恢复" }));
-  await user.click(screen.getByRole("button", { name: "全部" }));
   await user.click(screen.getByRole("button", { name: "删除" }));
   await user.click(screen.getByRole("button", { name: "确认删除" }));
   await waitFor(() => expect(deleteVisualWorkshopProject).toHaveBeenCalled());

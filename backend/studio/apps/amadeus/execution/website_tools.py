@@ -2,13 +2,12 @@
 
 import asyncio
 import secrets
-from pathlib import Path
 
 import httpx
 
-from studio.apps.amadeus.clients.website_operations import call_operation, operation_catalog
+from studio.apps.amadeus.clients.website_operations import call_operation
 from studio.apps.amadeus.storage.conversations import Conversations
-from studio.apps.amadeus.storage.files import list_files, read_file_bytes
+from studio.apps.amadeus.storage.dialogue_files import DialogueFiles
 from studio.apps.amadeus.storage.questions import Questions
 from studio.apps.amadeus.storage.runs import RunRecords as Runs
 from studio.apps.amadeus.storage.skill_import import read_skill_file
@@ -20,11 +19,23 @@ from studio.runtime.database.ownership import bind_owner
 
 
 class ToolBridge:
-    def __init__(self, app, headers, principal, run, sessions, *, files_root, resolve_agent):
+    def __init__(
+        self,
+        app,
+        headers,
+        principal,
+        run,
+        sessions,
+        *,
+        files_root,
+        resolve_agent,
+        operation_catalog,
+    ):
         self.app, self.headers, self.principal = app, headers, principal
         self.run, self.sessions = run, sessions
         self.files_root = files_root
         self.resolve_agent = resolve_agent
+        self.operation_catalog = operation_catalog
         self.paused = asyncio.Event()
         self.closed = False
 
@@ -60,7 +71,7 @@ class ToolBridge:
             row = await Runs(session, self.principal).get(self.run.conversation_id, self.run.id)
             if row.status != "running":
                 raise OperationError("运行已停止或等待确认", "run_not_active", 409)
-            operations = operation_catalog(self.app)
+            operations = self.operation_catalog()
             if name == "present_artifact":
                 return args
             if name == "operations":
@@ -74,34 +85,12 @@ class ToolBridge:
                         if not resource or op["resource"] == resource
                     ]
                 }
-            if name == "files":
-                return list_files(
-                    row.owner_user_id, row.conversation_id, files_root=self.files_root
-                )
-            if name == "read_file":
-                import base64
-
-                data = read_file_bytes(
-                    row.owner_user_id,
-                    row.conversation_id,
-                    args["kind"],
-                    args["name"],
-                    files_root=self.files_root,
-                )
-                if len(data) > 1024 * 1024:
-                    raise OperationError("文件过大，请使用文件下载接口")
-                suffix = Path(args["name"]).suffix.lower()
-                if suffix in {".png", ".jpg", ".jpeg", ".webp"}:
-                    mime = {
-                        ".png": "image/png",
-                        ".jpg": "image/jpeg",
-                        ".jpeg": "image/jpeg",
-                        ".webp": "image/webp",
-                    }[suffix]
-                    return [
-                        {"type": "image", "data": base64.b64encode(data).decode(), "mimeType": mime}
-                    ]
-                return {"content": data.decode("utf-8")}
+            if name in {"files", "read_file"}:
+                files = DialogueFiles(row.owner_user_id, row.conversation_id, self.files_root)
+                await session.rollback()
+                if name == "files":
+                    return await files.list()
+                return await files.read(args["kind"], args["name"])
             if name == "skill":
                 identity = args["id"]
                 if f"skill:{identity}" not in row.capabilities_json:

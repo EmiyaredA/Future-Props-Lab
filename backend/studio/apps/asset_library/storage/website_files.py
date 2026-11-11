@@ -52,22 +52,6 @@ class VisualAssets(AssetFolders):
         asset_ids = [item.id for item in assets]
         if asset_ids:
             await protect_document_references(self.session, asset_ids)
-            message_assets = Base.metadata.tables.get("visual_assistant_message_assets")
-            conversation_reference = (
-                await self.session.scalar(
-                    select(message_assets.c.id)
-                    .where(message_assets.c.asset_id.in_(asset_ids))
-                    .limit(1)
-                )
-                if message_assets is not None
-                else None
-            )
-            if conversation_reference:
-                raise AssetError(
-                    "文件夹内有文件正在被项目对话使用，请先删除相关对话",
-                    code="asset_in_use",
-                    status=409,
-                )
         global_ids = [item.id for item in assets if item.project_id is None]
         if global_ids:
             audio_projects = Base.metadata.tables.get("audio_annotation_projects")
@@ -259,20 +243,6 @@ class VisualAssets(AssetFolders):
         row = await self._asset(asset_id)
         ensure_library_managed(row)
         await protect_document_references(self.session, [asset_id])
-        message_assets = Base.metadata.tables.get("visual_assistant_message_assets")
-        conversation_reference = (
-            await self.session.scalar(
-                select(message_assets.c.id).where(message_assets.c.asset_id == asset_id).limit(1)
-            )
-            if message_assets is not None
-            else None
-        )
-        if conversation_reference:
-            raise AssetError(
-                "文件正在被项目对话使用，请先删除相关对话",
-                code="asset_in_use",
-                status=409,
-            )
         if row.project_id is None:
             audio_projects = Base.metadata.tables.get("audio_annotation_projects")
             if audio_projects is not None and await self.session.scalar(

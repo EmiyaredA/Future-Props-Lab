@@ -31,22 +31,6 @@ class CanvasPinBatch(MigrationBatch[CanvasPins]):
 CanvasPinPage = MigrationPage[CanvasPinBatch]
 
 
-CONVERSATION_PINS_DATASET = "visual.conversation-pins"
-CONVERSATION_PINS_PATH = "/v1/migration/visual/conversation-pins"
-
-
-class ConversationPins(CanvasPins):
-    project_id: Identifier
-
-
-class ConversationPinBatch(MigrationBatch[ConversationPins]):
-    dataset: Literal["visual.conversation-pins"]
-    records: tuple[ConversationPins, ...] = Field(max_length=1)
-
-
-ConversationPinPage = MigrationPage[ConversationPinBatch]
-
-
 ACCEPTANCE_PINS_DATASET = "visual.acceptance-pins"
 ACCEPTANCE_PINS_PATH = "/v1/migration/visual/acceptance-pins"
 

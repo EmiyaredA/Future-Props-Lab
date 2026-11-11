@@ -1,41 +1,24 @@
 """Verify frozen Canvas history and export retained files for Assets."""
 
-from collections import defaultdict
 from uuid import uuid5
 
-from pydantic import TypeAdapter, ValidationError
 from sqlalchemy import select
 
 from studio.apps.visual_workshop.canvas_asset_values import existing_assets
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
-from studio.apps.visual_workshop.schemas.workshop import (
-    VisualAssistantAssetPart,
-    VisualAssistantContentPart,
-)
 from studio.apps.visual_workshop.storage.migration_records import DATASETS
 from studio.apps.visual_workshop.storage.models import (
-    VisualAssistantConversation,
-    VisualAssistantMessage,
-    VisualAssistantMessageAsset,
     VisualCanvasDocument,
     VisualGenerationTask,
     VisualWorkshopProject,
 )
 from studio.contracts.visual_workshop.visual_migration import (
     CANVAS_PINS_DATASET,
-    CONVERSATION_PINS_DATASET,
     CanvasPinBatch,
     CanvasPinPage,
     CanvasPins,
-    ConversationPinBatch,
-    ConversationPinPage,
-    ConversationPins,
 )
 from studio.runtime.database.project_history_migration import blocked, inventory
-
-from .migration_assistant import DATASETS as ASSISTANT_DATASETS
-
-CONTENT_PARTS = TypeAdapter(list[VisualAssistantContentPart])
 
 
 async def inventory_pins(sessions, plan):
@@ -129,81 +112,5 @@ async def export_canvas_pins(sessions, plan, owner, after):
         records=tuple(records),
     )
     return CanvasPinPage(
-        batch=batch, sha256=batch.digest, next_cursor=records[-1].id if len(rows) > 1 else None
-    )
-
-
-async def inventory_conversation_pins(sessions, plan):
-    return await inventory(sessions, plan, ASSISTANT_DATASETS[0])
-
-
-async def conversation_assets(session, conversation_id):
-    attached = defaultdict(set)
-    for message_id, asset_id in await session.execute(
-        select(VisualAssistantMessageAsset.message_id, VisualAssistantMessageAsset.asset_id)
-        .join(
-            VisualAssistantMessage,
-            VisualAssistantMessage.id == VisualAssistantMessageAsset.message_id,
-        )
-        .where(VisualAssistantMessage.conversation_id == conversation_id)
-    ):
-        attached[message_id].add(asset_id)
-    for identity, parts in await session.execute(
-        select(VisualAssistantMessage.id, VisualAssistantMessage.content_parts).where(
-            VisualAssistantMessage.conversation_id == conversation_id
-        )
-    ):
-        if parts:
-            try:
-                used = {
-                    part.asset_id
-                    for part in CONTENT_PARTS.validate_python(parts)
-                    if isinstance(part, VisualAssistantAssetPart)
-                }
-            except ValidationError:
-                raise blocked("migration_visual_message_parts_invalid") from None
-            if used != attached[identity]:
-                raise blocked("migration_visual_message_attachment_conflict")
-    return sorted(set().union(*attached.values()))
-
-
-async def export_conversation_pins(sessions, plan, owner, after):
-    dataset = ASSISTANT_DATASETS[0]
-    async with sessions(info={"owner_user_id": str(owner)}) as session:
-        rows = list(
-            await session.scalars(
-                dataset.select(VisualAssistantConversation)
-                .where(
-                    dataset.owner_column == str(owner),
-                    VisualAssistantConversation.id > (after or ""),
-                )
-                .order_by(VisualAssistantConversation.id)
-                .limit(2)
-            )
-        )
-        try:
-            records = tuple(
-                [
-                    ConversationPins(
-                        id=row.id,
-                        project_id=row.project_id,
-                        revision=row.revision,
-                        asset_ids=await conversation_assets(session, row.id),
-                    )
-                    for row in rows[:1]
-                ]
-            )
-        except ValidationError:
-            raise blocked("migration_visual_conversation_pins_invalid") from None
-    batch = ConversationPinBatch(
-        run_id=plan.run_id,
-        source_revision=plan.source_revision,
-        source_database_sha256=plan.source_database_sha256,
-        dataset=CONVERSATION_PINS_DATASET,
-        owner_id=owner,
-        batch_id=uuid5(plan.run_id, f"{CONVERSATION_PINS_DATASET}/{owner}/{after or ''}"),
-        records=records,
-    )
-    return ConversationPinPage(
         batch=batch, sha256=batch.digest, next_cursor=records[-1].id if len(rows) > 1 else None
     )

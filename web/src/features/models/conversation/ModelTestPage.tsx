@@ -105,12 +105,7 @@ export function ModelTestPage({
     null,
   );
   const lastGenerationModelByMode = useRef<
-    Partial<
-      Record<
-        "image" | "video" | "speech" | "synthesis" | "realtime_voice",
-        string
-      >
-    >
+    Partial<Record<Exclude<ModelTestMode, "chat">, string>>
   >({});
   const abortRef = useRef<AbortController | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
@@ -139,9 +134,14 @@ export function ModelTestPage({
       return;
     }
     if (
-      !["image", "video", "synthesis", "speech", "realtime_voice"].includes(
-        initialMode,
-      )
+      ![
+        "image",
+        "video",
+        "synthesis",
+        "speech",
+        "realtime_voice",
+        "enhancement",
+      ].includes(initialMode)
     )
       return;
     autoCreated.current = true;
@@ -515,6 +515,9 @@ export function ModelTestPage({
     (model) => model.value === generationModelId,
   );
   const availableModes: Record<ModelTestMode, boolean> = {
+    enhancement: availableModels.some((model) =>
+      model.capabilities.includes("video_enhancement"),
+    ),
     synthesis: availableModels.some((model) =>
       model.capabilities.includes("speech_synthesis"),
     ),

@@ -6,7 +6,6 @@ from pydantic import ValidationError
 from sqlalchemy import text, update
 
 from studio.apps.visual_workshop.batch_nodes import attach_grid_nodes
-from studio.apps.visual_workshop.canvas_values import canvas_out
 from studio.apps.visual_workshop.generation.generation_peer import GenerationPeer
 from studio.apps.visual_workshop.generation_common import (
     GenerationError,
@@ -18,14 +17,12 @@ from studio.apps.visual_workshop.outputs.queries import OutputError
 from studio.apps.visual_workshop.outputs.references import resolve_references
 from studio.apps.visual_workshop.projects import Projects
 from studio.apps.visual_workshop.reference_backlog import pending_outcomes
-from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
 from studio.apps.visual_workshop.storage.generation_dispatch_records import (
     VisualGenerationDecision,
     VisualGenerationDispatch,
 )
 from studio.apps.visual_workshop.storage.models import VisualGenerationBatch, VisualGenerationTask
 from studio.contracts.model_service.generation_tasks import ImageGenerationTaskCreateIn
-from studio.contracts.visual_workshop.visual_assistant import approval_source
 from studio.contracts.visual_workshop.visual_generation_plan import (
     GenerationPlan,
     TaskPlan,
@@ -74,12 +71,7 @@ class GenerationIntake:
         )
         return await self.create(project, task, batch=body)
 
-    async def create(self, project, arguments, batch=None, *, draft_node=None):
-        approval = approval_source("POST", self.source)
-        if approval and (
-            approval[1] != project or batch is not None or arguments.canvas_node_id is None
-        ):
-            raise GenerationError("审批和生成任务不匹配", code="approval_not_found", status=404)
+    async def create(self, project, arguments, batch=None):
         await self.projects.row(project)
         for identity in await pending_outcomes(self.session, project):
             try:
@@ -90,17 +82,10 @@ class GenerationIntake:
                 ) from exc
         try:
             choice = await self.peer.model(arguments)
-            plan_arguments = arguments
-            if draft_node is not None:
-                plan_arguments = arguments.model_copy(
-                    update={"canvas_node_id": None, "expected_canvas_revision": None}
-                )
-            plan = await self.plan(project, plan_arguments, choice, batch)
+            plan = await self.plan(project, arguments, choice, batch)
         except ValidationError as exc:
             raise GenerationError("生成请求参数或素材引用无效", code="invalid_reference") from exc
         identity = str(plan.plan_id)
-        if approval:
-            await self.peer.admit(self.owner, plan)
         self.session.add(
             VisualGenerationDecision(
                 id=identity,
@@ -109,16 +94,14 @@ class GenerationIntake:
                 plan_sha256=plan.digest,
                 state="preparing",
                 source_path=self.source,
-                source_assertion="" if approval else self.assertion,
+                source_assertion=self.assertion,
             )
         )
         await self.session.commit()
         try:
             payloads = await self.peer.prepare(plan)
             await self.session.execute(text("BEGIN IMMEDIATE"))
-            result = await self.persist(
-                plan, payloads, arguments, batch, draft_node=draft_node, approved=bool(approval)
-            )
+            result = await self.persist(plan, payloads, arguments, batch)
             await self.session.commit()
             return result
         except BaseException:
@@ -172,7 +155,7 @@ class GenerationIntake:
             assets=assets,
         )
 
-    async def persist(self, plan, payloads, arguments, batch, *, draft_node=None, approved=False):
+    async def persist(self, plan, payloads, arguments, batch):
         project, identity = plan.project_id, str(plan.plan_id)
         await self.projects.row(project)
         await require_canvas_unreserved(self.session, self.owner, project)
@@ -222,13 +205,9 @@ class GenerationIntake:
         )
         decision.state, decision.updated_at = "activate", utc_now()
         if batch is None:
-            canvas = None
             if arguments.canvas_node_id is not None:
-                canvas = await self.attach(
-                    project, arguments, draft_node=draft_node, generation_task_id=rows[0].id
-                )
-            result = generation_task_out(rows[0])
-            return (result, canvas_out(canvas)) if approved else result
+                await self.attach(project, arguments, generation_task_id=rows[0].id)
+            return generation_task_out(rows[0])
         record = VisualGenerationBatch(
             id=identity,
             owner_user_id=self.owner,
@@ -257,7 +236,7 @@ class GenerationIntake:
             )
         return generation_batch_out(record)
 
-    async def attach(self, project, args, *, draft_node=None, **changes):
+    async def attach(self, project, args, **changes):
         canvas = await self.projects.canvas_row(project)
         if canvas.revision != args.expected_canvas_revision:
             raise GenerationError(
@@ -265,20 +244,6 @@ class GenerationIntake:
             )
         nodes = [dict(node) for node in (canvas.nodes or [])]
         node = next((row for row in nodes if row["id"] == args.canvas_node_id), None)
-        if draft_node is not None:
-            if node is not None or draft_node.id != args.canvas_node_id:
-                raise GenerationError("画布节点已变化", code="canvas_revision_conflict", status=409)
-            node = draft_node.model_dump(mode="json")
-            nodes.append(node)
-            try:
-                current = canvas_out(canvas)
-                VisualCanvasDocumentPutIn(
-                    expected_revision=current.revision, nodes=nodes, edges=current.edges
-                )
-            except ValidationError as exc:
-                raise GenerationError(
-                    "生成占位节点无效", code="invalid_canvas", status=422
-                ) from exc
         if node is None:
             raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
         if node["kind"] != args.kind:

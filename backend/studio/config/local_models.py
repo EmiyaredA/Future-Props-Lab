@@ -8,6 +8,9 @@ from pathlib import Path
 from studio.runtime.operation_errors import OperationError
 
 HERE = Path(__file__).parent
+RELAY_MODEL_ID = "relayvsr-x2-int8"
+FFMPEG_MODEL_ID = "ffmpeg-video-sharpen"
+LOCAL_VIDEO_MODEL_IDS = {RELAY_MODEL_ID, FFMPEG_MODEL_ID}
 LANGUAGES = [
     "Chinese",
     "English",

@@ -114,11 +114,15 @@ class DialogueTool(Leased):
 
 
 @native.post("/dialogue/plan")
-async def dialogue_plan(request: Request, body: Leased):
+async def dialogue_plan(request: Request, body: Leased, include_image_attachments: bool = False):
     turn = await request.app.state.native_host.dialogue_turn(
         request.state.amadeus_worker, body.lease
     )
-    return {"prompt": turn.prompt}
+    return turn.plan.model_dump(
+        mode="json",
+        exclude_defaults=True,
+        exclude=None if include_image_attachments else {"image_attachments"},
+    )
 
 
 @native.post("/dialogue/event")

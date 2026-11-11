@@ -41,3 +41,9 @@
 | 修改思绪工坊用户行为或维护官方文章与图形 | [官方知识库写作](docs/operations/official-knowledge-writing.md)，同步更新对应指南 |
 | 云控授权、Happier 或外部 Agent 执行 | [云控](docs/reference/cloud-control.md)、[Happier 部署](docs/operations/happier.md)、[编程智能体接入](docs/operations/code-agents.md) |
 | 非机械性的行为、架构、跨文件契约、工具链、测试策略或落盘、网络、配置格式改动 | 按 [Agent Note 维护规则](docs/operations/agent-notes.md#何时写) 记录决策 |
+
+## Codex 的 Trellis 流程
+
+- 跨模块、权限、事务或任务恢复等复杂改动，可在 Codex App 中显式选择 `trellis-start`。小改动按上表直接查规则和验证。
+- 先按上表定位条款，再查 Trellis 的[规范导航](.trellis/spec/guides/future-props-lab-contracts.md)。计划与审查引用同一份契约，非平凡决策按 Agent Note 规则记录。
+- Trellis 使用当前会话。验证按仓库矩阵选择，提交、推送和部署按用户授权执行。

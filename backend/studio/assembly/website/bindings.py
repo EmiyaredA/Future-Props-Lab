@@ -3,8 +3,10 @@ from __future__ import annotations
 import asyncio
 from functools import partial
 
+from studio.apps.amadeus.clients.website_operations import operation_catalog
 from studio.apps.amadeus.execution.website_actions import ActionExecution
 from studio.apps.amadeus.execution.website_dialogue import CodeAgentRuns
+from studio.apps.amadeus.storage.website_actions import WebsiteActionRecords
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
 from studio.apps.audio_annotation.storage.projects import ProjectRecords
@@ -67,6 +69,7 @@ from studio.assembly.annotation import (
     segment_transcriber,
 )
 from studio.assembly.website.account_provisioning import create_account
+from studio.assembly.website.amadeus_actions import WebsiteActionEffects
 from studio.assembly.website.annotation_imports import WebsiteCreationInputs
 from studio.assembly.website.annotation_sources import WebsiteAnnotationSources
 from studio.assembly.website.annotation_transcription import WebsiteTranscription
@@ -87,7 +90,6 @@ from studio.host.project_files.video_execution import _run_yt_dlp
 from studio.runtime.files.raster import RasterPreviews
 from studio.runtime.http.rate_limit import AttemptLimiter
 from studio.runtime.secrets import SecretCipher
-from studio.runtime.tasks.reactive_tools.approval import ApprovalBroker
 from studio.runtime.time import utc_now
 
 
@@ -98,7 +100,6 @@ def bind_components(app, settings, database, *, read_cloud_settings):
     app.state.auth_attempts = AttemptLimiter()
     app.state.invitation_cipher = SecretCipher(settings.fpl_secrets_key)
     app.state.management_api_key_cipher = SecretCipher(settings.fpl_secrets_key)
-    app.state.assistant_approvals = ApprovalBroker()
     app.state.cloud_unlocks = CloudUnlockRecords(
         database.sessions, clock=utc_now, settings_reader=read_cloud_settings
     )
@@ -137,12 +138,17 @@ def bind_components(app, settings, database, *, read_cloud_settings):
     app.state.amadeus_resolve = lambda session, owner, user, agent, *, probe=True: resolve(
         session, owner, user, agent, "amadeus", settings=read_cloud_settings(), probe=probe
     )
-    app.state.amadeus_actions = ActionExecution(
+    app.state.amadeus_operation_catalog = partial(operation_catalog, app)
+    app.state.amadeus_actions = ActionExecution()
+    app.state.amadeus_action_records = lambda principal, conversation: WebsiteActionRecords(
+        sessions, principal, conversation, app.state.amadeus_resolve
+    )
+    app.state.amadeus_action_effects = WebsiteActionEffects(
+        sessions,
+        settings.runtime_path,
         partial(
             apply_assistant_timeline_batch, sessions=sessions, asset_reader=LegacyTimelineAssets
         ),
-        files_root=settings.runtime_path,
-        resolve_agent=app.state.amadeus_resolve,
     )
     app.state.demo_runtime = DemoRuntime(partial(read_demo_configuration, sessions=sessions))
     app.state.interview_files_root = settings.runtime_path
@@ -257,6 +263,7 @@ def bind_components(app, settings, database, *, read_cloud_settings):
     app.state.account_creator = create_account
     app.state.account_storage_check = upgrade_pending
     app.state.code_agent_runs = CodeAgentRuns(
+        operation_catalog=app.state.amadeus_operation_catalog,
         resolve_agent=app.state.amadeus_resolve,
         sessions=sessions,
         settings=settings,

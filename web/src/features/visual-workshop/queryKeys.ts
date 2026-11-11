@@ -50,12 +50,4 @@ export const visualWorkshopQueryKeys = {
     ] as const,
   generationTask: (taskId: string | null | undefined) =>
     ["visual-generation-task", taskId] as const,
-  assistantConversations: (projectId: string) =>
-    ["visual-assistant-conversations", projectId] as const,
-  assistantConversation: (
-    projectId: string,
-    conversationId: string | null | undefined,
-  ) => ["visual-assistant-conversation", projectId, conversationId] as const,
-  assistantModels: (projectId: string) =>
-    ["visual-assistant-models", projectId] as const,
 };

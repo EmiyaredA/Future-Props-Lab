@@ -3954,6 +3954,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/model-inference/video-enhancements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Video Enhancements */
+        get: operations["list_video_enhancements_v1_model_inference_video_enhancements_get"];
+        put?: never;
+        /** Create Video Enhancement */
+        post: operations["create_video_enhancement_v1_model_inference_video_enhancements_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/video-enhancements/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Video Enhancement */
+        get: operations["get_video_enhancement_v1_model_inference_video_enhancements__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/video-enhancements/{task_id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Control Video Enhancement */
+        post: operations["control_video_enhancement_v1_model_inference_video_enhancements__task_id__actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/video-enhancements/{task_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Video Enhancement Result */
+        get: operations["get_video_enhancement_result_v1_model_inference_video_enhancements__task_id__content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/video-enhancements/{task_id}/segments/{index}/{variant}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Video Enhancement Segment */
+        get: operations["get_video_enhancement_segment_v1_model_inference_video_enhancements__task_id__segments__index___variant__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/model-providers": {
         parameters: {
             query?: never;
@@ -7776,94 +7862,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/visual-workshop/projects/{project_id}/conversations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Conversations */
-        get: operations["list_conversations_v1_visual_workshop_projects__project_id__conversations_get"];
-        put?: never;
-        /** Create Conversation */
-        post: operations["create_conversation_v1_visual_workshop_projects__project_id__conversations_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/conversations/models": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Models */
-        get: operations["list_models_v1_visual_workshop_projects__project_id__conversations_models_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Conversation */
-        get: operations["get_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__get"];
-        put?: never;
-        post?: never;
-        /** Delete Conversation */
-        delete: operations["delete_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__delete"];
-        options?: never;
-        head?: never;
-        /** Patch Conversation */
-        patch: operations["patch_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__patch"];
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Stream Message */
-        post: operations["stream_message_v1_visual_workshop_projects__project_id__conversations__conversation_id__messages_stream_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Resolve Approval */
-        post: operations["resolve_approval_v1_visual_workshop_projects__project_id__conversations__conversation_id__runs__run_id__approvals__approval_id__post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/visual-workshop/projects/{project_id}/generation-batches": {
         parameters: {
             query?: never;
@@ -8192,7 +8190,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -15849,6 +15847,12 @@ export interface components {
         LocalModelOut: {
             /** Busy */
             busy: boolean;
+            /**
+             * Capability
+             * @default speech_synthesis
+             * @enum {string}
+             */
+            capability: "speech_synthesis" | "video_enhancement";
             /** Compatible */
             compatible: boolean;
             /** Download Bytes */
@@ -16275,7 +16279,7 @@ export interface components {
              * Id
              * @enum {string}
              */
-            id: "text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech";
+            id: "text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "video_enhancement" | "image_generation" | "end_to_end_speech";
             /** Label */
             label: string;
             /** Sub Type */
@@ -16298,9 +16302,9 @@ export interface components {
         /** ModelEntryIn */
         ModelEntryIn: {
             /** Capabilities */
-            capabilities?: ("speech_synthesis" | "chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
+            capabilities?: ("speech_synthesis" | "chat" | "vision" | "tools" | "image_generation" | "video_generation" | "video_enhancement" | "speech_recognition" | "voice" | "audio_generation")[];
             /** Categories */
-            categories?: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech")[];
+            categories?: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "video_enhancement" | "image_generation" | "end_to_end_speech")[];
             /**
              * Description
              * @default
@@ -16330,9 +16334,9 @@ export interface components {
              */
             availability: "ready" | "not_installed" | "stopped" | "unsupported_platform";
             /** Capabilities */
-            capabilities: ("speech_synthesis" | "chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
+            capabilities: ("speech_synthesis" | "chat" | "vision" | "tools" | "image_generation" | "video_generation" | "video_enhancement" | "speech_recognition" | "voice" | "audio_generation")[];
             /** Categories */
-            categories: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech")[];
+            categories: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "video_enhancement" | "image_generation" | "end_to_end_speech")[];
             /** Description */
             description: string;
             /** Enabled */
@@ -18702,7 +18706,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Name */
             name: string;
             /** Supplier Id */
@@ -18730,7 +18734,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Managed Fields */
             managed_fields?: string[];
             /** Models */
@@ -19009,7 +19013,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -20649,9 +20653,9 @@ export interface components {
         /** TemplateModel */
         TemplateModel: {
             /** Capabilities */
-            capabilities?: ("speech_synthesis" | "chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
+            capabilities?: ("speech_synthesis" | "chat" | "vision" | "tools" | "image_generation" | "video_generation" | "video_enhancement" | "speech_recognition" | "voice" | "audio_generation")[];
             /** Categories */
-            categories?: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech")[];
+            categories?: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "video_enhancement" | "image_generation" | "end_to_end_speech")[];
             /**
              * Description
              * @default
@@ -20828,7 +20832,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -20864,7 +20868,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -22759,6 +22763,62 @@ export interface components {
              */
             kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "whip-pan" | "light-leak" | "flash" | "eyelid" | "audio-crossfade";
         };
+        /** VideoEnhancementAction */
+        VideoEnhancementAction: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "pause" | "resume";
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** VideoEnhancementIn */
+        VideoEnhancementIn: {
+            /** Model Id */
+            model_id: string;
+            /** Request Id */
+            request_id: string;
+            /** Source Id */
+            source_id: string;
+        };
+        /** VideoEnhancementOut */
+        VideoEnhancementOut: {
+            /** Completed */
+            completed: number;
+            /** Error Message */
+            error_message: string | null;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Model Id */
+            model_id: string;
+            /** Result Url */
+            result_url: string | null;
+            /** Revision */
+            revision: number;
+            /** Segments */
+            segments: components["schemas"]["VideoEnhancementSegment"][];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "analyzing" | "running" | "pausing" | "paused" | "interrupted" | "combining" | "completed" | "failed";
+        };
+        /** VideoEnhancementSegment */
+        VideoEnhancementSegment: {
+            /** End Seconds */
+            end_seconds: number;
+            /** Index */
+            index: number;
+            /** Original Url */
+            original_url: string | null;
+            /** Result Url */
+            result_url: string | null;
+            /** Start Seconds */
+            start_seconds: number;
+        };
         /** VideoFramesIn */
         VideoFramesIn: {
             /**
@@ -23025,243 +23085,6 @@ export interface components {
              * @default false
              */
             move_to_root: boolean;
-        };
-        /** VisualAssistantActionOut */
-        VisualAssistantActionOut: {
-            /** Action Id */
-            action_id: string;
-            /** Approval Group Id */
-            approval_group_id: string | null;
-            /** Canvas Revision */
-            canvas_revision: number | null;
-            /** Created At */
-            created_at: string;
-            /** Display Payload */
-            display_payload: {
-                [key: string]: unknown;
-            };
-            /** Duration Ms */
-            duration_ms: number | null;
-            /**
-             * Effect
-             * @enum {string}
-             */
-            effect: "read" | "write" | "external";
-            /** Error Message */
-            error_message: string | null;
-            /** Generation Task Id */
-            generation_task_id: string | null;
-            /** Id */
-            id: string;
-            /** Position */
-            position: number;
-            /** Result Payload */
-            result_payload: {
-                [key: string]: unknown;
-            };
-            /** Run Id */
-            run_id: string;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "proposed" | "waiting_approval" | "running" | "completed" | "rejected" | "failed" | "cancelled";
-            /** Tool Name */
-            tool_name: string;
-            /** Updated At */
-            updated_at: string;
-        };
-        /** VisualAssistantApprovalIn */
-        VisualAssistantApprovalIn: {
-            /** Canvas Revision */
-            canvas_revision: number;
-            /**
-             * Decision
-             * @enum {string}
-             */
-            decision: "approve" | "reject";
-        };
-        /** VisualAssistantApprovalOut */
-        VisualAssistantApprovalOut: {
-            /**
-             * Accepted
-             * @default true
-             */
-            accepted: boolean;
-        };
-        /** VisualAssistantAssetOut */
-        VisualAssistantAssetOut: {
-            /** Byte Size */
-            byte_size: number;
-            /** Display Name */
-            display_name: string;
-            /** Id */
-            id: string;
-            /** Mime Type */
-            mime_type: string;
-        };
-        /** VisualAssistantAssetPart */
-        VisualAssistantAssetPart: {
-            /** Asset Id */
-            asset_id: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "asset";
-        };
-        /** VisualAssistantConversationListOut */
-        VisualAssistantConversationListOut: {
-            /** Items */
-            items: components["schemas"]["VisualAssistantConversationSummaryOut"][];
-        };
-        /** VisualAssistantConversationOut */
-        VisualAssistantConversationOut: {
-            /** Created At */
-            created_at: string;
-            /** Id */
-            id: string;
-            /** Image Model Id */
-            image_model_id: string | null;
-            /** Image Model Slug */
-            image_model_slug: string;
-            /** Messages */
-            messages?: components["schemas"]["VisualAssistantMessageOut"][];
-            /** Model Id */
-            model_id: string | null;
-            /** Model Slug */
-            model_slug: string;
-            /** Project Id */
-            project_id: string;
-            /** Revision */
-            revision: number;
-            /** Title */
-            title: string;
-            /** Updated At */
-            updated_at: string;
-            /** Video Model Id */
-            video_model_id: string | null;
-            /** Video Model Slug */
-            video_model_slug: string;
-        };
-        /** VisualAssistantConversationPatchIn */
-        VisualAssistantConversationPatchIn: {
-            /** Expected Revision */
-            expected_revision: number;
-            /** Image Model Id */
-            image_model_id?: string | null;
-            /** Model Id */
-            model_id?: string | null;
-            /** Title */
-            title?: string | null;
-            /** Video Model Id */
-            video_model_id?: string | null;
-        };
-        /** VisualAssistantConversationSummaryOut */
-        VisualAssistantConversationSummaryOut: {
-            /** Created At */
-            created_at: string;
-            /** Id */
-            id: string;
-            /** Image Model Id */
-            image_model_id: string | null;
-            /** Image Model Slug */
-            image_model_slug: string;
-            /** Model Id */
-            model_id: string | null;
-            /** Model Slug */
-            model_slug: string;
-            /** Project Id */
-            project_id: string;
-            /** Revision */
-            revision: number;
-            /** Title */
-            title: string;
-            /** Updated At */
-            updated_at: string;
-            /** Video Model Id */
-            video_model_id: string | null;
-            /** Video Model Slug */
-            video_model_slug: string;
-        };
-        /** VisualAssistantMessageOut */
-        VisualAssistantMessageOut: {
-            /** Actions */
-            actions?: components["schemas"]["VisualAssistantActionOut"][];
-            /** Assets */
-            assets?: components["schemas"]["VisualAssistantAssetOut"][];
-            /** Content */
-            content: string;
-            /** Content Parts */
-            content_parts?: (components["schemas"]["VisualAssistantTextPart"] | components["schemas"]["VisualAssistantAssetPart"])[];
-            /** Created At */
-            created_at: string;
-            /** Error Message */
-            error_message: string | null;
-            /** Id */
-            id: string;
-            /** Model Slug */
-            model_slug: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "user" | "assistant";
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "pending" | "completed" | "error" | "cancelled";
-            /** Turn Id */
-            turn_id: string;
-        };
-        /** VisualAssistantModelOptionListOut */
-        VisualAssistantModelOptionListOut: {
-            /** Items */
-            items: components["schemas"]["VisualAssistantModelOptionOut"][];
-        };
-        /** VisualAssistantModelOptionOut */
-        VisualAssistantModelOptionOut: {
-            /** Capabilities */
-            capabilities: string[];
-            /** Description */
-            description: string;
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-            /** Provider Id */
-            provider_id: string;
-            /** Provider Name */
-            provider_name: string;
-            /** Slug */
-            slug: string;
-        };
-        /** VisualAssistantSendIn */
-        VisualAssistantSendIn: {
-            /** Asset Ids */
-            asset_ids?: string[];
-            /** Canvas Revision */
-            canvas_revision: number;
-            /**
-             * Content
-             * @default
-             */
-            content: string;
-            /** Content Parts */
-            content_parts?: (components["schemas"]["VisualAssistantTextPart"] | components["schemas"]["VisualAssistantAssetPart"])[];
-            /** Expected Revision */
-            expected_revision: number;
-        };
-        /** VisualAssistantTextPart */
-        VisualAssistantTextPart: {
-            /** Text */
-            text: string;
-            /**
-             * @description discriminator enum property added by openapi-typescript
-             * @enum {string}
-             */
-            type: "text";
         };
         /** VisualCanvasAudioGenerationDraft */
         VisualCanvasAudioGenerationDraft: {
@@ -32890,6 +32713,200 @@ export interface operations {
             };
         };
     };
+    list_video_enhancements_v1_model_inference_video_enhancements_get: {
+        parameters: {
+            query: {
+                model_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEnhancementOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_video_enhancement_v1_model_inference_video_enhancements_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEnhancementIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEnhancementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_video_enhancement_v1_model_inference_video_enhancements__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEnhancementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    control_video_enhancement_v1_model_inference_video_enhancements__task_id__actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEnhancementAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEnhancementOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_video_enhancement_result_v1_model_inference_video_enhancements__task_id__content_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "video/mp4": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_video_enhancement_segment_v1_model_inference_video_enhancements__task_id__segments__index___variant__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+                index: number;
+                variant: "original" | "enhanced";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "video/mp4": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_providers_v1_model_providers_get: {
         parameters: {
             query?: never;
@@ -42178,277 +42195,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualCanvasDocumentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_conversations_v1_visual_workshop_projects__project_id__conversations_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VisualAssistantConversationListOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_conversation_v1_visual_workshop_projects__project_id__conversations_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VisualAssistantConversationOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_models_v1_visual_workshop_projects__project_id__conversations_models_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VisualAssistantModelOptionListOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VisualAssistantConversationOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__delete: {
-        parameters: {
-            query: {
-                expected_revision: number;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    patch_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VisualAssistantConversationPatchIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VisualAssistantConversationOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    stream_message_v1_visual_workshop_projects__project_id__conversations__conversation_id__messages_stream_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VisualAssistantSendIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resolve_approval_v1_visual_workshop_projects__project_id__conversations__conversation_id__runs__run_id__approvals__approval_id__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                conversation_id: string;
-                run_id: string;
-                approval_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["VisualAssistantApprovalIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["VisualAssistantApprovalOut"];
                 };
             };
             /** @description Validation Error */

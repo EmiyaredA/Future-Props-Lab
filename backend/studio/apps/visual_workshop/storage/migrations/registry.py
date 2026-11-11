@@ -12,6 +12,9 @@ from studio.apps.visual_workshop.storage.migrations.versions.v0007 import (
 from studio.apps.visual_workshop.storage.migrations.versions.v0008 import SQL as GENERATION_DISPATCH
 from studio.apps.visual_workshop.storage.migrations.versions.v0009 import SQL as REVIEW_DISPATCH
 from studio.apps.visual_workshop.storage.migrations.versions.v0010 import SQL as ASSISTANT_DISPATCH
+from studio.apps.visual_workshop.storage.migrations.versions.v0011 import (
+    SQL as RETIRE_VISUAL_DIALOGUE,
+)
 from studio.runtime.database.migrations import Migration
 
 MIGRATIONS = (
@@ -25,4 +28,5 @@ MIGRATIONS = (
     Migration("0008_visual_generation_dispatches", GENERATION_DISPATCH),
     Migration("0009_visual_review_dispatches", REVIEW_DISPATCH),
     Migration("0010_visual_assistant_dispatches", ASSISTANT_DISPATCH),
+    Migration("0011_retire_visual_conversations", RETIRE_VISUAL_DIALOGUE),
 )

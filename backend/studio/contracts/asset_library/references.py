@@ -13,9 +13,7 @@ VIDEO_FILE_CHANGES = PROJECT_FILE_CHANGES
 
 RESOURCE_KINDS = MappingProxyType(
     {
-        "visual": frozenset(
-            {"project", "canvas", "conversation", "acceptance", "output", "history"}
-        ),
+        "visual": frozenset({"project", "canvas", "acceptance", "output", "history"}),
         "thought": frozenset(
             {"note", "history", "template", "publication", "knowledge-base", "sync"}
         ),
@@ -102,8 +100,10 @@ class PrepareReferenceChange(BaseModel):
     visual_upload: VisualUpload | None = None
     visual_evidence: VisualEvidenceUpload | None = None
     visual_review_project: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,128}$")
-    visual_project_removal: list[str] | None = Field(default=None, max_length=10000)
-    visual_conversation_project: str | None = Field(default=None, pattern=r"^[A-Za-z0-9_-]{1,128}$")
+    # An empty list marks project deletion; old conversation IDs are no longer accepted.
+    visual_project_removal: list[str] | None = Field(default=None, max_length=0)
+    # Keep the null field in the signed payload for existing reference changes.
+    visual_conversation_project: None = None
 
     @model_validator(mode="after")
     def check_project_file_change(self):
@@ -166,8 +166,6 @@ class PrepareReferenceChange(BaseModel):
             or self.carried_asset_ids is not None
         ):
             raise ValueError("Visual 验收记录范围无效")
-        if self.visual_conversation_project is not None and self.resource_kind != "conversation":
-            raise ValueError("Visual 对话范围无效")
         return self
 
     @field_validator(
@@ -188,7 +186,6 @@ class PrepareReferenceChange(BaseModel):
             raise ValueError("项目删除命令与所属服务不符")
         if service != "visual" and (
             self.visual_project_removal is not None
-            or self.visual_conversation_project is not None
             or self.visual_upload is not None
             or self.visual_evidence is not None
             or self.visual_review_project is not None

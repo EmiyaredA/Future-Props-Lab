@@ -20,22 +20,17 @@ describe("Amadeus conversation conflict", () => {
     const setRenameItem = vi.fn();
     const setError = vi.fn();
     const actions = conversationActions({
-      detailRef: { current: { conversation: item, messages: [], actions: [] } },
+      getDetail: () => ({ conversation: item, messages: [], actions: [] }),
+      captureSelection: () => () => true,
       busy: false,
-      filesOpen: false,
       refreshList,
       open,
-      setDetail: vi.fn(),
+      clearSelection: vi.fn(),
+      updateDetail: vi.fn(),
       setError,
       setRenameItem,
       setDeleteItem: vi.fn(),
-      setAttachments: vi.fn(),
-      setReferences: vi.fn(),
-      setFilesOpen: vi.fn(),
-      setWorkFiles: vi.fn(),
-      filePreviewRequestRef: { current: 0 },
-      setFilePreview: vi.fn(),
-    } as unknown as Parameters<typeof conversationActions>[0]);
+    });
     await actions.rename(item, "尚未发送的新标题");
     expect(fetchApiJson).toHaveBeenCalledTimes(1);
     expect(setRenameItem).toHaveBeenCalledWith(current);

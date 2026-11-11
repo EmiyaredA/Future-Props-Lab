@@ -1,4 +1,4 @@
-import { ReferenceChip } from "./ReferenceChip";
+import { AttachmentReference } from "./AttachmentReference";
 import { MessageActionRow } from "./MessageActions";
 import { messageAnchors, type MessageActions } from "./useMessageActions";
 import { usageFields } from "./conversationUsage";
@@ -754,9 +754,10 @@ export function ActivityFeed({
                 {!!message.references?.length && (
                   <div className="amadeus-message-refs">
                     {message.references.map((reference, index) => (
-                      <ReferenceChip
+                      <AttachmentReference
                         key={`${reference.id}-${index}`}
                         reference={reference}
+                        conversationId={detail.conversation.id}
                         onOpen={onReference}
                       />
                     ))}

@@ -237,10 +237,21 @@ test("approval refreshes the visual project in place; pasted attachments and dra
   const reasoning = pane.locator(".amadeus-reasoning-summary");
   await reasoning.locator("summary").click();
   await composer.fill("待发送草稿");
-  await composer.evaluate((element) => {
+  await composer.evaluate(async (element) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 160;
+    canvas.height = 90;
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#d86749";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const image = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob((blob) =>
+        blob ? resolve(blob) : reject(new Error("无法创建图片")),
+      ),
+    );
     const data = new DataTransfer();
     data.items.add(
-      new File([new Uint8Array([137, 80, 78, 71])], "image.png", {
+      new File([image], "image.png", {
         type: "image/png",
       }),
     );
@@ -259,6 +270,23 @@ test("approval refreshes the visual project in place; pasted attachments and dra
   await expect(pane.locator(".amadeus-pending-refs .amadeus-ref")).toHaveCount(
     2,
   );
+  const imageButton = pane.getByRole("button", {
+    name: /^放大图片：剪贴图像-/,
+  });
+  const thumbnail = imageButton.locator("img");
+  await expect(thumbnail).toHaveJSProperty("naturalWidth", 160);
+  const thumbnailWidth = (await thumbnail.boundingBox())!.width;
+  await expect(
+    pane.getByRole("button", { name: "查看引用：fixture.txt" }),
+  ).toBeVisible();
+  await imageButton.click();
+  const imageDialog = page.getByRole("dialog", { name: /^剪贴图像-/ });
+  const enlarged = imageDialog.getByRole("img");
+  await expect(enlarged).toHaveJSProperty("naturalWidth", 160);
+  expect((await enlarged.boundingBox())!.width).toBeGreaterThan(thumbnailWidth);
+  await page.keyboard.press("Escape");
+  await expect(imageDialog).toHaveCount(0);
+  await expect(imageButton).toBeFocused();
   await expect(composer).toHaveValue("待发送草稿");
   await page.evaluate(
     () => (document.body.dataset.testContinuity = "same-document"),
@@ -301,6 +329,7 @@ test("approval refreshes the visual project in place; pasted attachments and dra
   await expect(pane.locator(".amadeus-pending-refs .amadeus-ref")).toHaveCount(
     2,
   );
+  await expect(thumbnail).toHaveJSProperty("naturalWidth", 160);
   await expect(pane.getByText("已执行 · 收到回执")).toBeVisible();
   await expect(transcript).toHaveText(
     completedText.replace(/\s+/g, " ").trim(),

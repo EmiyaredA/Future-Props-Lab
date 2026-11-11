@@ -45,6 +45,9 @@ from studio.apps.model_service.transport.website.models import (
     suppliers,
 )
 from studio.apps.model_service.transport.website.quotas import router as quotas_router
+from studio.apps.model_service.transport.website.video_enhancement import (
+    router as video_enhancement_router,
+)
 from studio.apps.motion_compositor.transport.website.compatibility import (
     router as motion_compositor_router,
 )
@@ -70,9 +73,6 @@ from studio.apps.visual_workshop.acceptance.routes import router as visual_accep
 from studio.apps.visual_workshop.acceptance.standard_routes import router as visual_standard_router
 from studio.apps.visual_workshop.generation_routes import router as visual_generation_records_router
 from studio.apps.visual_workshop.transport.website import router as visual_workshop_router
-from studio.apps.visual_workshop.transport.website.assistant import (
-    router as visual_assistant_router,
-)
 from studio.apps.visual_workshop.transport.website.generation import (
     router as visual_generation_router,
 )
@@ -83,6 +83,7 @@ from studio.assembly.website.cloud_control import router as cloud_control_router
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(cloud_control_router)
 api_router.include_router(local_models_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(video_enhancement_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(interview_assistant_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(external_connections_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(article_sync_router, dependencies=[Depends(require_studio_auth)])
@@ -140,9 +141,6 @@ api_router.include_router(
 )
 api_router.include_router(
     visual_outputs_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
-)
-api_router.include_router(
-    visual_assistant_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 api_router.include_router(
     visual_generation_router, dependencies=[Depends(require_studio_auth), ModelCapacity]

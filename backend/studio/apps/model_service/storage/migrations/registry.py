@@ -18,6 +18,10 @@ from studio.apps.model_service.storage.migrations.versions.v0017 import SQL as S
 from studio.apps.model_service.storage.migrations.versions.v0018 import SQL as SQL_0018
 from studio.apps.model_service.storage.migrations.versions.v0019 import SQL as VISUAL_ASSISTANT_RUNS
 from studio.apps.model_service.storage.migrations.versions.v0020 import SQL as ASSISTANT_ATTRIBUTION
+from studio.apps.model_service.storage.migrations.versions.v0021 import (
+    SQL as RETIRE_VISUAL_DIALOGUE,
+)
+from studio.apps.model_service.storage.migrations.versions.v0022 import SQL as VIDEO_ENHANCEMENT
 from studio.runtime.database.migrations import Migration
 
 MIGRATIONS = (
@@ -41,4 +45,6 @@ MIGRATIONS = (
     Migration("0018_visual_model_reviews", SQL_0018),
     Migration("0019_visual_assistant_model_runs", VISUAL_ASSISTANT_RUNS),
     Migration("0020_visual_assistant_attribution", ASSISTANT_ATTRIBUTION),
+    Migration("0021_retire_visual_conversations", RETIRE_VISUAL_DIALOGUE),
+    Migration("0022_video_enhancement", VIDEO_ENHANCEMENT),
 )

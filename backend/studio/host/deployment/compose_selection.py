@@ -48,7 +48,6 @@ FEATURE_FILES = (
     ("galgame-snapshots", ("galgame",), ("FPL_GALGAME_ARCHIVE_KEY",)),
     ("visual-snapshots", ("visual",), ("FPL_VISUAL_ARCHIVE_KEY",)),
     ("visual-generation", ("visual", "models"), ("FPL_VISUAL_GENERATION_KEY",)),
-    ("visual-assistant", ("visual", "models"), ("FPL_VISUAL_ASSISTANT_SETTLEMENT_KEY",)),
     (
         "video-visual-handoff",
         ("video", "visual"),

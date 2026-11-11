@@ -9,12 +9,26 @@
   width: 12px;
   height: 12px;
   padding: 0;
-  border: 2px solid var(--accent);
-  background: var(--surface);
+  border: 0;
+  background: transparent;
   border-radius: 3px;
   pointer-events: auto;
   cursor: move;
   touch-action: none;
+}
+/* Keep the drag target larger than its visible mark. */
+.presentation-connection-handle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--surface);
 }
 .presentation-connection-handle.source,
 .presentation-connection-handle.target {
@@ -23,10 +37,27 @@
   border-radius: 50%;
   cursor: crosshair;
 }
+.presentation-connection-handle:is(.source, .target)::before {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
 .presentation-connection-handle.segment,
 .presentation-connection-handle.move {
   width: 10px;
   height: 10px;
+}
+.presentation-connection-handle:is(.segment, .move)::before {
+  width: 4px;
+  height: 4px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 65%, var(--surface));
+}
+.presentation-connection-handle.move:not(:hover, :focus-visible)::before {
+  opacity: 0;
+}
+.presentation-connection-handle:is(:hover, :focus-visible)::before {
   background: var(--accent);
 }
 .presentation-connection-handle:focus-visible {

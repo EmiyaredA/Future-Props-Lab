@@ -19,6 +19,7 @@ ModelCapability = Literal[
     "tools",
     "image_generation",
     "video_generation",
+    "video_enhancement",
     "speech_recognition",
     "voice",
     "audio_generation",
@@ -30,6 +31,7 @@ ModelCategory = Literal[
     "speech_recognition",
     "music_generation",
     "video_generation",
+    "video_enhancement",
     "image_generation",
     "end_to_end_speech",
 ]
@@ -71,7 +73,9 @@ class ProviderIn(BaseModel):
 
     @model_validator(mode="after")
     def valid_base_url(self) -> ProviderIn:
-        if self.kind == "local_qwen_tts" and (self.base_url.strip() or self.api_key.strip()):
+        if self.kind in {"local_qwen_tts", "local_relayvsr", "local_ffmpeg"} and (
+            self.base_url.strip() or self.api_key.strip()
+        ):
             raise ValueError("托管本地模型不接受服务地址或 API Key")
         if self.kind == "autodl_video" and not self.base_url.strip():
             self.base_url = "https://www.autodl.art"

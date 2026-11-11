@@ -19,6 +19,7 @@ import {
   providerBaseUrlPlaceholder,
   providerKindOptions,
 } from "./catalogOptions";
+import { providerMetadata } from "@features/models/metadata";
 import type { ModelInput } from "@features/models/api";
 import { CatalogDialog } from "./CatalogDialog";
 import {
@@ -41,6 +42,7 @@ const capabilityIcons = {
   tools: Wrench,
   image_generation: Image,
   video_generation: Video,
+  video_enhancement: Video,
   audio_generation: Music2,
   speech_recognition: Mic,
   voice: AudioLines,
@@ -113,17 +115,28 @@ export function ProviderForm({
           ariaLabel="接入协议"
           value={kind}
           disabled={!editable("kind")}
-          options={providerKindOptions}
+          options={
+            ["local_relayvsr", "local_ffmpeg"].includes(kind)
+              ? [
+                  ...providerKindOptions,
+                  { value: kind, label: providerMetadata[kind].optionLabel },
+                ]
+              : providerKindOptions
+          }
           onChange={(next) => {
             setKind(next as typeof kind);
-            if (next === "local_qwen_tts") {
+            if (
+              ["local_qwen_tts", "local_relayvsr", "local_ffmpeg"].includes(
+                next,
+              )
+            ) {
               setBaseUrl("");
               setApiKey("");
             }
           }}
         />
       </label>
-      {kind !== "local_qwen_tts" && (
+      {!["local_qwen_tts", "local_relayvsr", "local_ffmpeg"].includes(kind) && (
         <>
           <label>
             <span>服务地址</span>
@@ -162,8 +175,8 @@ export function ProviderForm({
           </label>
         </>
       )}
-      {kind === "local_qwen_tts" && (
-        <p>本机托管连接，由“本地语音模型”管理安装和运行，无需 API Key。</p>
+      {["local_qwen_tts", "local_relayvsr", "local_ffmpeg"].includes(kind) && (
+        <p>本机托管连接，由「本地模型」管理安装和运行，无需 API Key。</p>
       )}
       {initial?.origin === "role_template" && (
         <p className="mc-help">平台模板管理的字段在当前账号只读。</p>
@@ -222,6 +235,8 @@ export function ModelForm({
     zealman_video: ["video_generation"],
     autodl_video: ["video_generation"],
     local_qwen_tts: ["speech_synthesis"],
+    local_relayvsr: ["video_enhancement"],
+    local_ffmpeg: ["video_enhancement"],
     senseaudio_asr: ["speech_recognition"],
     senseaudio_asr_pro: ["speech_recognition"],
     senseaudio_realtime: ["voice"],

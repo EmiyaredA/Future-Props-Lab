@@ -33,7 +33,7 @@ from studio.apps.model_service.storage.native_records import (
 )
 from studio.apps.model_service.storage.service_models import TaskAuthorization
 from studio.apps.model_service.storage.task_records import task_fingerprint
-from studio.config.local_models import definition, manifest
+from studio.config.local_models import LOCAL_VIDEO_MODEL_IDS, definition, manifest
 from studio.contracts.identity.claims import verify_context
 from studio.contracts.model_service.model_native import (
     OPERATIONS,
@@ -157,6 +157,7 @@ class NativeModelBroker(PollingTaskRunner):
                 items=[
                     self._output(model, rows.get(model["id"]), state)
                     for model in manifest()["models"]
+                    if model["id"] not in LOCAL_VIDEO_MODEL_IDS
                 ],
             )
 
@@ -221,6 +222,8 @@ class NativeModelBroker(PollingTaskRunner):
         return row
 
     async def action(self, model_id, body, *, authorization=None):
+        if model_id in LOCAL_VIDEO_MODEL_IDS:
+            raise OperationError("视频增强仅在桌面本机提供", "unsupported_platform", 409)
         model = definition(model_id)
         path = "/v1/platform/local-models/" + model_id + "/actions"
         if authorization is None or authorization.method != "POST" or authorization.path != path:
@@ -702,6 +705,8 @@ class DisconnectedNativeModels:
     async def list(self, can_manage=False):
         items = []
         for model in manifest()["models"]:
+            if model["id"] in LOCAL_VIDEO_MODEL_IDS:
+                continue
             size = sum(part["size"] for part in model["files"])
             items.append(
                 LocalModelOut(

@@ -63,13 +63,16 @@ export function Connections({
                 <path d="M0,0 L8,4 L0,8 Z" fill={edge.color ?? "#365F62"} />
               </marker>
             </defs>
-            {selected === edge.id && (
+            {(onSelect || selected === edge.id) && (
               <path
+                className="presentation-connection-highlight"
+                data-selected={selected === edge.id}
                 d={d}
                 fill="none"
                 stroke="var(--accent)"
-                strokeOpacity="0.3"
-                strokeWidth={(edge.width ?? 2) + 8}
+                strokeWidth={(edge.width ?? 2) + 4}
+                strokeLinejoin="round"
+                aria-hidden="true"
               />
             )}
             <path
@@ -95,6 +98,7 @@ export function Connections({
             )}
             {onSelect && (
               <path
+                className="presentation-connection-hit"
                 d={d}
                 fill="none"
                 stroke="transparent"
@@ -104,11 +108,21 @@ export function Connections({
                   e.stopPropagation();
                   onSelect(edge.id);
                   onMoveStart?.(e, edge);
+                  // Dragging can focus the SVG hit area programmatically.
+                  const hit = e.currentTarget;
+                  hit.toggleAttribute(
+                    "data-pointer-focus",
+                    hit === hit.ownerDocument.activeElement,
+                  );
                 }}
+                onBlur={(e) =>
+                  e.currentTarget.removeAttribute("data-pointer-focus")
+                }
                 role="button"
                 tabIndex={0}
                 aria-label={`编辑连接${edge.label || edge.id}`}
                 onKeyDown={(e) => {
+                  e.currentTarget.removeAttribute("data-pointer-focus");
                   onMoveKey?.(e, edge);
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();

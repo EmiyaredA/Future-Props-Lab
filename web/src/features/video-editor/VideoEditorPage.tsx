@@ -28,7 +28,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { operationsForAsset, newTrack, snapUs, frameUs } from "./editorModel";
+import { operationsForAsset, newTrack, snapUs } from "./editorModel";
 import { VideoEditorAssetPanel } from "./VideoEditorAssetPanel";
 import { VideoEditorBatchInspector } from "./VideoEditorBatchInspector";
 import { VideoEditorExportDialog } from "./VideoEditorExportDialog";
@@ -53,12 +53,8 @@ import {
   timelineZoomMinimum,
 } from "./timelineScale";
 import { useVideoEditor } from "./useVideoEditor";
-import {
-  parseSubtitleFile,
-  subtitleImportOperations,
-  type SubtitleParseResult,
-  type SubtitleTimingMode,
-} from "./subtitleImport";
+import { useSubtitleImport } from "./useSubtitleImport";
+import { prepareAssetBatch } from "./assetBatch";
 import type { VideoEditorAsset, VideoEditorClip } from "./types";
 import "./video-editor.css";
 import "./video-editor-workspace.css";
@@ -104,12 +100,15 @@ export function VideoEditorPage({
   const [previewingAssetId, setPreviewingAssetId] = useState<string>();
   const [contentViewportWidthPx, setContentViewportWidthPx] = useState(0);
   const timelineScroller = useRef<HTMLDivElement>(null);
-  const [subtitleImport, setSubtitleImport] = useState<{
-    fileName: string;
-    result?: SubtitleParseResult;
-    error?: string;
-  }>();
-  const [subtitleImportPending, setSubtitleImportPending] = useState(false);
+  const subtitles = useSubtitleImport({
+    projectId,
+    playheadUs: editor.playheadUs,
+    commit: editor.commit,
+    onCommitted: (clipId) => {
+      selectClip(clipId);
+      setMobilePanel("inspector");
+    },
+  });
   const {
     zoom: editorZoom,
     setZoom: editorSetZoom,
@@ -296,50 +295,6 @@ export function VideoEditorPage({
     );
     editor.setTimelineScrollLeft(0);
   };
-  const handleSubtitleFile = (file: File) => {
-    setSubtitleImport({ fileName: file.name });
-    void parseSubtitleFile(file)
-      .then((result) => setSubtitleImport({ fileName: file.name, result }))
-      .catch((error) =>
-        setSubtitleImport({
-          fileName: file.name,
-          error: error instanceof Error ? error.message : "字幕文件解析失败",
-        }),
-      );
-  };
-  const confirmSubtitleImport = async (mode: SubtitleTimingMode) => {
-    const result = subtitleImport?.result;
-    if (!result?.cues.length) return;
-    setSubtitleImportPending(true);
-    try {
-      const playheadUs = editor.playheadUs;
-      let clipId: string | undefined;
-      await editor.commit((current) => {
-        const operations = subtitleImportOperations(
-          result.cues,
-          current.document.tracks ?? [],
-          playheadUs,
-          mode,
-        );
-        clipId = operations.track.clips?.[0]?.id;
-        return operations;
-      });
-      setSubtitleImport(undefined);
-      selectClip(clipId);
-      setMobilePanel("inspector");
-    } catch (error) {
-      setSubtitleImport((current) =>
-        current
-          ? {
-              ...current,
-              error: error instanceof Error ? error.message : "字幕导入失败",
-            }
-          : current,
-      );
-    } finally {
-      setSubtitleImportPending(false);
-    }
-  };
   const fps = timeline.document.settings?.fps ?? 30;
   const addAsset = (
     asset: VideoEditorAsset,
@@ -365,58 +320,10 @@ export function VideoEditorPage({
       };
     });
   };
-  const addAssetBatch = async (selectedAssets: VideoEditorAsset[]) => {
-    if (selectedAssets.length > 100)
-      throw new Error("每次最多添加 100 个素材到时间线");
-    const playheadUs = editor.playheadUs;
-    await editor.commit((current) => {
-      const tracks = current.document.tracks ?? [];
-      const fps = current.document.settings?.fps ?? 30;
-      const nextFrame = (value: number) =>
-        Math.ceil(value / frameUs(fps)) * frameUs(fps);
-      let cursor = nextFrame(
-        Math.max(
-          playheadUs,
-          ...tracks.flatMap((track) =>
-            (track.clips ?? []).map(
-              (clip) => clip.timelineStartUs + clip.durationUs,
-            ),
-          ),
-        ),
-      );
-      const operations = selectedAssets.flatMap((asset) => {
-        const next = operationsForAsset(asset, tracks, cursor);
-        if (!next.length)
-          throw new Error(`“${asset.displayName}”无法添加到当前轨道`);
-        const clip = next.find(
-          (operation) => operation.type === "addClip",
-        )?.clip;
-        cursor = nextFrame(cursor + (clip?.durationUs ?? 0));
-        return next;
-      });
-      if (
-        !operations.length ||
-        operations.length > 200 ||
-        operations.length < selectedAssets.length ||
-        operations.some(
-          (operation) =>
-            operation.type === "addClip" &&
-            tracks.find((track) => track.id === operation.clip.trackId)?.locked,
-        )
-      )
-        throw new Error(
-          "所选素材无法添加到当前轨道，请检查素材类型和轨道锁定状态",
-        );
-      return {
-        redo: operations,
-        undo: operations
-          .filter((operation) => operation.type === "addClip")
-          .map((operation) => ({
-            type: "removeClip" as const,
-            clipId: operation.clip.id,
-          })),
-      };
-    });
+  const addAssetBatch = async (assets: VideoEditorAsset[]) => {
+    await editor.commit(
+      prepareAssetBatch(assets, editor.playheadUs, () => crypto.randomUUID()),
+    );
   };
   const addGenerated = (
     kind: "text" | "color",
@@ -578,7 +485,7 @@ export function VideoEditorPage({
             projectId={projectId}
             assets={assets}
             organization={timeline.document.assetOrganization}
-            disabled={editor.saving || subtitleImportPending}
+            disabled={editor.saving || subtitles.pending}
             previewingAssetId={previewingAssetId}
             onPreview={(asset) => {
               editor.setPlaying(false);
@@ -589,7 +496,7 @@ export function VideoEditorPage({
             onAddBatch={addAssetBatch}
             onTimelineAssetDrag={setDraggingAsset}
             onAddGenerated={addGenerated}
-            onImportSubtitles={handleSubtitleFile}
+            onImportSubtitles={subtitles.read}
             onOrganizationChange={(organization) =>
               editor.commit(
                 [{ type: "setAssetOrganization", organization }],
@@ -992,17 +899,8 @@ export function VideoEditorPage({
             }}
           />
         ) : null}
-        {subtitleImport ? (
-          <VideoEditorSubtitleImportDialog
-            fileName={subtitleImport.fileName}
-            result={subtitleImport.result}
-            error={subtitleImport.error}
-            pending={subtitleImportPending}
-            onCancel={() => {
-              if (!subtitleImportPending) setSubtitleImport(undefined);
-            }}
-            onConfirm={(mode) => void confirmSubtitleImport(mode)}
-          />
+        {subtitles.dialog ? (
+          <VideoEditorSubtitleImportDialog {...subtitles.dialog} />
         ) : null}
       </div>
     </div>

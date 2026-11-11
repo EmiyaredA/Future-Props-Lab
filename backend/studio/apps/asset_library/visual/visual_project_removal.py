@@ -1,6 +1,6 @@
 """Delete project-owned folders and originals after the Visual source commits."""
 
-from sqlalchemy import and_, delete, or_, select
+from sqlalchemy import delete, or_, select
 
 from studio.apps.asset_library.scoped_project_files import remove_files
 from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
@@ -14,29 +14,21 @@ from studio.apps.asset_library.storage.service_models import (
 from studio.contracts.asset_library.errors import AssetError
 
 
-def project_children(projection, identities):
+def project_children(projection):
     return select(AssetReferenceSet.id).where(
         AssetReferenceSet.owner_user_id == projection.owner_user_id,
         AssetReferenceSet.service_id == "visual",
+        AssetReferenceSet.resource_kind == "acceptance",
         or_(
-            and_(
-                AssetReferenceSet.resource_kind == "conversation",
-                AssetReferenceSet.resource_id.in_(identities),
-            ),
-            and_(
-                AssetReferenceSet.resource_kind == "acceptance",
-                or_(
-                    AssetReferenceSet.resource_id == projection.resource_id,
-                    AssetReferenceSet.scope_project_id == projection.resource_id,
-                ),
-            ),
+            AssetReferenceSet.resource_id == projection.resource_id,
+            AssetReferenceSet.scope_project_id == projection.resource_id,
         ),
         AssetReferenceSet.deleted.is_(False),
     )
 
 
-async def prepare(session, projection, identities):
-    children = project_children(projection, identities)
+async def prepare(session, projection):
+    children = project_children(projection)
     if (
         await session.scalar(
             select(ReferenceIntent.id)
@@ -48,32 +40,7 @@ async def prepare(session, projection, identities):
         )
         is not None
     ):
-        raise AssetError("对话引用尚未结算", code="project_references_pending", status=409)
-    if (
-        await session.scalar(
-            select(ReferenceIntent.id)
-            .where(
-                ReferenceIntent.reference_set_id.in_(children),
-                ReferenceIntent.prepared_result["visual_conversation_project"].as_string()
-                != projection.resource_id,
-            )
-            .limit(1)
-        )
-        is not None
-    ):
-        raise AssetError("对话不属于当前项目", code="project_conversation_scope", status=409)
-    if (
-        await session.scalar(
-            select(AssetReferenceSet.id)
-            .where(
-                AssetReferenceSet.id.in_(children),
-                AssetReferenceSet.scope_project_id != projection.resource_id,
-            )
-            .limit(1)
-        )
-        is not None
-    ):
-        raise AssetError("对话不属于当前项目", code="project_conversation_scope", status=409)
+        raise AssetError("项目验收引用尚未结算", code="project_references_pending", status=409)
     originals = select(VisualAsset.id).where(
         VisualAsset.owner_user_id == projection.owner_user_id,
         VisualAsset.project_id == projection.resource_id,
@@ -95,11 +62,9 @@ async def prepare(session, projection, identities):
             raise AssetError("项目原件仍被其他业务引用", code="asset_in_use", status=409)
 
 
-async def commit(session, projection, identities):
+async def commit(session, projection):
     for child in await session.scalars(
-        select(AssetReferenceSet).where(
-            AssetReferenceSet.id.in_(project_children(projection, identities))
-        )
+        select(AssetReferenceSet).where(AssetReferenceSet.id.in_(project_children(projection)))
     ):
         await session.execute(
             delete(AssetReferencePin).where(AssetReferencePin.reference_set_id == child.id)

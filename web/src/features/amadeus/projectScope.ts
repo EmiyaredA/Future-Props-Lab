@@ -89,10 +89,7 @@ export function projectFromContext(
     };
 }
 
-function projectContext(
-  project: ProjectReference,
-  owner: string,
-): Context {
+function projectContext(project: ProjectReference, owner: string): Context {
   const workshop = workshopProjects.find(
     (item) => item.resource === project.resource,
   )!;

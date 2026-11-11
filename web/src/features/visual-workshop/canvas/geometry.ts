@@ -28,7 +28,6 @@ export const NODE_DRAG_BLOCKER_SELECTOR = [
   "[contenteditable='true']",
   ".canvas-node-port",
   ".canvas-node-inspector",
-  ".project-assistant-panel",
 ].join(",");
 
 export function readViewport(projectId: string): Viewport {

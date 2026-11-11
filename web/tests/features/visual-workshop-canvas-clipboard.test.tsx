@@ -47,22 +47,14 @@ vi.mock("@features/visual-workshop/api", async () => {
   >("@features/visual-workshop/api");
   return {
     ...actual,
-    createVisualAssistantConversation: vi.fn(),
     createGenerationTask: vi.fn(),
-    deleteVisualAssistantConversation: vi.fn(),
     getGenerationOptions: vi.fn(),
     getGenerationTask: vi.fn(),
     getGenerationTasks: vi.fn(),
-    getVisualAssistantConversation: vi.fn(),
-    getVisualAssistantConversations: vi.fn(),
-    getVisualAssistantModels: vi.fn(),
     getVisualCanvas: vi.fn(),
     getVisualWorkshopProject: vi.fn(),
-    patchVisualAssistantConversation: vi.fn(),
     patchVisualWorkshopProject: vi.fn(),
     putVisualCanvas: vi.fn(),
-    resolveVisualAssistantApproval: vi.fn(),
-    streamVisualAssistant: vi.fn(),
   };
 });
 vi.mock("@platform/api/client", async () => {

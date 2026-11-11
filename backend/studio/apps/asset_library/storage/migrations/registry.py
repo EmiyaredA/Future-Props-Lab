@@ -19,6 +19,9 @@ from studio.apps.asset_library.storage.migrations.versions.v0016 import SQL as S
 from studio.apps.asset_library.storage.migrations.versions.v0017 import SQL as SQL_0017
 from studio.apps.asset_library.storage.migrations.versions.v0018 import SQL as SQL_0018
 from studio.apps.asset_library.storage.migrations.versions.v0019 import SQL as SQL_0019
+from studio.apps.asset_library.storage.migrations.versions.v0020 import (
+    SQL as RETIRE_VISUAL_DIALOGUE,
+)
 from studio.runtime.database.migrations import Migration
 
 MIGRATIONS = (
@@ -41,4 +44,5 @@ MIGRATIONS = (
     Migration("0017_visual_upload_staging", SQL_0017),
     Migration("0018_visual_conversation_scopes", SQL_0018),
     Migration("0019_visual_archive_staging", SQL_0019),
+    Migration("0020_retire_visual_conversations", RETIRE_VISUAL_DIALOGUE),
 )

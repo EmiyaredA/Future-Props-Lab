@@ -8,6 +8,10 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from studio.contracts.agent_runtime.catalog import TokenUsage, TurnOptions
 
+IMAGE_ATTACHMENT_EXTENSIONS = frozenset(
+    {".avif", ".bmp", ".gif", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
+)
+
 _ELEMENT_KINDS = {
     "visual": {"node"},
     "video": {"clip"},

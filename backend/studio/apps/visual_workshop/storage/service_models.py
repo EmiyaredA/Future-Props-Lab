@@ -20,16 +20,11 @@ from studio.apps.visual_workshop.acceptance.models import (
     NodeAcceptanceBinding,
 )
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
-from studio.apps.visual_workshop.storage.assistant_dispatch_records import VisualAssistantDispatch
 from studio.apps.visual_workshop.storage.generation_dispatch_records import (
     VisualGenerationDecision,
     VisualGenerationDispatch,
 )
 from studio.apps.visual_workshop.storage.models import (
-    VisualAssistantAction,
-    VisualAssistantConversation,
-    VisualAssistantMessage,
-    VisualAssistantMessageAsset,
     VisualCanvasDocument,
     VisualGenerationBatch,
     VisualGenerationTask,
@@ -104,7 +99,6 @@ class VisualCompositionDispatch(CanvasRetentionBase):
 
 
 MODELS = (
-    VisualAssistantDispatch,
     VisualReviewDispatch,
     VisualGenerationDecision,
     VisualGenerationDispatch,
@@ -122,10 +116,6 @@ MODELS = (
     VisualCanvasDocument,
     VisualGenerationTask,
     VisualGenerationBatch,
-    VisualAssistantConversation,
-    VisualAssistantMessage,
-    VisualAssistantMessageAsset,
-    VisualAssistantAction,
     VisualNodeOutput,
     VisualCertificationReceipt,
     VisualCanvasReferenceMutation,

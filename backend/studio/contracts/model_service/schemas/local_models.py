@@ -15,6 +15,7 @@ class LocalModelActionIn(BaseModel):
 class LocalModelOut(BaseModel):
     id: str
     label: str
+    capability: Literal["speech_synthesis", "video_enhancement"] = "speech_synthesis"
     repository: str
     license: str
     model_revision: str

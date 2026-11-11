@@ -23,7 +23,6 @@ import {
   Video,
 } from "lucide-react";
 import { uploadManagedFile } from "@features/files";
-import { ProjectAssistantPanel } from "@features/visual-workshop/assistant/ProjectAssistantPanel";
 import { CanvasAssetsDrawer } from "@features/visual-workshop/canvas/CanvasAssetsDrawer";
 import { CanvasNodeInspector } from "@features/visual-workshop/canvas/CanvasNodeInspector";
 import { CanvasEdgeLayer } from "@features/visual-workshop/canvas/CanvasEdgeLayer";
@@ -109,8 +108,6 @@ export function VisualWorkshopCanvasView({
     setContextMenu,
     assetsOpen,
     setAssetsOpen,
-    assistantOpen,
-    setAssistantOpen,
     assetTab,
     setAssetTab,
     assetView,
@@ -237,7 +234,7 @@ export function VisualWorkshopCanvasView({
   );
 
   return (
-    <div className={`visual-canvas${assistantOpen ? " has-assistant" : ""}`}>
+    <div className="visual-canvas">
       <TransferFeedback progress={activeTransferProgress} />
 
       <div
@@ -267,7 +264,6 @@ export function VisualWorkshopCanvasView({
           title={title}
           editingTitle={editingTitle}
           saveState={saveState}
-          assistantOpen={assistantOpen}
           assetsOpen={assetsOpen}
           createMenuOpen={!!contextMenu}
           onBack={onBack}
@@ -313,15 +309,7 @@ export function VisualWorkshopCanvasView({
               viewportAnchor: true,
             });
           }}
-          onToggleAssistant={() => {
-            if (innerWidth <= 1200) {
-              setAssetsOpen(false);
-              setSelectedId(undefined);
-            }
-            setAssistantOpen((value) => !value);
-          }}
           onToggleAssets={() => {
-            if (innerWidth <= 1200) setAssistantOpen(false);
             setSelectedId(undefined);
             setAssetsOpen((value) => !value);
           }}
@@ -700,12 +688,6 @@ export function VisualWorkshopCanvasView({
           onClose={() => setAssetsOpen(false)}
         />
       ) : null}
-      <ProjectAssistantPanel
-        projectId={projectId}
-        open={assistantOpen}
-        onClose={() => setAssistantOpen(false)}
-        prepareCanvas={prepareCanvasForAgent}
-      />
       {previewNode ? (
         <CanvasMediaPreviewDialog
           key={previewNode.id}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { prepareAssetBatch } from "@features/video-editor/assetBatch";
 import {
   audioSeamGainAt,
   clipAudioGainAt,
@@ -452,4 +453,55 @@ describe("video editor timeline model", () => {
       ),
     ).toBe(false);
   });
+});
+
+it("appends linked clips at consecutive frames and builds undo for each new clip", () => {
+  let id = 0;
+  const nextId = () => `generated-${++id}`;
+  const frame = frameUs(30);
+  const asset = { ...video, probe: { durationUs: 240 * frame } };
+  const timeline: VideoEditorTimeline = {
+    document: { schemaVersion: "1.0", tracks },
+    projectId: "project",
+    revision: 1,
+    updatedAt: "",
+  };
+  const batch = prepareAssetBatch(
+    [asset, asset],
+    120 * frame,
+    nextId,
+  )(timeline);
+  const clips = batch.redo.flatMap((op) =>
+    op.type === "addClip" ? [op.clip] : [],
+  );
+  expect(clips.map(({ timelineStartUs }) => timelineStartUs)).toEqual([
+    120 * frame,
+    120 * frame,
+    360 * frame,
+    360 * frame,
+  ]);
+  expect(clips[0]?.linkGroupId).toBe(clips[1]?.linkGroupId);
+  expect(clips[0]?.linkGroupId).not.toBe(clips[2]?.linkGroupId);
+  expect(batch.undo).toEqual(
+    clips.map(({ id }) => ({ type: "removeClip", clipId: id })),
+  );
+  expect(() =>
+    prepareAssetBatch(
+      [video],
+      0,
+      nextId,
+    )({
+      ...timeline,
+      document: {
+        ...timeline.document,
+        tracks: tracks.map((track) => ({
+          ...track,
+          locked: track.kind === "audio",
+        })),
+      },
+    }),
+  ).toThrow("轨道锁定");
+  expect(() => prepareAssetBatch(Array(101).fill(video), 0, nextId)).toThrow(
+    "100",
+  );
 });

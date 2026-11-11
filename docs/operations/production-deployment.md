@@ -40,6 +40,9 @@ HTML 回退仅适用于页面导航，未知 API 和缺失程序资源返回原�
 
 - 网站 SQLite 默认位于 `.runtime/future-props.db`。用 `npm run db:migrate:check` 查看迁移状态。
   待执行迁移先在隔离库验证并定稿，停机备份后显式执行 `npm run db:migrate`，再启动正式网站。
+- `0126_retire_visual_conversations` 永久清理兼容网站的旧视觉对话、附件引用、审批和该助手的模型日志。先在旧版本完成或取消旧对话并正常结算，再停机备份数据库；迁移报 `unsettled = 0` 时停止切换，回到旧版本完成结算后重试。独立部署还需按[服务迁移顺序](independent-services.md)统一升级。
+- `0127_video_enhancement` 新增本地视频增强任务与片段检查点表。RelayVSR 入口要求目标 Mac 的 Metal 验收报告和固定运行时。
+- `0128_local_video_providers` 扩展桌面模型目录的接入类型。FFmpeg 快版要求桌面进程可通过 PATH 调用支持 VideoToolbox 的 FFmpeg 和 ffprobe。
 - Schema 由 `db/migrations/` 维护。只在 `versions/` 追加迁移并更新 `registry.py`。已登记的 ID、顺序、SQL 和 checksum 保持完整。
   Schema 或持久化兼容性变更同步更新 ORM、注册表、测试和数据／API 文档。迁移包独立于应用运行时，可执行 schema 所需的
   确定性数据变换。日常数据管理走正式 API。禁止绕过应用写入持久数据库或手工伪造迁移状态。

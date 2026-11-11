@@ -8,7 +8,7 @@ from starlette.background import BackgroundTask
 
 from studio.apps.visual_workshop.schemas.workshop import VisualProjectSnapshotImportOut
 from studio.apps.visual_workshop.snapshots.snapshot_exports import SnapshotExports
-from studio.contracts.visual_workshop.visual_assistant import SOURCE
+from studio.contracts.visual_workshop.visual_paths import SOURCE
 from studio.runtime.files.project_archives import ProjectSnapshotError
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 

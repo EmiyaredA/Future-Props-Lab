@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, renderHook, screen } from "@testing-library/react";
+import { useSubtitleImport } from "@features/video-editor/useSubtitleImport";
 import userEvent from "@testing-library/user-event";
 import { VideoEditorSubtitleImportDialog } from "@features/video-editor/VideoEditorSubtitleImportDialog";
 import {
@@ -200,4 +201,39 @@ describe("字幕导入预览", () => {
       screen.getByRole("button", { name: "导入 0 条字幕" }),
     ).toBeDisabled();
   });
+});
+
+it("ignores a previous subtitle parse after choosing a replacement and cancelling it", async () => {
+  const view = renderHook(() =>
+    useSubtitleImport({
+      projectId: "project",
+      playheadUs: 0,
+      commit: vi.fn(),
+      onCommitted: vi.fn(),
+    }),
+  );
+  const first = new File([], "first.srt");
+  let finishFirst!: (text: string) => void;
+  Object.defineProperty(first, "text", {
+    value: () =>
+      new Promise<string>((resolve) => {
+        finishFirst = resolve;
+      }),
+  });
+  let pending!: Promise<void>;
+  act(() => {
+    pending = view.result.current.read(first);
+  });
+  const second = new File([], "second.srt");
+  Object.defineProperty(second, "text", {
+    value: async () => "1\n00:00:01,000 --> 00:00:02,000\n替换",
+  });
+  await act(() => view.result.current.read(second));
+  expect(view.result.current.dialog?.result?.cues[0]?.text).toBe("替换");
+  act(() => view.result.current.dialog?.onCancel());
+  await act(async () => {
+    finishFirst("1\n00:00:01,000 --> 00:00:02,000\n原文件");
+    await pending;
+  });
+  expect(view.result.current.dialog).toBeUndefined();
 });

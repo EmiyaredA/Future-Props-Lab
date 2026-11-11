@@ -8,7 +8,6 @@ import time
 
 from sqlalchemy import delete, func, select, text
 
-from studio.apps.asset_library.conversation_files import validate_retained_attachments
 from studio.apps.asset_library.galgame import galgame_file_changes
 from studio.apps.asset_library.galgame.galgame_project_removal import prepare_project_removal
 from studio.apps.asset_library.references.canvas_retention import canvas_files
@@ -116,8 +115,6 @@ class ReferenceChanges:
             review_project = evidence.project_id if evidence else change.visual_review_project
             if review_project is not None:
                 await check_project_scope(session, "visual", review_project)
-            if change.visual_conversation_project is not None:
-                await check_project_scope(session, "visual", change.visual_conversation_project)
             file_change = change.resource_kind in VIDEO_FILE_CHANGES
             if row is None:
                 if change.expected_resource_revision != -1 and not file_change:
@@ -136,10 +133,6 @@ class ReferenceChanges:
                 await session.flush()
             if row.deleted:
                 raise failure("not_found", "源资源已删除", 404)
-            if change.visual_conversation_project is not None:
-                if row.scope_project_id not in {None, change.visual_conversation_project}:
-                    raise failure("project_conversation_scope", "对话不属于当前项目")
-                row.scope_project_id = change.visual_conversation_project
             if review_project is not None:
                 if row.scope_project_id not in {None, review_project}:
                     raise failure("project_evidence_scope", "验收证据不属于当前项目")
@@ -170,9 +163,7 @@ class ReferenceChanges:
                     # Canvas without changing the set of retained originals.
                     if active:
                         raise failure("project_references_pending", "项目引用尚未结算")
-                    await visual_project_removal.prepare(
-                        session, row, change.visual_project_removal
-                    )
+                    await visual_project_removal.prepare(session, row)
             if active >= 128:
                 raise failure("reference_mutations_pending", "请先恢复未完成的引用变更")
             if service in {"motion", "video", "galgame"} and change.resource_kind == "project":
@@ -240,10 +231,6 @@ class ReferenceChanges:
                         )
                     )
                 )
-            elif requested and change.visual_conversation_project is not None:
-                present = await validate_retained_attachments(
-                    session, row, change.visual_conversation_project, requested
-                )
             elif requested and review_project is not None:
                 candidates = await scoped_assets(
                     session, review_project, requested, include_private=False
@@ -277,8 +264,6 @@ class ReferenceChanges:
                 result["galgame_project_removal"] = True
             if change.visual_project_removal is not None:
                 result["visual_project_removal"] = change.visual_project_removal
-            if change.visual_conversation_project is not None:
-                result["visual_conversation_project"] = change.visual_conversation_project
             if describe_canvas:
                 result["unavailable_asset_ids"] = sorted(unavailable)
             if community is not None or describe_story or describe_canvas:
@@ -430,7 +415,7 @@ class ReferenceChanges:
                 if (scoped_project or galgame_removal) and deleted:
                     await remove_files(session, service, row.resource_id)
                 if visual_removal is not None:
-                    await visual_project_removal.commit(session, row, visual_removal)
+                    await visual_project_removal.commit(session, row)
                 row.resource_revision = resource_revision
                 row.deleted = deleted
                 state = "committed"

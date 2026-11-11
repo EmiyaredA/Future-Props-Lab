@@ -3,7 +3,7 @@
 import re
 
 from studio.contracts.asset_library.descriptions import ID
-from studio.contracts.visual_workshop.visual_assistant import MODEL_TARGET, SOURCE, message_source
+from studio.contracts.visual_workshop.visual_paths import SOURCE
 
 GENERATION_SOURCE = "/v1/visual-workshop/generation-options"
 GENERATION_TARGET = "/_internal/v1/visual-catalog/generation-options"
@@ -30,7 +30,6 @@ def catalog_target(method, path):
     return method == "GET" and path in {
         GENERATION_TARGET,
         ACCEPTANCE_TARGET,
-        MODEL_TARGET,
         FIXED_ACCEPTANCE_TARGET,
     }
 
@@ -46,9 +45,7 @@ def visual_catalog_grant(grant):
     if grant.target_path == FIXED_ACCEPTANCE_TARGET:
         return acceptance_scheme_source(grant.source_method, grant.source_path)
     if grant.target_path == GENERATION_TARGET:
-        return (grant.source_method, grant.source_path) == ("GET", GENERATION_SOURCE) or bool(
-            message_source(grant.source_method, grant.source_path)
-        )
+        return (grant.source_method, grant.source_path) == ("GET", GENERATION_SOURCE)
     return (
         grant.source_method == "GET"
         and grant.target_path == ACCEPTANCE_TARGET

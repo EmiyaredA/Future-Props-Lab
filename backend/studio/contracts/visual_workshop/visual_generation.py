@@ -11,7 +11,6 @@ from studio.contracts.asset_library.descriptions import (
     LibraryAssetQuery,
 )
 from studio.contracts.motion_compositor.motion_preview import DIGEST, FrameFile, FrameScope, sha256
-from studio.contracts.visual_workshop.visual_assistant import approval_source
 
 MODEL = "/_internal/v1/visual-generation/models"
 MODEL_PURPOSE = "visual.generation-model.read"
@@ -56,10 +55,6 @@ def generation_source(method, path):
     )
 
 
-def generation_admission_source(method, path):
-    return generation_source(method, path) or approval_source(method, path)
-
-
 def model_target(method, path):
     return method == "POST" and re.fullmatch(rf"{MODEL}/({DIGEST})", path)
 
@@ -67,7 +62,7 @@ def model_target(method, path):
 def visual_generation_model_grant(grant):
     return bool(
         (grant.caller, grant.purpose, grant.target_service) == ("visual", MODEL_PURPOSE, "models")
-        and generation_admission_source(grant.source_method, grant.source_path)
+        and generation_source(grant.source_method, grant.source_path)
         and model_target(grant.target_method, grant.target_path)
     )
 
@@ -107,7 +102,7 @@ def generation_asset_target(method, path):
 def visual_generation_asset_grant(grant):
     if (grant.caller, grant.purpose, grant.target_service) != ("visual", ASSET_PURPOSE, "assets"):
         return False
-    source = generation_admission_source(grant.source_method, grant.source_path)
+    source = generation_source(grant.source_method, grant.source_path)
     target = generation_asset_target(grant.target_method, grant.target_path)
     return bool(source and target and source[1] == target[1])
 
@@ -126,7 +121,7 @@ def plan_target(method, path):
 def visual_generation_plan_grant(grant):
     if (grant.caller, grant.purpose, grant.target_service) != ("visual", PLAN_PURPOSE, "models"):
         return False
-    source = generation_admission_source(grant.source_method, grant.source_path)
+    source = generation_source(grant.source_method, grant.source_path)
     target = plan_target(grant.target_method, grant.target_path)
     return bool(source and target and source[1] == target[1])
 

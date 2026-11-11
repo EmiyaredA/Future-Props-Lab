@@ -102,6 +102,20 @@
   overflow: visible;
   pointer-events: none;
 }
+.presentation-connection-highlight {
+  opacity: 0;
+}
+.presentation-connection-highlight[data-selected="true"] {
+  opacity: 0.14;
+}
+.presentation-connection-hit:focus {
+  outline: none;
+}
+.presentation-connections
+  g:has(> .presentation-connection-hit:focus-visible:not([data-pointer-focus]))
+  > .presentation-connection-highlight {
+  opacity: 1;
+}
 .presentation-reference-overlay {
   position: absolute;
   inset: 0;

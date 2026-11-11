@@ -20,6 +20,7 @@ vi.mock("@features/models/localModelApi", () => ({
 }));
 const item = {
   id: "qwen3-tts-0.6b-base",
+  capability: "speech_synthesis" as const,
   label: "Qwen3-TTS 0.6B Base",
   repository: "mlx-community/test",
   license: "Apache-2.0",

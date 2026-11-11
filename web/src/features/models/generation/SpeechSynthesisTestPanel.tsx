@@ -118,6 +118,9 @@ function SpeechWorkspace({
             !draft.busy &&
             models.some((m) => m.capabilities.includes("speech_recognition")),
           synthesis: true,
+          enhancement: models.some((model) =>
+            model.capabilities.includes("video_enhancement"),
+          ),
           realtime_voice:
             !draft.busy && models.some((m) => m.capabilities.includes("voice")),
         }}

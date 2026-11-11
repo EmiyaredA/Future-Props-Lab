@@ -1,8 +1,17 @@
 import type { LocalModel } from "@features/models/localModelApi";
 import type { ModelCatalogValue } from "./catalogTypes";
 
+export function isBuiltinVideo(model: LocalModel) {
+  return model.capability === "video_enhancement" && model.download_bytes === 0;
+}
+
 export function localModelStatus(model: LocalModel) {
-  if (!model.compatible) return "平台不支持";
+  if (!model.compatible)
+    return isBuiltinVideo(model)
+      ? "环境不可用"
+      : model.capability === "video_enhancement"
+        ? "待本机验收"
+        : "平台不支持";
   if (model.status === "installed") {
     if (model.busy && model.enabled) return "正在生成";
     return model.enabled ? "已启用" : "服务已停止";
@@ -22,7 +31,11 @@ export function localModelConnection(
   modelId: string,
 ) {
   const matches = catalog.providers
-    .filter((provider) => provider.kind === "local_qwen_tts")
+    .filter((provider) =>
+      ["local_qwen_tts", "local_relayvsr", "local_ffmpeg"].includes(
+        provider.kind,
+      ),
+    )
     .flatMap((provider) =>
       provider.models
         .filter((model) => model.slug === modelId)
@@ -39,6 +52,39 @@ export function localModelNextStep(
   attached: boolean,
   connectionEnabled: boolean,
 ) {
+  if (model.capability === "video_enhancement") {
+    if (isBuiltinVideo(model) && !model.compatible)
+      return {
+        title: "本机视频增强环境不可用",
+        description:
+          "需要支持 VideoToolbox 的 FFmpeg 和 ffprobe，以及 Apple Silicon Mac（macOS 15+）。",
+      };
+    if (!model.compatible)
+      return {
+        title: "待本机 Metal 验收",
+        description: "通过实机验证后可以安装。",
+      };
+    if (model.enabled && attached && connectionEnabled)
+      return {
+        title: "已就绪，可以开始测试",
+        description: "选择 MP4 或 MOV 影片，自动分段增强到 1080p。",
+      };
+    if (model.status === "not_installed")
+      return {
+        title: "准备本地视频增强",
+        description: "按需下载 RelayVSR 权重。",
+      };
+    if (model.enabled && !attached)
+      return {
+        title: "可添加到当前空间",
+        description: "接入当前空间后可以测试视频增强。",
+      };
+    if (model.status === "installed" && !model.enabled && isBuiltinVideo(model))
+      return {
+        title: "启用后即可使用",
+        description: "使用本机 FFmpeg 放大并轻微锐化，无需下载模型权重。",
+      };
+  }
   if (!model.compatible)
     return {
       title: "当前设备暂不支持",

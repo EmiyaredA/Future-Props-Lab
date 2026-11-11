@@ -1,10 +1,11 @@
 import { LoadingState } from "@shared/ui/LoadingState";
 import "./local-models.css";
 import { useId, useState } from "react";
-import { AudioLines, ChevronRight, Info, Monitor } from "lucide-react";
+import { AudioLines, ChevronRight, Info, Monitor, Video } from "lucide-react";
 import type { Catalog } from "@features/models/api";
 import { LocalModelDetails } from "./LocalModelDetails";
 import {
+  isBuiltinVideo,
   localModelConnection,
   localModelStatus,
 } from "./localModelPresentation";
@@ -39,7 +40,7 @@ export function LocalModelsPanel({
         <Monitor size={17} aria-hidden />
         <span>
           Apple Silicon · macOS 15+
-          <span className="lm-notice-divider"> · </span>录音与生成内容在本机处理
+          <span className="lm-notice-divider"> · </span>媒体和生成内容在本机处理
         </span>
       </div>
       {query.isError && (
@@ -70,7 +71,7 @@ export function LocalModelsPanel({
           <div className="lm-workbench">
             <div className="lm-model-list">
               <fieldset>
-                <legend>可安装模型</legend>
+                <legend>本机可用能力</legend>
                 {models.map((model) => (
                   <label
                     className={`lm-model-option${selected.id === model.id ? " is-selected" : ""}`}
@@ -85,7 +86,11 @@ export function LocalModelsPanel({
                       aria-label={model.label}
                     />
                     <span className="lm-model-icon">
-                      <AudioLines size={25} aria-hidden />
+                      {model.capability === "video_enhancement" ? (
+                        <Video size={25} aria-hidden />
+                      ) : (
+                        <AudioLines size={25} aria-hidden />
+                      )}
                     </span>
                     <span className="lm-model-copy">
                       <span className="lm-model-title">
@@ -95,8 +100,9 @@ export function LocalModelsPanel({
                         )}
                       </span>
                       <span className="lm-model-meta">
-                        下载 {(model.download_bytes / 1e9).toFixed(2)} GB ·
-                        安装需 {(model.required_disk_bytes / 1e9).toFixed(1)} GB
+                        {isBuiltinVideo(model)
+                          ? "本机 FFmpeg · 免下载"
+                          : `下载 ${(model.download_bytes / 1e9).toFixed(2)} GB · 安装需 ${(model.required_disk_bytes / 1e9).toFixed(1)} GB`}
                       </span>
                       <span
                         className={`lm-status${model.status === "installed" && model.enabled && model.compatible ? " is-ready" : ""}`}

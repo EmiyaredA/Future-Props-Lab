@@ -1,63 +1,56 @@
-import type { Dispatch, MutableRefObject, SetStateAction } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { fetchApiJson, requestApi } from "@platform/api/client";
-import type {
-  ChatMessage,
-  Conversation,
-  Detail,
-  FilePreview,
-  WorkFile,
-} from "./protocol";
+import type { ChatMessage, Conversation, Detail } from "./protocol";
 import {
   conversationConflict,
   CONVERSATION_CONFLICT_MESSAGE,
 } from "./revisionConflict";
 
 type Options = {
-  detailRef: MutableRefObject<Detail | null>;
+  getDetail: () => Detail | null;
+  captureSelection: () => () => boolean;
   busy: boolean;
-  filesOpen: boolean;
   refreshList: () => Promise<Conversation[]>;
   open: (id: string) => Promise<unknown>;
   clearSelection: () => void;
-  setDetail: Dispatch<SetStateAction<Detail | null>>;
+  updateDetail: (
+    isCurrent: () => boolean,
+    update: (detail: Detail) => Detail,
+  ) => void;
   setError: Dispatch<SetStateAction<string>>;
   setRenameItem: Dispatch<SetStateAction<Conversation | null>>;
   setDeleteItem: Dispatch<SetStateAction<Conversation | null>>;
-  setFilesOpen: Dispatch<SetStateAction<boolean>>;
-  setWorkFiles: Dispatch<SetStateAction<WorkFile[]>>;
-  filePreviewRequestRef: MutableRefObject<number>;
-  setFilePreview: Dispatch<SetStateAction<FilePreview | null>>;
 };
 
 export function conversationActions(options: Options) {
   const {
-    detailRef,
+    getDetail,
+    captureSelection,
     busy,
-    filesOpen,
     refreshList,
     open,
     clearSelection,
-    setDetail,
+    updateDetail,
     setError,
     setRenameItem,
     setDeleteItem,
-    setFilesOpen,
-    setWorkFiles,
-    filePreviewRequestRef,
-    setFilePreview,
   } = options;
   const create = async () => {
+    const isCurrent = captureSelection();
     const next = await fetchApiJson<Conversation>("/v1/amadeus/conversations", {
       method: "POST",
     });
     await refreshList();
+    if (!isCurrent()) return;
     await open(next.id);
+    if (getDetail()?.conversation.id === next.id) return next.id;
   };
   const pinMessage = async (
     conversationId: string,
     messageId: string,
     pinned: boolean,
   ) => {
+    const isCurrent = captureSelection();
     const saved = await fetchApiJson<ChatMessage>(
       `/v1/amadeus/conversations/${conversationId}/messages/${messageId}/pin`,
       {
@@ -66,7 +59,7 @@ export function conversationActions(options: Options) {
         body: JSON.stringify({ pinned }),
       },
     );
-    setDetail((current) =>
+    updateDetail(isCurrent, (current) =>
       current?.conversation.id === conversationId
         ? {
             ...current,
@@ -84,6 +77,7 @@ export function conversationActions(options: Options) {
     messageId: string,
     requestId: string,
   ) => {
+    const isCurrent = captureSelection();
     const branch = await fetchApiJson<Conversation>(
       `/v1/amadeus/conversations/${conversationId}/messages/${messageId}/fork`,
       {
@@ -93,11 +87,12 @@ export function conversationActions(options: Options) {
       },
     );
     await refreshList();
-    if (detailRef.current?.conversation.id !== conversationId) return;
+    if (!isCurrent() || getDetail()?.conversation.id !== conversationId) return;
     await open(branch.id);
-    if (detailRef.current?.conversation.id === branch.id) return branch.id;
+    if (getDetail()?.conversation.id === branch.id) return branch.id;
   };
   const rename = async (item: Conversation, title: string) => {
+    const isCurrent = captureSelection();
     title = title.trim();
     if (!title || title === item.title) {
       setRenameItem(null);
@@ -116,7 +111,7 @@ export function conversationActions(options: Options) {
         setError(CONVERSATION_CONFLICT_MESSAGE);
         try {
           await refreshList();
-          if (detailRef.current?.conversation.id === item.id)
+          if (isCurrent() && getDetail()?.conversation.id === item.id)
             await open(item.id);
         } catch (refreshError) {
           setError(
@@ -129,10 +124,12 @@ export function conversationActions(options: Options) {
       return;
     }
     await refreshList();
-    if (detailRef.current?.conversation.id === item.id) await open(item.id);
+    if (isCurrent() && getDetail()?.conversation.id === item.id)
+      await open(item.id);
     setRenameItem(null);
   };
   const remove = async (item: Conversation) => {
+    const isCurrent = captureSelection();
     if (busy) {
       setError("请先停止当前任务，再删除会话和工作文件。");
       return;
@@ -149,7 +146,7 @@ export function conversationActions(options: Options) {
         setError(CONVERSATION_CONFLICT_MESSAGE);
         try {
           await refreshList();
-          if (detailRef.current?.conversation.id === item.id)
+          if (isCurrent() && getDetail()?.conversation.id === item.id)
             await open(item.id);
         } catch (refreshError) {
           setError(
@@ -162,59 +159,11 @@ export function conversationActions(options: Options) {
       return;
     }
     const next = await refreshList();
-    if (detailRef.current?.conversation.id === item.id) {
+    if (isCurrent() && getDetail()?.conversation.id === item.id) {
       if (next[0]) await open(next[0].id);
       else clearSelection();
     }
     setDeleteItem(null);
-  };
-  const showFiles = async () => {
-    setFilesOpen(!filesOpen);
-    if (filesOpen || !detailRef.current) return;
-    try {
-      const listing = await fetchApiJson<{ items: WorkFile[] }>(
-        `/v1/amadeus/conversations/${detailRef.current.conversation.id}/files`,
-      );
-      setWorkFiles(listing.items);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    }
-  };
-  const fileUrl = (item: WorkFile) =>
-    `/v1/amadeus/conversations/${detailRef.current?.conversation.id}/files/${encodeURIComponent(item.kind)}/${encodeURIComponent(item.name)}`;
-  const previewFile = async (item: WorkFile) => {
-    if (item.bytes > 1024 * 1024) {
-      setError("预览文件不能超过 1 MiB");
-      return;
-    }
-    const conversationId = detailRef.current?.conversation.id;
-    if (!conversationId) return;
-    const request = ++filePreviewRequestRef.current;
-    const isCurrent = () =>
-      request === filePreviewRequestRef.current &&
-      conversationId === detailRef.current?.conversation.id;
-    try {
-      const response = await requestApi(fileUrl(item));
-      const text = await response.text();
-      if (isCurrent())
-        setFilePreview({ conversationId, name: item.name, text });
-    } catch (cause) {
-      if (isCurrent())
-        setError(cause instanceof Error ? cause.message : String(cause));
-    }
-  };
-  const downloadFile = async (item: WorkFile) => {
-    try {
-      const response = await requestApi(fileUrl(item));
-      const url = URL.createObjectURL(await response.blob());
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = item.name;
-      anchor.click();
-      window.setTimeout(() => URL.revokeObjectURL(url), 30_000);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
-    }
   };
   return {
     create,
@@ -222,8 +171,5 @@ export function conversationActions(options: Options) {
     forkMessage,
     rename,
     remove,
-    showFiles,
-    previewFile,
-    downloadFile,
   };
 }

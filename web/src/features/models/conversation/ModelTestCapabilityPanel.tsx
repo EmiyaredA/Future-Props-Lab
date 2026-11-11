@@ -3,6 +3,7 @@ import { ModelGenerationTestPanel } from "@features/models/generation/ModelGener
 import { modelGenerationKind } from "@features/models/generation/modelGenerationOptions";
 import { ModelTranscriptionTestPanel } from "@features/models/generation/ModelTranscriptionTestPanel";
 import { ModelRealtimeVoiceTestPanel } from "@features/models/realtime/ModelRealtimeVoiceTestPanel";
+import { VideoEnhancementPanel } from "../video-enhancement/VideoEnhancementPanel";
 import type { ModelTestMode } from "@features/models/workspace/ModelTestWorkspaceHeader";
 
 export type CapabilityTestModel = {
@@ -30,6 +31,16 @@ export function ModelTestCapabilityPanel({
   onOpenAudioAnnotation: (projectId: string) => void;
 }) {
   const model = models.find((item) => item.value === modelId);
+  if (model?.capabilities.includes("video_enhancement"))
+    return (
+      <VideoEnhancementPanel
+        key={modelId}
+        models={models}
+        modelId={modelId}
+        onSelectMode={onSelectMode}
+        onSelectModel={(id) => onSelectModel(id, "enhancement")}
+      />
+    );
   if (model?.capabilities.includes("speech_synthesis")) {
     return (
       <SpeechSynthesisTestPanel

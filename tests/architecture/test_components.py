@@ -574,7 +574,11 @@ def test_website_page_composition_and_navigation_have_explicit_owners():
         assert not (app / "layout" / f"{name}.tsx").exists()
         assert (app / "routing" / f"{name}.tsx").is_file()
     composition = (app / "routing/WebsiteRoutes.tsx").read_text()
-    assert "useWebsiteNavigation()" in composition
+    signed_in = (app / "SignedInApp.tsx").read_text()
+    assert signed_in.count("useWebsiteNavigation()") == 1
+    assert "<WebsiteRoutes navigation={navigation}" in signed_in
+    assert "navigation: ReturnType<typeof useWebsiteNavigation>" in composition
+    assert "useWebsiteNavigation()" not in composition
     assert "history.pushState" not in composition
     assert "history.replaceState" not in composition
     assert "popstate" not in composition
@@ -674,3 +678,19 @@ def test_apps_reserve_database_session_context_for_storage_ownership():
                     path,
                     node.lineno,
                 )
+
+
+@pytest.mark.parametrize("module", ["dialogue_tools.py", "execution/website_actions.py"])
+def test_amadeus_tool_orchestration_depends_on_ports(module):
+    path = STUDIO / "apps/amadeus" / module
+    forbidden = (
+        "fastapi",
+        "starlette",
+        "sqlalchemy",
+        "studio.apps.amadeus.storage",
+        "studio.apps.amadeus.transport",
+        "studio.apps.integrations",
+        "studio.assembly",
+        "studio.host",
+    )
+    assert not [name for name in imports(path) if name.startswith(forbidden)]

@@ -5,8 +5,8 @@ import re
 from pydantic import BaseModel, ConfigDict, Field
 
 from studio.contracts.asset_library.descriptions import ID, LibraryAssetQuery
-from studio.contracts.visual_workshop.visual_assistant import SOURCE
 from studio.contracts.visual_workshop.visual_catalog import acceptance_scheme_source
+from studio.contracts.visual_workshop.visual_paths import SOURCE
 
 PREFIX = "/_internal/v1/visual-acceptance/assets"
 PURPOSE = "visual.acceptance-assets.read"

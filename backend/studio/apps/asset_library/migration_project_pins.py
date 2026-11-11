@@ -48,16 +48,11 @@ from studio.contracts.visual_workshop.visual_migration import (
     ACCEPTANCE_PINS_PATH,
     CANVAS_PINS_DATASET,
     CANVAS_PINS_PATH,
-    CONVERSATION_PINS_DATASET,
-    CONVERSATION_PINS_PATH,
     AcceptancePinBatch,
     AcceptancePinPage,
     CanvasPinBatch,
     CanvasPinPage,
     CanvasPins,
-    ConversationPinBatch,
-    ConversationPinPage,
-    ConversationPins,
 )
 from studio.runtime.database.migration_apps import mount_dataset
 from studio.runtime.database.migration_receipts import batch_receipt, has_receipt, record_receipt
@@ -126,15 +121,8 @@ async def page(
                     .order_by(AssetReferencePin.asset_id)
                 )
             )
-            scope = {}
-            if kind == "conversation":
-                if row.scope_project_id is None:
-                    raise HTTPException(409, {"code": "migration_reference_project_missing"})
-                scope["project_id"] = row.scope_project_id
             records.append(
-                record_type(
-                    id=row.resource_id, revision=row.resource_revision, asset_ids=assets, **scope
-                )
+                record_type(id=row.resource_id, revision=row.resource_revision, asset_ids=assets)
             )
     batch = batch_type(
         run_id=plan.run_id,
@@ -163,9 +151,6 @@ async def ingest(sessions, dataset, service, kind, batch):
             scope = PROJECT_SCOPES.get(service)
             project_id = record.id
             media = ("image", "audio", "video")
-            if kind == "conversation":
-                project_id = record.project_id
-                media = (*media, "document")
             if service == "thought":
                 media = (
                     ("image",)
@@ -174,7 +159,7 @@ async def ingest(sessions, dataset, service, kind, batch):
                 )
             if service == "annotation":
                 media = ("audio",)
-            if kind in {"conversation", "acceptance"}:
+            if kind == "acceptance":
                 parent = await db.scalar(
                     select(AssetReferenceSet.id).where(
                         AssetReferenceSet.owner_user_id == owner,
@@ -224,7 +209,7 @@ async def ingest(sessions, dataset, service, kind, batch):
                     resource_kind=kind,
                     resource_id=record.id,
                     resource_revision=record.revision,
-                    scope_project_id=project_id if kind in {"conversation", "acceptance"} else None,
+                    scope_project_id=project_id if kind == "acceptance" else None,
                 )
             )
             try:
@@ -331,22 +316,6 @@ def mount_visual_canvas_pins(app, plan, sessions):
         record_type=CanvasPins,
         batch_type=CanvasPinBatch,
         page_type=CanvasPinPage,
-    )
-
-
-def mount_visual_conversation_pins(app, plan, sessions):
-    mount_project_pins(
-        app,
-        plan,
-        sessions,
-        prefix=CONVERSATION_PINS_PATH,
-        dataset=CONVERSATION_PINS_DATASET,
-        service="visual",
-        kind="conversation",
-        cursor=CURSOR,
-        record_type=ConversationPins,
-        batch_type=ConversationPinBatch,
-        page_type=ConversationPinPage,
     )
 
 

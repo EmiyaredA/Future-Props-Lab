@@ -1,61 +1,43 @@
 """Tools available to an owned CLI turn, with all mutations behind approval."""
 
-import base64
-from functools import partial
-from pathlib import Path
+from collections.abc import Awaitable, Callable
+from typing import Any, Protocol
 from uuid import uuid4
 
-from anyio.to_thread import run_sync
-
-from studio.apps.amadeus.clients.website_operations import catalog_from_schema, operation_request
-from studio.apps.amadeus.storage.conversations import Conversations
-from studio.apps.amadeus.storage.files import list_files, open_work_file
-from studio.apps.amadeus.storage.questions import Questions
-from studio.apps.amadeus.storage.runs import RunRecords
-from studio.apps.amadeus.storage.skill_files import read_skill_file
-from studio.apps.amadeus.transport.operation_http import published_catalog
 from studio.contracts.amadeus.amadeus_native import DialogueToolResult
-from studio.contracts.amadeus.conversations import ActionIn, QuestionIn
+from studio.contracts.amadeus.conversations import ActionOut, QuestionIn, QuestionOut, RunOut
 from studio.contracts.amadeus.tools import validate_tool
 from studio.runtime.database.operation_receipts import OperationError
 
-from .operation_calls import call_registered
 
-IMAGE_TYPES = {
-    ".png": "image/png",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".webp": "image/webp",
-}
+class TurnRecords(Protocol):
+    async def require_running(self) -> None: ...
+    async def ask(self, question: QuestionIn) -> QuestionOut: ...
+    async def propose(self, name: str, arguments: dict) -> ActionOut: ...
 
 
-def read_file(owner, conversation, root, kind, name):
-    file, size = open_work_file(owner, conversation, kind, name, files_root=root)
-    with file:
-        if size > 1024 * 1024:
-            raise OperationError("文件过大，请使用文件下载接口", "file_too_large", 422)
-        data = file.read(1024 * 1024 + 1)
-    if len(data) > 1024 * 1024:
-        raise OperationError("文件过大，请使用文件下载接口", "file_too_large", 422)
-    mime = IMAGE_TYPES.get(Path(name).suffix.lower())
-    if mime:
-        return [{"type": "image", "data": base64.b64encode(data).decode(), "mimeType": mime}]
-    try:
-        return {"content": data.decode("utf-8")}
-    except UnicodeDecodeError as exc:
-        raise OperationError("文件不是 UTF-8 文本", "unsupported_file", 422) from exc
+class TurnFiles(Protocol):
+    async def list(self) -> list[dict]: ...
+    async def read(self, kind: str, name: str) -> Any: ...
+    async def read_skill(self, identity: str, version: str, path: str) -> dict: ...
 
 
 class DialogueTools:
-    def __init__(self, database, capabilities, principal, run, assertion, path, skills):
-        self.database, self.capabilities, self.principal = database, capabilities, principal
-        self.run, self.assertion, self.path, self.skills = run, assertion, path, skills
-
-    async def read_operation(self, operation, arguments):
-        result = await call_registered(
-            self.capabilities, self.assertion, self.path, operation, arguments, approved=False
-        )
-        return result
+    def __init__(
+        self,
+        run: RunOut,
+        skills,
+        *,
+        may_write: bool,
+        records: TurnRecords,
+        files: TurnFiles,
+        catalog: Callable[[str], list[dict]],
+        operation_method: Callable[[str, dict], str],
+        read_operation: Callable[[str, dict], Awaitable[dict]],
+    ):
+        self.run, self.skills, self.may_write = run, skills, may_write
+        self.records, self.files, self.catalog = records, files, catalog
+        self.operation_method, self.read_operation = operation_method, read_operation
 
     async def integrations(self):
         items = []
@@ -73,46 +55,31 @@ class DialogueTools:
 
     async def call(self, name, args):
         validate_tool(name, args)
-        conversation = self.run.conversation_id
-        owner, root = self.principal.user_id, self.database.root
-        async with self.database.sessions(info={"owner_user_id": owner}) as session:
-            row = await RunRecords(session, self.principal).get(conversation, self.run.id)
-            if row.status != "running":
-                raise OperationError("运行已停止或等待确认", "run_not_active", 409)
-            await session.rollback()
+        await self.records.require_running()
 
         if name == "present_artifact":
             return DialogueToolResult(result=args)
         if name == "operations":
             resource = args.get("resource", "")
-            values = catalog_from_schema(published_catalog(), resource)
+            values = self.catalog(resource)
             if not resource:
                 keys = ("id", "resource", "method", "summary")
                 values = [{key: item[key] for key in keys} for item in values]
             return DialogueToolResult(result={"items": values})
         if name == "files":
-            return DialogueToolResult(
-                result=await run_sync(partial(list_files, owner, conversation, files_root=root))
-            )
+            return DialogueToolResult(result=await self.files.list())
         if name == "read_file":
-            return DialogueToolResult(
-                result=await run_sync(
-                    read_file, owner, conversation, root, args["kind"], args["name"]
-                )
-            )
+            return DialogueToolResult(result=await self.files.read(args["kind"], args["name"]))
         if name == "skill":
             return DialogueToolResult(result=await self.read_skill(args))
         if name == "integrations":
             return DialogueToolResult(result=await self.integrations())
         if name == "ask_user":
-            async with self.database.sessions(info={"owner_user_id": owner}) as session:
-                question = await Questions(session, self.principal).create(
-                    conversation, self.run.id, QuestionIn(tool_call_id=uuid4().hex, **args)
-                )
+            question = await self.records.ask(QuestionIn(tool_call_id=uuid4().hex, **args))
             return DialogueToolResult(result=question.model_dump(mode="json"), paused=True)
         if name == "call":
             operation, arguments = args["operation"], args["arguments"]
-            method, *_ = operation_request(operation, arguments, allow_write=True)
+            method = self.operation_method(operation, arguments)
             if method == "GET":
                 return DialogueToolResult(result=await self.read_operation(operation, arguments))
             action_name = "fpl_operation:" + operation
@@ -131,17 +98,7 @@ class DialogueTools:
             return snapshot
         if args.get("version") != snapshot["version"]:
             raise OperationError("Skill 版本与运行快照不符", "unsupported_tool", 403)
-        return await run_sync(
-            partial(
-                read_skill_file,
-                self.principal.user_id,
-                self.run.conversation_id,
-                skill_id,
-                args["version"],
-                args["path"],
-                files_root=self.database.root,
-            )
-        )
+        return await self.files.read_skill(skill_id, args["version"], args["path"])
 
     def integration_proposal(self, args):
         identity = args["id"]
@@ -156,18 +113,9 @@ class DialogueTools:
         return name, {"input": args["input"], "revision": args["revision"]}
 
     async def propose(self, name, arguments):
-        if self.run.mode != "agent" or not self.principal.allows("content.write"):
+        if self.run.mode != "agent" or not self.may_write:
             raise OperationError("当前运行只读", "write_tool_forbidden", 403)
-        async with self.database.sessions(
-            info={"owner_user_id": self.principal.user_id}
-        ) as session:
-            conversation = self.run.conversation_id
-            action = await Conversations(session, self.principal).propose(
-                conversation,
-                ActionIn(tool_name=name, arguments=arguments, run_id=self.run.id),
-                commit=False,
-            )
-            await RunRecords(session, self.principal).pause_for_approval(conversation, self.run.id)
+        action = await self.records.propose(name, arguments)
         return DialogueToolResult(
             result={"waiting_approval": action.model_dump(mode="json")}, paused=True
         )

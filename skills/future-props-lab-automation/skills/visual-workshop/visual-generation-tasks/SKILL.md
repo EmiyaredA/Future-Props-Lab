@@ -18,7 +18,7 @@ description: Drives Visual Workshop generation tasks via generation.*—options,
 
 ## 不在范围
 
-画布编辑；`visual_assistant` 会话（桌面未开放）。
+画布编辑由 `visual-canvas-editing` 负责。
 
 ## 方法
 

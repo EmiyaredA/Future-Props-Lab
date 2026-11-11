@@ -30,7 +30,6 @@ TAGS = {
     "tool-navigation": "tools",
     "visual-workshop": "visual",
     "visual-generation": "generation",
-    "visual-workshop-assistant": "visual_assistant",
     "galgame-workshop": "galgame",
     "video-editor": "video",
     "thought-workshop": "thought",

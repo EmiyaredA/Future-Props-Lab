@@ -1,15 +1,17 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
-import { useRef, useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { useAmadeusData } from "@features/amadeus/useAmadeusData";
 import type {
   Conversation,
   Detail,
   RunDetail,
-  Reference,
 } from "@features/amadeus/protocol";
 import { fetchApiJson } from "@platform/api/client";
-import { amadeusTabKey, writeTabState } from "@features/amadeus/tabState";
+import {
+  amadeusTabKey,
+  readDraft,
+  writeTabState,
+} from "@features/amadeus/tabState";
 
 vi.mock("@platform/api/client", () => ({ fetchApiJson: vi.fn() }));
 
@@ -30,49 +32,17 @@ const bridge = {
 };
 const noop = vi.fn();
 
-function useFixture(workspace: string) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [detail, setDetail] = useState<Detail | null>(null);
-  const [runs, setRuns] = useState<RunDetail[]>([]);
-  const [draft, setDraft] = useState("");
-  const [references, setReferences] = useState<Reference[]>([]);
-  const [loaded, setLoaded] = useState<string[]>([]);
-  const [loadedConversationId, setLoadedConversationId] = useState<
-    string | null
-  >(null);
-  const detailRef = useRef<Detail | null>(null);
-  const contextRef = useRef([]);
-  const activeActionRef = useRef(null);
-  const avatarTimerRef = useRef<number | undefined>(undefined);
-  const actions = useAmadeusData({
-    session: { me: { user: { id: workspace } } },
-    bridge,
-    detail,
-    detailRef,
-    contextRef,
+const isExecutingAction = () => false;
+
+function useFixture(owner: string) {
+  return useAmadeusData({
+    owner,
+    bridge: bridge as unknown as Parameters<typeof useAmadeusData>[0]["bridge"],
     standalone: false,
-    draft,
-    references,
-    setDraft,
-    activeActionRef,
-    avatarTimerRef,
-    loaded,
-    loadedConversationId,
-    setConversations,
-    setDetail,
-    setRuns,
-    setLoaded,
-    setLoadedConversationId,
-    setActiveRun: noop,
-    setBusy: noop,
-    setReferences,
-    setFilesOpen: noop,
-    setWorkFiles: noop,
-    setError: noop,
-    setContexts: noop,
-    setAvatarState: noop,
-  } as unknown as Parameters<typeof useAmadeusData>[0]);
-  return { conversations, detail, runs, draft, ...actions };
+    onError: noop,
+    onPickFinished: noop,
+    isExecutingAction,
+  });
 }
 
 describe("Amadeus scoped reads", () => {
@@ -153,4 +123,22 @@ describe("Amadeus scoped reads", () => {
     });
     await waitFor(() => expect(view.result.current.detail).toBeNull());
   });
+});
+
+it("keeps an unsent draft in the original account after changing accounts", async () => {
+  vi.mocked(fetchApiJson).mockResolvedValue({ items: [] } as never);
+  const view = renderHook(({ owner }) => useFixture(owner), {
+    initialProps: { owner: "draft-source" },
+  });
+  act(() => view.result.current.setDraft("private unsent text"));
+  const originalRead = view.result.current.selectionSignal();
+  view.rerender({ owner: "draft-target" });
+  await waitFor(() => expect(view.result.current.draft).toBe(""));
+  expect(originalRead.aborted).toBe(true);
+  expect(
+    readDraft(`${amadeusTabKey("draft-source", "embedded")}:draft:new`).text,
+  ).toBe("private unsent text");
+  expect(
+    readDraft(`${amadeusTabKey("draft-target", "embedded")}:draft:new`).text,
+  ).toBe("");
 });

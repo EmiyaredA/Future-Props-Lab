@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "78a23dc1874e88539cd128ffcd4832e263fd84c424de74bd34ab0bff87ee7fcd",
+  "openapi_sha256": "01aedd2b148f356353e365e90e5d66c7ff6ee4c4d3377544c627edd0a09b4176",
   "operations": [
     {
       "service": "identity",
@@ -1705,6 +1705,42 @@
       "method": "POST",
       "path": "/v1/model-inference/text/stream",
       "operation_id": "stream_text_v1_model_inference_text_stream_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-inference/video-enhancements",
+      "operation_id": "list_video_enhancements_v1_model_inference_video_enhancements_get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-inference/video-enhancements",
+      "operation_id": "create_video_enhancement_v1_model_inference_video_enhancements_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-inference/video-enhancements/{task_id}",
+      "operation_id": "get_video_enhancement_v1_model_inference_video_enhancements__task_id__get"
+    },
+    {
+      "service": "models",
+      "method": "POST",
+      "path": "/v1/model-inference/video-enhancements/{task_id}/actions",
+      "operation_id": "control_video_enhancement_v1_model_inference_video_enhancements__task_id__actions_post"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-inference/video-enhancements/{task_id}/content",
+      "operation_id": "get_video_enhancement_result_v1_model_inference_video_enhancements__task_id__content_get"
+    },
+    {
+      "service": "models",
+      "method": "GET",
+      "path": "/v1/model-inference/video-enhancements/{task_id}/segments/{index}/{variant}",
+      "operation_id": "get_video_enhancement_segment_v1_model_inference_video_enhancements__task_id__segments__index___variant__get"
     },
     {
       "service": "models",
@@ -3424,54 +3460,6 @@
     },
     {
       "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/conversations",
-      "operation_id": "list_conversations_v1_visual_workshop_projects__project_id__conversations_get"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/projects/{project_id}/conversations",
-      "operation_id": "create_conversation_v1_visual_workshop_projects__project_id__conversations_post"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/conversations/models",
-      "operation_id": "list_models_v1_visual_workshop_projects__project_id__conversations_models_get"
-    },
-    {
-      "service": "visual",
-      "method": "DELETE",
-      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
-      "operation_id": "delete_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__delete"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
-      "operation_id": "get_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__get"
-    },
-    {
-      "service": "visual",
-      "method": "PATCH",
-      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
-      "operation_id": "patch_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__patch"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream",
-      "operation_id": "stream_message_v1_visual_workshop_projects__project_id__conversations__conversation_id__messages_stream_post"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}",
-      "operation_id": "resolve_approval_v1_visual_workshop_projects__project_id__conversations__conversation_id__runs__run_id__approvals__approval_id__post"
-    },
-    {
-      "service": "visual",
       "method": "POST",
       "path": "/v1/visual-workshop/projects/{project_id}/generation-batches",
       "operation_id": "create_generation_batch_v1_visual_workshop_projects__project_id__generation_batches_post"
@@ -4438,12 +4426,6 @@
       "model": "ModelsImportReceipt"
     },
     {
-      "table": "visual_assistant_model_runs",
-      "service": "models",
-      "module": "studio.apps.model_service.storage.assistant_model_records",
-      "model": "VisualAssistantModelRun"
-    },
-    {
       "table": "model_demo_installations",
       "service": "models",
       "module": "studio.apps.model_service.storage.demo_install_records",
@@ -4562,6 +4544,12 @@
       "service": "models",
       "module": "studio.apps.model_service.storage.models.runtime_admission",
       "model": "RuntimeAdmission"
+    },
+    {
+      "table": "video_enhancement_tasks",
+      "service": "models",
+      "module": "studio.apps.model_service.storage.models.video_enhancement",
+      "model": "VideoEnhancementTask"
     },
     {
       "table": "model_native_jobs",
@@ -5134,12 +5122,6 @@
       "model": "VisualNodeOutput"
     },
     {
-      "table": "visual_assistant_dispatches",
-      "service": "visual",
-      "module": "studio.apps.visual_workshop.storage.assistant_dispatch_records",
-      "model": "VisualAssistantDispatch"
-    },
-    {
       "table": "visual_generation_decisions",
       "service": "visual",
       "module": "studio.apps.visual_workshop.storage.generation_dispatch_records",
@@ -5174,30 +5156,6 @@
       "service": "visual",
       "module": "studio.apps.visual_workshop.storage.models",
       "model": "VisualGenerationBatch"
-    },
-    {
-      "table": "visual_assistant_conversations",
-      "service": "visual",
-      "module": "studio.apps.visual_workshop.storage.models",
-      "model": "VisualAssistantConversation"
-    },
-    {
-      "table": "visual_assistant_messages",
-      "service": "visual",
-      "module": "studio.apps.visual_workshop.storage.models",
-      "model": "VisualAssistantMessage"
-    },
-    {
-      "table": "visual_assistant_message_assets",
-      "service": "visual",
-      "module": "studio.apps.visual_workshop.storage.models",
-      "model": "VisualAssistantMessageAsset"
-    },
-    {
-      "table": "visual_assistant_actions",
-      "service": "visual",
-      "module": "studio.apps.visual_workshop.storage.models",
-      "model": "VisualAssistantAction"
     },
     {
       "table": "visual_review_dispatches",

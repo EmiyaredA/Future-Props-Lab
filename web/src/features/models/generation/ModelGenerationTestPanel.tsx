@@ -129,6 +129,9 @@ export function ModelGenerationTestPanel({
           model.providerKind,
         ) && model.capabilities?.includes("speech_recognition"),
     ),
+    enhancement: models.some((model) =>
+      model.capabilities?.includes("video_enhancement"),
+    ),
     realtime_voice: models.some((model) =>
       model.capabilities?.includes("voice"),
     ),

@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
-const { origin, cookies, build, project, assistant } = JSON.parse(
-  readFileSync(0, "utf8"),
-);
+const { origin, cookies, build, project } = JSON.parse(readFileSync(0, "utf8"));
 const browser = await chromium.launch({ channel: "chrome", headless: true });
 try {
   const context = await browser.newContext();
@@ -72,24 +70,16 @@ try {
   assert.equal(result.status(), 200, await result.text());
   assert.equal(result.request().headers()["x-application-build"], build);
   assert.ok((await result.json()).nodes.some((node) => node.kind === "text"));
-  if (assistant) {
-    await page.getByRole("button", { name: "对话", exact: true }).click();
-    const editor = page.getByRole("textbox", { name: "消息内容" });
-    await editor.fill("请添加浏览器验收节点");
-    await page.getByRole("button", { name: "发送", exact: true }).click();
-    await page
-      .getByRole("button", { name: "确认执行" })
-      .click({ timeout: 20000 });
-    await page
-      .getByText("已保存浏览器确认的画布节点。", { exact: true })
-      .waitFor({ timeout: 20000 });
-    await page
-      .getByRole("button", { name: "停止生成" })
-      .waitFor({ state: "hidden" });
-    console.log(
-      "Chromium verified live Visual assistant SSE and Canvas approval",
-    );
-  }
+  const legacy = await context.request.get(
+    origin + `/v1/visual-workshop/projects/${project}/conversations`,
+  );
+  assert.equal(legacy.status(), 404);
+  const oldButton = page.getByRole("button", { name: "对话", exact: true });
+  assert.equal(await oldButton.count(), 0);
+  await page.getByRole("button", { name: "看板", exact: true }).click();
+  assert.equal(await oldButton.count(), 0);
+  await page.getByRole("button", { name: "打开 Amadeus", exact: true }).click();
+  await page.getByRole("complementary", { name: "Amadeus 助手" }).waitFor();
   assert.deepEqual(errors, []);
   console.log(
     "Chromium verified Visual entries, responsive layout and a saved Canvas edit",

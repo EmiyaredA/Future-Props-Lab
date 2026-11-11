@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import { NodeAcceptancePanel } from "./acceptance/NodeAcceptancePanel";
 import { AcceptanceWorkspace } from "./acceptance/AcceptanceWorkspace";
-import { ReadOnlyVisualConversation } from "./ReadOnlyVisualConversation";
 import { useQuery } from "@tanstack/react-query";
 import {
   ReadOnlyCollection,
@@ -131,9 +130,6 @@ export function ReadOnlyVisual({
       {projectId && (
         <button onClick={() => setAcceptance(true)}>查看项目验收</button>
       )}
-      {projectId ? (
-        <ReadOnlyVisualConversation key={projectId} projectId={projectId} />
-      ) : null}
     </ReadOnlyPage>
   );
 }

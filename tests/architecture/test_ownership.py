@@ -71,9 +71,9 @@ def test_visual_workshop_lives_under_apps() -> None:
     assert (
         REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/__init__.py"
     ).is_file()
-    assert (
+    assert not (
         REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/assistant.py"
-    ).is_file()
+    ).exists()
     assert (
         REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/generation.py"
     ).is_file()

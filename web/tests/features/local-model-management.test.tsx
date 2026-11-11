@@ -21,6 +21,7 @@ vi.mock("@features/models/localModelApi", () => ({
 }));
 const item: localApi.LocalModel = {
   id: "qwen3-tts-0.6b-base",
+  capability: "speech_synthesis",
   label: "Qwen3-TTS 0.6B Base",
   repository: "mlx-community/test",
   license: "Apache-2.0",
@@ -189,6 +190,44 @@ test("catalog remains default and local management exists only when a slot is su
       "tab",
     ),
   ).toHaveLength(2);
+});
+
+test("enables the built-in FFmpeg profile and opens its model test without a download", async () => {
+  const user = userEvent.setup();
+  const fast: localApi.LocalModel = {
+    ...item,
+    id: "ffmpeg-video-sharpen",
+    label: "FFmpeg 视频清晰增强",
+    capability: "video_enhancement",
+    download_bytes: 0,
+    required_disk_bytes: 0,
+    status: "installed",
+  };
+  state = [item, fast];
+  const catalog = attachedCatalog();
+  const provider = catalog.providers[0];
+  provider.kind = "local_ffmpeg";
+  const model = provider.models[0];
+  Object.assign(model, {
+    slug: fast.id,
+    label: fast.label,
+    capabilities: ["video_enhancement"],
+    categories: ["video_enhancement"],
+  });
+  vi.mocked(localApi.attachLocalModel).mockResolvedValue(catalog);
+  mount();
+  await user.click(await screen.findByRole("radio", { name: fast.label }));
+  const detail = screen.getByRole("article", { name: `${fast.label} 详情` });
+  expect(within(detail).getByText("本机 FFmpeg · 免下载")).toBeInTheDocument();
+  await user.click(within(detail).getByRole("button", { name: "启用服务" }));
+  await user.click(
+    await within(detail).findByRole("button", { name: "添加到当前空间" }),
+  );
+  await user.click(
+    await within(detail).findByRole("button", { name: "去测试" }),
+  );
+  expect(onTestModel).toHaveBeenCalledWith(model, provider);
+  expect(localApi.localModelAction).toHaveBeenCalledTimes(1);
 });
 
 test("leaving local models unmounts polling without cancelling an installation", async () => {

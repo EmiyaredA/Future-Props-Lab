@@ -1,5 +1,13 @@
 # 开发交付说明
 
+`0128_local_video_providers` 扩展桌面模型目录的接入类型，支持 FFmpeg 和 RelayVSR 视频增强。升级保留原目录记录和外键。
+
+`0127_video_enhancement` 添加账号范围的本地视频增强检查点表。独立 Models 0022 同步表结构以保护模型输入引用，桌面网站装配提供 Metal 执行入口。本机安装入口由实机验收结果启用。
+
+`0126_retire_visual_conversations` 下线兼容网站旧视觉对话并清理该来源的模型日志。独立部署追加 Visual 0011、Models 0021、Assets 0020；未结算状态使迁移回滚。正式升级按[停机备份流程](../operations/production-deployment.md)执行。
+
+`0125_amadeus_message_actions` 为 Amadeus 消息增加置顶状态，并为分叉请求保存账号范围的幂等回执。
+
 `0124_management_api_key_secrets` 为新签发的管理 API 密钥保存加密副本。已有密钥保留原哈希及有效期。
 
 `0123_workbench_turns` 为工作台追加历史关联、稳定分页索引、轮内活动及待执行队列状态。历史副本按原生身份补齐关联；重启后待执行队列由管理员重新解锁并继续。

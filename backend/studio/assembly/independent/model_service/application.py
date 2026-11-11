@@ -18,7 +18,6 @@ from studio.apps.model_service.admission.task_usage import OwnedCatalogTaskUsage
 from studio.apps.model_service.annotation_transcription import (
     router as annotation_transcription_router,
 )
-from studio.apps.model_service.assistant_model_runs import AssistantModelExpiry, AssistantModelRuns
 from studio.apps.model_service.audit.audit_delivery import ModelAuditDelivery
 from studio.apps.model_service.catalog.http_bindings import CatalogBindings
 from studio.apps.model_service.defaults import OwnedCatalogDefaults
@@ -52,9 +51,6 @@ from studio.apps.model_service.stream_access import access_check
 from studio.apps.model_service.template_sync import TemplateSynchronization
 from studio.apps.model_service.templates.policy import initialize_account_catalog
 from studio.apps.model_service.transcription.annotation import AnnotationTranscription
-from studio.apps.model_service.transport.assistant_model_http import (
-    router as assistant_model_router,
-)
 from studio.apps.model_service.transport.demo_http import call_router
 from studio.apps.model_service.transport.demo_http import router as demo_router
 from studio.apps.model_service.transport.galgame_asr_http import router as galgame_asr_router
@@ -86,6 +82,9 @@ from studio.apps.model_service.transport.website.models import (
     suppliers,
 )
 from studio.apps.model_service.transport.website.models.catalog import router as catalog_router
+from studio.apps.model_service.transport.website.video_enhancement import (
+    router as video_enhancement_router,
+)
 from studio.apps.model_service.visual.visual_generation_intake import VisualGenerationIntake
 from studio.apps.model_service.visual.visual_generation_results import VisualGenerationResults
 from studio.apps.model_service.visual.visual_generation_runner import VisualGenerationRunner
@@ -94,13 +93,6 @@ from studio.apps.model_service.writing import router as writing_router
 from studio.assembly.http_dependencies import require_studio_auth
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.identity.errors import AccountError
-from studio.contracts.visual_workshop.visual_assistant import MODEL_RUNS as ASSISTANT_MODEL_RUNS
-from studio.contracts.visual_workshop.visual_assistant_model import (
-    MAX_ROUND_BYTES,
-    MAX_SETTLEMENT_BYTES,
-    SETTLEMENT_DOMAIN,
-    SETTLEMENTS,
-)
 from studio.contracts.visual_workshop.visual_generation import MAX_PLAN_BYTES, PEER_DOMAIN, PLANS
 from studio.contracts.visual_workshop.visual_generation import MODEL as VISUAL_GENERATION_MODEL
 from studio.contracts.visual_workshop.visual_review import MAX_MODEL_REQUEST, MODEL_RUN
@@ -191,7 +183,6 @@ def create_app(
     web_root=None,
     run_tasks=True,
     visual_generation_key=None,
-    visual_assistant_settlement_key=None,
 ):
     database = Database(
         "models", settings.runtime_path, models=MODELS, account_models=ACCOUNT_MODELS
@@ -199,9 +190,6 @@ def create_app(
     if settings.database_path != database.path:
         raise ValueError("Models 配置必须指向自己的数据目录")
     ledger = ModelAdmission(database.sessions)
-    assistant_runs = AssistantModelRuns(
-        database.sessions, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt
-    )
     authority = ModelTaskAuthority(
         database.sessions, public_key=public_key, catalog=catalog, identity=identity
     )
@@ -251,8 +239,7 @@ def create_app(
         raise ValueError("演示安装协调缺少Identity固定意图端口")
     broker.connect_inference(inference)
     supervisor = RunnerSupervisor(
-        (AssistantModelExpiry(assistant_runs),)
-        + (
+        (
             provisioning_runner,
             synchronization,
             generation,
@@ -274,7 +261,6 @@ def create_app(
             await require_private_references(database.sessions)
             await ledger.recover()
             await app.state.visual_review_attempts.recover()
-            await assistant_runs.recover()
             await recover_interrupted_model_test_runs(database.sessions)
             await recover_transcription_attempts(database.sessions)
             if galgame_asr_staging.is_symlink() or not galgame_asr_staging.resolve().is_relative_to(
@@ -352,18 +338,6 @@ def create_app(
     app.state.visual_review_attempts = VisualReviewAttempts(
         database.sessions, settings, decrypt=SecretCipher(settings.fpl_secrets_key).decrypt
     )
-    if (
-        visual_assistant_settlement_key is not None
-        and visual_assistant_settlement_key == visual_generation_key
-    ):
-        raise ValueError("Visual 对话结算凭据必须独立")
-    app.state.assistant_settlement_peer = (
-        TimedPeer(visual_assistant_settlement_key, domain=SETTLEMENT_DOMAIN)
-        if visual_assistant_settlement_key is not None
-        else None
-    )
-    app.state.assistant_model_runs = assistant_runs
-
     app.state.model_catalog_bindings = CatalogBindings(
         defaults=OwnedCatalogDefaults,
         readiness=broker,
@@ -424,6 +398,9 @@ def create_app(
         catalog_router, prefix="/v1", dependencies=[Depends(require_studio_auth), ModelCapacity]
     )
     app.include_router(local_router, prefix="/v1", dependencies=[Depends(require_studio_auth)])
+    app.include_router(
+        video_enhancement_router, prefix="/v1", dependencies=[Depends(require_studio_auth)]
+    )
     for source in (model_test_realtime.router, demo_router, call_router, governance_router):
         app.include_router(source, prefix="/v1")
     app.include_router(integration_capacity_router)
@@ -432,9 +409,6 @@ def create_app(
     app.include_router(visual_catalog_router)
     app.include_router(visual_generation_router)
     app.include_router(visual_review_router)
-    app.include_router(assistant_model_router)
-    app.add_middleware(RequestLimit, prefix=ASSISTANT_MODEL_RUNS, maximum=MAX_ROUND_BYTES)
-    app.add_middleware(RequestLimit, prefix=SETTLEMENTS, maximum=MAX_SETTLEMENT_BYTES)
     app.add_middleware(RequestLimit, prefix=MODEL_RUN, maximum=MAX_MODEL_REQUEST)
     app.add_middleware(RequestLimit, prefix=VISUAL_GENERATION_MODEL, maximum=16 * 1024)
     app.add_middleware(RequestLimit, prefix=PLANS, maximum=MAX_PLAN_BYTES)

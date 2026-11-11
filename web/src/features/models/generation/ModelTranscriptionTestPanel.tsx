@@ -134,6 +134,9 @@ export function ModelTranscriptionTestPanel({
       model.capabilities.includes("speech_synthesis"),
     ),
     speech: Boolean(speechModels.length),
+    enhancement: models.some((model) =>
+      model.capabilities.includes("video_enhancement"),
+    ),
     realtime_voice: models.some((model) =>
       model.capabilities.includes("voice"),
     ),

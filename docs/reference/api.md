@@ -209,7 +209,7 @@ HTTPS 或本机回环 HTTP 规则。
 `auth_kind` / `api_key_name` / `api_key_prefix` 快照，历史日志可为空。
 
 调用源 `model_diagnostic` 表示诊断 API 的固定 `OK` 快速诊断，`model_playground` 表示模型测试
-工作台，`model_inference` 表示独立模型调用，`visual_workshop_assistant` 表示视觉工坊 Agent。详情按请求上下文、模型回复、Token 与
+工作台，`model_inference` 表示独立模型调用。详情按请求上下文、模型回复、Token 与
 耗时分区展示，并支持可读/JSON、Markdown/原文切换。新产生的流式文本日志记录首 Token 耗时、
 结束原因和模型轮次；旧日志没有对应观测值时返回原 payload 并显示为空。
 
@@ -419,11 +419,7 @@ OpenAPI 或执行定时健康检查。
   单个画布最多 1000 个节点、2000 条连线；整体保存与 `canvas/operations` 批处理结果使用相同上限。超限返回 422，不保存部分修改；原有节点、输出版本和固定引用不因扩容被删除。依赖环仍拒绝，最长 1000 节点的无环链可正常校验。
 - `POST /v1/visual-workshop/projects/{project_id}/asset-references`：把文件管理中的文件引用到项目。
 - `PATCH/DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}`：整理或移除项目引用。
-- `GET/POST /v1/visual-workshop/projects/{project_id}/conversations`：读取或新建项目对话。
-- `GET /v1/visual-workshop/projects/{project_id}/conversations/models`：返回当前已启用且支持对话的模型选项。
-- `GET/PATCH/DELETE /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}`：读取、改名或删除对话。
-- `POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream`：发送消息并接收 SSE 流。
-- `POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}`：确认或拒绝当前内存中的 Agent 操作组。
+旧项目对话路由组已移除，请使用 Amadeus。对画布的修改继续使用 `visual.apply_canvas_operations`。
 
 项目类型为 `image / video / canvas`，状态为 `draft / completed`，标题长度为 1–120 字。
 修改和删除必须携带项目的 `expected_revision`；冲突返回 `409 revision_conflict` 以及服务器
@@ -446,42 +442,6 @@ OpenAPI 或执行定时健康检查。
 返回 `409 upstream_asset_pending`。任务的 `request_payload.reference_filenames` 由服务端按提交时
 的上游节点标题派生并保存快照，客户端不能覆盖；视频和音频参考素材临时上传时使用该名称及素材
 真实后缀，旧任务没有映射时继续使用随机文件名。
-
-项目对话标题和模型配置使用独立会话 revision 做 CAS。`PATCH` 可通过 `model_id`、
-`image_model_id`、`video_model_id` 分别固定 Agent 的对话、图像生成和视频生成模型，传 `null`
-恢复该类任务的自动选择；Web 在三类 Tab 中按供应商浏览并自动保存，生成期间禁止切换。固定的
-图像或视频模型会覆盖 Agent 工具提案中的模型 ID；如果固定模型或供应商不可用，本次生成会明确
-失败并提示重新配置，不回退到其他模型。该配置只影响当前助手对话，不改变手动图片/视频生成器的
-模型选择。发送体除会话 `expected_revision` 外还必须携带已完成本地保存后的 `canvas_revision`。
-发送准备与流式结算分别使用短事务，供应商网络等待和审批等待不占用写事务。
-
-新客户端通过 `content_parts` 发送结构化正文，元素为 `{type: "text", text}` 或
-`{type: "asset", asset_id}`。素材引用按正文位置展开给模型，同一素材可重复出现，但只按首次出现
-顺序建立一个消息附件关系并占用一个名额。服务端同时把素材投影为 `@文件名` 保存到 `content`，供
-旧客户端、标题和诊断使用；精确位置以 `content_parts` 为准。旧客户端仍可发送 `content + asset_ids`，
-但不得与 `content_parts` 混用。历史消息没有结构化正文时返回空数组，由客户端回退到旧正文和附件区。
-
-视觉 Agent 每个模型轮次重新编译项目、最新画布、素材摘要和相关生成任务上下文；单文本节点最多
-4,000 字，总上下文最多 32,000 字并保留截断说明。支持工具的模型可自动使用 `read_canvas`、
-`list_project_assets`、`list_generation_options`、`inspect_generation_task`；`apply_canvas_changes` 与
-`start_generation_on_canvas` 始终要求审批。审批只接受当前进程中属于指定项目和对话的待处理项，
-默认五分钟过期；确认不会把旧提案重基到新 revision，发生冲突时工具不写入并让 Agent 重新规划。
-多个节点修改由单个 `operations[]` 调用和一次画布 CAS 原子执行，生成任务与占位节点在同一短事务
-中创建。只支持 `chat` 的手选模型仍可对话，但进入只读建议模式；自动选择优先 `chat + tools`，
-附图时优先 `chat + vision + tools`。
-
-项目对话每条消息最多 5 个不同附件，重复内联引用不重复计数。JPEG、PNG、WebP、GIF 与 AVIF 图片作为视觉输入且单张最多 8 MiB，
-其中 AVIF 会在进入供应商适配器前转换为 PNG；
-TXT、Markdown 和 PDF 正文以不可信附件内容加入模型文本上下文，单文件最多 50,000 字符、
-单条消息合计最多 100,000 字符，PDF 最多读取前 50 页。音视频仅向模型提供素材 ID、名称、类型与
-大小等元数据，不执行转录或二进制输入。附件仍遵循项目文件上传的类型与大小限制；
-被消息引用的素材返回 `409 asset_in_use`，必须先删除对应对话。SSE `start` 可携带
-`attachment_warnings` 提示加密、无法解析或被截断的文档。SSE v2 事件为 `start / delta / step /
-approval_required / approval_resolved / canvas_updated / generation_task_created / done / error`。消息历史
-保存已脱敏的步骤展示摘要与结果，不保存供应商原始事件或未脱敏工具参数；重启时遗留 pending 消息
-和运行中步骤结算为取消。调用日志来源为 `visual_workshop_assistant`，记录脱敏文本消息轨迹、最终
-文本回复、run、轮数、工具名、脱敏输入与结果、审批结果、首 Token、耗时、画布 revision、生成任务
-ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时链接、磁盘路径、密钥或供应商原始事件。
 
 ## 文件存储布局
 
@@ -1159,6 +1119,20 @@ SVG 先通过已有预览转换；动画图片读取第一帧。需要公共文�
 录音支持 WAV/MP3/M4A/OGG，最多 20 MiB、3–30 秒。录音通过现有素材上传或文件库导入 API
 创建，不接受客户端路径。结果为 WAV，沿用任务查询、下载、日志及保存到文件库接口。
 提交中断失败，不自动重提或回退云端；安装缺失和停用返回 409。
+
+### 桌面本地视频增强
+
+`relayvsr-x2-int8` 通过现有本地模型接口安装和接入。目录返回 `capability=video_enhancement`。
+连接类型为 `local_relayvsr`，无需地址或密钥。安装要求目标 Mac 已通过固定运行时与权重版本的 Metal 验收。
+`ffmpeg-video-sharpen` 使用同一能力和任务接口，连接类型为 `local_ffmpeg`。
+本机须有支持 VideoToolbox H.264 的 FFmpeg 和 ffprobe。管理员启用服务后可添加到当前空间，无需下载安装权重。
+
+- `POST /v1/model-inference/video-enhancements` 接收 `request_id`、`model_id`、`source_id`。源视频通过现有模型素材上传接口创建。
+- `GET /v1/model-inference/video-enhancements?model_id=…` 和 `GET /v1/model-inference/video-enhancements/{task_id}` 返回阶段、revision、片段时间范围和已发布结果。
+- `POST /v1/model-inference/video-enhancements/{task_id}/actions` 接收 `action=pause|resume` 与 `expected_revision`。继续时从首个未完成片段恢复。
+- `GET /v1/model-inference/video-enhancements/{task_id}/segments/{index}/{variant}` 读取零起始片段的 `original` 或 `enhanced` MP4。整片完成后从 `/{task_id}/content` 下载。
+
+所有视频增强操作需要本机浏览器 Session，素材和任务按当前账号隔离。其他账号的任务返回 404。
 
 ## 视频剪辑连续片段合并
 

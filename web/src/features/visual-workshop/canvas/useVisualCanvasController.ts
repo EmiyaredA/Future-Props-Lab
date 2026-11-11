@@ -103,7 +103,6 @@ export function useVisualCanvasController({
   const [inspectedNodeId, setInspectedNodeId] = useState<string>();
   const [contextMenu, setContextMenu] = useState<ContextMenuState>();
   const [assetsOpen, setAssetsOpen] = useState(false);
-  const [assistantOpen, setAssistantOpen] = useState(false);
   const [assetTab, setAssetTab] = useState<"project" | "cross" | "library">(
     "project",
   );
@@ -696,7 +695,7 @@ export function useVisualCanvasController({
         return;
       }
       const panel = surface.current?.parentElement?.querySelector<HTMLElement>(
-        ".canvas-node-inspector:not(.is-embedded), .canvas-assets-drawer, .project-assistant-panel.is-open",
+        ".canvas-node-inspector:not(.is-embedded), .canvas-assets-drawer",
       );
       const panelBounds = panel?.getBoundingClientRect();
       setViewport(
@@ -837,8 +836,6 @@ export function useVisualCanvasController({
     setContextMenu,
     assetsOpen,
     setAssetsOpen,
-    assistantOpen,
-    setAssistantOpen,
     assetTab,
     setAssetTab,
     assetView,

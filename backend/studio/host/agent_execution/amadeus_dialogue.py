@@ -100,7 +100,9 @@ class DialogueWorker:
             owner = str(UUID(lease.owner_user_id))
             if owner != lease.owner_user_id:
                 raise ValueError("invalid account ID")
-            values = await self.transport.post("dialogue/plan", payload)
+            values = await self.transport.post(
+                "dialogue/plan?include_image_attachments=true", payload
+            )
             plan = DialoguePlan.model_validate(values)
             executable = await self.connections.resolve(scope, probe=True)
             root = work_root(owner, str(scope.conversation_id), files_root=self.files_root)
@@ -135,6 +137,7 @@ class DialogueWorker:
                 turn.emit,
                 root=root,
                 runtime_path=self.connections.runtime_root,
+                image_attachments=plan.image_attachments,
                 **scope.cli_options(),
             )
         )

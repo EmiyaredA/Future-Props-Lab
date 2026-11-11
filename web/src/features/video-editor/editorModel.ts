@@ -178,8 +178,9 @@ const baseClip = (
   asset: VideoEditorAsset,
   trackId: string,
   startUs: number,
+  id: string,
 ): VideoEditorClip => ({
-  id: crypto.randomUUID(),
+  id,
   trackId,
   kind: asset.mediaKind as VideoEditorClip["kind"],
   name: asset.displayName,
@@ -217,6 +218,7 @@ export function operationsForAsset(
   tracks: VideoEditorTrack[],
   startUs: number,
   preferredTrackId?: string,
+  nextId: () => string = () => crypto.randomUUID(),
 ): VideoEditorOperation[] {
   const preferred = tracks.find((track) => track.id === preferredTrackId);
   const visual =
@@ -228,7 +230,9 @@ export function operationsForAsset(
   if (asset.mediaKind === "audio") {
     if (preferred && preferred.kind !== "audio") return [];
     if (!audio) return [];
-    return [{ type: "addClip", clip: baseClip(asset, audio.id, startUs) }];
+    return [
+      { type: "addClip", clip: baseClip(asset, audio.id, startUs, nextId()) },
+    ];
   }
   const mixed =
     (preferred?.kind === "mixed" ? preferred : undefined) ??
@@ -243,7 +247,7 @@ export function operationsForAsset(
       {
         type: "addClip",
         clip: {
-          ...baseClip(asset, mixed.id, startUs),
+          ...baseClip(asset, mixed.id, startUs, nextId()),
           kind: asset.mediaKind as "video" | "image",
         },
       },
@@ -251,15 +255,14 @@ export function operationsForAsset(
   }
   if (preferred && preferred.kind !== "visual") return [];
   if (!visual) return [];
-  const picture = baseClip(asset, visual.id, startUs);
+  const picture = baseClip(asset, visual.id, startUs, nextId());
   if (asset.mediaKind !== "video" || !audio) {
     return [{ type: "addClip", clip: picture }];
   }
-  const group = crypto.randomUUID();
+  const group = nextId();
   picture.linkGroupId = group;
   const sound = {
-    ...baseClip(asset, audio.id, startUs),
-    id: crypto.randomUUID(),
+    ...baseClip(asset, audio.id, startUs, nextId()),
     kind: "audio" as const,
     linkGroupId: group,
   };

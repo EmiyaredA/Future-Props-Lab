@@ -84,6 +84,9 @@ class DialogueScope(TurnOptions):
 class DialoguePlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
     prompt: Annotated[str, Field(min_length=1, max_length=400_000)]
+    image_attachments: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(
+        default_factory=list, max_length=20
+    )
 
 
 class DialogueToolInput(BaseModel):

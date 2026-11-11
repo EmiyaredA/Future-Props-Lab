@@ -10,12 +10,13 @@ type ApprovalOptions = {
   contexts: Context[];
   session: AccountSessionContext;
   bridge: AmadeusPageBridge;
-  detailRef: MutableRefObject<Detail | null>;
+  isCurrent: () => boolean;
+  signal: AbortSignal;
+  acceptDetail: (detail: Detail) => void;
   activeActionRef: MutableRefObject<{
     conversationId: string;
     actionId: string;
   } | null>;
-  setDetail: Dispatch<SetStateAction<Detail | null>>;
   setError: Dispatch<SetStateAction<string>>;
   setScriptOutput: Dispatch<SetStateAction<string>>;
 };
@@ -51,9 +52,10 @@ export async function decideAmadeusApproval({
   contexts,
   session,
   bridge,
-  detailRef,
+  isCurrent,
+  signal,
+  acceptDetail,
   activeActionRef,
-  setDetail,
   setError,
   setScriptOutput,
 }: ApprovalOptions) {
@@ -75,15 +77,16 @@ export async function decideAmadeusApproval({
     setError("目标项目有未保存的编辑。请先在原窗口保存，再确认这项操作。");
     return false;
   }
+  const report = (message: string) => {
+    if (isCurrent()) setError(message);
+  };
   const actionPath = `/v1/amadeus/conversations/${conversationId}/actions/${current.id}`;
   const reconcile = async () => {
     const snapshot = await fetchApiJson<Detail>(
       `/v1/amadeus/conversations/${conversationId}`,
+      { signal },
     );
-    if (detailRef.current?.conversation.id === conversationId) {
-      detailRef.current = snapshot;
-      setDetail(snapshot);
-    }
+    if (isCurrent()) acceptDetail(snapshot);
     return snapshot.actions.find((item) => item.id === current.id)?.status;
   };
   const notifyProject = () => {
@@ -126,7 +129,7 @@ export async function decideAmadeusApproval({
             action?: typeof outcome;
             message?: string;
           };
-          if (event.type === "output")
+          if (event.type === "output" && isCurrent())
             setScriptOutput((previous) => previous + (event.text || ""));
           else if (event.type === "end" && event.action)
             completed = event.action;
@@ -146,7 +149,7 @@ export async function decideAmadeusApproval({
     if (receipt === "completed") notifyProject();
     const status = await reconcile();
     if (status === "unknown") {
-      setError("操作结果待核实；不会自动重试。");
+      report("操作结果待核实；不会自动重试。");
       return false;
     }
     return status === "completed" || status === "failed";
@@ -154,6 +157,7 @@ export async function decideAmadeusApproval({
     try {
       let status: string | undefined;
       for (let attempt = 0; attempt < 6; attempt++) {
+        if (signal.aborted) return false;
         try {
           status = await reconcile();
           if (status !== "running") break;
@@ -170,14 +174,14 @@ export async function decideAmadeusApproval({
       if (status === "rejected" && !allow) return true;
       if (status === "failed" && allow) return true;
       if (status === "running" || status === "unknown") {
-        setError("操作结果待核实；不会自动重试。");
+        report("操作结果待核实；不会自动重试。");
         return false;
       }
     } catch {
-      setError("无法读取审批回执；请恢复连接后重新打开对话查看结果。");
+      report("无法读取审批回执；请恢复连接后重新打开对话查看结果。");
       return false;
     }
-    setError(cause instanceof Error ? cause.message : String(cause));
+    report(cause instanceof Error ? cause.message : String(cause));
     return false;
   } finally {
     activeActionRef.current = null;

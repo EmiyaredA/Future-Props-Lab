@@ -17,7 +17,7 @@ description: Edits Visual Workshop canvases via get_canvas, put_canvas, and appl
 
 ## 不在范围
 
-素材引用 → `visual-project-assets`。生成任务 → `visual-generation-tasks`。`visual_assistant` 不在桌面 Agent 白名单。
+素材引用 → `visual-project-assets`。生成任务 → `visual-generation-tasks`。
 
 ## 方法
 

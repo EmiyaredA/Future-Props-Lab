@@ -64,7 +64,7 @@ class BatchDeleteIn(BaseModel):
 
 
 CALL_SOURCE_PATTERN = (
-    "^(|model_diagnostic|model_playground|model_inference|visual_workshop_assistant|"
+    "^(|model_diagnostic|model_playground|model_inference|"
     "visual_workshop_generation|thought_workshop_assistant|audio_annotation|desktop_pet_chat)$"
 )
 PROVIDER_KIND_PATTERN = (

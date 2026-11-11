@@ -74,7 +74,7 @@ backend/
 
 兼容网站的工作台采集与执行、Amadeus CLI 执行、面试准备、文章同步、视觉生成与验收、Galgame 媒体任务、视频剪辑及特效 Runner 显式接收会话工厂；需要配置的 Runner 同时接收配置值。工作台轮次继承所属 Runner 的工厂，不通过全局数据库寻找连接。HTTP 用例和剩余助手工具的逐项端口化仍在后续批次进行。
 
-额度领取与回收、模板同步、工作台 SSE 及视觉助手结算也显式接收所属应用的会话工厂。视觉工具绑定器把工厂绑定到每个工具回调，事件回执直接调用共享存储操作；不再通过全局数据库或仅转发函数发现依赖。工作台事件流由装配注册，路由不回退到隐式单体实现。
+额度领取与回收、模板同步与工作台 SSE也显式接收所属应用的会话工厂。事件回执直接调用共享存储操作。工作台事件流由装配注册，路由不回退到隐式单体实现。
 
 旧包映射如下；“已迁移”只表示该包源码与调用方迁移完成，兼容网站残余实现及整个业务的端口化另行验收。
 
@@ -384,15 +384,11 @@ Visual 节点验收的 `review_submission.py` 按画布、方案绑定和资料�
 
 Visual 的 `review_agent.py` 冻结已保留的 Mac 任务媒体和固定连接签名，`review_authority_http.py` 复核该精确运行是否仍可执行。Agent Runtime 的 `review_host.py` 保存不可重派的原生租约并代理 Assets 原件流。`studio/host/visual_review_worker.py` 在 Mac 的隔离任务目录执行现有 CLI 适配器与专用媒体工具，回传报告和经摘要校验的追加帧。Agent Runtime 的暂存清理只处理已到期租约的已知文件。
 
-Models 的 `assistant_model_runs.py` 负责 Visual 助手的提供方执行租约、标准化模型轮次流、用量和调用日志；`studio/contracts/visual_workshop/visual_assistant_model.py` 拥有跨服务轮次契约。Visual 持有对话和工具执行权限。
-
-Assets 的 `conversation_files.py` 按对话保留集投影助手附件内容。共享 `studio/apps/asset_library/previews/assistant_attachments.py` 负责文本、PDF 和 AVIF 的原件读取与兼容限制。Visual 的源回执确定新引用，历史附件仍保留原归属。
-
-Visual 的 `assistant_submission.py` 冻结对话和画布版本，准备附件与模型额度后提交消息与源回执。`assistant_dispatches.py` 在 Visual 持有消息结算，使用短时服务签名向 Models 补交原调用的日志结果。源运行只保存归属、范围和结算数据。
+视觉项目对话和操作审批由 Amadeus 持有；Visual 与 Models 的生成、验收及素材交接继续通过各自跨服务契约。
 
 Visual 的 Canvas、工程与历史输出由 `studio/apps/visual_workshop/migration_application.py` 导出及导入。 Visual 与 Galgame 复用 `studio/runtime/database/edit_receipt_migration.py`，在 Canvas 或 Story 导入后分账号保留历史操作回执和原响应。迁移阻止跨归属、缺少源文档或回执版本超出当前文档的记录。Canvas 文件保留集合包含当前节点及旧输出，Assets 逐文件校验回执后提交。库内放置通过 Assets 维护入口保留原名称、目录、标识和版本。 Visual 的 `migration_generation.py` 逐账号保留历史生成任务和批次，核对画布或输出的任务来源与批次成员归属。 `migration_acceptance.py` 保留验收定义、历史结果、修复草稿和证据关联，Assets 在核对原件与工程范围后重建验收素材保留集合。
 
-Visual 助手的对话、消息和操作记录由 `studio/apps/visual_workshop/conversations.py` 查询。模型选项由 Models 提供账号投影，附件元数据由 Assets 按项目、对话、精确 ID 和保留引用核验。新建及删除对话与素材引用回执共用 Visual 数据事务。 `studio/apps/visual_workshop/migration_assistant.py` 逐条迁移历史对话、消息、附件和操作。Assets 在画布投影与原件摘要通过后恢复同工程的对话素材引用。 Visual 删除项目时由 `studio/apps/visual_workshop/project_deletion.py` 核对项目版本、画布和对话范围，提交删除与恢复回执。Assets 的 `visual_project_removal.py` 在确认回执后清除画布与对话引用、项目放置和私有原件，保留文件库原件。项目文件、放置和分段交接发布在 Assets 写事务中检查删除准备。 Visual 的素材节点与输出上传由 `studio/apps/visual_workshop/uploads.py` 准备画布引用，Assets 的 `visual_upload_stages.py` 流式验证长度与 SHA256，并在画布事务确认后发布原件和引用。GIF 检查版本与 MP4 同批发布；暂存失败和源回滚由 Assets 的日志与清理生命周期处理。
+Visual 删除项目时由 `studio/apps/visual_workshop/project_deletion.py` 核对项目与画布版本，提交删除与恢复回执。Assets 的 `visual_project_removal.py` 在确认回执后清除画布与验收引用、项目放置和私有原件，保留文件库原件。项目文件、放置和分段交接发布在 Assets 写事务中检查删除准备。 Visual 的素材节点与输出上传由 `studio/apps/visual_workshop/uploads.py` 准备画布引用，Assets 的 `visual_upload_stages.py` 流式验证长度与 SHA256，并在画布事务确认后发布原件和引用。GIF 检查版本与 MP4 同批发布；暂存失败和源回滚由 Assets 的日志与清理生命周期处理。
 
 `web/src/app/entries/` 拥有独立应用装配与导航，`IndependentShell.tsx` 复用账号、主题和导航组件。`web/service.config.ts` 选择单一入口和所属程序素材，`web/scripts/build-service.mjs` 生成逐文件 SHA256、gzip／Brotli 及单服务契约清单；产物保存在被忽略的 `.local/service-web/`，镜像封装时核验清单。`scripts/contracts/web_contract.py` 仅读静态契约，不初始化数据库。Models 的 `models.tsx` 只装配模型目录、测试和日志，保留当前账号权限、未保存导航保护及跨应用跳转。程序版本摘要包含所属 HTTP／WebSocket 契约，防止契约变化复用旧缓存；其他服务的契约变化不改变本服务协议摘要。 Visual 的 `visual.tsx` 与 `VisualApplication.tsx` 装配项目、画布、素材和任务入口，复用 Visual 功能页面及权限分支。Visual 镜像在提供程序资源前比对已安装程序的 API 摘要。 Galgame 的 `galgame.tsx` 与 `GalgameApplication.tsx` 独立装配项目列表、总览、编辑及预演，保留账号权限和已保存 Story 的预演回退。
 
@@ -507,7 +503,10 @@ Future-Props-Lab/
   `web/src/features/amadeus/` 拥有独立 `amadeus.html` 界面、Code Agent 选择、运行状态重连、对话时间线与控件选取；
   工坊通过 `web/src/platform/assistantElements.ts` 登记原生选区、命中和定位，`features/amadeus/SourceHost.tsx` 负责点选高亮和取消。
   `elementReferences.ts` 负责显式引用的去重、上限与快照构造。
-  Portal 提供 `/amadeus` 独立工作区，与工坊侧栏共用会话组件。项目选择经 FPL 操作目录读取各业务服务，`useAmadeusData.ts` 管理账号和会话范围内的读取与订阅，`revisionConflict.ts` 解释会话 CAS 冲突；
+  Portal 提供 `/amadeus` 独立工作区，与工坊侧栏共用会话组件。项目选择经 FPL 操作目录读取各业务服务。`useAmadeusData.ts` 拥有会话快照、历史、草稿和选择版本；
+  `useAmadeusRun.ts` 拥有活动任务、提交和轮询，`useAmadeusAttachments.ts` 拥有附件导入、文件列表和预览，
+  `useAmadeusCapabilities.ts` 拥有模型和集成目录。`useAmadeusController.ts` 组合这些命令与快照，
+  `revisionConflict.ts` 解释会话 CAS 冲突；
   `vendor/pi/` 仅保留历史来源快照，不参与 Amadeus 构建。进程监督由桌面独立工具入口提供，
   不复用携带后端凭据的服务进程。
 
@@ -605,7 +604,7 @@ Future-Props-Lab/
   `backend/studio/apps/interview_assistant/` 拥有私有场次、材料、输入快照、Codex 准备任务和交付契约；`routes/` 只适配 HTTP，`rooms.py` 执行权限、回执和 CAS，`runner.py` 通过现有 Runner 生命周期串行执行准备、处理中断并拒绝过期结果。`codex.py` 白名单读取模型连接、冻结上下文并消费 JSONL；`task_tools.py` 是不依赖运行时配置、ORM 或 HTTP 的文档／草稿 MCP，`process_watchdog.py` 负责父进程退出和超时终止。二者经 `scripts/website/interview_tools.py` 独立打包为 `fpl-interview-tools`，不复用服务进程凭据。`studio/apps/identity/website_access/interview.py` 提供后台账号／成员权限重验，在主入口注入执行器。
   后端 `studio/apps/asset_library/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
-  `apps/visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
+  `apps/visual_workshop/` 负责真实项目、带版本的节点画布与图片/视频异步生成任务，
   `apps/galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、账号级旧 Story
   批量迁移与旧文件导入用例、剧情对话富文本、多人角色舞台演出、
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
@@ -623,6 +622,9 @@ Future-Props-Lab/
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
   但只能通过 Galgame 工程素材 API 修改或删除。`studio/apps/asset_library/storage/website_references.py` 统一检查文档与知识库封面的公共文件删除保护。公共文件被视觉或 Galgame 工程引用期间禁止删除，
   对话消息引用的项目素材也必须先解除引用才能删除。
+
+视频剪辑页面通过 `useSubtitleImport.ts` 管理字幕文件解析、确认和取消；`assetBatch.ts` 根据时间线快照、
+素材与 ID 分配器生成编辑和撤销命令，由现有编辑队列提交。页面负责面板及选中项。
 
 视频剪辑的节目监视器由 `VideoEditorPreview.tsx` 装配；`VideoEditorMediaLayer.tsx` 拥有媒体图层与图片显示，
 `VideoEditorProxyVideo.tsx` 在定位和源区间校验完成后发布代理视频帧，保留画布上的上一张有效画面，
@@ -659,8 +661,7 @@ Future-Props-Lab/
 - Galgame 素材写入和 CAS 用例保留在 `assets.py`；文件命名、媒体元数据映射等纯规则位于
   `asset_support.py`，引用分析、资源总览和打包清单位于 `asset_analysis.py`，避免 CRUD、Story
   遍历和打包投影继续共享一个大型类文件。
-- 视觉助手对话生命周期与发送事务保留在 `visual_workshop/assistant/conversations.py`，附件权限、
-  内容投影、图片编码和文档提取集中在同目录 `attachments.py`，避免会话持久化依赖具体媒体解析。
+- 视觉工坊画布、看板和验收使用 Amadeus 项目入口；旧助手模块已移除。
 - 版本化项目快照的 ZIP64 流式校验、临时文件清理和跨平台目录打开命令由
   `studio/runtime/files/project_archives.py` 与 `studio/host/project_files/folders.py` 拥有；画布、Story 和时间线的
   类型化投影、ID 重映射与模型语义匹配仍位于三个所属工坊。
@@ -752,7 +753,7 @@ Skill 不可变版本保存在 `accounts/<user-id>/integrations/skills/<skill-id
 `r0019_project_storage_layout` 只增加存储版本。旧文件由受鉴权的显式迁移 API 校验并搬迁，
 schema migration 不执行文件 I/O。
 
-目录配置、模型测试会话与生成任务、视觉工坊项目、含节点级生成草稿和动态连线的节点画布、项目对话、文件夹、文件和项目引用
+目录配置、模型测试会话与生成任务、视觉工坊项目、含节点级生成草稿和动态连线的节点画布、文件夹、文件和项目引用
 使用 revision/CAS 防止静默覆盖；Galgame 工坊工程元数据与整份故事文档分别使用 revision/CAS，
 故事冲突保留服务器完整快照，完成态工程在故事修改后恢复草稿。Story 1.4 的角色、素材、国际化、
 时间轴、流程与表现层交叉校验由 `apps/galgame_workshop/schemas/story_validation.py` 的纯函数拥有；
@@ -770,11 +771,7 @@ schema migration 或直接数据库修改替代运行期迁移。工具单项状
 `shared/ui/taskExecutionPresentation.ts` 区分节点采样进度与上游报告值。
 `submitting` 中断不会自动重提，以避免重复计费。`AsyncSession` 只能由单个异步任务
 使用；每个生成分支使用独立短会话，供应商网络调用和文件下载不占用已开始写入的事务。
-项目对话同样在发送准备与流式结算阶段使用独立短事务，并复用统一供应商适配边界。视觉工坊
-Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任务无需确认，画布写入和外部生成必须
-经过内存审批；工具步骤持久化到对话消息，运行和审批等待不持久化，服务重启会安全取消遗留状态。
-写工具复用视觉工坊校验与短事务，批量节点/连线变更只执行一次画布 CAS，生成任务与占位节点原子创建，
-且不与 `model_test_*` 数据混用。
+视觉工坊提交前先保存画布；Amadeus 的画布写入复用视觉校验与画布 CAS。既有生成任务的审批来源识别只供成果发布。
 
 模型测试对话、图片附件及生成结果是独立的账号调试数据，不进入视觉
 工坊文件管理，也不参与 Bot 或业务编排。启动恢复会把遗留的 pending 模型回复标记为 cancelled。
@@ -925,6 +922,11 @@ Web `editor/` 拥有会话装配、共同命令、页面批量操作、查找替
 
 ## 导演台
 
+Web 编辑器入口装配播放时钟和帧展示。`editor/playback-clock.ts` 拥有帧调度与卸载取消，
+`ui/frame-presentation.ts` 消费每帧的展示数据；`editor/scene-projection.ts` 与
+`editor/scene-snapping.ts` 根据传入的场景数据计算拾取、标签投影及吸附。Engine 持有 Three.js 资源和拖动缓存。
+
+
 `backend/studio/apps/director_desk/` 拥有账号项目记录和用户动作库。
 `storage/file_paths.py` 独立拥有导演台路径和中断删除恢复，不继承素材库适配器。网站与独立服务显式注入该存储；文件和动作适配不自行读取全局配置。目录移入暂存、还原和清理由 `studio/runtime/files/directory_staging.py` 实现，创建／删除布局接口由 `runtime/files/project_layout.py` 定义，`runtime/database/project_files.py` 保持原有事务补偿顺序。项目归档格式与大小校验由 `runtime/files/project_archives.py` 编解码，各业务仍负责项目、文档、素材归属和事务规则。
 `director_desk_projects.document` 是编辑器写出的瘦 JSON：戏段、实体和资源引用。
@@ -1066,6 +1068,14 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 `local-models/`；数据库备份恢复后可主动重新安装。语音输入与输出保存在对应空间的
 `model-inference/inputs/`、`model-inference/outputs/`，沿用账号备份和访问边界。
 
+## 桌面本地视频增强
+
+`studio/apps/model_service/video_enhancement/` 拥有视频输入校验、帧范围计划、任务状态和片段发布。
+`studio/host/local_models/relayvsr/` 提供 Metal 原生 worker，按任务持有权重上下文，由桌面网站装配注入。
+FFmpeg 快版复用同一任务队列和媒体边界。长镜头最多每 240 帧分段，单次滤镜图输出等比放大和轻微锐化两份片段，使用 VideoToolbox 编码。
+安装目录只保留固定权重和经本机验收的运行环境。账号的输入及输出沿用 `model-inference/` 边界，`0127_video_enhancement` 保存任务检查点。
+分段结果先通过媒体校验并落盘，再提交进度。崩溃后以已提交的片段序号为续跑点。
+
 ## 视觉工坊节点验收
 
 `backend/studio/apps/visual_workshop/acceptance/` 拥有只读动作迁移定义、节点方案 CAS 绑定、自动生成依据、不可变输出验收记录、人工结论、证据、返修和快照兼容。`execution/` 负责无凭据任务包、专用媒体 MCP 和 Agent 报告转换。`runner.py` 复用短事务及 RunnerSupervisor，模型 API 与 Agent 专属结果分别保存。生成快照与上传版本的节点设置明确区分，验收不参与生成、上传、画布保存及最终输出采用的门禁。
@@ -1103,7 +1113,11 @@ Web `models/generation/videoCapabilities.ts` 共用能力选择、参数组装�
 
 演示模型与示例工具共用 `studio/apps/model_service/demonstration/execution.py` 的实例化执行组件；兼容网站的已登记设置读取留在治理存储适配中，独立模型服务注入自有设置存储。调用计数、排空和日志均归当前实例，不再存在模块级演示运行单例。
 
-Amadeus 动作句柄与下载任务分别由装配创建的 `ActionExecution`、`VideoDownloads` 实例持有。视频时间线和素材入库适配显式接收会话工厂；关闭数据库前先完成动作结算及已接受下载。
+Amadeus 网站动作句柄由装配创建的 `execution/website_actions.py` 执行器实例持有。
+`storage/website_actions.py` 负责按账号领取和结算，`assembly/website/amadeus_actions.py` 绑定外部执行能力。
+独立服务由装配读取发布契约并向 HTTP 与 `dialogue_tools.py` 注入同一操作目录；兼容网站注入当前实例的 OpenAPI 目录。
+`storage/dialogue_records.py` 和 `storage/dialogue_files.py` 分别提供独立 CLI 轮次的短事务和有界文件读取。
+下载任务由 `VideoDownloads` 实例持有。视频时间线和素材入库适配显式接收会话工厂；关闭数据库前先完成动作结算及已接受下载。
 
 ### 网站装配与隔离实例
 
@@ -1132,6 +1146,9 @@ OpenAPI 导出只构造 HTTP 协议层。测试通过 `tests/website_test_suppor
 登录、注册与远程桌面的短期尝试窗口由每个应用显式构造 `runtime/http/rate_limit.AttemptLimiter`。同实例的协议适配与桌面连接共用该实例；桌面认证成功清除当前实例对应键，不影响其他应用。Cookie 安全属性和允许的请求来源在装配中绑定。窗口只限流，不代替数据库中的账号、Session 和云控授权事实。
 
 ## 自动化发现与开发者文档
+
+Trellis 的任务、规范索引和工作记录位于 `.trellis/`，Codex 项目技能位于 `.agents/skills/trellis-*/`。
+Studio 后端以音频标注为首个规范入口，规则正文归现有工程契约。入口和适用范围见根 `AGENTS.md`。
 
 Gateway 的公开输入类型、白名单及路由规则在 `studio/contracts/gateway/`；`automation_operations.json` 是 SDK 和服务镜像共用的白名单真源。`gateway/use_cases/resource_links.py` 在查询前校验操作权限，查询不到、其他账号和已删除资源均返回不存在。网站通过 `storage/website_resources.py` 读取显式装配的模型注册表，独立服务通过 `clients/resource_reader.py` 向资源所有者发送当前签名身份。两种装配调用同一个用例，不各自裁决链接规则。
 
@@ -1165,15 +1182,15 @@ Amadeus 的会话文件路径由装配明确提供给 `storage/files.py` 和 Ski
 
 ### 工具循环与审批等待生命周期
 
-`studio/runtime/tasks/reactive_tools/` 保存原 Harness 的通用循环、上下文预算、工具阶段和进程内审批协调机制。模型消息协议继续由 `studio/contracts/agent_runtime/dialogue.py` 提供；业务审批持久化和任务结算仍属于业务应用或 Agent Runtime 服务。`ReactiveToolLoop` 必须接收 `ApprovalPort`，不创建默认审批单例；网站和独立视觉服务分别装配审批对象，关闭时取消全部等待句柄，重启后不得从内存恢复为批准。移除原父包集中重导出和无行为的 Harness 子类，调用方明确导入所需模块。
+`studio/runtime/tasks/reactive_tools/` 保存原 Harness 的通用循环、上下文预算、工具阶段和进程内审批协调机制。模型消息协议继续由 `studio/contracts/agent_runtime/dialogue.py` 提供；业务审批持久化和任务结算仍属于业务应用或 Agent Runtime 服务。`ReactiveToolLoop` 必须接收 `ApprovalPort`，不创建默认审批单例；进程内审批端口关闭时取消全部等待句柄，重启后不得从内存恢复为批准。移除原父包集中重导出和无行为的 Harness 子类，调用方明确导入所需模块。
 
 ### 写作与模型尝试的装配边界
 
-`studio/assembly/website/thought_writing.py` 拥有兼容网站的思绪写作模型选择、供应商流及调用日志连接，显式接收会话工厂、解密器与传输解析器；思绪业务通过 `WritingModels` 端口使用它。原 `apps/thought_workshop/legacy_writing.py` 已移除。独立 Models 的助手轮次、视觉验收与 Galgame 转录只接收自身会话、配置及解密能力，视觉验收不再接收整个应用状态容器。`apps/model_service/writing.py` 使用模型入口注入的解密器。没有消费者的旧 `clients/text.py` 同进程入口已删除，既有 HTTP 写作和推理协议保持不变。
+`studio/assembly/website/thought_writing.py` 拥有兼容网站的思绪写作模型选择、供应商流及调用日志连接，显式接收会话工厂、解密器与传输解析器；思绪业务通过 `WritingModels` 端口使用它。原 `apps/thought_workshop/legacy_writing.py` 已移除。独立 Models 的视觉验收与 Galgame 转录只接收自身会话、配置及解密能力，视觉验收不再接收整个应用状态容器。`apps/model_service/writing.py` 使用模型入口注入的解密器。没有消费者的旧 `clients/text.py` 同进程入口已删除，既有 HTTP 写作和推理协议保持不变。
 
 模型文本推理、模型测试 SSE 和实时语音 WS 由入口传入同一应用实例的解密器。`model_service/realtime/__init__.py` 不加载目录或会话适配；具体消费者直接导入 `catalog.py` 与 `session.py`。语音来源校验读取当前装配的 CORS 配置，避免不同实例受全局配置影响。供应商密钥只在服务端适配边界解密，不进入公开事件或响应。
 
-生成 Driver、模型推理／测试／转录 Runner、Galgame ASR 与视觉验收／助手均显式接收解密器。Models Runner 还必须接收配置，禁止默认全局回退。`runtime/secrets.py` 只提供实例加密机制，不选择密钥；账号复核、准备、执行和结算仍归业务所有者。测试密文帮助函数限定在 `tests/credential_test_support.py`，生产包不提供旧运行时兼容转发。
+生成 Driver、模型推理／测试／转录 Runner、Galgame ASR 与视觉验收均显式接收解密器。Models Runner 还必须接收配置，禁止默认全局回退。`runtime/secrets.py` 只提供实例加密机制，不选择密钥；账号复核、准备、执行和结算仍归业务所有者。测试密文帮助函数限定在 `tests/credential_test_support.py`，生产包不提供旧运行时兼容转发。
 
 思绪工坊的文件与社区兼容适配显式接收当前网站配置，`legacy_asset_metadata.py` 接收装配的文件存储；业务包不读取进程全局设置。账号与版本复核仍在读取入口执行。笔记、知识库、多维表及社区写入使用显式素材端口。社区在授权后使用对应源账号的适配器，独立服务在准备阶段生成有界素材快照。Identity 目录在协议层装配，发布、编辑历史和多维表人员查询显式接收该端口。数据库会话只携带存储归属和事务信息。
 
@@ -1199,6 +1216,6 @@ Web 通用 UI 验收放在 `web/tests/shared/`，API、SSE、下载与传输验�
 
 网站素材、演示、特效和视频剪辑适配器接收当前应用的配置或已构造的存储。特效网站 HTTP 操作从当前请求的应用取得配置，后台导出从其装配获得同一配置。演示、特效和视频剪辑的旧站资源工厂仍由会话适配器键选择，逐用例解耦继续按业务批次推进。
 
-视觉工坊网站的生成、助手和验收适配器接收当前应用的配置。`assistant/stream.py` 把准备对话时选定的同一份配置绑定到 `assistant/tools.py` 的生成查询和提交。网站节点验收显式绑定方案查询与素材存储，连接签名和视频取样使用当前应用配置。独立视觉服务通过原有跨服务端口读取模型和素材能力。架构测试检查整个视觉工坊业务包的配置边界。
+视觉工坊网站的生成和验收适配器接收当前应用的配置。网站节点验收显式绑定方案查询与素材存储，连接签名和视频取样使用当前应用配置。独立视觉服务通过原有跨服务端口读取模型和素材能力。架构测试检查整个视觉工坊业务包的配置边界。
 
 根级测试保留受保护产品文档直接引用的证据文件。测试会话、共用夹具和子进程脚本仍由各测试根目录提供。

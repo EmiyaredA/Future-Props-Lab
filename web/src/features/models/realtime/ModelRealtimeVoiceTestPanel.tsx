@@ -218,6 +218,9 @@ export function ModelRealtimeVoiceTestPanel({
       speech: models.some((model) =>
         model.capabilities.includes("speech_recognition"),
       ),
+      enhancement: models.some((model) =>
+        model.capabilities.includes("video_enhancement"),
+      ),
       realtime_voice: Boolean(realtimeModels.length),
     }),
     [models, realtimeModels.length],

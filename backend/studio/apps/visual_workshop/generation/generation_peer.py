@@ -19,7 +19,6 @@ from studio.contracts.visual_workshop.visual_generation import (
     ModelSelection,
     VisualModelChoice,
 )
-from studio.contracts.visual_workshop.visual_generation_approval import ADMIT, GenerationApproval
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
 
@@ -122,33 +121,6 @@ class GenerationPeer:
             "assets", query.path(project, identity), ASSET_PURPOSE, query.model_dump(mode="json")
         )
         return GenerationAssets.model_validate_json(raw)
-
-    async def admit(self, owner, plan):
-        (task,) = plan.tasks
-        body = GenerationApproval(
-            owner_id=owner,
-            project_id=plan.project_id,
-            task_id=task.task_id,
-            plan_sha256=plan.digest,
-            source_path=self.source,
-            kind=task.arguments.kind,
-        )
-        try:
-            response = await self.client.client.post(
-                self.client.identity_url + ADMIT,
-                headers={
-                    HEADER: self.assertion,
-                    "Authorization": "Bearer " + self.client.credential,
-                },
-                json=body.model_dump(mode="json"),
-            )
-            check(response)
-            if response.json() != {"task_id": str(body.task_id), "plan_sha256": plan.digest}:
-                raise ValueError("generation approval receipt mismatch")
-        except (httpx.HTTPError, TypeError, ValueError) as exc:
-            raise GenerationError(
-                "生成审批回执未确认", code="visual_generation_unavailable", status=503
-            ) from exc
 
     async def prepare(self, plan):
         headers = {}

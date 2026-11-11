@@ -52,7 +52,7 @@ class AcceptanceModelListOut(WireModel):
 class AcceptanceModelOut(WireModel):
     id: str = Field(default=..., alias='id')
     label: str = Field(default=..., alias='label')
-    provider_kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     slug: str = Field(default=..., alias='slug')
 
@@ -3228,6 +3228,7 @@ class LocalModelAttachIn(WireModel):
 
 class LocalModelOut(WireModel):
     busy: bool = Field(default=..., alias='busy')
+    capability: Literal['speech_synthesis', 'video_enhancement'] = Field(default='speech_synthesis', alias='capability')
     compatible: bool = Field(default=..., alias='compatible')
     download_bytes: int = Field(default=..., alias='download_bytes')
     enabled: bool = Field(default=..., alias='enabled')
@@ -3388,7 +3389,7 @@ class ModelCategoryListOut(WireModel):
     items: list[ModelCategoryOut] = Field(default=..., alias='items')
 
 class ModelCategoryOut(WireModel):
-    id: Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'image_generation', 'end_to_end_speech'] = Field(default=..., alias='id')
+    id: Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'video_enhancement', 'image_generation', 'end_to_end_speech'] = Field(default=..., alias='id')
     label: str = Field(default=..., alias='label')
     sub_type: str | None = Field(default=None, alias='sub_type')
     type: Literal['text', 'image', 'audio', 'video'] = Field(default=..., alias='type')
@@ -3398,8 +3399,8 @@ class ModelDefaultsIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
 class ModelEntryIn(WireModel):
-    capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
-    categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'image_generation', 'end_to_end_speech']] | None = Field(default=None, alias='categories')
+    capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'video_enhancement', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
+    categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'video_enhancement', 'image_generation', 'end_to_end_speech']] | None = Field(default=None, alias='categories')
     description: str = Field(default='', alias='description', max_length=255)
     enabled: bool = Field(default=True, alias='enabled')
     expected_catalog_revision: int = Field(default=..., alias='expected_catalog_revision', ge=0.0)
@@ -3408,8 +3409,8 @@ class ModelEntryIn(WireModel):
 
 class ModelEntryOut(WireModel):
     availability: Literal['ready', 'not_installed', 'stopped', 'unsupported_platform'] = Field(default='ready', alias='availability')
-    capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] = Field(default=..., alias='capabilities')
-    categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'image_generation', 'end_to_end_speech']] = Field(default=..., alias='categories')
+    capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'video_enhancement', 'speech_recognition', 'voice', 'audio_generation']] = Field(default=..., alias='capabilities')
+    categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'video_enhancement', 'image_generation', 'end_to_end_speech']] = Field(default=..., alias='categories')
     description: str = Field(default=..., alias='description')
     enabled: bool = Field(default=..., alias='enabled')
     id: str = Field(default=..., alias='id')
@@ -4348,7 +4349,7 @@ class ProviderIn(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     expected_catalog_revision: int = Field(default=..., alias='expected_catalog_revision', ge=0.0)
-    kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_id: str | None = Field(default=None, alias='supplier_id')
 
@@ -4362,7 +4363,7 @@ class ProviderOut(WireModel):
     enabled: bool = Field(default=..., alias='enabled')
     has_api_key: bool = Field(default=..., alias='has_api_key', repr=False)
     id: str = Field(default=..., alias='id')
-    kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     managed_fields: list[str] | None = Field(default=None, alias='managed_fields')
     models: list[ModelEntryOut] = Field(default=..., alias='models')
     name: str = Field(default=..., alias='name')
@@ -4477,7 +4478,7 @@ class RealtimeVoiceModelOut(WireModel):
     output_sample_rate: int = Field(default=..., alias='output_sample_rate')
     playback: RealtimeVoicePlaybackOut = Field(default=..., alias='playback')
     provider_id: str = Field(default=..., alias='provider_id')
-    provider_kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     slug: str = Field(default=..., alias='slug')
     supports_interruption: bool = Field(default=..., alias='supports_interruption')
@@ -5185,8 +5186,8 @@ class TemplateLayoutMapping(WireModel):
     slide_id: str = Field(default=..., alias='slide_id', min_length=1, max_length=64)
 
 class TemplateModel(WireModel):
-    capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
-    categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'image_generation', 'end_to_end_speech']] | None = Field(default=None, alias='categories')
+    capabilities: list[Literal['speech_synthesis', 'chat', 'vision', 'tools', 'image_generation', 'video_generation', 'video_enhancement', 'speech_recognition', 'voice', 'audio_generation']] | None = Field(default=None, alias='capabilities')
+    categories: list[Literal['text_generation', 'other_general', 'speech_synthesis', 'speech_recognition', 'music_generation', 'video_generation', 'video_enhancement', 'image_generation', 'end_to_end_speech']] | None = Field(default=None, alias='categories')
     description: str = Field(default='', alias='description', max_length=255)
     enabled: bool = Field(default=True, alias='enabled')
     label: str = Field(default='', alias='label', max_length=160)
@@ -5247,7 +5248,7 @@ class TemplateProvider_Input(WireModel):
     clear_api_key: bool = Field(default=False, alias='clear_api_key', repr=False)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -5258,7 +5259,7 @@ class TemplateProvider_Output(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['local_qwen_tts', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -5984,6 +5985,33 @@ class VideoEditorTransition(WireModel):
     easing: Literal['linear', 'ease-in', 'ease-out', 'ease-in-out'] = Field(default='linear', alias='easing')
     kind: Literal['cut', 'crossfade', 'fade-black', 'fade-white', 'wipe', 'wipe-left', 'wipe-right', 'zoom', 'blur', 'spin-blur', 'whip-pan', 'light-leak', 'flash', 'eyelid', 'audio-crossfade'] = Field(default=..., alias='kind')
 
+class VideoEnhancementAction(WireModel):
+    action: Literal['pause', 'resume'] = Field(default=..., alias='action')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+
+class VideoEnhancementIn(WireModel):
+    model_id: str = Field(default=..., alias='model_id', min_length=1, max_length=36)
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=64)
+    source_id: str = Field(default=..., alias='source_id', min_length=1, max_length=36)
+
+class VideoEnhancementOut(WireModel):
+    completed: int = Field(default=..., alias='completed')
+    error_message: str | None = Field(default=..., alias='error_message')
+    filename: str = Field(default=..., alias='filename')
+    id: str = Field(default=..., alias='id')
+    model_id: str = Field(default=..., alias='model_id')
+    result_url: str | None = Field(default=..., alias='result_url')
+    revision: int = Field(default=..., alias='revision')
+    segments: list[VideoEnhancementSegment] = Field(default=..., alias='segments')
+    status: Literal['queued', 'analyzing', 'running', 'pausing', 'paused', 'interrupted', 'combining', 'completed', 'failed'] = Field(default=..., alias='status')
+
+class VideoEnhancementSegment(WireModel):
+    end_seconds: float = Field(default=..., alias='end_seconds')
+    index: int = Field(default=..., alias='index')
+    original_url: str | None = Field(default=..., alias='original_url')
+    result_url: str | None = Field(default=..., alias='result_url')
+    start_seconds: float = Field(default=..., alias='start_seconds')
+
 class VideoFramesIn(WireModel):
     max_width: int = Field(default=1280, alias='max_width', ge=64.0, le=1920.0)
     output: Literal['zip', 'grid'] = Field(default='zip', alias='output')
@@ -6096,116 +6124,6 @@ class VisualAssetReferencePatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     folder_id: str | None = Field(default=None, alias='folder_id')
     move_to_root: bool = Field(default=False, alias='move_to_root')
-
-class VisualAssistantActionOut(WireModel):
-    action_id: str = Field(default=..., alias='action_id')
-    approval_group_id: str | None = Field(default=..., alias='approval_group_id')
-    canvas_revision: int | None = Field(default=..., alias='canvas_revision')
-    created_at: str = Field(default=..., alias='created_at')
-    display_payload: dict[str, Any] = Field(default=..., alias='display_payload')
-    duration_ms: int | None = Field(default=..., alias='duration_ms')
-    effect: Literal['read', 'write', 'external'] = Field(default=..., alias='effect')
-    error_message: str | None = Field(default=..., alias='error_message')
-    generation_task_id: str | None = Field(default=..., alias='generation_task_id')
-    id: str = Field(default=..., alias='id')
-    position: int = Field(default=..., alias='position')
-    result_payload: dict[str, Any] = Field(default=..., alias='result_payload')
-    run_id: str = Field(default=..., alias='run_id')
-    status: Literal['proposed', 'waiting_approval', 'running', 'completed', 'rejected', 'failed', 'cancelled'] = Field(default=..., alias='status')
-    tool_name: str = Field(default=..., alias='tool_name')
-    updated_at: str = Field(default=..., alias='updated_at')
-
-class VisualAssistantApprovalIn(WireModel):
-    canvas_revision: int = Field(default=..., alias='canvas_revision', ge=0.0)
-    decision: Literal['approve', 'reject'] = Field(default=..., alias='decision')
-
-class VisualAssistantApprovalOut(WireModel):
-    accepted: bool = Field(default=True, alias='accepted')
-
-class VisualAssistantAssetOut(WireModel):
-    byte_size: int = Field(default=..., alias='byte_size')
-    display_name: str = Field(default=..., alias='display_name')
-    id: str = Field(default=..., alias='id')
-    mime_type: str = Field(default=..., alias='mime_type')
-
-class VisualAssistantAssetPart(WireModel):
-    asset_id: str = Field(default=..., alias='asset_id', min_length=1, max_length=64)
-    type: Literal['asset'] = Field(default=..., alias='type')
-
-class VisualAssistantConversationListOut(WireModel):
-    items: list[VisualAssistantConversationSummaryOut] = Field(default=..., alias='items')
-
-class VisualAssistantConversationOut(WireModel):
-    created_at: str = Field(default=..., alias='created_at')
-    id: str = Field(default=..., alias='id')
-    image_model_id: str | None = Field(default=..., alias='image_model_id')
-    image_model_slug: str = Field(default=..., alias='image_model_slug')
-    messages: list[VisualAssistantMessageOut] | None = Field(default=None, alias='messages')
-    model_id: str | None = Field(default=..., alias='model_id')
-    model_slug: str = Field(default=..., alias='model_slug')
-    project_id: str = Field(default=..., alias='project_id')
-    revision: int = Field(default=..., alias='revision')
-    title: str = Field(default=..., alias='title')
-    updated_at: str = Field(default=..., alias='updated_at')
-    video_model_id: str | None = Field(default=..., alias='video_model_id')
-    video_model_slug: str = Field(default=..., alias='video_model_slug')
-
-class VisualAssistantConversationPatchIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    image_model_id: str | None = Field(default=None, alias='image_model_id')
-    model_id: str | None = Field(default=None, alias='model_id')
-    title: str | None = Field(default=None, alias='title')
-    video_model_id: str | None = Field(default=None, alias='video_model_id')
-
-class VisualAssistantConversationSummaryOut(WireModel):
-    created_at: str = Field(default=..., alias='created_at')
-    id: str = Field(default=..., alias='id')
-    image_model_id: str | None = Field(default=..., alias='image_model_id')
-    image_model_slug: str = Field(default=..., alias='image_model_slug')
-    model_id: str | None = Field(default=..., alias='model_id')
-    model_slug: str = Field(default=..., alias='model_slug')
-    project_id: str = Field(default=..., alias='project_id')
-    revision: int = Field(default=..., alias='revision')
-    title: str = Field(default=..., alias='title')
-    updated_at: str = Field(default=..., alias='updated_at')
-    video_model_id: str | None = Field(default=..., alias='video_model_id')
-    video_model_slug: str = Field(default=..., alias='video_model_slug')
-
-class VisualAssistantMessageOut(WireModel):
-    actions: list[VisualAssistantActionOut] | None = Field(default=None, alias='actions')
-    assets: list[VisualAssistantAssetOut] | None = Field(default=None, alias='assets')
-    content: str = Field(default=..., alias='content')
-    content_parts: list[VisualAssistantTextPart | VisualAssistantAssetPart] | None = Field(default=None, alias='content_parts')
-    created_at: str = Field(default=..., alias='created_at')
-    error_message: str | None = Field(default=..., alias='error_message')
-    id: str = Field(default=..., alias='id')
-    model_slug: str = Field(default=..., alias='model_slug')
-    role: Literal['user', 'assistant'] = Field(default=..., alias='role')
-    status: Literal['pending', 'completed', 'error', 'cancelled'] = Field(default=..., alias='status')
-    turn_id: str = Field(default=..., alias='turn_id')
-
-class VisualAssistantModelOptionListOut(WireModel):
-    items: list[VisualAssistantModelOptionOut] = Field(default=..., alias='items')
-
-class VisualAssistantModelOptionOut(WireModel):
-    capabilities: list[str] = Field(default=..., alias='capabilities')
-    description: str = Field(default=..., alias='description')
-    id: str = Field(default=..., alias='id')
-    label: str = Field(default=..., alias='label')
-    provider_id: str = Field(default=..., alias='provider_id')
-    provider_name: str = Field(default=..., alias='provider_name')
-    slug: str = Field(default=..., alias='slug')
-
-class VisualAssistantSendIn(WireModel):
-    asset_ids: list[str] | None = Field(default=None, alias='asset_ids', max_length=5)
-    canvas_revision: int = Field(default=..., alias='canvas_revision', ge=0.0)
-    content: str = Field(default='', alias='content', max_length=100000)
-    content_parts: list[VisualAssistantTextPart | VisualAssistantAssetPart] | None = Field(default=None, alias='content_parts', max_length=1000)
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-
-class VisualAssistantTextPart(WireModel):
-    text: str = Field(default=..., alias='text', max_length=100000)
-    type: Literal['text'] = Field(default=..., alias='type')
 
 class VisualCanvasAudioGenerationDraft(WireModel):
     active_prompt_version_id: str | None = Field(default=None, alias='active_prompt_version_id')
@@ -7302,6 +7220,10 @@ VideoEditorTimelineTransition.model_rebuild()
 VideoEditorTrack.model_rebuild()
 VideoEditorTransform.model_rebuild()
 VideoEditorTransition.model_rebuild()
+VideoEnhancementAction.model_rebuild()
+VideoEnhancementIn.model_rebuild()
+VideoEnhancementOut.model_rebuild()
+VideoEnhancementSegment.model_rebuild()
 VideoFramesIn.model_rebuild()
 VideoGenerationTaskCreateIn.model_rebuild()
 VideoMediaInfoOut.model_rebuild()
@@ -7317,20 +7239,6 @@ VisualAssetOut.model_rebuild()
 VisualAssetPatchIn.model_rebuild()
 VisualAssetReferenceCreateIn.model_rebuild()
 VisualAssetReferencePatchIn.model_rebuild()
-VisualAssistantActionOut.model_rebuild()
-VisualAssistantApprovalIn.model_rebuild()
-VisualAssistantApprovalOut.model_rebuild()
-VisualAssistantAssetOut.model_rebuild()
-VisualAssistantAssetPart.model_rebuild()
-VisualAssistantConversationListOut.model_rebuild()
-VisualAssistantConversationOut.model_rebuild()
-VisualAssistantConversationPatchIn.model_rebuild()
-VisualAssistantConversationSummaryOut.model_rebuild()
-VisualAssistantMessageOut.model_rebuild()
-VisualAssistantModelOptionListOut.model_rebuild()
-VisualAssistantModelOptionOut.model_rebuild()
-VisualAssistantSendIn.model_rebuild()
-VisualAssistantTextPart.model_rebuild()
 VisualCanvasAudioGenerationDraft.model_rebuild()
 VisualCanvasAudioNode.model_rebuild()
 VisualCanvasDocumentOut.model_rebuild()

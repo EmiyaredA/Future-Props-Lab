@@ -2,7 +2,6 @@
 
 from fastapi import APIRouter, HTTPException, Request
 
-from studio.apps.model_service.catalog.assistant import assistant_models
 from studio.apps.model_service.catalog.visual import (
     acceptance_model_out,
     acceptance_models,
@@ -14,11 +13,9 @@ from studio.apps.model_service.catalog.visual import (
 from studio.apps.model_service.catalog_reads import owned_catalog
 from studio.contracts.model_service.schemas.visual_catalog import (
     AcceptanceModelListOut,
-    AssistantCatalog,
     FixedAcceptanceModelOut,
     GenerationOptionsOut,
 )
-from studio.contracts.visual_workshop.visual_assistant import MODEL_TARGET
 from studio.contracts.visual_workshop.visual_catalog import (
     ACCEPTANCE_TARGET,
     FIXED_ACCEPTANCE_TARGET,
@@ -47,12 +44,6 @@ async def read_generation_options(request: Request):
 async def read_acceptance_models(request: Request):
     async with owned_catalog(request, purpose="visual_catalog") as (actor, session):
         return await acceptance_models(session, actor.user_id)
-
-
-@router.get(MODEL_TARGET, response_model=AssistantCatalog)
-async def read_assistant_models(request: Request):
-    async with owned_catalog(request, purpose="visual_assistant") as (_actor, session):
-        return await assistant_models(session)
 
 
 @router.get(FIXED_ACCEPTANCE_TARGET, response_model=FixedAcceptanceModelOut)

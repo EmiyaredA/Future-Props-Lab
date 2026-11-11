@@ -72,3 +72,12 @@
 - 目录门禁的覆盖范围内禁止 `-foundation`、`-components`、`-interactions`、`-part\d*`、`-base`、`-extra`
   和 `-misc` 后缀，以及只做转发的空壳 `@import` 样式。禁止在 Web 源码新增编号式 CSS 分片。
   构建预算脚本只读产物，禁止在构建后拆分或改写 CSS。
+
+## RelayVSR 本机验收
+
+RelayVSR 2× INT8 的桌面入口通过本机证据启用。构建时使用 Apple Silicon 上的 Xcode Command Line Tools 和 CMake，执行环境还需要可从 PATH 调用的 `ffmpeg` 与 `ffprobe`。临时权重、构建产物和验收报告放在经 `git check-ignore` 核验的 `.local/` 任务目录。
+
+1. 检出 `stable-diffusion.cpp` 的 `a3c49b13be5a64a0b4da2b576af3a17e8ae1ccbf`，按该提交初始化子模块。
+2. 以 `backend/studio/host/local_models/relayvsr` 为 CMake 源目录，传入 `-DRELAYVSR_SOURCE=<上游源码绝对路径>` 和 `-DCMAKE_BUILD_TYPE=Release`，构建 `fpl-relayvsr` 目标。
+3. 按本地模型清单取得两份 RelayVSR 权重。在实际 Mac 桌面环境运行 `uv run python scripts/validate_relayvsr.py benchmark --executable <worker> --weights <权重目录> --input <768p样片> --output <验收目录>`。脚本会校验版本、权重和输出，保存逐帧对比及进程内存采样。
+4. 看完对比视频并确认通过后，运行 `uv run python scripts/validate_relayvsr.py publish --executable <worker> --reviewed-report <验收目录/result.json> --local-model-root <部署的local-models目录>`。该操作发布运行环境及验收证明。随后在本地模型页安装、启用并接入当前空间。可传入 `--weights <权重目录>` 预置已校验的下载缓存。模型文件仍由应用安装流程校验和管理。

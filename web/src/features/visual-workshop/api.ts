@@ -6,7 +6,6 @@ import {
   fetchApiJson,
   unwrap,
 } from "@platform/api/client";
-import { postSse } from "@platform/api/sse";
 
 export type VisualWorkshopProject =
   components["schemas"]["VisualWorkshopProjectOut"];
@@ -55,37 +54,6 @@ export type GenerationTaskInput =
   | ImageGenerationTaskInput
   | VideoGenerationTaskInput
   | AudioGenerationTaskInput;
-export type VisualAssistantConversation =
-  components["schemas"]["VisualAssistantConversationOut"];
-export type VisualAssistantConversationSummary =
-  components["schemas"]["VisualAssistantConversationSummaryOut"];
-export type VisualAssistantMessage =
-  components["schemas"]["VisualAssistantMessageOut"];
-export type VisualAssistantAction =
-  components["schemas"]["VisualAssistantActionOut"];
-export type VisualAssistantAsset =
-  components["schemas"]["VisualAssistantAssetOut"];
-export type VisualAssistantContentPart = NonNullable<
-  components["schemas"]["VisualAssistantMessageOut"]["content_parts"]
->[number];
-export type VisualAssistantModelOption =
-  components["schemas"]["VisualAssistantModelOptionOut"];
-export type VisualAssistantStreamEvent = {
-  type:
-    | "start"
-    | "delta"
-    | "step"
-    | "approval_required"
-    | "approval_resolved"
-    | "canvas_updated"
-    | "generation_task_created"
-    | "done"
-    | "error";
-  schema_version: 2;
-  sequence: number;
-  payload: Record<string, unknown>;
-};
-
 export async function getVisualWorkshopProjects() {
   return unwrap(await api.GET("/v1/visual-workshop/projects"));
 }
@@ -395,148 +363,6 @@ export async function retryGenerationMaterialization(taskId: string) {
     await api.POST(
       "/v1/visual-workshop/generation-tasks/{task_id}/retry-materialization",
       { params: { path: { task_id: taskId } } },
-    ),
-  );
-}
-
-export async function getVisualAssistantConversations(projectId: string) {
-  return unwrap(
-    await api.GET("/v1/visual-workshop/projects/{project_id}/conversations", {
-      params: { path: { project_id: projectId } },
-    }),
-  );
-}
-
-export async function createVisualAssistantConversation(projectId: string) {
-  return unwrap(
-    await api.POST("/v1/visual-workshop/projects/{project_id}/conversations", {
-      params: { path: { project_id: projectId } },
-    }),
-  );
-}
-
-export async function getVisualAssistantConversation(
-  projectId: string,
-  conversationId: string,
-) {
-  return unwrap(
-    await api.GET(
-      "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
-      {
-        params: {
-          path: {
-            project_id: projectId,
-            conversation_id: conversationId,
-          },
-        },
-      },
-    ),
-  );
-}
-
-export async function getVisualAssistantModels(projectId: string) {
-  return unwrap(
-    await api.GET(
-      "/v1/visual-workshop/projects/{project_id}/conversations/models",
-      { params: { path: { project_id: projectId } } },
-    ),
-  );
-}
-
-export async function patchVisualAssistantConversation(
-  projectId: string,
-  conversationId: string,
-  expectedRevision: number,
-  changes: {
-    title?: string;
-    model_id?: string | null;
-    image_model_id?: string | null;
-    video_model_id?: string | null;
-  },
-) {
-  return unwrap(
-    await api.PATCH(
-      "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
-      {
-        params: {
-          path: {
-            project_id: projectId,
-            conversation_id: conversationId,
-          },
-        },
-        body: { expected_revision: expectedRevision, ...changes },
-      },
-    ),
-  );
-}
-
-export async function deleteVisualAssistantConversation(
-  projectId: string,
-  conversationId: string,
-  expectedRevision: number,
-) {
-  return unwrap(
-    await api.DELETE(
-      "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
-      {
-        params: {
-          path: {
-            project_id: projectId,
-            conversation_id: conversationId,
-          },
-          query: { expected_revision: expectedRevision },
-        },
-      },
-    ),
-  );
-}
-
-export async function streamVisualAssistant(
-  projectId: string,
-  conversationId: string,
-  body: {
-    expected_revision: number;
-    canvas_revision: number;
-    content?: string;
-    asset_ids?: string[];
-    content_parts?: VisualAssistantContentPart[];
-  },
-  signal: AbortSignal,
-  onEvent: (event: VisualAssistantStreamEvent) => void,
-) {
-  await postSse<VisualAssistantStreamEvent>({
-    path:
-      `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}` +
-      `/conversations/${encodeURIComponent(conversationId)}/messages/stream`,
-    body,
-    signal,
-    onEvent,
-    defaultErrorMessage: "对话请求失败",
-  });
-}
-
-export async function resolveVisualAssistantApproval(
-  projectId: string,
-  conversationId: string,
-  runId: string,
-  approvalId: string,
-  decision: "approve" | "reject",
-  canvasRevision: number,
-) {
-  return unwrap(
-    await api.POST(
-      "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}",
-      {
-        params: {
-          path: {
-            project_id: projectId,
-            conversation_id: conversationId,
-            run_id: runId,
-            approval_id: approvalId,
-          },
-        },
-        body: { decision, canvas_revision: canvasRevision },
-      },
     ),
   );
 }

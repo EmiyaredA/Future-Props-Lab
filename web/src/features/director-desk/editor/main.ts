@@ -68,7 +68,15 @@ import { mountNativeControls } from "./ui/native-controls.ts";
 import { createSidebar } from "./ui/sidebar.ts";
 import { createTimeline } from "./ui/timeline.ts";
 import { createVideoPanel } from "./ui/video-panel.ts";
-import { $, escape, icon } from "./ui/common.ts";
+import {
+  createFramePresentation,
+  presentPlayback,
+} from "./ui/frame-presentation.ts";
+import {
+  advancePlayback,
+  startPlaybackClock,
+} from "./editor/playback-clock.ts";
+import { $ } from "./ui/common.ts";
 
 function hasScenes(value: unknown): value is SceneDocument {
   return (
@@ -406,99 +414,21 @@ export function mountDirectorEditor(
       '[data-act="insert-cut"]',
     )!.disabled = preview === "program";
   }
-  function timeCode(t: number) {
-    const frames = Math.round(t * project.fps),
-      f = frames % project.fps,
-      s = Math.floor(frames / project.fps);
-    return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60, f]
-      .map((x) => String(x).padStart(2, "0"))
-      .join(":");
-  }
   function updateTimeUI() {
-    $("#timecode").textContent = timeCode(time);
-    $("#shot-time").textContent = timeCode(time);
-    $("#timeline-content").style.setProperty(
-      "--timeline-playhead",
-      String(time),
-    );
-    const play = $<HTMLButtonElement>('[data-act="play"]');
-    const label = playing ? "暂停" : "播放";
-    // Preserve the pointer target between press and release, including a slow click.
-    if (play.getAttribute("aria-label") !== label) {
-      play.innerHTML = icon(playing ? "pause" : "play");
-      play.setAttribute("aria-label", label);
-    }
+    presentPlayback(time, project.fps, playing);
   }
-  const labelNodes = new Map<string, HTMLButtonElement>();
-  const frameFields = new Map(
-    ["object-snap-status", "shot-name", "shot-lens", "shot-warning"].map(
-      (id) => [id, $("#" + id)],
-    ),
-  );
-  function frameText(id: string, value: string) {
-    const node = frameFields.get(id)!;
-    if (node.textContent !== value) node.textContent = value;
-  }
-  engine.onFrame = () => {
-    frameText(
-      "object-snap-status",
-      engine.objectSnapEnabled && engine.objectSnapTarget
-        ? `已吸附：${engine.objectSnapTarget}`
-        : "",
-    );
-    const camera = engine.cameraEntity();
-    frameText(
-      "shot-name",
-      camera.name + (preview === "program" ? " · 成片" : ""),
-    );
-    frameText("shot-lens", `${camera.camera!.focal} mm · ${project.aspect}`);
-    const p = engine.getShotCamera().position,
-      r = project.room;
-    const outside =
-      r.enabled &&
-      (Math.abs(p.x) > r.width / 2 ||
-        Math.abs(p.z) > r.depth / 2 ||
-        p.y > r.height ||
-        p.y < 0);
-    const hiddenObjects = camera.camera!.hiddenEntityIds?.length ?? 0;
-    frameText(
-      "shot-warning",
-      hiddenObjects
-        ? `本机位隐藏 ${hiddenObjects} 个对象${camera.camera!.hideWalls.length ? `、${camera.camera!.hideWalls.length} 面房间墙体` : ""}`
-        : outside && !camera.camera!.hideWalls.length
-          ? "机位在房间外 · 墙体保留"
-          : camera.camera!.hideWalls.length
-            ? `已移除 ${camera.camera!.hideWalls.length} 面拍摄墙体`
-            : "同场景真实取景",
-    );
-    if (mode === "shot") return;
-    const labels = engine.getProjectedLabels(),
-      ids = new Set(labels.map((l) => l.id));
-    for (const [id, node] of labelNodes)
-      if (!ids.has(id)) {
-        node.remove();
-        labelNodes.delete(id);
-      }
-    for (const l of labels) {
-      let node = labelNodes.get(l.id);
-      if (!node) {
-        node = document.createElement("button");
-        node.dataset.select = l.id;
-        $("#object-labels").append(node);
-        labelNodes.set(l.id, node);
-      }
-      const className = "object-label" + (l.id === selected ? " active" : "");
-      if (node.className !== className) node.className = className;
-      if (node.style.left !== l.x + "px") node.style.left = l.x + "px";
-      if (node.style.top !== l.y + "px") node.style.top = l.y + "px";
-      if (node.hidden === l.visible) node.hidden = !l.visible;
-      if (node.dataset.name !== l.name || node.dataset.color !== l.color) {
-        node.innerHTML = `<i style="background:${l.color}"></i>${escape(l.name)}`;
-        node.dataset.name = l.name;
-        node.dataset.color = l.color;
-      }
-    }
-  };
+  const presentFrame = createFramePresentation();
+  engine.onFrame = () =>
+    presentFrame({
+      snapTarget: engine.objectSnapEnabled ? engine.objectSnapTarget : "",
+      camera: engine.cameraEntity(),
+      preview,
+      aspect: project.aspect,
+      position: engine.getShotCamera().position,
+      room: project.room,
+      selected,
+      labels: mode === "shot" ? undefined : engine.getProjectedLabels(),
+    });
   function seek(t: number, deferSample = false) {
     if (busy) return;
     time = Math.max(0, Number.isFinite(t) ? t : 0);
@@ -587,39 +517,6 @@ export function mountDirectorEditor(
     } catch (error) {
       toast((error as Error).message, true);
     }
-  }
-  let previousFrame = performance.now(),
-    lastUI = 0;
-  function frame(now: number) {
-    const delta = Math.min((now - previousFrame) / 1000, 0.1);
-    previousFrame = now;
-    if (!busy && !engine.exporting) {
-      if (playing) {
-        time += delta;
-        if (time >= project.duration) {
-          if (loop) time %= project.duration;
-          else {
-            time = project.duration;
-            playing = false;
-          }
-        }
-      }
-      navigation.update(delta);
-      if (
-        playing ||
-        time !== engine.time ||
-        history.pending ||
-        draft ||
-        engine.dragging
-      )
-        engine.sample(time);
-      engine.render(false);
-      if (now - lastUI > 50) {
-        updateTimeUI();
-        lastUI = now;
-      }
-    }
-    if (alive) requestAnimationFrame(frame);
   }
   const uiContext: AppContext = {
     signal: lifecycle.signal,
@@ -800,7 +697,27 @@ export function mountDirectorEditor(
   mountApplicationMenu(lifecycle.signal);
   renderPanels();
   engine.select(selected);
-  if (alive) requestAnimationFrame(frame);
+  startPlaybackClock(lifecycle.signal, (delta, refreshUI) => {
+    if (busy || engine.exporting) return;
+    ({ time, playing } = advancePlayback(
+      time,
+      playing,
+      loop,
+      project.duration,
+      delta,
+    ));
+    navigation.update(delta);
+    if (
+      playing ||
+      time !== engine.time ||
+      history.pending ||
+      draft ||
+      engine.dragging
+    )
+      engine.sample(time);
+    engine.render(false);
+    if (refreshUI()) updateTimeUI();
+  });
   if (host.onSave) {
     if (!hasScenes(host.document)) recoverySave.request();
   } else

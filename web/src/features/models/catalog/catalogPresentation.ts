@@ -100,6 +100,7 @@ export function modelTestMode(model: CatalogModel, provider: CatalogProvider) {
     model.capabilities.includes("speech_synthesis")
   )
     return "synthesis";
+  if (model.capabilities.includes("video_enhancement")) return "enhancement";
   if (provider.kind === "senseaudio_realtime") return "realtime_voice";
   return null;
 }

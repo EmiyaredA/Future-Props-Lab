@@ -286,7 +286,11 @@ export function CatalogConnections({
                     <dt>服务地址</dt>
                     <dd>
                       <code>
-                        {selected.kind === "local_qwen_tts"
+                        {[
+                          "local_qwen_tts",
+                          "local_relayvsr",
+                          "local_ffmpeg",
+                        ].includes(selected.kind)
                           ? "本机托管"
                           : selected.base_url || "使用默认地址"}
                       </code>
@@ -297,9 +301,12 @@ export function CatalogConnections({
                     <dd>
                       {selected.has_api_key
                         ? `已配置 ···· ${selected.api_key_hint}`
-                        : ["zealman_video", "local_qwen_tts"].includes(
-                              selected.kind,
-                            )
+                        : [
+                              "zealman_video",
+                              "local_qwen_tts",
+                              "local_relayvsr",
+                              "local_ffmpeg",
+                            ].includes(selected.kind)
                           ? "无需密钥"
                           : "未配置"}
                     </dd>

@@ -283,7 +283,6 @@ def test_feature_query_keys_have_one_owner() -> None:
             '"visual-workshop-canvas"',
             '"visual-generation-options"',
             '"visual-generation-tasks"',
-            '"visual-assistant-conversations"',
         ),
         WEB_SRC / "features" / "audio-annotation" / "queryKeys.ts": (
             '"audio-annotation-projects"',
@@ -648,21 +647,6 @@ def test_runtime_assembly_entrypoints_exist() -> None:
     assert (REPO_ROOT / "backend/studio/apps/asset_library/storage/file_paths.py").is_file()
     assert (REPO_ROOT / "backend/studio/assembly/website/account_provisioning.py").is_file()
     assert (REPO_ROOT / "backend/studio/apps/asset_library/archives/folder_archive.py").is_file()
-
-
-def test_visual_assistant_has_no_function_local_app_imports() -> None:
-    violations: list[str] = []
-    for path in _python_files(REPO_ROOT / "backend/studio/apps/visual_workshop/assistant"):
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        for function in (
-            node
-            for node in ast.walk(tree)
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        ):
-            for node in ast.walk(function):
-                if isinstance(node, (ast.Import, ast.ImportFrom)):
-                    violations.append(f"{_relative(path)}:{node.lineno}")
-    assert not violations, "视觉助手不得在函数内动态导入：\n" + "\n".join(violations)
 
 
 def test_backend_business_packages_have_no_function_local_app_imports() -> None:

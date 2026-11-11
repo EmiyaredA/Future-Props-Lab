@@ -4,6 +4,7 @@ import asyncio
 import hashlib
 import io
 import json
+from dataclasses import asdict
 from types import SimpleNamespace
 from uuid import uuid4
 from zipfile import ZipFile
@@ -18,6 +19,7 @@ from studio.apps.agent_runtime.storage.migrations.registry import (
 )
 from studio.apps.asset_library.references.references import AssetReferences
 from studio.apps.identity.clients.authorization import LiveAuthorization
+from studio.apps.identity.storage.service_models import VisualGenerationApproval
 from studio.apps.media_rendering.settings import RenderingSettings
 from studio.apps.media_rendering.storage.migrations.registry import (
     MIGRATIONS as RENDERING_MIGRATIONS,
@@ -34,6 +36,10 @@ from studio.apps.model_service.transport.visual_generation_http import router as
 from studio.apps.model_service.visual.visual_generation_intake import VisualGenerationIntake
 from studio.apps.model_service.visual.visual_generation_results import VisualGenerationResults
 from studio.apps.model_service.visual.visual_generation_runner import VisualGenerationRunner
+from studio.apps.visual_workshop.storage.generation_dispatch_records import (
+    VisualGenerationDecision,
+    VisualGenerationDispatch,
+)
 from studio.assembly.independent.agent_runtime.application import create_app as create_agent_runtime
 from studio.assembly.independent.media_rendering.application import create_app as create_rendering
 from studio.contracts.agent_runtime.connections import (
@@ -41,8 +47,8 @@ from studio.contracts.agent_runtime.connections import (
     AcceptanceAgentStatus,
     ConnectionOptions,
 )
-from studio.contracts.asset_library.references import PrepareReferenceChange, ReferenceUpdate
-from studio.contracts.identity.claims import HEADER
+from studio.contracts.asset_library.references import ReferenceUpdate
+from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.motion_compositor.motion_preview import FrameFile
 from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
@@ -50,9 +56,6 @@ from studio.contracts.visual_workshop.visual_acceptance_assets import (
     PURPOSE as ACCEPTANCE_ASSETS_PURPOSE,
 )
 from studio.contracts.visual_workshop.visual_acceptance_assets import AcceptanceAssetQuery
-from studio.contracts.visual_workshop.visual_assistant import (
-    approval_path,
-)
 from studio.contracts.visual_workshop.visual_catalog import (
     ACCEPTANCE_TARGET,
     AGENT_ACCEPTANCE_PURPOSE,
@@ -91,7 +94,6 @@ from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.capability_client import CapabilityClient, CapabilityDenied
 from studio.runtime.messaging.timed_peer import TimedPeer
-from studio.runtime.tasks.reactive_tools.types import ToolExecutionContext
 from tests.apps.agent_runtime.test_agent_runtime_service import (
     IDENTITY_TOKEN,
     INGRESS,
@@ -104,7 +106,6 @@ from tests.apps.thought_workshop.test_community_asset_protocol import (  # noqa:
     CATALOG,
     scenario,
 )
-from tests.apps.visual_workshop.catalog_conversations import verify_conversations
 from tests.integration.test_independent_project_catalog import authorize
 
 
@@ -278,7 +279,6 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
         await verify_node_context(case, visual, http, entries[0]["id"], transport)
         await verify_native_generation(case, visual, http, models.state, selection, monkeypatch)
 
-        await verify_conversations(case, visual, http)
         logged_out = await case.browser.post(
             "/v1/auth/logout",
             headers={"Origin": "http://127.0.0.1:19000", "X-CSRF-Token": case.csrf},
@@ -496,6 +496,9 @@ async def verify_native_generation(case, visual, http, models, choice, monkeypat
     project = await send("POST", prefix, json={"title": "Provider generation", "kind": "canvas"})
     assert project.status_code == 200, project.text
     root = prefix + "/" + project.json()["id"]
+    for method in ("GET", "POST"):
+        retired = await http.request(method, "http://visual" + root + "/conversations")
+        assert retired.status_code == 404, retired.text
     create = root + "/generation-tasks"
     body = {"kind": "image", "model_id": choice.model_id, "prompt": "Create an orange tile"}
     task = await send("POST", create, json=body)
@@ -532,90 +535,47 @@ async def verify_native_generation(case, visual, http, models, choice, monkeypat
     await models.visual_generation_runner.process_once()
     assert calls == [body["prompt"]]
     await verify_native_batch(case, visual, models, send, root, choice, calls)
-    await verify_approved_generation(case, visual, models, send, root, choice, original, calls)
-
-
-async def verify_approved_generation(case, visual, models, send, root, choice, original, calls):
-    from studio.apps.visual_workshop.assistant.assistant_generation_action import (
-        AssistantGenerationAction,
-    )
-    from studio.apps.visual_workshop.storage.generation_dispatch_records import (
-        VisualGenerationDecision,
-        VisualGenerationDispatch,
-    )
-    from studio.contracts.visual_workshop.visual_upload import VisualUpload
-
-    conversation = await send("POST", root + "/conversations")
-    assert conversation.status_code == 200, conversation.text
-    canvas = await send("GET", root + "/canvas")
-    assert canvas.status_code == 200, canvas.text
-    project_id = root.rsplit("/", 1)[1]
-    conversation_id = conversation.json()["id"]
-    run_id, approval_id = uuid4().hex, uuid4().hex
-    source = approval_path(project_id, conversation_id, run_id, approval_id)
-    context = ToolExecutionContext(
-        run_id,
-        "generate",
-        {},
-        approved_canvas_revision=canvas.json()["revision"],
-        approval_id=approval_id,
-        approval_authorization=(await authorize(case, "visual", "POST", source))[HEADER],
-    )
-    turn = SimpleNamespace(
-        owner=case.viewer,
-        image_model_id=choice.model_id,
-        video_model_id=None,
-        scope=SimpleNamespace(
-            project_id=project_id, conversation_id=conversation_id, run_id=run_id
-        ),
-    )
-    tool = AssistantGenerationAction(visual.state, turn)
-    prompt = "Generate after explicit approval"
-    arguments = {"task": {"kind": "image", "prompt": prompt}, "node": {"id": "approved-image"}}
-    saved = await tool.start_generation_on_canvas(arguments, context)
-    assert saved.success, saved.model_text
-    task_id = saved.data["task"]["id"]
-    assert saved.data["node"]["generation_task_id"] == task_id
-    async with visual.state.database.sessions(info={"owner_user_id": case.viewer}) as session:
-        dispatch = await session.get(VisualGenerationDispatch, task_id)
-        decision = await session.get(VisualGenerationDecision, dispatch.plan_id)
-        assert decision.source_path == source and decision.source_assertion == ""
-        plan_sha256 = decision.plan_sha256
-    stale = await tool.start_generation_on_canvas(arguments, context)
-    assert stale.error_code == "canvas_conflict"
-    runner = visual.state.generation_runner
-    await runner.recover()
+    # Simulate an old approved task reaching publication after the upgrade.
+    historical = await send("POST", create, json=body)
+    assert historical.status_code == 200, historical.text
+    task_id = historical.json()["id"]
     await runner.process_once()
     await models.visual_generation_runner.process_once()
+    async with visual.state.database.sessions(info={"owner_user_id": case.viewer}) as db:
+        dispatch = await db.get(VisualGenerationDispatch, task_id)
+        decision = await db.get(VisualGenerationDecision, dispatch.plan_id)
+        actor = verify_context(
+            decision.source_assertion,
+            service="visual",
+            method="POST",
+            path=create,
+            public_key=case.key.public_key(),
+        )
+        decision.source_path = root + "/conversations/old/runs/old/approvals/old"
+        decision.source_assertion = ""
+        digest = decision.plan_sha256
+        await db.commit()
+    async with case.identity.state.database.sessions() as db:
+        db.add(
+            VisualGenerationApproval(
+                id=task_id,
+                owner_id=case.viewer,
+                actor=asdict(actor),
+                admission={
+                    "project_id": project.json()["id"],
+                    "kind": "image",
+                    "plan_sha256": digest,
+                },
+            )
+        )
+        await db.commit()
     await runner.process_once()
-    reply = await send("GET", "/v1/visual-workshop/generation-tasks/" + task_id)
-    assert reply.json()["status"] == "completed", reply.text
-    file_id = reply.json()["result_asset_id"]
-    downloaded = await send("GET", f"/v1/files/{file_id}/content", service="assets")
-    assert downloaded.status_code == 200 and downloaded.content == original
-    assert calls.count(prompt) == 1
-
-    # Even the Visual peer cannot reuse an approval to change the sealed bytes.
-    change = PrepareReferenceChange(
-        request_id=uuid4().hex,
-        resource_kind="canvas",
-        resource_id=project_id,
-        expected_resource_revision=canvas.json()["revision"] + 2,
-        asset_ids=[],
-        metadata_asset_ids=[],
-        carried_asset_ids=[],
-        visual_upload=VisualUpload(
-            kind="image",
-            filename="changed.png",
-            mime_type="image/png",
-            byte_size=len(original),
-            content_sha256="0" * 64,
-            generation_task_id=task_id,
-        ),
+    published = await send("GET", "/v1/visual-workshop/generation-tasks/" + task_id)
+    assert published.status_code == 200 and published.json()["status"] == "completed"
+    retained = await send(
+        "GET", f"/v1/files/{published.json()['result_asset_id']}/content", service="assets"
     )
-    with pytest.raises(CapabilityDenied) as altered:
-        await visual.state.reference_mutations.client.authorize_generation(plan_sha256, change)
-    assert altered.value.status == 409
+    assert retained.status_code == 200 and retained.content == original
 
 
 async def verify_native_batch(case, visual, models, send, root, choice, calls):

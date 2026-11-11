@@ -8,11 +8,8 @@ from studio.apps.visual_workshop.acceptance.models import AcceptanceRun
 from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
 from studio.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
 from studio.apps.visual_workshop.handoffs.segment_handoffs import require_canvas_unreserved
-from studio.apps.visual_workshop.storage.assistant_dispatch_records import VisualAssistantDispatch
 from studio.apps.visual_workshop.storage.generation_dispatch_records import VisualGenerationDispatch
 from studio.apps.visual_workshop.storage.models import (
-    VisualAssistantConversation,
-    VisualAssistantMessage,
     VisualGenerationBatch,
     VisualGenerationTask,
     VisualWorkshopProject,
@@ -70,46 +67,15 @@ class ProjectDeletion:
         )
         if unconfirmed is not None:
             raise ProjectResourceError("生成结果正在结算", "project_tasks_pending", 409)
-        pending = await self.session.scalar(
-            select(VisualAssistantMessage.id)
-            .join(
-                VisualAssistantConversation,
-                VisualAssistantConversation.id == VisualAssistantMessage.conversation_id,
-            )
-            .where(
-                VisualAssistantConversation.project_id == project_id,
-                VisualAssistantMessage.status == "pending",
-            )
-            .limit(1)
-        )
-        if pending is not None:
-            raise ProjectResourceError("生成期间不能删除项目", "conversation_busy", 409)
 
-        settling = await self.session.scalar(
-            select(VisualAssistantDispatch.run_id)
-            .where(VisualAssistantDispatch.project_id == project_id)
-            .limit(1)
-        )
-        if settling is not None:
-            raise ProjectResourceError("项目对话仍在结算", "conversation_busy", 409)
-
-    async def _conversations(self, project_id):
-        return list(
-            await self.session.scalars(
-                select(VisualAssistantConversation.id)
-                .where(VisualAssistantConversation.project_id == project_id)
-                .order_by(VisualAssistantConversation.id)
-            )
-        )
-
-    async def _prepare(self, project_id, revision, conversations):
+    async def _prepare(self, project_id, revision):
         change = PrepareReferenceChange(
             request_id=uuid4().hex,
             resource_kind="canvas",
             resource_id=project_id,
             expected_resource_revision=revision,
             asset_ids=[],
-            visual_project_removal=conversations,
+            visual_project_removal=[],
         )
         try:
             return await self.references.prepare(
@@ -135,18 +101,14 @@ class ProjectDeletion:
             raise conflict(expected_revision, project)
         await self._require_idle(project_id)
         revision = (await self.projects.canvas_row(project_id)).revision
-        conversations = await self._conversations(project_id)
-        for identity in await pending_outcomes(self.session, project_id, conversations):
+        for identity in await pending_outcomes(self.session, project_id):
             await self._deliver(identity)
-        prepared = await self._prepare(project_id, revision, conversations)
+        prepared = await self._prepare(project_id, revision)
         try:
             await self.session.execute(text("BEGIN IMMEDIATE"))
             canvas = await self.projects.canvas_row(project_id)
             await self._require_idle(project_id)
-            if (
-                canvas.revision != revision
-                or await self._conversations(project_id) != conversations
-            ):
+            if canvas.revision != revision:
                 raise ProjectResourceError(
                     "项目内容已更新，请重试删除", "project_contents_changed", 409
                 )

@@ -12,7 +12,6 @@ from studio.apps.asset_library.migration_project_pins import (
     mount_thought_references,
     mount_visual_acceptance_pins,
     mount_visual_canvas_pins,
-    mount_visual_conversation_pins,
 )
 from studio.apps.asset_library.migration_video_outputs import mount_video_outputs
 from studio.apps.asset_library.storage.migration_records import (
@@ -73,7 +72,6 @@ def create_import_app(*, plan, state_root):
     mount_thought_references(app, plan, database.sessions)
     mount_galgame_references(app, plan, database.sessions)
     mount_visual_canvas_pins(app, plan, database.sessions)
-    mount_visual_conversation_pins(app, plan, database.sessions)
     mount_visual_acceptance_pins(app, plan, database.sessions)
     mount_video_outputs(app, plan, database.sessions, database.root)
     return mount_records(app, plan, database.sessions)

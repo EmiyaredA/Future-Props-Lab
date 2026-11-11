@@ -169,10 +169,6 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
             switchView(next);
             setAcceptance(false);
           }}
-          onConversation={() => {
-            setAcceptance(false);
-            controller.setAssistantOpen(true);
-          }}
           onBack={() => setAcceptance(false)}
         />
       )}

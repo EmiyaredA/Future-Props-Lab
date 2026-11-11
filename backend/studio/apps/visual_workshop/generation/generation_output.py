@@ -19,7 +19,7 @@ from studio.apps.visual_workshop.projects import Projects
 from studio.apps.visual_workshop.storage.generation_dispatch_records import VisualGenerationDispatch
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 from studio.apps.visual_workshop.uploads import Uploads
-from studio.contracts.visual_workshop.visual_assistant import approval_source
+from studio.contracts.visual_workshop.visual_paths import retired_approval_source
 from studio.runtime.http.capability_client import CapabilityUnavailable
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now
@@ -97,7 +97,7 @@ class GenerationOutput:
         )
         projects = Projects(db, owner)
         current = canvas_out(await projects.canvas_row(project))
-        approved_plan = decision.plan_sha256 if approval_source("POST", source) else None
+        approved_plan = decision.plan_sha256 if retired_approval_source("POST", source) else None
         await db.rollback()
         receipt = None
         uploads = Uploads(

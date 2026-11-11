@@ -19,16 +19,19 @@ const EMPTY_STATE: ApiBlobUrlState = {
 
 export function useApiBlobUrl(
   path: string | null | undefined,
+  fallbackMimeType?: string,
 ): ApiBlobUrlState {
   const requestId = useRef(0);
   const [record, setRecord] = useState<{
     path: string | null | undefined;
+    fallbackMimeType?: string;
     value: ApiBlobUrlState;
   }>({ path: null, value: EMPTY_STATE });
 
   useEffect(() => {
     const currentRequest = ++requestId.current;
-    const setState = (value: ApiBlobUrlState) => setRecord({ path, value });
+    const setState = (value: ApiBlobUrlState) =>
+      setRecord({ path, fallbackMimeType, value });
     if (!path) {
       setState(EMPTY_STATE);
       return;
@@ -43,6 +46,7 @@ export function useApiBlobUrl(
         if (!controller.signal.aborted && requestId.current === currentRequest)
           setRecord((current) => ({
             path,
+            fallbackMimeType,
             value: { ...current.value, progress },
           }));
       },
@@ -50,12 +54,17 @@ export function useApiBlobUrl(
       .then((blob) => {
         if (controller.signal.aborted || requestId.current !== currentRequest)
           return;
-        objectUrl = URL.createObjectURL(blob);
+        const media =
+          fallbackMimeType &&
+          (!blob.type || blob.type === "application/octet-stream")
+            ? blob.slice(0, blob.size, fallbackMimeType)
+            : blob;
+        objectUrl = URL.createObjectURL(media);
         setState({
           url: objectUrl,
           loading: false,
           error: null,
-          mimeType: blob.type,
+          mimeType: media.type,
         });
       })
       .catch((caught: unknown) => {
@@ -73,9 +82,9 @@ export function useApiBlobUrl(
       controller.abort();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [path]);
+  }, [path, fallbackMimeType]);
 
-  return record.path === path
+  return record.path === path && record.fallbackMimeType === fallbackMimeType
     ? record.value
     : { ...EMPTY_STATE, loading: Boolean(path) };
 }

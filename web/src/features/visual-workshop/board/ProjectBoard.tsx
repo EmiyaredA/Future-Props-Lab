@@ -3,6 +3,7 @@ import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
+import { invalidateFileScope, type ManagedFile } from "@features/files";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -10,11 +11,11 @@ import {
   FolderOpen,
   Plus,
   Search,
-  MessageSquare,
   PanelsTopLeft,
   LayoutGrid,
   SlidersHorizontal,
   Upload,
+  Pencil,
 } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
@@ -22,10 +23,13 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { CanvasNodeInspector } from "../canvas/CanvasNodeInspector";
 import { CanvasAssetsDrawer } from "../canvas/CanvasAssetsDrawer";
-import { ProjectAssistantPanel } from "../assistant/ProjectAssistantPanel";
+import { isCanvasMediaKind } from "../canvas/canvasAssetDrag";
+import { batchInsertionAnchor, placeNode } from "../canvas/canvasPlacement";
+import { nextNodeId } from "../canvas/geometry";
 import {
   getGenerationTasks,
   getGenerationBatches,
+  getVisualCanvas,
   putVisualCanvas,
   type VisualMaterialCategory,
   type MaterialUploadDestination,
@@ -88,6 +92,12 @@ export function ProjectBoard({
   const [notice, setNotice] = useState("");
   const [uploadDestination, setUploadDestination] =
     useState<MaterialUploadDestination>();
+  const materialBatch = useRef<{
+    files: ManagedFile[];
+    nodes: VisualCanvasNode[];
+  }>(undefined);
+  const titleButton = useRef<HTMLButtonElement>(null);
+  const savingTitle = useRef(false);
   const [newKind, setNewKind] = useState("image");
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth > 600);
   useEffect(() => {
@@ -213,6 +223,91 @@ export function ProjectBoard({
     }
   };
   const managedNode = c.nodes.find((node) => node.id === nodeAction?.nodeId);
+  const finishTitle = async (restoreFocus: boolean) => {
+    if (savingTitle.current) return;
+    const title = c.title.trim();
+    if (!title || title === c.projectQuery.data?.title) {
+      c.setEditingTitle(false);
+    } else {
+      savingTitle.current = true;
+      try {
+        await c.renameMutation.mutateAsync();
+      } catch {
+        return;
+      } finally {
+        savingTitle.current = false;
+      }
+    }
+    if (restoreFocus) requestAnimationFrame(() => titleButton.current?.focus());
+  };
+  const addExistingMaterials = async (
+    files: ManagedFile[],
+    destination: MaterialUploadDestination,
+  ) => {
+    void invalidateFileScope(c.client, c.projectId);
+    const revision = await c.prepareCanvasForAgent();
+    const current = c.nodesRef.current;
+    if (materialBatch.current?.files !== files) {
+      const anchor = c.getInsertionAnchor();
+      const added: VisualCanvasNode[] = [];
+      for (const [index, file] of files.entries()) {
+        const kind = file.media_kind;
+        if (!isCanvasMediaKind(kind))
+          throw new Error("只支持图片、视频和音频素材。");
+        added.push({
+          ...destination,
+          id: nextNodeId(kind),
+          kind,
+          title: file.display_name.slice(0, 120),
+          asset_id: file.id,
+          position: placeNode(
+            [...current, ...added],
+            kind,
+            batchInsertionAnchor(anchor, index, files.length),
+          ),
+        });
+      }
+      materialBatch.current = { files, nodes: added };
+    }
+    const added = materialBatch.current.nodes;
+    const missing = added.filter(
+      (node) => !current.some((item) => item.id === node.id),
+    );
+    const queryKey = visualWorkshopQueryKeys.canvas(c.projectId);
+    if (missing.length) {
+      let updated;
+      try {
+        updated = await putVisualCanvas(
+          c.projectId,
+          [...current, ...missing],
+          revision,
+          c.edgesRef.current,
+        );
+      } catch (error) {
+        const latest = await getVisualCanvas(c.projectId).catch(
+          () => undefined,
+        );
+        if (latest) {
+          c.applyServerCanvas(latest);
+          c.client.setQueryData(queryKey, latest);
+        }
+        if (
+          !latest ||
+          !added.every((node) =>
+            latest.nodes.some((item) => item.id === node.id),
+          )
+        )
+          throw error;
+        updated = latest;
+      }
+      c.applyServerCanvas(updated);
+      c.client.setQueryData(queryKey, updated);
+    }
+    materialBatch.current = undefined;
+    c.setSelectedId(added.at(-1)?.id);
+    setNodeTab("content");
+    setTab("workbench");
+  };
   const saveCategories = async (next: VisualMaterialCategory[]) => {
     setPending(true);
     setNotice("");
@@ -259,7 +354,58 @@ export function ProjectBoard({
             alt=""
           />
           <div>
-            <strong>{c.projectQuery.data?.title ?? "创作项目"}</strong>
+            {c.editingTitle ? (
+              <form
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  void finishTitle(true);
+                }}
+              >
+                <input
+                  aria-label="项目名称"
+                  autoFocus
+                  maxLength={120}
+                  value={c.title}
+                  readOnly={c.renameMutation.isPending}
+                  onChange={(event) => c.setTitle(event.target.value)}
+                  onBlur={() => void finishTitle(false)}
+                  onKeyDown={(event) => {
+                    if (
+                      event.key !== "Escape" ||
+                      event.nativeEvent.isComposing ||
+                      savingTitle.current
+                    )
+                      return;
+                    event.preventDefault();
+                    c.renameMutation.reset();
+                    c.setEditingTitle(false);
+                    requestAnimationFrame(() => titleButton.current?.focus());
+                  }}
+                />
+                {c.renameMutation.isError && (
+                  <small role="alert">
+                    {c.renameMutation.error instanceof Error
+                      ? c.renameMutation.error.message
+                      : "项目名称保存失败"}
+                  </small>
+                )}
+              </form>
+            ) : (
+              <button
+                type="button"
+                className="board-project-title"
+                ref={titleButton}
+                disabled={!c.projectQuery.data}
+                onClick={() => {
+                  c.renameMutation.reset();
+                  c.setTitle(c.projectQuery.data?.title ?? "");
+                  c.setEditingTitle(true);
+                }}
+              >
+                <span>{c.projectQuery.data?.title ?? "创作项目"}</span>
+                <Pencil size={13} aria-hidden />
+              </button>
+            )}
             <small>
               视觉创作工坊 ·{" "}
               {c.saveState === "saved" ? (
@@ -292,12 +438,6 @@ export function ProjectBoard({
             </button>
           )}
           <ThemeToggle />
-          <button
-            aria-expanded={c.assistantOpen}
-            onClick={() => c.setAssistantOpen(!c.assistantOpen)}
-          >
-            <MessageSquare size={15} /> 对话
-          </button>
         </div>
       </header>
       <div className="board-layout">
@@ -365,6 +505,7 @@ export function ProjectBoard({
           </button>
           {uploadDestination && (
             <MaterialUpload
+              projectId={c.projectId}
               categories={categories}
               destination={uploadDestination}
               disabled={c.upload.isPending || !c.canvasReady}
@@ -373,6 +514,7 @@ export function ProjectBoard({
                 c.uploadPosition.current = undefined;
                 c.upload.mutate({ files, destination });
               }}
+              onAddFiles={addExistingMaterials}
             />
           )}
           <MaterialTree
@@ -620,14 +762,6 @@ export function ProjectBoard({
           onAssetTabChange={c.setAssetTab}
           onAssetViewChange={c.setAssetView}
           onClose={() => c.setAssetsOpen(false)}
-        />
-      )}
-      {c.assistantOpen && (
-        <ProjectAssistantPanel
-          projectId={c.projectId}
-          onClose={() => c.setAssistantOpen(false)}
-          prepareCanvas={c.prepareCanvasForAgent}
-          open
         />
       )}
       <TextInputDialog

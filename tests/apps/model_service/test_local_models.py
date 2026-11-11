@@ -19,6 +19,7 @@ from studio.apps.model_service.storage.models.local_models import (
     LocalModelInstallation,
     LocalModelOperation,
 )
+from studio.config.local_models import FFMPEG_MODEL_ID, RELAY_MODEL_ID
 from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.schemas.local_models import (
     LocalModelActionIn,
@@ -99,14 +100,28 @@ def action(kind, revision=0, request_id=None):
 
 
 def test_pinned_manifest_and_credential_boundary():
-    assert len(manifest()["models"]) == 2
+    assert {model["id"] for model in manifest()["models"]} == {
+        "qwen3-tts-0.6b-base",
+        "qwen3-tts-1.7b-base",
+        RELAY_MODEL_ID,
+        FFMPEG_MODEL_ID,
+    }
     for model in manifest()["models"]:
+        if model["id"] == FFMPEG_MODEL_ID:
+            assert model["capability"] == "video_enhancement" and not model["files"]
+            continue
         assert len(model["revision"]) == 40
-        assert "speech_tokenizer/model.safetensors" in [x["path"] for x in model["files"]]
+        paths = [item["path"] for item in model["files"]]
+        if model["id"] == RELAY_MODEL_ID:
+            assert model["capability"] == "video_enhancement"
+            assert len(paths) == 2 and all(path.endswith(".safetensors") for path in paths)
+        else:
+            assert "speech_tokenizer/model.safetensors" in paths
         for item in model["files"]:
             assert len(item["sha256"]) == 64
             assert model["revision"] in item["url"]
     assert credential_ready(SimpleNamespace(kind="local_qwen_tts"))
+    assert credential_ready(SimpleNamespace(kind="local_ffmpeg"))
     assert not credential_ready(SimpleNamespace(kind="openai", api_key_ciphertext=""))
     with pytest.raises(ValueError):
         ProviderIn(
@@ -137,9 +152,66 @@ async def test_default_list_and_recover_never_install(manager, monkeypatch):
         raise AssertionError("Must never download without an install action")
 
     monkeypatch.setattr(manager.installer, "install", forbidden)
+    monkeypatch.setattr(manager.installer, "fast_video_available", lambda: False)
     await manager.recover()
     assert all(item.status == "not_installed" for item in (await manager.list()).items)
     assert not manager.installer.root.exists()
+    relay = next(item for item in (await manager.list()).items if item.id == RELAY_MODEL_ID)
+    assert not relay.compatible and relay.capability == "video_enhancement"
+    with pytest.raises(OperationError, match="Metal 验收"):
+        await manager.action(RELAY_MODEL_ID, action("install"))
+
+
+async def test_fast_video_uses_host_environment_without_weights(manager, monkeypatch):
+    monkeypatch.setattr(manager.installer, "fast_video_available", lambda: True)
+    model = next(item for item in (await manager.list()).items if item.id == FFMPEG_MODEL_ID)
+    assert model.compatible and model.status == "installed" and not model.enabled
+    assert model.download_bytes == model.required_disk_bytes == 0
+    with pytest.raises(OperationError, match="支持启用和停止"):
+        await manager.action(FFMPEG_MODEL_ID, action("install"))
+    enabled = await manager.action(FFMPEG_MODEL_ID, action("enable"))
+    assert enabled.enabled
+    await manager.recover()
+    model = next(item for item in (await manager.list()).items if item.id == FFMPEG_MODEL_ID)
+    assert model.enabled and model.revision == enabled.revision
+    stopped = await manager.action(FFMPEG_MODEL_ID, action("stop", enabled.revision))
+    assert stopped.status == "installed" and not stopped.enabled
+    assert not manager.installer.root.exists()
+
+
+async def test_fast_video_attach_requires_local_browser(manager, monkeypatch):
+    monkeypatch.setattr(app.state, "local_models", manager, raising=False)
+    monkeypatch.setattr(manager.installer, "fast_video_available", lambda: True)
+    await manager.action(FFMPEG_MODEL_ID, action("enable"))
+
+    async def local(scope, receive, send):
+        scope.setdefault("state", {})["website_local"] = True
+        await app(scope, receive, send)
+
+    async with (
+        httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as remote,
+        httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=local), base_url="http://test"
+        ) as client,
+    ):
+        catalog = (await client.get("/v1/model-providers")).json()
+        body = {"model_id": FFMPEG_MODEL_ID, "expected_catalog_revision": catalog["revision"]}
+        assert (await remote.post("/v1/local-models/attach", json=body)).status_code == 403
+        attached = await client.post("/v1/local-models/attach", json=body)
+        assert attached.status_code == 200, attached.text
+        payload = attached.json()
+        provider = next(item for item in payload["providers"] if item["kind"] == "local_ffmpeg")
+        try:
+            assert payload["default_model_ids"] == catalog["default_model_ids"]
+            assert not provider["has_api_key"]
+            model = provider["models"][0]
+            assert model["availability"] == "ready"
+            assert model["capabilities"] == ["video_enhancement"]
+        finally:
+            await client.delete(
+                f"/v1/model-providers/{provider['id']}",
+                params={"expected_catalog_revision": payload["revision"]},
+            )
 
 
 async def test_install_replay_conflict_cancel_and_restart(manager, monkeypatch):

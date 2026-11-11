@@ -102,9 +102,6 @@ from studio.apps.asset_library.transport.service.visual_agent_media import (
 from studio.apps.asset_library.transport.service.visual_archives import (
     router as visual_archives_router,
 )
-from studio.apps.asset_library.transport.service.visual_assistant import (
-    router as conversation_assets_router,
-)
 from studio.apps.asset_library.transport.service.visual_generation import (
     router as visual_generation_router,
 )
@@ -130,11 +127,6 @@ from studio.contracts.visual_workshop.visual_acceptance_assets import (
     PREFIX as VISUAL_ACCEPTANCE_FILES,
 )
 from studio.contracts.visual_workshop.visual_agent_review import MAX_JOB_BYTES, SOURCES
-from studio.contracts.visual_workshop.visual_assistant import ASSET_PREFIX as CONVERSATION_FILES
-from studio.contracts.visual_workshop.visual_assistant import INPUT_PREFIX as ASSISTANT_INPUTS
-from studio.contracts.visual_workshop.visual_assistant import (
-    MAX_QUERY_BYTES as MAX_CONVERSATION_QUERY_BYTES,
-)
 from studio.contracts.visual_workshop.visual_composition import ASSETS as VISUAL_GRID_ASSETS
 from studio.contracts.visual_workshop.visual_composition import (
     MAX_PLAN_BYTES as MAX_VISUAL_GRID_BYTES,
@@ -315,8 +307,6 @@ def create_app(
     app.include_router(retention_router)
     app.include_router(visual_upload_router)
     app.include_router(project_reveal_router)
-    app.include_router(conversation_assets_router)
-    app.add_middleware(RequestLimit, prefix=ASSISTANT_INPUTS, maximum=16 * 1024)
     app.include_router(visual_acceptance_router)
     app.include_router(visual_generation_router)
     app.add_middleware(RequestLimit, prefix=VISUAL_GENERATION_ASSETS, maximum=32 * 1024)
@@ -331,9 +321,6 @@ def create_app(
         RequestLimit, prefix=VISUAL_SNAPSHOT_FILES, maximum=MAX_VISUAL_SNAPSHOT_QUERY_BYTES
     )
     app.add_middleware(RequestLimit, prefix=VISUAL_ACCEPTANCE_FILES, maximum=64 * 1024)
-    app.add_middleware(
-        RequestLimit, prefix=CONVERSATION_FILES, maximum=MAX_CONVERSATION_QUERY_BYTES
-    )
     app.include_router(galgame_assets_router)
     app.include_router(galgame_upload_router)
     app.add_middleware(RequestLimit, prefix=GALGAME_FILES, maximum=MAX_GALGAME_QUERY_BYTES)

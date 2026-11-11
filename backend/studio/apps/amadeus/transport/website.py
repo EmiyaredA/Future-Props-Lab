@@ -7,12 +7,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import Response, StreamingResponse
 
-from studio.apps.amadeus.clients.website_operations import call_operation, operation_catalog
-from studio.apps.amadeus.execution.website_actions import (
-    cancel_action,
-    cancel_actions_for_run,
-    execute_action,
-)
+from studio.apps.amadeus.clients.website_operations import call_operation
 from studio.apps.amadeus.fork_references import project_reader
 from studio.apps.amadeus.storage.conversations import Conversations
 from studio.apps.amadeus.storage.files import (
@@ -260,8 +255,10 @@ async def cancel_run(
     try:
         runs = Runs(session, principal)
         await runs.mark_cancelling(conversation_id, run_id)
-        await cancel_actions_for_run(
-            session, principal, run_id, execution=request.app.state.amadeus_actions
+        await request.app.state.amadeus_actions.cancel_for_run(
+            (principal.user_id, conversation_id),
+            run_id,
+            request.app.state.amadeus_action_records(principal, conversation_id),
         )
         from studio.apps.amadeus.execution.website_dialogue import runtime
 
@@ -405,22 +402,24 @@ async def decide_action(
 )
 async def run_action(
     request: Request,
-    session: SessionDep,
     principal: StudioAuth,
     conversation_id: str,
     action_id: str,
 ) -> ActionOut:
     try:
-        return await execute_action(
-            session,
-            principal,
-            conversation_id,
-            action_id,
-            request,
-            execution=request.app.state.amadeus_actions,
-        )
+        return await run_approved_action(request, principal, conversation_id, action_id)
     except OperationError as exc:
         raise _error(exc) from None
+
+
+async def run_approved_action(request, principal, conversation, action, output=None):
+    state = request.app.state
+    return await state.amadeus_actions.execute(
+        (principal.user_id, conversation),
+        action,
+        state.amadeus_action_records(principal, conversation),
+        state.amadeus_action_effects.bind(request, principal.user_id, conversation, output),
+    )
 
 
 @router.post(
@@ -429,7 +428,6 @@ async def run_action(
 )
 async def run_action_stream(
     request: Request,
-    session: SessionDep,
     principal: StudioAuth,
     conversation_id: str,
     action_id: str,
@@ -439,14 +437,8 @@ async def run_action_stream(
 
         async def work() -> ActionOut:
             try:
-                return await execute_action(
-                    session,
-                    principal,
-                    conversation_id,
-                    action_id,
-                    request,
-                    output_callback=lambda chunk: queue.put_nowait(chunk),
-                    execution=request.app.state.amadeus_actions,
+                return await run_approved_action(
+                    request, principal, conversation_id, action_id, queue.put_nowait
                 )
             finally:
                 queue.put_nowait(None)
@@ -475,18 +467,15 @@ async def run_action_stream(
 )
 async def stop_action(
     request: Request,
-    session: SessionDep,
     principal: StudioAuth,
     conversation_id: str,
     action_id: str,
 ) -> ActionOut:
     try:
-        return await cancel_action(
-            session,
-            principal,
-            conversation_id,
+        return await request.app.state.amadeus_actions.cancel(
+            (principal.user_id, conversation_id),
             action_id,
-            execution=request.app.state.amadeus_actions,
+            request.app.state.amadeus_action_records(principal, conversation_id),
         )
     except OperationError as exc:
         raise _error(exc) from None
@@ -498,7 +487,7 @@ async def list_registered_operations(
 ) -> dict[str, list[dict]]:
     if not principal.allows("content.read"):
         raise HTTPException(403, {"code": "insufficient_permission"})
-    return {"items": operation_catalog(request.app, resource)}
+    return {"items": request.app.state.amadeus_operation_catalog(resource)}
 
 
 @router.post("/operations/read")

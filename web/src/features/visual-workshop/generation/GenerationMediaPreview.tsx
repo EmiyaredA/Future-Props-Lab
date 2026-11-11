@@ -3,15 +3,26 @@ import { Image, Music, Video } from "lucide-react";
 import type { ManagedFile } from "@features/files";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 
-export function GenerationMediaPreview({ file }: { file: ManagedFile }) {
+export function GenerationMediaPreview({
+  file,
+  thumbnailOnly = false,
+}: {
+  file: ManagedFile;
+  thumbnailOnly?: boolean;
+}) {
   const { url: source } = useApiBlobUrl(
-    file.media_kind !== "video" ? null : `/v1/files/${file.id}/content`,
+    file.media_kind === "video" && !thumbnailOnly
+      ? `/v1/files/${file.id}/content`
+      : null,
   );
-  if (file.media_kind === "image")
+  if (
+    file.media_kind === "image" ||
+    (file.media_kind === "video" && thumbnailOnly)
+  )
     return (
       <ImagePreview
         interactive={false}
-        src={`/v1/files/${file.id}/content`}
+        src={`/v1/files/${file.id}/${thumbnailOnly ? "thumbnail" : "content"}`}
         size={320}
         alt=""
       />

@@ -40,7 +40,9 @@ export async function getInferenceOptions() {
 export async function getInferenceTasks() {
   return unwrap(await api.GET("/v1/model-inference/tasks"));
 }
-export async function uploadInferenceAudio(
+export const uploadInferenceAudio = uploadInferenceMedia;
+
+export async function uploadInferenceMedia(
   file: File,
   transfer: TransferOptions = {},
 ) {

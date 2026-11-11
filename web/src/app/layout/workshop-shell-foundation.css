@@ -222,6 +222,46 @@
   overflow: auto;
 }
 
+.generation-source-location {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0 8px;
+  overflow-x: auto;
+  background: var(--surface);
+}
+
+.generation-source-location > span {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 4px;
+  color: var(--faint);
+}
+
+.generation-source-location button {
+  flex: none;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.generation-source-location button:hover:not(:disabled),
+.generation-source-location button[aria-current] {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.generation-source-folders {
+  margin-bottom: 8px;
+}
+
 .generation-source-state {
   min-height: 180px;
   display: flex;

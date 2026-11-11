@@ -125,6 +125,7 @@ async def codex(
     instructions=None,
     reasoning_effort=None,
     service_tier=None,
+    image_input=(),
 ):
     async with codex_process(executable, profile, model, watchdog=watchdog) as (
         process,
@@ -140,6 +141,7 @@ async def codex(
             instructions,
             reasoning_effort=reasoning_effort,
             service_tier=service_tier,
+            image_input=image_input,
         )
 
 
@@ -154,6 +156,7 @@ async def codex_turn(
     *,
     reasoning_effort=None,
     service_tier=None,
+    image_input=(),
 ):
     sequence = 0
     total = 0
@@ -317,7 +320,10 @@ async def codex_turn(
         ]
         thread = await rpc("thread/start", thread_params)
         thread_id = thread["thread"]["id"]
-        turn_params = {"threadId": thread_id, "input": [{"type": "text", "text": prompt}]}
+        turn_params = {
+            "threadId": thread_id,
+            "input": [{"type": "text", "text": prompt}, *image_input],
+        }
         if reasoning_effort:
             turn_params["effort"] = reasoning_effort
         if service_tier:

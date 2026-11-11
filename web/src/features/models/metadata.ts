@@ -1,6 +1,14 @@
 import type { ProviderInput } from "@features/models/api";
 
 export const providerMetadata = {
+  local_ffmpeg: {
+    label: "本地 FFmpeg",
+    optionLabel: "本地 FFmpeg · 视频清晰增强",
+  },
+  local_relayvsr: {
+    label: "本地 RelayVSR",
+    optionLabel: "本地 RelayVSR · Metal 托管",
+  },
   local_qwen_tts: {
     label: "本地 Qwen 语音",
     optionLabel: "本地 Qwen · MLX 托管",
@@ -66,6 +74,7 @@ export const capabilityMetadata = {
   tools: { label: "工具" },
   image_generation: { label: "图像生成" },
   video_generation: { label: "视频生成" },
+  video_enhancement: { label: "视频增强" },
   audio_generation: { label: "音频生成" },
   speech_recognition: { label: "语音识别" },
   voice: { label: "端到端语音" },
@@ -87,12 +96,12 @@ export const capabilityLabel = Object.fromEntries(
   ]),
 ) as Record<ModelCapability, string>;
 
-export const providerKindOptions = Object.entries(providerMetadata).map(
-  ([value, metadata]) => ({
+export const providerKindOptions = Object.entries(providerMetadata)
+  .filter(([kind]) => !["local_relayvsr", "local_ffmpeg"].includes(kind))
+  .map(([value, metadata]) => ({
     value: value as ProviderKind,
     label: metadata.optionLabel,
-  }),
-);
+  }));
 
 export const modelCapabilities = Object.keys(
   capabilityMetadata,

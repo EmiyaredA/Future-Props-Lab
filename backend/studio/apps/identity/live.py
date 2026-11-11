@@ -77,9 +77,6 @@ from studio.contracts.visual_workshop.visual_agent_review import job_target as r
 from studio.contracts.visual_workshop.visual_agent_review import (
     status_target as review_status_target,
 )
-from studio.contracts.visual_workshop.visual_assistant import attachment_target
-from studio.contracts.visual_workshop.visual_assistant import input_target as assistant_input_target
-from studio.contracts.visual_workshop.visual_assistant import model_target as assistant_model_target
 from studio.contracts.visual_workshop.visual_catalog import AGENT_ACCEPTANCE_TARGET
 from studio.contracts.visual_workshop.visual_catalog import catalog_target as visual_catalog_target
 from studio.contracts.visual_workshop.visual_composition import (
@@ -274,7 +271,6 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and review_asset_target(body.method, body.path))
         or (body.service == "visual" and review_status_target(body.method, body.path))
         or private_models
-        or (body.service == "models" and assistant_model_target(body.method, body.path))
         or private_external
         or private_thought_upload
         or private_render
@@ -285,8 +281,6 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and snapshot_files_target(body.method, body.path))
         or (body.service == "assets" and galgame_frame_inputs_target(body.method, body.path))
         or (body.service == "assets" and galgame_export_inputs_target(body.method, body.path))
-        or (body.service == "assets" and attachment_target(body.method, body.path))
-        or (body.service == "assets" and assistant_input_target(body.method, body.path))
         or (body.service == "assets" and acceptance_asset_target(body.method, body.path))
         or (body.service == "assets" and visual_snapshot_asset_target(body.method, body.path))
         or (body.service == "assets" and generation_asset_target(body.method, body.path))

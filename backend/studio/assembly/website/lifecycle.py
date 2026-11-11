@@ -23,6 +23,7 @@ from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from studio.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
 from studio.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from studio.apps.identity.profile import reconcile_profile_avatars
+from studio.apps.identity.storage.models.accounts import User
 from studio.apps.identity.website_access.external_sync import external_sync_actor_allowed
 from studio.apps.identity.website_access.interview import interview_actor_allowed
 from studio.apps.identity.website_access.visual_acceptance import acceptance_actor_allowed
@@ -40,15 +41,19 @@ from studio.apps.model_service.playground.generation_runner import ModelTestGene
 from studio.apps.model_service.playground.recovery import recover_interrupted_model_test_runs
 from studio.apps.model_service.playground.transcription_runner import ModelTestTranscriptionRunner
 from studio.apps.model_service.templates.website_sync import ModelTemplateSyncRunner
+from studio.apps.model_service.video_enhancement.tasks import VideoBackend, VideoEnhancement
 from studio.apps.motion_compositor.runner import MotionExportRunner
 from studio.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
 from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
-from studio.apps.visual_workshop.assistant.actions import recover_interrupted_visual_assistant_runs
 from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+from studio.config.local_models import FFMPEG_MODEL_ID, RELAY_MODEL_ID, compatible, definition
+from studio.contracts.model_service.video_runtime import VideoRuntimeError
 from studio.host.local_models.installer import Installer
+from studio.host.local_models.relayvsr_runtime import RUNTIME_REVISION, RelayRuntime
 from studio.host.local_models.runtime import LocalRuntime
 from studio.runtime.files.project_archives import cleanup_snapshot_staging
+from studio.runtime.tasks.blocking_io import run_blocking_io
 from studio.runtime.tasks.polling import RunnerSupervisor
 
 
@@ -74,10 +79,10 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await reconcile_project_trash(session, AssetStorage(settings))
         await reconcile_snapshot_imports(session, AssetStorage(settings))
     await recover_admissions(sessions=sessions)
-    await recover_interrupted_visual_assistant_runs(sessions=sessions)
     await recover_interrupted_model_test_runs(sessions)
     await recover_interrupted_amadeus_runs(sessions=sessions)
     lifespan_app.state.code_agent_runs = CodeAgentRuns(
+        operation_catalog=lifespan_app.state.amadeus_operation_catalog,
         resolve_agent=lifespan_app.state.amadeus_resolve,
         sessions=sessions,
         settings=settings,
@@ -90,6 +95,41 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     local_models = LocalModels(sessions, installer, local_runtime)
     lifespan_app.state.local_models = local_models
     await local_models.recover()
+
+    async def enhancement_owner_active(session, owner):
+        account = await session.get(User, owner)
+        return account is not None and account.status == "active"
+
+    relay_model = definition(RELAY_MODEL_ID)
+
+    async def enhancement_engine(scratch):
+        if not await run_blocking_io(installer.is_installed, relay_model):
+            raise VideoRuntimeError("本地模型文件校验失败，请修复安装")
+        return RelayRuntime(
+            installer.relay_executable, installer.model_path(RELAY_MODEL_ID), scratch
+        )
+
+    video_enhancement = VideoEnhancement(
+        sessions,
+        settings,
+        {
+            RELAY_MODEL_ID: VideoBackend(
+                provider_kind="local_relayvsr",
+                revision=f"{RUNTIME_REVISION[:16]}:{relay_model['revision']}",
+                available=lambda: compatible() and installer.relay_available(),
+                engine=enhancement_engine,
+            ),
+            FFMPEG_MODEL_ID: VideoBackend(
+                provider_kind="local_ffmpeg",
+                revision=definition(FFMPEG_MODEL_ID)["revision"],
+                available=lambda: compatible() and installer.fast_video_available(),
+            ),
+        },
+        owner_active=enhancement_owner_active,
+    )
+    local_models.relay_busy = lambda: video_enhancement.current is not None
+    lifespan_app.state.video_enhancement = video_enhancement
+    await video_enhancement.recover()
     supervisor = RunnerSupervisor(
         (
             InterviewPreparationRunner(
@@ -156,11 +196,11 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await supervisor.start()
         yield
     finally:
-        await lifespan_app.state.assistant_approvals.close()
         await lifespan_app.state.video_downloads.close()
         await lifespan_app.state.amadeus_actions.close()
         await lifespan_app.state.code_agent_runs.close()
         await supervisor.stop()
+        await video_enhancement.close()
         await local_models.close()
         lifespan_app.state.runner_supervisor = None
         await database.close()

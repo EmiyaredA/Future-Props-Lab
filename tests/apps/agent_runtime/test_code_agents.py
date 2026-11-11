@@ -10,6 +10,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from PIL import Image
 from sqlalchemy import update
 
 from studio.apps.amadeus.storage.models import AmadeusConversation
@@ -30,7 +31,7 @@ def fake_cli(root: Path, name="fake"):
     path.write_text(
         f"#!{sys.executable}\n"
         + """
-import sys, json, os, subprocess, re
+import sys, json, os, subprocess, re, base64, io
 
 if "--version" in sys.argv:
     print("fake 2.163.300")
@@ -103,6 +104,19 @@ if "app-server" in sys.argv:
                 marker = next(m["content"] for m in reversed(history) if m["role"] == "user")
             except (ValueError, KeyError, StopIteration):
                 marker = prompt
+            if "IMAGE_FAKE" in marker:
+                from PIL import Image
+                assert "kind=imports" in prompt and "read_file" in prompt
+                images = [part["url"] for part in x["params"]["input"] if part["type"] == "image"]
+                assert len(images) == 1
+                assert images[0].startswith("data:image/jpeg;base64,")
+                with Image.open(io.BytesIO(base64.b64decode(images[0].split(",", 1)[1]))) as image:
+                    assert image.size == (1024, 512)
+                    red, green, blue = image.getpixel((512, 256))
+                    assert red > 200 and green < 50 and blue < 50
+                send({"method": "item/agentMessage/delta", "params": {"delta": "已收到图片像素"}})
+                send({"method": "turn/completed", "params": {"turn": {"status": "completed"}}})
+                break
             if "EFFORT_FAKE" in marker:
                 assert x["params"]["effort"] == "high"
                 assert x["params"]["serviceTier"] == "fast"
@@ -338,6 +352,45 @@ async def test_backend_owned_native_run_and_event_tombstones(
         )
         assert changed.status_code == 409
         assert (await client.get(root)).json()["messages"][-1]["run_id"] == identity
+
+
+@pytest.mark.usefixtures("configured")
+async def test_amadeus_sends_uploaded_image_pixels_to_codex():
+    client, *_ = await client_account(admin=True)
+    async with aclosing(client):
+        conversation = (await client.post("/v1/amadeus/conversations")).json()
+        root = f"/v1/amadeus/conversations/{conversation['id']}"
+        png = io.BytesIO()
+        Image.new("RGB", (2400, 1200), "red").save(png, format="PNG", compress_level=0)
+        assert png.tell() > 1024 * 1024
+        uploaded = await client.post(
+            root + "/imports",
+            files={"upload": ("剪贴图像.png", png.getvalue(), "image/png")},
+        )
+        assert uploaded.status_code == 200, uploaded.text
+        name = uploaded.json()["name"]
+        references = [
+            {"id": f"file:{item}", "source": "imports", "application": "会话文件", "name": item}
+            for item in (name, "missing.png", name)
+        ]
+        saved = await client.post(
+            root + "/messages",
+            json={
+                "role": "user",
+                "content": "IMAGE_FAKE",
+                "expected_revision": 0,
+                "references": references,
+            },
+        )
+        assert saved.status_code == 200, saved.text
+        started = await client.post(
+            root + "/runs", json={"agent_id": "codex", "references": references}
+        )
+        assert started.status_code == 200, started.text
+        result = await wait_run(client, root, started.json()["run"]["id"])
+        assert result["run"]["status"] == "completed", result
+        assert result["run"]["partial_text"] == "已收到图片像素"
+        assert "data:image/" not in str(result)
 
 
 @pytest.mark.usefixtures("configured")

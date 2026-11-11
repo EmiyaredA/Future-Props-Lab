@@ -1,4 +1,4 @@
-import { APPLICATION_DEFINITIONS } from "@features/applications/definitions";
+import { APPLICATION_DEFINITIONS } from "@features/applications";
 import { workshopProjects } from "./projectScope";
 import type { Conversation } from "./protocol";
 

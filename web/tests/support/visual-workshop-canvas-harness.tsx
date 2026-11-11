@@ -4,28 +4,17 @@ import { vi } from "vitest";
 import { VisualWorkshopCanvasPage } from "@features/visual-workshop/canvas";
 import { getFiles, getFolders, uploadManagedFile } from "@features/files/api";
 import {
-  createVisualAssistantConversation,
   createGenerationTask,
-  deleteVisualAssistantConversation,
   getGenerationOptions,
   getGenerationTask,
   getGenerationTasks,
-  getVisualAssistantConversation,
-  getVisualAssistantConversations,
-  getVisualAssistantModels,
   getVisualCanvas,
   getVisualWorkshopProject,
-  patchVisualAssistantConversation,
   patchVisualWorkshopProject,
   putVisualCanvas,
-  resolveVisualAssistantApproval,
-  streamVisualAssistant,
 } from "@features/visual-workshop/api";
 import { fetchApiBlob } from "@platform/api/client";
-import {
-  assistantConversation,
-  canvasProject as project,
-} from "./visual-workshop-canvas-fixtures";
+import { canvasProject as project } from "./visual-workshop-canvas-fixtures";
 
 export function renderCanvas() {
   const client = new QueryClient({
@@ -81,37 +70,6 @@ export function primeCanvasMocks() {
     value: vi.fn(),
   });
   vi.mocked(uploadManagedFile).mockReset();
-  vi.mocked(getVisualAssistantConversations).mockResolvedValue({
-    items: [assistantConversation],
-  });
-  vi.mocked(getVisualAssistantConversation).mockResolvedValue(
-    assistantConversation,
-  );
-  vi.mocked(createVisualAssistantConversation).mockResolvedValue(
-    assistantConversation,
-  );
-  vi.mocked(getVisualAssistantModels).mockResolvedValue({
-    items: [
-      {
-        id: "model-chat",
-        provider_id: "provider-openai",
-        provider_name: "OpenAI 兼容网关",
-        slug: "demo-chat",
-        label: "Demo Chat",
-        description: "快速文本模型",
-        capabilities: ["chat", "tools"],
-      },
-      {
-        id: "model-vision",
-        provider_id: "provider-anthropic",
-        provider_name: "Anthropic",
-        slug: "claude-vision",
-        label: "Claude Vision",
-        description: "支持图片理解",
-        capabilities: ["chat", "vision"],
-      },
-    ],
-  });
   vi.mocked(getGenerationOptions).mockResolvedValue({
     models: [
       {
@@ -141,50 +99,6 @@ export function primeCanvasMocks() {
       },
     ],
   });
-  vi.mocked(patchVisualAssistantConversation).mockImplementation(
-    async (_projectId, _conversationId, expectedRevision, changes) => ({
-      ...assistantConversation,
-      title: changes.title ?? assistantConversation.title,
-      model_id:
-        changes.model_id === undefined
-          ? assistantConversation.model_id
-          : changes.model_id,
-      model_slug:
-        changes.model_id === "model-vision"
-          ? "claude-vision"
-          : changes.model_id === null
-            ? ""
-            : assistantConversation.model_slug,
-      image_model_id:
-        changes.image_model_id === undefined
-          ? assistantConversation.image_model_id
-          : changes.image_model_id,
-      image_model_slug:
-        changes.image_model_id === "model-image"
-          ? "senseaudio-image-pro"
-          : changes.image_model_id === null
-            ? ""
-            : assistantConversation.image_model_slug,
-      video_model_id:
-        changes.video_model_id === undefined
-          ? assistantConversation.video_model_id
-          : changes.video_model_id,
-      video_model_slug:
-        changes.video_model_id === "model-video"
-          ? "senseaudio-video-pro"
-          : changes.video_model_id === null
-            ? ""
-            : assistantConversation.video_model_slug,
-      revision: expectedRevision + 1,
-    }),
-  );
-  vi.mocked(deleteVisualAssistantConversation).mockResolvedValue({
-    deleted: true,
-  });
-  vi.mocked(resolveVisualAssistantApproval).mockResolvedValue({
-    accepted: true,
-  });
-  vi.mocked(streamVisualAssistant).mockReset();
   vi.mocked(createGenerationTask).mockReset();
   vi.mocked(getGenerationTask).mockReset();
   vi.mocked(patchVisualWorkshopProject).mockImplementation(

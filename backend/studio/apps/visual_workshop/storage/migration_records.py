@@ -6,7 +6,6 @@ from typing import Literal
 from pydantic import Field, model_validator
 
 from studio.apps.visual_workshop.migration_acceptance import DATASETS as ACCEPTANCE_DATASETS
-from studio.apps.visual_workshop.migration_assistant import DATASETS as ASSISTANT_DATASETS
 from studio.apps.visual_workshop.migration_generation import DATASETS as GENERATION_DATASETS
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.schemas.workshop import (
@@ -104,7 +103,6 @@ DATASETS = (
         owns_record=False,
     ),
     *GENERATION_DATASETS,
-    *ASSISTANT_DATASETS,
     *ACCEPTANCE_DATASETS,
 )
 

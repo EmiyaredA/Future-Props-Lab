@@ -30,11 +30,18 @@ import { isExternalModel } from "./resources/project-resources.ts";
 import { makeCrowd } from "./assets/crowd.ts";
 import { collectSpatialReport, type SpatialOptions } from "./spatial/report.ts";
 import * as T from "three";
+import type { SnapBounds } from "./editor/object-snapping.ts";
 import {
-  objectBounds,
-  findObjectSnap,
-  type SnapBounds,
-} from "./editor/object-snapping.ts";
+  collectSnapTargets,
+  snapSceneObject,
+} from "./editor/scene-snapping.ts";
+import {
+  entityUnderRay,
+  pathGroundPoint,
+  pathHandleUnderRay,
+  pointerRay,
+  projectSceneLabels,
+} from "./editor/scene-projection.ts";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { TransformControls } from "three/addons/controls/TransformControls.js";
 import type { Rig } from "./assets.ts";
@@ -494,41 +501,6 @@ export class Engine {
         ) as Vec3)
       : [...position];
   }
-  private collectSnapTargets(exclude: string) {
-    const targets: SnapBounds[] = [];
-    for (const entity of this.project.entities) {
-      if (
-        entity.id === exclude ||
-        entity.kind !== "prop" ||
-        entity.light ||
-        !editorEntityVisible(this.project, entity)
-      )
-        continue;
-      const root = this.models.get(entity.id);
-      const bounds = root ? objectBounds(root, entity.id, entity.name) : null;
-      if (bounds) targets.push(bounds);
-    }
-    if (this.project.room.enabled) {
-      const names: Record<string, string> = {
-        north: "北墙",
-        south: "南墙",
-        east: "东墙",
-        west: "西墙",
-        ceiling: "天花板",
-      };
-      for (const [side, wall] of this.walls) {
-        if (this.project.editorView?.hideWalls) continue;
-        const bounds = objectBounds(wall, "room-" + side, names[side]);
-        if (bounds) targets.push(bounds);
-      }
-      const floor = this.roomGroup.children.find((o) => o instanceof T.Mesh);
-      if (floor) {
-        const bounds = objectBounds(floor, "room-floor", "房间地面");
-        if (bounds) targets.push(bounds);
-      }
-    }
-    return targets;
-  }
   snapObjectPosition(id: string, position: Vec3, axes = "XYZ"): Vec3 {
     const entity = this.project.entities.find((e) => e.id === id),
       root = this.models.get(id);
@@ -539,39 +511,27 @@ export class Engine {
       this.selectedPoint >= 0
     )
       return position;
-    const bounds = objectBounds(root, id, entity.name);
-    if (!bounds) return position;
-    const delta = new T.Vector3(...position).sub(root.position);
-    bounds.corners.forEach((p) => p.add(delta));
-    const targets = this.dragging
-      ? (this.snapTargets ??= this.collectSnapTargets(id))
-      : this.collectSnapTargets(id);
-    const result = findObjectSnap(bounds, targets, axes);
-    this.objectSnapTarget = result?.target.name ?? "";
-    if (result && result.offset.lengthSq() > 1e-12)
-      return new T.Vector3(...position).add(result.offset).toArray() as Vec3;
-    // Nearby object boundaries win over the grid. Otherwise retain grid behavior on active axes only.
-    const grid = new T.Vector3(
-      ...position.map((v, i) =>
-        axes.includes("XYZ"[i]) && this.placementSnap
-          ? Math.round(v / this.placementSnap) * this.placementSnap
-          : v,
-      ),
+    const result = snapSceneObject(
+      root,
+      entity,
+      position,
+      axes,
+      this.placementSnap,
+      () => {
+        const collect = () =>
+          collectSnapTargets(
+            this.project,
+            this.models,
+            this.walls,
+            this.roomGroup,
+            id,
+          );
+        return this.dragging ? (this.snapTargets ??= collect()) : collect();
+      },
     );
-    if (result) {
-      const correction = grid.sub(new T.Vector3(...position));
-      const normal = result.normal.clone();
-      ["X", "Y", "Z"].forEach((axis, i) => {
-        if (!axes.includes(axis)) normal.setComponent(i, 0);
-      });
-      if (normal.lengthSq() > 1e-8)
-        correction.addScaledVector(
-          normal,
-          -correction.dot(result.normal) / normal.lengthSq(),
-        );
-      return new T.Vector3(...position).add(correction).toArray() as Vec3;
-    }
-    return grid.toArray() as Vec3;
+    if (!result) return position;
+    this.objectSnapTarget = result.target;
+    return result.position;
   }
   refreshHelpers() {
     this.needsRender = true;
@@ -844,83 +804,34 @@ export class Engine {
       ) > 5
     )
       return;
-    const ray = this.pointerRay(e);
+    const ray = pointerRay(
+      e,
+      this.editorRenderer.domElement.getBoundingClientRect(),
+      this.editorCamera,
+    );
     this.prepareView(true);
     try {
       if (this.drawingPath) {
-        if (this.pathSurfaceMode === "surface") {
-          const surfaces: T.Object3D[] = this.project.entities
-            .filter(
-              (item) =>
-                item.kind === "prop" &&
-                !item.light &&
-                item.visible &&
-                item.id !== this.selected,
-            )
-            .map((item) => this.models.get(item.id)!);
-          if (this.project.room.enabled) surfaces.push(this.roomGroup);
-          const surface = ray.intersectObjects(surfaces, true).find((hit) => {
-            let node: T.Object3D | null = hit.object;
-            while (node) {
-              if (!node.visible) return false;
-              node = node.parent;
-            }
-            return true;
-          });
-          if (surface) {
-            this.cb.ground(surface.point.toArray() as Vec3);
-            return;
-          }
-        }
-        const out = new T.Vector3();
-        if (
-          ray.ray.intersectPlane(
-            new T.Plane(
-              new T.Vector3(0, 1, 0),
-              -workingElevation(this.project),
-            ),
-            out,
-          )
-        )
-          this.cb.ground(out.toArray() as Vec3);
+        const point = pathGroundPoint(
+          ray,
+          this.project,
+          this.models,
+          this.pathSurfaceMode === "surface" ? this.roomGroup : undefined,
+          this.selected,
+        );
+        if (point) this.cb.ground(point);
         return;
       }
-      const points = ray
-        .intersectObjects(this.pathHelpers.children, false)
-        .find((x) => x.object.userData.pointIndex !== undefined);
-      if (points) {
-        this.cb.point(points.object.userData.pointIndex);
+      const point = pathHandleUnderRay(ray, this.pathHelpers.children);
+      if (point !== undefined) {
+        this.cb.point(point);
         return;
       }
-      const entityId = this.entityUnderRay(ray);
+      const entityId = entityUnderRay(ray, this.models);
       if (entityId) this.cb.select(entityId);
     } finally {
       this.prepareView(false);
     }
-  }
-  private pointerRay(e: MouseEvent) {
-    const rect = this.editorRenderer.domElement.getBoundingClientRect();
-    const mouse = new T.Vector2(
-      ((e.clientX - rect.left) / rect.width) * 2 - 1,
-      (-(e.clientY - rect.top) / rect.height) * 2 + 1,
-    );
-    const ray = new T.Raycaster();
-    ray.layers.enable(1);
-    ray.setFromCamera(mouse, this.editorCamera);
-    return ray;
-  }
-  private entityUnderRay(ray: T.Raycaster) {
-    const hit = ray
-      .intersectObjects([...this.models.values()], true)
-      .find((x) => {
-        let o: T.Object3D | null = x.object;
-        while (o) {
-          if (!o.visible) return false;
-          o = o.parent;
-        }
-        return true;
-      });
-    return hit?.object.userData.entityId as string | undefined;
   }
   pickEntityAt(event: MouseEvent) {
     if (
@@ -931,38 +842,26 @@ export class Engine {
       return undefined;
     this.prepareView(true);
     try {
-      return this.entityUnderRay(this.pointerRay(event));
+      return entityUnderRay(
+        pointerRay(
+          event,
+          this.editorRenderer.domElement.getBoundingClientRect(),
+          this.editorCamera,
+        ),
+        this.models,
+      );
     } finally {
       this.prepareView(false);
     }
   }
   getProjectedLabels() {
-    const w = this.stage.clientWidth,
-      h = this.stage.clientHeight;
-    return this.project.entities
-      .filter(
-        (e) =>
-          editorEntityVisible(this.project, e) &&
-          (e.kind === "actor" || e.kind === "camera"),
-      )
-      .map((e) => {
-        const p = this.models
-          .get(e.id)!
-          .position.clone()
-          .add(
-            new T.Vector3(0, e.kind === "actor" ? e.height + 0.16 : 0.25, 0),
-          );
-        p.project(this.editorCamera);
-        return {
-          id: e.id,
-          name: e.name.split(" · ")[0],
-          color: e.color,
-          x: (p.x * 0.5 + 0.5) * w,
-          y: (-0.5 * p.y + 0.5) * h,
-          visible:
-            p.z >= -1 && p.z <= 1 && Math.abs(p.x) < 1 && Math.abs(p.y) < 1,
-        };
-      });
+    return projectSceneLabels(
+      this.project,
+      this.models,
+      this.editorCamera,
+      this.stage.clientWidth,
+      this.stage.clientHeight,
+    );
   }
   projectionSignature(id = this.previewId) {
     const c = this.getShotCamera(id);

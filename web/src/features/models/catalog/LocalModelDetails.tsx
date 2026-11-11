@@ -9,11 +9,13 @@ import {
   Play,
   Plus,
   Power,
+  Video,
 } from "lucide-react";
 import type { LocalModel } from "@features/models/localModelApi";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CatalogMenu } from "./CatalogMenu";
 import {
+  isBuiltinVideo,
   localModelNextStep,
   type localModelConnection,
 } from "./localModelPresentation";
@@ -46,6 +48,7 @@ export function LocalModelDetails({
   error: string;
 }) {
   const [confirmCleanup, setConfirmCleanup] = useState(false);
+  const builtin = isBuiltinVideo(model);
   const installed = model.status === "installed";
   const running = installed && model.enabled;
   const connectionEnabled =
@@ -61,17 +64,27 @@ export function LocalModelDetails({
   const manageable = canManage && !disabled && !model.busy;
   const steps = [
     {
-      title: installed ? "已安装" : "安装到本机",
-      description: installed
-        ? "模型文件已下载并安装到本机"
-        : "下载模型与独立运行环境",
+      title: builtin
+        ? installed
+          ? "本机环境已就绪"
+          : "检查本机环境"
+        : installed
+          ? "已安装"
+          : "安装到本机",
+      description: builtin
+        ? "使用本机 FFmpeg 和 VideoToolbox 硬件编码"
+        : installed
+          ? "模型文件已下载并安装到本机"
+          : "下载模型与独立运行环境",
       complete: installed,
     },
     {
       title: running ? "服务已启用" : "启用本机服务",
-      description: running
-        ? "首次调用时加载模型，无需 API Key"
-        : "安装完成后自动启用；停止后需手动启用",
+      description: builtin
+        ? "按需启动本机视频处理，无需 API Key"
+        : running
+          ? "首次调用时加载模型，无需 API Key"
+          : "安装完成后自动启用；停止后需手动启用",
       complete: running,
     },
     {
@@ -86,6 +99,7 @@ export function LocalModelDetails({
   let primary:
     { label: string; action: () => void; disabled: boolean } | undefined;
   if (
+    !builtin &&
     ["not_installed", "failed", "cancelled"].includes(model.status) &&
     canManage
   )
@@ -126,7 +140,7 @@ export function LocalModelDetails({
     };
 
   const permissionHint =
-    !installed && !canManage
+    !builtin && !installed && !canManage
       ? "安装和运行管理由平台管理员在本机管理端操作。"
       : installed && !model.enabled && !canManage
         ? "请联系平台管理员启用本机服务。"
@@ -136,7 +150,7 @@ export function LocalModelDetails({
             ? "当前角色没有模型测试权限。"
             : null;
   const cleanupAvailable =
-    installed || ["failed", "cancelled"].includes(model.status);
+    !builtin && (installed || ["failed", "cancelled"].includes(model.status));
   const cleanupLabel = installed ? "卸载模型" : "清理下载";
 
   return (
@@ -146,14 +160,21 @@ export function LocalModelDetails({
       aria-busy={pending}
     >
       <header className="lm-detail-header">
-        <AudioLines size={30} aria-hidden />
+        {model.capability === "video_enhancement" ? (
+          <Video size={30} aria-hidden />
+        ) : (
+          <AudioLines size={30} aria-hidden />
+        )}
         <div>
           <h2>{model.label}</h2>
           <p>
-            下载 {(model.download_bytes / 1e9).toFixed(2)} GB · 安装需{" "}
-            {(model.required_disk_bytes / 1e9).toFixed(1)} GB
+            {builtin
+              ? "本机 FFmpeg · 免下载"
+              : `下载 ${(model.download_bytes / 1e9).toFixed(2)} GB · 安装需 ${(model.required_disk_bytes / 1e9).toFixed(1)} GB`}
           </p>
-          <small>安装空间包含环境与暂存</small>
+          <small>
+            {builtin ? "等比放大到 1080p 并轻微锐化" : "安装空间包含环境与暂存"}
+          </small>
         </div>
       </header>
       <ol className="lm-steps" aria-label="模型使用步骤">
@@ -229,7 +250,7 @@ export function LocalModelDetails({
                 停止服务
               </button>
             )}
-            {canManage && (
+            {canManage && cleanupAvailable && (
               <CatalogMenu
                 label={`${model.label} 更多操作`}
                 items={[
@@ -247,8 +268,14 @@ export function LocalModelDetails({
             {model.busy ? (
               <LoadingState
                 variant="inline"
-                label="正在生成语音，完成后可管理服务。"
+                label={
+                  model.capability === "video_enhancement"
+                    ? "本机正在处理视频，完成后可管理服务。"
+                    : "正在生成语音，完成后可管理服务。"
+                }
               />
+            ) : builtin ? (
+              "空闲 · 按需启动视频处理。"
             ) : model.loaded ? (
               "模型已加载 · 空闲 5 分钟后自动释放内存。"
             ) : (
@@ -279,7 +306,7 @@ export function LocalModelDetails({
           />
         </div>
       )}
-      {canManage && installed && (
+      {canManage && installed && !builtin && (
         <button
           className="btn"
           disabled={!manageable || pending || model.busy}
@@ -290,11 +317,16 @@ export function LocalModelDetails({
       )}
       <footer className="lm-source">
         <a
-          href={`https://huggingface.co/${model.repository}`}
+          href={
+            builtin
+              ? "https://ffmpeg.org/"
+              : `https://huggingface.co/${model.repository}`
+          }
           target="_blank"
           rel="noreferrer"
         >
-          Hugging Face <ExternalLink size={13} aria-hidden />
+          {builtin ? "FFmpeg" : "Hugging Face"}{" "}
+          <ExternalLink size={13} aria-hidden />
           <span className="lm-sr-only">（新窗口打开）</span>
         </a>
         <span>{model.license}</span>

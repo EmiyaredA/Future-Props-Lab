@@ -17,7 +17,6 @@ from scripts.website import legacy_snapshot
 from scripts.website.migrate_assets import ASSET_RECORDS, transfer_asset_blobs
 from scripts.website.migrate_visual_history import (
     ACCEPTANCE_PINS,
-    CONVERSATION_PINS,
     PINS,
     RECORDS,
     migrate,
@@ -38,10 +37,6 @@ from studio.apps.visual_workshop.acceptance.models import (
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS
 from studio.apps.visual_workshop.storage.models import (
-    VisualAssistantAction,
-    VisualAssistantConversation,
-    VisualAssistantMessage,
-    VisualAssistantMessageAsset,
     VisualGenerationBatch,
     VisualGenerationTask,
 )
@@ -184,70 +179,6 @@ async def seed_history(database, owner, project, asset, evidence_asset):
                 )
             )
             await session.flush()
-            session.add(
-                VisualAssistantConversation(
-                    id="saved-dialogue",
-                    owner_user_id=str(owner),
-                    project_id=project,
-                    title="历史对话",
-                    revision=7,
-                    created_at=submitted,
-                    updated_at=submitted,
-                )
-            )
-            await session.flush()
-            session.add_all(
-                [
-                    VisualAssistantMessage(
-                        id="old-user",
-                        conversation_id="saved-dialogue",
-                        position=0,
-                        turn_id="old-turn",
-                        role="user",
-                        content="查看原件",
-                        content_parts=[
-                            {"type": "text", "text": "查看原件"},
-                            {"type": "asset", "asset_id": asset},
-                        ],
-                        status="completed",
-                    ),
-                    VisualAssistantMessage(
-                        id="old-answer",
-                        conversation_id="saved-dialogue",
-                        position=1,
-                        turn_id="old-turn",
-                        role="assistant",
-                        content="已检查",
-                        status="completed",
-                    ),
-                ]
-            )
-            await session.flush()
-            session.add_all(
-                [
-                    VisualAssistantMessageAsset(
-                        id="old-attachment",
-                        message_id="old-user",
-                        asset_id=asset,
-                        position=0,
-                    ),
-                    VisualAssistantAction(
-                        id="old-action",
-                        message_id="old-answer",
-                        action_id="external-tool-1",
-                        run_id="old-run",
-                        approval_group_id="old-group",
-                        position=0,
-                        tool_name="generate_image",
-                        effect="external",
-                        status="completed",
-                        generation_task_id=children[0],
-                        canvas_revision=2,
-                        display_payload={"label": "历史画面"},
-                        result_payload={"saved": True},
-                    ),
-                ]
-            )
             await seed_review(session, str(owner), project, evidence_asset)
             await session.commit()
     finally:
@@ -438,16 +369,25 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
                 links = next(pages(client, asset_target, headers, plan, owner, dataset))
                 assert [row.id for row in links.batch.records] == sorted(placements)
         assert transfer_asset_blobs(client, plan, asset_source, asset_target)["record_count"] == 2
-        attachments = next(pages(client, visual_source, headers, plan, owner, CONVERSATION_PINS))
-        rejected = client.post(
-            asset_target + CONVERSATION_PINS.prefix + "/batches",
-            json=attachments.batch.model_dump(mode="json"),
-            headers={**headers, "X-Fpl-Migration-SHA256": attachments.sha256},
-        )
-        assert (
-            rejected.status_code == 409
-            and rejected.json()["code"] == "migration_reference_project_missing"
-        )
+        for target in (visual_target, asset_target):
+            retired = client.post(
+                target + "/v1/migration/visual/conversation-pins/batches",
+                json={"dataset": "visual.conversation-pins"},
+                headers=headers,
+            )
+            assert retired.status_code == 404, retired.text
+        for suffix in (
+            "assistant-conversations",
+            "assistant-messages",
+            "assistant-attachments",
+            "assistant-actions",
+        ):
+            retired = client.post(
+                visual_target + f"/v1/migration/visual/{suffix}/batches",
+                json={"dataset": f"visual.{suffix}"},
+                headers=headers,
+            )
+            assert retired.status_code == 404, retired.text
         report = migrate(client, plan, *peers)
         assert report == migrate(client, plan, *peers)
         assert {row["dataset"]: row["record_count"] for row in report} == {
@@ -458,11 +398,6 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
             "visual.operation-receipts": 1,
             "visual.generation-tasks": 4,
             "visual.generation-batches": 1,
-            "visual.assistant-conversations": 1,
-            "visual.assistant-messages": 2,
-            "visual.assistant-attachments": 1,
-            "visual.assistant-actions": 1,
-            "visual.conversation-pins": 1,
             "visual.acceptance-templates": 1,
             "visual.acceptance-standards": 1,
             "visual.acceptance-versions": 1,
@@ -488,17 +423,6 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
         assert [row.provider_task_id for row in stored_tasks] == [
             f"legacy-{task_id}" for task_id in children
         ]
-        restored_pins = next(pages(client, asset_target, headers, plan, owner, CONVERSATION_PINS))
-        assert restored_pins == attachments
-        conversation = restored_pins.batch.records[0]
-        assert conversation.id == "saved-dialogue" and conversation.revision == 7
-        assert conversation.project_id == path.rsplit("/", 1)[-1]
-        assert conversation.asset_ids == [ids[0]]
-        action_dataset = next(item for item in RECORDS if item.name == "visual.assistant-actions")
-        stored_action = next(pages(client, visual_target, headers, plan, owner, action_dataset))
-        action = stored_action.batch.records[0]
-        assert action.generation_task_id == children[0] and action.approval_group_id == "old-group"
-        assert action.result_payload == {"saved": True}
         reference_dataset = next(
             item for item in RECORDS if item.name == "visual.acceptance-asset-references"
         )
@@ -534,11 +458,7 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
         login = client.post("/v1/auth/login", json={"username": "e2e-admin", "password": PASSWORD})
         assert login.status_code == 200, login.text
         assert client.get(path + "/canvas").json() == canvas
-        transcript = client.get(path + "/conversations/saved-dialogue")
-        assert transcript.status_code == 200, transcript.text
-        messages = transcript.json()["messages"]
-        assert messages[0]["assets"][0]["id"] == ids[0]
-        assert messages[1]["actions"][0]["generation_task_id"] == children[0]
+        assert client.get(path + "/conversations").status_code == 404
         review = client.get(path + "/acceptance/runs/old-review")
         assert review.status_code == 200, review.text
         assert review.json()["revision"] == 6

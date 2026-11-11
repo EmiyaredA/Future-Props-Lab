@@ -12,6 +12,14 @@ const clipboardExtensions: Record<string, string> = {
   "image/avif": "avif",
 };
 
+export function conversationFileUrl(
+  conversationId: string,
+  kind: WorkFile["kind"],
+  name: string,
+): string {
+  return `/v1/amadeus/conversations/${encodeURIComponent(conversationId)}/files/${encodeURIComponent(kind)}/${encodeURIComponent(name)}`;
+}
+
 export function clipboardAttachments(clipboard: DataTransfer): File[] {
   const files = Array.from(clipboard.files);
   const entries = files.length

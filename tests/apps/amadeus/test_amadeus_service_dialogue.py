@@ -1,9 +1,12 @@
 """Exercise owned CLI dialogue tools, approval, continuation and cancellation."""
 
 import asyncio
+import base64
+import io
 import json
 
 import httpx
+from PIL import Image
 
 from studio.apps.amadeus.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.amadeus.application import create_app
@@ -77,6 +80,9 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
         "name": "文本框",
         "target": target,
     }
+    png = io.BytesIO()
+    Image.new("RGB", (2, 2), "red").save(png, format="PNG")
+    image_bytes = png.getvalue()
 
     async def runner(
         agent,
@@ -91,6 +97,7 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
         runtime_path,
         reasoning_effort=None,
         service_tier=None,
+        image_attachments=(),
     ):
         assert (agent, executable) == ("codex", "sealed-codex-fixture")
         assert (model, reasoning_effort, service_tier) in {
@@ -103,6 +110,10 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
             assert snapshot["references"][0]["target"] == target
             assert snapshot["references"] == snapshot["messages"][-1]["references"]
             assert snapshot["messages"][-2]["references"][0]["target"] is None
+            assert image_attachments == [image_reference["name"]]
+            [image] = await call("read_file", {"kind": "imports", "name": image_attachments[0]})
+            assert image["mimeType"] == "image/png"
+            assert base64.b64decode(image["data"]) == image_bytes
         await emit("run_usage", {"input_tokens": 7, "context_used": 11})
         assert runtime_path == connections.runtime_root and root.is_dir()
         assert {item["name"] for item in tools} == set(SCHEMAS)
@@ -154,6 +165,17 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
         created = await send("POST", conversations)
         path = conversations + "/" + created.json()["id"]
         runs = path + "/runs"
+        imported = await send(
+            "POST", path + "/imports", files={"upload": ("剪贴图像.png", image_bytes, "image/png")}
+        )
+        assert imported.status_code == 200, imported.text
+        name = imported.json()["name"]
+        image_reference = {
+            "id": f"file:{name}",
+            "application": "会话文件",
+            "name": name,
+            "source": "imports",
+        }
         old = await send(
             "POST",
             path + "/messages",
@@ -183,7 +205,7 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
                 "expected_revision": old.json()["conversation"]["revision"],
                 "role": "user",
                 "content": "Inspect this element",
-                "references": [reference],
+                "references": [reference, image_reference],
             },
         )
         assert attached.status_code == 200, attached.text
@@ -195,7 +217,7 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
                 "agent_model": "fixture-model",
                 "reasoning_effort": "high",
                 "service_tier": "fast",
-                "references": [reference],
+                "references": [reference, image_reference],
                 "context": [{"projectId": "fixture-project", "selection": {"name": "not sent"}}],
             },
         )

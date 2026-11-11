@@ -18,7 +18,6 @@ from studio.apps.visual_workshop.acceptance.acceptance_options import (
 )
 from studio.apps.visual_workshop.acceptance.review_routes import router as review_router
 from studio.apps.visual_workshop.acceptance.standard_routes import router as standard_router
-from studio.apps.visual_workshop.assistant.assistant_dispatches import AssistantDispatches
 from studio.apps.visual_workshop.composition.composition_runner import CompositionRunner
 from studio.apps.visual_workshop.generation.generation_runner import GenerationRunner
 from studio.apps.visual_workshop.generation_routes import reads as generation_records_router
@@ -37,7 +36,6 @@ from studio.apps.visual_workshop.transport.acceptance_nodes_http import (
     router as acceptance_nodes_router,
 )
 from studio.apps.visual_workshop.transport.acceptance_samples_http import router as samples_router
-from studio.apps.visual_workshop.transport.assistant_http import router as assistant_router
 from studio.apps.visual_workshop.transport.catalog_http import (
     acceptance as acceptance_catalog_router,
 )
@@ -68,7 +66,6 @@ from studio.contracts.video_editor.video_segment_handoff import (
     asset_peer,
     visual_peer,
 )
-from studio.contracts.visual_workshop.visual_assistant_model import SETTLEMENT_DOMAIN
 from studio.contracts.visual_workshop.visual_generation import PEER_DOMAIN
 from studio.contracts.visual_workshop.visual_snapshot import (
     ARCHIVE_DOMAIN,
@@ -81,7 +78,6 @@ from studio.runtime.http.capability_client import CapabilityClient
 from studio.runtime.http.request_limit import RequestLimit
 from studio.runtime.http.web import attach_web, load_release
 from studio.runtime.messaging.timed_peer import TimedPeer
-from studio.runtime.tasks.reactive_tools.approval import ApprovalBroker
 
 PAGES = (
     "/apps/visual-workshop",
@@ -105,7 +101,6 @@ def create_app(
     schema_path=None,
     archive_key=None,
     generation_key=None,
-    assistant_settlement_key=None,
 ):
     if bool(video_segment_key) != bool(segment_assets_key):
         raise ValueError("Visual 分段交接需要独立的 Video 和 Assets 对等凭据")
@@ -116,9 +111,7 @@ def create_app(
         raise ValueError("Visual 分段交接凭据必须独立")
 
     async def ready(instance):
-        if not all(
-            (web_root, archive_key, generation_key, assistant_settlement_key, video_segment_key)
-        ):
+        if not all((web_root, archive_key, generation_key, video_segment_key)):
             raise HTTPException(503, "visual_production_dependencies_missing")
         state = instance.state
         if not state.public_routes_complete:
@@ -132,7 +125,6 @@ def create_app(
                 state.generation_runner,
                 state.composition_runner,
                 state.review_runner,
-                state.assistant_dispatches,
             )
         ):
             raise HTTPException(503, "visual_runner_unavailable")
@@ -167,7 +159,6 @@ def create_app(
     app.include_router(snapshot_router)
     app.include_router(composition_router)
     app.include_router(outputs_router)
-    app.include_router(assistant_router)
     app.include_router(generation_catalog_router)
     app.include_router(acceptance_catalog_router)
     app.include_router(acceptance_options_router)
@@ -180,22 +171,6 @@ def create_app(
     app.state.capabilities = CapabilityClient(
         service="visual", credential=credential, catalog=catalog, transport=transport
     )
-    if assistant_settlement_key is not None and assistant_settlement_key in {
-        credential,
-        generation_key,
-        archive_key,
-        video_segment_key,
-        segment_assets_key,
-    }:
-        raise ValueError("Visual 对话结算凭据必须独立")
-    settlement_peer = (
-        TimedPeer(assistant_settlement_key, domain=SETTLEMENT_DOMAIN)
-        if assistant_settlement_key is not None
-        else None
-    )
-    assistant_dispatches = AssistantDispatches(app.state, settlement_peer)
-    app.state.assistant_dispatches = assistant_dispatches
-    app.state.assistant_approvals = ApprovalBroker()
     if generation_key is not None and generation_key in {
         credential,
         archive_key,
@@ -275,18 +250,14 @@ def create_app(
                 if run_worker:
                     await composition_runner.start()
                     await review_runner.start()
-                    if settlement_peer is not None:
-                        await assistant_dispatches.start()
                     if app.state.generation_runner is not None:
                         await app.state.generation_runner.start()
                     if archive_delivery is not None:
                         await archive_delivery.start()
                 yield
             finally:
-                await app.state.assistant_approvals.close()
                 if app.state.generation_runner is not None:
                     await app.state.generation_runner.stop()
-                await assistant_dispatches.stop()
                 await review_runner.stop()
                 await composition_runner.stop()
                 if archive_delivery is not None:

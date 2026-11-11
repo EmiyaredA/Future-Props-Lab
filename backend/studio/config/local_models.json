@@ -173,6 +173,37 @@
           "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
         }
       ]
+    },
+    {
+      "id": "relayvsr-x2-int8",
+      "label": "RelayVSR 2× INT8",
+      "repository": "Comfy-Org/RelayVSR",
+      "revision": "ba556c9fab83606eb82285b7eb3a9375232744b6",
+      "license": "Apache-2.0",
+      "capability": "video_enhancement",
+      "files": [
+        {
+          "path": "relayvsr_x2_lightx2v_int8_convrot.safetensors",
+          "url": "https://huggingface.co/Comfy-Org/RelayVSR/resolve/ba556c9fab83606eb82285b7eb3a9375232744b6/diffusion_models/relayvsr_x2_lightx2v_int8_convrot.safetensors",
+          "size": 5163295248,
+          "sha256": "240e75e0c17cf2845d559b25254a230ff7458f81449d7a8c5e7e3fb8275c7b3c"
+        },
+        {
+          "path": "relayvsr_flash_vae_x2_fp32.safetensors",
+          "url": "https://huggingface.co/Comfy-Org/RelayVSR/resolve/ba556c9fab83606eb82285b7eb3a9375232744b6/vae/relayvsr_flash_vae_x2_fp32.safetensors",
+          "size": 127759464,
+          "sha256": "b5bb0339acb5b52545911ea29a51b4c5b805776a779222b5a14591571f42e21c"
+        }
+      ]
+    },
+    {
+      "id": "ffmpeg-video-sharpen",
+      "label": "FFmpeg 视频清晰增强",
+      "repository": "",
+      "revision": "lanczos-unsharp-v1",
+      "license": "",
+      "capability": "video_enhancement",
+      "files": []
     }
   ]
 }

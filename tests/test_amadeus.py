@@ -570,7 +570,7 @@ async def test_amadeus_cancel_marks_external_result_unknown(
 async def test_amadeus_script_execution_streams_output(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from studio.apps.amadeus.execution import website_actions as actions
+    from studio.assembly.website import amadeus_actions as actions
 
     await _test_user()
 
@@ -623,8 +623,6 @@ async def test_amadeus_script_execution_streams_output(
 
 @pytest.mark.asyncio
 async def test_amadeus_read_only_principal_cannot_execute_approved_write() -> None:
-    from studio.apps.amadeus.execution.website_actions import execute_action
-
     await _test_user()
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -650,18 +648,18 @@ async def test_amadeus_read_only_principal_cannot_execute_approved_write() -> No
     principal = SimpleNamespace(
         user_id="test-user", owner_user_id="test-user", allows=lambda _capability: False
     )
-    async with SessionLocal() as session:
-        bind_owner(session, "test-user")
-        with pytest.raises(OperationError) as error:
-            await execute_action(
-                session,
-                principal,
-                conversation_id,
-                action["id"],
-                None,
-                execution=app.state.amadeus_actions,
-            )
-        assert error.value.status == 403
+
+    async def unexpected_effect(_action):
+        pytest.fail("Read-only approval must not execute an effect")
+
+    with pytest.raises(OperationError) as error:
+        await app.state.amadeus_actions.execute(
+            (principal.user_id, conversation_id),
+            action["id"],
+            app.state.amadeus_action_records(principal, conversation_id),
+            unexpected_effect,
+        )
+    assert error.value.status == 403
 
 
 async def _test_user() -> None:

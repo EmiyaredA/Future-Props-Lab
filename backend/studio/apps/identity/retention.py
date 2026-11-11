@@ -29,11 +29,6 @@ from studio.contracts.presentation_workshop.presentation_assets import (
 from studio.contracts.presentation_workshop.presentation_assets import PROJECTS as PRESENTATION
 from studio.contracts.video_editor.video_assets import SOURCE as VIDEO
 from studio.contracts.video_editor.video_handoff import handoff_target
-from studio.contracts.visual_workshop.visual_assistant import (
-    approval_source,
-    conversation_retention,
-    message_source,
-)
 from studio.contracts.visual_workshop.visual_review import start_source as visual_review_start
 from studio.contracts.visual_workshop.visual_samples import evidence_resource, sample_source
 
@@ -80,11 +75,9 @@ def _visual_canvas_source(body):
     output = re.fullmatch(
         re.escape(project) + r"/nodes/[^/]{1,64}/outputs/[^/]{1,128}", body.source_path
     )
-    approval = approval_source(body.source_method, body.source_path)
     return canvas_metadata(body.caller, change) and (
         (body.source_method, body.source_path)
         in {("PUT", canvas), ("POST", canvas + "/operations")}
-        or (approval and approval[1] == change.resource_id)
         or (body.source_method == "POST" and outputs is not None)
         or (body.source_method == "DELETE" and output is not None)
     )
@@ -277,9 +270,6 @@ class RetentionAuthorization:
         expected_permission = (
             "community.access" if publication_source or community else "content.write"
         )
-        assistant_message = message_source(body.source_method, body.source_path)
-        if assistant_message and body.change.visual_conversation_project is not None:
-            expected_permission = "models.use"
         review_start = visual_review_start(body.source_method, body.source_path)
         review = body.change.visual_review_project
         evidence = body.change.visual_evidence
@@ -301,11 +291,7 @@ class RetentionAuthorization:
             and not _visual_canvas_source(body)
         ):
             raise HTTPException(403, "retention_resource_mismatch")
-        if (
-            body.caller == "visual"
-            and body.change.resource_kind == "conversation"
-            and not conversation_retention(body)
-        ):
+        if body.caller == "visual" and body.change.resource_kind == "conversation":
             raise HTTPException(403, "retention_resource_mismatch")
         if evidence is not None:
             sample = sample_source(body.source_method, body.source_path)

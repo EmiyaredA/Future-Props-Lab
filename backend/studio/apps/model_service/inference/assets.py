@@ -8,6 +8,7 @@ from studio.apps.model_service.inference.storage import InferenceStorage
 from studio.apps.model_service.library.inputs import ExactInput
 from studio.apps.model_service.library.inputs import LocalInput as LocalInput
 from studio.apps.model_service.storage.models.model_inference import ModelInferenceAsset
+from studio.apps.model_service.storage.models.video_enhancement import VideoEnhancementTask
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.file_types import ALLOWED_FILES
 from studio.contracts.asset_library.incoming import IncomingFile
@@ -116,6 +117,9 @@ class InferenceAssets:
                 ModelInferenceAsset.id == asset_id,
                 ModelInferenceAsset.owner_user_id == self.owner_user_id,
                 ModelInferenceAsset.task_id.is_(None),
+                ~select(VideoEnhancementTask.id)
+                .where(VideoEnhancementTask.source_id == asset_id)
+                .exists(),
             )
         )
         if result.rowcount != 1:

@@ -1,10 +1,14 @@
-.generation-image-options.has-reference-order {
+.generation-image-options.has-reference-order,
+.video-composer-reference .generation-image-options.has-reference-order {
   align-items: start;
   max-height: 82px;
   padding-bottom: 4px;
 }
 
-.generation-image-options.has-reference-order .generation-media-card {
+.generation-image-options.has-reference-order .generation-media-card,
+.video-composer-reference
+  .generation-image-options.has-reference-order
+  .generation-media-card {
   height: auto;
   flex: 0 0 48px;
   cursor: grab;
@@ -28,8 +32,12 @@
 
 .generation-image-options.has-reference-order .reference-order-actions {
   display: flex;
-  gap: 2px;
-  margin-top: 3px;
+  gap: 0;
+  margin-top: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
 }
 
 .generation-image-options.has-reference-order .reference-order-actions button {
@@ -38,11 +46,25 @@
   height: 23px;
   min-height: 23px;
   padding: 2px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  background: var(--surface);
-  color: var(--text);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--muted);
   cursor: pointer;
+}
+
+.generation-image-options.has-reference-order
+  .reference-order-actions
+  button
+  + button {
+  border-left: 1px solid var(--border);
+}
+
+.generation-image-options.has-reference-order
+  .reference-order-actions
+  button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--accent);
 }
 
 .generation-image-options.has-reference-order .reference-order-actions svg {

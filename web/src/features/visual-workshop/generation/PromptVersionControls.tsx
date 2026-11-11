@@ -26,16 +26,18 @@ export function PromptVersionControls({
       aria-label="提示词版本管理"
       onSubmit={(event) => event.stopPropagation()}
     >
-      <span>提示词版本</span>
-      <CustomSelect
-        ariaLabel="提示词版本"
-        value={versions.active_prompt_version_id}
-        options={versions.prompt_versions.map((version) => ({
-          value: version.id,
-          label: version.name,
-        }))}
-        onChange={versions.select}
-      />
+      <div className="prompt-version-selection">
+        <span>提示词版本</span>
+        <CustomSelect
+          ariaLabel="提示词版本"
+          value={versions.active_prompt_version_id}
+          options={versions.prompt_versions.map((version) => ({
+            value: version.id,
+            label: version.name,
+          }))}
+          onChange={versions.select}
+        />
+      </div>
       <div className="prompt-version-actions">
         <button
           type="button"
@@ -45,7 +47,6 @@ export function PromptVersionControls({
           onClick={() => versions.add()}
         >
           <Plus size={14} aria-hidden />
-          新增
         </button>
         <button
           type="button"
@@ -55,15 +56,14 @@ export function PromptVersionControls({
           onClick={() => versions.add(true)}
         >
           <Copy size={14} aria-hidden />
-          复制
         </button>
         <button
           type="button"
           aria-label="重命名提示词版本"
+          title="重命名当前版本"
           onClick={() => setDialog({ action: "rename", version: active })}
         >
           <Pencil size={14} aria-hidden />
-          重命名
         </button>
         <button
           type="button"
@@ -77,7 +77,6 @@ export function PromptVersionControls({
           onClick={() => setDialog({ action: "delete", version: active })}
         >
           <Trash2 size={14} aria-hidden />
-          删除
         </button>
       </div>
       <TextInputDialog

@@ -16,7 +16,6 @@ from studio.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectPatchIn,
 )
 from studio.apps.visual_workshop.storage.models import (
-    VisualAssistantConversation,
     VisualCanvasDocument,
     VisualWorkshopProject,
 )
@@ -129,11 +128,6 @@ class VisualWorkshopProjects:
             await self.session.execute(
                 delete(VisualProjectAssetReference).where(
                     VisualProjectAssetReference.project_id == project_id
-                )
-            )
-            await self.session.execute(
-                delete(VisualAssistantConversation).where(
-                    VisualAssistantConversation.project_id == project_id
                 )
             )
             await delete_acceptance(self.session, project_id)

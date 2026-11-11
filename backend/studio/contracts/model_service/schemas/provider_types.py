@@ -4,6 +4,8 @@ from typing import Literal
 
 ProviderKind = Literal[
     "local_qwen_tts",
+    "local_relayvsr",
+    "local_ffmpeg",
     "volcengine_image",
     "openai",
     "deepseek",

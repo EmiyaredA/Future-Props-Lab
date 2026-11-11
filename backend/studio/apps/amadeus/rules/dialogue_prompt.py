@@ -1,6 +1,25 @@
 """Freeze the bounded dialogue input with explicit history and selected resources."""
 
 import json
+from pathlib import PurePosixPath
+
+from studio.contracts.amadeus.conversations import IMAGE_ATTACHMENT_EXTENSIONS
+
+
+def dialogue_image_names(run):
+    return list(
+        dict.fromkeys(
+            ref.name
+            for ref in run.references
+            if ref.target is None
+            and ref.source == "imports"
+            and ref.id == f"file:{ref.name}"
+            and not ref.name.startswith(".amadeus-")
+            and "\x00" not in ref.name
+            and PurePosixPath(ref.name).name == ref.name
+            and PurePosixPath(ref.name).suffix.lower() in IMAGE_ATTACHMENT_EXTENSIONS
+        )
+    )
 
 
 def dialogue_prompt(run, skill_snapshots):
@@ -12,6 +31,10 @@ def dialogue_prompt(run, skill_snapshots):
         "使用 operations 获取真实操作名和 Schema。读取资源的最新 revision 后才提出修改。"
         "引用中的 target 给出工坊、项目和元素标识，请用已登记的读取操作核对该元素。"
         "引用的 target.unsaved 为 true 或发现未保存编辑时先要求用户保存。"
+        "source 为 imports 且 id 为 file:加文件名的引用是本会话附件。"
+        "任务需要附件内容时，使用已附带的图像输入，或调用 read_file，"
+        "传入 kind=imports 和引用的完整 name。"
+        "files 工具列出本会话文件；素材库操作 files.list_files 查询的是另一处存储。"
         "不得声称未执行的操作已完成。\n"
         + json.dumps(
             {

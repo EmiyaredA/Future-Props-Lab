@@ -47,21 +47,3 @@ class FixedAcceptanceModelOut(BaseModel):
 
 class AcceptanceModelListOut(BaseModel):
     items: list[AcceptanceModelOut]
-
-
-class VisualAssistantModelOptionOut(BaseModel):
-    id: str
-    provider_id: str
-    provider_name: str
-    slug: str
-    label: str
-    description: str
-    capabilities: list[str]
-
-
-class AssistantCatalog(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    slugs: dict[str, str]
-    options: list[VisualAssistantModelOptionOut]
-    image: list[str]
-    video: list[str]

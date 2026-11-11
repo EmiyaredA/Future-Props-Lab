@@ -89,6 +89,7 @@ from studio.apps.model_service.storage.models.model_test import (
     ModelTestTranscriptionTask,
 )
 from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
+from studio.apps.model_service.storage.models.video_enhancement import VideoEnhancementTask
 from studio.apps.motion_compositor.storage.models import (
     MotionDocument,
     MotionOperationBatch,
@@ -161,10 +162,6 @@ from studio.apps.visual_workshop.acceptance.models import (
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import (
-    VisualAssistantAction,
-    VisualAssistantConversation,
-    VisualAssistantMessage,
-    VisualAssistantMessageAsset,
     VisualCanvasDocument,
     VisualGenerationBatch,
     VisualGenerationTask,
@@ -234,9 +231,6 @@ _ = (
     VideoEditorAssetMetadata,
     VideoEditorTimeline,
     MotionDocument,
-    VisualAssistantAction,
-    VisualAssistantMessage,
-    VisualAssistantMessageAsset,
     VisualCanvasDocument,
     VisualNodeOutput,
     AcceptanceAssetReference,
@@ -293,6 +287,7 @@ TENANT_MODELS = (
     AmadeusQuestion,
     ModelInferenceAsset,
     ModelInferenceTask,
+    VideoEnhancementTask,
     ProjectOperationReceipt,
     PresentationProject,
     PresentationTemplate,
@@ -314,7 +309,6 @@ TENANT_MODELS = (
     VisualWorkshopProject,
     VisualGenerationTask,
     VisualGenerationBatch,
-    VisualAssistantConversation,
     GalgameWorkshopProject,
     GalgameAnnotationImportTask,
     GalgameAssetTranscriptionTask,

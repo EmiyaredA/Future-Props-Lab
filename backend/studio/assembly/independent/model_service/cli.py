@@ -135,9 +135,6 @@ def run(options):
             visual_generation_key=load_peer_key(
                 Path("/run/fpl/visual-generation-key"), excluded=(credential,)
             ),
-            visual_assistant_settlement_key=load_peer_key(
-                Path("/run/fpl/visual-assistant-settlement-key"), excluded=(credential,)
-            ),
             catalog=catalog,
             public_key=public,
             identity=LiveAuthorization(service="models", credential=credential),

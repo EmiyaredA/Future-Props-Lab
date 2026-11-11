@@ -13,7 +13,7 @@ from studio.contracts.asset_library.descriptions import (
 from studio.contracts.motion_compositor.motion_preview import DIGEST
 from studio.contracts.motion_compositor.motion_snapshot import MotionArchiveManifest
 from studio.contracts.thought_workshop.thought_archives import ArchiveFileKey
-from studio.contracts.visual_workshop.visual_assistant import SOURCE
+from studio.contracts.visual_workshop.visual_paths import SOURCE
 
 ASSETS = "/_internal/v1/visual-snapshot-assets"
 MODELS = "/_internal/v1/visual-snapshot-models"

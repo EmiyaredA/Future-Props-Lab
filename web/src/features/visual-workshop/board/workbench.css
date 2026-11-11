@@ -318,10 +318,11 @@
 .workbench-generation .video-composer-reference {
   min-height: 0;
   margin: 0;
-  padding: 0 0 6px;
-  gap: 10px;
-  border-radius: 0;
-  background: transparent;
+  padding: 12px;
+  gap: 20px;
+  border: 1px solid var(--board-border);
+  border-radius: 10px;
+  background: var(--board-soft);
   box-shadow: none;
   scrollbar-width: thin;
 }
@@ -337,11 +338,11 @@
   border-left: 0;
 }
 .workbench-generation .video-composer-reference legend {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
   padding: 0;
   color: var(--board-muted);
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
 }
 .workbench-generation .video-composer-reference .generation-media-upload {
   border-color: var(--board-border);
@@ -364,11 +365,12 @@
 }
 .workbench-generation .video-node-composer .video-composer-prompt {
   margin-top: 0;
-  padding-top: 8px;
-  border-top: 1px solid var(--board-border);
+  padding-top: 0;
+  border-top: 0;
 }
-.workbench-generation .video-composer-prompt:focus-within {
-  border-top-color: var(--board-accent);
+.workbench-generation .prompt-version-controls {
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--board-border);
 }
 .workbench-generation .video-composer-prompt .generation-prompt-editor {
   color: var(--board-text);

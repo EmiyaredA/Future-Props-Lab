@@ -495,9 +495,7 @@ def test_management_composes_every_registered_service_and_explicit_feature(monke
     assert files[0] == base
     assert len(files) == len(overlays) + 1
     assert set(files[1:]) == overlays
-    assert files.index(deploy / "project-owners.compose.yaml") < files.index(
-        deploy / "visual-assistant.compose.yaml"
-    )
+    assert deploy / "visual-assistant.compose.yaml" not in files
     assert files.index(deploy / "remote.compose.yaml") < files.index(
         deploy / "remote-guacd.compose.yaml"
     )

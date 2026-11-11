@@ -171,10 +171,6 @@
     "method": "delete_asset_reference",
     "resource": "visual"
   },
-  "DELETE /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
-    "method": "delete_conversation",
-    "resource": "visual_assistant"
-  },
   "DELETE /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}": {
     "method": "delete_node_output",
     "resource": "visual"
@@ -587,6 +583,22 @@
     "method": "download_result",
     "resource": "inference"
   },
+  "GET /v1/model-inference/video-enhancements": {
+    "method": "list_video_enhancements",
+    "resource": "video_enhancement"
+  },
+  "GET /v1/model-inference/video-enhancements/{task_id}": {
+    "method": "get_video_enhancement",
+    "resource": "video_enhancement"
+  },
+  "GET /v1/model-inference/video-enhancements/{task_id}/content": {
+    "method": "get_video_enhancement_result",
+    "resource": "video_enhancement"
+  },
+  "GET /v1/model-inference/video-enhancements/{task_id}/segments/{index}/{variant}": {
+    "method": "get_video_enhancement_segment",
+    "resource": "video_enhancement"
+  },
   "GET /v1/model-providers": {
     "method": "list_providers",
     "resource": "models"
@@ -995,18 +1007,6 @@
     "method": "get_canvas",
     "resource": "visual"
   },
-  "GET /v1/visual-workshop/projects/{project_id}/conversations": {
-    "method": "list_conversations",
-    "resource": "visual_assistant"
-  },
-  "GET /v1/visual-workshop/projects/{project_id}/conversations/models": {
-    "method": "list_models",
-    "resource": "visual_assistant"
-  },
-  "GET /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
-    "method": "get_conversation",
-    "resource": "visual_assistant"
-  },
   "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance": {
     "method": "get_node_acceptance",
     "resource": "visual"
@@ -1150,10 +1150,6 @@
   "PATCH /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}": {
     "method": "patch_asset_reference",
     "resource": "visual"
-  },
-  "PATCH /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
-    "method": "patch_conversation",
-    "resource": "visual_assistant"
   },
   "POST /v1/account/api-keys": {
     "method": "add_api_key",
@@ -1615,6 +1611,14 @@
     "method": "stream_text",
     "resource": "inference"
   },
+  "POST /v1/model-inference/video-enhancements": {
+    "method": "create_video_enhancement",
+    "resource": "video_enhancement"
+  },
+  "POST /v1/model-inference/video-enhancements/{task_id}/actions": {
+    "method": "control_video_enhancement",
+    "resource": "video_enhancement"
+  },
   "POST /v1/model-providers": {
     "method": "create_provider",
     "resource": "models"
@@ -2046,18 +2050,6 @@
   "POST /v1/visual-workshop/projects/{project_id}/canvas/operations": {
     "method": "apply_canvas_operations",
     "resource": "visual"
-  },
-  "POST /v1/visual-workshop/projects/{project_id}/conversations": {
-    "method": "create_conversation",
-    "resource": "visual_assistant"
-  },
-  "POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream": {
-    "method": "stream_message",
-    "resource": "visual_assistant"
-  },
-  "POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}": {
-    "method": "resolve_approval",
-    "resource": "visual_assistant"
   },
   "POST /v1/visual-workshop/projects/{project_id}/generation-batches": {
     "method": "create_generation_batch",

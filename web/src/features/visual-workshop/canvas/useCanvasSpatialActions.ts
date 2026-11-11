@@ -51,7 +51,7 @@ export function useCanvasSpatialActions({
     if (!element || !bounds?.width || !bounds.height) return undefined;
     const overlays = [
       ...element.parentElement!.querySelectorAll<HTMLElement>(
-        ".visual-canvas-topbar, .canvas-tool-dock, .canvas-controls, .canvas-selection-actions, .canvas-assets-drawer, .project-assistant-panel.is-open",
+        ".visual-canvas-topbar, .canvas-tool-dock, .canvas-controls, .canvas-selection-actions, .canvas-assets-drawer",
       ),
     ].map((overlay) => overlay.getBoundingClientRect());
     return visibleCanvasArea(bounds, overlays);

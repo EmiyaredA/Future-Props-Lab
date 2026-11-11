@@ -5,14 +5,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from starlette.responses import JSONResponse
 
 from studio.contracts.asset_library.retention_authority import RetentionRequest
-from studio.contracts.identity.claims import HEADER
 from studio.contracts.visual_workshop.visual_generation_approval import (
     ApprovedGenerationPublication,
-    GenerationApproval,
 )
 
 from .retention import RetentionAuthorization, require_credential
-from .visual_generation_approval import authorize_publication, reserve
+from .visual_generation_approval import authorize_publication
 
 router = APIRouter(prefix="/_internal/v1/asset-retention", include_in_schema=False)
 
@@ -40,12 +38,6 @@ async def check(request: Request, body: CheckRetention):
         body.authority, bearer(request), sealed_visual_upload=body.sealed_visual_upload
     )
     return JSONResponse({"active": active}, headers={"Cache-Control": "no-store"})
-
-
-@router.post("/visual-generation/admit")
-async def admit_generation(request: Request, body: GenerationApproval):
-    require_credential(request.app.state.identity_options, "visual", bearer(request))
-    return await reserve(request.app.state, body, request.headers.get(HEADER, ""))
 
 
 @router.post("/visual-generation/publish")

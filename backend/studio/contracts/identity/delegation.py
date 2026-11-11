@@ -59,8 +59,6 @@ from studio.contracts.video_editor.video_snapshot import archive_grant as video_
 from studio.contracts.video_editor.video_snapshot import snapshot_grant as video_snapshot_grant
 from studio.contracts.visual_workshop.visual_acceptance_assets import acceptance_asset_grant
 from studio.contracts.visual_workshop.visual_agent_review import agent_review_grant
-from studio.contracts.visual_workshop.visual_assistant import assistant_grant
-from studio.contracts.visual_workshop.visual_assistant import model_grant as assistant_model_grant
 from studio.contracts.visual_workshop.visual_catalog import (
     acceptance_agent_grant,
     visual_catalog_grant,
@@ -294,8 +292,6 @@ def permitted(grant, catalog):
         or visual_generation_model_grant(grant)
         or visual_generation_asset_grant(grant)
         or visual_generation_plan_grant(grant)
-        or assistant_grant(grant)
-        or assistant_model_grant(grant)
         or asr_model_grant(grant)
         or asr_job_grant(grant)
         or directory_grant(grant, catalog)

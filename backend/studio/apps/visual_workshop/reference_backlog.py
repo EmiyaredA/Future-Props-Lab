@@ -5,7 +5,7 @@ from sqlalchemy import select
 from studio.apps.visual_workshop.storage.service_models import VisualCanvasReferenceMutation
 
 
-async def pending_outcomes(session, project_id, conversations=()):
+async def pending_outcomes(session, project_id):
     model = VisualCanvasReferenceMutation
     kind, resource_id = (
         model.change["resource_kind"].as_string(),
@@ -16,8 +16,6 @@ async def pending_outcomes(session, project_id, conversations=()):
         (model.change["visual_evidence"]["project_id"].as_string() == project_id)
         | (model.change["visual_review_project"].as_string() == project_id)
     )
-    if conversations:
-        scope |= (kind == "conversation") & resource_id.in_(conversations)
     identities = list(
         await session.scalars(
             select(model.request_id)

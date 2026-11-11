@@ -17,7 +17,6 @@ from studio.apps.visual_workshop.outputs.queries import OutputError
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentOut
 from studio.apps.visual_workshop.storage.models import VisualGenerationBatch, VisualGenerationTask
 from studio.contracts.asset_library.references import PrepareReferenceChange
-from studio.contracts.visual_workshop.visual_assistant import approval_source
 from studio.runtime.database.operation_receipts import record, replay
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 from studio.runtime.ids import new_id
@@ -143,15 +142,6 @@ class CanvasWrites:
         return await self._save(
             project_id, row, body, method="PUT", path=f"{PREFIX}/{project_id}/canvas"
         )
-
-    async def apply_approved(self, project_id, body, path):
-        approval = approval_source("POST", path)
-        if not approval or approval[1] != project_id:
-            raise ProjectResourceError("审批与画布不匹配", "approval_not_found", 404)
-        row = await self.projects.canvas_row(project_id)
-        if row.revision != body.expected_revision:
-            raise conflict(body.expected_revision, canvas_out(row))
-        return await self._save(project_id, row, body, method="POST", path=path)
 
     async def apply_operations(self, project_id, body):
         row = await self.projects.canvas_row(project_id)

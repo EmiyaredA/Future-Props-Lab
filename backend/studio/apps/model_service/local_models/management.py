@@ -12,6 +12,7 @@ from studio.apps.model_service.storage.models.local_models import (
     LocalModelInstallation,
     LocalModelOperation,
 )
+from studio.config.local_models import FFMPEG_MODEL_ID, LOCAL_VIDEO_MODEL_IDS, RELAY_MODEL_ID
 from studio.contracts.model_service.schemas.local_models import LocalModelOut, LocalModelsOut
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
@@ -22,27 +23,48 @@ class LocalModels:
     def __init__(self, session_factory, installer, runtime):
         self.sessions, self.installer, self.runtime = session_factory, installer, runtime
         self.jobs = {}
+        self.relay_busy = lambda: False
 
     def output(self, model, row):
         size = sum(item["size"] for item in model["files"])
+        relay = model["id"] == RELAY_MODEL_ID
+        builtin = model["id"] == FFMPEG_MODEL_ID
+        platform_ready = compatible() and (
+            self.installer.fast_video_available()
+            if builtin
+            else not relay or self.installer.relay_available()
+        )
         return LocalModelOut(
             id=model["id"],
             label=model["label"],
+            capability=model.get("capability", "speech_synthesis"),
             repository=model["repository"],
             license=model["license"],
             model_revision=model["revision"],
             download_bytes=size,
-            required_disk_bytes=size * 2 + 2 * 1024**3,
-            compatible=compatible(),
-            status=row.status if row else "not_installed",
-            enabled=row.enabled if row else False,
+            required_disk_bytes=0 if builtin else size * 2 + 2 * 1024**3,
+            compatible=platform_ready,
+            status=("installed" if platform_ready else "not_installed")
+            if builtin
+            else row.status
+            if row
+            else "not_installed",
+            enabled=bool(row and row.enabled and (not builtin or platform_ready)),
             loaded=self.runtime.model_id == model["id"]
             and self.runtime.process is not None
             and self.runtime.process.returncode is None,
-            busy=self.runtime.busy,
+            busy=self.relay_busy() if model["id"] in LOCAL_VIDEO_MODEL_IDS else self.runtime.busy,
             progress=row.progress if row else 0,
             revision=row.revision if row else 0,
-            error_message=row.error_message if row else None,
+            error_message=(
+                "需要完成本机 Metal 验收后才可安装"
+                if relay and not platform_ready
+                else "需要本机 FFmpeg、FFprobe 和 VideoToolbox 编码支持"
+                if builtin and not platform_ready
+                else row.error_message
+                if row
+                else None
+            ),
         )
 
     async def list(self, can_manage=False):
@@ -69,14 +91,19 @@ class LocalModels:
             for row in await session.scalars(
                 select(LocalModelInstallation).where(LocalModelInstallation.status == "installed")
             ):
-                if (
-                    not self.installer.python.is_file()
-                    or not (self.installer.model_path(row.id) / "config.json").is_file()
-                ):
+                if row.id != FFMPEG_MODEL_ID and not self.files_present(row.id):
                     row.status, row.enabled = "failed", False
                     row.error_message = "本地模型文件缺失，请主动重新安装"
                     row.revision += 1
             await session.commit()
+
+    def files_present(self, model_id):
+        if model_id == RELAY_MODEL_ID:
+            return self.installer.model_files_present(model_id)
+        return (
+            self.installer.python.is_file()
+            and (self.installer.model_path(model_id) / "config.json").is_file()
+        )
 
     async def action(self, model_id, body, *, authorization=None):
         if authorization is not None and (
@@ -107,13 +134,34 @@ class LocalModels:
                         row.revision if row else 0,
                         self.output(model, row).model_dump(),
                     )
+                builtin = model_id == FFMPEG_MODEL_ID
+                if builtin and body.action not in {"enable", "stop"}:
+                    raise OperationError("本机 FFmpeg 支持启用和停止", "invalid_local_action", 409)
+                if (
+                    builtin
+                    and body.action == "enable"
+                    and (not compatible() or not self.installer.fast_video_available())
+                ):
+                    raise OperationError("本机 FFmpeg 编码环境不可用", "ffmpeg_unavailable", 409)
                 if not row:
                     row = LocalModelInstallation(
-                        id=model_id, status="not_installed", enabled=False, progress=0, revision=0
+                        id=model_id,
+                        status="installed" if builtin else "not_installed",
+                        enabled=False,
+                        progress=0,
+                        revision=0,
                     )
                     session.add(row)
                     await session.flush()
                 previous_enabled = row.enabled
+                relay = model_id == RELAY_MODEL_ID
+                busy = self.relay_busy() if model_id in LOCAL_VIDEO_MODEL_IDS else self.runtime.busy
+                if (
+                    relay
+                    and body.action in {"install", "repair", "enable"}
+                    and (not compatible() or not self.installer.relay_available())
+                ):
+                    raise OperationError("需要完成本机 Metal 验收", "metal_unverified", 409)
                 if body.action in {"install", "repair"}:
                     if not compatible():
                         raise OperationError(
@@ -122,10 +170,14 @@ class LocalModels:
                             409,
                         )
                     if body.action == "repair" and (
-                        self.runtime.busy
+                        busy
                         or getattr(self.runtime, "maintenance", False)
                         or any(not job.done() for job in self.jobs.values())
-                        or not (self.installer.model_path(model_id) / "config.json").is_file()
+                        or not (
+                            self.files_present(model_id)
+                            if relay
+                            else (self.installer.model_path(model_id) / "config.json").is_file()
+                        )
                     ):
                         raise OperationError("请等待任务结束并确认模型权重完整", "model_busy", 409)
                     if row.status == "installing" or (
@@ -142,8 +194,14 @@ class LocalModels:
                         body.action == "uninstall" and row.status in {"failed", "cancelled"}
                     ):
                         raise OperationError("模型尚未安装", "local_model_unavailable", 409)
-                    if self.runtime.busy and body.action in {"stop", "uninstall"}:
-                        raise OperationError("本地语音正在生成，请完成后重试", "model_busy", 409)
+                    if busy and body.action in {"stop", "uninstall"}:
+                        raise OperationError(
+                            "本地视频正在增强，请先暂停任务"
+                            if model_id in LOCAL_VIDEO_MODEL_IDS
+                            else "本地语音正在生成，请完成后重试",
+                            "model_busy",
+                            409,
+                        )
                     row.enabled = body.action == "enable"
                     if body.action == "uninstall":
                         row.status, row.progress = "not_installed", 0
@@ -189,7 +247,7 @@ class LocalModels:
                 )
                 await session.commit()
             if body.action in {"install", "repair"}:
-                if body.action == "repair":
+                if body.action == "repair" and not relay:
                     await self.runtime.close()
                     self.runtime.maintenance = True
                 job = asyncio.create_task(
@@ -292,7 +350,7 @@ class LocalModels:
                 )
                 await session.commit()
         finally:
-            if repair:
+            if repair and model["id"] != RELAY_MODEL_ID:
                 self.runtime.maintenance = False
 
     async def close(self):

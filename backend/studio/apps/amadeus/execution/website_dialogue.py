@@ -4,7 +4,7 @@ import asyncio
 import time
 
 from studio.apps.amadeus.execution.website_tools import TOOLS, ToolBridge
-from studio.apps.amadeus.rules.dialogue_prompt import dialogue_prompt
+from studio.apps.amadeus.rules.dialogue_prompt import dialogue_image_names, dialogue_prompt
 from studio.apps.amadeus.storage.files import work_root
 from studio.apps.amadeus.storage.runs import RunRecords as Runs
 from studio.apps.amadeus.storage.skill_import import load_skill
@@ -20,8 +20,9 @@ class OwnedRun(RunOut):
 
 
 class CodeAgentRuns:
-    def __init__(self, sessions, settings, *, skills, resolve_agent):
+    def __init__(self, sessions, settings, *, skills, resolve_agent, operation_catalog):
         self.skills = skills
+        self.operation_catalog = operation_catalog
         self.resolve_agent = resolve_agent
         self.settings = settings
         self.sessions, self.tasks = sessions, {}
@@ -100,6 +101,7 @@ class CodeAgentRuns:
             self.sessions,
             files_root=self.settings.runtime_path,
             resolve_agent=self.resolve_agent,
+            operation_catalog=self.operation_catalog,
         )
         transport = None
         paused = None
@@ -155,6 +157,7 @@ class CodeAgentRuns:
                     emit,
                     root=root,
                     runtime_path=self.settings.runtime_path,
+                    image_attachments=dialogue_image_names(run),
                     **run.cli_options(),
                 )
             )

@@ -127,6 +127,9 @@ from db.migrations.versions import (
     r0123_workbench_turns,
     r0124_management_api_key_secrets,
     r0125_amadeus_message_actions,
+    r0126_retire_visual_conversations,
+    r0127_video_enhancement,
+    r0128_local_video_providers,
 )
 
 
@@ -586,6 +589,22 @@ MIGRATIONS += (
 
 MIGRATIONS += (
     Migration(r0125_amadeus_message_actions.MIGRATION_ID, r0125_amadeus_message_actions.SQL),
+)
+
+MIGRATIONS += (
+    Migration(
+        r0126_retire_visual_conversations.MIGRATION_ID, r0126_retire_visual_conversations.SQL
+    ),
+)
+
+MIGRATIONS += (Migration(r0127_video_enhancement.MIGRATION_ID, r0127_video_enhancement.SQL),)
+
+MIGRATIONS += (
+    Migration(
+        r0128_local_video_providers.MIGRATION_ID,
+        r0128_local_video_providers.SQL,
+        foreign_keys_off=True,
+    ),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

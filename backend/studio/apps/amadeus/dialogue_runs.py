@@ -6,23 +6,26 @@ from uuid import UUID
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
-from studio.apps.amadeus.rules.dialogue_prompt import dialogue_prompt
+from studio.apps.amadeus.rules.dialogue_prompt import dialogue_image_names, dialogue_prompt
 from studio.apps.amadeus.storage.files import work_root
 from studio.apps.amadeus.storage.models import AmadeusAction
 from studio.apps.amadeus.storage.runs import RunRecords
 from studio.apps.amadeus.storage.skill_files import skill_root
-from studio.contracts.amadeus.amadeus_native import DialogueScope
+from studio.contracts.amadeus.amadeus_native import DialoguePlan, DialogueScope
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now
 
-from .dialogue_tools import DialogueTools
 from .skill_pins import SkillSource, load_pin
 
 
 class DialogueTurn:
     def __init__(self, database, principal, run, tools, prompt):
         self.database, self.principal, self.run = database, principal, run
-        self.tools, self.prompt = tools, prompt
+        self.tools = tools
+        self.plan = DialoguePlan(
+            prompt=prompt,
+            image_attachments=dialogue_image_names(run) if run.agent_id == "codex" else [],
+        )
         self.lock = asyncio.Lock()
 
     def session(self):
@@ -48,10 +51,11 @@ class DialogueTurn:
 
 
 class DialogueRuns:
-    def __init__(self, database, identity, capabilities, host, actions, locks):
+    def __init__(self, database, identity, capabilities, host, actions, locks, turn_tools):
         self.database, self.identity, self.capabilities = database, identity, capabilities
         self.host, self.actions, self.locks = host, actions, locks
         self.tasks = {}
+        self.turn_tools = turn_tools
 
     async def create(self, session, principal, conversation, body, *, assertion, path):
         if self.host is None or not self.host.dialogue_ready:
@@ -98,9 +102,7 @@ class DialogueRuns:
             self.database,
             principal,
             run,
-            DialogueTools(
-                self.database, self.capabilities, principal, run, assertion, path, skills
-            ),
+            self.turn_tools(principal, run, assertion, path, skills),
             dialogue_prompt(run, skills),
         )
 

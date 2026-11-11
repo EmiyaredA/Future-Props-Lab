@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   ClipboardCheck,
   LayoutTemplate,
-  MessageSquare,
   SlidersHorizontal,
 } from "lucide-react";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
@@ -27,7 +26,6 @@ export function AcceptanceWorkspace({
   onOpenNode,
   readOnly = false,
   onView,
-  onConversation,
   initialTab = "templates",
 }: {
   projectId: string;
@@ -36,7 +34,6 @@ export function AcceptanceWorkspace({
   readOnly?: boolean;
   initialTab?: "templates" | "summary";
   onView?: (view: "canvas" | "board") => void;
-  onConversation?: () => void;
   onBack: () => void;
   onOpenNode?: (nodeId: string, outputId?: string) => void;
 }) {
@@ -89,12 +86,6 @@ export function AcceptanceWorkspace({
             source={{ application: "视觉创作工坊", projectId, title }}
           />
           <ThemeToggle />
-          {onConversation && (
-            <button onClick={onConversation}>
-              <MessageSquare size={16} />
-              对话
-            </button>
-          )}
         </div>
       </header>
       <nav className="acceptance-navigation" aria-label="项目验收">

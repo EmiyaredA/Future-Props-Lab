@@ -21,6 +21,7 @@ from studio.apps.model_service.storage.models.model_service import (
     ModelProvider,
 )
 from studio.apps.model_service.storage.models.model_supplier import ModelSupplier
+from studio.config.local_models import FFMPEG_MODEL_ID, RELAY_MODEL_ID
 from studio.contracts.model_service.schemas.model_service import (
     ModelCatalogOut,
     ModelCategoryListOut,
@@ -60,6 +61,7 @@ MODEL_CATEGORIES = (
     ModelCategoryOut(
         id="video_generation", label="视频生成", type="video", sub_type="text-to-video"
     ),
+    ModelCategoryOut(id="video_enhancement", label="视频增强", type="video"),
     ModelCategoryOut(
         id="image_generation", label="图像生成", type="image", sub_type="text-to-image"
     ),
@@ -75,6 +77,8 @@ def _default_categories(row: ModelEntry) -> list[str]:
         return ["speech_synthesis"]
     if "image_generation" in capabilities:
         return ["image_generation"]
+    if "video_enhancement" in capabilities:
+        return ["video_enhancement"]
     if "video_generation" in capabilities:
         return ["video_generation"]
     if "speech_recognition" in capabilities:
@@ -167,7 +171,7 @@ class ModelCatalogService:
 
         def provider_out(provider):
             result = self._provider_out(provider, grouped.get(provider.id, []))
-            if provider.kind == "local_qwen_tts":
+            if provider.kind in {"local_qwen_tts", "local_relayvsr", "local_ffmpeg"}:
                 for model in result.models:
                     installation = installations.get(model.slug)
                     model.availability = (
@@ -279,7 +283,7 @@ class ModelCatalogService:
         row.kind = body.kind
         row.base_url = body.base_url
         row.enabled = body.enabled
-        if body.kind == "local_qwen_tts":
+        if body.kind in {"local_qwen_tts", "local_relayvsr", "local_ffmpeg"}:
             row.api_key_ciphertext = ""
         elif body.api_key.strip():
             row.api_key_ciphertext = self.cipher.encrypt(body.api_key)
@@ -421,13 +425,31 @@ class ModelCatalogService:
     async def attach_local_model(self, body):
         model = definition(body.model_id)
         await require_ready(self.session, body.model_id, readiness=self.readiness)
+        kind, supplier_name, provider_name, description = {
+            RELAY_MODEL_ID: (
+                "local_relayvsr",
+                "RelayVSR 本地",
+                "本地 RelayVSR 视频增强",
+                "本机 Metal 视频清晰度增强",
+            ),
+            FFMPEG_MODEL_ID: (
+                "local_ffmpeg",
+                "FFmpeg 本地",
+                "本地 FFmpeg 视频增强",
+                "等比缩放与轻锐化，Apple 硬件编码",
+            ),
+        }.get(
+            body.model_id,
+            ("local_qwen_tts", "Qwen 本地", "本地 Qwen 语音", "本机 MLX 参考录音音色克隆"),
+        )
+        capability = model.get("capability", "speech_synthesis")
         await self.advance_revision(body.expected_catalog_revision)
         owner_user_id = self._owner_user_id()
         provider = await self.session.scalar(
             select(ModelProvider)
             .where(
                 ModelProvider.owner_user_id == owner_user_id,
-                ModelProvider.kind == "local_qwen_tts",
+                ModelProvider.kind == kind,
                 ModelProvider.origin == "user",
             )
             .order_by(ModelProvider.id)
@@ -435,17 +457,18 @@ class ModelCatalogService:
         if provider is None:
             supplier = await self.session.scalar(
                 select(ModelSupplier).where(
-                    ModelSupplier.owner_user_id == owner_user_id, ModelSupplier.name == "Qwen 本地"
+                    ModelSupplier.owner_user_id == owner_user_id,
+                    ModelSupplier.name == supplier_name,
                 )
             )
             if supplier is None:
-                supplier = ModelSupplier(owner_user_id=owner_user_id, name="Qwen 本地")
+                supplier = ModelSupplier(owner_user_id=owner_user_id, name=supplier_name)
                 self.session.add(supplier)
                 await self.session.flush()
             provider = ModelProvider(
                 owner_user_id=owner_user_id,
-                name="本地 Qwen 语音",
-                kind="local_qwen_tts",
+                name=provider_name,
+                kind=kind,
                 supplier_id=supplier.id,
                 base_url="",
                 api_key_ciphertext="",
@@ -467,9 +490,9 @@ class ModelCatalogService:
                     provider_id=provider.id,
                     slug=body.model_id,
                     label=model["label"],
-                    description="本机 MLX 参考录音音色克隆",
-                    capabilities=["speech_synthesis"],
-                    categories=["speech_synthesis"],
+                    description=description,
+                    capabilities=[capability],
+                    categories=[capability],
                     enabled=True,
                 )
             )

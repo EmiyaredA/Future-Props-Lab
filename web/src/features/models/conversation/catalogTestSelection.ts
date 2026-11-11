@@ -44,11 +44,14 @@ export function preferredModeModel(
   const capabilities = {
     image: "image_generation",
     video: "video_generation",
+    enhancement: "video_enhancement",
     synthesis: "speech_synthesis",
     speech: "speech_recognition",
     realtime_voice: "voice",
   };
   const candidates = models.filter((model) => {
+    if (mode === "enhancement")
+      return model.capabilities.includes("video_enhancement");
     if (mode === "synthesis")
       return (
         model.providerKind === "local_qwen_tts" &&

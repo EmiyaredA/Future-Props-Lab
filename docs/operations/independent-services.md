@@ -589,13 +589,9 @@ Visual 生成任务与批次需要 `deploy/compose/visual-generation.compose.yam
 
 节点固定模型验收另需 Visual 的 0009 迁移。Visual 冻结画布和方案版本后登记原件，逐来源结算 Assets 证据回执，随后经 Identity 复核执行账号并调用固定模型。Visual 重启后从已有证据和模型回执续跑。隔离七容器运行 `fpl-visual-node-native-283354a174` 验证真实 FFmpeg 取样、封闭 SSE 夹具、Chromium 页面和重启后的证据摘要。Mac CLI 验收需要 `deploy/compose/agent-runtime.compose.yaml`、Agent Runtime 的 0002 迁移及已登记的 Mac worker。以 `studio.host.agent_execution.agent_connections_worker` 启动同一版本 worker，使用独占的 TOML 与原生凭据，固定连接由可信本机设置启用。Agent Runtime 只为仍有效的租约提供同项目保留素材。追加帧以 SHA256 核验，发布后由 Assets 持有。Agent Runtime 的暂存保留至执行截止后一小时供回执恢复。隔离七容器运行 `fpl-visual-native-agent-531ece22b9` 经回环原生网关启动真实受限 CLI 子进程，核验 MCP 媒体操作、追加帧摘要、容器重启和 Chromium 入口。
 
-Visual 助手的私网模型轮次需要 Models 的 0019 迁移。Models 绑定账号、项目、对话和运行，持有固定模型签名、额度和唯一调用日志。已完成轮次可按相同摘要重放，提交中断的轮次保持结果未知。公开消息流与审批继续使用原 URL 和 SSE v2 事件。
+视觉工坊的项目对话由 Amadeus 提供。旧 Visual 对话路由和私网模型轮次已下线，部署不再使用旧助手结算密钥或 Compose 叠加文件。Visual 就绪探针仍按生成后的归属清单检查公开操作，并检查浏览器发行包、Visual 归档、Visual 生成和剪辑交接配置。
 
-助手源事务需要 Visual 0010 和 Models 0020 迁移。叠加 `deploy/compose/visual-assistant.compose.yaml`，将独立的 `FPL_VISUAL_ASSISTANT_SETTLEMENT_KEY` 只读挂载到 Visual 与 Models。结算只接受同账号、同运行、同追踪标识的短时服务签名。原始请求授权仅用于当前请求。
-
-批准后的助手生成另需 Identity 0009 迁移。Identity 登记原账号、审批、项目、生成任务和计划摘要，结果发布时复核原账号授权并封存文件长度与 SHA256。Visual 将生成任务和对应画布节点一并提交。
-
-Visual 就绪探针要求归属清单中的 58 个操作均已装配，并检查浏览器发行包、Visual 归档、Visual 生成、助手结算与剪辑交接配置及后台执行器。SSE 在等待审批期间复核会话。撤销后取消待执行动作，并通过已登记的服务结算回执恢复调用日志。七容器隔离运行 `fpl-visual-assistant-native-3a6f0fa198` 验证了就绪探针、Chromium 向实际 SSE 入口发送并审批、390／768／1440 宽度下的页面、画布落盘与重启后历史读回。模型响应来自封闭的 HTTPS 夹具。
+升级须按 [停机备份流程](production-deployment.md#备份与恢复) 操作。先在旧版本结算助手请求、模型租约及素材引用；冻结写入并备份 Visual、Models 和 Assets。先在三份停机备份的隔离副本分别验证 Visual 0011、Models 0021、Assets 0020，全部通过后再对正式库执行。任何未结算的旧记录会阻止所属库迁移；通过旧服务正常结算后，重新停机备份和验证。迁移完成后统一切换网关归属、服务及前端发行包。已入队生成任务的旧审批凭据继续由 Identity 验证成果发布。
 
 ### Galgame 工坊的浏览器版本与故事验收
 

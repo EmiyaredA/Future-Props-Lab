@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.24)
+project(fpl_relayvsr LANGUAGES C CXX)
+
+set(SD_METAL ON CACHE BOOL "" FORCE)
+set(SD_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(SD_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+add_subdirectory("${RELAYVSR_SOURCE}" upstream)
+add_executable(fpl-relayvsr worker.cpp)
+target_compile_features(fpl-relayvsr PRIVATE cxx_std_17)
+target_link_libraries(fpl-relayvsr PRIVATE stable-diffusion)

@@ -97,12 +97,13 @@ async def case(tmp_path, monkeypatch):
             transport=httpx.ASGITransport(app=app), base_url="http://test"
         ) as client:
 
-            def headers(method, path, *, owner="alpha", role="admin", kind="session"):
+            def headers(method, path, *, owner="alpha", role="admin", kind="session", local=False):
                 actor = Actor(
                     user_id=owner,
                     purpose="management" if path.startswith("/v1/platform/") else "studio",
                     platform_role=role,
                     auth_kind=kind,
+                    local=local,
                     scopes=tuple(sorted(role_scopes(role))),
                     session_id="session-" + owner if kind == "session" else None,
                     api_key_id="key-" + owner if kind != "session" else None,
@@ -118,11 +119,13 @@ async def case(tmp_path, monkeypatch):
                     )
                 }
 
-            async def call(method, path, *, owner="alpha", role="admin", kind="session", **options):
+            async def call(
+                method, path, *, owner="alpha", role="admin", kind="session", local=False, **options
+            ):
                 return await client.request(
                     method,
                     path,
-                    headers=headers(method, path, owner=owner, role=role, kind=kind),
+                    headers=headers(method, path, owner=owner, role=role, kind=kind, local=local),
                     **options,
                 )
 
@@ -450,8 +453,8 @@ async def test_models_all_owned_runners_start_and_stop_with_independent_schema(c
     try:
         await asyncio.sleep(0.05)
         assert supervisor.is_healthy, supervisor.health
-        assert len(supervisor.runners) == 8
-        assert any(
+        assert len(supervisor.runners) == 7
+        assert not any(
             runner.runner_name == "visual-assistant-model-expiry" for runner in supervisor.runners
         )
     finally:
@@ -467,6 +470,11 @@ async def test_independent_models_contract_matches_page_build_input(case):
     assert public_contract(case.app.openapi(), "models", catalog) == public_contract(
         aggregate, "models", catalog
     )
+    path = "/v1/model-inference/video-enhancements"
+    remote = await case.call("GET", path, params={"model_id": "fast"})
+    assert remote.status_code == 403
+    local = await case.call("GET", path, params={"model_id": "fast"}, local=True)
+    assert local.status_code == 409
 
 
 async def test_audit_prepare_failure_does_not_mutate_policy_or_publish_an_outcome(

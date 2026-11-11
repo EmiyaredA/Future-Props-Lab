@@ -6,7 +6,6 @@ import {
   AppWindow,
   ArrowLeft,
   FolderOpen,
-  MessageSquareText,
   Pencil,
   Plus,
   Save,
@@ -25,7 +24,6 @@ type CanvasScreenChromeProps = {
   title: string;
   editingTitle: boolean;
   saveState: "saving" | "saved" | "conflict" | "error";
-  assistantOpen: boolean;
   assetsOpen: boolean;
   createMenuOpen: boolean;
   controls: ComponentProps<typeof CanvasViewControls>;
@@ -34,7 +32,6 @@ type CanvasScreenChromeProps = {
   onTitleChange: (title: string) => void;
   onSubmitTitle: () => void;
   onBlurTitle: () => void;
-  onToggleAssistant: () => void;
   onToggleAssets: () => void;
   onCreate: (event: React.MouseEvent<HTMLButtonElement>) => void;
 };
@@ -46,7 +43,6 @@ export function CanvasScreenChrome({
   title,
   editingTitle,
   saveState,
-  assistantOpen,
   assetsOpen,
   createMenuOpen,
   controls,
@@ -55,7 +51,6 @@ export function CanvasScreenChrome({
   onTitleChange,
   onSubmitTitle,
   onBlurTitle,
-  onToggleAssistant,
   onToggleAssets,
   onCreate,
 }: CanvasScreenChromeProps) {
@@ -132,19 +127,6 @@ export function CanvasScreenChrome({
           </button>
           {onAcceptance && <button onClick={onAcceptance}>项目验收</button>}
           <ThemeToggle />
-          <button
-            className={
-              assistantOpen
-                ? "active canvas-assistant-trigger"
-                : "canvas-assistant-trigger"
-            }
-            aria-label="对话"
-            aria-expanded={assistantOpen}
-            onClick={onToggleAssistant}
-          >
-            <MessageSquareText aria-hidden />
-            对话
-          </button>
         </div>
       </header>
       <nav className="canvas-tool-dock" aria-label="画布工具">

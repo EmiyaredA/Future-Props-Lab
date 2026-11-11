@@ -18,7 +18,9 @@ export function ProviderIcon({
     | "senseaudio_asr"
     | "senseaudio_asr_pro"
     | "senseaudio_realtime"
-    | "local_qwen_tts";
+    | "local_qwen_tts"
+    | "local_relayvsr"
+    | "local_ffmpeg";
   size?: number;
 }) {
   if (kind === "local_qwen_tts" || kind === "deepseek")

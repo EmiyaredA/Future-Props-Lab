@@ -1,23 +1,28 @@
 """Verify the final migration before any persistent desktop database uses it."""
 
-from db.migrations import runner
+from db.migrations import apply_migrations, runner
+from db.migrations.registry import MIGRATIONS
 from db.migrations.runner import connect_database
-from tests.migration_fixtures import MIGRATIONS, apply_migrations
+from db.migrations.versions.r0128_local_video_providers import MIGRATION_ID
 
 
-def test_local_tts_upgrade_preserves_catalog_and_foreign_keys(tmp_path, monkeypatch):
+def test_local_video_upgrade_preserves_catalog_and_foreign_keys(tmp_path, monkeypatch):
     path = tmp_path / "migration.db"
+    index = next(
+        i for i, migration in enumerate(MIGRATIONS) if migration.migration_id == MIGRATION_ID
+    )
     with monkeypatch.context() as patch:
-        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[:-1])
-        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[-2].migration_id)
+        patch.setattr(runner, "MIGRATIONS", MIGRATIONS[:index])
+        patch.setattr(runner, "LATEST_MIGRATION_ID", MIGRATIONS[index - 1].migration_id)
         apply_migrations(path)
     with connect_database(path) as db:
         db.execute(
-            "INSERT INTO model_providers(id,name,kind,api_key_ciphertext) "
-            "VALUES ('p','Existing','openai','encrypted')"
+            "INSERT INTO model_providers(id,owner_user_id,name,kind,api_key_ciphertext) "
+            "VALUES ('p','owner','Existing','openai','encrypted')"
         )
         db.execute(
-            "INSERT INTO model_entries(id,provider_id,slug) VALUES ('m','p','existing-model')"
+            "INSERT INTO model_entries(id,owner_user_id,provider_id,slug) "
+            "VALUES ('m','owner','p','existing-model')"
         )
         before = db.execute("SELECT * FROM model_providers WHERE id='p'").fetchone()
         indexes = db.execute(
@@ -36,8 +41,13 @@ def test_local_tts_upgrade_preserves_catalog_and_foreign_keys(tmp_path, monkeypa
             == indexes
         )
         assert db.execute("SELECT provider_id FROM model_entries WHERE id='m'").fetchone() == ("p",)
-        db.execute(
-            "INSERT INTO model_providers(id,name,kind) VALUES ('local','Local','local_qwen_tts')"
+        db.executemany(
+            "INSERT INTO model_providers(id,owner_user_id,name,kind) VALUES (?,'owner',?,?)",
+            [
+                ("tts", "Qwen", "local_qwen_tts"),
+                ("relay", "RelayVSR", "local_relayvsr"),
+                ("fast", "FFmpeg", "local_ffmpeg"),
+            ],
         )
         db.commit()
         assert not db.execute("PRAGMA foreign_key_check").fetchall()

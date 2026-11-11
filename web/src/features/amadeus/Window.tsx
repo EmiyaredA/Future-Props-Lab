@@ -32,7 +32,7 @@ import { fetchApiJson } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ConversationHistoryRow } from "./ConversationHistoryRow";
 import { avatarStateLabels, type Reference } from "./protocol";
-import { ReferenceChip } from "./ReferenceChip";
+import { AttachmentReference } from "./AttachmentReference";
 import { AmadeusAvatar } from "./Avatar";
 import {
   ActivityFeed,
@@ -760,9 +760,10 @@ function AmadeusWindowContent({
               {references.length > 0 && (
                 <div className="amadeus-pending-refs">
                   {references.map((item, index) => (
-                    <ReferenceChip
+                    <AttachmentReference
                       key={referenceKey(item)}
                       reference={item}
+                      conversationId={conversationId}
                       onOpen={openReference}
                       onRemove={() =>
                         setReferences((previous) =>
