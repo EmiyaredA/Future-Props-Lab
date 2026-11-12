@@ -3,6 +3,7 @@
 <p align="center">把 AI 模型、创作工具和 Agent 放进同一个工作空间。</p>
 
 <p align="center">
+  <a href="#aigc-制作案例">AIGC 制作案例</a> ·
   <a href="#主要功能">主要功能</a> ·
   <a href="#平台能力">平台能力</a> ·
   <a href="#工坊一览">工坊一览</a> ·
@@ -17,6 +18,20 @@ Future Props Lab 是一个可自行部署的 AI 创作与协作平台。模型�
 你可以在创意工坊发现和分享能力，通过集成中心管理工具 API、MCP、Skill 与外部连接，
 也可以用 Python SDK、CLI 或 MCP 编排自己的工作流。工具导航提供站内工具和外部工具入口，
 云控则让获授权的管理员通过浏览器访问部署端的应用或桌面。
+
+## AIGC 制作案例
+
+### 【石头门-铃羽/红莉栖】新宿决战
+
+战斗风格的 AIGC 短片，视频生成使用 MiniMax H3。点击封面前往 Bilibili 播放。
+
+<p align="center">
+  <a href="https://www.bilibili.com/video/BV1FAbp6rEdd/">
+    <img src="https://i2.hdslb.com/bfs/archive/138b7d153377dfa11cc2d0592fffbea3db31d76a.jpg" alt="播放 AIGC 制作案例：【石头门-铃羽/红莉栖】新宿决战" width="800">
+  </a>
+</p>
+
+[▶ 在 Bilibili 观看完整视频](https://www.bilibili.com/video/BV1FAbp6rEdd/)
 
 ## 主要功能
 
