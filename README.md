@@ -4,33 +4,98 @@
 
 <p align="center">
   <a href="#主要功能">主要功能</a> ·
+  <a href="#平台能力">平台能力</a> ·
   <a href="#工坊一览">工坊一览</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#文档">文档</a> ·
   <a href="#参与贡献">参与贡献</a>
 </p>
 
-Future Props Lab 是一个可自行部署的 AI 创作与协作平台。你可以在浏览器里连接模型服务、组织素材，
-制作图片与视频、编排 Galgame、编辑演示文稿和整理知识，也可以通过 Python SDK、CLI 或 MCP 将这些能力接入自己的工作流。
+Future Props Lab 是一个可自行部署的 AI 创作与协作平台。模型服务提供统一的多模态能力，文件库管理可复用素材，
+各工坊承载图片、视频、故事、演示与知识创作；Amadeus 可以引用当前页面和项目上下文，结合工具协助完成工作。
+
+你可以在创意工坊发现和分享能力，通过集成中心管理工具 API、MCP、Skill 与外部连接，
+也可以用 Python SDK、CLI 或 MCP 编排自己的工作流。工具导航提供站内工具和外部工具入口，
+云控则让获授权的管理员通过浏览器访问部署端的应用或桌面。
 
 ## 主要功能
 
 | 能力 | 可以做什么 |
 | --- | --- |
 | **模型服务** | 统一配置文本、图片、视频、语音等模型，测试调用效果，查看调用日志与任务结果 |
+| **Amadeus** | 引用页面、项目与选中对象，结合模型、Agent 和已授权工具协助创作 |
+| **素材与能力复用** | 在文件库组织素材，在创意工坊发现、分享和安装工具能力与方案包 |
+| **工具与集成** | 查找站内及外部工具，管理工具 API、MCP、Skill 和外部服务连接 |
+| **云控** | 管理员按部署条件访问获授权的远程应用或桌面 |
 | **视觉创作** | 在节点画布中组织提示词、参考素材与图片、视频生成任务 |
 | **视频剪辑** | 使用多轨时间线编排素材、预览片段，导出片段或完整 MP4 |
 | **Galgame 工坊** | 管理角色、场景、剧情、配音与音乐，预览和导出作品 |
 | **录音标注** | 从语音识别结果开始，编辑分段、说话人和文本，导出标注数据 |
 | **演示工坊** | 编辑幻灯片、表格、图表和动画，导入或导出可编辑 PPTX |
 | **思绪工坊** | 用文件夹与文档组织知识，支持 Markdown、附件、LaTeX、Mermaid 和离线导出 |
-| **Agent 与自动化** | 用 Amadeus 跨工坊处理项目，通过集成中心接入工具 API、MCP 和 Skill，或使用 SDK 编排任务 |
+| **3D 与特效** | 在导演台搭建场景与机位，在特效制作工坊编排图层和关键帧 |
+| **自动化接口** | 通过 Python SDK、CLI 与 MCP 调用平台能力、管理项目和编排任务 |
 
 各工坊共用文件库、账号体系与模型服务。私人项目和素材按账号隔离，管理员也不能浏览其他账号的私人项目。
 模型供应商凭据由使用者自行配置，仓库不包含 API Key。
 
 目前主要面向 **macOS 单机自部署**，通过浏览器使用，数据保存在本机。独立服务拆分正在推进，
 完成全部切换门禁前，日常使用仍按下方网站入口启动；进展与部署边界见[独立服务迁移](docs/operations/independent-services.md)。
+
+## 平台能力
+
+从模型接入、素材管理到工具协作，各工坊共用同一套平台能力。以下为现有部署的真实界面，点击截图查看原图。
+
+<table>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/assets/readme/amadeus-assistant.jpg"><img src="docs/assets/readme/amadeus-assistant.jpg" alt="Amadeus：视觉工坊内的助手侧栏、项目上下文与能力快捷入口" width="100%"></a>
+      <p><strong>Amadeus</strong><br>引用当前页面、项目与选中对象，结合工具协助创作。图中展示项目上下文和快捷入口。</p>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/assets/readme/model-services.jpg"><img src="docs/assets/readme/model-services.jpg" alt="模型服务：接入连接、模型目录与多模态能力分类" width="100%"></a>
+      <p><strong>模型服务</strong><br>配置供应商与接入连接，统一管理文本、图片、视频和语音模型，按协议与能力检索。</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/assets/readme/model-playground.jpg"><img src="docs/assets/readme/model-playground.jpg" alt="模型测试：已有问候对话、模型选择、测试类型与生成参数" width="100%"></a>
+      <p><strong>模型测试</strong><br>验证对话、图像、视频和语音能力，调整参数并查看历史结果。图中为已有文本测试。</p>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/assets/readme/model-call-logs.jpg"><img src="docs/assets/readme/model-call-logs.jpg" alt="调用日志：网页会话的模型、Token 用量、耗时与成功失败状态" width="100%"></a>
+      <p><strong>调用日志</strong><br>按来源、模型和状态筛选调用，查看 Token 用量、耗时与错误，辅助排查运行问题。</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/assets/readme/creative-workshop.jpg"><img src="docs/assets/readme/creative-workshop.jpg" alt="创意工坊：创意广场的搜索、能力类型与发布入口，当前暂无公开创作" width="100%"></a>
+      <p><strong>创意工坊</strong><br>在同一部署内发现、分享、安装和组合工具 API、MCP、Skill 与方案包。当前广场暂无公开作品。</p>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/assets/readme/file-manager.jpg"><img src="docs/assets/readme/file-manager.jpg" alt="文件管理：新宿决战项目的视频素材缩略图、类型与文件大小" width="100%"></a>
+      <p><strong>文件管理</strong><br>用文件夹统一组织图片、视频、音频与文档，预览素材并供工坊项目引用。</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/assets/readme/tools-directory.jpg"><img src="docs/assets/readme/tools-directory.jpg" alt="工具导航：工具分类、站内视频工具与带外链标记的外部工具卡片" width="100%"></a>
+      <p><strong>工具导航</strong><br>按分类查找站内的视频帧导出、视频下载；JSON、接口调试等带外链标记的卡片跳转外部网站。</p>
+    </td>
+    <td align="center" valign="top" width="50%">
+      <a href="docs/assets/readme/integration-center.jpg"><img src="docs/assets/readme/integration-center.jpg" alt="集成中心：工具 API、MCP、Skill、外部连接分类与已有 Skill 版本列表" width="100%"></a>
+      <p><strong>集成中心</strong><br>统一管理工具 API、MCP、Skill 与外部连接。图中为已有 Skill 的状态、标签和不可变版本。</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" valign="top" colspan="2">
+      <a href="docs/assets/readme/cloud-control.jpg"><img src="docs/assets/readme/cloud-control.jpg" alt="云控：Mac 远程应用选择与连接入口，当前未连接" width="49%"></a>
+      <p><strong>云控</strong><br>管理员通过浏览器访问获授权的应用或桌面，取决于部署模式。<br>需配置主机服务与系统权限；公网访问还需显式授权和网络配置。图中为未连接状态。</p>
+    </td>
+  </tr>
+</table>
+
+云控的部署条件与权限边界见[云控说明](docs/reference/cloud-control.md)。截图来源、取景和校验值见[素材说明](docs/assets/readme/README.md)。
 
 ## 工坊一览
 
