@@ -48,49 +48,45 @@ Future Props Lab 是一个可自行部署的 AI 创作与协作平台。模型�
 
 <table>
   <tr>
-    <td align="center" valign="top" width="50%">
-      <a href="docs/assets/readme/amadeus-assistant.jpg"><img src="docs/assets/readme/amadeus-assistant.jpg" alt="Amadeus：视觉工坊内的助手侧栏、项目上下文与能力快捷入口" width="100%"></a>
-      <p><strong>Amadeus</strong><br>引用当前页面、项目与选中对象，结合工具协助创作。图中展示项目上下文和快捷入口。</p>
+    <td align="center" valign="top" width="33%">
+      <a href="docs/assets/readme/amadeus-assistant.jpg"><img src="docs/assets/readme/amadeus-assistant-preview.jpg" alt="Amadeus：实际读取新宿决战项目画布的工具调用与分镜整理建议" width="100%"></a>
+      <p><strong>Amadeus</strong><br>引用页面与项目上下文，调用工具协助创作。示例：读取画布，整理三条分镜建议。</p>
     </td>
-    <td align="center" valign="top" width="50%">
+    <td align="center" valign="top" width="33%">
       <a href="docs/assets/readme/model-services.jpg"><img src="docs/assets/readme/model-services.jpg" alt="模型服务：接入连接、模型目录与多模态能力分类" width="100%"></a>
       <p><strong>模型服务</strong><br>配置供应商与接入连接，统一管理文本、图片、视频和语音模型，按协议与能力检索。</p>
     </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
+    <td align="center" valign="top" width="33%">
       <a href="docs/assets/readme/model-playground.jpg"><img src="docs/assets/readme/model-playground.jpg" alt="模型测试：已有问候对话、模型选择、测试类型与生成参数" width="100%"></a>
       <p><strong>模型测试</strong><br>验证对话、图像、视频和语音能力，调整参数并查看历史结果。图中为已有文本测试。</p>
     </td>
-    <td align="center" valign="top" width="50%">
+  </tr>
+  <tr>
+    <td align="center" valign="top" width="33%">
       <a href="docs/assets/readme/model-call-logs.jpg"><img src="docs/assets/readme/model-call-logs.jpg" alt="调用日志：网页会话的模型、Token 用量、耗时与成功失败状态" width="100%"></a>
       <p><strong>调用日志</strong><br>按来源、模型和状态筛选调用，查看 Token 用量、耗时与错误，辅助排查运行问题。</p>
     </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" width="50%">
-      <a href="docs/assets/readme/creative-workshop.jpg"><img src="docs/assets/readme/creative-workshop.jpg" alt="创意工坊：创意广场的搜索、能力类型与发布入口，当前暂无公开创作" width="100%"></a>
-      <p><strong>创意工坊</strong><br>在同一部署内发现、分享、安装和组合工具 API、MCP、Skill 与方案包。当前广场暂无公开作品。</p>
+    <td align="center" valign="top" width="33%">
+      <a href="docs/assets/readme/creative-workshop.jpg"><img src="docs/assets/readme/creative-workshop-preview.jpg" alt="创意工坊：已发布的分镜创作简报、演示大纲助手与创作交付检查 Skill" width="100%"></a>
+      <p><strong>创意工坊</strong><br>分享、安装和组合可复用能力。图中为三项原创 Skill，可查看<a href="docs/assets/readme/creative-workshop-detail.jpg">分镜简报的使用说明</a>。</p>
     </td>
-    <td align="center" valign="top" width="50%">
+    <td align="center" valign="top" width="33%">
       <a href="docs/assets/readme/file-manager.jpg"><img src="docs/assets/readme/file-manager.jpg" alt="文件管理：新宿决战项目的视频素材缩略图、类型与文件大小" width="100%"></a>
       <p><strong>文件管理</strong><br>用文件夹统一组织图片、视频、音频与文档，预览素材并供工坊项目引用。</p>
     </td>
   </tr>
   <tr>
-    <td align="center" valign="top" width="50%">
+    <td align="center" valign="top" width="33%">
       <a href="docs/assets/readme/tools-directory.jpg"><img src="docs/assets/readme/tools-directory.jpg" alt="工具导航：工具分类、站内视频工具与带外链标记的外部工具卡片" width="100%"></a>
       <p><strong>工具导航</strong><br>按分类查找站内的视频帧导出、视频下载；JSON、接口调试等带外链标记的卡片跳转外部网站。</p>
     </td>
-    <td align="center" valign="top" width="50%">
+    <td align="center" valign="top" width="33%">
       <a href="docs/assets/readme/integration-center.jpg"><img src="docs/assets/readme/integration-center.jpg" alt="集成中心：工具 API、MCP、Skill、外部连接分类与已有 Skill 版本列表" width="100%"></a>
       <p><strong>集成中心</strong><br>统一管理工具 API、MCP、Skill 与外部连接。图中为已有 Skill 的状态、标签和不可变版本。</p>
     </td>
-  </tr>
-  <tr>
-    <td align="center" valign="top" colspan="2">
-      <a href="docs/assets/readme/cloud-control.jpg"><img src="docs/assets/readme/cloud-control.jpg" alt="云控：Mac 远程应用选择与连接入口，当前未连接" width="49%"></a>
-      <p><strong>云控</strong><br>管理员通过浏览器访问获授权的应用或桌面，取决于部署模式。<br>需配置主机服务与系统权限；公网访问还需显式授权和网络配置。图中为未连接状态。</p>
+    <td align="center" valign="top" width="33%">
+      <a href="docs/assets/readme/cloud-control.jpg"><img src="docs/assets/readme/cloud-control.jpg" alt="云控：Mac 远程应用选择与连接入口，当前未连接" width="100%"></a>
+      <p><strong>云控</strong><br>管理员按部署模式访问获授权的应用或桌面，需配置主机服务与系统权限；公网另需授权与网络配置。图中未连接。</p>
     </td>
   </tr>
 </table>

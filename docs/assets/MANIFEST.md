@@ -14,7 +14,7 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 
 | 路径范围 | 数量 | 用途 | 来源 | 许可证/分发状态 | 内容集 SHA-256 | 生产构建 |
 | --- | ---: | --- | --- | --- | --- | --- |
-| `docs/assets/readme/` | 20 | 根 README 的九类平台能力、八个工坊截图与局部预览 | 2026-11-12 本机 Chrome；现有页面与项目；场景、实际状态、裁切范围与逐图 SHA-256 见[截图说明](readme/README.md) | 本项目 UI 与现有作品素材；沿用内部开发交接范围，未新增再分发授权 | `ab10c78e96e7e15defdc19206bf4e24382c77a8d50f818fe29362f45ff982007` | 否 |
+| `docs/assets/readme/` | 23 | 根 README 的九类平台能力、八个工坊截图与局部预览，含真实 Agent 任务与原创 Skill 发布 | 2026-11-12 本机 Chrome；现有项目、实际执行与发布页面；场景、状态、裁切范围与逐图 SHA-256 见[截图说明](readme/README.md) | 本项目 UI、原创 Skill 展示与现有作品素材；沿用内部开发交接范围，未新增再分发授权 | `ad601b7b5e731f50103371ade950e69b9852f943f3157a25267b017cfa9a11c7` | 否 |
 | `docs/assets/galgame-runaway-cgs/` | 68 | 《自由粒子的逃逸》演示 CG 与历史版本 | ImageGen 生成/编辑，部分以项目内原作画面和角色素材为参考；新增副本逐项记录见同目录 README | 未提供独立再分发授权；仅限内部开发交接 | `44d068f64f01b8c2fc61f196df9ec4846046c32a8b68dbcdaf62e96ab91d2d36` | 否 |
 | `docs/assets/galgame-runaway-portraits/` | 18 | 演示角色口型与半身立绘 | 原作素材的裁切/整理版本 | 仓库未包含上游许可；不得独立再分发 | `03badb7acdd1921374a7f3174a276af6230a33be8850d4141c5d49370ea84247` | 否 |
 | `docs/assets/galgame-runaway-scenes/` | 2 | 演示场景背景 | 原作素材的演示处理版本 | 仓库未包含上游许可；不得独立再分发 | `54e41702b90f5f2c529f55a721e1fb9df1f69ba425bc5262768b49259a516d9b` | 否 |
