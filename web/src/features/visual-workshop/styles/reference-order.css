@@ -88,3 +88,15 @@
   outline: 2px solid var(--accent);
   border-radius: 8px;
 }
+/* Reference sorting controls and tracking tags share the same compact stack. */
+.video-composer-body:has(> .video-subject-control) > .video-composer-reference {
+  padding-bottom: 0;
+}
+.video-composer-body:has(> .video-subject-control)
+  .video-composer-reference
+  .generation-image-options.has-reference-order {
+  padding-bottom: 0;
+}
+.video-composer-reference + .video-subject-control {
+  margin-top: 0;
+}
