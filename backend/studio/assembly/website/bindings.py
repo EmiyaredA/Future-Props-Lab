@@ -61,6 +61,7 @@ from studio.apps.video_editor.assistant_operations import apply_assistant_timeli
 from studio.apps.video_editor.handoffs.motion_handoff import import_motion_export
 from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
 from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
+from studio.apps.video_editor.preview_storage import local_preview_path
 from studio.assembly.annotation import (
     document_editor,
     project_creator,
@@ -122,6 +123,7 @@ def bind_components(app, settings, database, *, read_cloud_settings):
     video_layouts = partial(LegacyVideoLayouts, storage=AssetStorage(settings))
     app.state.video_layouts = lambda _request, session, owner: video_layouts(session, owner)
     app.state.video_assets = lambda _request, session, owner: LegacyTimelineAssets(session, owner)
+    app.state.video_preview_path = partial(local_preview_path, AssetStorage(settings))
 
     async def import_motion_video(session, owner, source, **details):
         return await import_motion_export(

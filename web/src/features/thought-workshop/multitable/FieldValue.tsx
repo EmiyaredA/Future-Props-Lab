@@ -53,7 +53,6 @@ export function FieldValue({
               className="multitable-tag"
               style={{ "--option-color": option.color } as CSSProperties}
             >
-              <i aria-hidden="true" />
               {option.label}
             </span>
           ) : null;

@@ -51,7 +51,7 @@ def test_invalid_layers_rejected(layer):
 
 @pytest.mark.parametrize("layer", [0, 1, 3, 200])
 @pytest.mark.parametrize("grouped", [False, True])
-def test_pptx_uses_same_connection_layer_and_keeps_labels_together(tmp_path, layer, grouped):
+def test_pptx_uses_connection_layer_with_labels_in_foreground(tmp_path, layer, grouped):
     data = scene_document()
     page = data["slides"][0]
     page["connections"][0]["layer"] = layer
@@ -72,7 +72,8 @@ def test_pptx_uses_same_connection_layer_and_keeps_labels_together(tmp_path, lay
     ]
     expected = ["node-a", "node-b", "label-a"]
     slot = min(layer, len(expected))
-    expected[slot:slot] = ["edge", "edge-label", "second"]
+    expected[slot:slot] = ["edge", "second"]
+    expected.append("edge-label")
     assert painted == expected
 
 

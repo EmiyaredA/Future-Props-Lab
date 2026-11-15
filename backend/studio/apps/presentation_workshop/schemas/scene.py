@@ -39,9 +39,13 @@ class PresentationConnection(SlideModel):
     )
     style: Literal["straight", "step"] = "step"
     label: str = Field(default="", max_length=500)
+    label_position: float | None = Field(default=None, ge=0, le=1)
+    label_offset: PresentationPoint | None = None
+    label_font_size: float | None = Field(default=None, ge=6, le=72)
     color: Color = "#365F62"
     width: float = Field(default=2, ge=0.5, le=30)
     arrow: bool = True
+    arrow_size: Literal["small", "medium", "large"] | None = None
     # Number of page elements below this connection; ties follow connection order.
     layer: int = Field(default=0, ge=0, le=300)
     waypoints: list[PresentationPoint] = Field(default_factory=list, max_length=32)

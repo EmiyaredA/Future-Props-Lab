@@ -494,6 +494,12 @@ OpenAPI 或执行定时健康检查。
 
 ### 视频剪辑工坊
 
+- `POST /v1/video-editor/projects/{project_id}/preview/renders`：提交 `{expectedRevision, requestId}`，冻结完整时间线并生成保持项目 30/60 FPS 的 720p H.264/AAC 预览。同一有效快照复用任务；版本冲突返回 409，素材未就绪或其他预渲染仍在进行时返回 422。
+- `GET /v1/video-editor/projects/{project_id}/preview/renders`：返回 `items`，每项为 `preview_render` 任务及 `timelineRevision`、`valid`、`mediaUrl`。仅当前账号、项目、时间线 revision、素材摘要及渲染器版本都匹配的完成缓存才提供媒体地址；刷新后可复用。
+- `POST /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel`：请求取消任务；执行器停止后结算为 `cancelled`。
+- `DELETE /v1/video-editor/projects/{project_id}/preview/renders`：退役该项目所有预览，立即停止提供缓存并由持久任务重试文件回收；进行中任务同时取消。
+- `GET /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media`：读取当前有效缓存，支持 Range（206/416）；过期、未完成、已清理或其他账号的缓存返回 404。缓存不加入素材、普通导出历史或工程快照，正式导出仍读取原件。
+
 - `GET/POST /v1/video-editor/projects` 与 `GET/PATCH/DELETE /v1/video-editor/projects/{project_id}`：管理 Workspace 隔离的剪辑项目；修改和删除使用 revision CAS。
 - `GET /v1/video-editor/projects/{project_id}/snapshot` 与 `POST /v1/video-editor/projects/snapshot-imports`：导出或导入为全新剪辑项目副本。
 - `POST /v1/video-editor/projects/{project_id}/open-folder`：在运行 Studio 的电脑上打开项目目录。

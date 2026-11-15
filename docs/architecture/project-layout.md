@@ -394,7 +394,11 @@ Visual 删除项目时由 `studio/apps/visual_workshop/project_deletion.py` 核�
 
 `shared/ui/NavigationProtection.tsx` 在每个独立应用内协调多个未保存保护，协议与 Hook 位于 `navigationGuards.ts` 和 `useUnsavedNavigation.tsx`。确认逐项进行，全部通过才继续；明确同意跨页面离开后不重复触发原生提示。`platform/api/applicationBuild.ts` 携带非鉴权的应用版本标记并广播本应用更新，`platform/programAsset.ts` 定位当前程序资源。共享登录通过显式回调清理应用自有临时状态。
 
-服务化实现及 Compose 切换尚在隔离工作树验证，正式入口仍使用下述网站单体；不得把清单生成视为应用迁移完成。当前网站 `.runtime/` 是唯一迁移真源，桌面原目录仅用于恢复。
+本机正式服务使用已选定的独立镜像和 Mac Worker。`.runtime/independent-services/` 保存服务数据、素材、
+最小配置与 Worker 回执；`.runtime/deployment/` 保存线上版本对应的代码副本、Compose、前端版本、
+工具运行环境、证书、发布门禁、启动登记与配置恢复点。兼容网站的共享前端构建位于 `.runtime/website/`，
+共用开发启动器的锁与进程状态位于 `.runtime/dev-server/`。`.local/` 只放可清理的中间结果，不能成为正式运行依赖。
+下述网站单体入口保留用于兼容运行，桌面原目录仅用于恢复。
 
 共享前端构建的 HTML 与版本信息跟随当前构建。经过清单验证的哈希资源可从最近两版退役构建读取，每版自退役起最多 24 小时。`runtime/website_releases.py` 提供服务器与构建器共用的保留策略，正在传输的资源持有目录共享锁。
 
@@ -405,6 +409,9 @@ Visual 删除项目时由 `studio/apps/visual_workshop/project_deletion.py` 核�
 `studio/apps/gateway/storage/website_resources.py` 校验资源归属并返回网站路径；`automation_operations.json` 维护 SDK／MCP 白名单，`automation_access.py` 将其编译为本机／公网共用的入口策略；`studio/apps/gateway/transport/website/automation.py` 负责发现和本机管理员访问控制。`sdk/python/src/future_props_lab/website.py` 保存受保护客户端连接，`cli.py` 提供 fpl。
 
 `features/amadeus/PageProvider.tsx` 持有当前账号的页面侧栏，`PageContext.tsx` 和 `pageBridge.ts` 明确传递页面、选中引用和审批后变更；`platform/assistant.ts` 仅提供无状态的打开请求。`features/accounts/WebsiteAccessDialog.tsx` 只在后端确认的本机入口向管理员展示。`web/scripts/prepare-studio-release.mjs` 生成构建清单及预压缩资源；云端发布工具归 remote-control。
+
+`scripts/website/awake.py` 管理显式启用的 Mac 接电防休眠 LaunchAgent，兼容接管旧 remote-control 的同名任务。
+正式启动登记、日志与最小回退副本归 `.runtime/host-awake/`，运行只依赖系统 caffeinate，独立于网站启停。
 
 ## 思绪工坊官方知识库
 
@@ -634,6 +641,10 @@ Future-Props-Lab/
 后端 `apps/video_editor/runner.py` 由装配层分别注册 media 与 export 两个独立串行轮询通道，
 素材预处理不等待长导出完成；每个通道只恢复自身中断任务，并分别参与后台健康检查。
 `VideoEditorPreciseFrame.tsx` 保留已解码画面直到当前请求加载完成，工程与保存版本变化时清空缓存画面。
+`preview_renders.py` 拥有手动预渲染快照、缓存身份及退役规则，`preview_storage.py` 拥有兼容网站的缓存发布与回收；
+独立渲染端复用 `VideoExports` 保留派生 MP4，`RenderDelivery` 恢复任务与项目删除后的清理，不发布素材。
+Web 的 `usePreviewRender.ts` 选择当前版本缓存，`VideoEditorCachedPreview.tsx` 用单个音画播放器驱动时间轴；
+`video-editor-preview-cache.css` 拥有缓存工具栏与合成视频表面样式。
 `transformModel.ts` 拥有变换几何、当前时刻求值与逐属性编辑操作，`usePreviewTransform.ts` 拥有指针手势、
 临时草稿和提交取消，`VideoEditorTransformBox.tsx` 显示固定屏幕尺寸操作手柄。
 `VideoEditorTransformFields.tsx` 将同一编辑契约接入属性检查器；草稿经编辑器显式传给预览与检查器，
@@ -889,6 +900,8 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `scene/selection.ts` 解析命中元素、完整逻辑对象框选与分组选择，`useSceneTools` 唯一持有组内层级；画布在点击松手时请求下钻，拖动保留原选区。这些选择状态不进入文稿持久化。
 `scene/ConnectionPanel.tsx` 将连接属性停靠到右侧 `PresentationInspector` 元素页，连接选择与新建预览仍由 `useSceneTools` 拥有；不再持有浮层定位状态。
 `scene/connectionGeometry.ts` 拥有沿边比例端点、旋转边缘投影、路径编辑与节点跟随；`ConnectionHandles` 展示画布覆盖层，`useConnectionDrag` 只持有可取消预览，松手经统一草稿提交一次。线身拖动解除两端绑定并平移全路径，端点拖动可自由放置或重新吸附；直线拖动保持直线，折线手柄编辑局部走线。自由端点以互斥的 ID／point 表达，`0104_presentation_free_connections` 为旧连接补 null 坐标，复制、可见性、批量操作和 PPTX 共享端点语义。后端 `connection_routes.py` 与 Web 共用测试向量，operations 合并整批节点变换后调整路径，显式路径优先。连接 `source_offset`、`target_offset` 为 0–1，迁移 `0100_presentation_connection_offsets` 为旧连接补 0.5，保留路径与 revision；PPTX 将非中点连接导出为自由形状以保留几何。
+`scene/connectionLabelLayout.ts` 与后端 `connection_labels.py` 通过共用测试向量保持路径比例锚点、偏移与定宽换行一致；连接可选 `label_position` / `label_offset` 缺省时兼容旧标签位置，不回写历史数据。`ConnectionLabels` 在内容和连线之上、编辑手柄之下绘制实色底垫文字，PPTX 同样以原生文本框置于前景；连线自身仍遵循原有层级。`useConnectionLabels` 拥有就地编辑与可取消拖动，中文输入和提交沿用草稿历史与 CAS，拖动标签不改变路径或端点绑定。
+连接可选 `label_font_size` / `arrow_size` 由右侧连接属性编辑，缺省保留原 16px 字号与中号箭头。字号同时控制标签外框、输入框与 PPTX 文字；箭头小／中／大预设分别映射 SVG 标记尺寸与 DrawingML 原生大小，不通过线宽间接调整。
 `scene/stacking.ts` 解析并调整元素与连接的统一前后顺序；连接 `layer` 保存下方元素数量，同层按连接数组顺序。迁移 `0098_presentation_connection_layers` 为缺失层级补 0，保留旧画面与 revision。`SlideSurface` 与 `pptx_scene.py` 消费相同顺序；PPTX 仅保留连续叠放的原生组，交错组在导出时展开以保持遮挡，源分组不变。
 后端 `schemas/scene.py` 校验文稿 v3 的引用关系，`scene_edits.py` 拥有片段替换和身份重映射，
 `slideTheme.ts` 拥有新建色板、可修改颜色收集与单页换肤纯函数，`SlideThemeDialog` 只维护预览替换表；用户应用才进入原草稿历史与 CAS 保存，不追加持久化字段。`useSceneTools` 返回动作描述与独立弹窗，`PresentationToolbar` 统一展示信息图与“更多”菜单，不再增加整排场景工具。`slide-theme.css` 仅维护换肤弹窗布局。

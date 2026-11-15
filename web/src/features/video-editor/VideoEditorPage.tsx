@@ -53,6 +53,7 @@ import {
   timelineZoomMinimum,
 } from "./timelineScale";
 import { useVideoEditor } from "./useVideoEditor";
+import { usePreviewRender } from "./usePreviewRender";
 import { useSubtitleImport } from "./useSubtitleImport";
 import { prepareAssetBatch } from "./assetBatch";
 import type { VideoEditorAsset, VideoEditorClip } from "./types";
@@ -98,6 +99,20 @@ export function VideoEditorPage({
   const [segmentExportClipIds, setSegmentExportClipIds] = useState<string[]>();
   const [draggingAsset, setDraggingAsset] = useState<VideoEditorAsset>();
   const [previewingAssetId, setPreviewingAssetId] = useState<string>();
+  const previewCache = usePreviewRender({
+    projectId,
+    revision: editor.timeline.data?.revision,
+    assetVersion: editor.assets.data?.items
+      .map((asset) => `${asset.id}:${asset.revision}`)
+      .join(","),
+    dirty:
+      editor.saving ||
+      Boolean(editor.transformDraft) ||
+      Boolean(previewingAssetId),
+    playing: editor.playing,
+    waitForSavedTimeline: editor.waitForSavedTimeline,
+    setMediaClockActive: editor.setMediaClockActive,
+  });
   const [contentViewportWidthPx, setContentViewportWidthPx] = useState(0);
   const timelineScroller = useRef<HTMLDivElement>(null);
   const subtitles = useSubtitleImport({
@@ -514,6 +529,9 @@ export function VideoEditorPage({
           />
           <VideoEditorSeparator {...workspaceLayout.separator("assetWidth")} />
           <VideoEditorPreview
+            previewCache={previewCache}
+            seekRevision={editor.seekRevision}
+            onPlaybackTime={editor.reportPlaybackTime}
             projectId={projectId}
             projectTitle={project.title}
             timeline={timeline}

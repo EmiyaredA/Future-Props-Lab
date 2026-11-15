@@ -16,7 +16,7 @@ auth_cookie_secure = false
 
 [website]
 port = 9000
-web_root = ".local/studio-current/current"
+web_root = ".runtime/website/current"
 public_enabled = false
 # 迁移工具写入原桌面数据根，服务持锁防止旧客户端误启动。
 legacy_data_root = ""

@@ -1,13 +1,13 @@
 """Native groups, preset connectors and editable routed paths for PowerPoint."""
 
-import math
-
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_AUTO_SHAPE_TYPE, MSO_CONNECTOR
+from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Emu, Pt
 
+from studio.apps.presentation_workshop.connection_labels import label_layout
 from studio.apps.presentation_workshop.connection_routes import anchor as route_anchor
 
 SITES = {"top": 0, "left": 1, "bottom": 2, "right": 3}
@@ -25,6 +25,7 @@ def anchor(item, side, offset=0.5):
 def add_scene(slide, page, shapes):
     elements = {e.id: e for e in page.elements}
     connection_shapes = {}
+    labels = []
     for edge in page.connections:
         start = (
             (edge.source_point.x, edge.source_point.y)
@@ -61,6 +62,11 @@ def add_scene(slide, page, shapes):
             )
         )
         line.name = edge.id
+        # Preset theme effects must not add shadows absent from the SVG canvas.
+        for style in list(line._element.findall(qn("p:style"))):
+            line._element.remove(style)
+        if line._element.spPr.find(qn("a:effectLst")) is None:
+            line._element.spPr.append(OxmlElement("a:effectLst"))
         line.line.color.rgb = RGBColor.from_string(edge.color[1:])
         line.line.width = Pt(edge.width * 0.75)
         if not routed:
@@ -84,19 +90,21 @@ def add_scene(slide, page, shapes):
         if edge.arrow:
             arrow = OxmlElement("a:tailEnd")
             arrow.set("type", "triangle")
+            if edge.arrow_size:
+                size = {"small": "sm", "medium": "med", "large": "lg"}[edge.arrow_size]
+                arrow.set("w", size)
+                arrow.set("len", size)
             line._element.spPr.get_or_add_ln().append(arrow)
         parts = [line]
-        if edge.label:
-            midpoint = _midpoint(points)
-            label = slide.shapes.add_textbox(
-                px(midpoint[0] - 90), px(midpoint[1] - 28), px(180), px(28)
-            )
-            label.name = edge.id + "-label"
-            label.text = edge.label
-            label.text_frame.paragraphs[0].font.size = Pt(12)
-            label.text_frame.paragraphs[0].font.name = "Microsoft YaHei"
-            label.text_frame.paragraphs[0].font.color.rgb = RGBColor.from_string(edge.color[1:])
-            parts.append(label)
+        layout = label_layout(
+            [{"x": x, "y": y} for x, y in points],
+            edge.label,
+            edge.label_position,
+            edge.label_offset.model_dump() if edge.label_offset else None,
+            edge.label_font_size or 16,
+        )
+        if layout:
+            labels.append(_label_shape(slide, page, edge, layout))
         connection_shapes[edge.id] = parts
 
     groups = {g.id: g for g in page.groups}
@@ -161,18 +169,35 @@ def add_scene(slide, page, shapes):
     for _, items in sort_parts(parts):
         for shape in items:
             slide.shapes._spTree.append(shape._element)
+    # Like SlideSurface, paint all labels above paths and content, below UI handles.
+    for label in labels:
+        slide.shapes._spTree.append(label._element)
 
 
-def _midpoint(points):
-    lengths = [math.dist(a, b) for a, b in zip(points[:-1], points[1:], strict=True)]
-    remaining = sum(lengths) / 2
-    for index, length in enumerate(lengths):
-        if remaining <= length:
-            ratio = remaining / length if length else 0
-            a, b = points[index : index + 2]
-            return a[0] + (b[0] - a[0]) * ratio, a[1] + (b[1] - a[1]) * ratio
-        remaining -= length
-    return points[-1]
+def _label_shape(slide, page, edge, layout):
+    label = slide.shapes.add_textbox(*(px(layout[k]) for k in ("x", "y", "width", "height")))
+    label.name = edge.id + "-label"
+    label.fill.solid()
+    label.fill.fore_color.rgb = RGBColor.from_string(page.background[1:])
+    label.line.fill.background()
+    frame = label.text_frame
+    frame.word_wrap = False
+    frame.vertical_anchor = MSO_ANCHOR.TOP
+    # Lines are already wrapped by the shared layout. Centre them in the full
+    # box so Office font rounding cannot wrap a smaller label a second time.
+    frame.margin_left = frame.margin_right = 0
+    frame.margin_top = frame.margin_bottom = px(3)
+    for i, line in enumerate(layout["lines"]):
+        paragraph = frame.paragraphs[0] if i == 0 else frame.add_paragraph()
+        paragraph.text = line
+        paragraph.alignment = PP_ALIGN.CENTER
+        paragraph.space_before = paragraph.space_after = Pt(0)
+        size = edge.label_font_size or 16
+        paragraph.line_spacing = Pt(size * 1.25 * 0.75)
+        paragraph.font.size = Pt(size * 0.75)
+        paragraph.font.name = "Microsoft YaHei"
+        paragraph.font.color.rgb = RGBColor.from_string(edge.color[1:])
+    return label
 
 
 def _connection_sites(shape, item):

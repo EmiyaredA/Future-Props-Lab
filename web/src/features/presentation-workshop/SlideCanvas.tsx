@@ -33,6 +33,7 @@ import {
 import type { Connection } from "./scene/model";
 import { updateScene } from "./scene/model";
 import { useConnectionDrag } from "./scene/useConnectionDrag";
+import { useConnectionLabels } from "./scene/useConnectionLabels";
 import { ConnectionHandles } from "./scene/ConnectionHandles";
 import {
   groupAtHit,
@@ -209,7 +210,8 @@ export function SlideCanvas({
       !!press.current ||
       !!gesture.current ||
       !!cropOverlay ||
-      connectionDrag.active(),
+      connectionDrag.active() ||
+      connectionLabels.active(),
   });
   const connectionDrag = useConnectionDrag({
     slide,
@@ -219,12 +221,26 @@ export function SlideCanvas({
     scale,
     commit: replace,
   });
+  const connectionLabels = useConnectionLabels({
+    slide,
+    selected: selectedConnection,
+    readOnly,
+    canvas,
+    scale,
+    commit: replace,
+    select: (id) => {
+      setEditing(null);
+      onSelectConnection?.(id);
+    },
+    onComposition,
+  });
   const baseDisplay = transient?.id === slide.id ? transient : slide;
-  const display = connectionDrag.preview
+  const edgePreview = connectionLabels.preview ?? connectionDrag.preview;
+  const display = edgePreview
     ? {
         ...baseDisplay,
         connections: (baseDisplay.connections ?? []).map((c) =>
-          c.id === connectionDrag.preview!.id ? connectionDrag.preview! : c,
+          c.id === edgePreview.id ? edgePreview : c,
         ),
       }
     : baseDisplay;
@@ -252,6 +268,7 @@ export function SlideCanvas({
     if (
       event.button !== 0 ||
       connectionDrag.active() ||
+      connectionLabels.active() ||
       (event.target as HTMLElement).closest(".presentation-text-editor")
     )
       return;
@@ -519,6 +536,7 @@ export function SlideCanvas({
     if (!historyGesture) return;
     historyGesture.current = () => {
       if (sketchCancel.current?.()) return true;
+      if (connectionLabels.cancel()) return true;
       if (connectionDrag.cancel()) return true;
       if (!press.current && !gesture.current) {
         if (boxSelect) {
@@ -585,19 +603,23 @@ export function SlideCanvas({
           }}
           onPointerDown={(event) => start(event)}
           onPointerMove={(event) => {
+            if (connectionLabels.move(event)) return;
             if (!connectionDrag.move(event)) move(event);
           }}
           onPointerUp={(event) => {
+            if (connectionLabels.finish(event)) return;
             if (connectionDrag.finish(event)) return;
             if (press.current?.pointer !== event.pointerId) return;
             move(event);
             finish();
           }}
           onPointerCancel={() => {
+            connectionLabels.cancel();
             connectionDrag.cancel();
             finish(true);
           }}
           onLostPointerCapture={() => {
+            connectionLabels.cancel();
             connectionDrag.cancel();
             if (press.current) finish(true);
           }}
@@ -609,6 +631,12 @@ export function SlideCanvas({
               };
           }}
           onKeyDown={(e) => {
+            if (e.key === "Escape" && connectionLabels.active()) {
+              e.preventDefault();
+              e.stopPropagation();
+              connectionLabels.cancel();
+              return;
+            }
             if (e.key === "Escape" && boxSelect) {
               e.preventDefault();
               e.stopPropagation();
@@ -683,6 +711,9 @@ export function SlideCanvas({
         >
           <CanvasGuides size={size} scale={scale} grid={grid} rulers={rulers} />
           <SlideSurface
+            connectionLabelActions={
+              readOnly ? undefined : connectionLabels.actions
+            }
             assetUrls={assetUrls}
             size={size}
             slide={
@@ -730,6 +761,7 @@ export function SlideCanvas({
                   }
             }
           >
+            {connectionLabels.editor}
             {referenceOverlay}
             {active && !readOnly ? (
               <SlideTextEditor

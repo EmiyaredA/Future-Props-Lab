@@ -167,12 +167,12 @@ def transfer(source, project, report_dir):
             document.setdefault("storage", {})["database_path"] = ".runtime/future-props.db"
             document["website"] = {
                 "port": 9000,
-                "web_root": ".local/studio-release",
+                "web_root": ".runtime/website/current",
                 "public_enabled": False,
                 "legacy_data_root": str(source),
             }
             document.setdefault("remote_web", {})["web_root"] = str(
-                project / ".local/studio-release"
+                project / ".runtime/website/current"
             )
             config_target = project / "backend/config.toml"
             config_stage = report_dir / "website-config.toml"

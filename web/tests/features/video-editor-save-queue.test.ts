@@ -66,6 +66,35 @@ const edit = (fps: number) => (timeline: VideoEditorTimeline) => ({
 });
 
 describe("timeline writes", () => {
+  it("releases preview snapshot waiters after all edits, and rejects them on failure or close", async () => {
+    const { queue, calls } = fixture();
+    const first = queue.enqueue("edit", edit(60));
+    const saved = vi.fn();
+    const waiting = queue.whenSaved().then(saved);
+    const second = queue.enqueue("edit", edit(30));
+    calls[0].result.resolve(snapshot(1));
+    await first;
+    expect(saved).not.toHaveBeenCalled();
+    calls[1].result.resolve(snapshot(2));
+    await second;
+    await waiting;
+    expect(saved).toHaveBeenCalledOnce();
+    const failing = queue.enqueue("edit", edit(60));
+    const failedWait = expect(queue.whenSaved()).rejects.toThrow("未保存");
+    calls[2].result.reject(new Error("isolated save failure"));
+    await expect(failing).rejects.toThrow("isolated save failure");
+    await failedWait;
+    await expect(queue.whenSaved()).rejects.toThrow("未保存");
+    const other = fixture();
+    const editing = other.queue.enqueue("edit", edit(60));
+    const closingWait = expect(other.queue.whenSaved()).rejects.toThrow(
+      "已关闭",
+    );
+    other.queue.close();
+    await closingWait;
+    other.calls[0].result.resolve(snapshot(1));
+    await editing;
+  });
   it("serializes writes and builds inverses against the preceding response", async () => {
     const { queue, calls } = fixture();
     const first = queue.enqueue("edit", edit(60));

@@ -5,6 +5,7 @@ from sqlalchemy import select, text, update
 
 from studio.apps.video_editor.baking.bake_organization import insert_baked_asset_in_organization
 from studio.apps.video_editor.handoffs.segment_results import settle_segments
+from studio.apps.video_editor.preview_renders import retire_previous_previews
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata, VideoEditorTask
 from studio.apps.video_editor.storage.service_models import VideoMediaDispatch, VideoRenderDispatch
 from studio.contracts.motion_compositor.motion_preview import sha256
@@ -52,7 +53,16 @@ class RenderDelivery(PollingTaskRunner):
                 await session.execute(
                     select(VideoRenderDispatch, VideoEditorTask)
                     .outerjoin(VideoEditorTask, VideoEditorTask.id == VideoRenderDispatch.task_id)
-                    .where(VideoRenderDispatch.settled.is_(False))
+                    .where(
+                        VideoRenderDispatch.settled.is_(False)
+                        | (
+                            VideoRenderDispatch.frozen["preview"].as_boolean().is_(True)
+                            & (
+                                VideoEditorTask.id.is_(None)
+                                | VideoEditorTask.result_detail["retired"].as_boolean().is_(True)
+                            )
+                        )
+                    )
                     .order_by(VideoRenderDispatch.checked_at, VideoRenderDispatch.task_id)
                     .limit(1)
                 )
@@ -93,6 +103,23 @@ class RenderDelivery(PollingTaskRunner):
         cancel = task is None or task.cancel_requested
         receipt = None
         try:
+            if binding.frozen.get("preview") and (cancel or task.result_detail.get("retired")):
+                response = await self.send("DELETE", path + "/preview", owner)
+                if response.status_code == 409:
+                    return
+                response.raise_for_status()
+                if task is None or task.result_detail.get("retired"):
+                    async with self.session(binding) as session:
+                        current = await session.get(VideoRenderDispatch, binding.task_id)
+                        row = await session.get(VideoEditorTask, binding.task_id)
+                        if row is not None:
+                            await session.delete(row)
+                        if current is not None:
+                            await session.delete(current)
+                        await session.commit()
+                    return
+                await self.settle(binding, VideoExportReceipt(status="cancelled", progress=0))
+                return
             if cancel:
                 response = await self.send("POST", path + "/cancel", owner)
                 if response.status_code == 404:
@@ -141,7 +168,10 @@ class RenderDelivery(PollingTaskRunner):
                 return
             if task.status == receipt.status and task.progress == receipt.progress:
                 if receipt.status not in ACTIVE:
-                    current.settled, current.frozen = True, {}
+                    current.settled, current.frozen = (
+                        True,
+                        ({"preview": True} if task.kind == "preview_render" else {}),
+                    )
                     await session.commit()
                 return
             now = utc_now()
@@ -153,7 +183,15 @@ class RenderDelivery(PollingTaskRunner):
             task.started_at = task.started_at or now
             if receipt.status not in ACTIVE:
                 task.finished_at = now
-                current.settled, current.frozen = True, {}
+                current.settled, current.frozen = (
+                    True,
+                    ({"preview": True} if task.kind == "preview_render" else {}),
+                )
+            if receipt.preview is not None:
+                if task.kind != "preview_render":
+                    raise ValueError("预览回执任务类型不符")
+                task.result_detail = {**task.result_detail, "probe": receipt.probe}
+                await retire_previous_previews(session, task)
             if receipt.segments:
                 await settle_segments(session, task, receipt.segments)
             if receipt.output is not None:
@@ -208,3 +246,14 @@ class RenderDelivery(PollingTaskRunner):
                         "effects": task.request_payload["effects"],
                     }
             await session.commit()
+
+    async def preview_output(self, owner, task_id, request_headers):
+        path = f"{EXPORTS}/{task_id}/preview"
+        headers = self.peer.headers("GET", path, owner)
+        headers["Accept-Encoding"] = "identity"
+        for key in ("range", "if-range"):
+            if key in request_headers:
+                headers[key] = request_headers[key]
+        return await self.client.send(
+            self.client.build_request("GET", RENDERING + path, headers=headers), stream=True
+        )

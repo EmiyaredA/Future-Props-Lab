@@ -57,16 +57,23 @@ describe("元素和连接统一叠放", () => {
     const slide = orderScene(fixture(), ["b"], "back");
     expect(ids(slide)).toEqual(["b", "ab", "bc", "a", "c"]);
     const view = render(<SlideSurface slide={slide} />);
-    const painted = [
+    const layers = [
       ...view.container.querySelector(".presentation-slide")!.children,
-    ].map(
-      (node) =>
-        node.getAttribute("data-element-id") ??
-        node
-          .querySelector("[data-connection-id]")
-          ?.getAttribute("data-connection-id"),
-    );
+    ];
+    const painted = layers
+      .filter(
+        (node) =>
+          !node.classList.contains("presentation-connection-label-layer"),
+      )
+      .map(
+        (node) =>
+          node.getAttribute("data-element-id") ??
+          node
+            .querySelector("[data-connection-id]")
+            ?.getAttribute("data-connection-id"),
+      );
     expect(painted).toEqual(ids(slide));
+    expect(layers.at(-1)).toHaveClass("presentation-connection-label-layer");
   });
 
   it("复制片段重算局部层级，粘贴与删除不漂移原连接的相对顺序", () => {

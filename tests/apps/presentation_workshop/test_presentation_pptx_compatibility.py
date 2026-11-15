@@ -203,7 +203,10 @@ def test_routed_paths_preserve_absolute_points_in_nested_groups(
     assert properties.find("a:noFill", NS) is not None
     assert (properties.find("a:ln/a:tailEnd", NS) is not None) == arrow
     assert root.find(".//p:cxnSp", NS) is None
-    assert "折线路径" in [t.text for t in outer.findall("p:sp/p:txBody/a:p/a:r/a:t", NS)]
+    # Labels use the same foreground overlay as the canvas, outside native groups.
+    assert "折线路径" in [
+        t.text for t in root.findall("p:cSld/p:spTree/p:sp/p:txBody/a:p/a:r/a:t", NS)
+    ]
     assert native.find(".//p:cxnSp/p:spPr/a:prstGeom", NS).get("prst") == "line"
     assert native.find(".//a:stCxn", NS) is not None
     assert native.find(".//a:endCxn", NS) is not None

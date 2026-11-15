@@ -13,6 +13,12 @@ import type { Connection } from "./model";
 import { NumberField } from "../PresentationNumberField";
 import { connectionEnd, translateConnection } from "./connectionGeometry";
 import { validConnection } from "./connectionEditing";
+import {
+  defaultLabelOffset,
+  labelFontSize,
+  minLabelFontSize,
+  maxLabelFontSize,
+} from "./connectionLabelLayout";
 import { sceneOrder, type OrderMode } from "./stacking";
 import "./connection-panel.css";
 
@@ -200,7 +206,7 @@ export function ConnectionPanel({
         </label>
         <label className="presentation-connection-field">
           关系文字
-          <input
+          <textarea
             aria-label="连接标签"
             value={value.label ?? ""}
             maxLength={500}
@@ -216,6 +222,59 @@ export function ConnectionPanel({
             onChange={(e) => onChange({ label: e.target.value }, "label")}
           />
         </label>
+        <NumberField
+          label="关系文字字号"
+          value={value.label_font_size ?? labelFontSize}
+          min={minLabelFontSize}
+          max={maxLabelFontSize}
+          step={0.5}
+          onChange={(label_font_size) =>
+            onChange({ label_font_size }, "label_font_size")
+          }
+        />
+        {(["x", "y"] as const).map((axis) => (
+          <NumberField
+            key={axis}
+            label={axis === "x" ? "文字水平偏移" : "文字垂直偏移"}
+            value={(value.label_offset ?? defaultLabelOffset)[axis]}
+            onChange={(coordinate) =>
+              onChange(
+                {
+                  label_offset: {
+                    ...(value.label_offset ?? defaultLabelOffset),
+                    [axis]: coordinate,
+                  },
+                },
+                `label-offset-${axis}`,
+              )
+            }
+          />
+        ))}
+        <p className="muted">
+          拖动文字可移动位置；选中文字后，拖动右下角手柄可调整大小。
+        </p>
+        <label className="presentation-connection-field">
+          箭头大小
+          <CustomSelect
+            ariaLabel="箭头大小"
+            value={value.arrow_size ?? "medium"}
+            options={[
+              { value: "small", label: "小" },
+              { value: "medium", label: "中" },
+              { value: "large", label: "大" },
+            ]}
+            onChange={(size) =>
+              onChange({ arrow_size: size as Connection["arrow_size"] })
+            }
+          />
+        </label>
+        <button
+          type="button"
+          className="presentation-connection-disclosure"
+          onClick={() => onChange({ label_position: null, label_offset: null })}
+        >
+          重置文字位置
+        </button>
         {!creating && (
           <div className="presentation-connection-field">
             <span>层级</span>

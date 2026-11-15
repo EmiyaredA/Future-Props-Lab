@@ -3,6 +3,7 @@
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import FileResponse
 from pydantic import ValidationError
 
 from studio.apps.media_rendering.local.presets import RENDER_PRESETS
@@ -54,6 +55,14 @@ def validate_scope(frozen):
         or frozen.preset not in RENDER_PRESETS
         or (frozen.transparent and frozen.preset != f"1080p{document.settings.fps}")
         or frozen.end_us > timeline_duration_us(document)
+        or (
+            frozen.preview
+            and (
+                frozen.preset != f"720p{document.settings.fps}"
+                or frozen.start_us != 0
+                or frozen.end_us != timeline_duration_us(document)
+            )
+        )
     ):
         raise ValueError("invalid frozen scope")
     if frozen.video_bake and (
@@ -107,3 +116,28 @@ async def cancel(request: Request, task_id: str):
         raise HTTPException(404, "video_export_missing")
     await jobs.cancel(job)
     return jobs.receipt(await jobs.load(owner, task_id))
+
+
+@router.get(EXPORTS + "/{task_id}/preview")
+async def preview_file(request: Request, task_id: str):
+    jobs, owner = peer_scope(request, task_id)
+    job = await jobs.load(owner, task_id)
+    if job is None or job.status != "completed" or not job.payload.get("preview"):
+        raise HTTPException(404, "preview_missing")
+    root = jobs.folder(owner, task_id)
+    path = root / "sealed" / "movie.mp4"
+    if path.is_symlink() or not path.resolve().is_relative_to(root) or not path.is_file():
+        raise HTTPException(404, "preview_missing")
+    return FileResponse(path, media_type="video/mp4", headers={"Cache-Control": "no-store"})
+
+
+@router.delete(EXPORTS + "/{task_id}/preview")
+async def delete_preview(request: Request, task_id: str):
+    jobs, owner = peer_scope(request, task_id)
+    job = await jobs.load(owner, task_id)
+    if job is not None:
+        if not job.payload.get("preview"):
+            raise HTTPException(404, "preview_missing")
+        if not await jobs.purge_preview(job):
+            raise HTTPException(409, "preview_stopping")
+    return {"deleted": True}

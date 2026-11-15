@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "01aedd2b148f356353e365e90e5d66c7ff6ee4c4d3377544c627edd0a09b4176",
+  "openapi_sha256": "01c734ebf09e101e034591149cf3da505710430d917c15d935956ac83ffce23c",
   "operations": [
     {
       "service": "identity",
@@ -3133,6 +3133,36 @@
       "method": "GET",
       "path": "/v1/video-editor/projects/{project_id}/preview/frame",
       "operation_id": "exact_frame_v1_video_editor_projects__project_id__preview_frame_get"
+    },
+    {
+      "service": "video",
+      "method": "DELETE",
+      "path": "/v1/video-editor/projects/{project_id}/preview/renders",
+      "operation_id": "clear_previews_v1_video_editor_projects__project_id__preview_renders_delete"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/preview/renders",
+      "operation_id": "list_previews_v1_video_editor_projects__project_id__preview_renders_get"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/preview/renders",
+      "operation_id": "create_preview_v1_video_editor_projects__project_id__preview_renders_post"
+    },
+    {
+      "service": "video",
+      "method": "POST",
+      "path": "/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel",
+      "operation_id": "cancel_preview_v1_video_editor_projects__project_id__preview_renders__task_id__cancel_post"
+    },
+    {
+      "service": "video",
+      "method": "GET",
+      "path": "/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media",
+      "operation_id": "preview_media_v1_video_editor_projects__project_id__preview_renders__task_id__media_get"
     },
     {
       "service": "video",

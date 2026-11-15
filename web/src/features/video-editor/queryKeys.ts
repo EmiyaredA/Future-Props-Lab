@@ -1,4 +1,13 @@
 export const videoEditorQueryKeys = {
+  previewRendersProject: (projectId: string) =>
+    ["video-editor-preview-renders", projectId] as const,
+  previewRenders: (projectId: string, revision?: number, assetVersion = "") =>
+    [
+      "video-editor-preview-renders",
+      projectId,
+      revision,
+      assetVersion,
+    ] as const,
   projects: ["video-editor-projects"] as const,
   project: (projectId: string) => ["video-editor-project", projectId] as const,
   timeline: (projectId: string) =>

@@ -20,7 +20,7 @@
 
 独立 Remote 只装配远程桌面。远程应用的 HTTP 操作保留原有鉴权和未启用响应。独立业务启动预检会拒绝已启用远程应用或 Happier 网站接入的配置。
 
-1. 在 Mac 登录会话中用 Xcode 命令行工具和 Go 1.24+ 构建辅助程序。先用隔离的站点配置验收，构建输出路径使用已忽略的本地目录。
+1. 在 Mac 登录会话中用 Xcode 命令行工具和 Go 1.24+ 构建辅助程序。先用隔离的站点配置验收，下例 `.local` 只放可清理的临时构建。正式配置只指向下一步安装后的应用，不依赖该临时目录；系统签名应用使用标准安装目录以保留 macOS 授权。
 
    ```sh
    scripts/website/build_remote_apps.sh "$PWD/.local/remote-apps/FPLRemoteApps.app"

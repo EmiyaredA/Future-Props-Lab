@@ -11,7 +11,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 LABEL = "cn.futurepropslab.website"
 MANAGEMENT_LABEL = "cn.futurepropslab.management"
-ACTIVE_LAUNCH = Path(".local/studio-ops/active-launch.plist")
+ACTIVE_LAUNCH = Path(".runtime/deployment/active-launch.plist")
+LEGACY_ACTIVE_LAUNCH = Path(".local/studio-ops/active-launch.plist")
 
 
 def definition(root=ROOT):
@@ -33,7 +34,7 @@ def definition(root=ROOT):
         "EnvironmentVariables": {
             "PATH": os.environ.get("PATH", "/opt/homebrew/bin:/usr/bin:/bin"),
             "FPL_CONFIG_FILE": str(root / "backend/config.toml"),
-            "UV_CACHE_DIR": str(root / ".local/uv-cache"),
+            "UV_CACHE_DIR": str(root / ".runtime/cache/uv"),
         },
         "StandardOutPath": str(logs / "website.log"),
         "StandardErrorPath": str(logs / "website-error.log"),
@@ -43,6 +44,9 @@ def definition(root=ROOT):
 def registered_definition(root):
     path = root / ACTIVE_LAUNCH
     if not path.exists() and not path.is_symlink():
+        legacy = root / LEGACY_ACTIVE_LAUNCH
+        if legacy.exists() or legacy.is_symlink():
+            raise SystemExit("旧 Studio 启动登记仍在 .local，请先迁移到 .runtime/deployment")
         return None
     info = path.lstat()
     if (
@@ -63,11 +67,19 @@ def registered_definition(root):
         label not in prefixes
         or not directory.is_absolute()
         or not directory.resolve().is_relative_to(root)
+        or directory.resolve().is_relative_to(root / ".local")
         or args[1:-1] != prefixes[label]
+        or Path(args[1]).resolve().is_relative_to(root / ".local")
         or not Path(args[0]).is_absolute()
         or not Path(args[0]).parent.resolve().is_relative_to(root)
+        or Path(args[0]).resolve().is_relative_to(root / ".local")
         or not Path(args[-1]).is_absolute()
         or not Path(args[-1]).resolve().is_relative_to(root)
+        or Path(args[-1]).resolve().is_relative_to(root / ".local")
+        or any(
+            str(root / ".local") + "/" in str(item)
+            for item in value.get("EnvironmentVariables", {}).values()
+        )
         or label == MANAGEMENT_LABEL
         and Path(args[-1]) != root / "backend/config.toml"
         or not all(Path(args[index]).is_file() for index in (0, 1, -1))

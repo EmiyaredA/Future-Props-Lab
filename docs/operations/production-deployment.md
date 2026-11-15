@@ -6,7 +6,7 @@ Future Props Lab 使用单台 Mac、一个后端进程和 SQLite；浏览器为�
 
 1. 安装 Node.js 24、npm 11、Python 3.11+、uv、Git LFS 与支持 H.264/AAC 的 FFmpeg/FFprobe，运行 `npm run setup`。验收结果为依赖安装与 LFS 资产检查成功。
 2. 新安装按 README 创建配置与管理员；已有桌面数据必须使用原配置和原密钥，不能生成替代密钥。桌面数据整体迁入使用 `scripts/website/data_transfer.py`，要求显式提供源、项目和报告目录；在原实例正常停机、释放锁及迁移状态定稿后使用。整体迁入保留完整恢复快照，核验 SHA256、SQLite 与原数据，不执行 SQL 写入。
-3. 将 `[website].web_root` 设为 `.local/studio-current/current`，运行 `uv run python scripts/website/frontend.py` 建立并校验首个共享构建。运行 `npm start`（或 `npm run dev`），本机固定通过 `http://127.0.0.1:3000` 登录，API 后端为 9001。
+3. 将 `[website].web_root` 设为 `.runtime/website/current`，运行 `uv run python scripts/website/frontend.py` 建立并校验首个共享构建。运行 `npm start`（或 `npm run dev`），本机固定通过 `http://127.0.0.1:3000` 登录，API 后端为 9001。
 4. 运行 `npm run website:service -- install` 安装用户级 LaunchAgent。正式 Studio 的手动启动入口是 `npm run website:service -- start`。Mac 登录时使用同一份 LaunchAgent，`status` 显示实际运行路径。已固定线上版本的主机使用本机私有的启动登记，手动启动先核对登记、已安装定义和已加载定义，再复用或加载后台。两种启动方式都直接使用已有数据和构建。服务状态和 `/ready` 均成功才算启动完成。
 
 正式入口在导入数据库前读取配置并持有 `.runtime/website.lock`。迁入后还持有原桌面目录的数据锁，阻止旧客户端误启动。存在待执行或漂移迁移时拒绝启动；迁移必须先在隔离数据验证，再按停机备份流程执行。服务不自动执行尚未核准的正式迁移。
@@ -22,6 +22,31 @@ Future Props Lab 使用单台 Mac、一个后端进程和 SQLite；浏览器为�
 `scripts/website/development.py` 是共用单例启动器。本机前端、本机 API 与公网回环使用同一个 ASGI 应用和 Runner 生命周期。
 `studio/assembly/website/public_access.py` 管理公网监听与专用 SSH，在网站生命周期结束时关闭。Compose 基础与叠加清单归
 `deploy/compose/`。仓库清单的相对挂载以 `deploy/` 解析，封存清单以各自目录解析。管理装配继续识别迁移前登记的仓库基础清单路径。
+
+正式部署文件放在 `.runtime/deployment/`：`releases/` 保存与线上镜像匹配的 Mac 代码副本，
+`compose/`、`web-releases/`、`tools/`、`tls/` 和 `agent-admission/` 分别保存部署清单、网页版本、
+工具运行环境、证书和发布门禁；`active-launch.plist` 是当前用户独占的 0600 启动登记。
+正式数据库、素材及 Worker 回执继续使用 `.runtime/independent-services/`。`.local/` 仅用于可清理的
+构建与验收中间结果，正式启动参数、工作目录、导入路径、挂载和符号链接不得引用其中的文件。
+路径迁移保留线上代码及构建字节，备份受影响的配置与 LaunchAgent，更新登记和已安装定义；
+涉及 Agent 后端时使用下文的空闲门禁，完成后核验容器实际挂载、已加载的 Worker 和本机／公网就绪。
+
+## Mac 接电防休眠
+
+需要 Mac 闲置时持续提供公网或云控服务的部署，可显式运行 `npm run host:awake -- install`。
+此用户级 LaunchAgent 运行系统 `/usr/bin/caffeinate -s`，仅阻止接电时的系统空闲睡眠；
+不阻止熄屏或锁屏，不保证合盖运行。它在用户登录时启动，独立于网站与云控连接的生命周期。
+
+`npm run host:awake -- status` 查看运行状态，`stop` 停止当前登录会话的任务，`start` 重新加载。
+`stop` 不撤销下次登录自启动；永久停用需先 `stop`，再移走
+`~/Library/LaunchAgents/com.futureprops.mac-host-awake.plist`。该任务不会随网站默认安装或自动启用。
+
+安装器保留历史任务标识，接管相邻 `remote-control` 的同名防休眠任务；其他目录的同名定义拒绝覆盖。
+工作目录、启动登记和日志位于 `.runtime/host-awake/`，运行时仅依赖系统命令。
+原启动配置及权限保存在该目录的 `rollback/<批次>/`，加载或运行核验失败时恢复原定义和原运行状态。
+手动回退先 `stop`，用对应批次中的原 plist 恢复用户 LaunchAgent，再通过
+`launchctl bootstrap gui/$(id -u) <原 plist 的安装路径>` 加载并核验 `launchctl print`。
+整个操作只改防休眠任务，不重启业务服务，不迁移或删除任何业务数据。
 
 ## 公网
 

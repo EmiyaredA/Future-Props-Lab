@@ -155,6 +155,10 @@
     "method": "delete_asset",
     "resource": "video"
   },
+  "DELETE /v1/video-editor/projects/{project_id}/preview/renders": {
+    "method": "clear_previews",
+    "resource": "video"
+  },
   "DELETE /v1/video-editor/projects/{project_id}/renders/{task_id}": {
     "method": "delete_render",
     "resource": "video"
@@ -909,6 +913,14 @@
   },
   "GET /v1/video-editor/projects/{project_id}/preview/frame": {
     "method": "exact_frame",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/preview/renders": {
+    "method": "list_previews",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media": {
+    "method": "preview_media",
     "resource": "video"
   },
   "GET /v1/video-editor/projects/{project_id}/renders": {
@@ -1969,6 +1981,14 @@
   },
   "POST /v1/video-editor/projects/{project_id}/open-folder": {
     "method": "reveal_project_folder",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/preview/renders": {
+    "method": "create_preview",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel": {
+    "method": "cancel_preview",
     "resource": "video"
   },
   "POST /v1/video-editor/projects/{project_id}/renders": {

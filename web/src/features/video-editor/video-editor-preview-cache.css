@@ -1,0 +1,43 @@
+.ve-preview-panel.has-preview-cache {
+  grid-template-rows: 42px auto minmax(0, 1fr) 46px;
+}
+
+.ve-preview-cache-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-bottom: 1px solid #292e3c;
+}
+
+.ve-preview-cache-toolbar button {
+  flex: none;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid #504786;
+  border-radius: 5px;
+  background: #211d36;
+  color: #d3ccff;
+  font-size: 12px;
+}
+
+.ve-preview-cache-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ve-preview-cache-status {
+  flex: 1 1 160px;
+  overflow-wrap: anywhere;
+  color: #9da4b9;
+  font-size: 11px;
+}
+
+.ve-cached-preview {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

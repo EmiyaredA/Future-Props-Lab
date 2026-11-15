@@ -3227,6 +3227,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/video-editor/projects/{project_id}/preview/renders",
+    "sdk": "client.video.clear_previews",
+    "document": "/docs.html?page=sdk-reference-video#clear-previews",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/video-editor/projects/{project_id}/renders/{task_id}",
     "sdk": "client.video.delete_render",
     "document": "/docs.html?page=sdk-reference-video#delete-render",
@@ -3293,6 +3300,20 @@
     "http": "GET /v1/video-editor/projects/{project_id}/preview/frame",
     "sdk": "client.video.exact_frame",
     "document": "/docs.html?page=sdk-reference-video#exact-frame",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/preview/renders",
+    "sdk": "client.video.list_previews",
+    "document": "/docs.html?page=sdk-reference-video#list-previews",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media",
+    "sdk": "client.video.preview_media",
+    "document": "/docs.html?page=sdk-reference-video#preview-media",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3437,6 +3458,20 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/video-editor/projects/{project_id}/preview/renders",
+    "sdk": "client.video.create_preview",
+    "document": "/docs.html?page=sdk-reference-video#create-preview",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel",
+    "sdk": "client.video.cancel_preview",
+    "document": "/docs.html?page=sdk-reference-video#cancel-preview",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/video-editor/projects/{project_id}/renders",
     "sdk": "client.video.create_render",
     "document": "/docs.html?page=sdk-reference-video#create-render",
@@ -3475,6 +3510,48 @@
     "http": "POST /v1/video-editor/projects/{project_id}/timeline/operations",
     "sdk": "client.video.apply_timeline_operations",
     "document": "/docs.html?page=sdk-reference-video#apply-timeline-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-inference/video-enhancements",
+    "sdk": "client.video_enhancement.list_video_enhancements",
+    "document": "/docs.html?page=sdk-reference-video-enhancement#list-video-enhancements",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-inference/video-enhancements/{task_id}",
+    "sdk": "client.video_enhancement.get_video_enhancement",
+    "document": "/docs.html?page=sdk-reference-video-enhancement#get-video-enhancement",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-inference/video-enhancements/{task_id}/content",
+    "sdk": "client.video_enhancement.get_video_enhancement_result",
+    "document": "/docs.html?page=sdk-reference-video-enhancement#get-video-enhancement-result",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-inference/video-enhancements/{task_id}/segments/{index}/{variant}",
+    "sdk": "client.video_enhancement.get_video_enhancement_segment",
+    "document": "/docs.html?page=sdk-reference-video-enhancement#get-video-enhancement-segment",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-inference/video-enhancements",
+    "sdk": "client.video_enhancement.create_video_enhancement",
+    "document": "/docs.html?page=sdk-reference-video-enhancement#create-video-enhancement",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-inference/video-enhancements/{task_id}/actions",
+    "sdk": "client.video_enhancement.control_video_enhancement",
+    "document": "/docs.html?page=sdk-reference-video-enhancement#control-video-enhancement",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

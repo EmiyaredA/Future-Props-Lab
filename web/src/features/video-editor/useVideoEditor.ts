@@ -70,6 +70,8 @@ export function useVideoEditor(projectId: string) {
     initialWorkspacePreferences.playheadUs,
   );
   const [playing, setPlaying] = useState(false);
+  const [mediaClockActive, setMediaClockActive] = useState(false);
+  const [seekRevision, setSeekRevision] = useState(0);
   const [zoom, setZoom] = useState(initialWorkspacePreferences.zoom);
   const [timelineScrollLeft, setTimelineScrollLeft] = useState(
     initialWorkspacePreferences.timelineScrollLeft,
@@ -199,6 +201,7 @@ export function useVideoEditor(projectId: string) {
       const next = Math.max(0, Math.min(durationUs, requested));
       playheadRef.current = next;
       setPlayheadState(next);
+      setSeekRevision((value) => value + 1);
       if (playing) {
         clock.current = {
           startedAt: performance.now(),
@@ -209,7 +212,7 @@ export function useVideoEditor(projectId: string) {
     [durationUs, playing],
   );
   useEffect(() => {
-    if (!playing) return;
+    if (!playing || mediaClockActive) return;
     clock.current = {
       startedAt: performance.now(),
       startedUs: playheadRef.current,
@@ -231,7 +234,23 @@ export function useVideoEditor(projectId: string) {
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [durationUs, playing]);
+  }, [durationUs, playing, mediaClockActive]);
+  const reportPlaybackTime = useCallback(
+    (timeUs: number) => {
+      const next = Math.max(0, Math.min(durationUs, timeUs));
+      playheadRef.current = next;
+      setPlayheadState(next);
+    },
+    [durationUs],
+  );
+  const waitForSavedTimeline = useCallback(async () => {
+    await saveQueue.whenSaved();
+    const saved = client.getQueryData<import("./types").VideoEditorTimeline>(
+      videoEditorQueryKeys.timeline(projectId),
+    );
+    if (!saved) throw new Error("时间轴尚未就绪");
+    return saved;
+  }, [client, projectId, saveQueue]);
   useEffect(() => {
     if (!timeline.data) return;
     const validClipIds = new Set(
@@ -542,6 +561,10 @@ export function useVideoEditor(projectId: string) {
     setPlayheadUs,
     playing,
     setPlaying,
+    seekRevision,
+    setMediaClockActive,
+    reportPlaybackTime,
+    waitForSavedTimeline,
     durationUs,
     zoom,
     setZoom,

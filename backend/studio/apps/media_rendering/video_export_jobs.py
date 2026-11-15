@@ -11,7 +11,7 @@ from uuid import UUID
 
 import httpx
 from anyio.to_thread import run_sync
-from sqlalchemy import select, text, update
+from sqlalchemy import delete, select, text, update
 
 from studio.apps.media_rendering.local.chroma_key import bake_image
 from studio.apps.media_rendering.local.render_engine import RenderCancelled, render_document
@@ -32,6 +32,7 @@ from studio.contracts.video_editor.video_exports import (
     VIDEO_WORK,
     VideoExportReceipt,
     VideoImageBakeRequest,
+    VideoPreviewOutput,
     VideoSegmentRequest,
 )
 from studio.contracts.video_editor.video_segment_handoff import SegmentHandoff
@@ -75,13 +76,19 @@ class VideoExports(PollingTaskRunner):
     def receipt(job):
         published = job.status == "completed"
         group = published and "segments" in job.sealed_output
-        single = published and not group
+        cached = published and job.payload.get("preview", False)
+        single = published and not group and not cached
         return VideoExportReceipt(
             status="running" if job.status == "publishing" else job.status,
             progress=job.progress,
             probe=job.probe,
             fingerprint=job.sealed_output["content_sha256"] if single else None,
             output=job.result if single else None,
+            preview=VideoPreviewOutput(
+                sha256=job.sealed_output["content_sha256"], byte_size=job.sealed_output["byte_size"]
+            )
+            if cached
+            else None,
             segments=job.result["segments"] if group else [],
             handoff=job.result.get("handoff") if group else None,
             variants=job.sealed_output.get("variants", {}) if single else {},
@@ -110,7 +117,9 @@ class VideoExports(PollingTaskRunner):
         query = update(VideoExportJob).where(
             VideoExportJob.id == job.id, VideoExportJob.status == expected
         )
-        if changes.get("status") == "publishing":
+        if changes.get("status") == "publishing" or (
+            changes.get("status") == "completed" and job.payload.get("preview")
+        ):
             query = query.where(VideoExportJob.cancel_requested.is_(False))
         async with self.session(job.owner_user_id) as session:
             result = await session.execute(query.values(**changes))
@@ -263,6 +272,18 @@ class VideoExports(PollingTaskRunner):
                 await run_sync(sync_files, target)
                 for parent in (folder, folder.parent, folder.parent.parent):
                     await run_sync(sync_directory, parent)
+                if getattr(request, "preview", False):
+                    if not await self.set_state(
+                        job,
+                        "running",
+                        status="completed",
+                        progress=100,
+                        probe=probe,
+                        sealed_output=sealed,
+                        result={},
+                    ):
+                        raise RenderCancelled("预渲染已取消")
+                    return
                 if not await self.set_state(
                     job,
                     "running",
@@ -414,3 +435,23 @@ class VideoExports(PollingTaskRunner):
             current.progress = 100
             current.result = result.model_dump(mode="json")
             await session.commit()
+
+    async def purge_preview(self, job):
+        if not job.payload.get("preview"):
+            raise ValueError("不是预览任务")
+        if job.status in {"queued", "running"}:
+            await self.cancel(job)
+            current = await self.load(job.owner_user_id, job.id)
+            if current is not None and current.status in {"queued", "running"}:
+                return False
+        await run_sync(
+            lambda: (
+                rmtree(self.folder(job.owner_user_id, job.id), ignore_errors=False)
+                if self.folder(job.owner_user_id, job.id).exists()
+                else None
+            )
+        )
+        async with self.session(job.owner_user_id) as session:
+            await session.execute(delete(VideoExportJob).where(VideoExportJob.id == job.id))
+            await session.commit()
+        return True

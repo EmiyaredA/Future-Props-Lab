@@ -33,6 +33,7 @@ from studio.apps.video_editor.schemas import (
 )
 from studio.apps.video_editor.schemas.clip_merge import VideoEditorClipMergeCreateIn
 from studio.apps.video_editor.snapshots import VideoEditorProjectSnapshots
+from studio.apps.video_editor.transport.preview_render_routes import router as preview_render_router
 from studio.apps.video_editor.transport.website.errors import _error as _public_error
 from studio.apps.video_editor.transport.website.projects import router as projects_router
 from studio.apps.video_editor.transport.website.render_preflight import router as preflight_router
@@ -456,3 +457,4 @@ router.include_router(projects_router)
 router.include_router(timeline_router)
 router.include_router(tasks_router)
 router.include_router(preflight_router)
+router.include_router(preview_render_router)

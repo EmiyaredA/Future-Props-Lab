@@ -15,7 +15,7 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-CURRENT = Path(".local/studio-current/current")
+CURRENT = Path(".runtime/website/current")
 
 BACKEND = str(ROOT / "backend")
 if BACKEND not in sys.path:

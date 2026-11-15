@@ -40,7 +40,7 @@ def publish(snapshot, *, public_enabled=None):
             with backup.open("xb") as stream:
                 stream.write(original)
             backup.chmod(0o600)
-        document.setdefault("remote_web", {})["web_root"] = str(ROOT / ".local/studio-release")
+        document.setdefault("remote_web", {})["web_root"] = str(ROOT / ".runtime/website/current")
         if public_enabled is not None:
             document["website"]["public_enabled"] = public_enabled
         temporary = path.with_name(".website-config.tmp")

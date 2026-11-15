@@ -126,7 +126,7 @@ def run_pair(root=ROOT):
 
 
 def main():
-    state = ROOT / ".local/dev-server"
+    state = ROOT / ".runtime/dev-server"
     state.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (state / "launcher.lock").open("a") as lock:
         os.chmod(lock.name, 0o600)

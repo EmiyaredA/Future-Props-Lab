@@ -26,6 +26,7 @@ from studio.apps.identity.profile import reconcile_profile_avatars
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.identity.website_access.external_sync import external_sync_actor_allowed
 from studio.apps.identity.website_access.interview import interview_actor_allowed
+from studio.apps.identity.website_access.video_preview import preview_actor_allowed
 from studio.apps.identity.website_access.visual_acceptance import acceptance_actor_allowed
 from studio.apps.interview_assistant.codex import CodexExecutor, executable
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
@@ -182,7 +183,9 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             GalgameAnnotationImportRunner(session_factory=sessions, settings=settings),
             GalgameVideoExportRunner(session_factory=sessions, settings=settings),
             GalgameVideoEditorHandoffRunner(session_factory=sessions, settings=settings),
-            VideoEditorRunner(session_factory=sessions, settings=settings),
+            VideoEditorRunner(
+                session_factory=sessions, settings=settings, preview_allowed=preview_actor_allowed
+            ),
             VideoEditorRunner(lane="media", session_factory=sessions, settings=settings),
             MotionExportRunner(
                 session_factory=sessions,

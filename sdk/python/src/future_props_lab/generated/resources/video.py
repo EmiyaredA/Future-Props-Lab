@@ -103,6 +103,26 @@ class Video:
         'Exact Frame. GET /v1/video-editor/projects/{project_id}/preview/frame'
         return self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/frame', parameters=[('project_id', 'path', project_id), ('revision', 'query', revision), ('timeUs', 'query', time_us), ('width', 'query', width), ('withoutChromaClipId', 'query', without_chroma_clip_id)], response_type=Any)
 
+    def clear_previews(self, *, project_id: str) -> dict[str, bool]:
+        'Clear Previews. DELETE /v1/video-editor/projects/{project_id}/preview/renders'
+        return self._client._call('DELETE', '/v1/video-editor/projects/{project_id}/preview/renders', parameters=[('project_id', 'path', project_id)], response_type=dict[str, bool])
+
+    def list_previews(self, *, project_id: str) -> models.VideoEditorPreviewRenderListOut:
+        'List Previews. GET /v1/video-editor/projects/{project_id}/preview/renders'
+        return self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/renders', parameters=[('project_id', 'path', project_id)], response_type=models.VideoEditorPreviewRenderListOut)
+
+    def create_preview(self, *, project_id: str, body: models.VideoEditorPreviewRenderCreateIn | dict) -> models.VideoEditorPreviewRenderOut:
+        'Create Preview. POST /v1/video-editor/projects/{project_id}/preview/renders'
+        return self._client._call('POST', '/v1/video-editor/projects/{project_id}/preview/renders', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VideoEditorPreviewRenderOut)
+
+    def cancel_preview(self, *, project_id: str, task_id: str) -> models.VideoEditorPreviewRenderOut:
+        'Cancel Preview. POST /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel'
+        return self._client._call('POST', '/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=models.VideoEditorPreviewRenderOut)
+
+    def preview_media(self, *, project_id: str, task_id: str) -> Download:
+        'Preview Media. GET /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media'
+        return self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=Any)
+
     def list_renders(self, *, project_id: str) -> models.VideoEditorTaskListOut:
         'List Renders. GET /v1/video-editor/projects/{project_id}/renders'
         return self._client._call('GET', '/v1/video-editor/projects/{project_id}/renders', parameters=[('project_id', 'path', project_id)], response_type=models.VideoEditorTaskListOut)
@@ -258,6 +278,26 @@ class AsyncVideo:
     async def exact_frame(self, *, project_id: str, revision: int, time_us: int, width: int | Unset = UNSET, without_chroma_clip_id: str | None | Unset = UNSET) -> Any:
         'Exact Frame. GET /v1/video-editor/projects/{project_id}/preview/frame'
         return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/frame', parameters=[('project_id', 'path', project_id), ('revision', 'query', revision), ('timeUs', 'query', time_us), ('width', 'query', width), ('withoutChromaClipId', 'query', without_chroma_clip_id)], response_type=Any)
+
+    async def clear_previews(self, *, project_id: str) -> dict[str, bool]:
+        'Clear Previews. DELETE /v1/video-editor/projects/{project_id}/preview/renders'
+        return await self._client._call('DELETE', '/v1/video-editor/projects/{project_id}/preview/renders', parameters=[('project_id', 'path', project_id)], response_type=dict[str, bool])
+
+    async def list_previews(self, *, project_id: str) -> models.VideoEditorPreviewRenderListOut:
+        'List Previews. GET /v1/video-editor/projects/{project_id}/preview/renders'
+        return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/renders', parameters=[('project_id', 'path', project_id)], response_type=models.VideoEditorPreviewRenderListOut)
+
+    async def create_preview(self, *, project_id: str, body: models.VideoEditorPreviewRenderCreateIn | dict) -> models.VideoEditorPreviewRenderOut:
+        'Create Preview. POST /v1/video-editor/projects/{project_id}/preview/renders'
+        return await self._client._call('POST', '/v1/video-editor/projects/{project_id}/preview/renders', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VideoEditorPreviewRenderOut)
+
+    async def cancel_preview(self, *, project_id: str, task_id: str) -> models.VideoEditorPreviewRenderOut:
+        'Cancel Preview. POST /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel'
+        return await self._client._call('POST', '/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=models.VideoEditorPreviewRenderOut)
+
+    async def preview_media(self, *, project_id: str, task_id: str) -> AsyncDownload:
+        'Preview Media. GET /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media'
+        return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media', parameters=[('project_id', 'path', project_id), ('task_id', 'path', task_id)], response_type=Any)
 
     async def list_renders(self, *, project_id: str) -> models.VideoEditorTaskListOut:
         'List Renders. GET /v1/video-editor/projects/{project_id}/renders'

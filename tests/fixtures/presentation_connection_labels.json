@@ -1,0 +1,10 @@
+[
+  {"name":"horizontal legacy default","points":[{"x":0,"y":100},{"x":200,"y":100}],"label":"调用","expected":{"x":78,"y":71,"width":44,"height":26,"lines":["调用"]}},
+  {"name":"vertical remains horizontal","points":[{"x":20,"y":0},{"x":20,"y":200}],"label":"拒绝","expected":{"x":-2,"y":71,"width":44,"height":26,"lines":["拒绝"]}},
+  {"name":"explicit elbow anchor and offset","points":[{"x":0,"y":0},{"x":100,"y":0},{"x":100,"y":100}],"label":"通过","position":0.75,"offset":{"x":10,"y":0},"expected":{"x":88,"y":37,"width":44,"height":26,"lines":["通过"]}},
+  {"name":"multiline at a waypoint","points":[{"x":0,"y":0},{"x":200,"y":0},{"x":200,"y":100},{"x":100,"y":100}],"label":"返回\n并追加","position":0.5,"offset":{"x":-40,"y":30},"expected":{"x":130,"y":7,"width":60,"height":46,"lines":["返回","并追加"]}},
+  {"name":"bounded long Chinese label","points":[{"x":0,"y":100},{"x":200,"y":100}],"label":"一二三四五六七八九十一二三四五","expected":{"x":-18,"y":61,"width":236,"height":46,"lines":["一二三四五六七八九十一二三四","五"]}},
+  {"name":"zero length segments","points":[{"x":10,"y":20},{"x":10,"y":20}],"label":"A","expected":{"x":-2,"y":-9,"width":24,"height":26,"lines":["A"]}},
+  {"name":"empty label has no mask","points":[{"x":0,"y":0},{"x":100,"y":100}],"label":" \n ","expected":null},
+  {"name":"small mechanism label","points":[{"x":0,"y":100},{"x":200,"y":100}],"label":"继续\n探索","font_size":10,"expected":{"x":84,"y":68.5,"width":32,"height":31,"lines":["继续","探索"]}}
+]

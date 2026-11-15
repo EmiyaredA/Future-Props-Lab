@@ -20,6 +20,11 @@ from studio.apps.media_rendering.local.video_output import verify_video_output
 from studio.apps.video_editor.baking.bake_organization import insert_baked_asset_in_organization
 from studio.apps.video_editor.clip_merging.runner import process_clip_merge
 from studio.apps.video_editor.handoffs.segment_runner import VideoEditorSegmentTaskRunner
+from studio.apps.video_editor.preview_storage import (
+    cleanup_local_preview,
+    prepare_local_preview,
+    publish_local_preview,
+)
 from studio.apps.video_editor.schemas import parse_timeline_document
 from studio.apps.video_editor.storage.models import (
     VideoEditorAssetMetadata,
@@ -44,12 +49,14 @@ class VideoEditorRunner(PollingTaskRunner):
         settings: Settings,
         *,
         lane: Literal["media", "export"] = "export",
+        preview_allowed=None,
     ) -> None:
         super().__init__()
         self.session_factory = session_factory
         self.settings = settings
         self.storage = AssetStorage(self.settings)
         self.lane = lane
+        self.preview_allowed = preview_allowed
         self.runner_name = f"video-editor-{lane}-runner"
 
     def _lane_filter(self):
@@ -72,7 +79,9 @@ class VideoEditorRunner(PollingTaskRunner):
             )
             for row in rows:
                 row.status = (
-                    "cancelled" if row.kind == "clip_merge" and row.cancel_requested else "queued"
+                    "cancelled"
+                    if row.kind in {"clip_merge", "preview_render"} and row.cancel_requested
+                    else "queued"
                 )
                 row.cancel_requested = False
                 row.error = None
@@ -81,6 +90,8 @@ class VideoEditorRunner(PollingTaskRunner):
             await session.commit()
 
     async def process_once(self) -> None:
+        if self.lane == "export":
+            await cleanup_local_preview(self.session_factory, self.storage)
         async with self.session_factory() as session:
             task_id = await session.scalar(
                 select(VideoEditorTask.id)
@@ -137,6 +148,13 @@ class VideoEditorRunner(PollingTaskRunner):
                 if task is None or task.status != "queued":
                     return
                 if task.cancel_requested:
+                    task.status = "cancelled"
+                    await session.commit()
+                    return
+                if task.kind == "preview_render" and (
+                    self.preview_allowed is None
+                    or not await self.preview_allowed(session, task.owner_user_id)
+                ):
                     task.status = "cancelled"
                     await session.commit()
                     return
@@ -236,14 +254,34 @@ class VideoEditorRunner(PollingTaskRunner):
             await asyncio.sleep(0.4)
             async with self.session_factory() as session:
                 task = await self._get(session, task_id)
-                if task is None or task.cancel_requested:
+                if (
+                    task is None
+                    or task.cancel_requested
+                    or (
+                        task.kind == "preview_render"
+                        and (
+                            self.preview_allowed is None
+                            or not await self.preview_allowed(session, task.owner_user_id)
+                        )
+                    )
+                ):
                     event.set()
                     return
 
     async def _raise_if_cancelled(self, task_id: str) -> None:
         async with self.session_factory() as session:
             task = await self._get(session, task_id)
-            if task is None or task.cancel_requested:
+            if (
+                task is None
+                or task.cancel_requested
+                or (
+                    task.kind == "preview_render"
+                    and (
+                        self.preview_allowed is None
+                        or not await self.preview_allowed(session, task.owner_user_id)
+                    )
+                )
+            ):
                 raise RenderCancelled()
 
     async def _process_segment_export(self, task_id: str) -> None:
@@ -288,9 +326,20 @@ class VideoEditorRunner(PollingTaskRunner):
             project_id = task.project_id
             owner_user_id = task.owner_user_id
             detail = dict(task.result_detail)
+            is_preview = task.kind == "preview_render"
         cancel = threading.Event()
+        temporary_parent = (
+            await prepare_local_preview(
+                self.session_factory, self.storage, task_id, owner_user_id, project_id
+            )
+            if is_preview
+            else None
+        )
         watch = asyncio.create_task(self._cancel_watch(task_id, cancel))
-        with TemporaryDirectory(prefix=f"video-editor-{task_id}-") as temporary:
+        with TemporaryDirectory(
+            prefix=f"video-editor-{task_id}-",
+            dir=temporary_parent,
+        ) as temporary:
             output = Path(temporary) / "render.mp4"
             loop = asyncio.get_running_loop()
 
@@ -317,6 +366,19 @@ class VideoEditorRunner(PollingTaskRunner):
             probe = await asyncio.to_thread(
                 verify_video_output, output, str(payload["preset"]), int(detail["durationUs"])
             )
+            await self._raise_if_cancelled(task_id)
+            if is_preview:
+                await publish_local_preview(
+                    self.session_factory,
+                    self.storage,
+                    task_id,
+                    owner_user_id,
+                    project_id,
+                    output,
+                    probe,
+                    self.preview_allowed,
+                )
+                return
             async with self.session_factory() as session:
                 bind_owner(session, owner_user_id)
                 project = await session.get(VideoEditorProject, project_id)

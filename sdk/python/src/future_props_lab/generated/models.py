@@ -3973,9 +3973,13 @@ class PresentationChart(WireModel):
 
 class PresentationConnection(WireModel):
     arrow: bool = Field(default=True, alias='arrow')
+    arrow_size: Literal['small', 'medium', 'large'] | None = Field(default=None, alias='arrow_size')
     color: str = Field(default='#365F62', alias='color')
     id: str = Field(default=..., alias='id', min_length=1, max_length=64)
     label: str = Field(default='', alias='label', max_length=500)
+    label_font_size: float | None = Field(default=None, alias='label_font_size')
+    label_offset: PresentationPoint | None = Field(default=None, alias='label_offset')
+    label_position: float | None = Field(default=None, alias='label_position')
     layer: int = Field(default=0, alias='layer', ge=0.0, le=300.0)
     source_anchor: Literal['left', 'right', 'top', 'bottom'] = Field(default='right', alias='source_anchor')
     source_id: str | None = Field(default=None, alias='source_id')
@@ -5815,6 +5819,30 @@ class VideoEditorKeyframe(WireModel):
     time_us: int = Field(default=..., alias='timeUs', ge=0.0)
     value: float = Field(default=..., alias='value')
 
+class VideoEditorPreviewRenderCreateIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
+    request_id: str = Field(default=..., alias='requestId', min_length=8, max_length=64)
+
+class VideoEditorPreviewRenderListOut(WireModel):
+    items: list[VideoEditorPreviewRenderOut] = Field(default=..., alias='items')
+
+class VideoEditorPreviewRenderOut(WireModel):
+    created_at: str = Field(default=..., alias='createdAt')
+    error: str | None = Field(default=None, alias='error')
+    id: str = Field(default=..., alias='id')
+    kind: Literal['media', 'render', 'segment_export', 'asset_bake', 'clip_merge', 'preview_render'] = Field(default=..., alias='kind')
+    media_url: str | None = Field(default=None, alias='mediaUrl')
+    output_asset_id: str | None = Field(default=None, alias='outputAssetId')
+    progress: int = Field(default=..., alias='progress', ge=0.0, le=100.0)
+    project_id: str = Field(default=..., alias='projectId')
+    request_id: str = Field(default=..., alias='requestId')
+    result_detail: dict[str, Any] | None = Field(default=None, alias='resultDetail')
+    revision: int = Field(default=..., alias='revision')
+    status: Literal['queued', 'running', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
+    timeline_revision: int = Field(default=..., alias='timelineRevision')
+    updated_at: str = Field(default=..., alias='updatedAt')
+    valid: bool = Field(default=..., alias='valid')
+
 class VideoEditorProjectCreateIn(WireModel):
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
@@ -5904,7 +5932,7 @@ class VideoEditorTaskOut(WireModel):
     created_at: str = Field(default=..., alias='createdAt')
     error: str | None = Field(default=None, alias='error')
     id: str = Field(default=..., alias='id')
-    kind: Literal['media', 'render', 'segment_export', 'asset_bake', 'clip_merge'] = Field(default=..., alias='kind')
+    kind: Literal['media', 'render', 'segment_export', 'asset_bake', 'clip_merge', 'preview_render'] = Field(default=..., alias='kind')
     output_asset_id: str | None = Field(default=None, alias='outputAssetId')
     progress: int = Field(default=..., alias='progress', ge=0.0, le=100.0)
     project_id: str = Field(default=..., alias='projectId')
@@ -7196,6 +7224,9 @@ VideoEditorClip.model_rebuild()
 VideoEditorClipMergeCreateIn.model_rebuild()
 VideoEditorDefaultEffects.model_rebuild()
 VideoEditorKeyframe.model_rebuild()
+VideoEditorPreviewRenderCreateIn.model_rebuild()
+VideoEditorPreviewRenderListOut.model_rebuild()
+VideoEditorPreviewRenderOut.model_rebuild()
 VideoEditorProjectCreateIn.model_rebuild()
 VideoEditorProjectListOut.model_rebuild()
 VideoEditorProjectOut.model_rebuild()

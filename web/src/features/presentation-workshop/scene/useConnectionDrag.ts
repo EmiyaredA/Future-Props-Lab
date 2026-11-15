@@ -118,7 +118,6 @@ export function useConnectionDrag({
     };
     if (handle.kind === "source" || handle.kind === "target")
       setEndpoint({ end: handle.kind, point: origin, port: null });
-    canvas.current?.setPointerCapture(event.pointerId);
   };
   const move = (event: PointerEvent) => {
     const g = drag.current;
@@ -129,6 +128,7 @@ export function useConnectionDrag({
       Math.hypot(event.clientX - g.screen.x, event.clientY - g.screen.y) <= 4
     )
       return true;
+    if (!g.moved) canvas.current?.setPointerCapture(event.pointerId);
     g.moved = true;
     const cursor = point(event);
     const p = {

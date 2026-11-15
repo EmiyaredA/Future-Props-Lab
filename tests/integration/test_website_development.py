@@ -153,6 +153,7 @@ def test_background_service_and_npm_aliases_use_the_same_pair(tmp_path):
     python.touch()
     args = service.definition(tmp_path)["ProgramArguments"]
     assert args == [str(python), str(tmp_path / "scripts/website/development.py")]
+    assert str(tmp_path / ".local") not in json.dumps(service.definition(tmp_path))
     package = json.loads((development.ROOT / "package.json").read_text())
     assert package["scripts"]["start"] == "uv run python scripts/website/development.py"
     assert all(
@@ -164,7 +165,7 @@ def test_background_service_and_npm_aliases_use_the_same_pair(tmp_path):
 def test_website_service_accepts_registered_independent_management(tmp_path):
     import plistlib
 
-    launcher = tmp_path / ".local/candidate/scripts/management/start.py"
+    launcher = tmp_path / ".runtime/deployment/releases/host/scripts/management/start.py"
     python = tmp_path / ".venv/bin/python"
     config = tmp_path / "backend/config.toml"
     for path in (launcher, python, config):
@@ -182,6 +183,55 @@ def test_website_service_accepts_registered_independent_management(tmp_path):
     assert service.registered_definition(tmp_path) == record
 
     record["ProgramArguments"][-1] = str(launcher)
+    registration.write_bytes(plistlib.dumps(record))
+    with pytest.raises(SystemExit, match="运行目录不匹配"):
+        service.registered_definition(tmp_path)
+
+
+def test_website_service_refuses_legacy_registration(tmp_path):
+    legacy = tmp_path / service.LEGACY_ACTIVE_LAUNCH
+    legacy.parent.mkdir(parents=True)
+    legacy.touch()
+    with pytest.raises(SystemExit, match="先迁移"):
+        service.registered_definition(tmp_path)
+
+
+@pytest.mark.parametrize("reference", ["directory", "launcher", "environment"])
+def test_website_service_refuses_local_runtime_dependencies(tmp_path, reference):
+    import plistlib
+
+    candidate = tmp_path / ".local/candidate"
+    launcher = candidate / "scripts/management/start.py"
+    python = tmp_path / ".venv/bin/python"
+    config = tmp_path / "backend/config.toml"
+    for path in (launcher, python, config):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.touch()
+    release = tmp_path / ".runtime/deployment/releases/host"
+    release.parent.mkdir(parents=True)
+    if reference == "directory":
+        release.symlink_to(candidate, target_is_directory=True)
+    else:
+        target = release / "scripts/management/start.py"
+        target.parent.mkdir(parents=True)
+        if reference == "launcher":
+            target.symlink_to(launcher)
+        else:
+            target.touch()
+    record = {
+        "Label": service.MANAGEMENT_LABEL,
+        "ProgramArguments": [
+            str(python),
+            str(release / "scripts/management/start.py"),
+            "--config",
+            str(config),
+        ],
+        "WorkingDirectory": str(release),
+    }
+    if reference == "environment":
+        record["EnvironmentVariables"] = {"PYTHONPATH": str(candidate / "backend")}
+    registration = tmp_path / service.ACTIVE_LAUNCH
+    registration.touch(mode=0o600)
     registration.write_bytes(plistlib.dumps(record))
     with pytest.raises(SystemExit, match="运行目录不匹配"):
         service.registered_definition(tmp_path)

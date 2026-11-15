@@ -43,6 +43,8 @@ def test_authoritative_source_is_copied_without_merging_existing_project_data(in
     assert config["security"]["secrets_key"] == key
     assert config["storage"]["database_path"] == ".runtime/future-props.db"
     assert config["website"]["public_enabled"] is False
+    assert config["website"]["web_root"] == ".runtime/website/current"
+    assert config["remote_web"]["web_root"] == str(project / ".runtime/website/current")
     assert config["website"]["legacy_data_root"] == str(source)
     assert (project / "backend/config.toml").stat().st_mode & 0o777 == 0o600
     assert transfer.inventory(source) == transfer.inventory(report / "desktop-snapshot")

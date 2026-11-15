@@ -130,6 +130,7 @@ from db.migrations.versions import (
     r0126_retire_visual_conversations,
     r0127_video_enhancement,
     r0128_local_video_providers,
+    r0129_video_preview_renders,
 )
 
 
@@ -605,6 +606,10 @@ MIGRATIONS += (
         r0128_local_video_providers.SQL,
         foreign_keys_off=True,
     ),
+)
+
+MIGRATIONS += (
+    Migration(r0129_video_preview_renders.MIGRATION_ID, r0129_video_preview_renders.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

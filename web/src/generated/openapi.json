@@ -25606,6 +25606,22 @@
             "title": "Arrow",
             "type": "boolean"
           },
+          "arrow_size": {
+            "anyOf": [
+              {
+                "enum": [
+                  "small",
+                  "medium",
+                  "large"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Arrow Size"
+          },
           "color": {
             "default": "#365F62",
             "pattern": "^#[0-9a-fA-F]{6}$",
@@ -25623,6 +25639,42 @@
             "maxLength": 500,
             "title": "Label",
             "type": "string"
+          },
+          "label_font_size": {
+            "anyOf": [
+              {
+                "maximum": 72.0,
+                "minimum": 6.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Font Size"
+          },
+          "label_offset": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PresentationPoint"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "label_position": {
+            "anyOf": [
+              {
+                "maximum": 1.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Position"
           },
           "layer": {
             "default": 0,
@@ -37391,6 +37443,161 @@
         "title": "VideoEditorKeyframe",
         "type": "object"
       },
+      "VideoEditorPreviewRenderCreateIn": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "requestId": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "requestId"
+        ],
+        "title": "VideoEditorPreviewRenderCreateIn",
+        "type": "object"
+      },
+      "VideoEditorPreviewRenderListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorPreviewRenderOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "VideoEditorPreviewRenderListOut",
+        "type": "object"
+      },
+      "VideoEditorPreviewRenderOut": {
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "media",
+              "render",
+              "segment_export",
+              "asset_bake",
+              "clip_merge",
+              "preview_render"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "mediaUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediaurl"
+          },
+          "outputAssetId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputassetid"
+          },
+          "progress": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Progress",
+            "type": "integer"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          },
+          "resultDetail": {
+            "additionalProperties": true,
+            "title": "Resultdetail",
+            "type": "object"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "timelineRevision": {
+            "title": "Timelinerevision",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "requestId",
+          "kind",
+          "status",
+          "progress",
+          "revision",
+          "createdAt",
+          "updatedAt",
+          "valid",
+          "timelineRevision"
+        ],
+        "title": "VideoEditorPreviewRenderOut",
+        "type": "object"
+      },
       "VideoEditorProjectCreateIn": {
         "properties": {
           "title": {
@@ -37991,7 +38198,8 @@
               "render",
               "segment_export",
               "asset_bake",
-              "clip_merge"
+              "clip_merge",
+              "preview_render"
             ],
             "title": "Kind",
             "type": "string"
@@ -66733,6 +66941,246 @@
           }
         },
         "summary": "Exact Frame",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/preview/renders": {
+      "delete": {
+        "operationId": "clear_previews_v1_video_editor_projects__project_id__preview_renders_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Clear Previews V1 Video Editor Projects  Project Id  Preview Renders Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clear Previews",
+        "tags": [
+          "video-editor"
+        ]
+      },
+      "get": {
+        "operationId": "list_previews_v1_video_editor_projects__project_id__preview_renders_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorPreviewRenderListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Previews",
+        "tags": [
+          "video-editor"
+        ]
+      },
+      "post": {
+        "operationId": "create_preview_v1_video_editor_projects__project_id__preview_renders_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorPreviewRenderCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorPreviewRenderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Preview",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancel_preview_v1_video_editor_projects__project_id__preview_renders__task_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorPreviewRenderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Preview",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media": {
+      "get": {
+        "operationId": "preview_media_v1_video_editor_projects__project_id__preview_renders__task_id__media_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "video/mp4": {}
+            },
+            "description": "Successful Response"
+          },
+          "206": {
+            "content": {
+              "video/mp4": {}
+            },
+            "description": "Partial Content"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Media",
         "tags": [
           "video-editor"
         ]

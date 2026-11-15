@@ -25,6 +25,18 @@ export class TimelineSaveQueue {
   private running = false;
   private closed = false;
   private leases = 0;
+  private idleWaiters: {
+    resolve: () => void;
+    reject: (error: unknown) => void;
+  }[] = [];
+  whenSaved(): Promise<void> {
+    if (this.closed || this.retained.length)
+      return Promise.reject(new Error("请先处理未保存操作"));
+    if (!this.unsaved) return Promise.resolve();
+    return new Promise((resolve, reject) =>
+      this.idleWaiters.push({ resolve, reject }),
+    );
+  }
   attach() {
     this.leases++;
     return () => {
@@ -92,6 +104,8 @@ export class TimelineSaveQueue {
     this.closed = true;
     for (const intent of this.pending) intent.reject(new Error("编辑器已关闭"));
     this.pending = [];
+    for (const waiter of this.idleWaiters.splice(0))
+      waiter.reject(new Error("编辑器已关闭"));
   }
   private async drain() {
     if (this.running || this.closed) return;
@@ -164,6 +178,10 @@ export class TimelineSaveQueue {
       }
     }
     this.running = false;
+    for (const waiter of this.idleWaiters.splice(0)) {
+      if (this.retained.length) waiter.reject(new Error("请先处理未保存操作"));
+      else waiter.resolve();
+    }
     if (!this.closed) this.io.changed();
   }
 }

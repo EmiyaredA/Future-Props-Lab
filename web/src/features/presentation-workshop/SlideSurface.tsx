@@ -28,6 +28,7 @@ import {
   type SlideElement,
 } from "./types";
 import { Connections } from "./scene/Connections";
+import { ConnectionLabels, type LabelActions } from "./scene/ConnectionLabels";
 import { sceneOrder } from "./scene/stacking";
 import { paragraphMarkers } from "./paragraphLists";
 
@@ -297,6 +298,7 @@ export const SlideSurface = memo(function SlideSurface({
   onSelectConnection,
   onMoveConnection,
   onMoveConnectionKey,
+  connectionLabelActions,
   size = defaultPageSize,
   playMedia = false,
   referenceable = true,
@@ -315,6 +317,7 @@ export const SlideSurface = memo(function SlideSurface({
   onSelectConnection?: (id: string) => void;
   onMoveConnection?: React.ComponentProps<typeof Connections>["onMoveStart"];
   onMoveConnectionKey?: React.ComponentProps<typeof Connections>["onMoveKey"];
+  connectionLabelActions?: LabelActions;
 }) {
   if ("slides" in size) slide = resolveSlide(size as Deck, slide);
   const elements = new Map(
@@ -351,6 +354,8 @@ export const SlideSurface = memo(function SlideSurface({
               onSelect={onSelectConnection}
               onMoveStart={onMoveConnection}
               onMoveKey={onMoveConnectionKey}
+              labels={false}
+              onEditLabel={connectionLabelActions?.onEditLabel}
             />
           );
         }
@@ -453,6 +458,19 @@ export const SlideSurface = memo(function SlideSurface({
           </div>
         );
       })}
+      <svg
+        className="presentation-connections presentation-connection-label-layer"
+        width="100%"
+        height="100%"
+        aria-label="连接线文字"
+      >
+        <ConnectionLabels
+          slide={slide}
+          selected={selectedConnection}
+          onSelect={onSelectConnection}
+          {...connectionLabelActions}
+        />
+      </svg>
       {children}
     </div>
   );

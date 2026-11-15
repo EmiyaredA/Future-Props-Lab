@@ -75,7 +75,8 @@
   gap: 8px;
   min-width: 0;
 }
-.presentation-connection-panel input:not([type="range"]) {
+.presentation-connection-panel input:not([type="range"]),
+.presentation-connection-panel textarea {
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
@@ -84,6 +85,11 @@
   border-radius: 6px;
   background: var(--bg);
   color: inherit;
+  font: inherit;
+}
+.presentation-connection-panel textarea {
+  min-height: 64px;
+  resize: vertical;
   font: inherit;
 }
 .presentation-connection-width input[type="number"] {

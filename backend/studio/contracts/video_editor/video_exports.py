@@ -32,6 +32,7 @@ class VideoExportRequest(BaseModel):
     filename: str = Field(min_length=1, max_length=255)
     transparent: bool = False
     video_bake: bool = False
+    preview: bool = False
     files: tuple[ExportInput, ...] = Field(max_length=10000)
 
     @model_validator(mode="after")
@@ -42,6 +43,7 @@ class VideoExportRequest(BaseModel):
         if (
             self.end_us <= self.start_us
             or (self.transparent and self.video_bake)
+            or (self.preview and (self.transparent or self.video_bake))
             or ids != sorted(set(ids))
             or Path(self.filename).name != self.filename
             or "\\" in self.filename
@@ -121,6 +123,12 @@ class RenderedSegment(PublishedSegment):
 VIDEO_WORK = TypeAdapter(VideoExportRequest | VideoImageBakeRequest | VideoSegmentRequest)
 
 
+class VideoPreviewOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    sha256: str = Field(pattern="^" + DIGEST + "$")
+    byte_size: int = Field(gt=0)
+
+
 class VideoExportReceipt(BaseModel):
     model_config = ConfigDict(extra="forbid")
     status: Literal["queued", "running", "completed", "failed", "cancelled"]
@@ -128,6 +136,7 @@ class VideoExportReceipt(BaseModel):
     probe: dict = Field(default_factory=dict)
     fingerprint: str | None = Field(default=None, pattern="^" + DIGEST + "$")
     output: VideoAsset | None = None
+    preview: VideoPreviewOutput | None = None
     variants: dict[Literal["proxy", "thumbnail", "waveform"], str | None] = Field(
         default_factory=dict
     )
@@ -139,9 +148,19 @@ class VideoExportReceipt(BaseModel):
     def validate_result(self):
         if self.status == "completed":
             single = self.output is not None and self.fingerprint is not None and bool(self.probe)
+            cached = self.preview is not None and bool(self.probe)
             group = bool(self.segments)
             if (
-                single == group
+                sum((single, group, cached)) != 1
+                or (
+                    cached
+                    and (
+                        self.output is not None
+                        or self.fingerprint is not None
+                        or self.variants
+                        or self.segments
+                    )
+                )
                 or (
                     group
                     and (self.output is not None or self.fingerprint is not None or self.variants)
@@ -151,6 +170,7 @@ class VideoExportReceipt(BaseModel):
                 raise ValueError("剪辑成片回执不完整")
         elif (
             self.output is not None
+            or self.preview is not None
             or self.fingerprint is not None
             or self.variants
             or self.segments

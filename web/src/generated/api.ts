@@ -7152,6 +7152,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/video-editor/projects/{project_id}/preview/renders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Previews */
+        get: operations["list_previews_v1_video_editor_projects__project_id__preview_renders_get"];
+        put?: never;
+        /** Create Preview */
+        post: operations["create_preview_v1_video_editor_projects__project_id__preview_renders_post"];
+        /** Clear Previews */
+        delete: operations["clear_previews_v1_video_editor_projects__project_id__preview_renders_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Preview */
+        post: operations["cancel_preview_v1_video_editor_projects__project_id__preview_renders__task_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview Media */
+        get: operations["preview_media_v1_video_editor_projects__project_id__preview_renders__task_id__media_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/video-editor/projects/{project_id}/renders": {
         parameters: {
             query?: never;
@@ -17718,6 +17771,8 @@ export interface components {
              * @default true
              */
             arrow: boolean;
+            /** Arrow Size */
+            arrow_size?: ("small" | "medium" | "large") | null;
             /**
              * Color
              * @default #365F62
@@ -17730,6 +17785,11 @@ export interface components {
              * @default
              */
             label: string;
+            /** Label Font Size */
+            label_font_size?: number | null;
+            label_offset?: components["schemas"]["PresentationPoint"] | null;
+            /** Label Position */
+            label_position?: number | null;
             /**
              * Layer
              * @default 0
@@ -22284,6 +22344,59 @@ export interface components {
             /** Value */
             value: number;
         };
+        /** VideoEditorPreviewRenderCreateIn */
+        VideoEditorPreviewRenderCreateIn: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Requestid */
+            requestId: string;
+        };
+        /** VideoEditorPreviewRenderListOut */
+        VideoEditorPreviewRenderListOut: {
+            /** Items */
+            items: components["schemas"]["VideoEditorPreviewRenderOut"][];
+        };
+        /** VideoEditorPreviewRenderOut */
+        VideoEditorPreviewRenderOut: {
+            /** Createdat */
+            createdAt: string;
+            /** Error */
+            error?: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "media" | "render" | "segment_export" | "asset_bake" | "clip_merge" | "preview_render";
+            /** Mediaurl */
+            mediaUrl?: string | null;
+            /** Outputassetid */
+            outputAssetId?: string | null;
+            /** Progress */
+            progress: number;
+            /** Projectid */
+            projectId: string;
+            /** Requestid */
+            requestId: string;
+            /** Resultdetail */
+            resultDetail?: {
+                [key: string]: unknown;
+            };
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "failed" | "cancelled";
+            /** Timelinerevision */
+            timelineRevision: number;
+            /** Updatedat */
+            updatedAt: string;
+            /** Valid */
+            valid: boolean;
+        };
         /** VideoEditorProjectCreateIn */
         VideoEditorProjectCreateIn: {
             /** Title */
@@ -22501,7 +22614,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "media" | "render" | "segment_export" | "asset_bake" | "clip_merge";
+            kind: "media" | "render" | "segment_export" | "asset_bake" | "clip_merge" | "preview_render";
             /** Outputassetid */
             outputAssetId?: string | null;
             /** Progress */
@@ -40443,6 +40556,178 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_previews_v1_video_editor_projects__project_id__preview_renders_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorPreviewRenderListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_preview_v1_video_editor_projects__project_id__preview_renders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorPreviewRenderCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorPreviewRenderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clear_previews_v1_video_editor_projects__project_id__preview_renders_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_preview_v1_video_editor_projects__project_id__preview_renders__task_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorPreviewRenderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_media_v1_video_editor_projects__project_id__preview_renders__task_id__media_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "video/mp4": unknown;
+                };
+            };
+            /** @description Partial Content */
+            206: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "video/mp4": unknown;
                 };
             };
             /** @description Validation Error */

@@ -104,7 +104,7 @@ class Settings(BaseSettings):
     fpl_management_public_origin: str = ""
 
     fpl_website_port: int = Field(default=9000, ge=1024, le=65535)
-    fpl_website_web_root: str = ".local/studio-release"
+    fpl_website_web_root: str = ".runtime/website/current"
     fpl_website_public_enabled: bool = False
     fpl_website_legacy_data_root: str = ""
     fpl_database_path: str = ".runtime/future-props.db"

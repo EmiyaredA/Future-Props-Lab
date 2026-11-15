@@ -1,4 +1,8 @@
 import { useTransferProgress } from "@platform/api/useTransferProgress";
+import { VideoEditorCachedPreview } from "./VideoEditorCachedPreview";
+import { VideoEditorPreviewCacheControls } from "./VideoEditorPreviewCacheControls";
+import type { PreviewRenderControl } from "./usePreviewRender";
+import "./video-editor-preview-cache.css";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { usePreviewTransform } from "./usePreviewTransform";
@@ -253,7 +257,13 @@ export function VideoEditorPreview({
   saving = false,
   previewingAsset,
   onClearPreviewingAsset,
+  previewCache,
+  seekRevision = 0,
+  onPlaybackTime,
 }: {
+  previewCache?: PreviewRenderControl;
+  seekRevision?: number;
+  onPlaybackTime?: (timeUs: number) => void;
   onSelectClip?: (clipId: string) => void;
   commit?: (
     redo: VideoEditorOperation[] | TimelineEditBuilder,
@@ -281,6 +291,7 @@ export function VideoEditorPreview({
     useTransferProgress();
 
   const canWrite = useAccountPermission("content.write");
+  const cached = playing ? previewCache?.active : undefined;
   const [frameExport, setFrameExport] = useState<{
     revision: number;
     timeUs: number;
@@ -318,12 +329,19 @@ export function VideoEditorPreview({
   );
   const visualLayers = useMemo(
     () =>
-      previewVisualLayers(
-        timeline.document.tracks ?? [],
-        playheadUs,
-        timeline.document.transitions ?? [],
-      ),
-    [playheadUs, timeline.document.tracks, timeline.document.transitions],
+      cached
+        ? []
+        : previewVisualLayers(
+            timeline.document.tracks ?? [],
+            playheadUs,
+            timeline.document.transitions ?? [],
+          ),
+    [
+      cached,
+      playheadUs,
+      timeline.document.tracks,
+      timeline.document.transitions,
+    ],
   );
   const videoPlaybackKeys = useMemo(
     () =>
@@ -459,7 +477,9 @@ export function VideoEditorPreview({
     );
   }
   return (
-    <section className="ve-preview-panel">
+    <section
+      className={`ve-preview-panel${previewCache ? " has-preview-cache" : ""}`}
+    >
       <TransferFeedback progress={activeTransferProgress} />
 
       <header>
@@ -569,6 +589,12 @@ export function VideoEditorPreview({
           </button>
         </div>
       </header>
+      {previewCache && (
+        <VideoEditorPreviewCacheControls
+          control={previewCache}
+          canWrite={canWrite}
+        />
+      )}
       <div
         className="ve-stage-wrap"
         style={
@@ -584,6 +610,17 @@ export function VideoEditorPreview({
           }}
         >
           <div className="ve-stage-content">
+            {cached?.mediaUrl && onPlaybackTime ? (
+              <VideoEditorCachedPreview
+                url={cached.mediaUrl}
+                playheadUs={playheadUs}
+                seekRevision={seekRevision}
+                durationUs={timelineDuration(timeline)}
+                onTime={onPlaybackTime}
+                onEnded={() => setPlaying(false)}
+                onError={() => previewCache?.playbackFailed(cached.id)}
+              />
+            ) : null}
             {visualLayers.map(({ clip, localUs, effect }) => {
               const asset = assetMap.get(clip.assetId ?? "");
               const geometry = previewMediaGeometry(clip, asset, {
@@ -754,20 +791,21 @@ export function VideoEditorPreview({
           )}
         </div>
         <div className="ve-proxy-audio" aria-hidden>
-          {audioChains.map((chain) => {
-            const asset = assetMap.get(chain.assetId);
-            return asset?.proxyUrl ? (
-              <ProxyAudioChain
-                key={chain.id}
-                source={asset.proxyUrl}
-                clips={chain.clips}
-                transitions={timeline.document.transitions}
-                clipsById={allClipsById}
-                playheadUs={playheadUs}
-                playing={playing}
-              />
-            ) : null;
-          })}
+          {!cached &&
+            audioChains.map((chain) => {
+              const asset = assetMap.get(chain.assetId);
+              return asset?.proxyUrl ? (
+                <ProxyAudioChain
+                  key={chain.id}
+                  source={asset.proxyUrl}
+                  clips={chain.clips}
+                  transitions={timeline.document.transitions}
+                  clipsById={allClipsById}
+                  playheadUs={playheadUs}
+                  playing={playing}
+                />
+              ) : null;
+            })}
         </div>
       </div>
       <footer className="ve-transport">

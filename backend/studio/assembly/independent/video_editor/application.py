@@ -48,6 +48,7 @@ from studio.apps.video_editor.transport.frame_routes import router as frame_rout
 from studio.apps.video_editor.transport.galgame_handoff_http import router as galgame_handoff_router
 from studio.apps.video_editor.transport.handoff_routes import router as handoff_router
 from studio.apps.video_editor.transport.media_routes import router as media_router
+from studio.apps.video_editor.transport.preview_render_routes import router as preview_render_router
 from studio.apps.video_editor.transport.project_reveal_routes import router as reveal_router
 from studio.apps.video_editor.transport.render_routes import router as render_router
 from studio.apps.video_editor.transport.segment_routes import router as segment_router
@@ -63,6 +64,7 @@ from studio.assembly.independent.asset_references import (
 )
 from studio.contracts.gateway.protocol_hash import public_contract
 from studio.contracts.gateway.routing import RouteCatalog
+from studio.contracts.identity.route_permissions import route_permission
 from studio.contracts.video_editor.video_processing import video_peer
 from studio.contracts.video_editor.video_segment_handoff import visual_peer as segment_visual_peer
 from studio.contracts.video_editor.video_snapshot import (
@@ -111,6 +113,11 @@ OPERATIONS = {
     ("POST", IMPORT),
     ("POST", PROJECT + "/audio-seams/candidates"),
     ("GET", PROJECT + "/preview/frame"),
+    ("GET", PROJECT + "/preview/renders"),
+    ("POST", PROJECT + "/preview/renders"),
+    ("DELETE", PROJECT + "/preview/renders"),
+    ("POST", PROJECT + "/preview/renders/{task_id}/cancel"),
+    ("GET", PROJECT + "/preview/renders/{task_id}/media"),
     ("GET", PROJECT + "/text-clips/{clip_id}/layer"),
     ("GET", PROJECT + "/asset-bakes/{task_id}"),
     ("POST", PROJECT + "/assets/{asset_id}/bakes"),
@@ -311,6 +318,7 @@ def create_app(
         audio_seam_router,
         preflight_router,
         render_router,
+        preview_render_router,
         clip_merge_router,
         bake_router,
         segment_router,
@@ -327,6 +335,8 @@ def create_app(
     expected = RouteCatalog(
         operation for operation in catalog.operations if operation.service == SERVICE
     )
+    if any(route_permission(method, path) is None for method, path in OPERATIONS):
+        raise ValueError("视频剪辑项目接口存在未登记的账号权限")
     schema = app.openapi()
     mounted = {
         (method.upper(), path) for path, methods in schema["paths"].items() for method in methods
