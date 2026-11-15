@@ -80,6 +80,7 @@ export function VideoSubjectControl({
               <span>{tag}</span>
               <button
                 type="button"
+                title={tag}
                 aria-label={`移除 ${tag}`}
                 onClick={() => remove(tag)}
               >
@@ -94,6 +95,7 @@ export function VideoSubjectControl({
           type="text"
           value={state.draft}
           placeholder={state.tags.length ? "添加对象…" : "添加对象，如 person…"}
+          title="输入英文名称，按 Enter 或逗号添加"
           aria-describedby={`${id}-hint`}
           aria-invalid={Boolean(state.error)}
           autoComplete="off"
