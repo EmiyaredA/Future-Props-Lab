@@ -322,12 +322,14 @@ def create_app(
             originals_client=capabilities.client,
             check_authority=identity.status,
             temporary_upload_url=settings.fpl_temp_media_upload_url,
+            autodl_temporary_upload_url=settings.fpl_autodl_temp_media_upload_url,
         )
         app.state.visual_generation_runner = VisualGenerationRunner(
             database.sessions,
             files=generation_files,
             check_authority=identity.status,
             temporary_upload_url=settings.fpl_temp_media_upload_url,
+            autodl_temporary_upload_url=settings.fpl_autodl_temp_media_upload_url,
             maximum_output_bytes=settings.fpl_visual_asset_max_bytes,
             decrypt=SecretCipher(settings.fpl_secrets_key).decrypt,
         )

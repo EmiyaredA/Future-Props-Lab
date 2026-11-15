@@ -105,7 +105,9 @@ class VideoGenerationTaskCreateIn(BaseModel):
         else:
             if self.first_frame_asset_id or self.last_frame_asset_id:
                 raise ValueError("参考素材模式不能携带首尾帧")
-            if not (self.reference_asset_ids or self.audio_asset_ids or self.video_asset_ids):
+            if self.canvas_node_id is None and not (
+                self.reference_asset_ids or self.audio_asset_ids or self.video_asset_ids
+            ):
                 raise ValueError("参考素材模式至少需要一个素材")
         return self
 

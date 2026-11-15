@@ -1,4 +1,4 @@
-"""Deterministic wire, policy and entry-point coverage for the twelve pinned workflows."""
+"""Deterministic wire, policy and entry-point coverage for the pinned workflows."""
 
 import json
 from dataclasses import replace
@@ -16,10 +16,14 @@ from studio.apps.model_service.providers.autodl_video import create_task, get_ta
 from studio.apps.model_service.providers.autodl_workflows import (
     MOTION,
     PREFIX,
+    TITI,
+    TITIM,
     WORKFLOWS,
     capabilities,
     normalize_request,
     prepare_payload,
+    reference_upload_url,
+    require_reference_delivery,
     validate_references,
 )
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
@@ -42,12 +46,12 @@ from website_test_support import SessionLocal, app
 def request(model):
     spec = WORKFLOWS[model]
     payload = {
-        "prompt": "subject walks" if spec.prompt else "",
+        "prompt": "subject walks" if spec.prompt and spec.prompt_required else "",
         "mode": spec.mode,
         "duration": 5,
         "reference_asset_ids": [f"image-{i}" for i in range(spec.images_min)],
         "audio_asset_ids": [f"audio-{i}" for i in range(spec.audio_min)],
-        "video_asset_ids": ["video-0"] if model == MOTION else [],
+        "video_asset_ids": ["video-0"] if spec.video_required else [],
     }
     if spec.mode == "frames":
         payload.update(
@@ -76,9 +80,18 @@ def content(payload):
 @pytest.mark.parametrize("model", list(WORKFLOWS))
 @pytest.mark.asyncio
 async def test_each_workflow_submits_its_exact_pinned_contract(model):
-    payload = normalize_request(model, request(model))
+    params = request(model)
+    if model == TITIM:
+        params["reference_asset_ids"] = ["image-b", "image-a"]
+        params["workflow_parameters"] = {"video_subject_to_replace": " white dog, person "}
+    payload = normalize_request(model, params)
     before = json.dumps(payload)
-    wire = prepare_payload(model, payload, content(payload))
+    assets = content(payload)
+    if model in {TITI, TITIM}:
+        for asset in assets:
+            key = "url" if asset["type"] == "image" else "video_url"
+            asset[key] = f"https://upload.example/{asset[key]}"
+    wire = prepare_payload(model, payload, assets)
     seen = []
 
     def handle(req):
@@ -94,7 +107,7 @@ async def test_each_workflow_submits_its_exact_pinned_contract(model):
             api_key="raw-token",
             model=model,
             payload=payload,
-            content=content(payload),
+            content=assets,
             transport=httpx.MockTransport(handle),
         )
         == "upstream"
@@ -102,9 +115,24 @@ async def test_each_workflow_submits_its_exact_pinned_contract(model):
     assert len(seen) == 1 and json.dumps(payload) == before
     assert wire["resolution"] == ("464*832px(竖版)" if model == MOTION else "768p竖")
     assert ("seed" in wire) == (WORKFLOWS[model].seed_min is not None)
-    assert ("prompt" in wire) == WORKFLOWS[model].prompt
+    assert ("prompt" in wire) == bool(params["prompt"])
     if model == MOTION:
         assert set(wire) == {"resolution", "seed", "ref_image", "ref_video"}
+    elif model in {TITI, TITIM}:
+        expected = {
+            "resolution": "768p竖",
+            "duration": 5,
+            "ref_video": "https://upload.example/video-0",
+        }
+        if model == TITI:
+            expected["ref_image"] = "https://upload.example/image-0"
+        else:
+            expected.update(
+                ref_image_0="https://upload.example/image-b",
+                ref_image_1="https://upload.example/image-a",
+                video_subject_to_replace="white dog, person",
+            )
+        assert wire == expected
     elif model == PREFIX + "image_audio_to_video":
         assert set(wire) == {"resolution", "audio_duration", "ref_image_0", "ref_audio_0"}
     elif model == PREFIX + "lightx2v":
@@ -122,9 +150,10 @@ def test_boundaries_defaults_seed_snapshot_and_mime(model):
             with pytest.raises(ValueError, match="时长"):
                 normalize_request(model, {**payload, "duration": duration})
     if WORKFLOWS[model].prompt:
-        normalize_request(model, {**payload, "prompt": "a" * 20000})
-        with pytest.raises(ValueError):
-            normalize_request(model, {**payload, "prompt": "a" * 20001})
+        maximum = WORKFLOWS[model].max_prompt_length
+        normalize_request(model, {**payload, "prompt": "a" * maximum})
+        with pytest.raises(ValueError, match="提示词"):
+            normalize_request(model, {**payload, "prompt": "a" * (maximum + 1)})
     if WORKFLOWS[model].seed_min is not None:
         for seed in (WORKFLOWS[model].seed_min - 1, 10**15, 1.5, True):
             with pytest.raises(ValueError, match="种子"):
@@ -138,6 +167,41 @@ def test_boundaries_defaults_seed_snapshot_and_mime(model):
         validate_references(model, [("image", "image/gif", 1)])
     with pytest.raises(ValueError, match="45 MB"):
         validate_references(model, [("image", "image/png", 46 * 1024 * 1024)])
+
+
+@pytest.mark.parametrize("model", [TITI, TITIM])
+def test_character_replacement_requires_the_right_assets_and_https_delivery(model):
+    params = request(model)
+    assert capabilities(model).reference_video_upload_configured is False
+    assert reference_upload_url("autodl_video", model, "default", "dedicated") == "dedicated"
+    assert reference_upload_url("autodl_video", model, "default", "") == "default"
+    assert reference_upload_url("volcengine_video", "seedance", "default", "dedicated") == "default"
+    with pytest.raises(ValueError, match="临时上传服务"):
+        require_reference_delivery(model, upload_configured=False)
+    with pytest.raises(ValueError, match="时长"):
+        normalize_request(model, {**params, "duration": 4})
+    for field in ("reference_asset_ids", "video_asset_ids"):
+        with pytest.raises(ValueError, match="需要"):
+            normalize_request(model, {**params, field: []})
+    with pytest.raises(ValueError, match="需要"):
+        normalize_request(
+            model,
+            {
+                **params,
+                "reference_asset_ids": [
+                    str(i) for i in range(capabilities(model).reference_limits["image"] + 1)
+                ],
+            },
+        )
+    with pytest.raises(ValueError, match="格式"):
+        validate_references(model, [("video", "video/quicktime", 1)])
+    with pytest.raises(ValueError, match="HTTPS"):
+        prepare_payload(model, normalize_request(model, params), content(params))
+    expected = "英文" if model == TITIM else "不支持"
+    with pytest.raises(ValueError, match=expected):
+        normalize_request(
+            model, {**params, "workflow_parameters": {"video_subject_to_replace": "人物"}}
+        )
 
 
 def test_resolution_pairs_order_and_audio_only_capabilities():
@@ -295,8 +359,11 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
         ):
             body["mode"] = "text"
         body.update(kind="video", model_id=model.id)
-        if WORKFLOWS[model_slug].prompt:
-            body["prompt"] = "x" * 20000
+        spec = WORKFLOWS[model_slug]
+        if spec.prompt and spec.prompt_required:
+            body["prompt"] = "x" * spec.max_prompt_length
+        if spec.default_duration:
+            body.pop("duration")
         storage = AssetStorage(get_settings())
         private_body, inference_body = dict(body), dict(body)
         inference_assets = []
@@ -362,17 +429,29 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
                     inference_ids,
                 )
         await session.commit()
-        visual = VisualGeneration(session, app.state.settings)
-        test = ModelTestGeneration(session, "test-user", settings=get_settings())
+        settings = app.state.settings.model_copy(
+            update={
+                "fpl_temp_media_upload_url": "",
+                "fpl_autodl_temp_media_upload_url": "https://upload.example/upload",
+            }
+        )
+        visual = VisualGeneration(session, settings)
+        test = ModelTestGeneration(session, "test-user", settings=settings)
         for option in ((await visual.options()).models, (await test.options()).items):
             selected = next(item for item in option if item.id == model.id)
-            assert selected.video_capabilities.duration_min == 1
+            assert selected.video_capabilities.duration_min == spec.duration_min
+            assert selected.video_capabilities.reference_video_upload_configured
+            assert selected.video_capabilities.default_duration == spec.default_duration
         task = await visual.prepare_create(project.id, VideoGenerationTaskCreateIn(**body))
         expected_resolution = "464x832" if model_slug == MOTION else "768p"
         assert task.request_payload["resolution"] == expected_resolution
+        if spec.default_duration:
+            assert task.request_payload["duration"] == spec.default_duration
         await session.commit()
         test_task = await test.create(ModelTestVideoGenerationIn(**private_body))
         assert test_task.provider_kind == "autodl_video"
+        if spec.default_duration:
+            assert test_task.request_payload["duration"] == spec.default_duration
         parameters = {k: v for k, v in inference_body.items() if k not in {"kind", "model_id"}}
         normalized = normalize_parameters(
             InferenceTaskIn(
@@ -385,8 +464,11 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
             model,
             provider,
             inference_assets,
+            temporary_upload_configured=True,
         )
         assert normalized["resolution"] == expected_resolution
+        if spec.default_duration:
+            assert normalized["duration"] == spec.default_duration
         assert ("seed" in normalized["workflow_parameters"]) == (
             WORKFLOWS[model_slug].seed_min is not None
         )
@@ -408,7 +490,8 @@ async def test_options_and_all_admission_paths_share_the_contract(model_slug):
 
 
 @pytest.mark.asyncio
-async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upload(monkeypatch):
+@pytest.mark.parametrize("model", [MOTION, TITI, TITIM])
+async def test_every_runner_uses_the_registered_media_transport(monkeypatch, model):
     from studio.apps.model_service.generation import visual_submission as visual_submission
     from studio.apps.model_service.inference import runner as inference_module
     from studio.apps.model_service.playground import generation_runner as test_module
@@ -423,8 +506,13 @@ async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upl
     async def inline(*_args, **_kwargs):
         return "data:video/webm;base64,AA=="
 
-    async def forbidden(*_args, **_kwargs):
-        raise AssertionError("AutoDL must not upload to temporary hosting")
+    async def hosted(*args, **_kwargs):
+        assert model != MOTION, "Motion references must remain inline"
+        return "https://upload.example/" + args[1]
+
+    async def inference_hosted(**kwargs):
+        assert model != MOTION, "Motion references must remain inline"
+        return "https://upload.example/" + kwargs["mime_type"].split("/")[0]
 
     for module in (visual_submission, inference_module, test_module):
         monkeypatch.setattr(module, "submit_generation_task", submit)
@@ -447,26 +535,38 @@ async def test_every_runner_inlines_motion_video_and_audio_without_temporary_upl
     )
     for runner in (visual, test):
         monkeypatch.setattr(runner, "_asset_data_uri", inline)
-        monkeypatch.setattr(runner, "_temporary_asset_url", forbidden)
+        monkeypatch.setattr(runner, "_temporary_asset_url", hosted)
     monkeypatch.setattr(inference_module, "read_data_uri", inline)
+    monkeypatch.setattr(inference_module, "upload_temporary_reference", inference_hosted)
 
     async def inputs(_task):
-        return {"video": (None, "video/webm", "clip.webm", 4)}
+        return {
+            "video": (None, "video/webm", "clip.webm", 4),
+            "image": (None, "image/png", "image.png", 4),
+        }
 
     monkeypatch.setattr(inference, "inputs", inputs)
     task = replace(
         _task("queued", provider_kind="autodl_video"),
-        model_slug=MOTION,
-        payload={"mode": "reference", "video_asset_ids": ["video"]},
+        model_slug=model,
+        payload={
+            "mode": "reference",
+            "reference_asset_ids": ["image"] if model != MOTION else [],
+            "video_asset_ids": ["video"],
+        },
     )
     await visual._submit_context(task)
     await test._submit_context(task)
     await inference.submit(task)
     assert len(captured) == 3
-    assert all(
-        next(item for item in items if item["type"] == "video")["video_url"].startswith("data:")
-        for items in captured
-    )
+    for items in captured:
+        video = next(item for item in items if item["type"] == "video")
+        if model == MOTION:
+            assert video["video_url"].startswith("data:")
+        else:
+            image = next(item for item in items if item["type"] == "image")
+            assert image["url"] == "https://upload.example/image"
+            assert video["video_url"] == "https://upload.example/video"
 
 
 @pytest.mark.asyncio

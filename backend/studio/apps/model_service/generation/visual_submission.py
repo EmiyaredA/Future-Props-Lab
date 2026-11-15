@@ -6,6 +6,7 @@ from pathlib import Path
 
 from studio.apps.model_service.generation.driver import ImmediateGenerationResult
 from studio.apps.model_service.generation.provider_tasks import submit_generation_task
+from studio.apps.model_service.providers.autodl_workflows import uses_temporary_reference_urls
 from studio.apps.model_service.providers.zealman_video import create_task, upload_reference
 
 
@@ -94,6 +95,7 @@ async def submit_visual_generation(
     content: list[dict[str, object]] = []
     if payload.get("prompt"):
         content.append({"type": "text", "text": payload["prompt"]})
+    autodl_urls = provider_kind == "autodl_video" and uses_temporary_reference_urls(model_slug)
     mode = payload.get("mode")
     if mode == "frames":
         content.append(
@@ -116,7 +118,9 @@ async def submit_visual_generation(
             content.append(
                 {
                     "type": "image",
-                    "url": await inputs.data_uri(asset_id, owner_user_id),
+                    "url": await inputs.temporary_url(asset_id, "image", owner_user_id)
+                    if autodl_urls
+                    else await inputs.data_uri(asset_id, owner_user_id),
                     "role": "reference",
                 }
             )
@@ -141,12 +145,12 @@ async def submit_visual_generation(
                     "video_url": await inputs.data_uri(
                         str(asset_id), owner_user_id, expected_kind="video"
                     )
-                    if provider_kind == "autodl_video"
+                    if provider_kind == "autodl_video" and not autodl_urls
                     else await inputs.temporary_url(
                         str(asset_id),
                         "video",
                         owner_user_id,
-                        reference_filename(asset_id),
+                        None if autodl_urls else reference_filename(asset_id),
                     ),
                 }
             )

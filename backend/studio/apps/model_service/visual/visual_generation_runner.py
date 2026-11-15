@@ -23,6 +23,7 @@ from studio.apps.model_service.generation.visual_submission import (
     VisualGenerationInputs,
     submit_visual_generation,
 )
+from studio.apps.model_service.providers.autodl_workflows import reference_upload_url
 from studio.apps.model_service.providers.zealman_live import ZealmanLiveMonitor
 from studio.apps.model_service.providers.zealman_video import get_task
 from studio.apps.model_service.storage.visual_generation_records import (
@@ -83,11 +84,13 @@ class VisualGenerationRunner(PollingTaskRunner):
         temporary_upload_url,
         maximum_output_bytes,
         decrypt: Callable[[str], str],
+        autodl_temporary_upload_url="",
     ):
         super().__init__()
         self.sessions, self.files = sessions, files
         self.check_authority = check_authority
         self.temporary_upload_url = temporary_upload_url
+        self.autodl_temporary_upload_url = autodl_temporary_upload_url
         self.maximum_output_bytes = maximum_output_bytes
         self.retention = ProviderRetention(sessions, files)
         self.zealman = ZealmanLiveMonitor()
@@ -168,7 +171,13 @@ class VisualGenerationRunner(PollingTaskRunner):
                 identity: self.files.input_path(batch.owner_user_id, batch.input_key, identity)
                 for identity in assets
             }
-        media = ProviderMedia(paths, assets, self.temporary_upload_url)
+        upload_url = reference_upload_url(
+            task.provider_kind,
+            task.model_slug,
+            self.temporary_upload_url,
+            self.autodl_temporary_upload_url,
+        )
+        media = ProviderMedia(paths, assets, upload_url)
         return await submit_visual_generation(
             VisualGenerationInputs(media.local_reference, media.data_uri, media.temporary_url),
             provider_kind=task.provider_kind,

@@ -8,6 +8,7 @@ from studio.apps.model_service.inference.assets import InferenceAssets
 from studio.apps.model_service.inference.catalog import get_model, normalize_parameters
 from studio.apps.model_service.inference.receipts import replay_task
 from studio.apps.model_service.inference.storage import InferenceStorage
+from studio.apps.model_service.providers.autodl_workflows import reference_upload_url
 from studio.apps.model_service.providers.local_qwen import MAX_REFERENCE_BYTES, inspect_reference
 from studio.apps.model_service.providers.seedance_references import (
     SeedanceReference,
@@ -120,7 +121,20 @@ class InferenceTasks:
                 raise OperationError("语音识别支持 MP3、WAV、M4A、OGG")
             if assets[0].byte_size > max_transcription_input_bytes(provider):
                 raise OperationError("音频超过当前模型的上传上限", "file_too_large", 413)
-        payload = normalize_parameters(body, model, provider, assets)
+        payload = normalize_parameters(
+            body,
+            model,
+            provider,
+            assets,
+            temporary_upload_configured=bool(
+                reference_upload_url(
+                    provider.kind,
+                    model.slug,
+                    self.settings.fpl_temp_media_upload_url,
+                    self.settings.fpl_autodl_temp_media_upload_url,
+                )
+            ),
+        )
         if provider.kind == "volcengine_video":
             try:
                 await validate_seedance_references(

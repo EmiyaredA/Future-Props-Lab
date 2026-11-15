@@ -36326,6 +36326,17 @@
             "title": "Audio Only",
             "type": "boolean"
           },
+          "default_duration": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Duration"
+          },
           "default_generate_audio": {
             "default": true,
             "title": "Default Generate Audio",
@@ -36482,10 +36493,32 @@
             "title": "Supports Seed",
             "type": "boolean"
           },
+          "supports_video_subject_to_replace": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Supports Video Subject To Replace"
+          },
           "supports_watermark": {
             "default": true,
             "title": "Supports Watermark",
             "type": "boolean"
+          },
+          "uses_temporary_reference_urls": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uses Temporary Reference Urls"
           }
         },
         "required": [
@@ -41745,6 +41778,17 @@
               }
             ],
             "title": "Upscale Factor"
+          },
+          "video_subject_to_replace": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Subject To Replace"
           },
           "width": {
             "anyOf": [

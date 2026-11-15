@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from collections.abc import Awaitable, Callable
 from datetime import timedelta
+from functools import partial
 from pathlib import Path
 from uuid import uuid4
 
@@ -36,6 +37,7 @@ from studio.apps.model_service.generation.visual_submission import (
     VisualGenerationInputs,
     submit_visual_generation,
 )
+from studio.apps.model_service.providers.autodl_workflows import reference_upload_url
 from studio.apps.model_service.providers.temporary_media import TemporaryMediaError
 from studio.apps.model_service.providers.zealman_live import ZealmanLiveMonitor
 from studio.apps.model_service.providers.zealman_video import get_task
@@ -377,6 +379,8 @@ class VisualGenerationRunner(PollingTaskRunner):
         expected_kind: str,
         owner_user_id: str,
         filename: str | None = None,
+        *,
+        upload_url: str | None = None,
     ) -> str:
         async with self.session_factory() as session:
             bind_owner(session, owner_user_id)
@@ -389,7 +393,7 @@ class VisualGenerationRunner(PollingTaskRunner):
         return await upload_temporary_reference(
             path=path,
             mime_type=mime_type,
-            upload_url=self.settings.fpl_temp_media_upload_url,
+            upload_url=upload_url or self.settings.fpl_temp_media_upload_url,
             transport=self.temporary_media_transport,
             filename=filename,
             file_extension=extension,
@@ -413,10 +417,17 @@ class VisualGenerationRunner(PollingTaskRunner):
         payload: dict,
         owner_user_id: str,
     ) -> str | ImmediateGenerationResult:
+        temporary_url = self._temporary_asset_url
+        upload_url = reference_upload_url(
+            provider_kind,
+            model_slug,
+            self.settings.fpl_temp_media_upload_url,
+            self.settings.fpl_autodl_temp_media_upload_url,
+        )
+        if upload_url != self.settings.fpl_temp_media_upload_url:
+            temporary_url = partial(temporary_url, upload_url=upload_url)
         return await submit_visual_generation(
-            VisualGenerationInputs(
-                self._local_reference, self._asset_data_uri, self._temporary_asset_url
-            ),
+            VisualGenerationInputs(self._local_reference, self._asset_data_uri, temporary_url),
             provider_kind=provider_kind,
             base_url=base_url,
             api_key=api_key,

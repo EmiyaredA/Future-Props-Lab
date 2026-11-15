@@ -1,5 +1,15 @@
 export const autodlPresets = [
   {
+    value: "minimax_h3_zm_titi",
+    label: "H3全自动角色动迁替换",
+    description: "用一张角色图替换源视频中的角色，支持 5–25 秒。",
+  },
+  {
+    value: "minimax_h3_zm_titim",
+    label: "H3全自动多角色动迁替换",
+    description: "用最多九张角色图替换源视频中的多个角色，支持 5–25 秒。",
+  },
+  {
     value: "minimax_h3_zm_nono",
     label: "H3多图多音频生视频(影视画质)",
     description: "MiniMax H3多图参考生成视频，最长支持15秒视频",

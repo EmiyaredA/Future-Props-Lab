@@ -27,6 +27,7 @@ async def prepare_visual_payload(
     input_snapshot,
     reference,
     validate_seedance,
+    temporary_upload_configured,
 ):
     payload = body.model_dump(
         mode="json",
@@ -79,7 +80,13 @@ async def prepare_visual_payload(
         payload["reference_asset_id"] = reference_ids[0] if len(reference_ids) == 1 else None
     elif isinstance(body, VideoGenerationTaskCreateIn):
         try:
-            payload = normalize_video_parameters(provider_kind, model_slug, payload)
+            payload = normalize_video_parameters(
+                provider_kind, model_slug, payload, explicit_fields=explicit_fields
+            )
+            if provider_kind == "autodl_video":
+                autodl_workflows.require_reference_delivery(
+                    model_slug, upload_configured=temporary_upload_configured
+                )
         except ValueError as exc:
             raise VisualGenerationValidationError(str(exc), code="unsupported_parameter") from None
         if provider_kind == "zealman_video":

@@ -39,6 +39,7 @@ async def model_options(request: Request, session: SessionDep, owner_user_id: Ow
         session,
         owner_user_id,
         upload_configured=bool(request.app.state.settings.fpl_temp_media_upload_url),
+        autodl_upload_configured=bool(request.app.state.settings.fpl_autodl_temp_media_upload_url),
         readiness=request.app.state.model_catalog_bindings.readiness,
     )
 

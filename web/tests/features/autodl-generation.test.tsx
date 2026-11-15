@@ -19,6 +19,7 @@ import {
 import {
   createModelTestGenerationTask,
   getModelTestGenerationOptions,
+  uploadModelTestReferenceAssets,
 } from "@features/models/api";
 
 vi.mock("@features/visual-workshop/api", async (original) => ({
@@ -34,6 +35,7 @@ vi.mock("@features/files/api", async (original) => ({
 vi.mock("@features/models/api", async (original) => ({
   ...(await original<typeof import("@features/models/api")>()),
   getModelTestGenerationOptions: vi.fn(),
+  uploadModelTestReferenceAssets: vi.fn(),
   getModelTestGenerationTasks: vi
     .fn()
     .mockResolvedValue({ items: [], total: 0 }),
@@ -129,6 +131,7 @@ beforeEach(() => {
   vi.mocked(createGenerationTask).mockClear();
   vi.mocked(createModelTestGenerationTask).mockClear();
 });
+afterEach(() => vi.unstubAllGlobals());
 
 test("resolution combinations and required images are enforced without inventing 960p landscape", () => {
   expect(videoChoices(caps, false, "960p").ratios).toEqual(["9:16"]);
@@ -448,4 +451,110 @@ test("invalid seeds remain editable and never persist an invalid canvas draft", 
   expect(commit).not.toHaveBeenCalled();
   fireEvent.change(input, { target: { value: "0" } });
   expect(commit).toHaveBeenLastCalledWith(0);
+});
+
+const replacementCaps: VideoCapabilities = {
+  ...caps,
+  duration_min: 5,
+  duration_max: 25,
+  default_duration: 10,
+  max_prompt_length: 2048,
+  resolutions: ["768p"],
+  prompt_required: false,
+  uses_temporary_reference_urls: true,
+  supports_video_subject_to_replace: true,
+  reference_limits: { image: 9, audio: 0, video: 1 },
+  reference_minimums: { image: 1, audio: 0, video: 1 },
+  reference_mime_types: { image: ["image/png"], video: ["video/mp4"] },
+};
+
+test("model test submits numbered role images in the chosen order with an optional prompt", async () => {
+  const user = userEvent.setup();
+  vi.stubGlobal(
+    "URL",
+    class extends URL {
+      static createObjectURL = vi.fn(() => "blob:autodl-reference");
+      static revokeObjectURL = vi.fn();
+    },
+  );
+  vi.mocked(uploadModelTestReferenceAssets).mockImplementation(
+    async (files) => ({
+      items: files.map((file) => ({
+        id: file.name,
+        original_filename: file.name,
+        media_kind: file.type === "video/mp4" ? "video" : "image",
+        mime_type: file.type,
+        byte_size: file.size,
+        claimed: false,
+        created_at: "2026-11-09T00:00:00Z",
+      })),
+    }),
+  );
+  panel(setup(replacementCaps));
+  const upload = await screen.findByLabelText("上传角色参考图和源视频");
+  await user.upload(upload, [
+    new File(["image"], "first.png", { type: "image/png" }),
+    new File(["video"], "clip.mp4", { type: "video/mp4" }),
+    new File(["image"], "second.png", { type: "image/png" }),
+  ]);
+  await user.click(screen.getByRole("button", { name: "前移 second.png" }));
+  await user.type(
+    screen.getByRole("textbox", { name: /追踪对象/ }),
+    "white dog",
+  );
+  expect(screen.getByRole("textbox", { name: /提示词/ })).not.toBeRequired();
+  await user.click(screen.getByRole("button", { name: "开始测试" }));
+  await waitFor(() =>
+    expect(createModelTestGenerationTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        prompt: "",
+        duration: 10,
+        resolution: "768p",
+        ratio: "9:16",
+        reference_asset_ids: ["second.png", "first.png"],
+        video_asset_ids: ["clip.mp4"],
+        workflow_parameters: { video_subject_to_replace: "white dog" },
+      }),
+    ),
+  );
+});
+
+test("workshop saves the tracking subject and submits references provided by canvas links", async () => {
+  const client = setup(replacementCaps);
+  const save = vi.fn();
+  render(
+    <QueryClientProvider client={client}>
+      <GenerationDrawer
+        projectId="project"
+        lockedKind="video"
+        compact
+        canvasNodeId="target"
+        linkedAssetIds={{ image: ["image"], video: ["clip"], audio: [] }}
+        onBeforeSubmit={async () => 3}
+        onDraftChange={save}
+        onClose={vi.fn()}
+      />
+    </QueryClientProvider>,
+  );
+  const input = await screen.findByRole("textbox", { name: /追踪对象/ });
+  fireEvent.change(input, { target: { value: "white dog" } });
+  fireEvent.blur(input);
+  expect(save).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      workflow_parameters: { video_subject_to_replace: "white dog" },
+    }),
+    true,
+  );
+  await userEvent.click(screen.getByRole("button", { name: "生成视频" }));
+  await waitFor(() => expect(createGenerationTask).toHaveBeenCalledOnce());
+  expect(vi.mocked(createGenerationTask).mock.calls[0][1]).toMatchObject({
+    canvas_node_id: "target",
+    expected_canvas_revision: 3,
+    mode: "reference",
+    prompt: "",
+    duration: 10,
+    reference_asset_ids: [],
+    video_asset_ids: [],
+    workflow_parameters: { video_subject_to_replace: "white dog" },
+  });
 });

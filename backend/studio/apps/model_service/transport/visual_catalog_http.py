@@ -36,7 +36,11 @@ router = APIRouter(include_in_schema=False)
 async def read_generation_options(request: Request):
     async with owned_catalog(request, purpose="visual_catalog") as (_actor, session):
         return await generation_options(
-            session, upload_configured=bool(request.app.state.settings.fpl_temp_media_upload_url)
+            session,
+            upload_configured=bool(request.app.state.settings.fpl_temp_media_upload_url),
+            autodl_upload_configured=bool(
+                getattr(request.app.state.settings, "fpl_autodl_temp_media_upload_url", "")
+            ),
         )
 
 

@@ -2,6 +2,7 @@ import { submitGenerationTasks } from "./generationSubmission";
 import { useVideoDefaults } from "./useVideoDefaults";
 import {
   videoRequestParameters,
+  numericWorkflowParameters,
   workflowSelectionError,
   videoSelectionError,
   videoChoices,
@@ -281,7 +282,10 @@ export function useGenerationDrawerController({
       Object.fromEntries(
         Object.entries(workflowValues)
           .filter(([, value]) => value !== "")
-          .map(([key, value]) => [key, Number(value)]),
+          .map(([key, value]) => [
+            key,
+            key === "video_subject_to_replace" ? value : Number(value),
+          ]),
       ),
     [workflowValues],
   );
@@ -405,8 +409,12 @@ export function useGenerationDrawerController({
       const mode = (caps.supported_modes?.[0] ?? "reference") as VideoMode;
       setVideoMode(mode);
     }
+    if (caps?.default_duration != null) setDuration(caps.default_duration);
     const changes: Record<string, unknown> = {
       model_id: id,
+      ...(caps?.default_duration != null
+        ? { duration: caps.default_duration }
+        : {}),
       ...(caps?.default_resolution
         ? {
             resolution: caps.default_resolution,
@@ -452,24 +460,16 @@ export function useGenerationDrawerController({
     }
     persistDraft(changes, true);
   };
+  const changeVideoSubject = (value: string) => {
+    setWorkflowValues({ ...workflowValues, video_subject_to_replace: value });
+    persistDraft({
+      workflow_parameters: value ? { video_subject_to_replace: value } : null,
+    });
+  };
   const changeWorkflowValues = (values: Record<string, string>) => {
     setWorkflowValues(values);
-    const parameters = Object.fromEntries(
-      Object.entries(values)
-        .filter(([, value]) => value !== "")
-        .map(([key, value]) => [key, Number(value)]),
-    );
-    const valid = Object.entries(parameters).every(([key, value]) => {
-      const spec = workflowCapabilities?.parameters[key];
-      return (
-        spec &&
-        Number.isFinite(value) &&
-        value >= spec.minimum &&
-        value <= spec.maximum &&
-        (spec.step !== 32 || value % 32 === 0)
-      );
-    });
-    if (valid) persistDraft({ workflow_parameters: parameters }, true);
+    const parameters = numericWorkflowParameters(values, workflowCapabilities);
+    if (parameters) persistDraft({ workflow_parameters: parameters }, true);
   };
   const reorderImages = (next: string[]) => {
     const previous = orderedReferenceIds(
@@ -615,10 +615,19 @@ export function useGenerationDrawerController({
         : model.slug === "doubao-seedance-2-0-260128",
     );
     if (!models.some((model) => model.id === modelId)) {
-      const next = preferred?.id ?? models[0]?.id ?? "";
+      const fallback = preferred ?? models[0];
+      const next = fallback?.id ?? "";
       if (next === modelId) return;
       setModelId(next);
-      persistDraft({ model_id: next || null }, true);
+      const defaultDuration = fallback?.video_capabilities?.default_duration;
+      if (defaultDuration != null) setDuration(defaultDuration);
+      persistDraft(
+        {
+          model_id: next || null,
+          ...(defaultDuration != null ? { duration: defaultDuration } : {}),
+        },
+        true,
+      );
     }
   }, [kind, modelId, models, persistDraft]);
   useEffect(() => {
@@ -764,6 +773,7 @@ export function useGenerationDrawerController({
         ),
         prompt,
         seed: workflowValues.seed,
+        subject: workflowValues.video_subject_to_replace,
         duration,
         resolution,
         ratio: effectiveRatio,
@@ -871,6 +881,7 @@ export function useGenerationDrawerController({
                 watermark,
                 generateAudio,
                 seed: workflowValues.seed,
+                subject: workflowValues.video_subject_to_replace,
               }),
             }),
         first_frame_asset_id:
@@ -930,6 +941,7 @@ export function useGenerationDrawerController({
     workflowValues,
     setWorkflowValues,
     changeWorkflowValues,
+    changeVideoSubject,
     prompt,
     setPrompt,
     size,

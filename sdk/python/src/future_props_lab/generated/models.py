@@ -5648,6 +5648,7 @@ class ValidationReconcileOut(WireModel):
 
 class VideoCapabilitiesOut(WireModel):
     audio_only: bool = Field(default=False, alias='audio_only')
+    default_duration: int | None = Field(default=None, alias='default_duration')
     default_generate_audio: bool = Field(default=True, alias='default_generate_audio')
     default_ratio: str | None = Field(default=None, alias='default_ratio')
     default_resolution: str | None = Field(default=None, alias='default_resolution')
@@ -5673,7 +5674,9 @@ class VideoCapabilitiesOut(WireModel):
     supports_prompt: bool = Field(default=True, alias='supports_prompt')
     supports_ratio: bool = Field(default=True, alias='supports_ratio')
     supports_seed: bool = Field(default=False, alias='supports_seed')
+    supports_video_subject_to_replace: bool | None = Field(default=None, alias='supports_video_subject_to_replace')
     supports_watermark: bool = Field(default=True, alias='supports_watermark')
+    uses_temporary_reference_urls: bool | None = Field(default=None, alias='uses_temporary_reference_urls')
 
 class VideoDownloadAssetOut(WireModel):
     byte_size: int = Field(default=..., alias='byte_size')
@@ -6390,6 +6393,7 @@ class WorkflowVideoParameters(WireModel):
     megapixels: float | None = Field(default=None, alias='megapixels')
     seed: int | None = Field(default=None, alias='seed')
     upscale_factor: float | None = Field(default=None, alias='upscale_factor')
+    video_subject_to_replace: str | None = Field(default=None, alias='video_subject_to_replace')
     width: int | None = Field(default=None, alias='width')
 
 AcceptanceCriterion.model_rebuild()

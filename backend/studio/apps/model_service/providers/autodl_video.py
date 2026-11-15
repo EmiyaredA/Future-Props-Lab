@@ -1,6 +1,7 @@
 """AutoDL ComfyUI protocol normalized for the shared generation driver."""
 
 import json
+import re
 from typing import Any
 from urllib.parse import quote
 
@@ -18,12 +19,15 @@ def root_url(base_url: str) -> str:
     return require_safe_provider_base_url(base_url or BASE_URL).rstrip("/")
 
 
-def response_data(response: httpx.Response, api_key: str) -> dict[str, Any]:
-    def safe(value):
-        return sanitize_provider_message(
-            str(value).replace(api_key, "[REDACTED]") if api_key else str(value)
-        )[:1000]
+def safe_message(value: Any, api_key: str) -> str:
+    message = str(value)
+    if api_key:
+        message = message.replace(api_key, "[REDACTED]")
+    message = re.sub(r"""https?://[^\s"'<>]+""", "[URL]", message)
+    return sanitize_provider_message(message)[:1000]
 
+
+def response_data(response: httpx.Response, api_key: str) -> dict[str, Any]:
     try:
         body = response.json()
     except ValueError:
@@ -31,7 +35,7 @@ def response_data(response: httpx.Response, api_key: str) -> dict[str, Any]:
     if not isinstance(body, dict):
         raise ValueError("AutoDL 返回无效响应")
     if response.is_error or str(body.get("code", "")).lower() != "success":
-        detail = safe(body.get("msg") or body.get("message") or "未知错误")
+        detail = safe_message(body.get("msg") or body.get("message") or "未知错误", api_key)
         raise ValueError(f"AutoDL 请求失败（HTTP {response.status_code}）: {detail}")
     if not isinstance(body.get("data"), dict):
         raise ValueError("AutoDL 返回无效任务数据")
@@ -87,9 +91,7 @@ async def get_task(
         message = str(data.get("error") or data.get("message") or "AutoDL 任务失败")
         return ProviderTaskStatus(
             "failed",
-            error_message=sanitize_provider_message(
-                message.replace(api_key, "[REDACTED]") if api_key else message
-            ),
+            error_message=safe_message(message, api_key),
         )
     if status in {"queued", "pending"}:
         return ProviderTaskStatus("pending")

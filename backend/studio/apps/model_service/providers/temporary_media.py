@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import re
+from mimetypes import guess_extension
 from pathlib import Path
 from urllib.parse import urlsplit
 from uuid import uuid4
@@ -8,6 +11,7 @@ from uuid import uuid4
 import httpx
 
 MAX_RESPONSE_BYTES = 4096
+TEMPFILE_UPLOAD_URL = "https://tempfile.org/api/upload/local"
 
 
 class TemporaryMediaError(Exception):
@@ -49,6 +53,20 @@ def _validated_result_url(value: str, upload_url: str) -> str:
     return result
 
 
+def _tempfile_download_url(body: str) -> str:
+    try:
+        response = json.loads(body)
+        files = response["files"]
+        if response["success"] is not True or not isinstance(files, list) or len(files) != 1:
+            raise ValueError
+        file_id = files[0]["id"]
+        if not isinstance(file_id, str) or not re.fullmatch(r"[A-Za-z0-9]+", file_id):
+            raise ValueError
+    except (KeyError, TypeError, ValueError) as exc:
+        raise TemporaryMediaError("临时参考素材上传返回了无效响应") from exc
+    return f"https://tempfile.org/{file_id}/download"
+
+
 async def upload_temporary_media(
     *,
     path: Path,
@@ -63,7 +81,10 @@ async def upload_temporary_media(
         raise TemporaryMediaError("未配置参考素材临时上传服务")
     if not path.is_file():
         raise TemporaryMediaError("参考素材文件已不存在")
-    upload_filename = _temporary_filename(path, filename, file_extension)
+    extension = file_extension or path.suffix or guess_extension(mime_type) or ""
+    upload_filename = _temporary_filename(path, filename, extension)
+    tempfile_org = upload_url == TEMPFILE_UPLOAD_URL
+    form_field = "files" if tempfile_org else "file"
     timeout = httpx.Timeout(300.0, connect=15.0, pool=30.0)
     for attempt in range(2):
         try:
@@ -72,7 +93,8 @@ async def upload_temporary_media(
                     async with client.stream(
                         "POST",
                         upload_url,
-                        files={"file": (upload_filename, source, mime_type)},
+                        files={form_field: (upload_filename, source, mime_type)},
+                        data={"expiryHours": "1"} if tempfile_org else None,
                     ) as response:
                         if response.status_code == 429 or response.status_code >= 500:
                             if attempt == 0:
@@ -90,6 +112,8 @@ async def upload_temporary_media(
                             result = body.decode("utf-8")
                         except UnicodeDecodeError as exc:
                             raise TemporaryMediaError("临时参考素材上传返回了无效响应") from exc
+                        if tempfile_org:
+                            result = _tempfile_download_url(result)
                         return _validated_result_url(result, upload_url)
         except (httpx.TimeoutException, httpx.NetworkError) as exc:
             if attempt == 0:

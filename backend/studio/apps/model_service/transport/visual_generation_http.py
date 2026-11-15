@@ -11,6 +11,7 @@ from studio.apps.model_service.catalog.visual_generation import (
     select_visual_model,
 )
 from studio.apps.model_service.catalog_reads import owned_catalog
+from studio.apps.model_service.providers.autodl_workflows import reference_upload_url
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.visual_workshop.visual_generation import (
     MODEL,
@@ -48,7 +49,14 @@ async def choose_visual_model(request: Request, digest: str, body: ModelSelectio
             provider_kind=provider.kind,
             provider_name=provider.name,
             model_slug=model.slug,
-            temporary_upload_configured=bool(request.app.state.settings.fpl_temp_media_upload_url),
+            temporary_upload_configured=bool(
+                reference_upload_url(
+                    provider.kind,
+                    model.slug,
+                    request.app.state.settings.fpl_temp_media_upload_url,
+                    getattr(request.app.state.settings, "fpl_autodl_temp_media_upload_url", ""),
+                )
+            ),
         )
 
 

@@ -158,6 +158,24 @@ describe("model directory", () => {
       screen.getByRole("combobox", { name: "AutoDL 工作流预设" }),
     );
     await user.click(
+      screen.getByRole("option", { name: /^H3全自动角色动迁替换/ }),
+    );
+    expect(screen.getByRole("textbox", { name: "模型标识" })).toHaveValue(
+      "minimax_h3_zm_titi",
+    );
+    await user.click(
+      screen.getByRole("combobox", { name: "AutoDL 工作流预设" }),
+    );
+    await user.click(
+      screen.getByRole("option", { name: /^H3全自动多角色动迁替换/ }),
+    );
+    expect(screen.getByRole("textbox", { name: "模型标识" })).toHaveValue(
+      "minimax_h3_zm_titim",
+    );
+    await user.click(
+      screen.getByRole("combobox", { name: "AutoDL 工作流预设" }),
+    );
+    await user.click(
       screen.getByRole("option", { name: /^H3多图多音频生视频\(影视画质\)/ }),
     );
     expect(screen.getByRole("textbox", { name: "模型标识" })).toHaveValue(

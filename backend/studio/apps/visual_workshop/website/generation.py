@@ -13,6 +13,7 @@ from studio.apps.model_service.catalog.visual_generation import (
     select_visual_model,
 )
 from studio.apps.model_service.generation.visual_payload import prepare_visual_payload
+from studio.apps.model_service.providers.autodl_workflows import reference_upload_url
 from studio.apps.model_service.providers.seedance_references import (
     SeedanceReference,
     validate_seedance_references,
@@ -75,7 +76,9 @@ class VisualGeneration(GenerationRecords):
 
     async def options(self) -> GenerationOptionsOut:
         return await generation_options(
-            self.session, upload_configured=bool(self.settings.fpl_temp_media_upload_url)
+            self.session,
+            upload_configured=bool(self.settings.fpl_temp_media_upload_url),
+            autodl_upload_configured=bool(self.settings.fpl_autodl_temp_media_upload_url),
         )
 
     async def _model(
@@ -224,6 +227,14 @@ class VisualGeneration(GenerationRecords):
                 input_snapshot=input_snapshot,
                 reference=reference,
                 validate_seedance=seedance,
+                temporary_upload_configured=bool(
+                    reference_upload_url(
+                        provider.kind,
+                        model.slug,
+                        self.settings.fpl_temp_media_upload_url,
+                        self.settings.fpl_autodl_temp_media_upload_url,
+                    )
+                ),
             )
         except VisualGenerationValidationError as exc:
             raise GenerationError(str(exc), code=exc.code, status=exc.status) from None

@@ -8,7 +8,11 @@ import {
   Settings2,
   Video,
 } from "lucide-react";
-import { VideoSeedControl, WorkflowVideoControls } from "@features/models";
+import {
+  VideoSeedControl,
+  VideoSubjectControl,
+  WorkflowVideoControls,
+} from "@features/models";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { type VideoMode } from "@features/visual-workshop/generation/options";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
@@ -78,6 +82,8 @@ export function CompactVideoGenerationDrawer({
     submit,
     hasLinkedVideoReferences,
   } = controller;
+  const characterReplacement =
+    controller.videoCapabilities?.uses_temporary_reference_urls;
   const minimumDuration =
     controller.videoCapabilities?.duration_min ??
     (workflowCapabilities ? 4 : 2);
@@ -325,8 +331,12 @@ export function CompactVideoGenerationDrawer({
                       excludedAssetIds={controller.excludedAssetIds}
                       onDropResult={setDropNotice}
                       projectId={projectId}
-                      label="参考图片"
-                      onReorder={reorderImages}
+                      label={characterReplacement ? "角色参考图" : "参考图片"}
+                      onReorder={
+                        !characterReplacement || referenceLimits.image > 1
+                          ? reorderImages
+                          : undefined
+                      }
                       minimal
                       showLabel={controller.layout === "workbench"}
                       value={references}
@@ -346,7 +356,7 @@ export function CompactVideoGenerationDrawer({
                       excludedAssetIds={controller.excludedAssetIds}
                       onDropResult={setDropNotice}
                       projectId={projectId}
-                      label="参考视频"
+                      label={characterReplacement ? "源视频" : "参考视频"}
                       kind="video"
                       minimal
                       showLabel={controller.layout === "workbench"}
@@ -360,7 +370,7 @@ export function CompactVideoGenerationDrawer({
                       onInvalidSelection={invalidSelection}
                     />
                   ) : null}
-                  {videoMode === "reference" ||
+                  {(videoMode === "reference" && referenceLimits.audio > 0) ||
                   audioReferences.length ||
                   linkedAssetIds.audio.length ? (
                     <ProjectMediaPicker
@@ -386,6 +396,13 @@ export function CompactVideoGenerationDrawer({
             </div>
           ) : null}
           <ReferenceDropNotice notice={dropNotice} />
+          {controller.videoCapabilities?.supports_video_subject_to_replace && (
+            <VideoSubjectControl
+              value={controller.workflowValues.video_subject_to_replace ?? ""}
+              onChange={controller.changeVideoSubject}
+              onBlur={() => persistDraft({}, true)}
+            />
+          )}
           {controller.videoCapabilities?.supports_prompt !== false && (
             <div className="video-composer-prompt">
               {controller.promptVersions && (
@@ -398,7 +415,11 @@ export function CompactVideoGenerationDrawer({
                 }
                 assets={promptAssets}
                 label="视频提示词"
-                placeholder="描述您的修改或生成需求…"
+                placeholder={
+                  characterReplacement
+                    ? "提示词可留空，也可指定哪张图替换哪个角色"
+                    : "描述您的修改或生成需求…"
+                }
                 canvasHistoryShortcuts
                 onChange={setPrompt}
                 onBlur={() => persistDraft({}, true)}

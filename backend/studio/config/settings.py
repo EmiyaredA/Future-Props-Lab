@@ -171,6 +171,7 @@ class Settings(BaseSettings):
     fpl_visual_asset_max_bytes: int = 200 * 1024 * 1024
     fpl_galgame_export_max_bytes: int = 8 * 1024 * 1024 * 1024
     fpl_temp_media_upload_url: str = ""
+    fpl_autodl_temp_media_upload_url: str = ""
     fpl_mcp_stdio_allowed_commands: str = ""
     fpl_skill_archive_max_bytes: int = 20 * 1024 * 1024
     fpl_skill_expanded_max_bytes: int = 50 * 1024 * 1024
@@ -274,17 +275,18 @@ class Settings(BaseSettings):
         ]
         if any(not Path(item).is_absolute() for item in allowed_commands):
             raise ValueError("FPL_MCP_STDIO_ALLOWED_COMMANDS must contain absolute paths")
-        if self.fpl_temp_media_upload_url:
-            parsed_upload_url = urlsplit(self.fpl_temp_media_upload_url)
+        for name in ("fpl_temp_media_upload_url", "fpl_autodl_temp_media_upload_url"):
+            upload_url = getattr(self, name)
+            if not upload_url:
+                continue
+            parsed_upload_url = urlsplit(upload_url)
             if (
                 parsed_upload_url.scheme != "https"
                 or not parsed_upload_url.hostname
                 or parsed_upload_url.username
                 or parsed_upload_url.password
             ):
-                raise ValueError(
-                    "FPL_TEMP_MEDIA_UPLOAD_URL must be empty or an unauthenticated HTTPS URL"
-                )
+                raise ValueError(f"{name.upper()} must be empty or an unauthenticated HTTPS URL")
         return self
 
     @property

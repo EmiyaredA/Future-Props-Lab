@@ -162,6 +162,9 @@ class ModelTestGeneration:
                         provider.kind,
                         model.slug,
                         upload_configured=bool(self.settings.fpl_temp_media_upload_url),
+                        autodl_upload_configured=bool(
+                            self.settings.fpl_autodl_temp_media_upload_url
+                        ),
                     ),
                     workflow_capabilities=parameter_options(model.slug)
                     if provider.kind == "zealman_video"
@@ -201,7 +204,21 @@ class ModelTestGeneration:
                     "当前测试模型不支持所选时长或首尾帧模式", code="unsupported_parameter"
                 )
             try:
-                payload = normalize_video_parameters(provider.kind, model.slug, payload)
+                payload = normalize_video_parameters(
+                    provider.kind, model.slug, payload, explicit_fields=body.model_fields_set
+                )
+                if provider.kind == "autodl_video":
+                    autodl_workflows.require_reference_delivery(
+                        model.slug,
+                        upload_configured=bool(
+                            autodl_workflows.reference_upload_url(
+                                provider.kind,
+                                model.slug,
+                                self.settings.fpl_temp_media_upload_url,
+                                self.settings.fpl_autodl_temp_media_upload_url,
+                            )
+                        ),
+                    )
             except ValueError as exc:
                 raise ModelTestGenerationError(str(exc), code="unsupported_parameter") from None
             for field, default in (

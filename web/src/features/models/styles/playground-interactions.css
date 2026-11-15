@@ -60,7 +60,7 @@
   min-width: 0;
   padding: 6px;
   display: grid;
-  grid-template-columns: 46px minmax(0, 1fr) 26px;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   border: 1px solid var(--border);
@@ -124,7 +124,11 @@
   vertical-align: -2px;
 }
 
-.generation-reference-item > button {
+.generation-reference-actions {
+  display: flex;
+}
+
+.generation-reference-actions > button {
   width: 26px;
   height: 26px;
   padding: 0;
@@ -136,12 +140,21 @@
   color: var(--faint);
 }
 
-.generation-reference-item > button:hover {
+.generation-reference-actions > button:disabled {
+  opacity: 0.45;
+}
+
+.generation-reference-actions > button:not(:disabled):hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.generation-reference-actions > button:last-child:hover {
   background: var(--danger-soft);
   color: var(--danger);
 }
 
-.generation-reference-item > button svg {
+.generation-reference-actions > button svg {
   width: 14px;
   height: 14px;
 }

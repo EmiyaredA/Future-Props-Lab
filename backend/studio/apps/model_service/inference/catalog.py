@@ -85,7 +85,14 @@ async def get_model(session, owner_user_id, model_id, kind, *, readiness=None):
     return model, provider
 
 
-async def options(session, owner_user_id, *, upload_configured: bool, readiness=None):
+async def options(
+    session,
+    owner_user_id,
+    *,
+    upload_configured: bool,
+    autodl_upload_configured=False,
+    readiness=None,
+):
     rows = (
         await session.execute(
             select(ModelEntry, ModelProvider)
@@ -120,6 +127,7 @@ async def options(session, owner_user_id, *, upload_configured: bool, readiness=
                     provider.kind,
                     model.slug,
                     upload_configured=upload_configured,
+                    autodl_upload_configured=autodl_upload_configured,
                 )
             except ValueError:
                 continue
@@ -175,7 +183,7 @@ async def options(session, owner_user_id, *, upload_configured: bool, readiness=
     return InferenceOptionsOut(items=items)
 
 
-def normalize_parameters(body, model, provider, assets):
+def normalize_parameters(body, model, provider, assets, *, temporary_upload_configured=False):
     params = dict(body.parameters)
     if body.kind == "speech_synthesis":
         payload = SpeechSynthesisParameters.model_validate(params).model_dump()
@@ -212,7 +220,8 @@ def normalize_parameters(body, model, provider, assets):
         )
     else:
         params.update(kind=body.kind, model_id=model.id)
-    payload = cls.model_validate(params).model_dump(mode="json", exclude=forbidden)
+    request = cls.model_validate(params)
+    payload = request.model_dump(mode="json", exclude=forbidden)
     by_id = {asset.id: asset for asset in assets}
     references = []
     for field, value in payload.items():
@@ -255,8 +264,13 @@ def normalize_parameters(body, model, provider, assets):
             raise OperationError("Seedream 4.5 参考图片只支持 PNG、JPEG 或 WebP")
     if body.kind == "video":
         try:
-            payload = normalize_video_parameters(provider.kind, model.slug, payload)
+            payload = normalize_video_parameters(
+                provider.kind, model.slug, payload, explicit_fields=request.model_fields_set
+            )
             if provider.kind == "autodl_video":
+                autodl_workflows.require_reference_delivery(
+                    model.slug, upload_configured=temporary_upload_configured
+                )
                 autodl_workflows.validate_references(
                     model.slug, [(a.media_kind, a.mime_type, a.byte_size) for a in assets]
                 )

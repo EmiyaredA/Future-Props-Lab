@@ -13,9 +13,13 @@ SEEDANCE_MODELS = {
 VIDEO_RATIOS = ["16:9", "9:16", "4:3", "3:4", "1:1", "21:9", "adaptive"]
 
 
-def video_capabilities(kind: str, slug: str, *, upload_configured=False):
+def video_capabilities(
+    kind: str, slug: str, *, upload_configured=False, autodl_upload_configured=False
+):
     if kind == "autodl_video":
-        return autodl_capabilities(slug)
+        return autodl_capabilities(
+            slug, upload_configured=upload_configured or autodl_upload_configured
+        )
     if kind != "volcengine_video":
         return None
     if slug not in SEEDANCE_MODELS:
@@ -36,9 +40,11 @@ def video_capabilities(kind: str, slug: str, *, upload_configured=False):
     )
 
 
-def normalize_video_parameters(kind: str, slug: str, payload: dict) -> dict:
+def normalize_video_parameters(
+    kind: str, slug: str, payload: dict, *, explicit_fields: set[str] | None = None
+) -> dict:
     if kind == "autodl_video":
-        return normalize_autodl_request(slug, payload)
+        return normalize_autodl_request(slug, payload, explicit_fields=explicit_fields)
     if len(str(payload.get("prompt") or "")) > 6000:
         raise ValueError("当前模型提示词最多支持 6000 个字符")
     result = dict(payload)

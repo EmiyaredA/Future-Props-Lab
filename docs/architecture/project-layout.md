@@ -1044,12 +1044,17 @@ Web 编辑器入口装配播放时钟和帧展示。`editor/playback-clock.ts` �
 
 ## AutoDL zealman 工作流
 
-`backend/studio/apps/model_service/providers/autodl_workflows.py` 固定登记 AutoDL 页面署名 zealman 的 12 个工作流，
+`backend/studio/apps/model_service/providers/autodl_workflows.py` 固定登记 AutoDL 页面署名 zealman 的 14 个工作流，
 拥有模式、提示词、素材格式及数量、时长语义、输出尺寸组合、种子范围和请求字段映射。
 `autodl_video.py` 拥有原始 Authorization Token、提交与结果轮询协议。三个入口共用
 `VideoCapabilitiesOut` 与准入归一化，并复用 GenerationTaskDriver；图片、音频与动作视频直接编码
-为 Base64，业务记录保留素材 ID 和参数，不保存编码内容。迁移 `0113_autodl_video` 扩展连接、
+为 Base64。H3 单角色和多角色替换使用临时 HTTPS 素材链接，前端按各自的角色图数量和
+参数能力呈现表单。业务记录保留素材 ID 和参数，不保存编码内容或临时参考素材链接。迁移 `0113_autodl_video` 扩展连接、
 测试任务及工坊任务类型约束，保留历史和外键。
+
+`models/generation/VideoSubjectControl.tsx` 与同目录样式拥有模型测试和视觉工坊共用的追踪对象标签，
+对外继续读写英文逗号分隔字符串；输入中的未确认文字也同步草稿，避免直接提交时丢失。
+`ModelVideoParameters.tsx` 只负责模型测试的视频参数表单，`videoCapabilities.ts` 集中参数选择与数值校验。
 
 视觉工坊 `outputs/references.py` 在显式启用双帧槽位时将画布图片连线解析为首帧、尾帧，并保留
 输入快照与 CAS；视频草稿使用 `VisualVideoPromptVersion` 保存最长 20000 字符的版本。

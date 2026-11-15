@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import re
 import secrets
 from dataclasses import dataclass
 from typing import Any
+from urllib.parse import urlsplit
 
 from studio.contracts.model_service.schemas.video_capabilities import VideoCapabilitiesOut
 
 BASE_URL = "https://www.autodl.art"
 PREFIX = "minimax_h3_"
 MOTION = "wan2.2animate-v4-motion_retargeting"
+TITI = PREFIX + "zm_titi"
+TITIM = PREFIX + "zm_titim"
 IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp"]
 AUDIO_MIMES = ["audio/mpeg", "audio/wav", "audio/x-wav", "audio/flac", "audio/x-flac"]
 MAX_REFERENCE_BYTES = 45 * 1024 * 1024
@@ -30,9 +34,37 @@ class Workflow:
     mode: str = "reference"
     prompt: bool = True
     flac: bool = True
+    duration_min: int = 1
+    default_duration: int | None = None
+    prompt_required: bool = True
+    max_prompt_length: int = 20000
+    video_required: bool = False
+    uses_temporary_reference_urls: bool = False
+    supports_subject: bool = False
+    single_image_field: bool = False
+
+
+def character_replacement(label: str, *, multiple: bool) -> Workflow:
+    return Workflow(
+        label,
+        images_max=9 if multiple else 1,
+        duration_min=5,
+        duration_max=25,
+        default_duration=10,
+        resolutions=("768p",),
+        seed_min=None,
+        prompt_required=False,
+        max_prompt_length=2048,
+        video_required=True,
+        uses_temporary_reference_urls=True,
+        supports_subject=multiple,
+        single_image_field=not multiple,
+    )
 
 
 WORKFLOWS = {
+    TITI: character_replacement("H3全自动角色动迁替换", multiple=False),
+    TITIM: character_replacement("H3全自动多角色动迁替换", multiple=True),
     PREFIX + "zm_nono": Workflow(
         "H3多图多音频生视频(影视画质)",
         audio_max=3,
@@ -79,7 +111,14 @@ WORKFLOWS = {
     PREFIX + "lightx2v": Workflow(
         "H3首尾帧生成视频", images_min=2, images_max=2, square=True, mode="frames"
     ),
-    MOTION: Workflow("动作迁移", images_max=1, resolutions=("464x832", "832x464"), prompt=False),
+    MOTION: Workflow(
+        "动作迁移",
+        images_max=1,
+        resolutions=("464x832", "832x464"),
+        prompt=False,
+        video_required=True,
+        single_image_field=True,
+    ),
 }
 
 
@@ -89,21 +128,45 @@ def profile(model: str) -> Workflow:
     return WORKFLOWS[model]
 
 
-def capabilities(model: str) -> VideoCapabilitiesOut:
+def uses_temporary_reference_urls(model: str) -> bool:
+    return profile(model).uses_temporary_reference_urls
+
+
+def reference_upload_url(
+    provider_kind: str, model_slug: str, default_url: str, autodl_url: str
+) -> str:
+    if provider_kind == "autodl_video" and autodl_url:
+        spec = WORKFLOWS.get(model_slug)
+        if spec and spec.uses_temporary_reference_urls:
+            return autodl_url
+    return default_url
+
+
+def require_reference_delivery(model: str, *, upload_configured: bool) -> None:
+    if uses_temporary_reference_urls(model) and not upload_configured:
+        raise ValueError("当前 AutoDL 工作流需要配置参考素材临时上传服务")
+
+
+def capabilities(model: str, *, upload_configured: bool = False) -> VideoCapabilitiesOut:
     spec = profile(model)
     motion = model == MOTION
     ratios = ["9:16", "16:9"] + (["1:1"] if spec.square else [])
     return VideoCapabilitiesOut(
-        duration_min=1,
+        duration_min=spec.duration_min,
         duration_max=spec.duration_max,
+        default_duration=spec.default_duration,
         supports_auto_duration=False,
         resolutions=list(spec.resolutions),
         ratios=[] if motion else ratios,
-        reference_limits={"image": spec.images_max, "audio": spec.audio_max, "video": int(motion)},
+        reference_limits={
+            "image": spec.images_max,
+            "audio": spec.audio_max,
+            "video": int(spec.video_required),
+        },
         reference_minimums={
             "image": spec.images_min,
             "audio": spec.audio_min,
-            "video": int(motion),
+            "video": int(spec.video_required),
         },
         reference_mime_types={
             "image": IMAGE_MIMES,
@@ -116,8 +179,8 @@ def capabilities(model: str) -> VideoCapabilitiesOut:
         if spec.images_min == 0 and spec.audio_max
         else [spec.mode],
         supports_prompt=spec.prompt,
-        prompt_required=spec.prompt,
-        max_prompt_length=20000,
+        prompt_required=spec.prompt and spec.prompt_required,
+        max_prompt_length=spec.max_prompt_length,
         supports_duration=not motion,
         duration_label="音频截取时长" if not spec.prompt and not motion else "时长",
         supports_ratio=not motion,
@@ -133,28 +196,44 @@ def capabilities(model: str) -> VideoCapabilitiesOut:
         }
         if not motion
         else {},
-        reference_video_upload_configured=True,
+        reference_video_upload_configured=not spec.uses_temporary_reference_urls
+        or upload_configured,
+        uses_temporary_reference_urls=spec.uses_temporary_reference_urls,
+        supports_video_subject_to_replace=spec.supports_subject,
     )
 
 
-def normalize_request(model: str, payload: dict[str, Any]) -> dict[str, Any]:
+def normalize_request(
+    model: str, payload: dict[str, Any], *, explicit_fields: set[str] | None = None
+) -> dict[str, Any]:
     spec, caps = profile(model), capabilities(model)
     result = dict(payload)
     if result.get("mode", "reference") not in caps.supported_modes:
         raise ValueError("当前 AutoDL 工作流不支持此生成模式")
-    if spec.prompt and not 1 <= len(str(result.get("prompt") or "").strip()) <= 20000:
-        raise ValueError("AutoDL 提示词必须为 1 至 20000 个字符")
-    if not spec.prompt:
-        if str(result.get("prompt") or "").strip():
+    prompt = str(result.get("prompt") or "").strip()
+    if spec.prompt:
+        if spec.prompt_required and not prompt:
+            raise ValueError("AutoDL 提示词不能为空")
+        if len(prompt) > spec.max_prompt_length:
+            raise ValueError(f"AutoDL 提示词最多支持 {spec.max_prompt_length} 个字符")
+        result["prompt"] = prompt
+    else:
+        if prompt:
             raise ValueError("当前 AutoDL 工作流不支持提示词")
         result.pop("prompt", None)
     if model == MOTION:
         result.pop("duration", None)
         result.pop("ratio", None)
     else:
-        if not 1 <= result.get("duration", 5) <= spec.duration_max:
-            raise ValueError(f"当前 AutoDL 工作流时长必须为 1 至 {spec.duration_max} 秒")
-        result["duration"] = result.get("duration", 5)
+        duration = result.get("duration", spec.default_duration or 5)
+        if spec.default_duration is not None and explicit_fields is not None:
+            if "duration" not in explicit_fields:
+                duration = spec.default_duration
+        if type(duration) is not int or not spec.duration_min <= duration <= spec.duration_max:
+            raise ValueError(
+                f"当前 AutoDL 工作流时长必须为 {spec.duration_min} 至 {spec.duration_max} 秒"
+            )
+        result["duration"] = duration
         result["ratio"] = result.get("ratio") or caps.default_ratio
     result["resolution"] = result.get("resolution") or caps.default_resolution
     if result["resolution"] not in caps.resolutions or (
@@ -188,8 +267,23 @@ def normalize_request(model: str, payload: dict[str, Any]) -> dict[str, Any]:
     parameters = {
         k: v for k, v in (result.get("workflow_parameters") or {}).items() if v is not None
     }
-    if set(parameters) - {"seed"} or (parameters and spec.seed_min is None):
+    allowed = set()
+    if spec.seed_min is not None:
+        allowed.add("seed")
+    if spec.supports_subject:
+        allowed.add("video_subject_to_replace")
+    if parameters.keys() - allowed:
         raise ValueError("当前 AutoDL 工作流不支持所选工作流参数")
+    if "video_subject_to_replace" in parameters:
+        subject = parameters.pop("video_subject_to_replace").strip()
+        if subject:
+            targets = [target.strip() for target in subject.split(",")]
+            if any(
+                not re.fullmatch(r"[A-Za-z0-9 '\-]+", target) or not re.search(r"[A-Za-z]", target)
+                for target in targets
+            ):
+                raise ValueError("追踪对象请填写英文，多个对象用英文逗号分隔")
+            parameters["video_subject_to_replace"] = ", ".join(targets)
     if spec.seed_min is not None:
         seed = parameters.get("seed")
         if seed is None:
@@ -226,8 +320,11 @@ def prepare_payload(
     else:
         resolution += {"9:16": "竖", "16:9": "横", "1:1": "(1:1)"}[payload["ratio"]]
     result: dict[str, Any] = {"resolution": resolution}
-    if spec.prompt:
+    if spec.prompt and payload.get("prompt"):
         result["prompt"] = payload["prompt"]
+    subject = (payload.get("workflow_parameters") or {}).get("video_subject_to_replace")
+    if spec.supports_subject and subject:
+        result["video_subject_to_replace"] = subject
     if model != MOTION:
         result["duration" if spec.prompt else "audio_duration"] = payload["duration"]
     if spec.seed_min is not None:
@@ -243,8 +340,14 @@ def prepare_payload(
         value = value.replace("data:audio/x-wav;", "data:audio/wav;", 1).replace(
             "data:audio/x-flac;", "data:audio/flac;", 1
         )
-        if model == MOTION:
-            name = f"ref_{kind}"
+        if spec.uses_temporary_reference_urls:
+            url = urlsplit(value)
+            if url.scheme != "https" or not url.hostname or url.username or url.password:
+                raise ValueError("当前 AutoDL 工作流的参考素材需要有效的 HTTPS URL")
+        if kind == "video":
+            name = "ref_video"
+        elif kind == "image" and spec.single_image_field:
+            name = "ref_image"
         elif spec.mode == "frames":
             name = item.get("role")
             if name not in {"first_frame", "last_frame"}:

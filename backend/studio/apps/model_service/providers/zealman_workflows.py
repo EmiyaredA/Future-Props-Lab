@@ -108,7 +108,9 @@ def parameter_options(model: str) -> dict[str, Any]:
 
 def normalize_parameters(model: str, values: dict[str, Any]) -> dict[str, Any]:
     specs = parameter_options(model)["parameters"]
-    known = {name for workflow in WORKFLOWS for name in parameter_options(workflow)["parameters"]}
+    known = {
+        name for workflow in WORKFLOWS for name in parameter_options(workflow)["parameters"]
+    } | {"video_subject_to_replace"}
     # Shared nullable schemas round-trip every workflow's fields through canvas drafts.
     # Null is absent; an actual value for another workflow remains unsupported.
     supplied = {name: value for name, value in values.items() if value is not None}

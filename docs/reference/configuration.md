@@ -16,6 +16,7 @@
 | `remote_web.web_root`（正式构建绝对路径）               | `FPL_REMOTE_WEB_ROOT`                              |
 | `limits.<名称>`（正整数）                               | 下文各容量/文件数变量去掉 `FPL_` 并小写            |
 | `integrations.temp_media_upload_url`                    | `FPL_TEMP_MEDIA_UPLOAD_URL`                        |
+| `integrations.autodl_temp_media_upload_url`             | `FPL_AUTODL_TEMP_MEDIA_UPLOAD_URL`                 |
 | `integrations.mcp_stdio_allowed_commands`（字符串数组） | `FPL_MCP_STDIO_ALLOWED_COMMANDS`（系统路径分隔符） |
 
 优先级：显式程序参数 > 进程环境变量 > TOML > 默认值。`FPL_CONFIG_FILE` 可为测试或部署指定独立

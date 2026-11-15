@@ -20,6 +20,10 @@ from studio.apps.model_service.generation.provider_tasks import (
 )
 from studio.apps.model_service.inference.storage import InferenceStorage
 from studio.apps.model_service.inference.tasks import ACTIVE
+from studio.apps.model_service.providers.autodl_workflows import (
+    reference_upload_url,
+    uses_temporary_reference_urls,
+)
 from studio.apps.model_service.providers.local_qwen import synthesize
 from studio.apps.model_service.providers.transcription import transcribe_model_audio
 from studio.apps.model_service.storage.models.call_log import LlmCallLog
@@ -166,11 +170,19 @@ class InferenceRunner(PollingTaskRunner):
             return await upload_temporary_reference(
                 path=path,
                 mime_type=mime,
-                upload_url=self.settings.fpl_temp_media_upload_url,
+                upload_url=reference_upload_url(
+                    task.provider_kind,
+                    task.model_slug,
+                    self.settings.fpl_temp_media_upload_url,
+                    self.settings.fpl_autodl_temp_media_upload_url,
+                ),
                 transport=self.transport,
             )
 
         payload = task.payload
+        autodl_urls = task.provider_kind == "autodl_video" and uses_temporary_reference_urls(
+            task.model_slug
+        )
         image_reference = None
         if payload.get("reference_asset_id"):
             image_reference = await image_url(payload["reference_asset_id"])
@@ -189,7 +201,13 @@ class InferenceRunner(PollingTaskRunner):
                 audio_urls.append(await media_url(identity))
             else:
                 content.append(
-                    {"type": "image", "url": await image_url(identity), "role": "reference"}
+                    {
+                        "type": "image",
+                        "url": await media_url(identity)
+                        if autodl_urls
+                        else await image_url(identity),
+                        "role": "reference",
+                    }
                 )
         for field, kind in (("audio_asset_ids", "audio"), ("video_asset_ids", "video")):
             for identity in payload.get(field, []):
@@ -197,7 +215,7 @@ class InferenceRunner(PollingTaskRunner):
                     {
                         "type": kind,
                         f"{kind}_url": await image_url(identity)
-                        if task.provider_kind == "autodl_video"
+                        if (task.provider_kind == "autodl_video" and not autodl_urls)
                         or (kind == "audio" and task.provider_kind == "volcengine_video")
                         else await media_url(identity),
                     }
@@ -209,7 +227,9 @@ class InferenceRunner(PollingTaskRunner):
             model_slug=task.model_slug,
             payload=payload,
             image_reference=image_reference,
-            image_references=[
+            image_references=[]
+            if autodl_urls
+            else [
                 await image_url(identity)
                 for identity in dict.fromkeys(
                     [

@@ -15,6 +15,7 @@ from studio.apps.model_service.providers.temporary_media import TemporaryMediaEr
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import (
+    VisualCanvasDocument,
     VisualGenerationTask,
     VisualWorkshopProject,
 )
@@ -458,5 +459,86 @@ async def test_processing_result_completes_only_after_asset_is_saved(
             assert asset is not None
             assert asset.project_id == project.id
             assert AssetStorage(get_settings()).path_for(asset).is_file()
+    finally:
+        await _cleanup(provider.id, project.id)
+
+
+@pytest.mark.asyncio
+async def test_autodl_completed_mp4_is_saved_and_published_as_a_canvas_output(monkeypatch):
+    from studio.apps.model_service.providers.autodl_video import get_task
+    from studio.apps.model_service.providers.autodl_workflows import TITIM
+
+    project, provider, model = await _fixture_rows()
+    task = _task(
+        project_id=project.id, provider_id=provider.id, model_id=model.id, status="pending"
+    )
+    task.provider_kind, task.model_slug, task.generation_kind = "autodl_video", TITIM, "video"
+    task.provider_task_id, task.canvas_node_id = "existing-remote", "video-node"
+    video = b"\x00\x00\x00\x18ftypisom" + b"test video"
+    async with SessionLocal() as session:
+        persisted_provider = await session.get(ModelProvider, provider.id)
+        persisted_provider.kind = "autodl_video"
+        persisted_model = await session.get(ModelEntry, model.id)
+        persisted_model.slug = TITIM
+        session.add(task)
+        session.add(
+            VisualCanvasDocument(
+                project_id=project.id,
+                nodes=[
+                    {
+                        "id": "video-node",
+                        "title": "替换结果",
+                        "kind": "video",
+                        "position": {"x": 0, "y": 0},
+                    }
+                ],
+            )
+        )
+        await session.commit()
+
+    async def poll(context):
+        assert context.provider_task_id == "existing-remote"
+        return await get_task(
+            base_url="",
+            api_key="mock",
+            task_id=context.provider_task_id,
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    json={
+                        "code": "Success",
+                        "data": {
+                            "status": "completed",
+                            "results": [{"type": "video", "url": "https://cdn.example/result.mp4"}],
+                        },
+                    },
+                )
+            ),
+        )
+
+    async def download(url, target):
+        assert url == "https://cdn.example/result.mp4"
+        target.write_bytes(video)
+        return len(video), "video", "video/mp4", ".mp4"
+
+    runner = VisualGenerationRunner(
+        session_factory=SessionLocal,
+        settings=get_settings(),
+        decrypt=SecretCipher(isolated_settings().fpl_secrets_key).decrypt,
+    )
+    monkeypatch.setattr(runner.task_driver, "poll", poll)
+    monkeypatch.setattr(runner, "_download", download)
+    try:
+        await runner.process_once()
+        async with SessionLocal() as session:
+            completed = await session.get(VisualGenerationTask, task.id)
+            assert completed.status == "completed", completed.error_message
+            asset = await session.get(VisualAsset, completed.result_asset_id)
+            assert asset.mime_type == "video/mp4"
+            assert AssetStorage(get_settings()).path_for(asset).read_bytes() == video
+            output = await session.scalar(
+                VisualNodeOutput.__table__.select().where(VisualNodeOutput.asset_id == asset.id)
+            )
+            assert output is not None
     finally:
         await _cleanup(provider.id, project.id)

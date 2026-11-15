@@ -21910,6 +21910,8 @@ export interface components {
              * @default false
              */
             audio_only: boolean;
+            /** Default Duration */
+            default_duration?: number | null;
             /**
              * Default Generate Audio
              * @default true
@@ -22013,11 +22015,15 @@ export interface components {
              * @default false
              */
             supports_seed: boolean;
+            /** Supports Video Subject To Replace */
+            supports_video_subject_to_replace?: boolean | null;
             /**
              * Supports Watermark
              * @default true
              */
             supports_watermark: boolean;
+            /** Uses Temporary Reference Urls */
+            uses_temporary_reference_urls?: boolean | null;
         };
         /** VideoDownloadAssetOut */
         VideoDownloadAssetOut: {
@@ -23772,6 +23778,8 @@ export interface components {
             seed?: number | null;
             /** Upscale Factor */
             upscale_factor?: number | null;
+            /** Video Subject To Replace */
+            video_subject_to_replace?: string | null;
             /** Width */
             width?: number | null;
         };

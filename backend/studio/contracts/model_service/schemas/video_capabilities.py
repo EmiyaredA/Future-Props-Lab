@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 class VideoCapabilitiesOut(BaseModel):
     duration_min: int = 4
     duration_max: int
+    default_duration: int | None = None
     supports_auto_duration: bool = True
     resolutions: list[str]
     ratios: list[str]
@@ -14,6 +15,8 @@ class VideoCapabilitiesOut(BaseModel):
     frames_require_adaptive_ratio: bool = False
     default_generate_audio: bool = True
     reference_video_upload_configured: bool = False
+    uses_temporary_reference_urls: bool | None = None
+    supports_video_subject_to_replace: bool | None = None
     supported_modes: list[str] = Field(default_factory=lambda: ["text", "frames", "reference"])
     reference_minimums: dict[str, int] = Field(default_factory=dict)
     reference_mime_types: dict[str, list[str]] = Field(default_factory=dict)

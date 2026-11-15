@@ -148,6 +148,7 @@ async def normalize(plan, paths, *, temporary_upload_url):
             input_snapshot=task.input_snapshot,
             reference=reference,
             validate_seedance=seedance,
+            temporary_upload_configured=bool(temporary_upload_url),
         )
         for task in plan.tasks
     }

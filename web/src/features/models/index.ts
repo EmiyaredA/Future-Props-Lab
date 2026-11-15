@@ -14,7 +14,9 @@ export {
   videoRequestParameters,
   workflowSelectionError,
   videoChoices,
+  numericWorkflowParameters,
   videoSelectionError,
 } from "./generation/videoCapabilities";
 
 export { LocalModelsPanel } from "./catalog/LocalModelsPanel";
+export { VideoSubjectControl } from "./generation/VideoSubjectControl";

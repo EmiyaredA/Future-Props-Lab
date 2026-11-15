@@ -173,3 +173,45 @@ async def test_upload_rejects_oversized_response(tmp_path: Path) -> None:
             transport=transport,
             retry_delay=0,
         )
+
+
+@pytest.mark.asyncio
+async def test_tempfile_upload_resolves_only_the_same_host_direct_download(tmp_path):
+    from studio.apps.model_service.providers.temporary_media import TEMPFILE_UPLOAD_URL
+
+    video = tmp_path / "opaque-storage-id"
+    video.write_bytes(b"video")
+
+    def upload(request: httpx.Request):
+        assert request.url == TEMPFILE_UPLOAD_URL
+        assert b'name="files"; filename="' in request.content
+        assert b'.mp4"' in request.content
+        assert b'name="expiryHours"\r\n\r\n1' in request.content
+        return httpx.Response(
+            200,
+            json={
+                "success": True,
+                "files": [{"id": "videoAbc123", "url": "https://untrusted.invalid/video"}],
+            },
+        )
+
+    result = await upload_temporary_media(
+        path=video,
+        mime_type="video/mp4",
+        upload_url=TEMPFILE_UPLOAD_URL,
+        transport=httpx.MockTransport(upload),
+    )
+    assert result == "https://tempfile.org/videoAbc123/download"
+
+    with pytest.raises(TemporaryMediaError, match="无效响应"):
+        await upload_temporary_media(
+            path=video,
+            mime_type="video/mp4",
+            upload_url=TEMPFILE_UPLOAD_URL,
+            transport=httpx.MockTransport(
+                lambda _: httpx.Response(
+                    200,
+                    json={"success": True, "files": [{"id": "../bad"}]},
+                )
+            ),
+        )

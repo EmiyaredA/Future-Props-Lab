@@ -128,6 +128,8 @@ async def resolve_references(
             for field in ("reference_asset_ids", "video_asset_ids", "audio_asset_ids")
         ):
             payload["mode"] = "reference"
+        elif body.mode == "reference":
+            raise OutputError("参考素材模式至少需要一个素材", code="invalid_reference")
     own_asset_id = target.get("asset_id")
     reference_ids = [
         *payload.get("reference_asset_ids", []),

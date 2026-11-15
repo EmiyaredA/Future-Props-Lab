@@ -32,6 +32,7 @@ from studio.apps.model_service.generation.provider_tasks import (
     upload_temporary_reference,
 )
 from studio.apps.model_service.playground.generation import ACTIVE_GENERATION_STATUSES
+from studio.apps.model_service.providers.autodl_workflows import uses_temporary_reference_urls
 from studio.apps.model_service.providers.temporary_media import TemporaryMediaError
 from studio.apps.model_service.providers.zealman_live import ZealmanLiveMonitor
 from studio.apps.model_service.providers.zealman_video import (
@@ -153,6 +154,9 @@ class ModelTestGenerationRunner(PollingTaskRunner):
                 model_slug=task.model_slug,
                 payload=task.payload,
             )
+        autodl_urls = task.provider_kind == "autodl_video" and uses_temporary_reference_urls(
+            task.model_slug
+        )
         content: list[dict[str, object]] = [
             {"type": "text", "text": str(task.payload.get("prompt", ""))}
         ]
@@ -174,7 +178,11 @@ class ModelTestGenerationRunner(PollingTaskRunner):
             content.append(
                 {
                     "type": "image",
-                    "url": await self._asset_data_uri(task.task_id, str(asset_id), "image"),
+                    "url": await self._temporary_asset_url(
+                        task.task_id, str(asset_id), "image", autodl=True
+                    )
+                    if autodl_urls
+                    else await self._asset_data_uri(task.task_id, str(asset_id), "image"),
                     "role": "reference",
                 }
             )
@@ -192,8 +200,10 @@ class ModelTestGenerationRunner(PollingTaskRunner):
                 {
                     "type": "video",
                     "video_url": await self._asset_data_uri(task.task_id, str(asset_id), "video")
-                    if task.provider_kind == "autodl_video"
-                    else await self._temporary_asset_url(task.task_id, str(asset_id), "video"),
+                    if task.provider_kind == "autodl_video" and not autodl_urls
+                    else await self._temporary_asset_url(
+                        task.task_id, str(asset_id), "video", autodl=autodl_urls
+                    ),
                 }
             )
         return await submit_generation_task(
@@ -255,7 +265,9 @@ class ModelTestGenerationRunner(PollingTaskRunner):
                 raise ValueError("历史参考素材尚未转移到模型服务")
             return await self.legacy_references.path(session, task, asset_id, expected_kind)
 
-    async def _temporary_asset_url(self, task_id: str, asset_id: str, expected_kind: str) -> str:
+    async def _temporary_asset_url(
+        self, task_id: str, asset_id: str, expected_kind: str, *, autodl: bool = False
+    ) -> str:
         try:
             path, mime_type = await self._asset_path(task_id, asset_id, expected_kind)
         except ValueError as exc:
@@ -263,7 +275,8 @@ class ModelTestGenerationRunner(PollingTaskRunner):
         return await upload_temporary_reference(
             path=path,
             mime_type=mime_type,
-            upload_url=self.settings.fpl_temp_media_upload_url,
+            upload_url=(self.settings.fpl_autodl_temp_media_upload_url if autodl else "")
+            or self.settings.fpl_temp_media_upload_url,
             transport=self.temporary_media_transport,
         )
 

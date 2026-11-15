@@ -139,6 +139,7 @@ FIELDS = {
     },
     "integrations": {
         "temp_media_upload_url": ("fpl_temp_media_upload_url", str),
+        "autodl_temp_media_upload_url": ("fpl_autodl_temp_media_upload_url", str),
         "mcp_stdio_allowed_commands": ("fpl_mcp_stdio_allowed_commands", list),
     },
 }

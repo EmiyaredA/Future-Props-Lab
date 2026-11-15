@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "01c734ebf09e101e034591149cf3da505710430d917c15d935956ac83ffce23c",
+  "openapi_sha256": "0a73d2bb7a2b9ab05dff15a9eb061227e7de094cbb91dbea3466bf7b406a38d4",
   "operations": [
     {
       "service": "identity",
@@ -5475,6 +5475,7 @@
     },
     "integrations": {
       "temp_media_upload_url": "integrations",
+      "autodl_temp_media_upload_url": "integrations",
       "mcp_stdio_allowed_commands": "integrations"
     }
   },

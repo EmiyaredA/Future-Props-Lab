@@ -18,7 +18,9 @@ from studio.contracts.model_service.schemas.visual_catalog import (
 )
 
 
-async def generation_options(session, *, upload_configured) -> GenerationOptionsOut:
+async def generation_options(
+    session, *, upload_configured, autodl_upload_configured=False
+) -> GenerationOptionsOut:
     rows = (
         await session.execute(
             select(ModelEntry, ModelProvider)
@@ -83,6 +85,7 @@ async def generation_options(session, *, upload_configured) -> GenerationOptions
                     provider.kind,
                     model.slug,
                     upload_configured=upload_configured,
+                    autodl_upload_configured=autodl_upload_configured,
                 ),
                 workflow_capabilities=(
                     parameter_options(model.slug) if provider.kind == "zealman_video" else None

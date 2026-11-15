@@ -11,6 +11,7 @@ class WorkflowVideoParameters(BaseModel):
     width: int | None = Field(default=None, ge=256, le=2048, multiple_of=32)
     height: int | None = Field(default=None, ge=256, le=2048, multiple_of=32)
     seed: int | None = Field(default=None, ge=0, le=1125899906842624)
+    video_subject_to_replace: str | None = None
 
 
 class WorkflowNumericParameterOut(BaseModel):

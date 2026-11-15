@@ -1,3 +1,4 @@
+import type { ModelTestGenerationOption } from "@features/models/api";
 import type { components } from "@generated/api";
 
 export type VideoCapabilities = components["schemas"]["VideoCapabilitiesOut"];
@@ -41,6 +42,7 @@ export function videoSelectionError(
     mode?: string;
     prompt?: string;
     seed?: string;
+    subject?: string;
     files?: Array<{ media_kind: string; mime_type: string; byte_size: number }>;
   },
 ) {
@@ -63,6 +65,17 @@ export function videoSelectionError(
       values.prompt.length > (caps?.max_prompt_length ?? 6000))
   )
     return `请输入 1 至 ${caps?.max_prompt_length ?? 6000} 个字符的提示词。`;
+  if (
+    caps?.supports_video_subject_to_replace &&
+    values.subject?.trim() &&
+    !values.subject
+      .split(",")
+      .every(
+        (target) =>
+          /^[A-Za-z0-9 '-]+$/.test(target.trim()) && /[A-Za-z]/.test(target),
+      )
+  )
+    return "追踪对象请填写英文，多个对象用英文逗号分隔。";
   if (
     caps?.supports_duration !== false &&
     (caps
@@ -130,6 +143,7 @@ export function videoRequestParameters(
     watermark: boolean;
     generateAudio: boolean;
     seed?: string;
+    subject?: string;
   },
 ) {
   return {
@@ -153,7 +167,13 @@ export function videoRequestParameters(
             seed: values.seed ? Number(values.seed) : null,
           },
         }
-      : {}),
+      : caps?.supports_video_subject_to_replace && values.subject?.trim()
+        ? {
+            workflow_parameters: {
+              video_subject_to_replace: values.subject.trim(),
+            },
+          }
+        : {}),
   };
 }
 
@@ -188,4 +208,29 @@ export function workflowSelectionError(
   return caps.max_reference_bytes && bytes > caps.max_reference_bytes
     ? "参考素材总大小不能超过 45 MB。"
     : "";
+}
+
+export function numericWorkflowParameters(
+  values: Record<string, string>,
+  capabilities?: NonNullable<
+    ModelTestGenerationOption["workflow_capabilities"]
+  > | null,
+): Record<string, number> | null {
+  const parameters = Object.fromEntries(
+    Object.entries(values)
+      .filter(([, value]) => value !== "")
+      .map(([key, value]) => [key, Number(value)]),
+  );
+  return Object.entries(parameters).every(([key, value]) => {
+    const spec = capabilities?.parameters[key];
+    return (
+      spec &&
+      Number.isFinite(value) &&
+      value >= spec.minimum &&
+      value <= spec.maximum &&
+      (spec.step !== 32 || value % 32 === 0)
+    );
+  })
+    ? parameters
+    : null;
 }

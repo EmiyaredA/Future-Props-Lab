@@ -8,6 +8,7 @@ from sqlalchemy import select, text
 
 from studio.apps.model_service.admission.admission import settle
 from studio.apps.model_service.catalog.visual_generation import VisualGenerationValidationError
+from studio.apps.model_service.providers.autodl_workflows import reference_upload_url
 from studio.apps.model_service.storage.visual_generation_batches import batch_conflict, load_batch
 from studio.apps.model_service.storage.visual_generation_records import (
     VisualProviderBatch,
@@ -31,10 +32,20 @@ def receipt(batch, tasks):
 
 
 class VisualGenerationIntake:
-    def __init__(self, sessions, *, files, originals_client, check_authority, temporary_upload_url):
+    def __init__(
+        self,
+        sessions,
+        *,
+        files,
+        originals_client,
+        check_authority,
+        temporary_upload_url,
+        autodl_temporary_upload_url="",
+    ):
         self.sessions, self.files = sessions, files
         self.originals_client, self.check_authority = originals_client, check_authority
         self.temporary_upload_url = temporary_upload_url
+        self.autodl_temporary_upload_url = autodl_temporary_upload_url
 
     @staticmethod
     async def tasks(session, identity):
@@ -49,20 +60,24 @@ class VisualGenerationIntake:
     async def prepare(self, plan, actor, assertion, originals_token):
         owner = actor.user_id
         identity = str(plan.plan_id)
+        upload_url = reference_upload_url(
+            plan.model.provider_kind,
+            plan.model.model_slug,
+            self.temporary_upload_url,
+            self.autodl_temporary_upload_url,
+        )
         async with self.sessions(info={"owner_user_id": owner}) as session:
             prior = await load_batch(session, plan.project_id, identity, plan.digest)
             if prior is not None:
                 if prior.state == "aborted":
                     raise batch_conflict()
                 return receipt(prior, await self.tasks(session, identity))
-            await verify_selection(
-                session, owner, plan, temporary_upload_url=self.temporary_upload_url
-            )
+            await verify_selection(session, owner, plan, temporary_upload_url=upload_url)
         directory = Path(mkdtemp(prefix="plan-", dir=self.files.staging_root(owner)))
         committing = False
         try:
             paths = await original_files(self.originals_client, plan, originals_token, directory)
-            payloads = await normalize(plan, paths, temporary_upload_url=self.temporary_upload_url)
+            payloads = await normalize(plan, paths, temporary_upload_url=upload_url)
             active = await self.check_authority(assertion=assertion, method="POST", path=plan.path)
             if active is not True:
                 raise VisualGenerationValidationError(
@@ -77,9 +92,7 @@ class VisualGenerationIntake:
                     if prior.state == "aborted":
                         raise batch_conflict()
                     return receipt(prior, await self.tasks(session, identity))
-                await verify_selection(
-                    session, owner, plan, temporary_upload_url=self.temporary_upload_url
-                )
+                await verify_selection(session, owner, plan, temporary_upload_url=upload_url)
                 batch = VisualProviderBatch(
                     id=identity,
                     owner_user_id=owner,
