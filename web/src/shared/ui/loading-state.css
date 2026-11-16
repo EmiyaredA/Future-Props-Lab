@@ -118,6 +118,22 @@
   font-size: inherit;
   font-weight: inherit;
 }
+/* Busy controls still need readable status text while blocking repeat clicks. */
+.btn:disabled:has(> .fpl-loading--inline) {
+  opacity: 1;
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  color: var(--text);
+  box-shadow: none;
+  cursor: wait;
+}
+button > .fpl-loading--inline,
+button > .fpl-loading--inline .fpl-loading-label {
+  color: inherit;
+}
+button > .fpl-loading--inline .fpl-loading-wait {
+  font-size: 12px;
+}
 .fpl-loading--inline .fpl-progress:not(.fpl-loading-dots) {
   height: 2px;
   min-height: 2px;
