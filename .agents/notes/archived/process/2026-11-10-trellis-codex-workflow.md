@@ -1,6 +1,7 @@
 # Agent Note: 主工作区的 Trellis 文档规范流程
 
 Status: implemented
+Archived: 2026-11-15
 
 ## Problem
 

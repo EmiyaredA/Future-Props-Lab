@@ -2,6 +2,7 @@
   "version": 1,
   "files": {
     "archived/feature/2026-09-14-live-development-protected-data.md": "sha256:b3dc1a03fe1ee0dc71d61d92ddff7618bb8538a6b8982f764935dd87f4bfca45",
+    "archived/process/2026-11-10-trellis-codex-workflow.md": "sha256:815f1c8f2e8482d5d40fc0ac6e5b11198b37e391b4c93353517c40c02b55e9f1",
     "archived/testing/2026-08-23-architecture-gates-and-empty-size-baseline.md": "sha256:c21ca76ca9d619e6307998d7e2fdd95ed260873e86ed63fafd1d2cf031ea8f45"
   }
 }

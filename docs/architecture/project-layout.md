@@ -1165,8 +1165,8 @@ OpenAPI 导出只构造 HTTP 协议层。测试通过 `tests/website_test_suppor
 
 ## 自动化发现与开发者文档
 
-Trellis 的任务、规范索引和工作记录位于 `.trellis/`，Codex 项目技能位于 `.agents/skills/trellis-*/`。
-Studio 后端以音频标注为首个规范入口，规则正文归现有工程契约。入口和适用范围见根 `AGENTS.md`。
+开发规则从根 `AGENTS.md` 按任务索引直接进入工程契约；计划与审查引用同一组条款。
+项目技能位于 `.agents/skills/`，工程决策记录位于 `.agents/notes/`，维护规则见 `docs/operations/agent-notes.md`。
 
 Gateway 的公开输入类型、白名单及路由规则在 `studio/contracts/gateway/`；`automation_operations.json` 是 SDK 和服务镜像共用的白名单真源。`gateway/use_cases/resource_links.py` 在查询前校验操作权限，查询不到、其他账号和已删除资源均返回不存在。网站通过 `storage/website_resources.py` 读取显式装配的模型注册表，独立服务通过 `clients/resource_reader.py` 向资源所有者发送当前签名身份。两种装配调用同一个用例，不各自裁决链接规则。
 
