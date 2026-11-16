@@ -68,6 +68,7 @@ async def test_model_catalog_diagnostic_and_logs(monkeypatch: pytest.MonkeyPatch
             "speech_recognition",
             "music_generation",
             "video_generation",
+            "video_enhancement",
             "image_generation",
             "end_to_end_speech",
         }

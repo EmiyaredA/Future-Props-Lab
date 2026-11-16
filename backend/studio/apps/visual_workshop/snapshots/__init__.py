@@ -1,1 +1,1 @@
-"""studio.apps.visual_workshop.website.snapshots components."""
+"""studio.assembly.website.visual_workshop.website.snapshots components."""

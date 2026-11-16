@@ -10,10 +10,10 @@ import pytest
 from sqlalchemy import select
 
 from studio.apps.video_editor.errors import VideoEditorValidationError
-from studio.apps.video_editor.runner import VideoEditorRunner
+from studio.apps.video_editor.rules.timeline_operations import apply_operations
 from studio.apps.video_editor.schemas import VideoEditorClip, VideoEditorTimelineBatchIn
 from studio.apps.video_editor.storage.models import VideoEditorTask
-from studio.apps.video_editor.timeline import apply_operations
+from studio.assembly.website.video_editor.runner import VideoEditorRunner
 from studio.config.settings import get_settings
 from website_test_support import SessionLocal, app
 
@@ -240,7 +240,7 @@ async def test_ripple_api_conflicts_collisions_and_restore_validation():
 
 @pytest.mark.asyncio
 async def test_media_duration_is_published_before_preview_encoding(monkeypatch):
-    from studio.apps.video_editor import runner as runner_module
+    from studio.assembly.website.video_editor import runner as runner_module
 
     started, release = threading.Event(), threading.Event()
     prepare = runner_module.prepare_media

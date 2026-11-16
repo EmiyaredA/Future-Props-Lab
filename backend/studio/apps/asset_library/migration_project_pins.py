@@ -7,6 +7,7 @@ from fastapi import HTTPException
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 
+from studio.apps.asset_library.storage.migration_blobs import DATASET as ASSET_BLOBS
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.service_models import AssetReferencePin, AssetReferenceSet
 from studio.contracts.asset_library.annotation import MAX_AUDIO_BYTES
@@ -59,7 +60,6 @@ from studio.runtime.database.migration_receipts import batch_receipt, has_receip
 from studio.runtime.database.project_history_migration import CURSOR
 from studio.runtime.ids import new_id
 
-from .migration_blobs import DATASET as ASSET_BLOBS
 from .migration_models import AssetImportReceipt
 
 LIBRARY = (

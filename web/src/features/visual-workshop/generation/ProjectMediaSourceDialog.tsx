@@ -6,13 +6,13 @@ import { Check, ChevronRight, Folder, Search, X } from "lucide-react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import {
   fileQueryKeys,
+  pathToFolder,
   getFiles,
   getFolders,
   importManagedFiles,
   type ManagedFile,
   type MediaKind,
 } from "@features/files";
-import { pathToFolder } from "@features/files/AssetBrowserParts";
 import { getVisualWorkshopProjects } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { GenerationMediaPreview } from "@features/visual-workshop/generation/GenerationMediaPreview";

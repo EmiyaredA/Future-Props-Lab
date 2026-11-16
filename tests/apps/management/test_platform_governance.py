@@ -7,7 +7,7 @@ from sqlalchemy import select
 
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.model_service.storage.models.model_service import ModelProvider
-from studio.apps.model_service.templates.website_sync import ModelTemplateSyncRunner
+from studio.assembly.website.model_service.templates.website_sync import ModelTemplateSyncRunner
 from tests.apps.visual_workshop.test_workspace_governance import client_account
 from website_test_support import SessionLocal, app
 

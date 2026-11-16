@@ -7,9 +7,9 @@ import httpx
 import pytest
 from fastapi import Request
 
-from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.assembly.http_dependencies import SessionDep, require_studio_auth
 from studio.assembly.website.models import bind_owner
+from studio.assembly.website.video_editor.runner import VideoEditorRunner
 from studio.config.settings import get_settings
 from website_test_support import SessionLocal, app
 

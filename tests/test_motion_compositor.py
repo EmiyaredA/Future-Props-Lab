@@ -15,10 +15,10 @@ from sqlalchemy import select
 
 from studio.apps.media_rendering.local.motion_frames import MotionFrameRenderer
 from studio.apps.motion_compositor.projects import MotionNotFound
-from studio.apps.motion_compositor.runner import MotionExportRunner
 from studio.apps.motion_compositor.storage.models import MotionTask
-from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorTask
+from studio.assembly.website.motion_compositor.runner import MotionExportRunner
+from studio.assembly.website.video_editor.runner import VideoEditorRunner
 from studio.config.settings import get_settings
 from studio.contracts.motion_compositor.document import MotionComposition
 from website_test_support import SessionLocal, app

@@ -5,7 +5,10 @@ from uuid import uuid4
 from pydantic import ValidationError
 from sqlalchemy import select, text
 
-from studio.apps.visual_workshop.canvas_asset_values import existing_assets, expected_assets
+from studio.apps.visual_workshop.canvas_asset_values import (
+    existing_assets,
+    expected_assets,
+)
 from studio.apps.visual_workshop.canvas_documents import CanvasDocuments
 from studio.apps.visual_workshop.canvas_values import canvas_out
 from studio.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES

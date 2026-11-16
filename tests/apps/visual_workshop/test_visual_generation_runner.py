@@ -19,7 +19,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
-from studio.apps.visual_workshop.website.generation_runner import (
+from studio.assembly.website.visual_workshop.website.generation_runner import (
     MaterializationError,
     VisualGenerationRunner,
     _assert_public_https,

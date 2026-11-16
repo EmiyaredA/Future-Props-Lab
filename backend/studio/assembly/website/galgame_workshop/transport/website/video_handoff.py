@@ -1,0 +1,74 @@
+from fastapi import APIRouter, Request, status
+
+from studio.apps.galgame_workshop.schemas import (
+    GalgameVideoEditorHandoffCreateIn,
+    GalgameVideoEditorHandoffTaskListOut,
+    GalgameVideoEditorHandoffTaskOut,
+)
+from studio.assembly.http_dependencies import SessionDep
+from studio.assembly.website.galgame_workshop.transport.website._shared import _asset_error
+from studio.assembly.website.galgame_workshop.video.video_handoff import GalgameVideoEditorHandoffs
+from studio.contracts.asset_library.errors import AssetError
+
+router = APIRouter()
+
+
+@router.post(
+    "/{project_id}/video-editor-handoffs",
+    response_model=GalgameVideoEditorHandoffTaskOut,
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def create_handoff(
+    request: Request, session: SessionDep, project_id: str, body: GalgameVideoEditorHandoffCreateIn
+) -> GalgameVideoEditorHandoffTaskOut:
+    try:
+        return await GalgameVideoEditorHandoffs(session, request.app.state.settings).create(
+            project_id, body
+        )
+    except AssetError as exc:
+        raise _asset_error(exc) from None
+
+
+@router.get(
+    "/{project_id}/video-editor-handoffs",
+    response_model=GalgameVideoEditorHandoffTaskListOut,
+)
+async def list_handoffs(
+    request: Request, session: SessionDep, project_id: str
+) -> GalgameVideoEditorHandoffTaskListOut:
+    try:
+        return await GalgameVideoEditorHandoffs(session, request.app.state.settings).list(
+            project_id
+        )
+    except AssetError as exc:
+        raise _asset_error(exc) from None
+
+
+@router.get(
+    "/{project_id}/video-editor-handoffs/{task_id}",
+    response_model=GalgameVideoEditorHandoffTaskOut,
+)
+async def get_handoff(
+    request: Request, session: SessionDep, project_id: str, task_id: str
+) -> GalgameVideoEditorHandoffTaskOut:
+    try:
+        return await GalgameVideoEditorHandoffs(session, request.app.state.settings).get(
+            project_id, task_id
+        )
+    except AssetError as exc:
+        raise _asset_error(exc) from None
+
+
+@router.post(
+    "/{project_id}/video-editor-handoffs/{task_id}/cancel",
+    response_model=GalgameVideoEditorHandoffTaskOut,
+)
+async def cancel_handoff(
+    request: Request, session: SessionDep, project_id: str, task_id: str
+) -> GalgameVideoEditorHandoffTaskOut:
+    try:
+        return await GalgameVideoEditorHandoffs(session, request.app.state.settings).cancel(
+            project_id, task_id
+        )
+    except AssetError as exc:
+        raise _asset_error(exc) from None

@@ -29,8 +29,8 @@ from studio.apps.model_service.providers.autodl_workflows import (
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.schemas.workshop import VisualCanvasVideoGenerationDraft
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
-from studio.apps.visual_workshop.website.generation import VisualGeneration
 from studio.assembly.website.models import bind_owner
+from studio.assembly.website.visual_workshop.website.generation import VisualGeneration
 from studio.config.settings import get_settings
 from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
@@ -495,7 +495,7 @@ async def test_every_runner_uses_the_registered_media_transport(monkeypatch, mod
     from studio.apps.model_service.generation import visual_submission as visual_submission
     from studio.apps.model_service.inference import runner as inference_module
     from studio.apps.model_service.playground import generation_runner as test_module
-    from studio.apps.visual_workshop.website import generation_runner as visual_module
+    from studio.assembly.website.visual_workshop.website import generation_runner as visual_module
 
     captured = []
 
@@ -598,9 +598,9 @@ async def test_recovery_never_resubmits_and_existing_result_only_retries_downloa
 
 @pytest.mark.asyncio
 async def test_canvas_frame_links_preserve_roles_order_snapshot_and_cas():
-    from studio.apps.visual_workshop.outputs.history import OutputError
     from studio.apps.visual_workshop.outputs.references import resolve_references
     from studio.apps.visual_workshop.storage.models import VisualCanvasDocument
+    from studio.assembly.website.visual_workshop.outputs.history import OutputError
 
     canvas = SimpleNamespace(
         revision=3,

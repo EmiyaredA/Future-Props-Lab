@@ -18,14 +18,16 @@ from studio.apps.thought_workshop.storage.migrations.registry import (
 )
 from studio.apps.thought_workshop.storage.models import ThoughtNoteHistory
 from studio.apps.thought_workshop.storage.service_models import ACCOUNT_MODELS, MODELS
-from studio.apps.thought_workshop.transport.website import router as thought_router
-from studio.apps.thought_workshop.transport.website.community import router as community_router
-from studio.apps.thought_workshop.transport.website.community_tables import (
-    router as community_tables_router,
-)
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
 from studio.apps.thought_workshop.website.asset_metadata import AssetMetadataBindings
 from studio.assembly.independent.identity.application import create_app
+from studio.assembly.website.thought_workshop.transport.website import router as thought_router
+from studio.assembly.website.thought_workshop.transport.website.community import (
+    router as community_router,
+)
+from studio.assembly.website.thought_workshop.transport.website.community_tables import (
+    router as community_tables_router,
+)
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.identity.account_directory import DirectoryQuery
 from studio.contracts.identity.errors import AccountError

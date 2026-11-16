@@ -1,8 +1,14 @@
 """Apply a repair prompt within the draft's Canvas transaction."""
 
 from studio.apps.visual_workshop.acceptance.review_records import ReviewRecords
-from studio.apps.visual_workshop.canvas_asset_values import existing_assets, expected_assets
-from studio.apps.visual_workshop.canvas_documents import CanvasDocuments, VisualCanvasError
+from studio.apps.visual_workshop.canvas_asset_values import (
+    existing_assets,
+    expected_assets,
+)
+from studio.apps.visual_workshop.canvas_documents import (
+    CanvasDocuments,
+    VisualCanvasError,
+)
 from studio.apps.visual_workshop.handoffs.segment_handoffs import require_canvas_unreserved
 
 

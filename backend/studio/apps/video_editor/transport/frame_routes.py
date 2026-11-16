@@ -1,14 +1,14 @@
 """The existing Video Editor still and text layer routes on the independent service."""
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import Response
 
 from studio.apps.video_editor.errors import (
+    FrameRejected,
     VideoEditorNotFoundError,
     VideoEditorUnavailableError,
     VideoEditorValidationError,
 )
-from studio.apps.video_editor.frame_requests import FrameRequests
 from studio.apps.video_editor.transport.website.errors import _error
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 
@@ -27,13 +27,15 @@ async def exact_frame(
     without_chroma_clip_id: str | None = Query(default=None, alias="withoutChromaClipId"),
 ) -> Response:
     try:
-        png = await FrameRequests(request, session, owner_user_id).frame(
+        png = await request.app.state.video_frame_requests(request, session, owner_user_id).frame(
             project_id,
             revision,
             time_us,
             width,
             without_chroma_clip_id,
         )
+    except FrameRejected as exc:
+        raise HTTPException(exc.status, exc.detail) from None
     except (
         VideoEditorNotFoundError,
         VideoEditorValidationError,
@@ -61,9 +63,11 @@ async def text_clip_layer(
     revision: int = Query(ge=0),
 ) -> Response:
     try:
-        png = await FrameRequests(request, session, owner_user_id).text(
+        png = await request.app.state.video_frame_requests(request, session, owner_user_id).text(
             project_id, clip_id, revision
         )
+    except FrameRejected as exc:
+        raise HTTPException(exc.status, exc.detail) from None
     except (
         VideoEditorNotFoundError,
         VideoEditorValidationError,

@@ -9,7 +9,7 @@ from studio.apps.media_rendering.local.galgame.compiler import (
 )
 from studio.apps.media_rendering.local.galgame.dialogue import FONT_REGULAR
 from studio.apps.media_rendering.local.galgame.lip_sync import AudioEnvelope
-from studio.apps.video_editor.frames import render_plan_frame
+from studio.assembly.website.video_editor.frames import render_plan_frame
 
 
 def test_story_compiler_builds_layered_timeline_and_capture_frame() -> None:

@@ -12,12 +12,25 @@ from studio.runtime.database.migrations import apply
 
 NOW = "2026-11-09 00:00:00"
 REGISTRIES = {"website": runner.MIGRATIONS, "visual": VISUAL, "models": MODELS, "assets": ASSETS}
+RETIREMENT_IDS = {
+    "website": "0126_retire_visual_conversations",
+    "visual": "0011_retire_visual_conversations",
+    "models": "0021_retire_visual_conversations",
+    "assets": "0020_retire_visual_conversations",
+}
 
 
 def migrate(path, owner, monkeypatch, *, old=False):
     registry = REGISTRIES[owner]
     if old:
-        registry = registry[:-1]
+        # Later migrations must not move this fixture past the retirement boundary.
+        boundary = next(
+            index
+            for index, migration in enumerate(registry)
+            if (migration.migration_id if owner == "website" else migration.id)
+            == RETIREMENT_IDS[owner]
+        )
+        registry = registry[:boundary]
     if owner == "website":
         with monkeypatch.context() as patch:
             patch.setattr(runner, "MIGRATIONS", registry)

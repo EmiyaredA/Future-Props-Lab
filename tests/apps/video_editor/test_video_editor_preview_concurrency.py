@@ -13,9 +13,9 @@ from studio.apps.media_rendering.local.evaluator import FRAME_COMPOSITOR_VERSION
 from studio.apps.media_rendering.local.inputs import RenderPlan
 from studio.apps.media_rendering.local.text_layer import TEXT_RENDER_VERSION
 from studio.apps.media_rendering.local.video_sampling import VIDEO_SAMPLING_VERSION
-from studio.apps.video_editor import frames
 from studio.apps.video_editor.errors import VideoEditorNotFoundError
 from studio.apps.video_editor.schemas import VideoEditorTimelineDocument
+from studio.assembly.website.video_editor import frames
 from studio.config.settings import get_settings
 from website_test_support import app, engine
 

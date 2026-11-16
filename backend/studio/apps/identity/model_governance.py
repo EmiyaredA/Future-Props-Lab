@@ -6,14 +6,13 @@ import time
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import select
 from starlette.responses import JSONResponse
 
-from studio.apps.identity.storage.models.accounts import User
+from studio.apps.identity.storage.account_directory import template_targets as read_template_targets
+from studio.apps.identity.storage.actor_status import active_actor
 from studio.contracts.identity.claims import verify_context
 
 from .catalog_events import require_models
-from .live import active_actor
 
 router = APIRouter(
     prefix="/_internal/v1/model-governance",
@@ -56,20 +55,9 @@ async def template_targets(request: Request, body: TemplateTargets):
         active = await active_actor(session, actor)
         targets = []
         if active:
-            statement = select(User.id, User.display_name, User.revision).where(
-                User.platform_role == body.role,
-                User.status == "active",
-                User.must_change_password.is_(False),
-            )
-            if body.account_ids is not None:
-                statement = statement.where(User.id.in_(set(body.account_ids)))
-            rows = (await session.execute(statement.order_by(User.id).limit(1001))).all()
-            if len(rows) > 1000:
+            targets = await read_template_targets(session, body.role, body.account_ids)
+            if len(targets) > 1000:
                 raise HTTPException(413, {"code": "template_targets_too_large"})
-            targets = [
-                {"id": row.id, "display_name": row.display_name, "revision": row.revision}
-                for row in rows
-            ]
     return JSONResponse(
         {"active": bool(active), "expires_at": int(time.time()) + 5, "targets": targets},
         headers={"Cache-Control": "no-store"},

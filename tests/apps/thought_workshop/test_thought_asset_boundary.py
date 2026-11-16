@@ -371,7 +371,7 @@ async def test_website_metadata_uses_injected_storage_and_rechecks_owner(instanc
     from dataclasses import replace
 
     from studio.apps.asset_library.storage.file_paths import AssetStorage
-    from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
+    from studio.assembly.website.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 
     app, _, _, identity = instance
     async with app.state.database.sessions(info={"owner_user_id": "alpha"}) as session:
@@ -397,8 +397,8 @@ async def test_sync_snapshot_accepts_replaceable_asset_reader(instance, tmp_path
     from PIL import Image
 
     from studio.apps.asset_library.storage.file_paths import AssetStorage
-    from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
     from studio.apps.thought_workshop.synchronization.sync_artifacts import SyncArtifacts
+    from studio.assembly.website.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 
     app, _, _, _ = instance
     image = io.BytesIO()

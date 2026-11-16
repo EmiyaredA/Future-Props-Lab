@@ -15,6 +15,7 @@ from studio.apps.video_editor.motion_media import MotionMedia
 from studio.apps.video_editor.motion_operations import motion_operations
 from studio.apps.video_editor.project_layouts import ProjectLayouts
 from studio.apps.video_editor.projects import VideoEditorProjects
+from studio.apps.video_editor.rules.timeline_operations import apply_operations
 from studio.apps.video_editor.schemas import VideoEditorProjectCreateIn, VideoEditorTimelineBatchIn
 from studio.apps.video_editor.storage.models import (
     VideoEditorOperationBatch,
@@ -22,7 +23,6 @@ from studio.apps.video_editor.storage.models import (
     VideoEditorTimeline,
 )
 from studio.apps.video_editor.storage.service_models import VideoMotionHandoff
-from studio.apps.video_editor.timeline import apply_operations
 from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from studio.contracts.video_editor.video_handoff import MotionHandoff
 from studio.runtime.tasks.polling import PollingTaskRunner

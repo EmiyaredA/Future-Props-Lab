@@ -6,7 +6,10 @@ from uuid import uuid4
 from sqlalchemy import func, select, text
 
 from studio.apps.visual_workshop.acceptance.acceptance_context import AcceptanceContext
-from studio.apps.visual_workshop.acceptance.context_values import fingerprint, resolve_context
+from studio.apps.visual_workshop.acceptance.context_values import (
+    fingerprint,
+    resolve_context,
+)
 from studio.apps.visual_workshop.acceptance.models import (
     AcceptanceAssetReference,
     AcceptanceRun,

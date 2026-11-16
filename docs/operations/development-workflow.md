@@ -41,6 +41,8 @@
 - 后端测试按 `tests/{architecture,apps,contracts,runtime,host,integration}/` 归类。Web 测试按
   `web/tests/{features,shared,platform}/` 归类，浏览器旅程归 `web/e2e/`。受保护产品文档直接引用
   的测试证据保留原路径。可自动化验证的行为应由自动测试覆盖。
+- 架构测试覆盖应用与兼容网站的实际路由声明、ORM 实体依赖、跨应用私有存储及元数据发现；
+  绝对、相对、局部、类型和字面量动态导入均纳入存储边界检查。规则有违规样例验证。
 - 架构测试覆盖依赖方向、迁移独立性、路由版本和核心目录。变更架构规则时，同步维护对应契约、目录索引和测试。
   规则入口或适用范围有变化时同步维护根 `AGENTS.md`。
 - 新增 Web 路由或独立 HTML 入口时，同步更新 `web/e2e/responsive-inventory.ts` 与相应适配用例；

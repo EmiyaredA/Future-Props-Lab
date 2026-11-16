@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { IndependentShell } from "@app/entries/IndependentShell";
 
@@ -38,7 +38,22 @@ vi.mock("@app/entries/ApplicationUpdate", () => ({
   ApplicationUpdate: () => null,
 }));
 
-afterEach(() => window.history.replaceState({}, "", "/"));
+beforeEach(() => {
+  // JSDOM has no layout engine; these shell tests use the initial measurement.
+  vi.stubGlobal(
+    "ResizeObserver",
+    class {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    },
+  );
+});
+
+afterEach(() => {
+  window.history.replaceState({}, "", "/");
+  vi.unstubAllGlobals();
+});
 
 test("顶层独立入口使用 Studio 导航并保留导航拦截", () => {
   window.history.replaceState({}, "", "/cloud-control");

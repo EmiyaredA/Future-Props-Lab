@@ -1,4 +1,4 @@
-import { submitGenerationTasks } from "./generationSubmission";
+import { useGenerationSubmission } from "./useGenerationSubmission";
 import { useVideoDefaults } from "./useVideoDefaults";
 import {
   videoRequestParameters,
@@ -15,13 +15,11 @@ import {
   useRef,
   useState,
 } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import type { ManagedFile } from "@features/files";
 import {
-  createGenerationBatch,
   getGenerationOptions,
   type GenerationTaskInput,
-  type ImageGenerationBatchInput,
   type VisualCanvasImageGenerationDraft,
   type VisualCanvasVideoGenerationDraft,
 } from "@features/visual-workshop/api";
@@ -78,7 +76,6 @@ export function useGenerationDrawerController({
   linkedReferenceNames = {},
   excludedAssetIds = [],
 }: GenerationDrawerProps) {
-  const client = useQueryClient();
   const imageDraft =
     lockedKind === "image"
       ? (draft as VisualCanvasImageGenerationDraft | null | undefined)
@@ -644,69 +641,14 @@ export function useGenerationDrawerController({
     }
   }, [kind, persistDraft, selectedModel, size]);
 
-  const createMutation = useMutation({
-    mutationFn: (input: {
-      body: GenerationTaskInput;
-      count?: number;
-      followupBody?: GenerationTaskInput;
-    }) =>
-      submitGenerationTasks(projectId, input, {
-        canvasNodeId,
-        onBeforeSubmit,
-        onTaskCreated,
-      }),
-    onSuccess: async (tasks) => {
-      const task = tasks.at(-1);
-      if (!task) return;
-      try {
-        await onTaskCreated?.(task);
-      } catch (error) {
-        setNotice(`任务已提交，但节点关联保存失败：${errorMessage(error)}`);
-        return;
-      }
-      setNotice(
-        layout === "workbench"
-          ? ""
-          : tasks.length === 1
-            ? `任务已排队（${task.id.slice(0, 8)}），获得额度后自动执行，可在“生成任务”页查看进度。`
-            : `已提交 ${tasks.length} 个生成任务，生成结果将保存为节点输出版本。`,
-      );
-      void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
-    },
-    onError: (error) => {
-      setNotice(errorMessage(error));
-      void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
-    },
-  });
-  const createBatchMutation = useMutation<
-    Awaited<ReturnType<typeof createGenerationBatch>>,
-    unknown,
-    ImageGenerationBatchInput
-  >({
-    mutationFn: createGenerationBatch.bind(null, projectId),
-    onSuccess: async (batch) => {
-      void client.invalidateQueries({ queryKey: visualKeys.generationBatches });
-      try {
-        await onBatchCreated?.(batch);
-      } catch (error) {
-        setNotice(`宫格任务已提交，但画布保存失败：${errorMessage(error)}`);
-        return;
-      }
-      setNotice(
-        layout === "workbench"
-          ? ""
-          : `已提交 ${batch.grid_size} 张图片，${
-              batch.grid_output === "nodes"
-                ? "将自动排列到画布"
-                : "完成后自动拼成大图"
-            }。`,
-      );
-      void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
-    },
-    onError: (error) => {
-      setNotice(errorMessage(error));
-      void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
-    },
+  const { createMutation, createBatchMutation } = useGenerationSubmission({
+    projectId,
+    canvasNodeId,
+    onBeforeSubmit,
+    onTaskCreated,
+    onBatchCreated,
+    layout,
+    setNotice,
   });
   const submit = async (event: FormEvent) => {
     event.preventDefault();

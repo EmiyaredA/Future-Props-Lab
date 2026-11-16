@@ -195,9 +195,9 @@ def source_closure(root: Path, service):
                         "studio.apps.model_service",
                         "studio.apps.identity",
                         "studio.host",
-                        "studio.apps.asset_library.storage.website_files",
+                        "studio.assembly.website.asset_library.storage.website_files",
                         "studio.apps.asset_library.storage.layout.account_upgrade",
-                        "studio.apps.asset_library.storage.layout.website_upgrade",
+                        "studio.assembly.website.asset_library.storage.layout.website_upgrade",
                         "studio.apps.media_rendering.local",
                     )
                 )
@@ -212,7 +212,7 @@ def source_closure(root: Path, service):
                     "studio.assembly.http_dependencies",
                     "studio.apps.model_service",
                     "studio.apps.asset_library.storage.models",
-                    "studio.apps.asset_library.storage.website_files",
+                    "studio.assembly.website.asset_library.storage.website_files",
                     "studio.apps.asset_library.storage.uploads",
                     "studio.apps.asset_library",
                     "studio.apps.identity",
@@ -258,7 +258,7 @@ def source_closure(root: Path, service):
                     "studio.apps.model_service",
                     "studio.apps.model_service.demonstration.website_storage",
                     "studio.apps.asset_library.storage.models",
-                    "studio.apps.asset_library.storage.website_files",
+                    "studio.assembly.website.asset_library.storage.website_files",
                     "studio.apps.asset_library.storage.file_paths",
                     "studio.apps.asset_library.storage.uploads",
                     "studio.apps.model_service",
@@ -295,8 +295,8 @@ def source_closure(root: Path, service):
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.uploads",
                     "studio.apps.asset_library.storage.file_paths",
-                    "studio.apps.thought_workshop.portability",
-                    "studio.apps.thought_workshop.publication.assets",
+                    "studio.assembly.website.thought_workshop.portability",
+                    "studio.assembly.website.thought_workshop.publication.assets",
                     "studio.apps.asset_library",
                     "studio.apps.identity",
                     "studio.apps.model_service",
@@ -314,7 +314,7 @@ def source_closure(root: Path, service):
                     "studio.runtime.database.website",
                     "studio.apps.model_service.demonstration.website_storage",
                     "studio.apps.asset_library.storage.models",
-                    "studio.apps.asset_library.storage.website_files",
+                    "studio.assembly.website.asset_library.storage.website_files",
                     "studio.apps.asset_library.storage.file_paths",
                     "studio.apps.asset_library",
                     "studio.apps.identity",
@@ -406,7 +406,7 @@ def source_closure(root: Path, service):
                 )
                 or name
                 in {
-                    "studio.apps.motion_compositor.legacy_project_resources",
+                    "studio.assembly.website.motion_compositor.legacy_project_resources",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.file_paths",
                 }
@@ -430,7 +430,7 @@ def source_closure(root: Path, service):
                 )
                 or name
                 in {
-                    "studio.apps.video_editor.legacy_project_layouts",
+                    "studio.assembly.website.video_editor.legacy_project_layouts",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.file_paths",
                 }
@@ -454,7 +454,7 @@ def source_closure(root: Path, service):
                 )
                 or name
                 in {
-                    "studio.apps.presentation_workshop.legacy_project_assets",
+                    "studio.assembly.website.presentation_workshop.legacy_project_assets",
                     "studio.apps.asset_library.storage.models",
                     "studio.apps.asset_library.storage.file_paths",
                 }

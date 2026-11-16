@@ -4,7 +4,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 
-from studio.apps.agent_workbench.execution import runner
+from studio.assembly.website.agent_workbench.execution import runner
 
 
 async def test_workbench_queue_reads_use_the_factory_of_the_owning_runner(monkeypatch):

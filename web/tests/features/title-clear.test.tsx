@@ -38,6 +38,7 @@ vi.mock("@features/video-editor/useVideoEditor", () => ({
     setPlayheadUs: vi.fn(),
     playing: false,
     setPlaying: vi.fn(),
+    setMediaClockActive: vi.fn(),
     zoom: 40,
     setZoom: vi.fn(),
     timelineScrollLeft: 0,

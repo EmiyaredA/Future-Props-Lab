@@ -2,12 +2,11 @@ from __future__ import annotations
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
-from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from db.migrations.registry import LATEST_MIGRATION_ID
 from studio.apps.identity.credentials.operations import AccountError
+from studio.assembly.website.readiness import database_schema
 from studio.assembly.website.routes import api_router
 from studio.runtime.http.problem_details import (
     account_exception_handler,
@@ -49,12 +48,10 @@ def create_http_app(*, lifespan_context=None):
                     "message": "account storage upgrade requires restart",
                 },
             )
-        async with app.state.database.sessions() as session:
-            await session.execute(text("SELECT 1 FROM schema_migrations LIMIT 1"))
-            await session.execute(text("SELECT 1 FROM users LIMIT 1"))
+        schema = await database_schema(app.state.database)
         supervisor = getattr(app.state, "runner_supervisor", None)
         if supervisor is not None and not supervisor.is_healthy:
             raise StarletteHTTPException(status_code=503, detail="background runners are not ready")
-        return {"status": "ready", "schema": LATEST_MIGRATION_ID}
+        return {"status": "ready", "schema": schema}
 
     return app

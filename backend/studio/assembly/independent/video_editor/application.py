@@ -88,6 +88,8 @@ from studio.runtime.http.web import attach_web, load_release
 from studio.runtime.lifecycle.locking import service_lock
 from studio.runtime.revisions import RevisionConflictError
 
+from .frames import frame_requests
+
 SERVICE = "video"
 WEB_ROOT = "/apps/video-editor"
 PAGES = (
@@ -267,6 +269,7 @@ def create_app(
     )
     app.state.database = database
     app.state.capabilities = capabilities
+    app.state.video_frame_requests = frame_requests
     app.state.video_snapshot_settings = snapshot_settings
     app.state.snapshot_slots = asyncio.Semaphore(2)
     app.state.video_snapshot_imports = (

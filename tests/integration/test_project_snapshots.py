@@ -13,7 +13,6 @@ from sqlalchemy import delete
 
 import studio.host.project_files.folders as folder_module
 from studio.apps.asset_library.storage.file_paths import AssetStorage
-from studio.apps.asset_library.storage.layout.website_upgrade import reconcile_snapshot_imports
 from studio.apps.galgame_workshop.storage.models import (
     GalgameWorkshopProject,
 )
@@ -24,6 +23,9 @@ from studio.apps.visual_workshop.storage.models import (
     VisualWorkshopProject,
 )
 from studio.assembly.http_dependencies import SessionDep, require_studio_auth
+from studio.assembly.website.asset_library.storage.layout.website_upgrade import (
+    reconcile_snapshot_imports,
+)
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from studio.contracts.identity.principal import StudioPrincipal

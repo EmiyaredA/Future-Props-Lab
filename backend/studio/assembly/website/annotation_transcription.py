@@ -2,10 +2,10 @@
 
 from studio.apps.audio_annotation.schemas.document import AudioAnnotationSegmentTranscriptionOut
 from studio.apps.audio_annotation.sources import AudioAnnotationError
-from studio.apps.model_service.call_logs.credentials import snapshot_from_principal
 from studio.apps.model_service.transcription.annotation import (
     AnnotationTranscriptionError,
 )
+from studio.assembly.website.model_service.call_logs.credentials import snapshot_from_principal
 
 
 class WebsiteTranscription:

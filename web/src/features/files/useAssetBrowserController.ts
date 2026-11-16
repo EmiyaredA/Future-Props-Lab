@@ -1,3 +1,4 @@
+import { folderOptionLabel, isFolderWithin, pathToFolder } from "./folderPaths";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import {
   type FormEvent,
@@ -44,9 +45,6 @@ import {
   type UploadItem,
   VIEW_KEY,
   fileDownloadName,
-  folderOptionLabel,
-  isFolderWithin,
-  pathToFolder,
   stripOriginalExtension,
 } from "@features/files/AssetBrowserParts";
 import { fileQueryKeys, invalidateFileScope } from "@features/files/queryKeys";

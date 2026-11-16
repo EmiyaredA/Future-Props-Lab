@@ -38,7 +38,7 @@ def test_audio_annotation_lives_under_apps() -> None:
 def test_thought_workshop_lives_under_apps() -> None:
     assert (REPO_ROOT / "backend/studio/apps/thought_workshop/storage/models.py").is_file()
     assert (
-        REPO_ROOT / "backend/studio/apps/thought_workshop/transport/website/__init__.py"
+        REPO_ROOT / "backend/studio/assembly/website/thought_workshop/transport/website/__init__.py"
     ).is_file()
     assert (REPO_ROOT / "backend/studio/apps/thought_workshop/content_exports_http.py").is_file()
     assert not (BACKEND_APP / "thought_workshop").exists()
@@ -69,13 +69,14 @@ def test_video_editor_lives_under_apps() -> None:
 def test_visual_workshop_lives_under_apps() -> None:
     assert (REPO_ROOT / "backend/studio/apps/visual_workshop/storage/models.py").is_file()
     assert (
-        REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/__init__.py"
+        REPO_ROOT / "backend/studio/assembly/website/visual_workshop/transport/website/__init__.py"
     ).is_file()
     assert not (
-        REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/assistant.py"
+        REPO_ROOT / "backend/studio/assembly/website/visual_workshop/transport/website/assistant.py"
     ).exists()
     assert (
-        REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/generation.py"
+        REPO_ROOT
+        / "backend/studio/assembly/website/visual_workshop/transport/website/generation.py"
     ).is_file()
     assert not (BACKEND_APP / "visual_workshop").exists()
     assert not (BACKEND_APP / "models" / "visual_workshop.py").exists()
@@ -94,7 +95,7 @@ def test_visual_workshop_lives_under_apps() -> None:
 def test_galgame_workshop_lives_under_apps() -> None:
     assert (REPO_ROOT / "backend/studio/apps/galgame_workshop/storage/models.py").is_file()
     assert (
-        REPO_ROOT / "backend/studio/apps/galgame_workshop/transport/website/__init__.py"
+        REPO_ROOT / "backend/studio/assembly/website/galgame_workshop/transport/website/__init__.py"
     ).is_file()
     assert (REPO_ROOT / "backend/studio/apps/galgame_workshop/story").is_dir()
     assert (REPO_ROOT / "backend/studio/apps/galgame_workshop/assets").is_dir()
@@ -161,7 +162,9 @@ def test_tool_navigation_owns_models_schemas_and_routes() -> None:
 
 def test_demo_runtime_owns_schemas_and_routes() -> None:
     assert (CONTRACTS / "model_service/demo.py").is_file()
-    assert (STUDIO_APPS / "model_service/transport/website/demo.py").is_file()
+    assert (
+        REPO_ROOT / "backend/studio/assembly/website/model_service/transport/website/demo.py"
+    ).is_file()
     assert not (BACKEND_APP / "schemas" / "demo_runtime.py").exists()
     assert not (BACKEND_APP / "routes" / "demo_runtime.py").exists()
 
@@ -172,11 +175,15 @@ def test_identity_owns_account_routes_and_contracts() -> None:
         assert not (BACKEND_APP / "console/routes" / (name + ".py")).exists()
     for name in ("accounts", "registration", "project_markers"):
         assert (CONTRACTS / "identity" / (name + ".py")).is_file()
-    assert (STUDIO_APPS / "asset_library/transport/website/files.py").is_file()
+    assert (
+        REPO_ROOT / "backend/studio/assembly/website/asset_library/transport/website/files.py"
+    ).is_file()
     assert (CONTRACTS / "gateway/automation.py").is_file()
     assert (STUDIO_APPS / "gateway/transport/website/automation.py").is_file()
     assert (STUDIO_APPS / "portal/transport/website.py").is_file()
-    assert (STUDIO_APPS / "model_service/transport/website/quotas.py").is_file()
+    assert (
+        REPO_ROOT / "backend/studio/assembly/website/model_service/transport/website/quotas.py"
+    ).is_file()
     assert not (BACKEND_APP / "console/schemas/platform_governance.py").exists()
 
 

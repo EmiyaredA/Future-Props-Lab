@@ -4,7 +4,7 @@ import sqlite3
 from contextlib import closing
 from types import SimpleNamespace
 
-from studio.apps.asset_library.migration_blobs import FrozenAssetStorage, FrozenPaths
+from studio.apps.asset_library.storage.migration_blobs import FrozenAssetStorage, FrozenPaths
 from studio.apps.model_service.storage.migration_originals import LegacyTranscriptionInputs
 from studio.runtime.files.migration_files import checked_path, inspect_blob
 

@@ -11,8 +11,8 @@ import httpx
 import pytest
 
 from studio.apps.interview_assistant.codex import CodexExecutor, executable
-from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
+from studio.assembly.website.interview_assistant.executor_status import executor_status
 from studio.config.settings import get_settings
 from website_test_support import SessionLocal, app
 

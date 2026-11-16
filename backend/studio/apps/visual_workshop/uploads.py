@@ -10,7 +10,10 @@ from pydantic import Field, ValidationError
 from sqlalchemy import text
 
 from studio.apps.visual_workshop.canvas_asset_values import expected_assets
-from studio.apps.visual_workshop.canvas_documents import CanvasDocuments, VisualCanvasError
+from studio.apps.visual_workshop.canvas_documents import (
+    CanvasDocuments,
+    VisualCanvasError,
+)
 from studio.apps.visual_workshop.canvas_values import canvas_out
 from studio.apps.visual_workshop.handoffs.segment_handoffs import require_canvas_unreserved
 from studio.apps.visual_workshop.outputs.mutations import OutputMutations

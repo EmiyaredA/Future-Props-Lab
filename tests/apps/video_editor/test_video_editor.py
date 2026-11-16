@@ -21,9 +21,9 @@ from studio.apps.video_editor.evaluator import (
     visual_gaps,
 )
 from studio.apps.video_editor.render_engine import render_document
-from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.schemas import VideoEditorTimelineDocument
 from studio.apps.video_editor.storage.models import VideoEditorProject
+from studio.assembly.website.video_editor.runner import VideoEditorRunner
 from studio.config.settings import get_settings
 from website_test_support import SessionLocal, app
 
@@ -57,6 +57,36 @@ def color_clip(clip_id: str, start_us: int, duration_us: int) -> dict:
         },
         "keyframes": [],
     }
+
+
+@pytest.mark.asyncio
+async def test_edit_receipt_confirms_old_request_and_returns_latest_snapshot():
+    await _reset()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = (await client.post("/v1/video-editor/projects", json={"title": "Replay"})).json()
+        route = f"/v1/video-editor/projects/{project['id']}/timeline/operations"
+        first = {
+            "expectedRevision": 0,
+            "requestId": "receipt-first",
+            "operations": [
+                {"type": "updateTrack", "trackId": "visual-1", "patch": {"name": "first"}}
+            ],
+        }
+        assert (await client.post(route, json=first)).json()["revision"] == 1
+        second = {
+            "expectedRevision": 1,
+            "requestId": "receipt-second",
+            "operations": [
+                {"type": "updateTrack", "trackId": "visual-1", "patch": {"name": "second"}}
+            ],
+        }
+        assert (await client.post(route, json=second)).json()["revision"] == 2
+        replay = await client.post(route, json=first)
+        assert replay.status_code == 200
+        assert replay.json()["revision"] == 2
+        assert replay.json()["document"]["tracks"][0]["name"] == "second"
 
 
 @pytest.mark.asyncio

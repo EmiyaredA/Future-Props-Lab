@@ -8,7 +8,7 @@ from studio.apps.audio_annotation.schemas.document import (
     AudioAnnotationDocumentPutIn,
 )
 from studio.apps.audio_annotation.schemas.operations import AnnotationOperationsIn
-from studio.runtime.revisions import RevisionConflictError
+from studio.runtime.revisioned_commands import apply_revisioned_command
 
 
 class DocumentEdits(Protocol):
@@ -40,14 +40,10 @@ class EditDocument:
     async def execute(
         self, project_id: str, command: AnnotationOperationsIn
     ) -> AudioAnnotationDocumentOut:
-        # Check resource access before replay, including when a resource was deleted.
-        current = await self.store.load(project_id)
-        saved = await self.store.replay(project_id, command)
-        if saved is not None:
-            return saved
-        if current.revision != command.expected_revision:
-            raise RevisionConflictError(
-                command.expected_revision, current.revision, current.model_dump(mode="json")
-            )
-        candidate = transform(current, command)
-        return await self.store.commit(project_id, command, candidate)
+        return await apply_revisioned_command(
+            self.store,
+            project_id,
+            command,
+            transform=transform,
+            describe=lambda snapshot: snapshot.model_dump(mode="json"),
+        )

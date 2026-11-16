@@ -6,7 +6,8 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 
-from studio.apps.identity.storage.models.accounts import User
+from studio.apps.identity.storage.account_directory import profile_name
+from studio.apps.identity.storage.actor_status import active_actor
 from studio.contracts.creative_workshop.creative_authors import (
     PATH,
     CreativeAuthorName,
@@ -16,8 +17,6 @@ from studio.contracts.creative_workshop.creative_authors import (
 from studio.contracts.identity.claims import verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.identity.route_permissions import route_permission
-
-from .live import active_actor
 
 router = APIRouter(include_in_schema=False)
 
@@ -64,8 +63,7 @@ async def author(request: Request, body: CreativeAuthorQuery):
     async with request.app.state.database.sessions() as session:
         if not await active_actor(session, actor):
             raise HTTPException(401, "creative_author_authorization_revoked")
-        profile = await session.get(User, body.author_id)
-        name = (profile.display_name or profile.username) if profile else None
+        name = await profile_name(session, body.author_id)
     return JSONResponse(
         CreativeAuthorName(name=name).model_dump(), headers={"Cache-Control": "no-store"}
     )

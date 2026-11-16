@@ -4,7 +4,7 @@ import httpx
 import pytest
 from sqlalchemy import delete
 
-import studio.apps.asset_library.storage.website_files as asset_module
+import studio.assembly.website.asset_library.storage.website_files as asset_module
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider

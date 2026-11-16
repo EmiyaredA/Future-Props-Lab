@@ -12,8 +12,8 @@ from studio.apps.identity.website_access.video_preview import preview_actor_allo
 from studio.apps.video_editor.errors import VideoEditorNotFoundError
 from studio.apps.video_editor.preview_renders import PreviewRenders
 from studio.apps.video_editor.preview_storage import local_preview_path
-from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorProject, VideoEditorTask
+from studio.assembly.website.video_editor.runner import VideoEditorRunner
 from studio.config.settings import get_settings
 from tests.apps.video_editor.test_video_editor import color_clip
 from website_test_support import SessionLocal, app

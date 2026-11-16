@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from studio.apps.galgame_workshop.schemas import GalgameStoryProject
-from studio.apps.galgame_workshop.story.story import build_route_report
+from studio.assembly.website.galgame_workshop.story.story import build_route_report
 from tests.apps.galgame_workshop.test_galgame_workshop import playable_story
 
 

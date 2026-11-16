@@ -1,1 +1,1 @@
-"""studio.apps.visual_workshop.website.composition components."""
+"""studio.assembly.website.visual_workshop.website.composition components."""

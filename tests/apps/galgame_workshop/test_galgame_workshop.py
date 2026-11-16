@@ -4,7 +4,7 @@ import httpx
 import pytest
 
 from studio.apps.galgame_workshop.schemas import GalgameStoryProject
-from studio.apps.galgame_workshop.story.story import build_route_report
+from studio.assembly.website.galgame_workshop.story.story import build_route_report
 from website_test_support import app
 
 

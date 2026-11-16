@@ -5,14 +5,14 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from studio.apps.model_service.admission.website_quotas import (
+from studio.apps.model_service.storage.models.model_test import ModelTestGenerationTask
+from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
+from studio.assembly.website.model_service.admission.website_quotas import (
     acquire,
     attach,
     recover_admissions,
     release,
 )
-from studio.apps.model_service.storage.models.model_test import ModelTestGenerationTask
-from studio.apps.model_service.storage.models.runtime_admission import RuntimeAdmission
 from studio.contracts.identity.errors import AccountError
 from studio.contracts.identity.principal import StudioPrincipal
 from tests.apps.visual_workshop.test_workspace_governance import client_account

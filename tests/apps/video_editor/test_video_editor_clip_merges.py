@@ -14,8 +14,8 @@ from studio.apps.video_editor.clip_merging.document import (
     selection,
 )
 from studio.apps.video_editor.errors import VideoEditorValidationError
-from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorTask
+from studio.assembly.website.video_editor.runner import VideoEditorRunner
 from studio.config.settings import get_settings
 from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from website_test_support import SessionLocal, app
@@ -257,7 +257,7 @@ async def test_merge_api_real_render_apply_undo_redo_and_conflicts(
                         f"{root}/clip-merges", json={**body, "requestId": "failed-render-test"}
                     )
                 ).json()
-                from studio.apps.video_editor.clip_merging import runner as merge_runner
+                from studio.assembly.website.video_editor.clip_merging import runner as merge_runner
 
                 def fail_render(*_args, **_kwargs):
                     raise RuntimeError("encoding failed")

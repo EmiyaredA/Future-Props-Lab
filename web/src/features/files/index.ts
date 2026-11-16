@@ -37,3 +37,5 @@ export {
 } from "./queryKeys";
 
 export { ACCEPT, AssetPreview, AssetPreviewDialog } from "./AssetBrowserParts";
+
+export { pathToFolder } from "./folderPaths";

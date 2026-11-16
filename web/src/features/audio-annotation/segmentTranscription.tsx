@@ -1,6 +1,8 @@
+import { annotationSnapshot as snapshot } from "./model/snapshot";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -22,7 +24,7 @@ import type {
   AudioAnnotationSegment,
   AudioAnnotationTranscriptionOption,
 } from "@features/audio-annotation/types";
-import type { AudioWaveformHandle } from "@features/audio-annotation/AudioWaveform";
+import type { AnnotationPlayback as AudioWaveformHandle } from "./playback";
 import { modelQueryKeys } from "@features/models";
 
 const MODEL_STORAGE_PREFIX = "fpl_audio_annotation_transcription_model";
@@ -32,6 +34,7 @@ type SegmentTranscriptionTarget = LanguageTranscriptionTarget & {
   segmentId: string;
   startMs: number;
   endMs: number;
+  scope: symbol;
 };
 
 type CompletedSegmentTranscription = {
@@ -43,40 +46,23 @@ export type SegmentTranscriptionController = ReturnType<
   typeof useSegmentTranscription
 >;
 
-function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
-  return {
-    schema_version: "1.0",
-    speakers: document.speakers,
-    custom_emotions: document.custom_emotions ?? [],
-    segments: document.segments,
-  };
-}
-
 export function useSegmentTranscription({
   projectId,
   accountId,
-  documentRef,
+  readDocument,
+  applySnapshot,
   selected,
   conflict,
   waveformRef,
-  version,
-  setDocument,
-  setUndoStack,
-  setRedoStack,
-  setDirty,
   setNotice,
 }: {
   projectId: string;
   accountId: string;
-  documentRef: MutableRefObject<AudioAnnotationDocument | null>;
+  readDocument: () => AudioAnnotationDocument | null;
+  applySnapshot: (next: AnnotationSnapshot) => boolean;
   selected: AudioAnnotationSegment | null;
   conflict: boolean;
   waveformRef: MutableRefObject<AudioWaveformHandle | null>;
-  version: MutableRefObject<number>;
-  setDocument: Dispatch<SetStateAction<AudioAnnotationDocument | null>>;
-  setUndoStack: Dispatch<SetStateAction<AnnotationSnapshot[]>>;
-  setRedoStack: Dispatch<SetStateAction<AnnotationSnapshot[]>>;
-  setDirty: Dispatch<SetStateAction<boolean>>;
   setNotice: Dispatch<SetStateAction<string>>;
 }) {
   const { run: runTransfer, progress: activeTransferProgress } =
@@ -88,6 +74,19 @@ export function useSegmentTranscription({
     useState<SegmentTranscriptionTarget | null>(null);
   const [completed, setCompleted] =
     useState<CompletedSegmentTranscription | null>(null);
+  const scope = useMemo(
+    () => Symbol(`annotation-transcription:${accountId}:${projectId}`),
+    [accountId, projectId],
+  );
+  const currentScope = useRef(scope);
+  currentScope.current = scope;
+  useEffect(() => {
+    currentScope.current = scope;
+    return () => {
+      if (currentScope.current === scope)
+        currentScope.current = Symbol("closed");
+    };
+  }, [scope]);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
 
@@ -113,10 +112,16 @@ export function useSegmentTranscription({
   }, [modelId, options, accountId]);
 
   const targetText = (target: SegmentTranscriptionTarget): string | null => {
-    const segment = documentRef.current?.segments.find(
+    if (target.scope !== currentScope.current) return null;
+    const segment = readDocument()?.segments.find(
       (item) => item.id === target.segmentId,
     );
-    if (!segment) return null;
+    if (
+      !segment ||
+      segment.start_ms !== target.startMs ||
+      segment.end_ms !== target.endMs
+    )
+      return null;
     if (target.version === "primary") return segment.text;
     return (
       segment.localized_texts?.find((item) => item.language === target.version)
@@ -125,8 +130,8 @@ export function useSegmentTranscription({
   };
 
   const applyText = (target: SegmentTranscriptionTarget, text: string) => {
-    const current = documentRef.current;
-    if (!current) return false;
+    const current = readDocument();
+    if (!current || targetText(target) === null) return false;
     let found = false;
     const segments = current.segments.map((segment) => {
       if (segment.id !== target.segmentId) return segment;
@@ -147,14 +152,7 @@ export function useSegmentTranscription({
       };
     });
     if (!found) return false;
-    setUndoStack((stack) => [...stack, snapshot(current)].slice(-100));
-    setRedoStack([]);
-    version.current += 1;
-    const next = { ...current, segments };
-    documentRef.current = next;
-    setDocument(next);
-    setDirty(true);
-    return true;
+    return applySnapshot(snapshot({ ...current, segments }));
   };
 
   const mutation = useMutation({
@@ -175,6 +173,7 @@ export function useSegmentTranscription({
         ),
       ),
     onSuccess: (result, input) => {
+      if (input.target.scope !== currentScope.current) return;
       if (!result.text.trim()) {
         setNotice("当前片段未识别到语音，内容保持不变。");
         return;
@@ -223,6 +222,7 @@ export function useSegmentTranscription({
     if (!current) return;
     const captured: SegmentTranscriptionTarget = {
       ...target,
+      scope,
       segmentId: current.id,
       startMs: current.start_ms,
       endMs: current.end_ms,

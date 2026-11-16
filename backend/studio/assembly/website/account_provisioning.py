@@ -5,7 +5,7 @@ from studio.apps.identity.registration.accounts import (
     create_managed_account as create_identity_managed_account,
 )
 from studio.apps.model_service.catalog.seed import ensure_account_model_catalog
-from studio.apps.model_service.templates.website import initialize_from_template
+from studio.assembly.website.model_service.templates.website import initialize_from_template
 from studio.runtime.database.ownership import bind_owner
 
 

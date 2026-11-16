@@ -6,9 +6,8 @@ import io
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import ValidationError
-from sqlalchemy import text
 
-from studio.apps.model_service.storage.service_models import AnnotationTranscriptionAttempt
+from studio.apps.model_service.storage.annotation_attempts import AnnotationAttempts
 from studio.apps.model_service.transcription.annotation import (
     AnnotationTranscriptionError,
 )
@@ -118,8 +117,8 @@ async def execute(request: Request, project_id: str, segment_id: str, fingerprin
     try:
         await require_active(request, request.headers[HEADER])
         async with request.app.state.database.sessions(info={"owner_user_id": owner}) as session:
-            await session.execute(text("BEGIN IMMEDIATE"))
-            previous = await session.get(AnnotationTranscriptionAttempt, key)
+            attempts = AnnotationAttempts(session, key)
+            previous = await attempts.reserve(fingerprint)
             if previous is not None:
                 if previous.fingerprint != fingerprint:
                     raise HTTPException(409, "annotation_attempt_conflict")
@@ -128,19 +127,9 @@ async def execute(request: Request, project_id: str, segment_id: str, fingerprin
                 if previous.error is not None:
                     raise_error(previous.error)
                 raise HTTPException(409, "annotation_attempt_outcome_unknown")
-            session.add(
-                AnnotationTranscriptionAttempt(
-                    owner_user_id=owner, attempt_id=key[1], fingerprint=fingerprint
-                )
-            )
-            await session.commit()
 
             async def settle(*, result=None, error=None):
-                row = await session.get(AnnotationTranscriptionAttempt, key)
-                if result is not None:
-                    row.result = result.model_dump(mode="json")
-                else:
-                    row.error = as_error(error)
+                await attempts.settle(result=result, error=as_error(error) if error else None)
 
             try:
                 return await request.app.state.annotation_model_transcription(session).transcribe(
@@ -157,10 +146,10 @@ async def execute(request: Request, project_id: str, segment_id: str, fingerprin
                     settle=settle,
                 )
             except AnnotationTranscriptionError as failure:
-                row = await session.get(AnnotationTranscriptionAttempt, key)
+                row = await attempts.read()
                 if row.error is None:
                     await settle(error=failure)
-                    await session.commit()
+                    await attempts.commit()
                 raise_error(as_error(failure))
     finally:
         await upload.close()

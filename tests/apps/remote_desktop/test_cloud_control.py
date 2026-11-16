@@ -14,10 +14,7 @@ from PIL import Image
 from sqlalchemy import text
 
 from db.migrations import runner as migration_runner
-from studio.apps.agent_workbench.execution import (
-    project_files,
-    storage,
-)
+from studio.apps.agent_workbench.execution import project_files
 from studio.apps.agent_workbench.transport import (
     turn_events as events,
 )
@@ -25,6 +22,7 @@ from studio.apps.identity.storage import cloud_access as access
 from studio.apps.remote_desktop.transport import guacamole as desktop
 from studio.assembly.website import desktop as desktop_binding
 from studio.assembly.website.account_provisioning import create_account
+from studio.assembly.website.agent_workbench.execution import storage
 from studio.config.settings import get_settings
 from studio.contracts.identity.cloud_authority import DESKTOP_COOKIE, DESKTOP_SOCKET
 from studio.runtime.time import utc_now

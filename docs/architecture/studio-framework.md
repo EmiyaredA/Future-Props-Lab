@@ -16,6 +16,9 @@ Future Props Lab 是单机部署的模型基础设施管理台。单机可运行
 - `studio/assembly/website/` 显式构造兼容网站。`application` 创建实例，`bindings` 注入组件，
   `lifecycle` 管理启停，`http` 与 `routes` 注册协议，`models` 限定网站会话规则。
   导入不读取配置或创建数据库；测试实例由隔离配置的 `tests/website_test_support.py` 拥有。
+- 兼容网站中依赖共享数据库的适配与协议组合按所有者归 `assembly/website/<owner>/`；
+  应用的纯规则、自有存储、独立服务及共用协议保持在 `apps/<owner>/`。应用禁止导入网站组合，
+  也不得通过静态导入、相对/局部导入或元数据表名访问其他应用的私有存储。
 - `studio` 的父包初始化保持无副作用。`contracts`、配置格式、纯 `rules` 与 `use_cases`
   不导入 ORM、HTTP 框架、主机实现或应用内部模块。业务用例声明所需接口，装配注入存储与
   外部客户端；用例通过命令、快照和领域错误交互，不接收数据库 Session。
@@ -28,7 +31,7 @@ Future Props Lab 是单机部署的模型基础设施管理台。单机可运行
 - 由入口装配显式提供应用的配置、账号范围存储、凭据能力和外部客户端。依赖从构造器、请求或用例端口传入，
   禁止以 Session、整个应用状态容器或进程全局设置查找业务依赖。装配拥有实例生命周期，关闭时回收资源。
 - 所有路由与协议适配只校验请求、调用功能模块并把领域结果或错误映射为协议响应。
-  禁止直接导入 SQLAlchemy、ORM 模型或 `db.migrations`。查询、写入和事务规则归所属业务及其存储适配。
+  路由处理函数禁止直接使用 SQLAlchemy、ORM 模型或迁移 SQL；数据库探针与迁移应用构造同样通过明确的 I/O 适配执行。查询、写入和事务规则归所属业务及其存储适配。
 - 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
   在所属能力内按具体职责命名文件或子包，例如 `studio/apps/model_service/catalog/`、`studio/apps/asset_library/storage/`。
 

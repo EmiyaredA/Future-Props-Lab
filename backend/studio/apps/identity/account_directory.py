@@ -3,19 +3,14 @@
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
-from sqlalchemy import or_, select
 
-from studio.apps.identity.storage.models.accounts import User
+from studio.apps.identity.storage.account_directory import lookup as directory_lookup
+from studio.apps.identity.storage.actor_status import active_actor
 from studio.contracts.identity.account_directory import (
-    AccountProfile,
-    CallerProfile,
     DirectoryQuery,
-    DirectoryResult,
 )
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
-
-from .live import active_actor
 
 router = APIRouter(include_in_schema=False)
 
@@ -43,31 +38,5 @@ async def lookup(request: Request, digest: str, body: DirectoryQuery):
     async with request.app.state.database.sessions() as session:
         if not await active_actor(session, actor):
             raise HTTPException(401, "account_directory_authorization_revoked")
-        caller = await session.get(User, actor.user_id)
-        rows = list(
-            await session.scalars(
-                select(User).where(
-                    or_(User.id.in_(body.ids), User.username_normalized.in_(body.usernames))
-                )
-            )
-        )
-        result = DirectoryResult(
-            caller=CallerProfile(
-                id=caller.id,
-                username=caller.username,
-                display_name=caller.display_name,
-                active=True,
-                platform_role=caller.platform_role,
-                revision=caller.revision,
-            ),
-            profiles=[
-                AccountProfile(
-                    id=user.id,
-                    username=user.username,
-                    display_name=user.display_name,
-                    active=user.status == "active",
-                )
-                for user in rows
-            ],
-        )
+        result = await directory_lookup(session, actor, body)
     return JSONResponse(result.model_dump(), headers={"Cache-Control": "no-store"})

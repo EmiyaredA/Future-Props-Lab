@@ -1,1 +1,1 @@
-"""studio.apps.galgame_workshop.website.snapshots components."""
+"""studio.assembly.website.galgame_workshop.website.snapshots components."""

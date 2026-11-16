@@ -5,9 +5,9 @@ import secrets
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
-from sqlalchemy import select
 
-from studio.apps.identity.storage.models.accounts import AuthSession, ManagementApiKey, User
+from studio.apps.identity.storage.actor_status import active_actor
+from studio.apps.identity.storage.actor_status import task_authorization as task_actor_authorization
 from studio.contracts.asset_library.reveal import reveal_target
 from studio.contracts.audio_annotation.task_sources import upload_target as annotation_upload_target
 from studio.contracts.galgame_workshop.galgame_annotation_source import annotation_target
@@ -59,7 +59,6 @@ from studio.contracts.identity.permissions import (
     CLOUD_CONTROL_PERMISSION,
     requires_cloud_control,
     role_permissions,
-    role_scopes,
 )
 from studio.contracts.model_service.annotation import target as annotation_transcription_target
 from studio.contracts.motion_compositor.motion_exports import render_target
@@ -110,7 +109,6 @@ from studio.contracts.visual_workshop.visual_snapshot import (
     resolution_target as visual_snapshot_resolution_target,
 )
 from studio.runtime.files.signed_payloads import is_model_output_path
-from studio.runtime.time import utc_now
 
 router = APIRouter()
 
@@ -120,42 +118,6 @@ class LiveRequest(BaseModel):
     assertion: str = Field(max_length=8192)
     method: str = Field(max_length=12)
     path: str = Field(max_length=4096)
-
-
-async def active_actor(session, actor):
-    user = await session.get(User, actor.user_id)
-    if (
-        user is None
-        or user.status != "active"
-        or user.must_change_password
-        or user.platform_role != actor.platform_role
-    ):
-        return False
-    now = utc_now()
-    scopes = role_scopes(user.platform_role)
-    if actor.auth_kind == "session":
-        auth = await session.get(AuthSession, actor.session_id)
-        active = bool(
-            auth
-            and auth.user_id == actor.user_id
-            and auth.revoked_at is None
-            and auth.idle_expires_at > now
-            and auth.absolute_expires_at > now
-            and (await session.scalar(select(AuthSession.purpose).where(AuthSession.id == auth.id)))
-            == actor.purpose
-        )
-    else:
-        key = await session.get(ManagementApiKey, actor.api_key_id)
-        active = bool(
-            key and key.user_id == actor.user_id and key.revoked_at is None and key.expires_at > now
-        )
-        key_scopes = set(key.scopes) if key else set()
-        if "studio:write" in key_scopes:
-            key_scopes.add("studio:read")
-        if "studio:read" in key_scopes:
-            key_scopes.add("studio:private_read")
-        scopes = key_scopes & scopes
-    return active and set(actor.scopes) == set(scopes)
 
 
 @router.post("/_internal/v1/authorization/live")
@@ -336,11 +298,4 @@ async def task_authorization(request: Request, body: TaskAuthorizationRequest):
     if body.permission not in TASK_PERMISSIONS.get(body.service, ()):
         raise HTTPException(403, "task_permission_forbidden")
     async with request.app.state.database.sessions() as session:
-        user = await session.get(User, body.owner_user_id)
-        allowed = bool(
-            user
-            and user.status == "active"
-            and not user.must_change_password
-            and body.permission in role_permissions(user.platform_role)
-        )
-        return {"allowed": allowed, "revision": user.revision if user else None}
+        return await task_actor_authorization(session, body.owner_user_id, body.permission)

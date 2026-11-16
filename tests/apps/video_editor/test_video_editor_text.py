@@ -18,13 +18,13 @@ from studio.apps.media_rendering.local.text_layer import (
     wrap_text,
 )
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
-from studio.apps.video_editor.frames import VideoEditorFrames
+from studio.apps.video_editor.rules.timeline_operations import apply_operations
 from studio.apps.video_editor.schemas import (
     VideoEditorClip,
     VideoEditorTimelineBatchIn,
     VideoEditorTimelineDocument,
 )
-from studio.apps.video_editor.timeline import apply_operations
+from studio.assembly.website.video_editor.frames import VideoEditorFrames
 from website_test_support import SessionLocal, app
 
 

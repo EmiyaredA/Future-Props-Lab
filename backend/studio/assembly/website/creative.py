@@ -3,10 +3,12 @@
 from studio.apps.creative_workshop.catalog import CreativeCatalog
 from studio.apps.creative_workshop.catalog_resources import CreativeResources
 from studio.apps.creative_workshop.storage.file_paths import CreativeArchiveStaging
-from studio.apps.creative_workshop.storage.website_installation import LegacyCreativeInstaller
 from studio.apps.creative_workshop.use_cases.installation import CreativeInstaller
 from studio.apps.identity.storage.creative_authors import LegacyCreativeAuthors
 from studio.apps.integrations.storage.creative_sources import IntegrationCreativeSources
+from studio.assembly.website.creative_workshop.storage.website_installation import (
+    LegacyCreativeInstaller,
+)
 from studio.runtime.secrets import SecretCipher
 
 

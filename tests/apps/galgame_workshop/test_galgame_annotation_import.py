@@ -9,16 +9,16 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from studio.apps.galgame_workshop.assets.annotation_import_runner import (
-    GalgameAnnotationImportRunner,
-)
-from studio.apps.galgame_workshop.readiness import GalgameReadiness
 from studio.apps.galgame_workshop.schemas import GalgameStoryReportIssue
 from studio.apps.galgame_workshop.storage.models import (
     GalgameAnnotationImportTask,
     GalgameAssetMetadata,
     GalgameWorkshopProject,
 )
+from studio.assembly.website.galgame_workshop.assets.annotation_import_runner import (
+    GalgameAnnotationImportRunner,
+)
+from studio.assembly.website.galgame_workshop.readiness import GalgameReadiness
 from studio.assembly.website.models import bind_owner
 from studio.config.settings import get_settings
 from website_test_support import SessionLocal, app

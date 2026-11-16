@@ -1,3 +1,4 @@
+import { annotationSnapshot as snapshot } from "./model/snapshot";
 import { X } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -15,18 +16,8 @@ import {
 } from "./model";
 import { emotionKey } from "./emotions";
 import { prepareTextOnlyAnnotationImport } from "./annotationTextImport";
-import type { AnnotationSnapshot, AudioAnnotationDocument } from "./types";
 import type { AudioAnnotationEditorController } from "./useAudioAnnotationEditorController";
 import type { SpeakerImportSource } from "./speakerImportSource";
-
-function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
-  return {
-    schema_version: "1.0",
-    speakers: document.speakers,
-    custom_emotions: document.custom_emotions ?? [],
-    segments: document.segments,
-  };
-}
 
 export function AudioAnnotationEditorDialogs({
   controller,
@@ -55,7 +46,7 @@ export function AudioAnnotationEditorDialogs({
     setConfirmMerge,
     setDeleteSpeaker,
     setDeleteSpeakerReplacement,
-    setDirty,
+    discardChanges,
     setEmotionManager,
     setExportOpen,
     setNotice,
@@ -228,7 +219,7 @@ export function AudioAnnotationEditorDialogs({
         }}
         onConfirm={() => {
           registerNavigationGuard(null);
-          setDirty(false);
+          discardChanges();
           setConfirmLeave(false);
           const continueNavigation = pendingNavigation;
           setPendingNavigation(null);

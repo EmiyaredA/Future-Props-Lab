@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from studio.apps.asset_library.storage.context import VisualAssetContext
 from studio.apps.asset_library.storage.models import VisualAssetFolder
-from studio.apps.asset_library.transport.projections import folder_out
+from studio.apps.asset_library.storage.projections import folder_out
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import (
     VisualAssetFolderCreateIn,

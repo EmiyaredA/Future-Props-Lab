@@ -47,12 +47,12 @@ async def clear_private_projects(owner="test-user"):
 
     from studio.apps.asset_library.storage.file_paths import AssetStorage
     from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
-    from studio.apps.galgame_workshop.website.projects import GalgameWorkshopProjects
     from studio.apps.video_editor.projects import VideoEditorProjects
     from studio.apps.video_editor.storage.models import VideoEditorProject
     from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
-    from studio.apps.visual_workshop.website.projects import VisualWorkshopProjects
+    from studio.assembly.website.galgame_workshop.website.projects import GalgameWorkshopProjects
     from studio.assembly.website.models import TENANT_MODELS
+    from studio.assembly.website.visual_workshop.website.projects import VisualWorkshopProjects
     from website_test_support import SessionLocal, app
 
     dependents = {

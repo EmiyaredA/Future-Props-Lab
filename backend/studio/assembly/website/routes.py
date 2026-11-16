@@ -3,11 +3,9 @@ from fastapi import APIRouter, Depends
 from studio.apps.agent_runtime.transport.code_agents import router as code_agents_router
 from studio.apps.amadeus.transport.website import require_amadeus_session
 from studio.apps.amadeus.transport.website import router as amadeus_router
-from studio.apps.asset_library.transport.website.files import router as file_management_router
 from studio.apps.audio_annotation.routes import router as audio_annotation_router
 from studio.apps.creative_workshop.transport.catalog_http import router as creative_workshop_router
 from studio.apps.director_desk.transport.website import router as director_desk_router
-from studio.apps.galgame_workshop.transport.website import router as galgame_workshop_router
 from studio.apps.gateway.transport.website.automation import router as automation_router
 from studio.apps.identity.transport.website.account_management import router as management_router
 from studio.apps.identity.transport.website.accounts import router as accounts_router
@@ -24,15 +22,10 @@ from studio.apps.media_rendering.transport.website import (
     previews,
     video_frames,
 )
-from studio.apps.model_service.transport.website.demo import call_router as demo_call_router
-from studio.apps.model_service.transport.website.demo import router as demo_runtime_router
 from studio.apps.model_service.transport.website.local_models import router as local_models_router
 from studio.apps.model_service.transport.website.model_capacity import ModelCapacity
 from studio.apps.model_service.transport.website.model_inference import (
     router as model_inference_router,
-)
-from studio.apps.model_service.transport.website.model_templates import (
-    router as model_templates_router,
 )
 from studio.apps.model_service.transport.website.models import (
     call_logs,
@@ -44,12 +37,8 @@ from studio.apps.model_service.transport.website.models import (
     model_test_transcription,
     suppliers,
 )
-from studio.apps.model_service.transport.website.quotas import router as quotas_router
 from studio.apps.model_service.transport.website.video_enhancement import (
     router as video_enhancement_router,
-)
-from studio.apps.motion_compositor.transport.website.compatibility import (
-    router as motion_compositor_router,
 )
 from studio.apps.portal.transport.website import router as developer_docs_router
 from studio.apps.presentation_workshop.transport.website.compatibility import (
@@ -57,28 +46,59 @@ from studio.apps.presentation_workshop.transport.website.compatibility import (
 )
 from studio.apps.thought_workshop import content_exports_http as thought_conversion
 from studio.apps.thought_workshop.external_sync.records_http import router as sync_records_router
-from studio.apps.thought_workshop.transport.website import router as thought_workshop_router
-from studio.apps.thought_workshop.transport.website.community import router as community_router
-from studio.apps.thought_workshop.transport.website.community_tables import (
-    router as community_tables_router,
-)
-from studio.apps.thought_workshop.transport.website.external_sync import (
-    router as article_sync_router,
-)
 from studio.apps.tools.transport.download_http import router as video_download_router
 from studio.apps.tools.transport.navigation_http import router as tool_navigation_router
-from studio.apps.video_editor.transport.website.compatibility import router as video_editor_router
 from studio.apps.visual_workshop.acceptance.review_routes import router as visual_review_router
-from studio.apps.visual_workshop.acceptance.routes import router as visual_acceptance_router
 from studio.apps.visual_workshop.acceptance.standard_routes import router as visual_standard_router
 from studio.apps.visual_workshop.generation_routes import router as visual_generation_records_router
-from studio.apps.visual_workshop.transport.website import router as visual_workshop_router
-from studio.apps.visual_workshop.transport.website.generation import (
+from studio.assembly.http_dependencies import require_studio_auth
+from studio.assembly.website.asset_library.transport.website.files import (
+    router as file_management_router,
+)
+from studio.assembly.website.cloud_control import router as cloud_control_router
+from studio.assembly.website.galgame_workshop.transport.website import (
+    router as galgame_workshop_router,
+)
+from studio.assembly.website.model_service.transport.website.demo import (
+    call_router as demo_call_router,
+)
+from studio.assembly.website.model_service.transport.website.demo import (
+    router as demo_runtime_router,
+)
+from studio.assembly.website.model_service.transport.website.model_templates import (
+    router as model_templates_router,
+)
+from studio.assembly.website.model_service.transport.website.quotas import router as quotas_router
+from studio.assembly.website.motion_compositor.transport.website.compatibility import (
+    router as motion_compositor_router,
+)
+from studio.assembly.website.thought_workshop.transport.website import (
+    router as thought_workshop_router,
+)
+from studio.assembly.website.thought_workshop.transport.website.community import (
+    router as community_router,
+)
+from studio.assembly.website.thought_workshop.transport.website.community_tables import (
+    router as community_tables_router,
+)
+from studio.assembly.website.thought_workshop.transport.website.external_sync import (
+    router as article_sync_router,
+)
+from studio.assembly.website.video_editor.transport.website.compatibility import (
+    router as video_editor_router,
+)
+from studio.assembly.website.visual_workshop.acceptance.routes import (
+    router as visual_acceptance_router,
+)
+from studio.assembly.website.visual_workshop.transport.website import (
+    router as visual_workshop_router,
+)
+from studio.assembly.website.visual_workshop.transport.website.generation import (
     router as visual_generation_router,
 )
-from studio.apps.visual_workshop.transport.website.outputs import router as visual_outputs_router
-from studio.assembly.http_dependencies import require_studio_auth
-from studio.assembly.website.cloud_control import router as cloud_control_router
+from studio.assembly.website.visual_workshop.transport.website.outputs import (
+    router as visual_outputs_router,
+)
 
 api_router = APIRouter(prefix="/v1")
 api_router.include_router(cloud_control_router)

@@ -1,6 +1,12 @@
 import { createGenerationTask, type GenerationTaskInput } from "../api";
 import { apiErrorMessage } from "@platform/api/errors";
-import type { GenerationDrawerProps } from "./generationDrawerTypes";
+export type GenerationSubmissionCallbacks = {
+  canvasNodeId?: string;
+  onBeforeSubmit?: () => Promise<number | void>;
+  onTaskCreated?: (
+    task: Awaited<ReturnType<typeof createGenerationTask>>,
+  ) => void | Promise<void>;
+};
 
 export async function submitGenerationTasks(
   projectId: string,
@@ -9,10 +15,7 @@ export async function submitGenerationTasks(
     count?: number;
     followupBody?: GenerationTaskInput;
   },
-  callbacks: Pick<
-    GenerationDrawerProps,
-    "canvasNodeId" | "onBeforeSubmit" | "onTaskCreated"
-  >,
+  callbacks: GenerationSubmissionCallbacks,
 ) {
   const { body, count = 1, followupBody } = input;
   const { canvasNodeId, onBeforeSubmit, onTaskCreated } = callbacks;

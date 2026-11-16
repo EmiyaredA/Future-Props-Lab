@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { sourceEvidenceExists } from "../sourceEvidence";
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import { APPLICATION_DEFINITIONS } from "@app/applicationRegistry";
@@ -161,10 +162,7 @@ describe("technical documentation library", () => {
       expect(codePaths.length, chapter.id).toBeGreaterThanOrEqual(3);
       for (const path of codePaths) {
         expect(path).not.toMatch(/^(\/|\.\.)/);
-        expect(
-          existsSync(`${repositoryRoot}/${path}`),
-          `${chapter.id}: ${path}`,
-        ).toBe(true);
+        expect(sourceEvidenceExists(path), `${chapter.id}: ${path}`).toBe(true);
       }
     }
     expect(referencedFigures.size).toBe(Object.keys(figureSources).length);

@@ -483,7 +483,7 @@ def test_compatibility_settings_are_not_application_internal_models():
 
 
 def test_archived_workbench_keeps_shared_turn_records_off_the_website():
-    path = STUDIO / "apps/agent_workbench/execution/storage.py"
+    path = STUDIO / "assembly/website/agent_workbench/execution/storage.py"
     definitions = {
         node.name
         for node in ast.parse(path.read_text()).body

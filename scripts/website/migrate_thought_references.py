@@ -29,7 +29,9 @@ def verify_related_originals(client, plan, source, target, dataset, *, report, e
             if page.batch.records and files is None:
                 files = {
                     item.id: item.sha256
-                    for item in manifest(client, target, owner, headers, complete=True)
+                    for item in manifest(
+                        client, target, owner, headers, complete=True, peer="目标端"
+                    )
                 }
             for record in page.batch.records:
                 if record.asset_id not in files:

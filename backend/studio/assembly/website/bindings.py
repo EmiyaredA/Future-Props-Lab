@@ -19,38 +19,23 @@ from studio.apps.identity.transport.database_auth import (
     authenticate_database_request,
     authenticate_database_websocket,
 )
-from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.model_service.admission.bindings import AdmissionBindings
-from studio.apps.model_service.admission.website_queue import admit_generation_tasks
-from studio.apps.model_service.admission.website_quotas import acquire, attach, release
-from studio.apps.model_service.call_logs.credentials import snapshot_from_principal
 from studio.apps.model_service.catalog.http_bindings import CatalogBindings
 from studio.apps.model_service.catalog.legacy_defaults import LegacyCatalogDefaults
-from studio.apps.model_service.catalog.legacy_usage import LegacyCatalogTaskUsage
 from studio.apps.model_service.demonstration.execution import DemoRuntime
 from studio.apps.model_service.demonstration.website_storage import read_demo_configuration
 from studio.apps.model_service.library.inputs import LibraryInputBindings
 from studio.apps.model_service.library.outputs import LibraryOutputBindings
-from studio.apps.model_service.library.website_inputs import LegacyLibraryInputs
-from studio.apps.model_service.library.website_outputs import LegacyLibraryOutputs
-from studio.apps.model_service.playground.legacy_generation_references import (
-    LegacyGenerationReferences,
-)
 from studio.apps.model_service.transcription.annotation import AnnotationTranscription
 from studio.apps.model_service.transport.provider_bindings import ProviderTransports
-from studio.apps.motion_compositor.legacy_project_resources import LegacyProjectResources
 from studio.apps.motion_compositor.projects import MotionProjects
 from studio.apps.portal.storage.documents import InstalledDocuments
 from studio.apps.portal.use_cases.documents import DeveloperDocuments
-from studio.apps.presentation_workshop.exchange.legacy_import import import_legacy_presentation
-from studio.apps.presentation_workshop.legacy_project_assets import LegacyProjectAssets
 from studio.apps.presentation_workshop.projects import Presentations
 from studio.apps.remote_desktop.storage.preferences import PreferenceRecords
 from studio.apps.remote_desktop.use_cases.preferences import DesktopPreferences
 from studio.apps.thought_workshop.archives.backup import BackupLimits
 from studio.apps.thought_workshop.external_sync.use_cases import ArticleSync
-from studio.apps.thought_workshop.legacy_accounts import LegacyAccountDirectory
-from studio.apps.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 from studio.apps.thought_workshop.website.account_directory import DirectoryBindings
 from studio.apps.thought_workshop.website.asset_metadata import AssetMetadataBindings
 from studio.apps.thought_workshop.writing import WritingBindings
@@ -58,9 +43,6 @@ from studio.apps.tools.storage.navigation import NavigationRecords
 from studio.apps.tools.use_cases.navigation import ToolNavigation
 from studio.apps.tools.video_downloads.local_jobs import VideoDownloads
 from studio.apps.video_editor.assistant_operations import apply_assistant_timeline_batch
-from studio.apps.video_editor.handoffs.motion_handoff import import_motion_export
-from studio.apps.video_editor.legacy_project_layouts import LegacyVideoLayouts
-from studio.apps.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.apps.video_editor.preview_storage import local_preview_path
 from studio.assembly.annotation import (
     document_editor,
@@ -78,10 +60,32 @@ from studio.assembly.website.code_agent_access import resolve
 from studio.assembly.website.creative import bind_creative
 from studio.assembly.website.desktop import DesktopConnection
 from studio.assembly.website.integrations import integration_bindings
+from studio.assembly.website.interview_assistant.executor_status import executor_status
 from studio.assembly.website.media import bind_media
+from studio.assembly.website.model_service.admission.website_queue import admit_generation_tasks
+from studio.assembly.website.model_service.admission.website_quotas import acquire, attach, release
+from studio.assembly.website.model_service.call_logs.credentials import snapshot_from_principal
+from studio.assembly.website.model_service.catalog.legacy_usage import LegacyCatalogTaskUsage
+from studio.assembly.website.model_service.library.website_inputs import LegacyLibraryInputs
+from studio.assembly.website.model_service.library.website_outputs import LegacyLibraryOutputs
+from studio.assembly.website.model_service.playground.legacy_generation_references import (
+    LegacyGenerationReferences,
+)
 from studio.assembly.website.models import AUTOMATION_ROOTS, CERTIFIABLE_PROJECT_ROOTS
+from studio.assembly.website.motion_compositor.legacy_project_resources import (
+    LegacyProjectResources,
+)
+from studio.assembly.website.presentation_workshop.exchange.legacy_import import (
+    import_legacy_presentation,
+)
+from studio.assembly.website.presentation_workshop.legacy_project_assets import LegacyProjectAssets
 from studio.assembly.website.remote_apps import RemoteApps
+from studio.assembly.website.thought_workshop.legacy_accounts import LegacyAccountDirectory
+from studio.assembly.website.thought_workshop.legacy_asset_metadata import LegacyAssetMetadata
 from studio.assembly.website.thought_writing import WebsiteWritingModels
+from studio.assembly.website.video_editor.handoffs.motion_handoff import import_motion_export
+from studio.assembly.website.video_editor.legacy_project_layouts import LegacyVideoLayouts
+from studio.assembly.website.video_editor.legacy_timeline_assets import LegacyTimelineAssets
 from studio.assembly.website.video_library import ingest_library
 from studio.config import CONFIG_FILE, REPO_ROOT
 from studio.host.agent_execution.cli.connection_configuration import enable_connection

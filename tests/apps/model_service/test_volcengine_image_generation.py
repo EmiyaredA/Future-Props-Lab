@@ -10,8 +10,11 @@ from studio.apps.model_service.generation.driver import ImmediateGenerationResul
 from studio.apps.model_service.providers.volcengine_image import SEEDREAM_MODEL, generate_image
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
-from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
 from studio.assembly.website.models import bind_owner
+from studio.assembly.website.visual_workshop.website.generation import (
+    GenerationError,
+    VisualGeneration,
+)
 from studio.contracts.model_service.generation_tasks import ImageGenerationTaskCreateIn
 from tests.credential_test_support import encrypt_secret
 from tests.integration.test_generation_task_driver import FakeStore, _driver, _task

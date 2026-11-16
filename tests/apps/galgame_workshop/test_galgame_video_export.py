@@ -5,9 +5,13 @@ from types import SimpleNamespace
 import httpx
 import pytest
 
-from studio.apps.galgame_workshop.video.video_export import EXPORT_PACKAGING_POLICY
-from studio.apps.galgame_workshop.video.video_export_runner import _recover_interrupted_task
-from studio.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
+from studio.assembly.website.galgame_workshop.video.video_export import EXPORT_PACKAGING_POLICY
+from studio.assembly.website.galgame_workshop.video.video_export_runner import (
+    _recover_interrupted_task,
+)
+from studio.assembly.website.galgame_workshop.video.video_handoff_runner import (
+    GalgameVideoEditorHandoffRunner,
+)
 from studio.config.settings import get_settings
 from tests.apps.galgame_workshop.test_galgame_workshop import playable_story
 from website_test_support import SessionLocal, app

@@ -10,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from sqlalchemy import JSON, column, func, or_, select, table, text
 from sqlalchemy.exc import IntegrityError
 
+from studio.apps.asset_library.storage.migration_blobs import AssetBlobs
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.storage.scope import is_library_asset
 from studio.apps.asset_library.storage.service_models import VideoFileWriteReceipt
@@ -22,7 +23,6 @@ from studio.runtime.database.migration_receipts import batch_receipt, has_receip
 from studio.runtime.database.project_history_migration import CURSOR
 from studio.runtime.files.signed_payloads import ModelOutputDescription
 
-from .migration_blobs import AssetBlobs
 from .migration_models import AssetImportReceipt, AssetVideoOutputHistory
 
 DATASET = "assets.video-output-receipts"

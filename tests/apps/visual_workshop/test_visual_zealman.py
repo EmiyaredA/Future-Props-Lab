@@ -11,7 +11,7 @@ from studio.apps.model_service.providers.zealman_video import create_task
 from studio.apps.model_service.providers.zealman_workflows import U06, U17
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
-from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+from studio.assembly.website.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.config.settings import get_settings
 from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.task_execution import TaskExecutionInfo
@@ -67,7 +67,9 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
     monkeypatch.setattr(
         "studio.apps.model_service.generation.visual_submission.create_task", submit
     )
-    monkeypatch.setattr("studio.apps.visual_workshop.website.generation_runner.get_task", poll)
+    monkeypatch.setattr(
+        "studio.assembly.website.visual_workshop.website.generation_runner.get_task", poll
+    )
     monkeypatch.setattr("studio.apps.model_service.generation.media.assert_public_https", allow)
     provider = ModelProvider(
         owner_user_id="test-user",

@@ -7,8 +7,8 @@ import pytest
 from PIL import Image
 from sqlalchemy import delete
 
-from studio.apps.video_editor.runner import VideoEditorRunner
 from studio.apps.video_editor.storage.models import VideoEditorProject
+from studio.assembly.website.video_editor.runner import VideoEditorRunner
 from studio.config.settings import get_settings
 from website_test_support import SessionLocal, app
 

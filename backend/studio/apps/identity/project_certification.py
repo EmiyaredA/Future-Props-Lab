@@ -2,13 +2,11 @@
 
 import jwt
 from fastapi import APIRouter, HTTPException, Request
-from sqlalchemy import text
 
-from studio.apps.identity.storage.models.accounts import SecurityAuditEvent, User
-from studio.apps.identity.storage.service_models import CertificationAuditDelivery
+from studio.apps.identity.storage.actor_status import active_actor
+from studio.apps.identity.storage.certification_audits import AuditConflict, record_audit
 from studio.contracts.identity.certification import (
     PREFIX,
-    PROJECT_EVENT,
     CertificationAudit,
     CertificationAuditReceipt,
     CertificationAuthorization,
@@ -21,10 +19,8 @@ from studio.contracts.identity.certification import (
 from studio.contracts.identity.claims import verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.identity.route_permissions import route_permission
-from studio.runtime.ids import new_id
 
 from .integration_intents import require_client
-from .live import active_actor
 
 router = APIRouter(prefix=PREFIX, include_in_schema=False)
 
@@ -112,30 +108,15 @@ async def audit(request: Request, body: CertificationAudit):
     request_id = str(command.request_id)
     fingerprint = command.fingerprint(owner)
     async with request.app.state.database.sessions() as session:
-        await session.execute(text("BEGIN IMMEDIATE"))
-        prior = await session.get(CertificationAuditDelivery, request_id)
-        if prior is not None:
-            if prior.fingerprint != fingerprint:
-                raise HTTPException(409, "certification_audit_receipt_conflict")
-            return signed_audit(request, command, fingerprint, prior.audit_event_id)
-        user = await session.get(User, owner)
-        event_id = new_id()
-        session.add(
-            SecurityAuditEvent(
-                id=event_id,
-                actor_user_id=user.id if user else None,
-                owner_user_id=user.id if user else None,
-                event_type=PROJECT_EVENT,
+        try:
+            event_id = await record_audit(
+                session,
+                request_id=request_id,
+                fingerprint=fingerprint,
+                owner=owner,
+                command=command,
                 client_ip=grant.actor.client_ip or "",
-                metadata_json={
-                    "status_to": "official" if command.is_official else "ordinary",
-                },
             )
-        )
-        session.add(
-            CertificationAuditDelivery(
-                id=request_id, fingerprint=fingerprint, audit_event_id=event_id
-            )
-        )
-        await session.commit()
-        return signed_audit(request, command, fingerprint, event_id)
+        except AuditConflict:
+            raise HTTPException(409, "certification_audit_receipt_conflict") from None
+    return signed_audit(request, command, fingerprint, event_id)

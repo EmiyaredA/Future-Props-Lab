@@ -13,6 +13,7 @@ import {
 } from "../src/docs/content";
 import aliases from "../src/docs/legacyLinks.json";
 import screenshotSources from "../public/docs/sources.json";
+import { sourceEvidenceExists } from "./sourceEvidence";
 import {
   parseProjectFile,
   buildSrt,
@@ -99,20 +100,20 @@ describe("documentation source of truth", () => {
       expect(page.markdown, page.id).not.toMatch(/TODO|待补充|敬请期待/);
       for (const file of page.evidence)
         if (!file.startsWith("https://"))
-          expect(existsSync(resolve("..", file)), page.id + ": " + file).toBe(
-            true,
-          );
+          expect(sourceEvidenceExists(file), page.id + ": " + file).toBe(true);
     }
   });
-  it("resolves all legacy sections to an existing article heading", () => {
+  it("resolves legacy links to an existing article or heading", () => {
     for (const [old, target] of Object.entries(aliases)) {
       const [id, hash] = old.split("#");
       const resolved = resolveLocation(id, hash);
       expect(resolved.page.id + "#" + resolved.section).toBe(target);
-      expect(
-        resolved.page.headings.some((h) => h.id === resolved.section),
-        old,
-      ).toBe(true);
+      expect(PAGE_BY_ID.has(resolved.page.id), old).toBe(true);
+      if (resolved.section)
+        expect(
+          resolved.page.headings.some((h) => h.id === resolved.section),
+          old,
+        ).toBe(true);
     }
   });
   it("checks every internal link, image, alternate text and JSON example", () => {
@@ -157,9 +158,7 @@ describe("documentation source of truth", () => {
           const local = decodeURIComponent(
             new URL(result).pathname.split("/blob/HEAD/")[1],
           );
-          expect(existsSync(resolve("..", local)), page.id + ": " + href).toBe(
-            true,
-          );
+          expect(sourceEvidenceExists(local), page.id + ": " + href).toBe(true);
         } else if (/\.md(?:#|$)/.test(href))
           throw Error("Unresolved Markdown link " + page.id + ": " + href);
       }

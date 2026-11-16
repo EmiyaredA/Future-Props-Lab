@@ -9,12 +9,14 @@ import pytest
 from sqlalchemy import select
 
 from studio.apps.media_rendering.local.audio_matching import SAMPLE_RATE, rank_audio_seams
-from studio.apps.video_editor.audio_alignment.audio_matching import VideoEditorAudioMatching
 from studio.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
+from studio.apps.video_editor.rules.timeline_operations import apply_operations
 from studio.apps.video_editor.schemas import VideoEditorTimelineBatchIn
 from studio.apps.video_editor.schemas.audio_seam import AudioSeamCandidatesIn
 from studio.apps.video_editor.storage.models import VideoEditorAssetMetadata
-from studio.apps.video_editor.timeline import apply_operations
+from studio.assembly.website.video_editor.audio_alignment.audio_matching import (
+    VideoEditorAudioMatching,
+)
 from website_test_support import SessionLocal, app
 
 

@@ -10,7 +10,6 @@ from PIL import Image
 from sqlalchemy import delete
 
 from studio.apps.galgame_workshop.assets import asset_analysis as asset_analysis_module
-from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
 from studio.apps.galgame_workshop.assets.asset_support import normalize_import_filename
 from studio.apps.galgame_workshop.schemas import GalgameStoryProject
 from studio.apps.galgame_workshop.storage.models import (
@@ -19,6 +18,7 @@ from studio.apps.galgame_workshop.storage.models import (
     GalgameAssetTranscriptionTask,
 )
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.assembly.website.galgame_workshop.assets.asr import GalgameAsrRunner
 from studio.config.settings import get_settings
 from studio.config.settings import get_settings as isolated_settings
 from studio.runtime.secrets import SecretCipher

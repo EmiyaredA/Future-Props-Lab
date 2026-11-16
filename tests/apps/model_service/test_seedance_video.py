@@ -25,8 +25,11 @@ from studio.apps.model_service.storage.models.model_test import (
     ModelTestGenerationTask,
 )
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
-from studio.apps.visual_workshop.website.generation import GenerationError, VisualGeneration
 from studio.assembly.website.models import bind_owner
+from studio.assembly.website.visual_workshop.website.generation import (
+    GenerationError,
+    VisualGeneration,
+)
 from studio.config.settings import get_settings
 from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.generation_tasks import VideoGenerationTaskCreateIn
@@ -208,7 +211,7 @@ async def test_all_video_entry_points_inline_ark_audio_and_preserve_provider_neu
     from studio.apps.model_service.generation import visual_submission as visual_submission
     from studio.apps.model_service.inference import runner as inference_runner
     from studio.apps.model_service.playground import generation_runner as test_runner
-    from studio.apps.visual_workshop.website import generation_runner as visual_runner
+    from studio.assembly.website.visual_workshop.website import generation_runner as visual_runner
 
     captured = []
 

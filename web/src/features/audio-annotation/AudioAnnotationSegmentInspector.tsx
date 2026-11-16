@@ -1,3 +1,4 @@
+import { annotationSnapshot as snapshot } from "./model/snapshot";
 import {
   Check,
   ChevronLeft,
@@ -21,7 +22,7 @@ import {
   snapSegmentToPrevious,
   updateSegmentBounds,
 } from "./model";
-import type { AnnotationSnapshot, AudioAnnotationDocument } from "./types";
+import type { AudioAnnotationDocument } from "./types";
 import type { AudioAnnotationEditorController } from "./useAudioAnnotationEditorController";
 
 function speakerTriggerLabel(
@@ -35,15 +36,6 @@ function speakerTriggerLabel(
   if (!names.length) return "未指定";
   if (names.length <= 2) return names.join("、");
   return `${names.slice(0, 2).join("、")} 等 ${names.length} 人`;
-}
-
-function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
-  return {
-    schema_version: "1.0",
-    speakers: document.speakers,
-    custom_emotions: document.custom_emotions ?? [],
-    segments: document.segments,
-  };
 }
 
 export function AudioAnnotationSegmentInspector({
@@ -72,11 +64,11 @@ export function AudioAnnotationSegmentInspector({
     setNotice,
     setSpeakerManager,
     setEmotionManager,
-    setUndoStack,
+    beginTextEdit,
+    endTextEdit,
     snappedToNext,
     snappedToPrevious,
     speakerById,
-    textBase,
     toggleSelectedPreview,
     updateSelected,
   } = controller;
@@ -303,7 +295,7 @@ export function AudioAnnotationSegmentInspector({
             segment={selected}
             preferredLanguage={preferredDisplayLanguage}
             onFocus={() => {
-              if (!textBase.current) textBase.current = snapshot(document);
+              beginTextEdit();
             }}
             onChange={(changes, record) =>
               updateSelected(
@@ -315,11 +307,7 @@ export function AudioAnnotationSegmentInspector({
               )
             }
             onBlur={() => {
-              if (textBase.current)
-                setUndoStack((current) =>
-                  [...current, textBase.current!].slice(-100),
-                );
-              textBase.current = null;
+              endTextEdit();
             }}
             transcription={segmentTranscription.controls}
           />

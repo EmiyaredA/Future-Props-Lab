@@ -36,7 +36,7 @@ def test_video_image_excludes_compatibility_layout_and_foreign_orm():
     closure = source_closure(ROOT, "video")
     assert "studio.assembly.independent.video_editor.application" in closure
     assert "studio.apps.video_editor.timeline_read" in closure
-    assert "studio.apps.video_editor.legacy_project_layouts" not in closure
+    assert "studio.assembly.website.video_editor.legacy_project_layouts" not in closure
     assert "studio.apps.asset_library.storage.models" not in closure
     assert "studio.runtime.database.website" not in closure
 

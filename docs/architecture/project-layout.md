@@ -60,7 +60,7 @@ backend/
     └── deployment/
 ```
 
-- 应用内部 `storage/models.py` 保存共用业务模型，`storage/service_models.py` 保存独立服务附加模型，`storage/migrations/` 保存独立迁移链；迁移 SQL、ID 与顺序不变。协议适配位于 `transport/`，兼容站路由为 `transport/website/`，其余按实际业务操作命名。音频标注保留其已抽取的 `rules/`、`use_cases/` 和 `ports.py`。
+- 应用内部 `storage/models.py` 保存共用业务模型，`storage/service_models.py` 保存独立服务附加模型，`storage/migrations/` 保存独立迁移链；迁移 SQL、ID 与顺序不变。独立与共用协议适配位于应用的 `transport/`；兼容网站协议及跨表适配归 `assembly/website/<owner>/`。音频标注保留其已抽取的 `rules/`、`use_cases/` 和 `ports.py`。
 - `assembly/independent/<应用名>/application.py` 构造服务，`cli.py` 提供启动/迁移命令，`maintenance.py` 提供存在该能力的回环维护装配。历史 Agents 服务的装配仅供归档版本参考。
 - `contracts/<所有者>/` 只保存可独立加载的数据形状、协议规则与固定权限；不导入业务实现、HTTP 框架或 ORM。账号权限清单在 `contracts/identity/route_permissions.py`，本地模型固定目录在 `config/local_models.json`。
 - `runtime/database/` 拥有数据库连接、迁移执行、通用 ORM 原语和迁移传输适配；`http/` 拥有身份断言、错误映射、请求限制及静态资源适配；`tasks/` 拥有轮询和租约队列机制；`files/` 与 `messaging/` 拥有受限文件和签名载荷机制。业务状态裁决仍由应用负责。
@@ -175,6 +175,29 @@ docs/
 这是 Future Props Lab 目录职责的唯一完整索引。新增、删除目录或改变目录职责时更新本文件；
 各模块文档只补充局部使用方法，不另行定义一套架构。
 
+## 兼容网站与组件端口
+
+兼容网站的跨应用存储、文件布局、后台执行适配与相应协议组合统一位于
+`backend/studio/assembly/website/<owner>/`，按原能力和具体职责组织。应用自有实体、独立服务协议、
+纯规则和业务命令仍归 `apps/<owner>/`。网站组合可连接多个所有者的存储，应用源码不能反向导入网站组合。
+保留自有存储之外的依赖时，只能使用纯契约、已登记的公开客户端或本地媒体模块。
+
+- 素材项目存在检查必须显式注入，禁止通过 ORM 元数据查找其他应用表。
+- Models 的额度决定消费 `admission/capacity.py` 中的聚合事实；网站适配负责跨工坊任务查询。
+- 视频时间线的转换和校验归 `rules/`，`use_cases/edit_timeline.py` 仅消费时间线与素材端口，
+  `timeline.py` 负责 SQL CAS、回执及原子提交。视频回执确认旧请求后返回当前快照；当前 revision
+  不等于该请求保存的 result revision。音频、故事及画布编辑共用纯 revision 命令流程，继续重放原结果。
+- 视频精确帧消费时间线、素材和渲染端口。`storage/frame_reads.py` 返回脱离会话的快照；
+  `clients/frame_renderer.py` 负责委托 HTTP、响应大小及格式校验。渲染器不决定时间线业务规则。
+- 音频编辑的 `model/editorState.ts` 唯一维护文档、编辑版本、dirty 和撤销历史。
+  转录通过快照读取与提交命令接入，异步结果核对账号/项目范围、片段及音频区间。
+  `playback.ts` 声明播放能力，展示组件实现该接口；保存确认只推进 CAS，不能覆盖后续编辑。
+- 视觉生成的提交与批次反馈归 `useGenerationSubmission`，参数、草稿和素材顺序仍由原业务模块持有。
+- 文件库目录路径规则归 `folderPaths.ts` 并通过公共入口导出；两套文件 API 共用 `storage/asset_edits.py`。
+
+[源码迁移清单](source-relocations.json) 为历史文档中的代码依据提供静态定位；不参与服务加载，
+不创建旧模块别名、符号链接或默认兼容实现。产品文档正文保持原样。
+
 ## Agent 工作台
 
 本机 Happier 可使用独立回环 TLS 监听器。`scripts/website/application.py` 绑定 Studio 与 Happier 两个同站来源，`WebsiteTransport` 依据实际监听 socket 标记本机 Happier 入口，仅 Agent 解锁使用该标记。
@@ -263,7 +286,7 @@ Models 所有调用链显式接收当前装配的配置：测试台附件、生�
 
 `studio/contracts/model_service/catalog_events.py` 定义仅含事件 ID、账号 ID、角色、版本和短期当前状态的私有目录初始化协议。`studio/apps/identity/catalog_events.py` 只允许独立 Models 凭据轮询／确认，拒绝浏览器和其他服务；历史事件与当前角色分开，停用账号保留事件但不投递。`studio/apps/model_service/account_events.py` 拥有有界 HTTP 传输与恢复轮询，`provisioning.py` 在独立账号事务中执行显式本地初始化回调并保存摘要回执。新增 `0003_catalog_provisioning` 不改写前两版。回执防止确认丢失后重建目录，不构成后续业务授权；完整 ASGI 装配仍待完成。
 
-`studio/apps/model_service/catalog/template_reconciliation.py` 拥有模板预览、保留 ID 的目录合并与默认选择规则；`template_values.py` 拥有输入密钥替换／保留及脱敏视图，不依赖治理存储。`studio/apps/model_service/templates/policy.py` 使用追加的 `0004_role_templates` 自有角色策略表提供 CAS 与账号初始化，空策略沿用无密钥内置目录；调用方负责管理员授权和保存／审计事务。`task_usage.py` 只查询 Models 自有任务。恢复网站的旧设置、账号审计与跨工坊占用留在 `studio/apps/model_service/templates/website.py` 适配器，独立服务不得导入它。
+`studio/apps/model_service/catalog/template_reconciliation.py` 拥有模板预览、保留 ID 的目录合并与默认选择规则；`template_values.py` 拥有输入密钥替换／保留及脱敏视图，不依赖治理存储。`studio/apps/model_service/templates/policy.py` 使用追加的 `0004_role_templates` 自有角色策略表提供 CAS 与账号初始化，空策略沿用无密钥内置目录；调用方负责管理员授权和保存／审计事务。`task_usage.py` 只查询 Models 自有任务。恢复网站的旧设置、账号审计与跨工坊占用留在 `studio/assembly/website/model_service/templates/website.py` 适配器，独立服务不得导入它。
 
 `studio/apps/model_service/quotas.py` 使用追加的 `0005_quota_policy` 保存独立 CAS 策略；协议类型归 `studio/apps/model_service/schemas/runtime_quotas.py`，旧治理 schema 只作兼容导出。`admission.py` 持有同步调用与三个 Models 任务种类的额度生命周期：全局统计仅返回固定自有表的汇总，恢复任务没有账本也计入占用；任务关联与创建同事务，重放不可改绑。`studio/apps/model_service/generation/outcomes.py` 共享供应商提交中断结果标记，未知与缺失任务不会因超时被当作已完成。额度不等于执行授权；排队授权、Runner 结算与治理审计仍待完整装配。
 
@@ -517,7 +540,7 @@ Future-Props-Lab/
   `vendor/pi/` 仅保留历史来源快照，不参与 Amadeus 构建。进程监督由桌面独立工具入口提供，
   不复用携带后端凭据的服务进程。
 
-- `studio/apps/model_service/credential_snapshot.py` 保存纯调用归因快照，不导入账号 ORM 或数据库。`studio/apps/model_service/http_credentials.py` 让模型 HTTP 入口读取与当前 Principal 匹配的已验证 Identity 上下文中的 API Key ID、显示名与前缀，不跨库读取账号或密钥；实时语音仅接受已经认证的浏览器 Principal。恢复网站在装配时显式安装 `studio/apps/model_service/call_logs/credentials.py` 中的账号查询，使用当前应用的会话，LLM 模块不直接导入单体全局数据库工厂。归因只用于日志，不能代替授权。
+- `studio/apps/model_service/credential_snapshot.py` 保存纯调用归因快照，不导入账号 ORM 或数据库。`studio/apps/model_service/http_credentials.py` 让模型 HTTP 入口读取与当前 Principal 匹配的已验证 Identity 上下文中的 API Key ID、显示名与前缀，不跨库读取账号或密钥；实时语音仅接受已经认证的浏览器 Principal。恢复网站在装配时显式安装 `studio/assembly/website/model_service/call_logs/credentials.py` 中的账号查询，使用当前应用的会话，LLM 模块不直接导入单体全局数据库工厂。归因只用于日志，不能代替授权。
 - `runtime/task_records.py` 拥有内部 Runner 的账号查找与绑定：在无绑定时只读解析本服务任务归属，随后按该账号读取；已有绑定不可覆盖。生成／转录恢复先枚举受影响账号，再分别提交状态与日志，系统读取不授予系统写入。`studio/apps/model_service/inference/storage.py` 管理本服务推理输入与输出，启动核对只读取 Models 自有记录与目录，不扫描 Identity 表、不跟随链接、不递归清理或修改其他应用文件。
 - `studio/runtime/http/dependencies.py` 从当前 ASGI 应用取得显式会话工厂，业务身份仅消费已验证签名上下文。`studio/apps/identity/transport/database_auth.py` 拥有浏览器 Cookie、CSRF、API Key、Session 用途和原实时语音认证的账号数据校验；Identity 与恢复网站在装配时明确安装该适配器，其他应用不加载账号 ORM 或旧数据库。`studio/assembly/identity_http.py` 提供无存储依赖的协议错误、客户端地址和最近重新认证前置条件。缺少绑定不能触发单体数据库回退。
 - `studio/apps/model_service/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供账号限定的
@@ -627,7 +650,7 @@ Future-Props-Lab/
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
-  但只能通过 Galgame 工程素材 API 修改或删除。`studio/apps/asset_library/storage/website_references.py` 统一检查文档与知识库封面的公共文件删除保护。公共文件被视觉或 Galgame 工程引用期间禁止删除，
+  但只能通过 Galgame 工程素材 API 修改或删除。`studio/assembly/website/asset_library/storage/website_references.py` 统一检查文档与知识库封面的公共文件删除保护。公共文件被视觉或 Galgame 工程引用期间禁止删除，
   对话消息引用的项目素材也必须先解除引用才能删除。
 
 视频剪辑页面通过 `useSubtitleImport.ts` 管理字幕文件解析、确认和取消；`assetBatch.ts` 根据时间线快照、
@@ -859,11 +882,11 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
   键归属真源为 `studio/contracts/management/setting_owners.py`，部署清单消费同一注册表；
   `apps/model_service/storage/website_settings.py` 限制模型分区，`website_policy.py` 保持授权、设置写入和审计的同一事务。
   模板输入加密与输出掩码只使用装配提供的 `TemplateCipher`；邀请码名额和注册事务仍归 Identity。
-- `studio/apps/model_service/templates/website.py`、`website_sync.py` 拥有角色模板、预览和逐账号持久同步；保留自建资源，管理员预览不暴露私人目录名称。
+- `studio/assembly/website/model_service/templates/website.py`、`website_sync.py` 拥有角色模板、预览和逐账号持久同步；保留自建资源，管理员预览不暴露私人目录名称。
 - `code_agents.py` 按账号、Agent 与用途维护授权，连接定义和认证白名单属于部署 TOML。
-- `studio/apps/model_service/admission/website_quotas.py` 拥有账号与实例额度，`studio/apps/model_service/admission/website_queue.py` 维护图片／视频等待容量及任务调度；等待不占并发，额度领取与提交状态在同一短事务更新。
+- `studio/assembly/website/model_service/admission/website_quotas.py` 拥有账号与实例额度，`studio/assembly/website/model_service/admission/website_queue.py` 维护图片／视频等待容量及任务调度；等待不占并发，额度领取与提交状态在同一短事务更新。
 - `developer_docs.py`、`project_certification.py` 拥有开发者文档与官方标记；私人数据没有管理员跨账号读取入口。
-- `studio/apps/model_service/demonstration/website_management.py` 维护网站演示配置，`execution.py` 执行进程内 Mock；`studio/apps/model_service/catalog/defaults.py` 保存账号默认模型，并与目录共用 CAS。
+- `studio/assembly/website/model_service/demonstration/website_management.py` 维护网站演示配置，`execution.py` 执行进程内 Mock；`studio/apps/model_service/catalog/defaults.py` 保存账号默认模型，并与目录共用 CAS。
 - `web/src/features/accounts/` 拥有账号设置、中台六个页面、注册邀请码、模型模板、Agent 分配与运行额度。
   调用日志的工具栏、筛选、列表与缓存由 `features/models/logs/` 拥有，只查询当前账号。
 - 旧空间治理、成员授权、公开展台、跨空间日志及动态权限策略模块已删除。迁移 SQL 仅保留历史兼容名称。

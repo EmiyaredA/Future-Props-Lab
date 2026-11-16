@@ -1,32 +1,33 @@
-from studio.apps.visual_workshop.canvas import VisualCanvasDocuments
-from studio.apps.visual_workshop.operation_values import transform as transform
-from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentOut
-from studio.runtime.database.operation_receipts import record, replay
-from studio.runtime.revisions import RevisionConflictError
+"""Apply owner-specific editing rules through an atomic, replaceable storage port."""
+
+from typing import Protocol
+
+from studio.apps.visual_workshop.operation_values import transform
+from studio.apps.visual_workshop.schemas.operations import VisualOperationsIn
+from studio.apps.visual_workshop.schemas.workshop import (
+    VisualCanvasDocumentOut,
+    VisualCanvasDocumentPutIn,
+)
+from studio.runtime.revisioned_commands import apply_revisioned_command
 
 
-async def apply_operations(session, owner_user_id, project_id, body):
-    documents = VisualCanvasDocuments(session)
-    current = await documents.get(project_id)
-    key = dict(owner_user_id=owner_user_id, kind="visual", resource_id=project_id, body=body)
-    saved = await replay(session, **key)
-    if saved is not None:
-        return VisualCanvasDocumentOut.model_validate(saved)
-    if current.revision != body.expected_revision:
-        raise RevisionConflictError(
-            body.expected_revision, current.revision, current.model_dump(mode="json")
-        )
-    candidate = transform(current, body)
-    try:
-        result = await documents.replace(project_id, candidate)
-        record(session, **key, result=result)
-        await session.commit()
-        return result
-    except RevisionConflictError:
-        saved = await replay(session, **key)
-        if saved is not None:
-            return VisualCanvasDocumentOut.model_validate(saved)
-        raise
-    except Exception:
-        await session.rollback()
-        raise
+class DocumentEdits(Protocol):
+    async def load(self, resource: str) -> VisualCanvasDocumentOut: ...
+    async def replay(
+        self, resource: str, command: VisualOperationsIn
+    ) -> VisualCanvasDocumentOut | None: ...
+    async def commit(
+        self, resource: str, command: VisualOperationsIn, candidate: VisualCanvasDocumentPutIn
+    ) -> VisualCanvasDocumentOut: ...
+
+
+async def apply_operations(
+    store: DocumentEdits, project_id: str, body: VisualOperationsIn
+) -> VisualCanvasDocumentOut:
+    return await apply_revisioned_command(
+        store,
+        project_id,
+        body,
+        transform=transform,
+        describe=lambda snapshot: snapshot.model_dump(mode="json"),
+    )

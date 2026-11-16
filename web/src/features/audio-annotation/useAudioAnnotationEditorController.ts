@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnnotationEditorState } from "./model/editorState";
+import { annotationSnapshot as snapshot } from "./model/snapshot";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getAudioAnnotationDocument,
@@ -24,24 +33,14 @@ import {
 } from "@features/audio-annotation/model";
 import type {
   AnnotationSnapshot,
-  AudioAnnotationDocument,
   AudioAnnotationSegment,
   AudioAnnotationSpeaker,
 } from "@features/audio-annotation/types";
-import type { AudioWaveformHandle } from "@features/audio-annotation/AudioWaveform";
+import type { AnnotationPlayback as AudioWaveformHandle } from "./playback";
 import { publishResourceRevision } from "@platform/sync/resourceBroadcast";
 import { ApiError } from "@platform/api/client";
 import { useSegmentTranscription } from "@features/audio-annotation/segmentTranscription";
 import { audioAnnotationQueryKeys } from "@features/audio-annotation/queryKeys";
-
-function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
-  return {
-    schema_version: "1.0",
-    speakers: document.speakers,
-    custom_emotions: document.custom_emotions ?? [],
-    segments: document.segments,
-  };
-}
 
 export function useAudioAnnotationEditorController({
   projectId,
@@ -58,12 +57,20 @@ export function useAudioAnnotationEditorController({
 }) {
   const queryClient = useQueryClient();
   const waveformRef = useRef<AudioWaveformHandle>(null);
-  const documentRef = useRef<AudioAnnotationDocument | null>(null);
-  const version = useRef(0);
-  const textBase = useRef<AnnotationSnapshot | null>(null);
-  const [document, setDocument] = useState<AudioAnnotationDocument | null>(
-    null,
+  const editor = useMemo(
+    () => new AnnotationEditorState({ accountId, projectId }),
+    [accountId, projectId],
   );
+  const currentEditor = useRef<AnnotationEditorState | null>(editor);
+  currentEditor.current = editor;
+  useEffect(() => {
+    currentEditor.current = editor;
+    return () => {
+      if (currentEditor.current === editor) currentEditor.current = null;
+    };
+  }, [editor]);
+  const editState = useSyncExternalStore(editor.subscribe, editor.getSnapshot);
+  const { document, dirty, undo: undoStack, redo: redoStack } = editState;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentMs, setCurrentMs] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -87,12 +94,9 @@ export function useAudioAnnotationEditorController({
     storedDisplayLanguage.current ?? PRIMARY_DISPLAY_LANGUAGE,
   );
   const [statusFilter, setStatusFilter] = useState("all");
-  const [dirty, setDirty] = useState(false);
   const dirtyRef = useRef(dirty);
   const [conflict, setConflict] = useState(false);
   const [notice, setNotice] = useState("");
-  const [undoStack, setUndoStack] = useState<AnnotationSnapshot[]>([]);
-  const [redoStack, setRedoStack] = useState<AnnotationSnapshot[]>([]);
   const [speakerManager, setSpeakerManager] = useState(false);
   const [emotionManager, setEmotionManager] = useState(false);
   const [deleteSpeaker, setDeleteSpeaker] =
@@ -109,7 +113,6 @@ export function useAudioAnnotationEditorController({
   const [textImportValue, setTextImportValue] = useState("");
   const [textImportError, setTextImportError] = useState("");
   dirtyRef.current = dirty;
-  documentRef.current = document;
 
   const projectQuery = useQuery({
     queryKey: audioAnnotationQueryKeys.project(projectId),
@@ -128,7 +131,7 @@ export function useAudioAnnotationEditorController({
 
   useEffect(() => {
     if (!document && documentQuery.data) {
-      setDocument(documentQuery.data);
+      editor.load(documentQuery.data);
       setSelectedId(documentQuery.data.segments[0]?.id ?? null);
       if (!storedDisplayLanguage.current) {
         const initialLanguage = documentQuery.data.segments.some((segment) =>
@@ -145,36 +148,31 @@ export function useAudioAnnotationEditorController({
         );
       }
     }
-  }, [document, documentQuery.data, projectId]);
+  }, [document, documentQuery.data, projectId, editor]);
 
   const save = useMutation({
     mutationFn: async (input: {
+      scope: AnnotationEditorState;
+      project: string;
       data: AnnotationSnapshot;
       revision: number;
       version: number;
     }) => ({
       saved: await putAudioAnnotationDocument(
-        projectId,
+        input.project,
         input.revision,
         input.data,
       ),
       version: input.version,
+      scope: input.scope,
     }),
-    onSuccess: ({ saved, version: savedVersion }) => {
+    onSuccess: ({ saved, version: savedVersion, scope }) => {
+      if (scope !== currentEditor.current) return;
       queryClient.setQueryData(
         audioAnnotationQueryKeys.document(projectId),
         saved,
       );
-      setDocument((current) =>
-        current
-          ? {
-              ...current,
-              revision: saved.revision,
-              updated_at: saved.updated_at,
-            }
-          : current,
-      );
-      if (savedVersion === version.current) setDirty(false);
+      editor.saved(saved, savedVersion);
       setNotice("");
       publishResourceRevision({
         kind: "audio-annotation",
@@ -185,7 +183,8 @@ export function useAudioAnnotationEditorController({
         queryKey: audioAnnotationQueryKeys.project(projectId),
       });
     },
-    onError: (error) => {
+    onError: (error, input) => {
+      if (input.scope !== currentEditor.current) return;
       if (
         error instanceof ApiError &&
         error.problem.code === "revision_conflict"
@@ -196,14 +195,26 @@ export function useAudioAnnotationEditorController({
     },
   });
 
+  const { mutate: submitSave, isPending: saving } = save;
   const flushSave = useCallback(() => {
-    if (!document || !dirty || conflict || save.isPending) return;
-    save.mutate({
+    if (!document || !dirty || conflict || saving) return;
+    submitSave({
+      scope: editor,
+      project: projectId,
       data: snapshot(document),
       revision: document.revision,
-      version: version.current,
+      version: editState.version,
     });
-  }, [conflict, dirty, document, save]);
+  }, [
+    conflict,
+    dirty,
+    document,
+    submitSave,
+    saving,
+    editState.version,
+    editor,
+    projectId,
+  ]);
 
   useEffect(() => {
     if (!dirty || conflict || save.isPending) return;
@@ -231,14 +242,7 @@ export function useAudioAnnotationEditorController({
   }, [registerNavigationGuard]);
 
   const applySnapshot = (next: AnnotationSnapshot, record = true) => {
-    if (!document) return;
-    if (record) {
-      setUndoStack((current) => [...current, snapshot(document)].slice(-100));
-      setRedoStack([]);
-    }
-    version.current += 1;
-    setDocument({ ...document, ...next });
-    setDirty(true);
+    editor.replace(next, record);
     setNotice("");
   };
 
@@ -310,20 +314,8 @@ export function useAudioAnnotationEditorController({
     });
   }, [document, languageFilter, search, speakerById, statusFilter]);
 
-  const undo = () => {
-    if (!document || !undoStack.length) return;
-    const previous = undoStack.at(-1)!;
-    setRedoStack((current) => [...current, snapshot(document)].slice(-100));
-    setUndoStack((current) => current.slice(0, -1));
-    applySnapshot(previous, false);
-  };
-  const redo = () => {
-    if (!document || !redoStack.length) return;
-    const next = redoStack.at(-1)!;
-    setUndoStack((current) => [...current, snapshot(document)].slice(-100));
-    setRedoStack((current) => current.slice(0, -1));
-    applySnapshot(next, false);
-  };
+  const undo = () => editor.undo();
+  const redo = () => editor.redo();
 
   const doSplit = () => {
     if (!document || !selected) return;
@@ -399,26 +391,17 @@ export function useAudioAnnotationEditorController({
     const segments = document.segments.map((segment) =>
       segment.id === selected.id ? { ...segment, ...changes } : segment,
     );
-    if (record) mutateSegments(segments);
-    else {
-      version.current += 1;
-      setDocument({ ...document, segments });
-      setDirty(true);
-    }
+    applySnapshot({ ...snapshot(document), segments }, record);
   };
 
   const segmentTranscription = useSegmentTranscription({
     projectId,
     accountId,
-    documentRef,
+    readDocument: () => editor.getSnapshot().document,
+    applySnapshot: (next: AnnotationSnapshot) => editor.replace(next),
     selected,
     conflict,
     waveformRef,
-    version,
-    setDocument,
-    setUndoStack,
-    setRedoStack,
-    setDirty,
     setNotice,
   });
 
@@ -432,13 +415,9 @@ export function useAudioAnnotationEditorController({
   const reloadServer = async () => {
     const result = await documentQuery.refetch();
     if (!result.data) return;
-    setDocument(result.data);
+    editor.load(result.data);
     setSelectedId(result.data.segments[0]?.id ?? null);
-    setUndoStack([]);
-    setRedoStack([]);
-    setDirty(false);
     setConflict(false);
-    version.current += 1;
   };
 
   if (projectQuery.isError || documentQuery.isError || waveformQuery.isError) {
@@ -534,7 +513,6 @@ export function useAudioAnnotationEditorController({
     setCurrentMs,
     setDeleteSpeaker,
     setDeleteSpeakerReplacement,
-    setDirty,
     setEmotionManager,
     setExportOpen,
     setFocusSelectionMode,
@@ -552,7 +530,6 @@ export function useAudioAnnotationEditorController({
     setTextImportError,
     setTextImportOpen,
     setTextImportValue,
-    setUndoStack,
     setVolume,
     setWaveformViewport,
     setZoomRatio,
@@ -561,7 +538,9 @@ export function useAudioAnnotationEditorController({
     speakerById,
     speakerManager,
     statusFilter,
-    textBase,
+    beginTextEdit: () => editor.beginTextEdit(),
+    endTextEdit: () => editor.endTextEdit(),
+    discardChanges: () => editor.discard(),
     textImportError,
     textImportOpen,
     textImportValue,

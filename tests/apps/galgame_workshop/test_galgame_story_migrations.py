@@ -8,8 +8,8 @@ import pytest
 from sqlalchemy import select, update
 
 from studio.apps.galgame_workshop.storage.models import GalgameStoryDocument, GalgameWorkshopProject
-from studio.apps.galgame_workshop.story.story import default_story_document
-from studio.apps.galgame_workshop.story.story_migrations import (
+from studio.assembly.website.galgame_workshop.story.story import default_story_document
+from studio.assembly.website.galgame_workshop.story.story_migrations import (
     GalgameStoryMigrations,
     inspect_story_migration,
 )

@@ -14,7 +14,9 @@ from studio.apps.galgame_workshop.storage.service_models import (
     GalgameVideoDispatch,
 )
 from studio.apps.galgame_workshop.upload_intakes import UploadSignature
-from studio.apps.galgame_workshop.video.video_export_planning import EXPORT_PACKAGING_POLICY
+from studio.apps.galgame_workshop.video.video_export_planning import (
+    EXPORT_PACKAGING_POLICY,
+)
 from studio.contracts.galgame_workshop.galgame_exports import ExportMedia, GalgameExport
 from studio.contracts.galgame_workshop.galgame_upload import UploadReceipt
 from studio.runtime.http.capability_client import CapabilityUnavailable

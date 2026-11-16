@@ -10,13 +10,10 @@ from uuid import uuid4
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
-from sqlalchemy import select
 
 from studio.apps.model_service.admission.bindings import admission_for
-from studio.apps.model_service.providers.chat_completions import TEXT_PROVIDER_KINDS
 from studio.apps.model_service.providers.streaming import ChatMessageInput, stream_text_completion
-from studio.apps.model_service.storage.models.call_log import LlmCallLog
-from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
+from studio.apps.model_service.storage.writing_calls import record_call, selections
 from studio.apps.model_service.transport.provider_bindings import provider_options
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
@@ -29,7 +26,6 @@ from studio.contracts.thought_workshop.writing import (
     event,
     writing_target,
 )
-from studio.runtime.database.ownership import bind_owner
 
 router = APIRouter(include_in_schema=False)
 
@@ -62,26 +58,6 @@ async def actor(request):
         raise HTTPException(401 if active is False else 503, "writing_authorization_unavailable")
     request.state.service_actor, request.state.service_assertion = verified, token
     return verified
-
-
-async def selections(session, owner):
-    rows = (
-        await session.execute(
-            select(ModelEntry, ModelProvider)
-            .join(ModelProvider, ModelProvider.id == ModelEntry.provider_id)
-            .where(
-                ModelEntry.owner_user_id == owner,
-                ModelProvider.owner_user_id == owner,
-                ModelEntry.enabled.is_(True),
-                ModelProvider.enabled.is_(True),
-            )
-        )
-    ).all()
-    return [
-        (model, provider)
-        for model, provider in rows
-        if "chat" in model.capabilities and provider.kind in TEXT_PROVIDER_KINDS
-    ]
 
 
 @dataclass(frozen=True)
@@ -191,32 +167,28 @@ async def completion_events(request, verified, body, selection):
     finally:
 
         async def settle():
-            async with request.app.state.database.sessions(
-                info={"owner_user_id": verified.user_id}
-            ) as session:
-                bind_owner(session, verified.user_id)
-                session.add(
-                    LlmCallLog(
-                        owner_user_id=verified.user_id,
-                        call_source="thought_workshop_assistant",
-                        provider_kind=selection.kind,
-                        model=selection.slug,
-                        trace_id=str(uuid4()),
-                        request_payload={
-                            "note_id": body.note_id,
-                            "revision": body.revision,
-                            "action": body.action,
-                            "input_characters": len(body.content),
-                        },
-                        response_payload={"output_characters": output_count, "status": status},
-                        latency_ms=round((time.monotonic() - started) * 1000),
-                        status="success" if status == "success" else "error",
-                        error_message=error,
-                        **snapshot_from_actor(verified).as_kwargs(),
-                        **usage,
-                    )
-                )
-                await session.commit()
+            await record_call(
+                request.app.state.database.sessions,
+                {
+                    "owner_user_id": verified.user_id,
+                    "call_source": "thought_workshop_assistant",
+                    "provider_kind": selection.kind,
+                    "model": selection.slug,
+                    "trace_id": str(uuid4()),
+                    "request_payload": {
+                        "note_id": body.note_id,
+                        "revision": body.revision,
+                        "action": body.action,
+                        "input_characters": len(body.content),
+                    },
+                    "response_payload": {"output_characters": output_count, "status": status},
+                    "latency_ms": round((time.monotonic() - started) * 1000),
+                    "status": "success" if status == "success" else "error",
+                    "error_message": error,
+                    **snapshot_from_actor(verified).as_kwargs(),
+                    **usage,
+                },
+            )
 
         settled = asyncio.create_task(settle())
         try:

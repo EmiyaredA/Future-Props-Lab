@@ -5,7 +5,8 @@ import hashlib
 import httpx
 from pydantic import TypeAdapter
 
-from studio.apps.asset_library.migration_blobs import BLOBS, DATASET, AssetBlob, receipt_for
+from studio.apps.asset_library.migration_blobs import BLOBS
+from studio.apps.asset_library.storage.migration_blobs import DATASET, AssetBlob, receipt_for
 from studio.apps.asset_library.storage.migration_records import DATASETS
 from studio.assembly.independent.asset_library.maintenance import PREFIX
 from studio.contracts.management.migration_batches import BatchReceipt

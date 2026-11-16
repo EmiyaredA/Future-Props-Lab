@@ -35,19 +35,8 @@ export type AudioWaveformViewport = {
   endMs: number;
 };
 
-export type AudioWaveformHandle = {
-  playPause: () => void;
-  playRange: (startMs: number, endMs: number) => void;
-  pause: () => void;
-  seekMs: (milliseconds: number) => void;
-  setRate: (rate: number) => void;
-  setVolume: (volume: number) => void;
-  zoom: (ratio: number, anchorMs?: number) => void;
-  scrollTo: (startMs: number) => void;
-  panBy: (viewportFraction: number) => void;
-  setFocusSelectionMode: (enabled: boolean) => void;
-  exportRangeWav: (startMs: number, endMs: number) => Blob | null;
-};
+export type { AnnotationPlayback as AudioWaveformHandle } from "./playback";
+import type { AnnotationPlayback as AudioWaveformHandle } from "./playback";
 
 async function decodeAudioBlob(blob: Blob): Promise<AudioBuffer> {
   const context = new AudioContext();

@@ -10,10 +10,10 @@ from pypdf import PdfWriter
 from studio.apps.interview_assistant import codex, runner
 from studio.apps.interview_assistant.bundles import acceptance
 from studio.apps.interview_assistant.codex import task_context
-from studio.apps.interview_assistant.executor_status import executor_status
 from studio.apps.interview_assistant.storage.models import InterviewPreparation
 from studio.apps.interview_assistant.task_tools import TaskFiles, extract_document
 from studio.assembly.http_dependencies import require_studio_auth
+from studio.assembly.website.interview_assistant.executor_status import executor_status
 from studio.config.settings import get_settings
 from studio.contracts.interview_assistant.documents import InterviewExecutorOut, PreparationBundle
 from website_test_support import SessionLocal, app

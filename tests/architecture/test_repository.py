@@ -78,24 +78,12 @@ ROOT_PROBE_PATHS = {"/health", "/ready"}
 
 
 def _backend_route_files() -> list[Path]:
-    roots = [
-        REPO_ROOT / "backend/studio/apps/audio_annotation/routes",
-        REPO_ROOT / "backend/studio/apps/audio_annotation/transport",
-        BACKEND_APP / "console" / "routes",
-        REPO_ROOT / "backend/studio/apps/model_service/transport/website",
-        REPO_ROOT / "backend/studio/apps/integrations/transport",
-        REPO_ROOT / "backend/studio/apps/tools/transport/navigation_http.py",
-        REPO_ROOT / "backend/studio/apps/tools/transport/download_http.py",
-        *(REPO_ROOT / "backend/studio/apps").glob("*/transport/website"),
-    ]
-    files = [path for root in roots if root.is_dir() for path in _python_files(root)]
-    files.extend(root for root in roots if root.is_file())
-    files.extend((REPO_ROOT / "backend/studio/apps").glob("*/transport/website.py"))
-    for package in ("integrations", "tool_navigation", "demo_runtime"):
-        candidate = BACKEND_APP / package / "routes.py"
-        if candidate.is_file():
-            files.append(candidate)
-    return sorted(files)
+    from tests.architecture.dependency_policy import route_handlers
+
+    roots = [REPO_ROOT / "backend/studio/apps", REPO_ROOT / "backend/studio/assembly/website"]
+    return sorted(
+        path for root in roots for path in _python_files(root) if route_handlers(path.read_text())
+    )
 
 
 FROM_IMPORT_PATTERN = re.compile(r"\bfrom\s+[\"']([^\"']+)[\"']")
@@ -124,14 +112,13 @@ def _restructured_directories() -> list[Path]:
 
 
 def _python_imports(path: Path) -> set[str]:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    imports: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Import):
-            imports.update(alias.name for alias in node.names)
-        elif isinstance(node, ast.ImportFrom) and node.module:
-            imports.add(node.module)
-    return imports
+    from tests.architecture.dependency_policy import dependencies
+
+    base = REPO_ROOT / "backend" if path.is_relative_to(REPO_ROOT / "backend") else REPO_ROOT
+    module = ".".join(path.relative_to(base).with_suffix("").parts).removesuffix(".__init__")
+    return dependencies(
+        path.read_text(encoding="utf-8"), module, package=path.name == "__init__.py"
+    )
 
 
 def _matches_module(module: str, prefix: str) -> bool:
@@ -312,12 +299,31 @@ def test_feature_query_keys_have_one_owner() -> None:
 
 
 def test_backend_routes_do_not_own_persistence() -> None:
-    violations: list[str] = []
+    from tests.architecture.dependency_policy import route_handlers
+
+    violations = []
     for path in _backend_route_files():
-        for module in _python_imports(path):
-            if any(_matches_module(module, prefix) for prefix in ROUTE_FORBIDDEN_IMPORTS):
-                violations.append(f"{_relative(path)} imports {module}")
-    assert not violations, "路由层不得直接依赖持久化实现：\n" + "\n".join(violations)
+        source = path.read_text()
+        persistence = set()
+        for node in ast.walk(ast.parse(source)):
+            if isinstance(node, ast.ImportFrom) and node.module:
+                if (
+                    node.module.startswith(("sqlalchemy", "db."))
+                    or ".storage.models" in node.module
+                    or ".storage.service_models" in node.module
+                ):
+                    persistence.update(alias.asname or alias.name for alias in node.names)
+            elif isinstance(node, ast.Import):
+                persistence.update(
+                    alias.asname or alias.name.split(".")[0]
+                    for alias in node.names
+                    if alias.name.startswith("sqlalchemy")
+                )
+        for handler in route_handlers(source):
+            used = {node.id for node in ast.walk(handler) if isinstance(node, ast.Name)}
+            if used & persistence:
+                violations.append(f"{_relative(path)}:{handler.lineno} {used & persistence}")
+    assert not violations, "路由不得直接执行持久化操作：\n" + "\n".join(violations)
 
 
 def test_management_api_key_mutations_require_browser_session_auth() -> None:
@@ -404,7 +410,7 @@ def test_background_runner_lifecycle_is_not_owned_by_llm() -> None:
 def test_generation_features_use_the_shared_task_driver() -> None:
     runners = (
         REPO_ROOT / "backend/studio/apps/model_service/playground/generation_runner.py",
-        REPO_ROOT / "backend/studio/apps/visual_workshop/website/generation_runner.py",
+        REPO_ROOT / "backend/studio/assembly/website/visual_workshop/website/generation_runner.py",
     )
     violations = [
         _relative(path)
@@ -455,31 +461,56 @@ def test_orm_models_only_depend_on_allowed_runtime_primitives() -> None:
         "studio.runtime.database.orm_base",
         "studio.runtime.ids",
         "studio.runtime.time",
+        "studio.runtime.database.migration_receipts",
+        "studio.runtime.database.native_records",
+        "studio.runtime.database.project_operations",
     }
-    roots = [
-        REPO_ROOT / "backend/studio/runtime/database/project_operations.py",
-        REPO_ROOT / "backend/studio/apps/asset_library/storage/models.py",
-        REPO_ROOT / "backend/studio/apps/integrations/storage/models.py",
-        REPO_ROOT / "backend/studio/apps/integrations/storage/external_models.py",
-        REPO_ROOT / "backend/studio/apps/tools/storage/navigation_models.py",
-        *(BACKEND_APP / "apps").glob("*/models.py"),
-        *(
-            (BACKEND_APP / "console" / "models").glob("*.py")
-            if (BACKEND_APP / "console" / "models").is_dir()
-            else []
-        ),
-        *(
-            (REPO_ROOT / "backend/studio/apps/model_service/storage/models").rglob("*.py")
-            if (REPO_ROOT / "backend/studio/apps/model_service/storage/models").is_dir()
-            else []
-        ),
-    ]
+    roots = [REPO_ROOT / "backend/studio/runtime/database/project_operations.py"]
+    for path in (REPO_ROOT / "backend/studio/apps").rglob("*.py"):
+        # Entity files declare tables; aggregation modules are checked separately
+        # by source ownership and service closure rules.
+        tree = ast.parse(path.read_text())
+        if any(
+            isinstance(node, ast.Assign)
+            and any(
+                isinstance(target, ast.Name) and target.id == "__tablename__"
+                for target in node.targets
+            )
+            for node in ast.walk(tree)
+        ):
+            roots.append(path)
     violations: list[str] = []
     for path in roots:
         if not path.is_file() or path.name == "__init__.py":
             continue
-        for module in _python_imports(path):
-            if _matches_module(module, "app.runtime") and module not in allowed:
+        tree = ast.parse(path.read_text())
+        entities = [
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ClassDef)
+            and any(
+                isinstance(child, ast.Assign)
+                and any(
+                    isinstance(target, ast.Name) and target.id == "__tablename__"
+                    for target in child.targets
+                )
+                for child in node.body
+            )
+        ]
+        names = {
+            node.id
+            for entity in entities
+            for node in ast.walk(entity)
+            if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load)
+        }
+        modules = {
+            node.module
+            for node in tree.body
+            if isinstance(node, ast.ImportFrom)
+            and any((alias.asname or alias.name) in names for alias in node.names)
+        }
+        for module in modules:
+            if module and _matches_module(module, "studio.runtime") and module not in allowed:
                 violations.append(f"{_relative(path)} imports {module}")
     assert not violations, "ORM 模型只能依赖 runtime.orm_base / ids / time：\n" + "\n".join(
         violations
@@ -578,7 +609,7 @@ def test_account_service_does_not_own_catalog_provisioning() -> None:
 
 def test_public_files_have_independent_ownership() -> None:
     required = (
-        REPO_ROOT / "backend/studio/apps/asset_library/storage/website_files.py",
+        REPO_ROOT / "backend/studio/assembly/website/asset_library/storage/website_files.py",
         REPO_ROOT / "backend/studio/apps/asset_library/storage/models.py",
         REPO_ROOT / "backend/studio/contracts/asset_library/files.py",
     )
@@ -593,7 +624,9 @@ def test_public_files_have_independent_ownership() -> None:
         imports = _python_imports(route)
         assert "app.visual_workshop.assets" not in imports
         assert "studio.apps.visual_workshop.assets" not in imports
-    visual_routes = REPO_ROOT / "backend/studio/apps/visual_workshop/transport/website/__init__.py"
+    visual_routes = (
+        REPO_ROOT / "backend/studio/assembly/website/visual_workshop/transport/website/__init__.py"
+    )
     assert visual_routes.is_file()
     imports = _python_imports(visual_routes)
     assert "app.visual_workshop.assets" not in imports
@@ -697,7 +730,8 @@ def test_legacy_asset_root_is_only_resolved_by_storage_boundary() -> None:
     allowed = {
         BACKEND_APP / "runtime" / "config.py",
         REPO_ROOT / "backend/studio/apps/asset_library/storage/file_paths.py",
-        REPO_ROOT / "backend/studio/apps/asset_library/storage/layout/website_upgrade.py",
+        REPO_ROOT
+        / "backend/studio/assembly/website/asset_library/storage/layout/website_upgrade.py",
     }
     violations = [
         _relative(path)
@@ -735,12 +769,16 @@ def test_cross_feature_imports_use_public_entry() -> None:
             continue
         source_feature = path.relative_to(features_root).parts[0]
         for specifier in _web_imports(path):
-            if not specifier.startswith("@features/"):
+            target = _resolve_web_import(path, specifier)
+            if target is None or not _is_within(target, features_root):
                 continue
-            segments = specifier.split("/")
-            if len(segments) < 2 or segments[1] == source_feature:
+            relative = target.relative_to(features_root)
+            if not relative.parts or relative.parts[0] == source_feature:
                 continue
-            if len(segments) > 2:
+            if len(relative.parts) > 1 and relative.as_posix() not in {
+                f"{relative.parts[0]}/index",
+                f"{relative.parts[0]}/index.ts",
+            }:
                 violations.append(f"{_relative(path)} imports {specifier}")
     assert not violations, "跨 feature 只能导入目标 feature 公共入口：\n" + "\n".join(violations)
 
@@ -922,7 +960,7 @@ def test_documentation_markdown_and_compatibility_sources_are_present() -> None:
 
 
 def test_galgame_protocol_and_schema_modules_stay_split() -> None:
-    route_root = REPO_ROOT / "backend/studio/apps/galgame_workshop/transport/website"
+    route_root = REPO_ROOT / "backend/studio/assembly/website/galgame_workshop/transport/website"
     assert {"projects.py", "story.py", "assets.py", "asr.py", "maintenance.py"}.issubset(
         {path.name for path in route_root.glob("*.py")}
     )

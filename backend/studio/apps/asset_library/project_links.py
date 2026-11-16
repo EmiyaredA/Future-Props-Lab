@@ -3,9 +3,9 @@
 from sqlalchemy import delete, select, update
 
 from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.projections import asset_out
 from studio.apps.asset_library.storage.scope import is_library_asset, is_visual_project_asset
 from studio.apps.asset_library.storage.service_models import VisualProjectFileLink
-from studio.apps.asset_library.transport.projections import asset_out
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.files import VisualAssetListOut
 from studio.runtime.files.names import display_name_without_original_extension

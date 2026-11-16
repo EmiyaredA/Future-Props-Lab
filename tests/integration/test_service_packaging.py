@@ -309,7 +309,7 @@ def test_thought_packages_own_release_and_only_purpose_scoped_asset_credentials(
         "studio.assembly.independent.thought_workshop.application",
     } <= closure.keys()
     assert "studio.apps.thought_workshop.publication.official_source" in closure
-    assert "studio.apps.thought_workshop.publication.assets" not in closure
+    assert "studio.assembly.website.thought_workshop.publication.assets" not in closure
     assert "studio.apps.asset_library.storage.models" not in closure
     assert "studio.runtime.database.website" not in closure
 

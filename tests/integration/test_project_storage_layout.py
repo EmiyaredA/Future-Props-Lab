@@ -7,12 +7,14 @@ import pytest
 from sqlalchemy import delete, select
 
 from studio.apps.asset_library.storage.file_paths import AssetStorage
-from studio.apps.asset_library.storage.layout.website_upgrade import reconcile_project_trash
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.galgame_workshop.storage.models import GalgameWorkshopProject
 from studio.apps.thought_workshop.storage.models import ThoughtKnowledgeBase
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualWorkshopProject
+from studio.assembly.website.asset_library.storage.layout.website_upgrade import (
+    reconcile_project_trash,
+)
 from studio.config.settings import get_settings
 from website_test_support import SessionLocal, app
 

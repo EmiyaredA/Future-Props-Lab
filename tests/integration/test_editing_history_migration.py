@@ -369,12 +369,11 @@ def test_editing_history_scopes_and_sealed_rollback(tmp_path):
             reports = transfer_history(client, plan, *endpoints[service], spec)
             assert tuple(report["record_count"] for report in reports) == expected
             assert transfer_history(client, plan, *endpoints[service], spec) == reports
-        video_operations = next(
-            pages(client, endpoints["video"][1], headers, plan, owner, VIDEO[3])
-        )
+        # Receipts are paginated by random IDs; the legacy one can be on any page.
         legacy_operation = next(
             record
-            for record in video_operations.batch.records
+            for page in pages(client, endpoints["video"][1], headers, plan, owner, VIDEO[3])
+            for record in page.batch.records
             if record.request_id == "legacy-edge-transition"
         )
         assert legacy_operation.operations[0]["transition"]["placement"] == "in"

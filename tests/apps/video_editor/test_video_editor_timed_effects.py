@@ -20,8 +20,8 @@ from studio.apps.video_editor.clip_merging.document import (
     replace_selection,
     selection,
 )
+from studio.apps.video_editor.rules.timeline_operations import apply_operations
 from studio.apps.video_editor.schemas import VideoEditorTimelineBatchIn
-from studio.apps.video_editor.timeline import apply_operations
 from studio.contracts.video_editor.timeline_document import parse_timeline_document
 from website_test_support import app
 

@@ -12,16 +12,6 @@ from studio.apps.amadeus.execution.website_runs import recover_interrupted_amade
 from studio.apps.asset_library.archives.folder_archive import cleanup_library_folder_archive_staging
 from studio.apps.asset_library.storage.file_paths import AssetStorage
 from studio.apps.asset_library.storage.layout.account_upgrade import upgrade_pending
-from studio.apps.asset_library.storage.layout.website_upgrade import (
-    reconcile_project_trash,
-    reconcile_snapshot_imports,
-)
-from studio.apps.galgame_workshop.assets.annotation_import_runner import (
-    GalgameAnnotationImportRunner,
-)
-from studio.apps.galgame_workshop.assets.asr import GalgameAsrRunner
-from studio.apps.galgame_workshop.video.video_export_runner import GalgameVideoExportRunner
-from studio.apps.galgame_workshop.video.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from studio.apps.identity.profile import reconcile_profile_avatars
 from studio.apps.identity.storage.models.accounts import User
 from studio.apps.identity.website_access.external_sync import external_sync_actor_allowed
@@ -30,24 +20,38 @@ from studio.apps.identity.website_access.video_preview import preview_actor_allo
 from studio.apps.identity.website_access.visual_acceptance import acceptance_actor_allowed
 from studio.apps.interview_assistant.codex import CodexExecutor, executable
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
-from studio.apps.model_service.admission.website_queue import (
-    claim_visual_capacity,
-    visual_queue_candidates,
-)
-from studio.apps.model_service.admission.website_quotas import recover_admissions
 from studio.apps.model_service.inference.runner import InferenceRunner
 from studio.apps.model_service.local_models.catalog import local_root
 from studio.apps.model_service.local_models.management import LocalModels
 from studio.apps.model_service.playground.generation_runner import ModelTestGenerationRunner
 from studio.apps.model_service.playground.recovery import recover_interrupted_model_test_runs
 from studio.apps.model_service.playground.transcription_runner import ModelTestTranscriptionRunner
-from studio.apps.model_service.templates.website_sync import ModelTemplateSyncRunner
 from studio.apps.model_service.video_enhancement.tasks import VideoBackend, VideoEnhancement
-from studio.apps.motion_compositor.runner import MotionExportRunner
 from studio.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
-from studio.apps.video_editor.runner import VideoEditorRunner
-from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
-from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+from studio.assembly.website.asset_library.storage.layout.website_upgrade import (
+    reconcile_project_trash,
+    reconcile_snapshot_imports,
+)
+from studio.assembly.website.galgame_workshop.assets.annotation_import_runner import (
+    GalgameAnnotationImportRunner,
+)
+from studio.assembly.website.galgame_workshop.assets.asr import GalgameAsrRunner
+from studio.assembly.website.galgame_workshop.video.video_export_runner import (
+    GalgameVideoExportRunner,
+)
+from studio.assembly.website.galgame_workshop.video.video_handoff_runner import (
+    GalgameVideoEditorHandoffRunner,
+)
+from studio.assembly.website.model_service.admission.website_queue import (
+    claim_visual_capacity,
+    visual_queue_candidates,
+)
+from studio.assembly.website.model_service.admission.website_quotas import recover_admissions
+from studio.assembly.website.model_service.templates.website_sync import ModelTemplateSyncRunner
+from studio.assembly.website.motion_compositor.runner import MotionExportRunner
+from studio.assembly.website.video_editor.runner import VideoEditorRunner
+from studio.assembly.website.visual_workshop.acceptance.runner import AcceptanceRunner
+from studio.assembly.website.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.config.local_models import FFMPEG_MODEL_ID, RELAY_MODEL_ID, compatible, definition
 from studio.contracts.model_service.video_runtime import VideoRuntimeError
 from studio.host.local_models.installer import Installer

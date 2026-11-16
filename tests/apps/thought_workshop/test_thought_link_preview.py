@@ -199,7 +199,9 @@ async def test_api_contract(monkeypatch):
             available=True,
         )
     )
-    monkeypatch.setattr("studio.apps.thought_workshop.transport.website.preview_link", mock)
+    monkeypatch.setattr(
+        "studio.assembly.website.thought_workshop.transport.website.preview_link", mock
+    )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
     ) as client:
@@ -233,7 +235,9 @@ async def test_read_only_workspace_member_can_preview(monkeypatch):
             url="https://example.com", final_url="https://example.com", domain="example.com"
         )
     )
-    monkeypatch.setattr("studio.apps.thought_workshop.transport.website.preview_link", mock)
+    monkeypatch.setattr(
+        "studio.assembly.website.thought_workshop.transport.website.preview_link", mock
+    )
     async with aclosing(owner), aclosing(viewer):
         result = await viewer.get(
             "/v1/thought-workshop/link-preview", params={"url": "https://example.com"}

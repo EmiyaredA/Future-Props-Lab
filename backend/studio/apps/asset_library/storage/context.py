@@ -1,4 +1,3 @@
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.asset_library.storage.file_paths import AssetStorage
@@ -6,7 +5,6 @@ from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFol
 from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.config.settings import Settings
 from studio.contracts.asset_library.errors import AssetError
-from studio.runtime.database.orm_base import Base
 
 
 class VisualAssetContext:
@@ -25,15 +23,7 @@ class VisualAssetContext:
             if not await self.project_exists(project_id):
                 raise AssetError("项目不存在", code="not_found", status=404)
             return
-        projects = Base.metadata.tables.get("visual_workshop_projects")
-        if (
-            projects is None
-            or await self.session.scalar(
-                select(projects.c.id).where(projects.c.id == project_id).limit(1)
-            )
-            is None
-        ):
-            raise AssetError("项目不存在", code="not_found", status=404)
+        raise ValueError("项目存在性端口未装配")
 
     async def _folder(self, folder_id: str) -> VisualAssetFolder:
         row = await self.session.get(VisualAssetFolder, folder_id)

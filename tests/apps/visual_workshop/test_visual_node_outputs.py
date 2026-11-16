@@ -6,13 +6,13 @@ import httpx
 import pytest
 from sqlalchemy import func, select
 
-from studio.apps.visual_workshop.outputs.history import (
+from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
+from studio.assembly.website.visual_workshop.outputs.history import (
     NodeOutputs,
     OutputError,
     publish_generated_output,
 )
-from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
-from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
 from studio.config.settings import get_settings as isolated_settings
 from studio.runtime.secrets import SecretCipher
 from website_test_support import SessionLocal, app
@@ -348,7 +348,7 @@ async def test_generated_grid_placeholders_avoid_existing_cards_and_preserve_tas
     from studio.apps.visual_workshop.batch_nodes import attach_grid_nodes
     from studio.apps.visual_workshop.node_placement import automatic_node_position
     from studio.apps.visual_workshop.storage.models import VisualGenerationTask
-    from studio.apps.visual_workshop.website.generation import VisualGeneration
+    from studio.assembly.website.visual_workshop.website.generation import VisualGeneration
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -592,7 +592,9 @@ async def test_atomic_media_upload_and_snapshot_preserve_full_history_and_fixed_
 
 @pytest.mark.asyncio
 async def test_composition_registers_one_version_with_frozen_inputs(monkeypatch):
-    from studio.apps.visual_workshop.website.generation_runner import VisualGenerationRunner
+    from studio.assembly.website.visual_workshop.website.generation_runner import (
+        VisualGenerationRunner,
+    )
     from studio.config.settings import get_settings
 
     calls = []
@@ -602,7 +604,8 @@ async def test_composition_registers_one_version_with_frozen_inputs(monkeypatch)
         output.write_bytes(PNG)
 
     monkeypatch.setattr(
-        "studio.apps.visual_workshop.website.generation_runner.render_image_grid", render
+        "studio.assembly.website.visual_workshop.website.generation_runner.render_image_grid",
+        render,
     )
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

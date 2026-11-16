@@ -11,9 +11,9 @@ from PIL import Image
 from sqlalchemy import delete
 
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
-from studio.apps.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
+from studio.assembly.website.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.runtime.secrets import SecretCipher
 from tests.credential_test_support import encrypt_secret
 from website_test_support import SessionLocal, app
@@ -495,8 +495,8 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
     assert (await client.get(f"{base}/acceptance/runs/{interrupted['id']}")).json()[
         "status"
     ] == "failed"
-    from studio.apps.visual_workshop.acceptance.nodes import NodeAcceptance
     from studio.apps.visual_workshop.acceptance.project_access import AcceptanceError
+    from studio.assembly.website.visual_workshop.acceptance.nodes import NodeAcceptance
 
     async with SessionLocal() as session:
         with pytest.raises(AcceptanceError) as failure:
@@ -511,8 +511,8 @@ async def test_invalid_result_cancel_recovery_and_workspace_isolation(client, vi
 async def test_agent_task_report_and_scoped_media_with_fake_executor(
     client, video, monkeypatch, kind
 ):
-    from studio.apps.visual_workshop.acceptance.execution import agents
     from studio.apps.visual_workshop.acceptance.execution.task_tools import MediaTools
+    from studio.assembly.website.visual_workshop.acceptance.execution import agents
 
     async def available(*_):
         return True, "已连接"
