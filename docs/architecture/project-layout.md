@@ -899,6 +899,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `projects.py` 处理账号限定加载与整体 CAS；`exports.py` 负责只读版本快照、
 两路导出并发、私有临时文件和取消清理；`pptx_export.py` 组装 python-pptx 导出，`pptx_styles.py` 映射 DrawingML 样式，
 `pptx_media.py` 拥有 SVG 扩展嵌入、PNG 兼容图与图片外观，`native_shapes.py` 构造可编辑自由形状。
+`pptx_text.py` 在导出与导入之间换算原生上／下标字号，保持编辑器的可见字号语义。
 文稿持久化于 `presentation_projects`，图片引用位于 `presentation_asset_references`。
 迁移 `0057_presentation_styles` 为文稿 JSON 补齐确定性样式缺省值，不改变 revision 或更新时间；
 `pptx_styles.py` 与 Web `PresentationShape.tsx` 分别拥有 DrawingML 和 SVG 样式映射。
@@ -928,7 +929,7 @@ Web `knowledge-tools/` 拥有引用与提示块节点、查找替换、跨库发
 `scene/stacking.ts` 解析并调整元素与连接的统一前后顺序；连接 `layer` 保存下方元素数量，同层按连接数组顺序。迁移 `0098_presentation_connection_layers` 为缺失层级补 0，保留旧画面与 revision。`SlideSurface` 与 `pptx_scene.py` 消费相同顺序；PPTX 仅保留连续叠放的原生组，交错组在导出时展开以保持遮挡，源分组不变。
 后端 `schemas/scene.py` 校验文稿 v3 的引用关系，`scene_edits.py` 拥有片段替换和身份重映射，
 `slideTheme.ts` 拥有新建色板、可修改颜色收集与单页换肤纯函数，`SlideThemeDialog` 只维护预览替换表；用户应用才进入原草稿历史与 CAS 保存，不追加持久化字段。`useSceneTools` 返回动作描述与独立弹窗，`PresentationToolbar` 统一展示信息图与“更多”菜单，不再增加整排场景工具。`slide-theme.css` 仅维护换肤弹窗布局。
-`pptx_scene.py` 拥有原生分组与端点绑定导出。迁移 `0096_presentation_scene` 为旧文稿追加空场景字段，
+`pptx_scene.py` 拥有原生分组与端点绑定导出；无自定义路径的上下锚点折线通过旋转预设及其坐标框保持先竖向的走线和末端箭头方向，同时保留节点绑定。迁移 `0096_presentation_scene` 为旧文稿追加空场景字段，
 不改变原内容或 revision；参考图纳入账号素材保护但不参与放映与 PPTX。
 页面 `image_asset_id` 单独保存一张归档图的公共素材引用，沿用同一 CAS、账号校验与删除保护。
 迁移 `0097_presentation_image_version` 只为缺失字段补 null，不改变已有图像 ID、revision 或更新时间。

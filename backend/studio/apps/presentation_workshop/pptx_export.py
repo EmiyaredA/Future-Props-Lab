@@ -25,6 +25,7 @@ from studio.apps.presentation_workshop.pptx_paths import path_shape
 from studio.apps.presentation_workshop.pptx_playback import media_shape
 from studio.apps.presentation_workshop.pptx_scene import add_scene
 from studio.apps.presentation_workshop.pptx_styles import apply_shape_style
+from studio.apps.presentation_workshop.pptx_text import native_font_size
 from studio.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
     PresentationElement,
@@ -125,7 +126,7 @@ def add_text(shape, element: PresentationElement):
                 run = p.add_run()
                 run.text = text
                 run.font.name = "Consolas" if item.code else item.font
-                run.font.size = Pt(item.size * 0.75)
+                run.font.size = Pt(native_font_size(item.size, item.script) * 0.75)
                 run.font.bold, run.font.italic, run.font.underline = (
                     item.bold,
                     item.italic,

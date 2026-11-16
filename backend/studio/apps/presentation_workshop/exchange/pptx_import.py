@@ -25,6 +25,7 @@ from studio.apps.presentation_workshop.exchange.pptx_appearance import (
     text_marks,
 )
 from studio.apps.presentation_workshop.pptx_export import SHAPES
+from studio.apps.presentation_workshop.pptx_text import visible_font_size
 from studio.apps.presentation_workshop.schemas.document import (
     PresentationDocument,
     PresentationElement,
@@ -73,15 +74,17 @@ def paragraphs(frame):
         runs = []
         for run in paragraph.runs:
             font = run.font
+            marks = text_marks(run)
+            size = float(font.size or paragraph.font.size or 24 * 12700) / 9525
             runs.append(
                 {
                     "text": run.text,
-                    **text_marks(run),
+                    **marks,
                     "font": font.name
                     if font.name in {"Arial", "Consolas", "Microsoft YaHei"}
                     else "Microsoft YaHei",
                     "size": min(
-                        240, max(6, float(font.size or paragraph.font.size or 24 * 12700) / 9525)
+                        240, max(6, visible_font_size(size, marks.get("script", "normal")))
                     ),
                     "color": color(font.color, "#17334A"),
                     "bold": bool(font.bold),

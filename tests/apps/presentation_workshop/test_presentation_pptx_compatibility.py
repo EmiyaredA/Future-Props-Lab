@@ -1,5 +1,6 @@
 """Check DrawingML constraints that permissive python-pptx loading misses."""
 
+import math
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
 
@@ -15,6 +16,89 @@ NS = {
     "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
 }
+
+
+@pytest.mark.parametrize("source_anchor", ["top", "bottom", "left", "right"])
+@pytest.mark.parametrize(
+    "end", [(200, 100), (600, 100), (200, 500), (600, 500), (400, 500), (600, 300)]
+)
+@pytest.mark.parametrize("bound", [True, False])
+def test_default_elbow_matches_canvas_route_and_arrow_direction(
+    tmp_path, source_anchor, end, bound
+):
+    start = (400, 300)
+    target_anchor = {"top": "bottom", "bottom": "top", "left": "right", "right": "left"}[
+        source_anchor
+    ]
+
+    def node(identity, point, side):
+        return element(
+            "rect",
+            id=identity,
+            width=80,
+            height=40,
+            x=point[0] - {"left": 0, "right": 80, "top": 40, "bottom": 40}[side],
+            y=point[1] - {"left": 20, "right": 20, "top": 0, "bottom": 40}[side],
+        )
+
+    data = sample_document().model_dump()
+    page = data["slides"][0]
+    page["elements"] = [node("a", start, source_anchor), node("b", end, target_anchor)]
+    page["groups"] = [{"id": "flow", "name": "Flow", "element_ids": ["a", "b"]}]
+    page["connections"] = [
+        {
+            "id": "edge",
+            "style": "step",
+            "arrow": True,
+            "arrow_size": "small",
+            "source_anchor": source_anchor,
+            "target_anchor": target_anchor,
+            "source_id": "a" if bound else None,
+            "target_id": "b" if bound else None,
+            "source_point": None if bound else {"x": start[0], "y": start[1]},
+            "target_point": None if bound else {"x": end[0], "y": end[1]},
+        }
+    ]
+    document = PresentationDocument.model_validate(data)
+    before = document.model_dump_json()
+    target = tmp_path / "elbow.pptx"
+    write_pptx(document, {}, target)
+    assert document.model_dump_json() == before
+    with ZipFile(target) as archive:
+        root = ET.fromstring(archive.read("ppt/slides/slide1.xml"))
+    connector = root.find(".//p:cxnSp", NS)
+    assert connector is not None  # Retain editable native connector bindings.
+    assert connector.find("p:spPr/a:prstGeom", NS).get("prst") == "bentConnector3"
+    transform = connector.find("p:spPr/a:xfrm", NS)
+    offset, extent = transform.find("a:off", NS), transform.find("a:ext", NS)
+    left, top = int(offset.get("x")), int(offset.get("y"))
+    width, height = int(extent.get("cx")), int(extent.get("cy"))
+    radians = math.radians(int(transform.get("rot", 0)) / 60000)
+    points = []
+    # Decode the native preset's actual path, including its flips and rotation.
+    for x, y in [(0, 0), (0.5, 0), (0.5, 1), (1, 1)]:
+        if transform.get("flipH") == "1":
+            x = 1 - x
+        if transform.get("flipV") == "1":
+            y = 1 - y
+        dx, dy = (x - 0.5) * width, (y - 0.5) * height
+        points.append(
+            (
+                left + width / 2 + dx * math.cos(radians) - dy * math.sin(radians),
+                top + height / 2 + dx * math.sin(radians) + dy * math.cos(radians),
+            )
+        )
+    if source_anchor in {"top", "bottom"}:
+        middle = (start[1] + end[1]) / 2
+        expected = [start, (start[0], middle), (end[0], middle), end]
+    else:
+        middle = (start[0] + end[0]) / 2
+        expected = [start, (middle, start[1]), (middle, end[1]), end]
+    for actual, expected_point in zip(points, expected, strict=True):
+        assert actual == pytest.approx([v * 9525 for v in expected_point], abs=2)
+    assert connector.find(".//a:tailEnd", NS).get("type") == "triangle"
+    for name in ("stCxn", "endCxn"):
+        assert (connector.find(f".//a:{name}", NS) is not None) == bound
 
 
 @pytest.mark.parametrize("notes", ["", "中文备注\n\nSecond paragraph & <references>"])

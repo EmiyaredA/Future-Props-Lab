@@ -51,15 +51,7 @@ def add_scene(slide, page, shapes):
             or edge.target_offset != 0.5
         )
         line = (
-            _routed_shape(slide, points)
-            if routed
-            else slide.shapes.add_connector(
-                MSO_CONNECTOR.ELBOW if edge.style == "step" else MSO_CONNECTOR.STRAIGHT,
-                px(start[0]),
-                px(start[1]),
-                px(end[0]),
-                px(end[1]),
-            )
+            _routed_shape(slide, points) if routed else _preset_connector(slide, edge, start, end)
         )
         line.name = edge.id
         # Preset theme effects must not add shadows absent from the SVG canvas.
@@ -172,6 +164,26 @@ def add_scene(slide, page, shapes):
     # Like SlideSurface, paint all labels above paths and content, below UI handles.
     for label in labels:
         slide.shapes._spTree.append(label._element)
+
+
+def _preset_connector(slide, edge, start, end):
+    # bentConnector3 always starts horizontally in its local coordinates.
+    # Rotate its coordinate frame, as well as its geometry, for vertical-first
+    # routes. Setting rotation alone would move the bound endpoints.
+    vertical = edge.style == "step" and edge.source_anchor in {"top", "bottom"}
+    if vertical:
+        cx, cy = (start[0] + end[0]) / 2, (start[1] + end[1]) / 2
+        start, end = [(cx + y - cy, cy - x + cx) for x, y in (start, end)]
+    shape = slide.shapes.add_connector(
+        MSO_CONNECTOR.ELBOW if edge.style == "step" else MSO_CONNECTOR.STRAIGHT,
+        px(start[0]),
+        px(start[1]),
+        px(end[0]),
+        px(end[1]),
+    )
+    if vertical:
+        shape.rotation = 90
+    return shape
 
 
 def _label_shape(slide, page, edge, layout):
