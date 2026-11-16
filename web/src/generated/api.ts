@@ -5445,6 +5445,145 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/spreadsheet-workshop/imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Import */
+        post: operations["preview_spreadsheet_import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spreadsheet-workshop/imports/{import_id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Import */
+        post: operations["confirm_spreadsheet_import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spreadsheet-workshop/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Projects */
+        get: operations["list_spreadsheet_projects"];
+        put?: never;
+        /** Create Project */
+        post: operations["create_spreadsheet_project"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spreadsheet-workshop/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project */
+        get: operations["get_spreadsheet_project"];
+        /** Put Project */
+        put: operations["update_spreadsheet_project"];
+        post?: never;
+        /** Delete Project */
+        delete: operations["delete_spreadsheet_project"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spreadsheet-workshop/projects/{project_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export */
+        post: operations["export_spreadsheet"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spreadsheet-workshop/projects/{project_id}/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Operations */
+        post: operations["apply_spreadsheet_operations"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spreadsheet-workshop/projects/{project_id}/original": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Original */
+        get: operations["download_spreadsheet_original"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/spreadsheet-workshop/projects/{project_id}/range": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Range */
+        get: operations["read_spreadsheet_range"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/thought-workshop/attachments": {
         parameters: {
             query?: never;
@@ -9609,7 +9748,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
+            kind: "spreadsheet" | "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
             /** Resource Id */
             resource_id?: string | null;
             /** View */
@@ -9621,7 +9760,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
+            kind: "spreadsheet" | "visual" | "galgame" | "video" | "presentation" | "annotation" | "director" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
             /** Path */
             path: string;
             /** Resource Id */
@@ -9784,6 +9923,11 @@ export interface components {
         Body_preview_import_v1_presentation_workshop_imports_preview_post: {
             /** Upload */
             upload: string;
+        };
+        /** Body_preview_spreadsheet_import */
+        Body_preview_spreadsheet_import: {
+            /** File */
+            file: string;
         };
         /** Body_put_avatar_v1_account_profile_avatar_put */
         Body_put_avatar_v1_account_profile_avatar_put: {
@@ -19947,7 +20091,7 @@ export interface components {
          * ServiceId
          * @enum {string}
          */
-        ServiceId: "gateway" | "management" | "identity" | "portal" | "remote" | "visual" | "thought" | "galgame" | "video" | "motion" | "presentation" | "annotation" | "director" | "interview" | "creative" | "assets" | "models" | "rendering" | "agent-runtime" | "integrations" | "amadeus" | "tools";
+        ServiceId: "spreadsheet" | "gateway" | "management" | "identity" | "portal" | "remote" | "visual" | "thought" | "galgame" | "video" | "motion" | "presentation" | "annotation" | "director" | "interview" | "creative" | "assets" | "models" | "rendering" | "agent-runtime" | "integrations" | "amadeus" | "tools";
         /** ServiceIssue */
         ServiceIssue: {
             /** Label */
@@ -20059,6 +20203,41 @@ export interface components {
              * @enum {string}
              */
             type: "setTransition";
+        };
+        /** Sheet */
+        Sheet: {
+            /** Celldata */
+            celldata?: components["schemas"]["SparseCell"][];
+            /**
+             * Column
+             * @default 26
+             */
+            column: number;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Order
+             * @default 0
+             */
+            order: number;
+            /**
+             * Row
+             * @default 100
+             */
+            row: number;
+            /**
+             * Status
+             * @default 0
+             */
+            status: number;
+        } & {
+            [key: string]: unknown;
         };
         /** SkillCatalogOut */
         SkillCatalogOut: {
@@ -20223,6 +20402,17 @@ export interface components {
             /** Field Id */
             field_id: string;
         };
+        /** SparseCell */
+        SparseCell: {
+            /** C */
+            c: number;
+            /** R */
+            r: number;
+            /** V */
+            v: {
+                [key: string]: unknown;
+            };
+        };
         /** Specification */
         Specification: {
             /** Max Duration */
@@ -20260,6 +20450,202 @@ export interface components {
              * @enum {string}
              */
             type: "splitClip";
+        };
+        /** SpreadsheetCreate */
+        SpreadsheetCreate: {
+            document?: components["schemas"]["SpreadsheetDocument"] | null;
+            /** Request Id */
+            request_id: string;
+            /**
+             * Title
+             * @default 未命名工作簿
+             */
+            title: string;
+        };
+        /** SpreadsheetDocument */
+        SpreadsheetDocument: {
+            /**
+             * Schema Version
+             * @default 1
+             * @constant
+             */
+            schema_version: 1;
+            /** Sheets */
+            sheets: components["schemas"]["Sheet"][];
+        };
+        /** SpreadsheetExport */
+        SpreadsheetExport: {
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Format
+             * @default xlsx
+             * @enum {string}
+             */
+            format: "xlsx" | "csv";
+            /** Sheet Id */
+            sheet_id?: string | null;
+            /**
+             * Value Mode
+             * @default values
+             * @enum {string}
+             */
+            value_mode: "values" | "formulas";
+        };
+        /** SpreadsheetImportConfirm */
+        SpreadsheetImportConfirm: {
+            /**
+             * Accept Warnings
+             * @default false
+             */
+            accept_warnings: boolean;
+            /**
+             * Converter
+             * @constant
+             */
+            converter: "spreadsheet-v1";
+            /** Request Id */
+            request_id: string;
+            /** Sha256 */
+            sha256: string;
+            /** Title */
+            title?: string | null;
+        };
+        /** SpreadsheetImportPreview */
+        SpreadsheetImportPreview: {
+            /**
+             * Converter
+             * @default spreadsheet-v1
+             */
+            converter: string;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Sha256 */
+            sha256: string;
+            /** Sheets */
+            sheets: string[];
+            /** Warnings */
+            warnings: string[];
+        };
+        /** SpreadsheetList */
+        SpreadsheetList: {
+            /** Items */
+            items: components["schemas"]["SpreadsheetSummary"][];
+            /** Total */
+            total: number;
+        };
+        /** SpreadsheetOperation */
+        SpreadsheetOperation: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "set_cells" | "clear_range" | "style_range" | "add_sheet" | "rename_sheet" | "delete_sheet" | "reorder_sheets";
+            /** Cells */
+            cells?: components["schemas"]["SparseCell"][];
+            /** Name */
+            name?: string | null;
+            /** Range */
+            range?: string | null;
+            /** Sheet Id */
+            sheet_id?: string | null;
+            /** Sheet Order */
+            sheet_order?: string[];
+            /** Style */
+            style?: {
+                [key: string]: unknown;
+            };
+        };
+        /** SpreadsheetOperations */
+        SpreadsheetOperations: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Operations */
+            operations: components["schemas"]["SpreadsheetOperation"][];
+            /** Request Id */
+            request_id: string;
+        };
+        /** SpreadsheetProject */
+        SpreadsheetProject: {
+            /**
+             * Calculation
+             * @enum {string}
+             */
+            calculation: "pending" | "browser_calculated" | "not_needed";
+            /** Created At */
+            created_at: string;
+            document: components["schemas"]["SpreadsheetDocument"];
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Source Name */
+            source_name?: string | null;
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** SpreadsheetPut */
+        SpreadsheetPut: {
+            /**
+             * Calculated
+             * @default false
+             */
+            calculated: boolean;
+            document: components["schemas"]["SpreadsheetDocument"];
+            /** Expected Revision */
+            expected_revision: number;
+            /** Request Id */
+            request_id: string;
+            /** Title */
+            title: string;
+        };
+        /** SpreadsheetRange */
+        SpreadsheetRange: {
+            /** Cells */
+            cells: components["schemas"]["SpreadsheetRangeCell"][];
+            /** Range */
+            range: string;
+            /** Revision */
+            revision: number;
+            /** Sheet Id */
+            sheet_id: string;
+        };
+        /** SpreadsheetRangeCell */
+        SpreadsheetRangeCell: {
+            /** Calculation */
+            calculation: string;
+            /** Column */
+            column: number;
+            /** Formula */
+            formula?: string | null;
+            /** Row */
+            row: number;
+            /** Value */
+            value?: unknown;
+        };
+        /** SpreadsheetSummary */
+        SpreadsheetSummary: {
+            /**
+             * Calculation
+             * @enum {string}
+             */
+            calculation: "pending" | "browser_calculated" | "not_needed";
+            /** Created At */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Source Name */
+            source_name?: string | null;
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at: string;
         };
         /** StorageLayoutIssueOut */
         StorageLayoutIssueOut: {
@@ -36532,6 +36918,379 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PresentationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_spreadsheet_import: {
+        parameters: {
+            query?: {
+                encoding?: "utf-8-sig" | "gb18030";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_preview_spreadsheet_import"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpreadsheetImportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_spreadsheet_import: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                import_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpreadsheetImportConfirm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpreadsheetProject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_spreadsheet_projects: {
+        parameters: {
+            query?: {
+                query?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpreadsheetList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_spreadsheet_project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpreadsheetCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpreadsheetProject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_spreadsheet_project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpreadsheetProject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_spreadsheet_project: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpreadsheetPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpreadsheetProject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_spreadsheet_project: {
+        parameters: {
+            query: {
+                expected_revision: number;
+                request_id: string;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_spreadsheet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpreadsheetExport"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_spreadsheet_operations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SpreadsheetOperations"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpreadsheetProject"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_spreadsheet_original: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_spreadsheet_range: {
+        parameters: {
+            query: {
+                sheet_id: string;
+                range: string;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpreadsheetRange"];
                 };
             };
             /** @description Validation Error */

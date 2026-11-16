@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "0a73d2bb7a2b9ab05dff15a9eb061227e7de094cbb91dbea3466bf7b406a38d4",
+  "openapi_sha256": "b99f755e1dee61ea1f30850f5a16136a5ac5fc17f46e1b9c9db3992bfc781035",
   "operations": [
     {
       "service": "identity",
@@ -2395,6 +2395,72 @@
       "method": "POST",
       "path": "/v1/presentation-workshop/templates/{template_id}/documents",
       "operation_id": "create_from_template_v1_presentation_workshop_templates__template_id__documents_post"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "POST",
+      "path": "/v1/spreadsheet-workshop/imports/preview",
+      "operation_id": "preview_spreadsheet_import"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "POST",
+      "path": "/v1/spreadsheet-workshop/imports/{import_id}/confirm",
+      "operation_id": "confirm_spreadsheet_import"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "GET",
+      "path": "/v1/spreadsheet-workshop/projects",
+      "operation_id": "list_spreadsheet_projects"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "POST",
+      "path": "/v1/spreadsheet-workshop/projects",
+      "operation_id": "create_spreadsheet_project"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "DELETE",
+      "path": "/v1/spreadsheet-workshop/projects/{project_id}",
+      "operation_id": "delete_spreadsheet_project"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "GET",
+      "path": "/v1/spreadsheet-workshop/projects/{project_id}",
+      "operation_id": "get_spreadsheet_project"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "PUT",
+      "path": "/v1/spreadsheet-workshop/projects/{project_id}",
+      "operation_id": "update_spreadsheet_project"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "POST",
+      "path": "/v1/spreadsheet-workshop/projects/{project_id}/export",
+      "operation_id": "export_spreadsheet"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "POST",
+      "path": "/v1/spreadsheet-workshop/projects/{project_id}/operations",
+      "operation_id": "apply_spreadsheet_operations"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "GET",
+      "path": "/v1/spreadsheet-workshop/projects/{project_id}/original",
+      "operation_id": "download_spreadsheet_original"
+    },
+    {
+      "service": "spreadsheet",
+      "method": "GET",
+      "path": "/v1/spreadsheet-workshop/projects/{project_id}/range",
+      "operation_id": "read_spreadsheet_range"
     },
     {
       "service": "thought",
@@ -4798,6 +4864,24 @@
       "model": "DesktopPreferenceImportReceipt"
     },
     {
+      "table": "spreadsheet_workbooks",
+      "service": "spreadsheet",
+      "module": "studio.apps.spreadsheet_workshop.storage.models",
+      "model": "SpreadsheetWorkbook"
+    },
+    {
+      "table": "spreadsheet_receipts",
+      "service": "spreadsheet",
+      "module": "studio.apps.spreadsheet_workshop.storage.models",
+      "model": "SpreadsheetReceipt"
+    },
+    {
+      "table": "spreadsheet_imports",
+      "service": "spreadsheet",
+      "module": "studio.apps.spreadsheet_workshop.storage.models",
+      "model": "SpreadsheetImport"
+    },
+    {
       "table": "thought_sync_bindings",
       "service": "thought",
       "module": "studio.apps.thought_workshop.external_sync.models",
@@ -5243,6 +5327,10 @@
     }
   ],
   "pages": [
+    {
+      "path": "/apps/spreadsheet-workshop",
+      "service": "spreadsheet"
+    },
     {
       "path": "/management",
       "service": "management"

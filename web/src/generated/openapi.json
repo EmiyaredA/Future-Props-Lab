@@ -3872,6 +3872,7 @@
         "properties": {
           "kind": {
             "enum": [
+              "spreadsheet",
               "visual",
               "galgame",
               "video",
@@ -3933,6 +3934,7 @@
         "properties": {
           "kind": {
             "enum": [
+              "spreadsheet",
               "visual",
               "galgame",
               "video",
@@ -4497,6 +4499,20 @@
           "upload"
         ],
         "title": "Body_preview_import_v1_presentation_workshop_imports_preview_post",
+        "type": "object"
+      },
+      "Body_preview_spreadsheet_import": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_preview_spreadsheet_import",
         "type": "object"
       },
       "Body_put_avatar_v1_account_profile_avatar_put": {
@@ -7725,7 +7741,7 @@
             "items": {
               "$ref": "#/components/schemas/DeploymentServiceState"
             },
-            "maxItems": 22,
+            "maxItems": 23,
             "title": "Services",
             "type": "array"
           }
@@ -31354,6 +31370,7 @@
       },
       "ServiceId": {
         "enum": [
+          "spreadsheet",
           "gateway",
           "management",
           "identity",
@@ -31637,6 +31654,70 @@
           "edge"
         ],
         "title": "SetTransitionOperation",
+        "type": "object"
+      },
+      "Sheet": {
+        "additionalProperties": true,
+        "properties": {
+          "celldata": {
+            "items": {
+              "$ref": "#/components/schemas/SparseCell"
+            },
+            "maxItems": 100000,
+            "title": "Celldata",
+            "type": "array"
+          },
+          "column": {
+            "default": 26,
+            "maximum": 16384.0,
+            "minimum": 1.0,
+            "title": "Column",
+            "type": "integer"
+          },
+          "config": {
+            "additionalProperties": true,
+            "title": "Config",
+            "type": "object"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[\\w-]+$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 31,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "order": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Order",
+            "type": "integer"
+          },
+          "row": {
+            "default": 100,
+            "maximum": 100000.0,
+            "minimum": 1.0,
+            "title": "Row",
+            "type": "integer"
+          },
+          "status": {
+            "default": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Status",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "Sheet",
         "type": "object"
       },
       "SkillCatalogOut": {
@@ -32083,6 +32164,35 @@
         "title": "Sort",
         "type": "object"
       },
+      "SparseCell": {
+        "additionalProperties": false,
+        "properties": {
+          "c": {
+            "exclusiveMaximum": 16384.0,
+            "minimum": 0.0,
+            "title": "C",
+            "type": "integer"
+          },
+          "r": {
+            "exclusiveMaximum": 100000.0,
+            "minimum": 0.0,
+            "title": "R",
+            "type": "integer"
+          },
+          "v": {
+            "additionalProperties": true,
+            "title": "V",
+            "type": "object"
+          }
+        },
+        "required": [
+          "r",
+          "c",
+          "v"
+        ],
+        "title": "SparseCell",
+        "type": "object"
+      },
       "Specification": {
         "properties": {
           "max_duration": {
@@ -32213,6 +32323,553 @@
           "newClipId"
         ],
         "title": "SplitClipOperation",
+        "type": "object"
+      },
+      "SpreadsheetCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SpreadsheetDocument"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "title": {
+            "default": "未命名工作簿",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "title": "SpreadsheetCreate",
+        "type": "object"
+      },
+      "SpreadsheetDocument": {
+        "additionalProperties": false,
+        "properties": {
+          "schema_version": {
+            "const": 1,
+            "default": 1,
+            "title": "Schema Version",
+            "type": "integer"
+          },
+          "sheets": {
+            "items": {
+              "$ref": "#/components/schemas/Sheet"
+            },
+            "maxItems": 20,
+            "minItems": 1,
+            "title": "Sheets",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sheets"
+        ],
+        "title": "SpreadsheetDocument",
+        "type": "object"
+      },
+      "SpreadsheetExport": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "format": {
+            "default": "xlsx",
+            "enum": [
+              "xlsx",
+              "csv"
+            ],
+            "title": "Format",
+            "type": "string"
+          },
+          "sheet_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sheet Id"
+          },
+          "value_mode": {
+            "default": "values",
+            "enum": [
+              "values",
+              "formulas"
+            ],
+            "title": "Value Mode",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "SpreadsheetExport",
+        "type": "object"
+      },
+      "SpreadsheetImportConfirm": {
+        "additionalProperties": false,
+        "properties": {
+          "accept_warnings": {
+            "default": false,
+            "title": "Accept Warnings",
+            "type": "boolean"
+          },
+          "converter": {
+            "const": "spreadsheet-v1",
+            "title": "Converter",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "request_id",
+          "sha256",
+          "converter"
+        ],
+        "title": "SpreadsheetImportConfirm",
+        "type": "object"
+      },
+      "SpreadsheetImportPreview": {
+        "additionalProperties": false,
+        "properties": {
+          "converter": {
+            "default": "spreadsheet-v1",
+            "title": "Converter",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "sha256": {
+            "title": "Sha256",
+            "type": "string"
+          },
+          "sheets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sheets",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "sha256",
+          "filename",
+          "warnings",
+          "sheets"
+        ],
+        "title": "SpreadsheetImportPreview",
+        "type": "object"
+      },
+      "SpreadsheetList": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SpreadsheetSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "SpreadsheetList",
+        "type": "object"
+      },
+      "SpreadsheetOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "set_cells",
+              "clear_range",
+              "style_range",
+              "add_sheet",
+              "rename_sheet",
+              "delete_sheet",
+              "reorder_sheets"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/SparseCell"
+            },
+            "maxItems": 10000,
+            "title": "Cells",
+            "type": "array"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 31,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "range": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Range"
+          },
+          "sheet_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sheet Id"
+          },
+          "sheet_order": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Sheet Order",
+            "type": "array"
+          },
+          "style": {
+            "additionalProperties": true,
+            "title": "Style",
+            "type": "object"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "SpreadsheetOperation",
+        "type": "object"
+      },
+      "SpreadsheetOperations": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/SpreadsheetOperation"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Operations",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "operations"
+        ],
+        "title": "SpreadsheetOperations",
+        "type": "object"
+      },
+      "SpreadsheetProject": {
+        "additionalProperties": false,
+        "properties": {
+          "calculation": {
+            "enum": [
+              "pending",
+              "browser_calculated",
+              "not_needed"
+            ],
+            "title": "Calculation",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/SpreadsheetDocument"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "calculation",
+          "created_at",
+          "updated_at",
+          "document"
+        ],
+        "title": "SpreadsheetProject",
+        "type": "object"
+      },
+      "SpreadsheetPut": {
+        "additionalProperties": false,
+        "properties": {
+          "calculated": {
+            "default": false,
+            "title": "Calculated",
+            "type": "boolean"
+          },
+          "document": {
+            "$ref": "#/components/schemas/SpreadsheetDocument"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "title",
+          "document"
+        ],
+        "title": "SpreadsheetPut",
+        "type": "object"
+      },
+      "SpreadsheetRange": {
+        "additionalProperties": false,
+        "properties": {
+          "cells": {
+            "items": {
+              "$ref": "#/components/schemas/SpreadsheetRangeCell"
+            },
+            "title": "Cells",
+            "type": "array"
+          },
+          "range": {
+            "title": "Range",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "sheet_id": {
+            "title": "Sheet Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "revision",
+          "sheet_id",
+          "range",
+          "cells"
+        ],
+        "title": "SpreadsheetRange",
+        "type": "object"
+      },
+      "SpreadsheetRangeCell": {
+        "additionalProperties": false,
+        "properties": {
+          "calculation": {
+            "title": "Calculation",
+            "type": "string"
+          },
+          "column": {
+            "title": "Column",
+            "type": "integer"
+          },
+          "formula": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formula"
+          },
+          "row": {
+            "title": "Row",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value"
+          }
+        },
+        "required": [
+          "row",
+          "column",
+          "calculation"
+        ],
+        "title": "SpreadsheetRangeCell",
+        "type": "object"
+      },
+      "SpreadsheetSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "calculation": {
+            "enum": [
+              "pending",
+              "browser_calculated",
+              "not_needed"
+            ],
+            "title": "Calculation",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Name"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "calculation",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SpreadsheetSummary",
         "type": "object"
       },
       "StorageLayoutIssueOut": {
@@ -60559,6 +61216,590 @@
         "summary": "Create From Template",
         "tags": [
           "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/spreadsheet-workshop/imports/preview": {
+      "post": {
+        "operationId": "preview_spreadsheet_import",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "encoding",
+            "required": false,
+            "schema": {
+              "default": "utf-8-sig",
+              "enum": [
+                "utf-8-sig",
+                "gb18030"
+              ],
+              "title": "Encoding",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_preview_spreadsheet_import"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpreadsheetImportPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Import",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      }
+    },
+    "/v1/spreadsheet-workshop/imports/{import_id}/confirm": {
+      "post": {
+        "operationId": "confirm_spreadsheet_import",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "title": "Import Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpreadsheetImportConfirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpreadsheetProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Confirm Import",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      }
+    },
+    "/v1/spreadsheet-workshop/projects": {
+      "get": {
+        "operationId": "list_spreadsheet_projects",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 120,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpreadsheetList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Projects",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_spreadsheet_project",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpreadsheetCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpreadsheetProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Project",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      }
+    },
+    "/v1/spreadsheet-workshop/projects/{project_id}": {
+      "delete": {
+        "operationId": "delete_spreadsheet_project",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Spreadsheet Project",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Project",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      },
+      "get": {
+        "operationId": "get_spreadsheet_project",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpreadsheetProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "update_spreadsheet_project",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpreadsheetPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpreadsheetProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Project",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      }
+    },
+    "/v1/spreadsheet-workshop/projects/{project_id}/export": {
+      "post": {
+        "operationId": "export_spreadsheet",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpreadsheetExport"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      }
+    },
+    "/v1/spreadsheet-workshop/projects/{project_id}/operations": {
+      "post": {
+        "operationId": "apply_spreadsheet_operations",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpreadsheetOperations"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpreadsheetProject"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Operations",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      }
+    },
+    "/v1/spreadsheet-workshop/projects/{project_id}/original": {
+      "get": {
+        "operationId": "download_spreadsheet_original",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Original",
+        "tags": [
+          "spreadsheet-workshop"
+        ]
+      }
+    },
+    "/v1/spreadsheet-workshop/projects/{project_id}/range": {
+      "get": {
+        "operationId": "read_spreadsheet_range",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sheet_id",
+            "required": true,
+            "schema": {
+              "maxLength": 64,
+              "minLength": 1,
+              "title": "Sheet Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "range",
+            "required": true,
+            "schema": {
+              "maxLength": 50,
+              "minLength": 1,
+              "title": "Range",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpreadsheetRange"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Read Range",
+        "tags": [
+          "spreadsheet-workshop"
         ]
       }
     },

@@ -16,6 +16,7 @@ class AutomationCapabilities(BaseModel):
 
 class AutomationOpenIn(BaseModel):
     kind: Literal[
+        "spreadsheet",
         "visual",
         "galgame",
         "video",

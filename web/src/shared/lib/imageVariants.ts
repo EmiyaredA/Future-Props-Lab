@@ -57,6 +57,11 @@ export const imageVariants: Record<string, Record<string, string>> = {
     "128": "/brand/thumbnails/presentation-workshop-mark-34895e659c94-128.webp",
     "256": "/brand/thumbnails/presentation-workshop-mark-34895e659c94-256.webp",
   },
+  "/brand/spreadsheet-workshop-mark.png": {
+    "64": "/brand/thumbnails/spreadsheet-workshop-mark-1dd283a7d257-64.webp",
+    "128": "/brand/thumbnails/spreadsheet-workshop-mark-1dd283a7d257-128.webp",
+    "256": "/brand/thumbnails/spreadsheet-workshop-mark-1dd283a7d257-256.webp",
+  },
   "/brand/thought-workshop-mark.png": {
     "64": "/brand/thumbnails/thought-workshop-mark-4706bb94b1d9-64.webp",
     "128": "/brand/thumbnails/thought-workshop-mark-4706bb94b1d9-128.webp",

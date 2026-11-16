@@ -15,6 +15,7 @@ TARGET = SDK / "src/future_props_lab/generated"
 MAPPING = SDK / "operations.json"
 SCHEMA = ROOT / "web/src/generated/openapi.json"
 TAGS = {
+    "spreadsheet-workshop": "spreadsheet",
     "automation": "automation",
     "accounts": "accounts",
     "account-workspaces": "workspaces",

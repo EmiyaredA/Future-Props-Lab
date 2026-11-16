@@ -14,6 +14,8 @@ export const desktopSurfaces = {} as const;
 
 // Every application route must name its responsive scenario owner.
 export const responsiveOwners = {
+  "spreadsheet-workshop-projects": "shell",
+  "spreadsheet-workshop-editor": "editors",
   "interview-assistant-session": "shell",
   home: "shell",
   "creative-workshop": "shell",
@@ -67,6 +69,10 @@ export const responsiveOwners = {
 } satisfies Record<AppPage, "shell" | "editors" | "thought">;
 export const publicSurfaces = ["login", "account-settings", "docs"] as const;
 export const independentApplications = {
+  spreadsheet: [
+    "/apps/spreadsheet-workshop",
+    "/apps/spreadsheet-workshop/projects/:id",
+  ],
   creative: [
     "/creative-workshop",
     "/creative-workshop/mine",

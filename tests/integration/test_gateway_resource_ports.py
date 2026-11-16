@@ -31,6 +31,11 @@ class MemoryResources:
         return (owner, resource_id) == ("owner", "owned")
 
 
+async def test_website_resource_adapter_refuses_standalone_only_tables():
+    reader = WebsiteResources(None, {})
+    assert not await reader.exists("owner", "spreadsheet", "owned")
+
+
 @pytest.fixture(params=["memory", "sqlite", "remote"])
 async def reader(request, tmp_path):
     if request.param == "memory":

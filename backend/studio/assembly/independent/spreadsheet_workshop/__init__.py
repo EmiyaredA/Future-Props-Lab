@@ -1,0 +1,1 @@
+"""Independent spreadsheet application assembly."""

@@ -27,6 +27,7 @@ if (
     "interview",
     "annotation",
     "presentation",
+    "spreadsheet",
     "motion",
     "video",
     "visual",
@@ -50,6 +51,11 @@ function walk(directory, prefix = "") {
     });
 }
 const sources = walk(path.join(web, "src")).map((name) => "web/src/" + name);
+sources.push(
+  ...walk(path.join(repo, "vendor/fortune-sheet")).map(
+    (name) => "vendor/fortune-sheet/" + name,
+  ),
+);
 sources.push(...serviceAssets[service].map((name) => "web/public/" + name));
 sources.push(
   "web/scripts/build-service.mjs",

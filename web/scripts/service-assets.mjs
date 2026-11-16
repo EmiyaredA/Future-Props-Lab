@@ -3,6 +3,7 @@ import { imageVariants as variants } from "../src/shared/lib/imageVariants.ts";
 import { fileURLToPath } from "node:url";
 
 const workshopMarks = [
+  "brand/spreadsheet-workshop-mark.png",
   "brand/presentation-workshop-mark.png",
   "brand/thought-workshop-mark.png",
   "brand/interview-assistant-mark.png",
@@ -15,6 +16,11 @@ const workshopMarks = [
 ];
 
 export const serviceAssets = {
+  spreadsheet: [
+    "brand/brand-mark.png",
+    "brand/favicon.png",
+    "brand/spreadsheet-workshop-mark.png",
+  ],
   thought: [
     "brand/brand-mark.png",
     "brand/favicon.png",

@@ -1,17 +1,45 @@
-import { directorResourceChunks } from "./chunkGraph";
+import { assistantRenderingChunks, directorResourceChunks } from "./chunkGraph";
 import { mathFontData } from "./mathFontData";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 
 const apiPort = process.env.FPL_E2E_API_PORT || "9001";
 const webPort = Number(process.env.FPL_E2E_WEB_PORT || "3000");
 const apiTarget = `http://127.0.0.1:${apiPort}`;
 const configuredCacheDir = process.env.FPL_VITE_CACHE_DIR;
 
+function fortuneLicense(): Plugin {
+  return {
+    name: "fortune-sheet-license",
+    generateBundle(_options, bundle) {
+      if (
+        Object.values(bundle).some(
+          (chunk) =>
+            chunk.type === "chunk" &&
+            Object.keys(chunk.modules).some((id) =>
+              id.includes("/vendor/fortune-sheet/"),
+            ),
+        )
+      ) {
+        this.emitFile({
+          type: "asset",
+          fileName: "assets/fortune-sheet-LICENSE.txt",
+          source: readFileSync(
+            resolve(__dirname, "../vendor/fortune-sheet/LICENSE"),
+            "utf8",
+          ),
+        });
+      }
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const directorChunk = directorResourceChunks();
+  const assistantRenderingChunk = assistantRenderingChunks();
   return {
     cacheDir:
       configuredCacheDir || resolve(__dirname, `node_modules/.vite-${mode}`),
@@ -20,10 +48,18 @@ export default defineConfig(({ mode }) => {
       mode === "studio"
         ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
         : undefined,
-    plugins: [react(), tailwindcss(), mathFontData()],
+    plugins: [react(), tailwindcss(), mathFontData(), fortuneLicense()],
     resolve: {
       dedupe: ["react", "react-dom"],
       alias: {
+        "@fortune-sheet/core": resolve(
+          __dirname,
+          "../vendor/fortune-sheet/packages/core/src/index.ts",
+        ),
+        "@fortune-sheet/react": resolve(
+          __dirname,
+          "../vendor/fortune-sheet/packages/react/src/index.ts",
+        ),
         "#default-font/svg/default.js": resolve(
           __dirname,
           "../node_modules/@mathjax/mathjax-tex-font/mjs/svg/default.js",
@@ -73,6 +109,23 @@ export default defineConfig(({ mode }) => {
         output: {
           onlyExplicitManualChunks: true,
           manualChunks(id, context) {
+            const rendering = assistantRenderingChunk(id, context);
+            if (rendering) return rendering;
+            if (id.includes("/vendor/fortune-sheet/packages/core/src/locale/"))
+              return /\/locale\/zh\./.test(id)
+                ? "spreadsheet-locale-zh"
+                : "spreadsheet-locale-en";
+            if (id.includes("/vendor/fortune-sheet/packages/core/src/")) {
+              return "spreadsheet-core";
+            }
+            if (
+              /\/node_modules\/(@fortune-sheet\/formula-parser|@formulajs\/formulajs|jstat|bessel)\//.test(
+                id,
+              )
+            )
+              return "spreadsheet-functions";
+            if (id.includes("/vendor/fortune-sheet/packages/react/src/"))
+              return "spreadsheet-editor";
             const director = directorChunk(id, context);
             if (director) return director;
             if (/\/node_modules\/(react|react-dom|scheduler)\//.test(id))

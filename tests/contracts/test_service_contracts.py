@@ -18,7 +18,17 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_all_public_operations_and_tables_have_reviewable_owners():
     data = document(ROOT)
-    assert len(SERVICES) == 22
+    assert len(SERVICES) == 23
+    assert {t["table"] for t in data["tables"] if t["service"] == "spreadsheet"} == {
+        "spreadsheet_workbooks",
+        "spreadsheet_receipts",
+        "spreadsheet_imports",
+    }
+    assert all(
+        o["service"] == "spreadsheet"
+        for o in data["operations"]
+        if o["path"].startswith("/v1/spreadsheet-workshop/")
+    )
     assert len(data["operations"]) > 550
     assert len(data["tables"]) > 100
     assert any(

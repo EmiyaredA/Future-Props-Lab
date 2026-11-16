@@ -5,8 +5,21 @@ import {
   MessagesSquare,
   Mic2,
   Presentation,
+  Sheet,
 } from "lucide-react";
 import type { ApplicationDefinition } from "./catalog";
+
+export const SPREADSHEET_WORKSHOP_DEFINITION = {
+  id: "spreadsheet-workshop",
+  serviceId: "spreadsheet",
+  name: "表格工坊",
+  category: "productivity",
+  description: "编辑多工作表与公式，整理数据，并导入导出 Excel 和 CSV。",
+  capabilities: ["表格", "公式", "Excel", "CSV"],
+  path: "/apps/spreadsheet-workshop",
+  icon: Sheet,
+  brandImage: "/brand/spreadsheet-workshop-mark.png",
+} as const satisfies ApplicationDefinition;
 
 export const AUDIO_ANNOTATION_DEFINITION = {
   id: "audio-annotation",
@@ -128,4 +141,5 @@ export const APPLICATION_DEFINITIONS = [
   MOTION_COMPOSITOR_DEFINITION,
   AUDIO_ANNOTATION_DEFINITION,
   DIRECTOR_DESK_DEFINITION,
+  SPREADSHEET_WORKSHOP_DEFINITION,
 ] as const;

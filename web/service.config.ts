@@ -43,6 +43,7 @@ export default defineConfig(async (environment) => {
       "interview",
       "annotation",
       "presentation",
+      "spreadsheet",
       "motion",
       "video",
       "visual",
@@ -80,6 +81,7 @@ export default defineConfig(async (environment) => {
             | "interview"
             | "annotation"
             | "presentation"
+            | "spreadsheet"
             | "motion"
             | "video"
             | "visual"

@@ -2,7 +2,7 @@
 
 本轮正在把网站单体迁为同仓库的独立服务。正式网站仍由网站入口运行；未完成所有服务、数据导入与恢复验收前，不停止正式实例，不连接或迁移正式数据库。
 
-服务集合以 `backend/studio/contracts/gateway/catalog.py` 和生成的 `deploy/contracts/ownership.json` 为准。当前完整 Compose 装配包括 22 个登记服务、Remote 的 Guacamole 伴随容器和 7 个本机 worker。本文保留了各拆分阶段的验证记录，正式切换以同一候选提交的整站门禁为准。
+服务集合以 `backend/studio/contracts/gateway/catalog.py` 和生成的 `deploy/contracts/ownership.json` 为准。当前完整 Compose 装配包括 23 个登记服务、Remote 的 Guacamole 伴随容器和 7 个本机 worker。表格工坊的独立构建、迁移和兼容范围见[工程说明](../reference/spreadsheet-workshop.md)。本文保留了各拆分阶段的验证记录，正式切换以同一候选提交的整站门禁为准。
 
 ## 已实现的运行边界
 

@@ -2,6 +2,7 @@ import type { useWebsiteNavigation } from "./useWebsiteNavigation";
 import { useRuntimeAccess } from "@features/accounts";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { PresentationWorkshopRoute } from "./PresentationWorkshopRoute";
+import { SpreadsheetWorkshopRoute } from "./SpreadsheetWorkshopRoute";
 import { CodeAgentsRoute } from "./CodeAgentsRoute";
 import { ModelServiceRoute } from "./ModelServiceRoute";
 import type { KnowledgeSection } from "@features/thought-workshop/KnowledgeSections";
@@ -162,6 +163,7 @@ export default function WebsiteRoutes({
   useEffect(() => {
     const key = String(page);
     const applications: Record<string, string> = {
+      "spreadsheet-workshop": "表格工坊",
       "presentation-workshop": "演示工坊",
       "interview-assistant": "面试助手",
       "thought-workshop": "思绪工坊",
@@ -286,6 +288,19 @@ export default function WebsiteRoutes({
           />
         </PageBoundary>
       </WorkshopShell>
+    );
+
+  if (page.startsWith("spreadsheet-workshop-"))
+    return (
+      <PageBoundary>
+        <SpreadsheetWorkshopRoute
+          page={page as WorkshopPage}
+          projectId={route.projectId}
+          readOnly={!accountAllows(me, "content.write")}
+          navigate={navigate}
+          registerNavigationGuard={registerNavigationGuard}
+        />
+      </PageBoundary>
     );
 
   if (page.startsWith("presentation-workshop-"))

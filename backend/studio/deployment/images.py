@@ -11,6 +11,7 @@ from .media_modules import LOCAL_MEDIA_MODULES
 
 PROJECT_OWNERS = frozenset({"visual", "galgame"})
 STUDIO_OWNERS = {
+    "spreadsheet_workshop": "spreadsheet",
     "audio_annotation": "annotation",
     "agent_workbench": "agents",
     "agent_runtime": "agent-runtime",
@@ -83,6 +84,7 @@ OWNED_HTTP_IMAGES = PROJECT_OWNERS | {
 }
 
 ENTRY_POINTS = {
+    "spreadsheet": "studio.assembly.independent.spreadsheet_workshop.cli",
     "amadeus": "studio.assembly.independent.amadeus.cli",
     "annotation": "studio.assembly.independent.audio_annotation.cli",
     "presentation": "studio.assembly.independent.presentation_workshop.cli",
@@ -632,6 +634,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
         manifest = "backend/studio/contracts/gateway/automation_operations.json"
         payloads[manifest] = (root / manifest).read_bytes()
     if service in {
+        "spreadsheet",
         "creative",
         "gateway",
         "thought",
@@ -675,6 +678,7 @@ def prepare_image(root: Path, service: str, *, web_release=None):
                 payloads[path.relative_to(root).as_posix()] = path.read_bytes()
     web_build = None
     if service in {
+        "spreadsheet",
         "portal",
         "assets",
         "management",

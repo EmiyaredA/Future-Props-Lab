@@ -12,6 +12,7 @@ from studio.contracts.gateway.routing import SOCKET_OPERATIONS, Operation, Route
 from studio.contracts.management.setting_owners import KEY_OWNERS, PREFIX_OWNERS
 
 API_OWNERS = {
+    "spreadsheet-workshop": "spreadsheet",
     "management": "management",
     "account": "identity",
     "auth": "identity",
@@ -91,6 +92,8 @@ def operation_owner(path):
 
 
 def table_owner(module, table):
+    if module.startswith("studio.apps.spreadsheet_workshop."):
+        return "spreadsheet"
     # This compatibility projection physically lives beside Visual's old model,
     # but its independent data owner is the asset library. A package move must
     # not reassign persisted data or widen the Visual service's database.

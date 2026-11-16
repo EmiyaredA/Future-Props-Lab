@@ -7,6 +7,7 @@ from pathlib import Path
 from studio.runtime.database.migrations import check
 
 MIGRATION_MODULES = {
+    "spreadsheet": "studio.apps.spreadsheet_workshop.storage.migrations.registry",
     "agent-runtime": "studio.apps.agent_runtime.storage.migrations.registry",
     "amadeus": "studio.apps.amadeus.storage.migrations.registry",
     "annotation": "studio.apps.audio_annotation.storage.migrations.registry",

@@ -12,6 +12,7 @@ SERVICE_FILES = (
     ("project-owners", ("visual", "galgame")),
     ("creative", ("creative",)),
     ("presentation", ("presentation",)),
+    ("spreadsheet", ("spreadsheet",)),
     ("annotation", ("annotation",)),
     ("video", ("video",)),
     ("motion", ("motion",)),

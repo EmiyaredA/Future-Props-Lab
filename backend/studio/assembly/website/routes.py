@@ -44,6 +44,7 @@ from studio.apps.portal.transport.website import router as developer_docs_router
 from studio.apps.presentation_workshop.transport.website.compatibility import (
     router as presentation_workshop_router,
 )
+from studio.apps.spreadsheet_workshop.transport.http import router as spreadsheet_router
 from studio.apps.thought_workshop import content_exports_http as thought_conversion
 from studio.apps.thought_workshop.external_sync.records_http import router as sync_records_router
 from studio.apps.tools.transport.download_http import router as video_download_router
@@ -131,6 +132,7 @@ api_router.include_router(
 api_router.include_router(
     call_logs.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
+api_router.include_router(spreadsheet_router)
 api_router.include_router(
     model_test.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )

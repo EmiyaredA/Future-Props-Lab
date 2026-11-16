@@ -29,6 +29,7 @@ RESTRUCTURED_ROOTS = (
     BACKEND_APP / "capabilities",
 )
 WEB_APP_UNITS = (
+    "spreadsheet-workshop",
     "agent-workbench",
     "audio-annotation",
     "galgame-workshop",
@@ -900,6 +901,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/studio/apps/asset_library/archives",
         "backend/studio/apps",
         "backend/studio/apps/presentation_workshop",
+        "backend/studio/apps/spreadsheet_workshop",
         "backend/studio/apps/audio_annotation",
         "backend/studio/apps/thought_workshop",
         "backend/studio/apps/video_editor",

@@ -1,5 +1,7 @@
 # 项目目录索引
 
+表格工坊的业务、格式转换和私有存储归 `backend/studio/apps/spreadsheet_workshop/`；独立启动装配归 `backend/studio/assembly/independent/spreadsheet_workshop/`。网页适配归 `web/src/features/spreadsheet-workshop/`，独立入口为 `web/spreadsheet.html`；锁定的上游源码归 `vendor/fortune-sheet/`。独立镜像和 Compose 分别位于 `deploy/images/spreadsheet/`、`deploy/compose/spreadsheet.compose.yaml`。实现边界见[表格工坊工程说明](../reference/spreadsheet-workshop.md)。
+
 本文用于定位目录、入口与代码所有者。修改装配、应用注册或跨应用交接时查阅
 [Studio 框架契约](studio-framework.md)，能力专属规则见[能力实现契约](capability-contracts.md)。
 

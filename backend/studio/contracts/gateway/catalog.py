@@ -13,6 +13,7 @@ class Service:
 
 
 SERVICES = (
+    Service("spreadsheet", "表格工坊", ("/apps/spreadsheet-workshop",), ("identity",)),
     Service("gateway", "网站网关"),
     Service(
         "management",

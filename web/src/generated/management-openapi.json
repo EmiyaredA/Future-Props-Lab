@@ -88,7 +88,7 @@
             "items": {
               "$ref": "#/components/schemas/DeploymentServiceState"
             },
-            "maxItems": 22,
+            "maxItems": 23,
             "title": "Services",
             "type": "array"
           }
@@ -279,6 +279,7 @@
       },
       "ServiceId": {
         "enum": [
+          "spreadsheet",
           "gateway",
           "management",
           "identity",

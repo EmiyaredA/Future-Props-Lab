@@ -637,12 +637,12 @@ class AutomationCapabilities(WireModel):
     version: int = Field(default=1, alias='version')
 
 class AutomationOpenIn(WireModel):
-    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
+    kind: Literal['spreadsheet', 'visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
     resource_id: str | None = Field(default=None, alias='resource_id')
     view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
 
 class AutomationOpenOut(WireModel):
-    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
+    kind: Literal['spreadsheet', 'visual', 'galgame', 'video', 'presentation', 'annotation', 'director', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
     path: str = Field(default=..., alias='path')
     resource_id: str | None = Field(default=None, alias='resource_id')
     view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
@@ -729,6 +729,9 @@ class Body_imports_v1_thought_workshop_imports_post(WireModel):
 
 class Body_preview_import_v1_presentation_workshop_imports_preview_post(WireModel):
     upload: str = Field(default=..., alias='upload')
+
+class Body_preview_spreadsheet_import(WireModel):
+    file: str = Field(default=..., alias='file')
 
 class Body_put_avatar_v1_account_profile_avatar_put(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
@@ -1260,7 +1263,7 @@ class DeploymentServiceState(WireModel):
 
 class DeploymentServicesOut(WireModel):
     observed_at: datetime | None = Field(default=None, alias='observed_at')
-    services: list[DeploymentServiceState] | None = Field(default=None, alias='services', max_length=22)
+    services: list[DeploymentServiceState] | None = Field(default=None, alias='services', max_length=23)
 
 class DesktopLogin(WireModel):
     password: str = Field(default=..., alias='password', repr=False, min_length=1, max_length=128)
@@ -4873,7 +4876,7 @@ class SeparateClipOperation(WireModel):
     type: Literal['separateClip'] = Field(default=..., alias='type')
     visual_track_id: str = Field(default=..., alias='visualTrackId')
 
-class ServiceId(RootModel[Literal['gateway', 'management', 'identity', 'portal', 'remote', 'visual', 'thought', 'galgame', 'video', 'motion', 'presentation', 'annotation', 'director', 'interview', 'creative', 'assets', 'models', 'rendering', 'agent-runtime', 'integrations', 'amadeus', 'tools']]):
+class ServiceId(RootModel[Literal['spreadsheet', 'gateway', 'management', 'identity', 'portal', 'remote', 'visual', 'thought', 'galgame', 'video', 'motion', 'presentation', 'annotation', 'director', 'interview', 'creative', 'assets', 'models', 'rendering', 'agent-runtime', 'integrations', 'amadeus', 'tools']]):
     pass
 
 class ServiceIssue(WireModel):
@@ -4921,6 +4924,16 @@ class SetTransitionOperation(WireModel):
     edge: Literal['in', 'out'] = Field(default=..., alias='edge')
     transition: VideoEditorTransition | None = Field(default=None, alias='transition')
     type: Literal['setTransition'] = Field(default=..., alias='type')
+
+class Sheet(WireModel):
+    celldata: list[SparseCell] | None = Field(default=None, alias='celldata', max_length=100000)
+    column: int = Field(default=26, alias='column', ge=1.0, le=16384.0)
+    config: dict[str, Any] | None = Field(default=None, alias='config')
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    name: str = Field(default=..., alias='name', min_length=1, max_length=31)
+    order: int = Field(default=0, alias='order', ge=0.0)
+    row: int = Field(default=100, alias='row', ge=1.0, le=100000.0)
+    status: int = Field(default=0, alias='status', ge=0.0, le=1.0)
 
 class SkillCatalogOut(WireModel):
     draft_count: int = Field(default=..., alias='draft_count')
@@ -4998,6 +5011,11 @@ class Sort(WireModel):
     direction: Literal['asc', 'desc'] = Field(default='asc', alias='direction')
     field_id: str = Field(default=..., alias='field_id')
 
+class SparseCell(WireModel):
+    c: int = Field(default=..., alias='c', ge=0.0, lt=16384.0)
+    r: int = Field(default=..., alias='r', ge=0.0, lt=100000.0)
+    v: dict[str, Any] = Field(default=..., alias='v')
+
 class Specification(WireModel):
     max_duration: float | None = Field(default=None, alias='max_duration')
     min_duration: float | None = Field(default=None, alias='min_duration')
@@ -5013,6 +5031,93 @@ class SplitClipOperation(WireModel):
     new_clip_id: str = Field(default=..., alias='newClipId')
     new_link_group_id: str | None = Field(default=None, alias='newLinkGroupId')
     type: Literal['splitClip'] = Field(default=..., alias='type')
+
+class SpreadsheetCreate(WireModel):
+    document: SpreadsheetDocument | None = Field(default=None, alias='document')
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=64)
+    title: str = Field(default='未命名工作簿', alias='title', min_length=1, max_length=120)
+
+class SpreadsheetDocument(WireModel):
+    schema_version: Literal[1] = Field(default=1, alias='schema_version')
+    sheets: list[Sheet] = Field(default=..., alias='sheets', min_length=1, max_length=20)
+
+class SpreadsheetExport(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    format: Literal['xlsx', 'csv'] = Field(default='xlsx', alias='format')
+    sheet_id: str | None = Field(default=None, alias='sheet_id')
+    value_mode: Literal['values', 'formulas'] = Field(default='values', alias='value_mode')
+
+class SpreadsheetImportConfirm(WireModel):
+    accept_warnings: bool = Field(default=False, alias='accept_warnings')
+    converter: Literal['spreadsheet-v1'] = Field(default=..., alias='converter')
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=64)
+    sha256: str = Field(default=..., alias='sha256')
+    title: str | None = Field(default=None, alias='title')
+
+class SpreadsheetImportPreview(WireModel):
+    converter: str = Field(default='spreadsheet-v1', alias='converter')
+    filename: str = Field(default=..., alias='filename')
+    id: str = Field(default=..., alias='id')
+    sha256: str = Field(default=..., alias='sha256')
+    sheets: list[str] = Field(default=..., alias='sheets')
+    warnings: list[str] = Field(default=..., alias='warnings')
+
+class SpreadsheetList(WireModel):
+    items: list[SpreadsheetSummary] = Field(default=..., alias='items')
+    total: int = Field(default=..., alias='total')
+
+class SpreadsheetOperation(WireModel):
+    action: Literal['set_cells', 'clear_range', 'style_range', 'add_sheet', 'rename_sheet', 'delete_sheet', 'reorder_sheets'] = Field(default=..., alias='action')
+    cells: list[SparseCell] | None = Field(default=None, alias='cells', max_length=10000)
+    name: str | None = Field(default=None, alias='name')
+    range: str | None = Field(default=None, alias='range')
+    sheet_id: str | None = Field(default=None, alias='sheet_id')
+    sheet_order: list[str] | None = Field(default=None, alias='sheet_order', max_length=20)
+    style: dict[str, Any] | None = Field(default=None, alias='style')
+
+class SpreadsheetOperations(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    operations: list[SpreadsheetOperation] = Field(default=..., alias='operations', min_length=1, max_length=1000)
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=64)
+
+class SpreadsheetProject(WireModel):
+    calculation: Literal['pending', 'browser_calculated', 'not_needed'] = Field(default=..., alias='calculation')
+    created_at: str = Field(default=..., alias='created_at')
+    document: SpreadsheetDocument = Field(default=..., alias='document')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    source_name: str | None = Field(default=None, alias='source_name')
+    title: str = Field(default=..., alias='title')
+    updated_at: str = Field(default=..., alias='updated_at')
+
+class SpreadsheetPut(WireModel):
+    calculated: bool = Field(default=False, alias='calculated')
+    document: SpreadsheetDocument = Field(default=..., alias='document')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=64)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class SpreadsheetRange(WireModel):
+    cells: list[SpreadsheetRangeCell] = Field(default=..., alias='cells')
+    range: str = Field(default=..., alias='range')
+    revision: int = Field(default=..., alias='revision')
+    sheet_id: str = Field(default=..., alias='sheet_id')
+
+class SpreadsheetRangeCell(WireModel):
+    calculation: str = Field(default=..., alias='calculation')
+    column: int = Field(default=..., alias='column')
+    formula: str | None = Field(default=None, alias='formula')
+    row: int = Field(default=..., alias='row')
+    value: Any | None = Field(default=None, alias='value')
+
+class SpreadsheetSummary(WireModel):
+    calculation: Literal['pending', 'browser_calculated', 'not_needed'] = Field(default=..., alias='calculation')
+    created_at: str = Field(default=..., alias='created_at')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    source_name: str | None = Field(default=None, alias='source_name')
+    title: str = Field(default=..., alias='title')
+    updated_at: str = Field(default=..., alias='updated_at')
 
 class StorageLayoutIssueOut(WireModel):
     asset_id: str = Field(default=..., alias='asset_id')
@@ -6511,6 +6616,7 @@ Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post.m
 Body_import_snapshot_v1_motion_compositor_projects_snapshot_imports_post.model_rebuild()
 Body_imports_v1_thought_workshop_imports_post.model_rebuild()
 Body_preview_import_v1_presentation_workshop_imports_preview_post.model_rebuild()
+Body_preview_spreadsheet_import.model_rebuild()
 Body_put_avatar_v1_account_profile_avatar_put.model_rebuild()
 Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post.model_rebuild()
 Body_upload_asset_v1_model_inference_assets_post.model_rebuild()
@@ -7113,6 +7219,7 @@ SetAssetOrganizationOperation.model_rebuild()
 SetAudioTransitionOperation.model_rebuild()
 SetClipSpeedOperation.model_rebuild()
 SetTransitionOperation.model_rebuild()
+Sheet.model_rebuild()
 SkillCatalogOut.model_rebuild()
 SkillFileListOut.model_rebuild()
 SkillFileOut.model_rebuild()
@@ -7125,8 +7232,22 @@ Snapshot.model_rebuild()
 SnapshotBlock.model_rebuild()
 SnapshotRun.model_rebuild()
 Sort.model_rebuild()
+SparseCell.model_rebuild()
 Specification.model_rebuild()
 SplitClipOperation.model_rebuild()
+SpreadsheetCreate.model_rebuild()
+SpreadsheetDocument.model_rebuild()
+SpreadsheetExport.model_rebuild()
+SpreadsheetImportConfirm.model_rebuild()
+SpreadsheetImportPreview.model_rebuild()
+SpreadsheetList.model_rebuild()
+SpreadsheetOperation.model_rebuild()
+SpreadsheetOperations.model_rebuild()
+SpreadsheetProject.model_rebuild()
+SpreadsheetPut.model_rebuild()
+SpreadsheetRange.model_rebuild()
+SpreadsheetRangeCell.model_rebuild()
+SpreadsheetSummary.model_rebuild()
 StorageLayoutIssueOut.model_rebuild()
 StorageLayoutMigrationOut.model_rebuild()
 StorageLayoutStatusOut.model_rebuild()

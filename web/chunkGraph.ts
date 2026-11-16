@@ -1,5 +1,72 @@
 import type { GetManualChunk } from "rollup";
 
+/** Keep Pixi's dependency components together, packing in dependency order.
+ * A directory split would create artificial cycles between renderers and scene objects.
+ */
+export function assistantRenderingChunks(): GetManualChunk {
+  let chunks: Map<string, string> | undefined;
+  return (id, context) => {
+    const owns = (key: string) =>
+      key.includes("/node_modules/pixi.js/") ||
+      key.includes("/node_modules/earcut/");
+    if (!owns(id)) return;
+    if (!chunks) {
+      const all = new Set([...context.getModuleIds()].filter(owns));
+      const index = new Map<string, number>();
+      const low = new Map<string, number>();
+      const stack: string[] = [];
+      const active = new Set<string>();
+      const components: string[][] = [];
+      let next = 0;
+      const visit = (key: string) => {
+        index.set(key, next);
+        low.set(key, next++);
+        stack.push(key);
+        active.add(key);
+        for (const dependency of context.getModuleInfo(key)?.importedIds ||
+          []) {
+          if (!all.has(dependency)) continue;
+          if (!index.has(dependency)) {
+            visit(dependency);
+            low.set(key, Math.min(low.get(key)!, low.get(dependency)!));
+          } else if (active.has(dependency))
+            low.set(key, Math.min(low.get(key)!, index.get(dependency)!));
+        }
+        if (low.get(key) !== index.get(key)) return;
+        const members: string[] = [];
+        let member: string;
+        do {
+          member = stack.pop()!;
+          active.delete(member);
+          members.push(member);
+        } while (member !== key);
+        components.push(members);
+      };
+      [...all].sort().forEach((key) => {
+        if (!index.has(key)) visit(key);
+      });
+      chunks = new Map();
+      let group = 0,
+        bytes = 0;
+      for (const members of components) {
+        const size = members.reduce(
+          (sum, key) => sum + (context.getModuleInfo(key)?.code?.length || 0),
+          0,
+        );
+        if (bytes && bytes + size > 350_000) {
+          group++;
+          bytes = 0;
+        }
+        members.forEach((key) =>
+          chunks!.set(key, `assistant-rendering-${group}`),
+        );
+        bytes += size;
+      }
+    }
+    return chunks.get(id);
+  };
+}
+
 /** Keep paths between resource modules together, without pulling leaf vendors in. */
 export function directorResourceChunks(): GetManualChunk {
   let members: Set<string> | undefined;

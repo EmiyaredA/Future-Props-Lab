@@ -1,4 +1,5 @@
 import { AUDIO_ANNOTATION_MODULE } from "@features/audio-annotation/module";
+import { SPREADSHEET_WORKSHOP_MODULE } from "@features/spreadsheet-workshop/module";
 import { DIRECTOR_DESK_MODULE } from "@features/director-desk/module";
 import { PRESENTATION_WORKSHOP_MODULE } from "@features/presentation-workshop/module";
 import { THOUGHT_WORKSHOP_MODULE } from "@features/thought-workshop/module";
@@ -9,6 +10,7 @@ import { MOTION_COMPOSITOR_MODULE } from "@features/motion-compositor/module";
 import { INTERVIEW_ASSISTANT_MODULE } from "@features/interview-assistant/module";
 
 export const APPLICATION_MODULES = [
+  SPREADSHEET_WORKSHOP_MODULE,
   PRESENTATION_WORKSHOP_MODULE,
   THOUGHT_WORKSHOP_MODULE,
   INTERVIEW_ASSISTANT_MODULE,

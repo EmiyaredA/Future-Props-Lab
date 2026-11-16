@@ -15,6 +15,11 @@ class ResourceRoute:
 
 RESOURCE_ROUTES = MappingProxyType(
     {
+        "spreadsheet": ResourceRoute(
+            "spreadsheet",
+            "/v1/spreadsheet-workshop/projects/{id}",
+            "/apps/spreadsheet-workshop/projects/",
+        ),
         "visual": ResourceRoute(
             "visual",
             "/v1/visual-workshop/projects/{id}",

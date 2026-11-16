@@ -25,6 +25,10 @@ export const APPLICATION_CATEGORIES: Array<{
 ];
 
 export const APPLICATION_TAGS = [
+  "表格",
+  "公式",
+  "Excel",
+  "CSV",
   "笔记",
   "富文本",
   "图像",

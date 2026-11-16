@@ -1,0 +1,298 @@
+.spreadsheet-library {
+  padding: clamp(20px, 3vw, 42px);
+  min-width: 0;
+}
+.spreadsheet-library-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+.spreadsheet-eyebrow {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: var(--text-muted, #837b70);
+}
+.spreadsheet-library h1 {
+  margin: 8px 0;
+  font-size: clamp(25px, 3vw, 34px);
+}
+.spreadsheet-library-header p {
+  color: var(--text-muted, #837b70);
+}
+.spreadsheet-library-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+.spreadsheet-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 240px;
+  min-height: 44px;
+  background: var(--surface, #fffdfa);
+  border: 1px solid var(--border, #e4dbce);
+  border-radius: 10px;
+  padding: 0 12px;
+}
+.spreadsheet-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  outline-offset: 4px;
+}
+.spreadsheet-library button,
+.spreadsheet-editor-header button,
+.spreadsheet-notice button,
+.spreadsheet-pagination button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border, #e4dbce);
+  border-radius: 9px;
+  background: var(--surface, #fffdfa);
+  padding: 8px 12px;
+  color: inherit;
+  cursor: pointer;
+}
+.spreadsheet-library button:disabled,
+.spreadsheet-editor button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.spreadsheet-library .spreadsheet-primary {
+  background: #dc6846;
+  color: white;
+  border-color: #dc6846;
+}
+.spreadsheet-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr));
+  gap: 18px;
+}
+.spreadsheet-card {
+  min-width: 0;
+  background: var(--surface, #fffdfa);
+  border: 1px solid var(--border, #e4dbce);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 3px 16px #634b2810;
+}
+.spreadsheet-card .spreadsheet-card-open {
+  display: block;
+  text-align: left;
+  width: 100%;
+  border: 0;
+  padding: 20px;
+  background: transparent;
+}
+.spreadsheet-card-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #f4e5ce, #e7ede0);
+  color: #82724e;
+  margin-bottom: 18px;
+}
+.spreadsheet-card h2 {
+  font-size: 17px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 0 0 8px;
+}
+.spreadsheet-card p {
+  font-size: 12px;
+  color: var(--text-muted, #837b70);
+  margin: 0;
+}
+.spreadsheet-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 14px 12px;
+  gap: 8px;
+}
+.spreadsheet-card-actions button {
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+}
+.spreadsheet-empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 70px 15px;
+  color: var(--text-muted, #837b70);
+  border: 1px dashed var(--border, #e4dbce);
+  border-radius: 16px;
+}
+.spreadsheet-empty svg {
+  margin: 0 auto;
+}
+.spreadsheet-empty h2 {
+  font-size: 20px;
+  color: var(--text, #302b24);
+}
+.spreadsheet-library-help {
+  font-size: 12px;
+  color: var(--text-muted, #837b70);
+  margin-top: 25px;
+}
+.spreadsheet-pagination {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 25px;
+  font-size: 13px;
+}
+.spreadsheet-editor {
+  height: var(--app-viewport-height, 100dvh);
+  min-height: 420px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface, #fffdfa);
+}
+.spreadsheet-editor-header {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border, #e4dbce);
+}
+.spreadsheet-editor-header img {
+  border-radius: 9px;
+}
+.spreadsheet-editor-header input {
+  font-size: 17px;
+  font-weight: 600;
+  background: transparent;
+  color: inherit;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 8px;
+  flex: 1 1 150px;
+  min-width: 100px;
+  max-width: 420px;
+}
+.spreadsheet-editor-header input:focus {
+  border-color: #db704b;
+  outline: 2px solid #db704b33;
+}
+.spreadsheet-save-status {
+  font-size: 12px;
+  color: var(--text-muted, #837b70);
+  white-space: nowrap;
+}
+.spreadsheet-editor-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.spreadsheet-editor-actions .custom-select {
+  min-width: 130px;
+}
+.spreadsheet-grid {
+  min-height: 0;
+  flex: 1;
+  position: relative;
+  min-width: 0;
+  overflow: auto;
+}
+.spreadsheet-editor-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 16px;
+  font-size: 11px;
+  color: var(--text-muted, #837b70);
+  border-top: 1px solid var(--border, #e4dbce);
+}
+.spreadsheet-editor-footer span {
+  text-align: right;
+}
+.spreadsheet-notice {
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  background: #fff0d7;
+  color: #7c4d19;
+  font-size: 13px;
+}
+.spreadsheet-import-preview {
+  max-height: 50dvh;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+}
+.spreadsheet-import-preview ul {
+  padding-left: 22px;
+}
+.spreadsheet-import-preview li {
+  margin: 8px 0;
+}
+.spreadsheet-grid .fortune-container {
+  height: 100%;
+}
+.spreadsheet-grid .fortune-container {
+  color-scheme: light;
+  color: #262626;
+  --text: #262626;
+  --text-strong: #171717;
+  --muted: #666;
+}
+[data-theme="dark"] .spreadsheet-notice {
+  background: #46331e;
+  color: #ffda9c;
+}
+[data-theme="dark"] .spreadsheet-card-art {
+  background: linear-gradient(135deg, #45392c, #303e31);
+  color: #c2bd90;
+}
+[data-theme="dark"] .spreadsheet-grid .fortune-container {
+  filter: invert(0.88) hue-rotate(180deg);
+}
+@media (max-width: 640px) {
+  .spreadsheet-library-header {
+    flex-wrap: wrap;
+  }
+  .spreadsheet-editor-header {
+    gap: 6px;
+    padding: 8px;
+  }
+  .spreadsheet-editor-header img {
+    width: 32px;
+    height: 32px;
+  }
+  .spreadsheet-editor-header input {
+    max-width: calc(100% - 95px);
+  }
+  .spreadsheet-editor-actions {
+    margin-left: 0;
+    width: 100%;
+  }
+  .spreadsheet-editor-footer {
+    flex-wrap: wrap;
+    padding: 6px 10px;
+  }
+  .spreadsheet-editor-footer span {
+    text-align: left;
+  }
+  .spreadsheet-save-status {
+    margin-left: auto;
+  }
+}

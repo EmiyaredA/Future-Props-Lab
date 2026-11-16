@@ -123,6 +123,10 @@
     "method": "delete_template",
     "resource": "presentation"
   },
+  "DELETE /v1/spreadsheet-workshop/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "spreadsheet"
+  },
   "DELETE /v1/thought-workshop/knowledge-bases/{project_id}": {
     "method": "trash_knowledge_base",
     "resource": "thought"
@@ -762,6 +766,22 @@
   "GET /v1/presentation-workshop/templates/{template_id}": {
     "method": "get_template",
     "resource": "presentation"
+  },
+  "GET /v1/spreadsheet-workshop/projects": {
+    "method": "list_projects",
+    "resource": "spreadsheet"
+  },
+  "GET /v1/spreadsheet-workshop/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "spreadsheet"
+  },
+  "GET /v1/spreadsheet-workshop/projects/{project_id}/original": {
+    "method": "download_original",
+    "resource": "spreadsheet"
+  },
+  "GET /v1/spreadsheet-workshop/projects/{project_id}/range": {
+    "method": "read_range",
+    "resource": "spreadsheet"
   },
   "GET /v1/thought-workshop/backup": {
     "method": "backup",
@@ -1815,6 +1835,26 @@
     "method": "create_from_template",
     "resource": "presentation"
   },
+  "POST /v1/spreadsheet-workshop/imports/preview": {
+    "method": "preview_import",
+    "resource": "spreadsheet"
+  },
+  "POST /v1/spreadsheet-workshop/imports/{import_id}/confirm": {
+    "method": "confirm_import",
+    "resource": "spreadsheet"
+  },
+  "POST /v1/spreadsheet-workshop/projects": {
+    "method": "create_project",
+    "resource": "spreadsheet"
+  },
+  "POST /v1/spreadsheet-workshop/projects/{project_id}/export": {
+    "method": "export_workbook",
+    "resource": "spreadsheet"
+  },
+  "POST /v1/spreadsheet-workshop/projects/{project_id}/operations": {
+    "method": "apply_operations",
+    "resource": "spreadsheet"
+  },
   "POST /v1/thought-workshop/attachments": {
     "method": "attachments",
     "resource": "thought"
@@ -2154,6 +2194,10 @@
   "PUT /v1/presentation-workshop/templates/{template_id}": {
     "method": "put_template",
     "resource": "presentation"
+  },
+  "PUT /v1/spreadsheet-workshop/projects/{project_id}": {
+    "method": "update_project",
+    "resource": "spreadsheet"
   },
   "PUT /v1/thought-workshop/knowledge-bases/{project_id}": {
     "method": "update_knowledge_base",
