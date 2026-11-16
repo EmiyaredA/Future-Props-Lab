@@ -11,6 +11,7 @@
 | --- | --- |
 | [delete_project](#delete-project) | `DELETE /v1/video-editor/projects/{project_id}` |
 | [delete_asset](#delete-asset) | `DELETE /v1/video-editor/projects/{project_id}/assets/{asset_id}` |
+| [clear_previews](#clear-previews) | `DELETE /v1/video-editor/projects/{project_id}/preview/renders` |
 | [delete_render](#delete-render) | `DELETE /v1/video-editor/projects/{project_id}/renders/{task_id}` |
 | [import_sources](#import-sources) | `GET /v1/video-editor/import-sources` |
 | [list_projects](#list-projects) | `GET /v1/video-editor/projects` |
@@ -21,6 +22,8 @@
 | [list_clip_merges](#list-clip-merges) | `GET /v1/video-editor/projects/{project_id}/clip-merges` |
 | [get_clip_merge](#get-clip-merge) | `GET /v1/video-editor/projects/{project_id}/clip-merges/{task_id}` |
 | [exact_frame](#exact-frame) | `GET /v1/video-editor/projects/{project_id}/preview/frame` |
+| [list_previews](#list-previews) | `GET /v1/video-editor/projects/{project_id}/preview/renders` |
+| [preview_media](#preview-media) | `GET /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media` |
 | [list_renders](#list-renders) | `GET /v1/video-editor/projects/{project_id}/renders` |
 | [get_render](#get-render) | `GET /v1/video-editor/projects/{project_id}/renders/{task_id}` |
 | [list_segment_exports](#list-segment-exports) | `GET /v1/video-editor/projects/{project_id}/segment-exports` |
@@ -41,6 +44,8 @@
 | [create_clip_merge](#create-clip-merge) | `POST /v1/video-editor/projects/{project_id}/clip-merges` |
 | [cancel_clip_merge](#cancel-clip-merge) | `POST /v1/video-editor/projects/{project_id}/clip-merges/{task_id}/cancel` |
 | [reveal_project_folder](#reveal-project-folder) | `POST /v1/video-editor/projects/{project_id}/open-folder` |
+| [create_preview](#create-preview) | `POST /v1/video-editor/projects/{project_id}/preview/renders` |
+| [cancel_preview](#cancel-preview) | `POST /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel` |
 | [create_render](#create-render) | `POST /v1/video-editor/projects/{project_id}/renders` |
 | [render_preflight](#render-preflight) | `POST /v1/video-editor/projects/{project_id}/renders/preflight` |
 | [cancel_render](#cancel-render) | `POST /v1/video-editor/projects/{project_id}/renders/{task_id}/cancel` |
@@ -82,6 +87,25 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `project_id` | path | string | 是 |
 | `asset_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## clear_previews {#clear-previews}
+
+`client.video.clear_previews(...)`
+
+**接口**：`DELETE /v1/video-editor/projects/{project_id}/preview/renders`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
 
 **响应**：
 - `200` · `application/json` · `object`
@@ -283,6 +307,46 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_previews {#list-previews}
+
+`client.video.list_previews(...)`
+
+**接口**：`GET /v1/video-editor/projects/{project_id}/preview/renders`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorPreviewRenderListOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## preview_media {#preview-media}
+
+`client.video.preview_media(...)`
+
+**接口**：`GET /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/media`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `task_id` | path | string | 是 |
+
+**响应**：
+- `200` · `video/mp4` · `object`
+- `206` · `video/mp4` · `object`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -703,6 +767,48 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ProjectFolderOpenOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## create_preview {#create-preview}
+
+`client.video.create_preview(...)`
+
+**接口**：`POST /v1/video-editor/projects/{project_id}/preview/renders`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | VideoEditorPreviewRenderCreateIn | 是 |
+| `body.expectedRevision` | 请求体 | integer | 是 |
+| `body.requestId` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorPreviewRenderOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## cancel_preview {#cancel-preview}
+
+`client.video.cancel_preview(...)`
+
+**接口**：`POST /v1/video-editor/projects/{project_id}/preview/renders/{task_id}/cancel`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `task_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `VideoEditorPreviewRenderOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

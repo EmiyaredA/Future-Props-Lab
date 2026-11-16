@@ -30,6 +30,7 @@ LABELS = {
     "generation": "工坊生成任务",
     "galgame": "Galgame 工坊",
     "video": "视频剪辑",
+    "video_enhancement": "视频增强",
     "thought": "思绪工坊",
     "annotation": "录音标注",
     "presentation": "演示工坊",
