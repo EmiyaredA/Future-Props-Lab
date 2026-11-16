@@ -157,8 +157,6 @@ export function AudioAnnotationSpeakerManager({
                   options={projects.map((project) => ({
                     value: project.id,
                     label: project.title,
-                    description:
-                      project.status === "completed" ? "已完成" : "草稿",
                   }))}
                   onChange={(value) => {
                     setSourceProjectId(value);

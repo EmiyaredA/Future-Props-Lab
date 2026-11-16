@@ -88,7 +88,7 @@ test("creates an unnamed project and opens overview without a dialog", async () 
   expect(onOpenProject).toHaveBeenCalledWith("project-1");
 });
 
-test("renames, completes, restores, searches, and deletes projects", async () => {
+test("renames, searches, and deletes projects without manual status controls", async () => {
   vi.mocked(getGalgameWorkshopProjects).mockResolvedValueOnce({
     items: [project],
   });
@@ -101,10 +101,14 @@ test("renames, completes, restores, searches, and deletes projects", async () =>
   await user.type(name, "新版工程");
   await user.click(screen.getByRole("button", { name: "保存名称" }));
   expect(await screen.findByText("新版工程")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "完成" }));
+  expect(screen.queryByText("草稿")).not.toBeInTheDocument();
+  expect(screen.queryByText("已完成")).not.toBeInTheDocument();
   expect(
-    await screen.findByRole("button", { name: "恢复" }),
-  ).toBeInTheDocument();
+    screen.queryByRole("button", { name: "完成" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "恢复" }),
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByRole("group", { name: "工程状态" }),
   ).not.toBeInTheDocument();
@@ -113,7 +117,6 @@ test("renames, completes, restores, searches, and deletes projects", async () =>
   expect(screen.queryByText("新版工程")).not.toBeInTheDocument();
   await user.clear(search);
   expect(screen.getByText("新版工程")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "恢复" }));
   await user.click(screen.getByRole("button", { name: "删除" }));
   await user.click(screen.getByRole("button", { name: "确认删除" }));
   await waitFor(() => expect(deleteGalgameWorkshopProject).toHaveBeenCalled());

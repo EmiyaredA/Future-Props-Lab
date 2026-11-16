@@ -203,7 +203,6 @@ export function DirectorDeskProjectsPage({
                 title: project.title,
                 updated_at: project.updated_at,
               }}
-              metadata={<span className="workshop-status draft">预演</span>}
               cover="director"
               coverTitle="三维预演"
               onOpen={() => onOpen(project.id)}

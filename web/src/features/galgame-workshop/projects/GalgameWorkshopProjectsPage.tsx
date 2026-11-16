@@ -4,16 +4,7 @@ import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ProjectCertification } from "@features/accounts";
 import { useState } from "react";
-import {
-  Check,
-  Maximize2,
-  Pencil,
-  Plus,
-  Search,
-  RefreshCcw,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Maximize2, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { ApiError } from "@platform/api/client";
 import {
   ProjectEditorDialog,
@@ -193,27 +184,6 @@ export function GalgameWorkshopProjectsPage({
                   }
                 >
                   <Pencil aria-hidden />
-                </button>
-                <button
-                  aria-label={project.status === "draft" ? "完成" : "恢复"}
-                  title={
-                    project.status === "draft" ? "标记为已完成" : "恢复为草稿"
-                  }
-                  onClick={() =>
-                    patchMutation.mutate({
-                      project,
-                      changes: {
-                        status:
-                          project.status === "draft" ? "completed" : "draft",
-                      },
-                    })
-                  }
-                >
-                  {project.status === "draft" ? (
-                    <Check aria-hidden />
-                  ) : (
-                    <RefreshCcw aria-hidden />
-                  )}
                 </button>
                 <button
                   className="danger"

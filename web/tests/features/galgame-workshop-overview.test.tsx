@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
 import { GalgameWorkshopOverviewPage } from "@features/galgame-workshop/overview";
@@ -7,7 +7,6 @@ import {
   getGalgameStoryDocument,
   getGalgameStoryReport,
   getGalgameWorkshopProject,
-  patchGalgameWorkshopProject,
 } from "@features/galgame-workshop/api";
 
 vi.mock("@features/galgame-workshop/api", async () => {
@@ -19,7 +18,6 @@ vi.mock("@features/galgame-workshop/api", async () => {
     getGalgameWorkshopProject: vi.fn(),
     getGalgameStoryDocument: vi.fn(),
     getGalgameStoryReport: vi.fn(),
-    patchGalgameWorkshopProject: vi.fn(),
   };
 });
 
@@ -88,14 +86,6 @@ beforeEach(() => {
       },
     ],
   });
-  vi.mocked(patchGalgameWorkshopProject).mockImplementation(
-    async (current, changes) => ({
-      ...current,
-      ...changes,
-      revision: current.revision + 1,
-      updated_at: "2026-08-05T09:00:00Z",
-    }),
-  );
 });
 
 test("shows story counts and opens the real editor", async () => {
@@ -117,19 +107,17 @@ test("shows story counts and opens the real editor", async () => {
   expect(onProjects).toHaveBeenCalled();
 });
 
-test("toggles project status from overview", async () => {
-  const user = userEvent.setup();
+test("shows route readiness without manual project status", async () => {
   renderPage();
-  expect(await screen.findByText("草稿")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "标记完成" }));
-  await waitFor(() =>
-    expect(patchGalgameWorkshopProject).toHaveBeenCalledWith(project, {
-      status: "completed",
-    }),
-  );
+  expect(await screen.findByText("线路就绪")).toBeInTheDocument();
+  expect(screen.queryByText("草稿")).not.toBeInTheDocument();
+  expect(screen.queryByText("已完成")).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "标记完成" }),
+  ).not.toBeInTheDocument();
 });
 
-test("blocks completion while the saved story has route errors", async () => {
+test("shows route errors and keeps the editor available", async () => {
   vi.mocked(getGalgameStoryReport).mockResolvedValueOnce({
     project_id: "project-1",
     story_revision: 0,
@@ -145,7 +133,9 @@ test("blocks completion while the saved story has route errors", async () => {
     chapters: [],
   });
   renderPage();
+  expect(await screen.findByText("仍需完善线路")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "进入编辑器" })).toBeEnabled();
   expect(
-    await screen.findByRole("button", { name: "标记完成" }),
-  ).toBeDisabled();
+    screen.queryByRole("button", { name: "标记完成" }),
+  ).not.toBeInTheDocument();
 });

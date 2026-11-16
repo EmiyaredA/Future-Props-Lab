@@ -1,7 +1,6 @@
 import { AmadeusButton } from "@platform/AmadeusButton";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
   BookOpenText,
@@ -9,15 +8,11 @@ import {
   MapPinned,
   RefreshCcw,
   Users,
-  X,
 } from "lucide-react";
-import { ApiError } from "@platform/api/client";
 import {
   getGalgameStoryDocument,
   getGalgameStoryReport,
   getGalgameWorkshopProject,
-  patchGalgameWorkshopProject,
-  type GalgameWorkshopProject,
 } from "@features/galgame-workshop/api";
 import "@features/galgame-workshop/galgameStyles";
 import { galgameQueryKeys } from "@features/galgame-workshop/queryKeys";
@@ -56,12 +51,6 @@ function countItems(value: unknown) {
   return Array.isArray(value) ? value.length : 0;
 }
 
-function errorMessage(error: unknown) {
-  if (error instanceof ApiError && error.problem.code === "revision_conflict")
-    return "工程已在其他页面更新，内容已重新加载。";
-  return error instanceof Error ? error.message : "操作失败，请稍后重试。";
-}
-
 export function GalgameWorkshopOverviewPage({
   projectId,
   onProjects,
@@ -71,8 +60,6 @@ export function GalgameWorkshopOverviewPage({
   onProjects: () => void;
   onOpenEditor: () => void;
 }) {
-  const client = useQueryClient();
-  const [notice, setNotice] = useState("");
   const projectQuery = useQuery({
     queryKey: PROJECT_KEY(projectId),
     queryFn: () => getGalgameWorkshopProject(projectId),
@@ -84,20 +71,6 @@ export function GalgameWorkshopOverviewPage({
   const reportQuery = useQuery({
     queryKey: ["galgame-workshop-story-report", projectId],
     queryFn: () => getGalgameStoryReport(projectId),
-  });
-  const patchMutation = useMutation({
-    mutationFn: (changes: Partial<Pick<GalgameWorkshopProject, "status">>) =>
-      patchGalgameWorkshopProject(projectQuery.data!, changes),
-    onSuccess: (updated) => {
-      client.setQueryData(PROJECT_KEY(projectId), updated);
-      void client.invalidateQueries({
-        queryKey: ["galgame-workshop-projects"],
-      });
-    },
-    onError: (error) => {
-      setNotice(errorMessage(error));
-      void projectQuery.refetch();
-    },
   });
   const project = projectQuery.data;
   const document = storyQuery.data?.document;
@@ -134,9 +107,6 @@ export function GalgameWorkshopOverviewPage({
           <p>从故事结构进入角色、场景、分支试玩和确定性线路检查。</p>
           {project ? (
             <div className="galgame-overview-health">
-              <span className={`workshop-status ${project.status}`}>
-                {project.status === "draft" ? "草稿" : "已完成"}
-              </span>
               <span className={reportQuery.data?.ready ? "ready" : "blocked"}>
                 {reportQuery.data?.ready ? (
                   <CheckCircle2 aria-hidden />
@@ -164,31 +134,9 @@ export function GalgameWorkshopOverviewPage({
             >
               <BookOpenText aria-hidden /> 进入编辑器
             </button>
-            <button
-              type="button"
-              disabled={
-                patchMutation.isPending ||
-                (project.status === "draft" && !reportQuery.data?.ready)
-              }
-              onClick={() =>
-                patchMutation.mutate({
-                  status: project.status === "draft" ? "completed" : "draft",
-                })
-              }
-            >
-              {project.status === "draft" ? "标记完成" : "恢复草稿"}
-            </button>
           </div>
         ) : null}
       </header>
-      {notice ? (
-        <div className="workshop-notice" role="status">
-          {notice}
-          <button aria-label="关闭提示" onClick={() => setNotice("")}>
-            <X aria-hidden />
-          </button>
-        </div>
-      ) : null}
       {loading ? (
         <div className="workshop-state">
           <LoadingState label="正在读取工程概览" variant="inline" />

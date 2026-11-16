@@ -136,7 +136,6 @@ export function VideoEditorProjectsPage({
               project={{
                 id: project.id,
                 title: project.title,
-                status: project.status,
                 updated_at: project.updatedAt,
               }}
               cover="video"
