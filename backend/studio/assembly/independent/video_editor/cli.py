@@ -10,6 +10,11 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from studio.apps.video_editor.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.assembly.independent.video_editor.application import create_app
 from studio.assembly.independent.video_editor.maintenance import (
     create_export_app,
@@ -27,6 +32,7 @@ from studio.runtime.messaging.timed_peer import load_peer_key
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Video Editor")
+    add_runtime_options(parser)
     parser.add_argument(
         "command", choices=("serve", "migrate", "migration-export", "migration-import")
     )
@@ -45,7 +51,8 @@ def main():
     )
     parser.add_argument("--port", type=int, default=8080)
     add_maintenance_options(parser)
-    options = parser.parse_args()
+    options = parse_runtime_arguments(parser)
+    runtime = runtime_for(options)
     if handle_maintenance(parser, options, create_export_app, create_import_app):
         return
     if options.command == "migrate":
@@ -76,6 +83,7 @@ def main():
     uploads.mkdir(parents=True, exist_ok=True, mode=0o700)
     os.environ["TMPDIR"] = str(uploads)
     app = create_app(
+        transport=runtime.transport(),
         state_root=options.state_root,
         catalog=RouteCatalog.read(options.catalog),
         public_key=key,
@@ -86,7 +94,7 @@ def main():
         segment_visual_key=segment_visual_key,
         web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,
     )
-    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=options.host, port=options.port, proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":

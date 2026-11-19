@@ -5,8 +5,15 @@ import { expect, test } from "@playwright/test";
 for (const effect of [
   { kind: "whip-pan", label: "甩镜模糊", category: "模糊" },
   { kind: "light-leak", label: "漏光扫过", category: "光效" },
+  { kind: "page-curl", label: "书页翻页", category: "风格", direction: "left" },
+  {
+    kind: "page-curl",
+    label: "书页翻页",
+    category: "风格",
+    direction: "right",
+  },
 ]) {
-  test(`${effect.label}: library, preview, exact frames and encoded export agree`, async ({
+  test(`${effect.label} ${"direction" in effect ? effect.direction : ""}: library, preview, exact frames and encoded export agree`, async ({
     page,
   }, info) => {
     test.setTimeout(180_000);
@@ -34,7 +41,9 @@ for (const effect of [
         "-f",
         "lavfi",
         "-i",
-        "color=c=0x243858:size=320x240:rate=30:duration=4,drawbox=x=140:y=80:w=40:h=80:color=white:t=fill",
+        effect.kind === "page-curl"
+          ? "color=c=0x243858:size=320x240:rate=30:duration=4,drawbox=x=0:y=0:w=iw:h=ih:color=0x984836:t=fill:enable='gte(t,2)',drawgrid=w=40:h=40:t=2:c=white@0.35,drawbox=x=20:y=20:w=60:h=30:color=white:t=fill"
+          : "color=c=0x243858:size=320x240:rate=30:duration=4,drawbox=x=140:y=80:w=40:h=80:color=white:t=fill",
         "-c:v",
         "libx264",
         "-pix_fmt",
@@ -111,6 +120,27 @@ for (const effect of [
               .transitions[0]?.kind,
         )
         .toBe(effect.kind);
+      if ("direction" in effect) {
+        await expect(
+          page.getByRole("button", { name: "上", exact: true }),
+        ).toHaveCount(0);
+        await expect(
+          page.getByRole("button", { name: "下", exact: true }),
+        ).toHaveCount(0);
+        await page
+          .getByRole("button", {
+            name: effect.direction === "left" ? "左" : "右",
+            exact: true,
+          })
+          .click();
+        await expect
+          .poll(
+            async () =>
+              (await (await page.request.get(`${base}/timeline`)).json())
+                .document.transitions[0]?.direction,
+          )
+          .toBe(effect.direction);
+      }
       for (const theme of ["light", "dark"]) {
         await page.evaluate((value) => {
           document.documentElement.dataset.theme = value;
@@ -290,6 +320,61 @@ for (const effect of [
         ).toString(),
       );
       expect(error).toBeLessThan(5);
+      if (effect.kind === "page-curl" && effect.direction === "left") {
+        const cached = await page.request.post(`${base}/preview/renders`, {
+          headers,
+          data: {
+            expectedRevision: state.revision,
+            requestId: crypto.randomUUID(),
+          },
+        });
+        expect(cached.ok()).toBeTruthy();
+        const cacheId = (await cached.json()).id;
+        const cacheState = async () =>
+          (
+            await (await page.request.get(`${base}/preview/renders`)).json()
+          ).items.find((item: { id: string }) => item.id === cacheId);
+        await expect
+          .poll(async () => (await cacheState())?.status, { timeout: 90_000 })
+          .toBe("completed");
+        const ready = await cacheState();
+        expect(ready.valid).toBe(true);
+        const media = await page.request.get(ready.mediaUrl);
+        expect(media.ok()).toBeTruthy();
+        const cacheFile = info.outputPath("cached-preview.mp4");
+        writeFileSync(cacheFile, await media.body());
+        execFileSync("ffmpeg", [
+          "-v",
+          "error",
+          "-ss",
+          "2",
+          "-i",
+          cacheFile,
+          "-vf",
+          "scale=320:180",
+          "-frames:v",
+          "1",
+          "-y",
+          info.outputPath("middle-cache.png"),
+        ]);
+        const cacheError = Number(
+          execFileSync(
+            "uv",
+            [
+              "run",
+              "--no-cache",
+              "--no-sync",
+              "python",
+              "-c",
+              "import sys,numpy as np;from PIL import Image;a=np.asarray(Image.open(sys.argv[1]).convert('RGB'),dtype=float);b=np.asarray(Image.open(sys.argv[2]).convert('RGB'),dtype=float);print(np.abs(a-b).mean())",
+              info.outputPath("middle-exact.png"),
+              info.outputPath("middle-cache.png"),
+            ],
+            { cwd: ".." },
+          ).toString(),
+        );
+        expect(cacheError).toBeLessThan(5);
+      }
     } finally {
       const latest = await (await page.request.get(base)).json();
       const removed = await page.request.delete(

@@ -1,5 +1,23 @@
 # 开发与验证流程
 
+独立服务部署的本机开发由 `npm run dev`（同 `npm start`）自动识别 `backend/config.toml` 的
+`deployment.environment`，进入 `scripts/website/native_development.py`。它直接运行登记的独立 Python
+入口及已安装的 Mac Worker，复用各服务原有数据库、素材与凭据，不调用 Docker、不初始化数据库、不自动迁移。
+前端为 `http://127.0.0.1:3000` 的 Vite HMR；后端按源码依赖重载，首次启动先只读核验所有迁移。
+配置、依赖、公共契约与启动器变化后重新运行开发入口。Python 重载会中断该服务在途请求，并重启本机 Worker；
+未知外部调用仍按各应用的恢复规则处理，不能自动重提。代码重载失败时保留源码监听器，修正后再试。
+
+本机依赖使用 `.runtime/native-development/tools/caddy`，由可信官方 macOS 包及其 SHA256 准备；
+配置投影、程序契约快照、日志、Vite 缓存和进程登记均在 `.runtime/native-development/`，文件 0600、
+私有目录 0700。前端源码由 Vite 提供，程序快照保留各服务既有 API 版本校验，不发布或覆盖正式网页。
+仅监听回环地址，不创建公网隧道；Vite 限定可读源码与依赖，不能读取后端配置或运行期密钥。
+原本已使用兼容单体配置的主机仍进入原开发启动器。
+
+切换前正常停止正式管理 LaunchAgent、各 Worker 和该 Compose 项目的容器，保留其数据与定义。
+开发启动器拒绝仍已加载的正式 Worker、重复实例及端口占用。若暂停了正式任务的登录自启动，恢复时先按
+`.runtime/native-development/production-paused.json` 的记录核对原状态，再显式启用；已迁移的数据不能直接交给
+旧镜像，须升级到匹配版本或按已验证的恢复点整体恢复本次受影响数据库。
+
 在仓库根目录执行命令。准备环境和依赖版本见[贡献指南](../../CONTRIBUTING.md)，正式服务见[生产部署](production-deployment.md)。
 
 ## 本地运行与配置

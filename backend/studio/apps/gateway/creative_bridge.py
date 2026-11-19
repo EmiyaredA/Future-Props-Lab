@@ -171,8 +171,8 @@ def create_creative_bridge(*, public_key, gateway_credential, ingress_secret, tr
     return app
 
 
-def private_socket(directory):
-    """Bind an owner-only UDS; never remove an existing path or follow a link."""
+def private_socket(directory, *, recover_stale=False):
+    """Bind an owner-only UDS, optionally reclaiming a confirmed dead native socket."""
     import os
     import socket
     import stat
@@ -187,7 +187,17 @@ def private_socket(directory):
         raise ValueError("Creative bridge socket directory must be private to the current user")
     path = directory / "creative.sock"
     if path.exists() or path.is_symlink():
-        raise ValueError("Creative bridge socket path is already in use")
+        info = path.lstat()
+        if not recover_stale or not stat.S_ISSOCK(info.st_mode) or info.st_uid != os.getuid():
+            raise ValueError("Creative bridge socket path is already in use")
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as probe:
+            probe.settimeout(0.5)
+            try:
+                probe.connect(str(path))
+            except ConnectionRefusedError:
+                path.unlink()
+            else:
+                raise ValueError("Creative bridge socket is still accepting connections")
     listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
     try:
         listener.bind(str(path))

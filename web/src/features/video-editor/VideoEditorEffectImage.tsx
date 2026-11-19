@@ -1,3 +1,4 @@
+import { paintPageCurlCanvas, type PageCurlEffect } from "./pageCurlCanvas";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { paintChromaCanvas } from "./chromaCanvas";
@@ -17,6 +18,7 @@ export function VideoEditorEffectImage({
   chromaKey,
   spinBlur = 0,
   whipPan,
+  pageCurl,
   timedEffects = noTimedEffects,
   fittedWidth,
   onSize,
@@ -26,6 +28,7 @@ export function VideoEditorEffectImage({
   chromaKey?: VideoEditorClip["chromaKey"];
   spinBlur?: number;
   whipPan?: WhipPanEffect;
+  pageCurl?: PageCurlEffect;
   timedEffects?: ActiveTimedEffect[];
   fittedWidth?: number;
   onSize?: (size: { width: number; height: number }) => void;
@@ -33,7 +36,11 @@ export function VideoEditorEffectImage({
   const image = useRef<HTMLImageElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const processed = Boolean(
-    chromaKey?.enabled || spinBlur || whipPan || timedEffects.length,
+    chromaKey?.enabled ||
+    spinBlur ||
+    whipPan ||
+    pageCurl ||
+    timedEffects.length,
   );
   const paint = useCallback(() => {
     const node = image.current;
@@ -85,7 +92,8 @@ export function VideoEditorEffectImage({
         surface.height,
         whipPan,
       );
-  }, [chromaKey, spinBlur, whipPan, timedEffects, fittedWidth]);
+    if (pageCurl) paintPageCurlCanvas(surface, pageCurl);
+  }, [chromaKey, spinBlur, whipPan, pageCurl, timedEffects, fittedWidth]);
   useLayoutEffect(paint, [paint, source]);
   return (
     <>

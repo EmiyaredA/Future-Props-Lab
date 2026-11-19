@@ -1,3 +1,4 @@
+import { paintPageCurlCanvas, type PageCurlEffect } from "./pageCurlCanvas";
 import { useLayoutEffect, useRef } from "react";
 import {
   paintChromaCanvas,
@@ -24,6 +25,7 @@ export function VideoEditorProxyVideo({
   chromaKey,
   spinBlur = 0,
   whipPan,
+  pageCurl,
   timedEffects = noTimedEffects,
   fittedWidth,
 }: {
@@ -35,6 +37,7 @@ export function VideoEditorProxyVideo({
   chromaKey?: VideoEditorClip["chromaKey"];
   spinBlur?: number;
   whipPan?: WhipPanEffect;
+  pageCurl?: PageCurlEffect;
   timedEffects?: ActiveTimedEffect[];
   fittedWidth?: number;
 }) {
@@ -53,6 +56,7 @@ export function VideoEditorProxyVideo({
     chromaKey,
     spinBlur,
     whipPan,
+    pageCurl,
     timedEffects,
     fittedWidth,
     crop,
@@ -64,6 +68,7 @@ export function VideoEditorProxyVideo({
         playing: boolean;
         spinBlur: number;
         whipPan?: WhipPanEffect;
+        pageCurl?: PageCurlEffect;
         timedEffects?: ActiveTimedEffect[];
       }
     | undefined
@@ -88,6 +93,8 @@ export function VideoEditorProxyVideo({
       prior?.spinBlur !== spinBlur ||
       prior?.whipPan?.amount !== whipPan?.amount ||
       prior?.whipPan?.direction !== whipPan?.direction ||
+      prior?.pageCurl?.progress !== pageCurl?.progress ||
+      prior?.pageCurl?.direction !== pageCurl?.direction ||
       prior?.timedEffects !== timedEffects
     )
       paintedTime.current = Number.NaN;
@@ -97,6 +104,7 @@ export function VideoEditorProxyVideo({
       playing: advancing,
       spinBlur,
       whipPan,
+      pageCurl,
       timedEffects,
     };
     frame.current = {
@@ -109,6 +117,7 @@ export function VideoEditorProxyVideo({
       chromaKey,
       spinBlur,
       whipPan,
+      pageCurl,
       timedEffects,
       fittedWidth,
       crop,
@@ -122,6 +131,7 @@ export function VideoEditorProxyVideo({
     chromaKey,
     spinBlur,
     whipPan,
+    pageCurl,
     timedEffects,
     fittedWidth,
     crop,
@@ -156,6 +166,7 @@ export function VideoEditorProxyVideo({
         chromaKey,
         spinBlur,
         whipPan,
+        pageCurl,
         timedEffects,
         fittedWidth,
         crop,
@@ -186,7 +197,7 @@ export function VideoEditorProxyVideo({
           surface.height = node.videoHeight;
         surface.getContext("2d")?.drawImage(node, 0, 0);
       }
-      if (spinBlur || whipPan || timedEffects.length) {
+      if (spinBlur || whipPan || pageCurl || timedEffects.length) {
         // Remove letterboxing before sampling so proxy padding never becomes a trail.
         const width = (surface.width * 100) / crop.widthPercent;
         const height = (surface.height * 100) / crop.heightPercent;
@@ -196,6 +207,8 @@ export function VideoEditorProxyVideo({
           width,
           height,
         };
+        if (pageCurl && !spinBlur && !whipPan && !timedEffects.length)
+          paintSpinBlurCanvas(surface, surface, width, height, 0, area);
         if (timedEffects.length) {
           paintSpinBlurCanvas(surface, surface, width, height, 0, area);
           paintTimedEffectsCanvas(surface, timedEffects, fittedWidth);
@@ -218,6 +231,7 @@ export function VideoEditorProxyVideo({
             whipPan,
             spinBlur || timedEffects.length ? undefined : area,
           );
+        if (pageCurl) paintPageCurlCanvas(surface, pageCurl);
       }
     };
     const sync = () => {
@@ -301,7 +315,7 @@ export function VideoEditorProxyVideo({
         ref={canvas}
         className="ve-keyed-media"
         style={
-          spinBlur || whipPan || timedEffects.length
+          spinBlur || whipPan || pageCurl || timedEffects.length
             ? { left: 0, top: 0, width: "100%", height: "100%" }
             : placement
         }

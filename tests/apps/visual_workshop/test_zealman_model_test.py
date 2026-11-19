@@ -144,7 +144,7 @@ async def test_keyless_workflow_api_completion_materialization_logs_and_catalog_
 
 
 async def _allow(_url):
-    return None
+    return ("93.184.216.34",)
 
 
 @pytest.mark.asyncio

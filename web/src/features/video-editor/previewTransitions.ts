@@ -10,7 +10,10 @@ import type {
   TransitionDirection,
 } from "./directionalTransitionCanvas";
 
+import type { PageCurlEffect } from "./pageCurlCanvas";
+
 export type PreviewTransitionEffect = {
+  pageCurl?: PageCurlEffect;
   opacityMultiplier: number;
   scaleMultiplier: number;
   blurPx: number;
@@ -71,13 +74,20 @@ function effectForVisualKind(
       normalizedKind === "wipe" ||
       normalizedKind === "fade-black" ||
       normalizedKind === "fade-white" ||
-      normalizedKind === "light-leak"
+      normalizedKind === "light-leak" ||
+      normalizedKind === "page-curl"
         ? 1
         : visibility,
     scaleMultiplier: 1,
     blurPx: 0,
     overlayOpacity: 0,
   };
+  if (normalizedKind === "page-curl") {
+    effect.pageCurl = {
+      progress: 1 - visibility,
+      direction: direction as "left" | "right",
+    };
+  }
   if (normalizedKind === "eyelid") {
     effect.opacityMultiplier = 1;
     effect.eyelidProgress = Math.max(0, Math.min(1, visibility));
@@ -143,6 +153,7 @@ function multiplyEffects(
     opacityMultiplier: base.opacityMultiplier * extra.opacityMultiplier,
     scaleMultiplier: base.scaleMultiplier * extra.scaleMultiplier,
     blurPx: Math.max(base.blurPx, extra.blurPx),
+    pageCurl: base.pageCurl ?? extra.pageCurl,
     spinBlur: base.spinBlur ?? extra.spinBlur,
     whipPan: base.whipPan ?? extra.whipPan,
     lightLeak: base.lightLeak ?? extra.lightLeak,
@@ -278,6 +289,24 @@ export function previewTransitionEffectForClip(
           between.durationUs,
           between.easing,
         );
+        if (between.kind === "page-curl") {
+          const edge =
+            clipEdgePreviewEffect(clip, playheadUs - clip.timelineStartUs) ??
+            identityEffect();
+          return {
+            ...edge,
+            pageCurl:
+              clip.id === left.id
+                ? { progress, direction: between.direction as "left" | "right" }
+                : edge.pageCurl,
+            forceLocalUs: mediaLocalUs(
+              clip,
+              playheadUs,
+              transitions,
+              clipsById,
+            ),
+          };
+        }
         if (between.kind === "light-leak" || between.kind === "whip-pan") {
           const active = progress < 0.5 ? left : right;
           if (clip.id !== active.id)
@@ -500,6 +529,7 @@ export function previewVisualLayers(
   const seen = new Set<string>();
 
   for (const track of visualTracks) {
+    const trackLayers: PreviewVisualLayer[] = [];
     const clips = [...(track.clips ?? [])].sort(
       (left, right) => left.timelineStartUs - right.timelineStartUs,
     );
@@ -523,12 +553,28 @@ export function previewVisualLayers(
         clipsById,
       );
       if (effect.opacityMultiplier <= 0 && effect.overlayOpacity <= 0) continue;
-      layers.push({
+      trackLayers.push({
         clip,
         localUs: effect.forceLocalUs ?? playheadUs - clip.timelineStartUs,
         effect,
       });
     }
+    // The next page is underneath the outgoing sheet, within this track only.
+    for (const transition of transitions.filter(
+      (item) => item.kind === "page-curl",
+    )) {
+      const left = trackLayers.findIndex(
+        (layer) => layer.clip.id === transition.fromClipId,
+      );
+      const right = trackLayers.findIndex(
+        (layer) => layer.clip.id === transition.toClipId,
+      );
+      if (left >= 0 && right > left) {
+        const [outgoing] = trackLayers.splice(left, 1);
+        trackLayers.splice(right, 0, outgoing);
+      }
+    }
+    layers.push(...trackLayers);
   }
 
   return layers;

@@ -2,18 +2,17 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import ipaddress
-import socket
 from pathlib import Path
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin
 
 import httpx
 
+from studio.apps.model_service.generation.result_urls import (
+    GenerationMaterializationError,
+    assert_public_https,
+)
+
 MAX_REDIRECTS = 4
-
-
-class GenerationMaterializationError(Exception):
-    """Safe, user-displayable error raised while persisting provider output."""
 
 
 def generated_type(head: bytes, content_type: str) -> tuple[str, str, str] | None:
@@ -58,33 +57,6 @@ def generated_type(head: bytes, content_type: str) -> tuple[str, str, str] | Non
     return detected if normalized_type in accepted_types else None
 
 
-async def assert_public_https(url: str) -> None:
-    parsed = urlsplit(url)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
-        raise GenerationMaterializationError("生成结果必须使用无凭证的 HTTPS 公网地址")
-
-    def resolve() -> list[str]:
-        return list(
-            {
-                item[4][0]
-                for item in socket.getaddrinfo(
-                    parsed.hostname,
-                    parsed.port or 443,
-                    type=socket.SOCK_STREAM,
-                )
-            }
-        )
-
-    try:
-        addresses = await asyncio.to_thread(resolve)
-    except OSError as exc:
-        raise GenerationMaterializationError("无法解析生成结果地址") from exc
-    if not addresses:
-        raise GenerationMaterializationError("生成结果地址没有可用 IP")
-    if any(not ipaddress.ip_address(address).is_global for address in addresses):
-        raise GenerationMaterializationError("生成结果地址指向非公网网络")
-
-
 async def download_generated_media(
     *,
     url: str,
@@ -102,10 +74,19 @@ async def download_generated_media(
             timeout=timeout,
             follow_redirects=False,
             transport=transport,
+            trust_env=False,
         ) as client:
             for _ in range(MAX_REDIRECTS + 1):
-                await assert_public_https(current_url)
-                async with client.stream("GET", current_url) as response:
+                addresses = await assert_public_https(current_url)
+                origin = httpx.URL(current_url)
+                # Pin the checked IP, preserving Host and TLS SNI/certificate checks.
+                # A second hostname lookup could reintroduce Fake-IP or DNS rebinding.
+                async with client.stream(
+                    "GET",
+                    origin.copy_with(host=addresses[0]),
+                    headers={"Host": origin.netloc.decode("ascii")},
+                    extensions={"sni_hostname": origin.host},
+                ) as response:
                     if response.is_redirect:
                         location = response.headers.get("location")
                         if not location:

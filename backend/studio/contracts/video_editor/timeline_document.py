@@ -97,6 +97,7 @@ class VideoEditorTransition(BaseModel):
         "light-leak",
         "flash",
         "eyelid",
+        "page-curl",
         "audio-crossfade",
     ]
     duration_us: int = Field(alias="durationUs", ge=0, le=10_000_000)
@@ -110,6 +111,8 @@ class VideoEditorTransition(BaseModel):
             return value
         normalized = dict(value)
         kind = normalized.get("kind")
+        if kind == "page-curl" and normalized.get("direction", "left") not in {"left", "right"}:
+            raise ValueError("书页翻页只支持左右方向")
         if kind in {"wipe-left", "wipe-right"}:
             normalized["kind"] = "wipe"
             if normalized.get("direction") not in {"left", "right", "up", "down"}:
@@ -137,6 +140,7 @@ class VideoEditorTimelineTransition(BaseModel):
         "light-leak",
         "flash",
         "eyelid",
+        "page-curl",
         "audio-crossfade",
         "audio-equal-power",
         "audio-dip",
@@ -163,6 +167,8 @@ class VideoEditorTimelineTransition(BaseModel):
             return value
         normalized = dict(value)
         kind = normalized.get("kind")
+        if kind == "page-curl" and normalized.get("direction", "left") not in {"left", "right"}:
+            raise ValueError("书页翻页只支持左右方向")
         if kind in {"wipe-left", "wipe-right"}:
             normalized["kind"] = "wipe"
             if normalized.get("direction") not in {"left", "right", "up", "down"}:
@@ -338,6 +344,7 @@ _CLIP_EDGE_KINDS = {
     "whip-pan",
     "light-leak",
     "flash",
+    "page-curl",
     "audio-crossfade",
 }
 

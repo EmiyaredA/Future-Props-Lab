@@ -47,7 +47,7 @@ def main():
     if options.only_management:
         configured["fpl_management_host_auto_start"] = False
         configured["fpl_website_public_enabled"] = False
-    with service_lock(state):
+    with service_lock(ROOT / ".runtime/deployment/native-mode"), service_lock(state):
         # Acquire the host singleton before any Compose action, including a second npm start.
         check_selected_databases(
             environment,

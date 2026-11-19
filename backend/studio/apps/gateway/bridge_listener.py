@@ -10,13 +10,16 @@ from .creative_bridge import create_creative_bridge, private_socket, private_tex
 
 
 @contextmanager
-def serve_creative_bridge(*, directory, public_key, gateway_credential, ingress_file):
+def serve_creative_bridge(
+    *, directory, public_key, gateway_credential, ingress_file, transport=None, recover_stale=False
+):
     app = create_creative_bridge(
         public_key=public_key,
         gateway_credential=gateway_credential,
         ingress_secret=private_text(ingress_file),
+        transport=transport,
     )
-    listener, path = private_socket(directory)
+    listener, path = private_socket(directory, recover_stale=recover_stale)
     server = uvicorn.Server(
         uvicorn.Config(app, access_log=False, proxy_headers=False, timeout_graceful_shutdown=5)
     )

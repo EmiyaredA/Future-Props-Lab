@@ -1,3 +1,5 @@
+import { VideoEditorColorLayer } from "./VideoEditorColorLayer";
+import { pageCurlForClip, type PageCurlEffect } from "./pageCurlCanvas";
 import type { CSSProperties } from "react";
 import { VideoEditorEffectImage } from "./VideoEditorEffectImage";
 import { VideoEditorProxyVideo } from "./VideoEditorProxyVideo";
@@ -15,6 +17,7 @@ export function VideoEditorMediaLayer({
   selected,
   spinBlur,
   whipPan,
+  pageCurl,
   timedEffects,
 }: {
   clip: VideoEditorClip;
@@ -26,6 +29,7 @@ export function VideoEditorMediaLayer({
   selected: boolean;
   spinBlur?: number;
   whipPan?: WhipPanEffect;
+  pageCurl?: PageCurlEffect;
   timedEffects?: ActiveTimedEffect[];
 }) {
   return (
@@ -48,6 +52,7 @@ export function VideoEditorMediaLayer({
               chromaKey={clip.chromaKey}
               spinBlur={spinBlur}
               whipPan={whipPan}
+              pageCurl={pageCurlForClip(pageCurl, clip.flipX ?? false)}
               timedEffects={timedEffects}
               fittedWidth={geometry?.width}
             />
@@ -64,11 +69,17 @@ export function VideoEditorMediaLayer({
             chromaKey={clip.chromaKey}
             spinBlur={spinBlur}
             whipPan={whipPan}
+            pageCurl={pageCurlForClip(pageCurl, clip.flipX ?? false)}
             timedEffects={timedEffects}
             fittedWidth={geometry?.width}
           />
         ) : clip.kind === "color" ? (
-          <i style={{ background: clip.color ?? "#000" }} />
+          <VideoEditorColorLayer
+            color={clip.color ?? "#000"}
+            pageCurl={pageCurlForClip(pageCurl, clip.flipX ?? false)}
+            width={geometry?.width ?? 1920}
+            height={geometry?.height ?? 1080}
+          />
         ) : null}
       </div>
     </div>

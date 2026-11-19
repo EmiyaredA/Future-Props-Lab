@@ -11,6 +11,11 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from pydantic import ValidationError
 
 from studio.apps.tools.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.assembly.independent.tools.application import create_app
 from studio.assembly.independent.tools.maintenance import create_export_app, create_import_app
 from studio.contracts.gateway.routing import RouteCatalog
@@ -22,6 +27,7 @@ from studio.runtime.lifecycle.locking import service_lock
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Tools")
+    add_runtime_options(parser)
     parser.add_argument(
         "command", choices=("serve", "migrate", "migration-export", "migration-import")
     )
@@ -36,7 +42,8 @@ def main():
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--migration-plan", type=Path)
     parser.add_argument("--legacy-db", type=Path)
-    options = parser.parse_args()
+    options = parse_runtime_arguments(parser)
+    runtime = runtime_for(options)
     if options.command.startswith("migration-"):
         if options.migration_plan is None:
             parser.error("迁移维护入口需要 --migration-plan")
@@ -74,6 +81,7 @@ def main():
         except ValidationError:
             parser.error("Tools 原生配置无效")
     app = create_app(
+        identity_transport=runtime.transport(),
         state_root=options.state_root,
         public_key=key,
         catalog=RouteCatalog.read(options.catalog),
@@ -81,7 +89,7 @@ def main():
         schema_path=options.schema,
         native_options=native,
     )
-    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=options.host, port=options.port, proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":

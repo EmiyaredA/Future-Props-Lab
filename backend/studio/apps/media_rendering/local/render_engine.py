@@ -10,7 +10,7 @@ import threading
 from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, TemporaryFile
 from typing import BinaryIO
 
 from PIL import Image
@@ -23,7 +23,9 @@ from studio.apps.media_rendering.local.audio_transitions import (
 from studio.apps.media_rendering.local.evaluator import FrameSource, TimelineFrameRenderer
 from studio.apps.media_rendering.local.inputs import RenderCaptureFrame, RenderPlan
 from studio.apps.media_rendering.local.presets import RENDER_PRESETS
+from studio.apps.media_rendering.local.render_errors import RenderFailure, process_failure
 from studio.apps.media_rendering.local.speed import audio_speed_filters, source_time_us
+from studio.apps.media_rendering.local.timeline_ranges import frame_clips
 from studio.apps.media_rendering.local.video_sampling import source_frame_time
 from studio.contracts.video_editor.timeline_document import (
     VideoEditorClip,
@@ -183,19 +185,19 @@ def _wait_for_process(
 
 
 def _run(args: list[str], *, cancel: threading.Event) -> None:
-    process = subprocess.Popen(
-        args,
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
-        start_new_session=True,
-    )
-    while process.poll() is None:
-        if cancel.wait(0.1):
+    with TemporaryFile() as diagnostic:
+        process = subprocess.Popen(
+            args,
+            stdout=subprocess.DEVNULL,
+            stderr=diagnostic,
+            start_new_session=True,
+        )
+        try:
+            returncode = _wait_for_process(process, cancel=cancel)
+            if returncode:
+                raise process_failure("音频合成", returncode, diagnostic)
+        finally:
             _terminate_process_group(process)
-            raise RenderCancelled("渲染已取消")
-    if process.returncode:
-        stderr = (process.stderr.read() if process.stderr else b"").decode(errors="replace")
-        raise RuntimeError(stderr[-4000:] or "FFmpeg 执行失败")
 
 
 # Coarse input seek lands near a keyframe; fine trim in the filtergraph then
@@ -284,6 +286,10 @@ class _VideoDecoder:
             "-hide_banner",
             "-loglevel",
             "error",
+            "-threads",
+            "2",
+            "-filter_threads",
+            "1",
             *seek_args,
             "-an",
             "-vf",
@@ -301,12 +307,17 @@ class _VideoDecoder:
         ]
         input_index = command.index("-i") + 1
         command.insert(input_index, str(path))
-        self.process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            start_new_session=True,
-        )
+        self.diagnostic = TemporaryFile()
+        try:
+            self.process = subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=self.diagnostic,
+                start_new_session=True,
+            )
+        except BaseException:
+            self.diagnostic.close()
+            raise
         self.last: Image.Image | None = None
 
     def next(self) -> Image.Image | None:
@@ -315,10 +326,20 @@ class _VideoDecoder:
         data = _read_exact(self.process.stdout, size, cancel=self.cancel)
         if len(data) == size:
             self.last = Image.frombytes("RGBA", (self.width, self.height), data)
+        else:
+            returncode = _wait_for_process(self.process, cancel=self.cancel)
+            if returncode:
+                raise process_failure("视频解码", returncode, self.diagnostic)
+            if not self.last or data:
+                raise RenderFailure("视频解码未产生完整画面；请检查源素材后重试")
         return self.last.copy() if self.last else None
 
     def close(self) -> None:
         _terminate_process_group(self.process)
+        if self.process.stdout is not None:
+            self.process.stdout.close()
+        self.diagnostic.close()
+        self.last = None
 
 
 def _decoder_request_action(
@@ -381,6 +402,15 @@ def _render_segment(
                 requested,
                 frame_us,
             )
+            if (
+                decoder is not None
+                and requested == clip.duration_us - 1
+                and requested != decoder.local_us
+            ):
+                # A held seam handle ends one microsecond before the clip boundary.
+                # Advancing a whole output frame here can cross that boundary and
+                # publish the following shot. Seek once to its containing source PTS.
+                action, value = "open", requested
             if action == "open":
                 if decoder is not None:
                     decoder.close()
@@ -418,50 +448,59 @@ def _render_segment(
         ),
         transparent=transparent,
     )
-    encoder = subprocess.Popen(
-        [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-f",
-            "rawvideo",
-            "-pix_fmt",
-            "rgba" if transparent else "rgb24",
-            "-s",
-            f"{width}x{height}",
-            "-r",
-            str(fps),
-            "-i",
-            "pipe:0",
-            "-an",
-            "-c:v",
-            *(
-                ["prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le"]
-                if transparent
-                else [
-                    "libx264",
-                    "-preset",
-                    "medium",
-                    "-crf",
-                    "18",
-                    "-pix_fmt",
-                    "yuv420p",
-                ]
-            ),
-            "-r",
-            str(fps),
-            "-g",
-            str(fps * 2),
-            "-video_track_timescale",
-            "90000",
-            "-y",
-            str(output),
-        ],
-        stdin=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        start_new_session=True,
-    )
+    diagnostic = TemporaryFile()
+    try:
+        encoder = subprocess.Popen(
+            [
+                "ffmpeg",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-filter_threads",
+                "1",
+                "-f",
+                "rawvideo",
+                "-pix_fmt",
+                "rgba" if transparent else "rgb24",
+                "-s",
+                f"{width}x{height}",
+                "-r",
+                str(fps),
+                "-i",
+                "pipe:0",
+                "-an",
+                "-c:v",
+                *(
+                    ["prores_ks", "-profile:v", "4", "-pix_fmt", "yuva444p10le"]
+                    if transparent
+                    else [
+                        "libx264",
+                        "-preset",
+                        "medium",
+                        "-crf",
+                        "18",
+                        "-pix_fmt",
+                        "yuv420p",
+                    ]
+                ),
+                "-r",
+                str(fps),
+                "-threads",
+                "2",
+                "-g",
+                str(fps * 2),
+                "-video_track_timescale",
+                "90000",
+                "-y",
+                str(output),
+            ],
+            stdin=subprocess.PIPE,
+            stderr=diagnostic,
+            start_new_session=True,
+        )
+    except BaseException:
+        diagnostic.close()
+        raise
     try:
         assert encoder.stdin is not None
         for offset in range(frame_count):
@@ -469,6 +508,13 @@ def _render_segment(
                 raise RenderCancelled("渲染已取消")
             frame_number = first_frame + offset
             time_us = range_start_us + round(frame_number * 1_000_000 / fps)
+            # Release finished clips before opening the next decoder. Retaining
+            # blocked FFmpeg pipes for every past shot grows memory with duration.
+            required = {clip.id for clip in frame_clips(document, time_us)}
+            for identity in set(decoders) - required:
+                decoders.pop(identity).close()
+            for identity in set(image_cache) - required:
+                image_cache.pop(identity).close()
             frame = renderer.render(time_us)
             frame = frame.crop(
                 (
@@ -484,12 +530,14 @@ def _render_segment(
         encoder.stdin.close()
         return_code = _wait_for_process(encoder, cancel=cancel)
         if return_code:
-            stderr = (encoder.stderr.read() if encoder.stderr else b"").decode(errors="replace")
-            raise RuntimeError(stderr[-4000:] or "画面编码失败")
+            raise process_failure("画面编码", return_code, diagnostic)
     except Exception as exc:
+        returncode = encoder.poll()
         _terminate_process_group(encoder)
         if cancel.is_set() and not isinstance(exc, RenderCancelled):
             raise RenderCancelled("渲染已取消") from exc
+        if isinstance(exc, BrokenPipeError):
+            raise process_failure("画面编码", returncode or encoder.returncode, diagnostic) from exc
         raise
     finally:
         if encoder.stdin is not None and not encoder.stdin.closed:
@@ -499,6 +547,9 @@ def _render_segment(
                 pass
         for decoder in decoders.values():
             decoder.close()
+        for image in image_cache.values():
+            image.close()
+        diagnostic.close()
 
 
 def _volume_expression(clip: VideoEditorClip, clip_local_start_us: int) -> str:
@@ -663,7 +714,18 @@ def _mux_audio(
         and (track.kind == "audio" or clip.kind == "video")
         and _has_audio_stream(str(asset_paths[clip.asset_id or ""]))
     ]
-    args = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(video_path)]
+    args = [
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-filter_complex_threads",
+        "1",
+        "-threads",
+        "2",
+        "-i",
+        str(video_path),
+    ]
     filters: list[str] = []
     labels: list[str] = []
     for index, clip in enumerate(audio_clips, start=1):
@@ -674,6 +736,8 @@ def _mux_audio(
         playback_rate = clip.playback_rate or 1
         source_duration = clip_duration * playback_rate
         input_args = [
+            "-threads",
+            "2",
             *(["-stream_loop", "-1"] if clip.source_loop else []),
             "-ss",
             f"{source_start / 1_000_000:.6f}",
@@ -724,6 +788,8 @@ def _mux_audio(
             "copy",
             "-c:a",
             "aac",
+            "-threads",
+            "2",
             "-ar",
             "48000",
             "-b:a",

@@ -126,6 +126,16 @@ def run_pair(root=ROOT):
 
 
 def main():
+    sys.path.insert(0, str(ROOT / "backend"))
+    sys.path.insert(0, str(ROOT))
+    from studio.config import read_config
+
+    config = ROOT / "backend/config.toml"
+    if config.is_file() and read_config(config).get("fpl_deployment_environment"):
+        from scripts.website.native_development import run
+
+        run(ROOT)
+        return
     state = ROOT / ".runtime/dev-server"
     state.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (state / "launcher.lock").open("a") as lock:

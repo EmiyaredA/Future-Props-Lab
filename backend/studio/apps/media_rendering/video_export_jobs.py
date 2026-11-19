@@ -1,6 +1,8 @@
 """Render Video movies and recover the publication of each sealed output once."""
 
 import asyncio
+import logging
+import traceback
 from dataclasses import asdict
 from functools import partial
 from pathlib import Path
@@ -15,6 +17,7 @@ from sqlalchemy import delete, select, text, update
 
 from studio.apps.media_rendering.local.chroma_key import bake_image
 from studio.apps.media_rendering.local.render_engine import RenderCancelled, render_document
+from studio.apps.media_rendering.local.render_errors import RenderFailure, render_failure_message
 from studio.apps.media_rendering.local.video_derivatives import probe_media
 from studio.apps.media_rendering.local.video_output import (
     verify_clip_merge_output,
@@ -45,6 +48,8 @@ from .video_export_variants import install_variants, seal_variants
 from .video_originals import download_original
 from .video_outputs import VideoOutputs
 from .video_segment_work import SegmentOutputs, encode_group
+
+logger = logging.getLogger(__name__)
 
 
 class VideoExports(PollingTaskRunner):
@@ -299,8 +304,18 @@ class VideoExports(PollingTaskRunner):
         except CapabilityUnavailable:
             await self.set_state(job, "running", status="queued", progress=0)
             raise
-        except Exception:
-            await self.set_state(job, "running", status="failed", error="剪辑成片渲染失败")
+        except Exception as exc:
+            # Do not expose source paths or upstream response bodies to the UI.
+            logger.error(
+                "Video export %s failed (%s): %s\n%s",
+                job.id,
+                type(exc).__name__,
+                exc.diagnostic if isinstance(exc, RenderFailure) else "",
+                "".join(traceback.format_tb(exc.__traceback__)),
+            )
+            await self.set_state(
+                job, "running", status="failed", error=render_failure_message(exc, job.id)
+            )
             await run_sync(lambda: rmtree(folder, ignore_errors=True))
 
     async def prepare_output(self, job, request, folder, staging, sources):

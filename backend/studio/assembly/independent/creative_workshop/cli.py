@@ -5,6 +5,11 @@ import os
 from pathlib import Path
 
 from studio.apps.creative_workshop.storage.migrations.registry import MIGRATIONS
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.project_history_migration import (
     add_maintenance_options,
@@ -15,6 +20,7 @@ from studio.runtime.lifecycle.locking import service_lock
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Creative")
+    add_runtime_options(parser)
     parser.add_argument(
         "command", choices=("serve", "migrate", "migration-export", "migration-import")
     )
@@ -29,7 +35,8 @@ def main():
     parser.add_argument("--web-root", type=Path, default=Path("/app/web"))
     parser.add_argument("--creative-install-credentials", type=Path, required=False)
     parser.add_argument("--port", type=int, default=8080)
-    options = parser.parse_args()
+    options = parse_runtime_arguments(parser)
+    runtime = runtime_for(options)
     if options.command.startswith("migration-"):
         from .maintenance import create_export_app, create_import_app
 
@@ -58,6 +65,7 @@ def main():
         web_root = None
     credentials = options.creative_install_credentials
     app = create_app(
+        transport=runtime.transport(),
         state_root=options.state_root,
         catalog=RouteCatalog.read(options.catalog),
         public_key=public,
@@ -67,7 +75,7 @@ def main():
         schema_path=options.schema,
         version=os.environ.get("FPL_SERVICE_VERSION", "development"),
     )
-    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=options.host, port=options.port, proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":

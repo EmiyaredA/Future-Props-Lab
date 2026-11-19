@@ -2,6 +2,7 @@ import {
   transitionDefinitions as definitions,
   transitionCategories as categories,
   directionalTransition,
+  transitionDirections,
   transitionDefaultDuration,
 } from "./transitionCatalog";
 import { Search, SlidersHorizontal, Trash2 } from "lucide-react";
@@ -237,7 +238,7 @@ export function VideoEditorTransitionPanel({
     if (!directionalTransition(nextKind)) return "left";
     const current =
       selectedTransition?.direction ?? activeEdgeTransition?.direction;
-    return ["left", "right", "up", "down"].includes(current ?? "")
+    return transitionDirections(nextKind).includes(current as Direction)
       ? (current as Direction)
       : "left";
   };
@@ -785,7 +786,7 @@ export function VideoEditorTransitionPanel({
           <div className="ve-transition-field">
             <span>方向</span>
             <div className="ve-transition-options">
-              {(["left", "right", "up", "down"] as const).map((item) => (
+              {transitionDirections(selectedDefinition.kind).map((item) => (
                 <button
                   key={item}
                   type="button"

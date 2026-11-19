@@ -6,6 +6,11 @@ import os
 import sys
 from pathlib import Path
 
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.config import read_config
 from studio.runtime.database.migrations import apply, check
 from studio.runtime.database.project_history_migration import (
@@ -23,6 +28,7 @@ LIMIT_DEFAULTS = {
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Thought")
+    add_runtime_options(result)
     result.add_argument(
         "command", choices=("serve", "migrate", "migration-export", "migration-import")
     )
@@ -57,6 +63,7 @@ def configuration(path, state):
 
 
 def run(options):
+    runtime = runtime_for(options)
     from studio.apps.thought_workshop.storage.migrations.registry import MIGRATIONS
 
     state = options.state_root.resolve()
@@ -102,12 +109,17 @@ def run(options):
     if not has_web and not (options.web_root / ".api-only").is_file():
         raise ValueError("Thought 缺少已安装的浏览器程序")
     app = create_app(
+        transport=runtime.transport(),
         state_root=state,
         catalog=RouteCatalog.read(options.catalog),
         public_key=public,
         credential=credential,
-        identity=LiveAuthorization(service="thought", credential=credential),
-        retention_client=RetentionClient(service="thought", credential=credential),
+        identity=LiveAuthorization(
+            transport=runtime.transport(), service="thought", credential=credential
+        ),
+        retention_client=RetentionClient(
+            transport=runtime.transport(), service="thought", credential=credential
+        ),
         assets_peer_credential=peer.community,
         upload_receipt_credential=peer.upload_receipt,
         upload_maximum_bytes=limits["fpl_visual_asset_max_bytes"],
@@ -119,13 +131,13 @@ def run(options):
         web_root=options.web_root if has_web else None,
         version=os.environ.get("FPL_SERVICE_VERSION", "development"),
     )
-    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=options.host, port=options.port, proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":
     try:
         arguments = parser()
-        options = arguments.parse_args()
+        options = parse_runtime_arguments(arguments)
         if options.command.startswith("migration-"):
             from .maintenance import create_export_app, create_import_app
 

@@ -235,6 +235,14 @@ docs/
 
 ## 网站运行与自动化
 
+`scripts/website/native_layout.py` 将既有独立部署的显式挂载转换为本机路径和配置投影；
+`native_development.py` 监督本机独立服务、Mac Worker、源码重载与停止清理。
+`assembly/independent/runtime_options.py` 只提供 CLI 的资源/监听参数，
+`runtime/http/service_transport.py` 通过显式传入的连接表将逻辑服务 URL 连接到回环端口，保留签名路径和身份头。
+`web/native.config.ts` 以登记的页面归属装配 Vite 多入口、HMR 和本机 API 代理。
+`web/applicationIcons.ts` 将 HTML 声明的工坊头像解析为既有 64px 派生图，供开发与独立构建共用。
+运行依赖和私有投影归 `.runtime/native-development/`，可清理验收证据归 `.local/` 的任务目录。
+
 ### 独立服务迁移
 
 `backend/studio/contracts/` 定义独立服务的协议，包括精确到 HTTP 方法和路径的归属匹配与请求绑定身份断言。`backend/studio/runtime/` 提供独立 SQLite 会话与迁移校验。`backend/studio/deployment/` 登记 23 个发布单元，从静态 OpenAPI 和模型源码生成 `deploy/contracts/ownership.json`，并在存在新增未归属或重复操作、未归属表时阻止构建。`npm run services:contracts:generate|check` 管理该清单，并纳入公共契约检查。跨服务 ORM 访问和缺少账号上下文的私人数据操作被存储边界拒绝。
@@ -299,6 +307,8 @@ Models 所有调用链显式接收当前装配的配置：测试台附件、生�
 `studio/apps/model_service/library/inputs.py` 拥有文件库输入流、精确长度校验和每请求装配；`legacy_library_inputs.py` 仅供恢复网站读取旧素材库。独立 `studio/apps/model_service/library_inputs.py` 经 Identity 的来源／目标权限复核读取 `studio/apps/asset_library/library_inputs.py` 与私有路由提供的账号文件流，不挂载 Assets 目录或查询其表。版本化私有描述归 `studio/runtime/files/incoming.py`，不包含路径或存储键；项目、Galgame、剪辑和特效专属素材均不作为文件库输入。推理输入和转录在文件复制后使用自有表提交；转录的暂存与提交归同一流程，提交未决不得删除可能已登记的输入文件。
 
 `studio/apps/model_service/library/outputs.py` 定义每请求结果保存端口；恢复网站显式注入 `legacy_library_outputs.py`，独立 Models 注入 `studio/apps/model_service/library_outputs.py` 的有界 HTTP 输出。`studio/runtime/files/signed_payloads.py` 把文件名、MIME、大小和内容 SHA256 绑定到目标路径；Identity 只从同一任务的保存操作签发窄用途委托，Assets 在接收前和流式传输后复核原身份。`studio/apps/asset_library/library_outputs.py` 在网络／文件 I/O 完成后以短事务保存自有文件和 `0004_model_output_receipts` 不可变回执，并发或响应丢失重试只返回同一文件；已删除结果不自动复制重建。私有结果接口不进入浏览器路由、公共 OpenAPI 或 SDK。未知提交保留可能已登记的字节，不按超时清除。
+
+`studio/apps/model_service/generation/result_urls.py` 拥有生成结果 HTTPS 地址、真实公网解析及代理虚拟 DNS 回退规则；`generation/media.py` 使用已验证 IP 建立连接并保留原域名的 Host、TLS SNI 和证书验证，逐跳复核重定向及素材大小、类型。
 
 生成测试只读取 Models 私有参考与结果；`playground/legacy_generation_references.py` 是恢复网站显式装配的旧素材查询／回填适配。独立服务缺少该适配时拒绝未迁移的历史引用，正式转移前须通过旧站的正式回填 API 完成转换。附件和结果缩略图直接使用 `runtime/raster.py`，不会为纯栅格处理加载 Assets ORM；上传、回填与结果提交在取消或提交回执未知时保全可能已提交的文件。
 
@@ -645,8 +655,11 @@ Future-Props-Lab/
   后端精确停帧和剪辑任务；`apps/motion_compositor/` 拥有特效项目、素材、文档 CAS、工程包、导出任务与显式剪辑交接，浏览器界面归 `web/src/features/motion-compositor/`；`studio/apps/media_rendering/local/` 统一拥有 RenderPlan 契约、特效 RGBA 帧求值、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
   FFmpeg/Pillow 合成和取消控制。`animated_image.py` 拥有有界、可取消的 GIF 单次动画到无声 MP4 转换；`studio/apps/media_rendering/local/gif_upload.py` 处理上传动画的临时输入，转换完成后才进入既有素材／输出 CAS 事务。`video_sampling.py` 按源视频 PTS 选择包含当前时刻的画面区间，
   精确停帧与导出共享该采样规则。正式剪辑渲染只依赖不可变时间轴快照和原素材，
+  `render_engine.py` 按 `timeline_ranges.frame_clips` 的当前片段与接缝窗口回收解码器和图片；
+  `render_errors.py` 区分媒体进程退出原因及安全的用户提示，底层 FFmpeg 诊断由渲染任务日志保留。
   `spin_blur.py` 拥有旋转模糊的角向采样；Web 的 `video-editor/spinBlurCanvas.ts` 使用相同的角度、采样数与覆盖缩放，`VideoEditorEffectImage.tsx` 复用图片和文字图层的已加载素材。
   `directional_transitions.py` 拥有甩镜九点方向采样与漏光滤色配方；Web 的 `video-editor/directionalTransitionCanvas.ts` 对齐像素规则，`VideoEditorLightLeak.tsx` 在节目画布上只叠加一次光带。`video-editor/transitionCatalog.ts` 维护可复用转场的分类、名称与默认时长，面板和检查器共同消费。
+  `page_curl.py` 与 Web 的 `video-editor/pageCurlCanvas.ts` 对齐书页卷曲的圆柱采样、纸背与投影；接缝在所属轨道内先绘制下一页，片段头尾共用同一配方。`VideoEditorColorLayer.tsx` 为纯色片段提供同样的卷曲预览。
   `studio/apps/media_rendering/local/timed_effects.py` 拥有复合片段内定时视觉脉冲，不改变素材采样或片段区间；`video_editor/timed_effect_edit.py` 在裁剪、分割和变速时维护局部区间及原始变化阶段。Web 的 `video-editor/timedEffects.ts` 与 `timedEffectsCanvas.ts` 对齐求值和像素处理。
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。

@@ -14,6 +14,11 @@ from studio.assembly.independent.motion_compositor.maintenance import (
     create_export_app,
     create_import_app,
 )
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.motion_compositor.motion_exports import load_export_key
 from studio.runtime.database.migrations import apply
@@ -26,6 +31,7 @@ from studio.runtime.lifecycle.locking import service_lock
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Motion")
+    add_runtime_options(parser)
     parser.add_argument(
         "command", choices=("serve", "migrate", "migration-export", "migration-import")
     )
@@ -41,7 +47,8 @@ def main():
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
     parser.add_argument("--export-key", type=Path, default=Path("/run/fpl/motion-export-key"))
     add_maintenance_options(parser)
-    options = parser.parse_args()
+    options = parse_runtime_arguments(parser)
+    runtime = runtime_for(options)
     if handle_maintenance(parser, options, create_export_app, create_import_app):
         return
     if options.command == "migrate":
@@ -77,6 +84,7 @@ def main():
     except (ValueError, OSError) as exc:
         parser.error(str(exc))
     app = create_app(
+        transport=runtime.transport(),
         state_root=options.state_root,
         public_key=key,
         credential=credential,
@@ -86,7 +94,7 @@ def main():
         schema_path=options.schema,
         web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,
     )
-    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=options.host, port=options.port, proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":

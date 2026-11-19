@@ -59,7 +59,7 @@ async def test_workshop_keyless_workflow_references_completion_and_recovery(monk
         return ProviderTaskStatus("completed", 100, "https://example.test/result.mp4")
 
     async def allow(_url):
-        pass
+        return ("93.184.216.34",)
 
     monkeypatch.setattr(
         "studio.apps.model_service.generation.visual_submission.upload_reference", upload

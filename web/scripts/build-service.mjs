@@ -61,6 +61,7 @@ sources.push(
   "web/scripts/build-service.mjs",
   "web/scripts/service-assets.mjs",
   "web/mathFontData.ts",
+  "web/applicationIcons.ts",
   "web/chunkGraph.ts",
   "web/tsconfig.json",
   "web/package.json",

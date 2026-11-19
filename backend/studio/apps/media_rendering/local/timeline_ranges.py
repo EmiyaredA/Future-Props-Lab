@@ -66,8 +66,8 @@ def track_frame_sources(track, transitions, time_us):
     return clips, seams, active
 
 
-def frame_asset_ids(document, time_us):
-    assets = set()
+def frame_clips(document, time_us):
+    """Include both seam handles even outside their nominal clip intervals."""
     for track in visible_tracks(document):
         clips, _, transitions = track_frame_sources(track, document.transitions, time_us)
         involved = {
@@ -77,8 +77,14 @@ def frame_asset_ids(document, time_us):
             if clip.id in involved or (
                 clip.timeline_start_us <= time_us < clip.timeline_start_us + clip.duration_us
             ):
-                if clip.kind in {"video", "image"} and clip.asset_id:
-                    assets.add(clip.asset_id)
-                if clip.kind == "text" and clip.font_asset_id:
-                    assets.add(clip.font_asset_id)
+                yield clip
+
+
+def frame_asset_ids(document, time_us):
+    assets = set()
+    for clip in frame_clips(document, time_us):
+        if clip.kind in {"video", "image"} and clip.asset_id:
+            assets.add(clip.asset_id)
+        if clip.kind == "text" and clip.font_asset_id:
+            assets.add(clip.font_asset_id)
     return assets

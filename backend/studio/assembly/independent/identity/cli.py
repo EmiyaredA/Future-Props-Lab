@@ -7,11 +7,17 @@ import os
 import sys
 from pathlib import Path
 
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.runtime.lifecycle.locking import service_lock
 
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Identity service")
+    add_runtime_options(result)
     result.add_argument(
         "command",
         choices=("serve", "migrate", "create-admin", "migration-export", "migration-import"),
@@ -60,6 +66,7 @@ def run_maintenance(options):
 
 
 def run(options):
+    runtime_for(options)
     if options.command.startswith("migration-"):
         run_maintenance(options)
         return
@@ -113,7 +120,9 @@ def run(options):
             else {},
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )
-        uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+        uvicorn.run(
+            app, host=options.host, port=options.port, proxy_headers=False, access_log=False
+        )
 
 
 async def bootstrap(state):
@@ -147,7 +156,7 @@ async def bootstrap(state):
 
 if __name__ == "__main__":
     try:
-        run(parser().parse_args())
+        run(parse_runtime_arguments(parser()))
     except (ValueError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)
         raise SystemExit(1) from None

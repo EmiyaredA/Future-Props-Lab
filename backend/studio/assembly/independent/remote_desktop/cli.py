@@ -15,6 +15,11 @@ from studio.assembly.independent.remote_desktop.maintenance import (
     create_export_app,
     create_import_app,
 )
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.config.cloud_projection import CloudProjection
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.management.migration_batches import MigrationPlan
@@ -25,6 +30,7 @@ from studio.runtime.lifecycle.locking import service_lock
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Remote")
+    add_runtime_options(parser)
     parser.add_argument(
         "command", choices=("serve", "migrate", "migration-export", "migration-import")
     )
@@ -41,7 +47,8 @@ def main():
     parser.add_argument("--setup-options", type=Path, default=Path("/run/fpl/remote-setup.json"))
     parser.add_argument("--migration-plan", type=Path)
     parser.add_argument("--legacy-db", type=Path)
-    options = parser.parse_args()
+    options = parse_runtime_arguments(parser)
+    runtime = runtime_for(options)
     if options.command.startswith("migration-"):
         if options.migration_plan is None or (
             (options.command == "migration-export") != (options.legacy_db is not None)
@@ -79,6 +86,7 @@ def main():
             Path(os.environ["FPL_CLOUD_SETTINGS_COMMIT_DIR"]),
         )
     app = create_app(
+        transport=runtime.transport(),
         state_root=options.state_root,
         settings=RemoteSettings.read(options.config, guacd_host=options.guacd_host),
         public_key=public_key,
@@ -88,7 +96,7 @@ def main():
         setup_options=setup,
         cloud_projection=projection,
     )
-    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=options.host, port=options.port, proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":

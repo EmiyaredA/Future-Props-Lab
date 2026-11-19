@@ -7,11 +7,17 @@ import re
 import sys
 from pathlib import Path
 
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.runtime.lifecycle.locking import service_lock
 
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Rendering")
+    add_runtime_options(result)
     result.add_argument("command", choices=("serve", "migrate", "migration-import"))
     result.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
     result.add_argument("--state-root", type=Path, default=Path("/state"))
@@ -31,6 +37,7 @@ def parser():
 
 
 def run(options):
+    runtime = runtime_for(options)
     from studio.apps.media_rendering.settings import load_settings
     from studio.apps.media_rendering.storage.migrations.registry import MIGRATIONS
     from studio.runtime.database.migrations import apply, check
@@ -98,21 +105,28 @@ def run(options):
             settings=settings,
             catalog=catalog,
             public_key=public,
-            identity=LiveAuthorization(service="rendering", credential=credential),
+            identity=LiveAuthorization(
+                transport=runtime.transport(), service="rendering", credential=credential
+            ),
             capabilities=CapabilityClient(
-                service="rendering", credential=credential, catalog=catalog
+                transport=runtime.transport(),
+                service="rendering",
+                credential=credential,
+                catalog=catalog,
             ),
             export_key=export_key,
             video_media_key=media_key,
             video_originals_key=originals_key,
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )
-        uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+        uvicorn.run(
+            app, host=options.host, port=options.port, proxy_headers=False, access_log=False
+        )
 
 
 if __name__ == "__main__":
     try:
-        run(parser().parse_args())
+        run(parse_runtime_arguments(parser()))
     except (ValueError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)
         raise SystemExit(1) from None

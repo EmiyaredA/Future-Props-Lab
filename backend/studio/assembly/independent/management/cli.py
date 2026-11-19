@@ -8,12 +8,18 @@ import subprocess
 import threading
 from pathlib import Path
 
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.config import read_config
 from studio.runtime.lifecycle.locking import service_lock
 
 
 def run():
     parser = argparse.ArgumentParser(description="FPL independent management service")
+    add_runtime_options(parser)
     parser.add_argument("command", choices=("serve", "migrate"))
     parser.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
     parser.add_argument("--state-root", type=Path, default=Path("/state"))
@@ -21,8 +27,10 @@ def run():
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
     parser.add_argument("--caddyfile", type=Path, default=Path("/etc/caddy/Caddyfile"))
+    parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--api-only", action="store_true")
-    options = parser.parse_args()
+    options = parse_runtime_arguments(parser)
+    runtime = runtime_for(options)
     os.environ["FPL_CONFIG_FILE"] = str(options.config.resolve())
     values = read_config(options.config)
     state = options.state_root.resolve()
@@ -47,21 +55,27 @@ def run():
         app = create_app(
             state_root=state,
             catalog=RouteCatalog.read(options.catalog),
-            public_key=load_pem_public_key(Path("/run/fpl/identity-public.pem").read_bytes()),
-            identity=LiveAuthorization(
-                service="management", credential=Path("/run/fpl/identity-token").read_text().strip()
+            public_key=load_pem_public_key(
+                runtime.path("/run/fpl/identity-public.pem").read_bytes()
             ),
-            native_ingress_token=Path("/run/fpl/native-ingress").read_text().strip(),
-            workers=json.loads(Path("/run/fpl/workers.json").read_text()),
+            identity=LiveAuthorization(
+                transport=runtime.transport(),
+                service="management",
+                credential=runtime.path("/run/fpl/identity-token").read_text().strip(),
+            ),
+            native_ingress_token=runtime.path("/run/fpl/native-ingress").read_text().strip(),
+            workers=json.loads(runtime.path("/run/fpl/workers.json").read_text()),
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
-            web_root=Path("/app/web") if Path("/app/web/build.json").is_file() else None,
+            web_root=runtime.path("/app/web")
+            if runtime.path("/app/web/build.json").is_file()
+            else None,
         )
         child = None
         stopping = threading.Event()
         if not options.api_only:
             subprocess.run(
                 [
-                    "/usr/bin/caddy",
+                    str(runtime.path("/usr/bin/caddy")),
                     "validate",
                     "--config",
                     str(options.caddyfile),
@@ -73,7 +87,7 @@ def run():
             )
             child = subprocess.Popen(
                 [
-                    "/usr/bin/caddy",
+                    str(runtime.path("/usr/bin/caddy")),
                     "run",
                     "--config",
                     str(options.caddyfile),
@@ -89,7 +103,9 @@ def run():
 
             threading.Thread(target=observe, daemon=True).start()
         try:
-            uvicorn.run(app, host="0.0.0.0", port=8080, proxy_headers=False, access_log=False)
+            uvicorn.run(
+                app, host=options.host, port=options.port, proxy_headers=False, access_log=False
+            )
         finally:
             stopping.set()
             if child and child.poll() is None:

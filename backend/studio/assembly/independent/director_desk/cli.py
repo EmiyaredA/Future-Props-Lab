@@ -13,6 +13,11 @@ from studio.assembly.independent.director_desk.maintenance import (
     create_export_app,
     create_import_app,
 )
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.management.migration_batches import MigrationPlan
 from studio.runtime.database.migrations import apply
@@ -21,6 +26,7 @@ from studio.runtime.lifecycle.locking import service_lock
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Director")
+    add_runtime_options(parser)
     parser.add_argument(
         "command", choices=("serve", "migrate", "migration-export", "migration-import")
     )
@@ -34,7 +40,8 @@ def main():
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--migration-plan", type=Path)
     parser.add_argument("--legacy-db", type=Path)
-    options = parser.parse_args()
+    options = parse_runtime_arguments(parser)
+    runtime_for(options)
     if options.command.startswith("migration-"):
         if options.migration_plan is None or (
             (options.command == "migration-export") != (options.legacy_db is not None)
@@ -66,7 +73,7 @@ def main():
         schema_path=options.schema,
         web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,
     )
-    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=options.host, port=options.port, proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":

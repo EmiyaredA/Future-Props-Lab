@@ -1,5 +1,6 @@
 import { assistantRenderingChunks, directorResourceChunks } from "./chunkGraph";
 import { mathFontData } from "./mathFontData";
+import { applicationIcons } from "./applicationIcons";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { readFileSync } from "node:fs";
@@ -48,7 +49,13 @@ export default defineConfig(({ mode }) => {
       mode === "studio"
         ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
         : undefined,
-    plugins: [react(), tailwindcss(), mathFontData(), fortuneLicense()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      mathFontData(),
+      fortuneLicense(),
+      applicationIcons(),
+    ],
     resolve: {
       dedupe: ["react", "react-dom"],
       alias: {

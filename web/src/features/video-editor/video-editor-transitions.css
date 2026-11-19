@@ -335,6 +335,19 @@
   filter: blur(1px);
 }
 
+.ve-transition-thumb.effect-page-curl {
+  background: linear-gradient(
+    110deg,
+    #6d679e 0% 44%,
+    #aaa3c6 45%,
+    #f8f5eb 51%,
+    #c8c2b7 61%,
+    #282337 64%,
+    #494365 74%
+  );
+  border-radius: 2px 2px 35% 2px;
+}
+
 .ve-transition-thumb.effect-whip-pan {
   background: repeating-linear-gradient(
     0deg,

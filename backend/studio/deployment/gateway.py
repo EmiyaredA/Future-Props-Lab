@@ -37,6 +37,10 @@ def render_gateway(
     creative_ingress=None,
     happier_studio_origin=None,
     happier_origin=None,
+    addresses=None,
+    local_only=False,
+    local_port=None,
+    creative_socket_directory=CREATIVE_SOCKET_DIR,
 ):
     if audience not in {"studio", "management"}:
         raise ValueError("Unknown gateway audience")
@@ -65,11 +69,18 @@ def render_gateway(
     }
 
     def upstream(service):
+        if addresses is not None:
+            address = addresses[service]
+            if not re.fullmatch(r"127\.0\.0\.1:[0-9]{4,5}", address):
+                raise ValueError("本机网关只允许回环服务地址")
+            return address
         return (
             "127.0.0.1:8080"
             if audience == "management" and service == "management"
             else service_upstream(service)
         )
+
+    control_address = upstream("gateway" if audience == "studio" else "management")
 
     groups = defaultdict(list)
     for operation in catalog.operations:
@@ -105,6 +116,10 @@ def render_gateway(
         else:
             groups[(operation.service, operation.method, "")].append(operation)
     listeners = [("local", "http://:9000"), ("public", "http://:28081")]
+    if local_only:
+        if happier_origin or happier_studio_origin:
+            raise ValueError("纯本机开发不装配 Happier HTTPS 入口")
+        listeners = [("local", f"http://127.0.0.1:{local_port or origins['local'].port}")]
     tls = "    tls /run/fpl/happier-cert.pem /run/fpl/happier-key.pem"
     if happier_studio_origin or happier_origin:
         if audience != "studio" or not control:
@@ -165,7 +180,7 @@ def render_gateway(
             lines[start:stop] = [
                 "    @probe path /health /ready /build.json",
                 "    handle @probe {",
-                "      reverse_proxy 127.0.0.1:8080 {",
+                f"      reverse_proxy {control_address} {{",
                 "        header_up -Cookie",
                 "        header_up -Authorization",
                 "      }",
@@ -181,7 +196,7 @@ def render_gateway(
                     "    handle /management/build.json {",
                     "      rewrite * /build.json",
                     "      header >Cache-Control no-store",
-                    "      reverse_proxy 127.0.0.1:8080 {",
+                    f"      reverse_proxy {control_address} {{",
                     "        header_up -Cookie",
                     "        header_up -Authorization",
                     "      }",
@@ -227,7 +242,7 @@ def render_gateway(
                         "        request_header X-Fpl-Request-Method GET",
                         "        request_header X-Fpl-Request-Uri {uri}",
                         "        request_header X-Fpl-Request-Protocol websocket",
-                        "        forward_auth identity:8080 {",
+                        f"        forward_auth {upstream('identity')} {{",
                         "          uri /_internal/v1/authorize",
                         "          header_up -Upgrade",
                         "          header_up -Connection",
@@ -273,7 +288,7 @@ def render_gateway(
                         f"        request_header X-Fpl-Target-Service {service}",
                         "        request_header X-Fpl-Request-Method {method}",
                         "        request_header X-Fpl-Request-Uri {uri}",
-                        "        forward_auth identity:8080 {",
+                        f"        forward_auth {upstream('identity')} {{",
                         "          uri /_internal/v1/authorize",
                         "          copy_headers X-Fpl-Context",
                         "        }",
@@ -282,7 +297,9 @@ def render_gateway(
             if bridge_path:
                 lines.append(f"        rewrite * {bridge_path}")
             destination = (
-                f"unix/{CREATIVE_SOCKET_DIR}/creative.sock" if bridge_path else upstream(service)
+                f"unix/{creative_socket_directory}/creative.sock"
+                if bridge_path
+                else upstream(service)
             )
             lines.extend(
                 [
@@ -363,7 +380,7 @@ def render_gateway(
     if native_tokens:
         result.extend(
             [
-                "http://:29090 {",
+                f"http://127.0.0.1:{native_port} {{" if local_only else "http://:29090 {",
                 "  route {",
                 f'    @host expression {{http.request.hostport}} != "127.0.0.1:{native_port}"',
                 "    respond @host 403",

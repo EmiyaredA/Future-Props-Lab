@@ -21,7 +21,7 @@ from studio.contracts.video_editor.video_exports import (
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now
 
-PREVIEW_RENDER_VERSION = 1
+PREVIEW_RENDER_VERSION = 2
 ACTIVE = {"queued", "running"}
 
 

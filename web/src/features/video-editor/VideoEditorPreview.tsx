@@ -650,6 +650,7 @@ export function VideoEditorPreview({
                     style={style}
                     spinBlur={effect.spinBlur}
                     whipPan={effect.whipPan}
+                    pageCurl={effect.pageCurl}
                     canvasWidth={canvasWidth}
                     canvasHeight={canvasHeight}
                     stageRef={stageRef}
@@ -679,6 +680,7 @@ export function VideoEditorPreview({
                   style={style}
                   spinBlur={effect.spinBlur}
                   whipPan={effect.whipPan}
+                  pageCurl={effect.pageCurl}
                   localUs={localUs}
                   timedEffects={activeTimedEffects(
                     clip,

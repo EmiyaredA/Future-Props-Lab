@@ -44,6 +44,13 @@ const makeTrack = (clips: VideoEditorClip[]): VideoEditorTrack => ({
 });
 const effects = [
   {
+    kind: "page-curl",
+    label: "书页翻页",
+    category: "风格",
+    durationUs: 800_000,
+    search: "page curl",
+  },
+  {
     kind: "whip-pan",
     label: "甩镜模糊",
     category: "模糊",
@@ -186,7 +193,7 @@ describe("directional transition library", () => {
   );
 
   it.each(effects)(
-    "updates all four directions for $label and preserves its undo",
+    "updates the available directions for $label and preserves its undo",
     (effect) => {
       const left = makeClip("a", 0),
         right = makeClip("b", 2_000_000);
@@ -214,8 +221,12 @@ describe("directional transition library", () => {
       for (const [label, direction] of [
         ["左", "left"],
         ["右", "right"],
-        ["上", "up"],
-        ["下", "down"],
+        ...(effect.kind === "page-curl"
+          ? []
+          : [
+              ["上", "up"],
+              ["下", "down"],
+            ]),
       ]) {
         fireEvent.click(screen.getByRole("button", { name: label }));
         expect(commit.mock.lastCall?.[0][0]).toMatchObject({

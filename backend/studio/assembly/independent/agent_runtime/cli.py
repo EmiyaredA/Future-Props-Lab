@@ -11,6 +11,11 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from studio.apps.agent_runtime.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.agent_runtime.application import SERVICE, create_app
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.contracts.agent_runtime.connections import ConnectionOptions
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply
@@ -19,6 +24,7 @@ from studio.runtime.lifecycle.locking import service_lock
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Agent Runtime")
+    add_runtime_options(parser)
     parser.add_argument("command", choices=("serve", "migrate"))
     parser.add_argument("--state-root", type=Path, default=Path("/state"))
     parser.add_argument("--public-key", type=Path, default=Path("/run/fpl/identity-public.pem"))
@@ -29,7 +35,8 @@ def main():
     parser.add_argument("--web-root", type=Path, default=Path("/app/web"))
     parser.add_argument("--native-config", type=Path)
     parser.add_argument("--port", type=int, default=8080)
-    args = parser.parse_args()
+    args = parse_runtime_arguments(parser)
+    runtime = runtime_for(args)
     if args.command == "migrate":
         with service_lock(args.state_root):
             apply(args.state_root / "service.db", SERVICE, MIGRATIONS)
@@ -47,6 +54,7 @@ def main():
         except (OSError, ValueError):
             parser.error("原生配置须为本用户独占且有效的普通文件")
     app = create_app(
+        transport=runtime.transport(),
         state_root=args.state_root,
         public_key=public_key,
         catalog=RouteCatalog.read(args.catalog),
@@ -54,7 +62,7 @@ def main():
         schema_path=args.schema,
         web_root=None if (args.web_root / ".api-only").is_file() else args.web_root,
     )
-    uvicorn.run(app, host="0.0.0.0", port=args.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=args.host, port=args.port, proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":

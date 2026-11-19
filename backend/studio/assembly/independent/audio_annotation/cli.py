@@ -10,6 +10,11 @@ from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
 from studio.apps.audio_annotation.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.audio_annotation.application import create_app
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.project_history_migration import (
@@ -21,6 +26,7 @@ from studio.runtime.lifecycle.locking import service_lock
 
 def main():
     parser = argparse.ArgumentParser(description="FPL Annotation")
+    add_runtime_options(parser)
     parser.add_argument(
         "command", choices=("serve", "migrate", "migration-export", "migration-import")
     )
@@ -34,7 +40,8 @@ def main():
     parser.add_argument("--web-root", type=Path, default=Path("/app/web"))
     parser.add_argument("--port", type=int, default=8080)
     parser.add_argument("--identity-token", type=Path, default=Path("/run/fpl/identity-token"))
-    options = parser.parse_args()
+    options = parse_runtime_arguments(parser)
+    runtime = runtime_for(options)
     if options.command.startswith("migration-"):
         from .maintenance import create_export_app, create_import_app
 
@@ -61,6 +68,7 @@ def main():
     except (OSError, ValueError):
         parser.error("Annotation Identity 凭据无法读取或无效")
     app = create_app(
+        transport=runtime.transport(),
         state_root=options.state_root,
         public_key=key,
         credential=credential,
@@ -68,7 +76,7 @@ def main():
         schema_path=options.schema,
         web_root=None if (options.web_root / ".api-only").is_file() else options.web_root,
     )
-    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=options.host, port=options.port, proxy_headers=False, access_log=False)
 
 
 if __name__ == "__main__":

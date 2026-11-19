@@ -7,6 +7,11 @@ import uvicorn
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply
 from studio.runtime.lifecycle.locking import service_lock
@@ -14,6 +19,7 @@ from studio.runtime.lifecycle.locking import service_lock
 
 def run_project_owner(service, migrations, create_app, *, maintenance=None):
     parser = argparse.ArgumentParser(description=f"FPL {service} project owner")
+    add_runtime_options(parser)
     commands = ("serve", "migrate")
     if maintenance is not None:
         from studio.runtime.database.project_history_migration import add_maintenance_options
@@ -28,7 +34,8 @@ def run_project_owner(service, migrations, create_app, *, maintenance=None):
         "--catalog", type=Path, default=Path("/app/deploy/contracts/ownership.json")
     )
     parser.add_argument("--port", type=int, default=8080)
-    options = parser.parse_args()
+    options = parse_runtime_arguments(parser)
+    runtime = runtime_for(options)
     if maintenance is not None:
         from studio.runtime.database.project_history_migration import handle_maintenance
 
@@ -42,9 +49,11 @@ def run_project_owner(service, migrations, create_app, *, maintenance=None):
     if not isinstance(public_key, Ed25519PublicKey):
         parser.error("Identity 公钥类型无效")
     app = create_app(
+        runtime=runtime,
+        transport=runtime.transport(),
         state_root=options.state_root,
         public_key=public_key,
         credential=options.identity_token.read_text().strip(),
         catalog=RouteCatalog.read(options.catalog),
     )
-    uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+    uvicorn.run(app, host=options.host, port=options.port, proxy_headers=False, access_log=False)

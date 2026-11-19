@@ -390,6 +390,31 @@ def test_private_socket_is_owner_only_and_rejects_existing_paths():
             private_socket(alias)
 
 
+def test_native_reload_reclaims_only_a_dead_owner_socket(tmp_path, monkeypatch):
+    from pathlib import Path
+
+    from studio.apps.gateway.creative_bridge import private_socket
+
+    # Relative paths keep the test within macOS's AF_UNIX path limit.
+    tmp_path.chmod(0o700)
+    monkeypatch.chdir(tmp_path)
+    listener, path = private_socket(Path("."))
+    try:
+        with pytest.raises(ValueError, match="still accepting"):
+            private_socket(Path("."), recover_stale=True)
+    finally:
+        listener.close()
+    with pytest.raises(ValueError, match="already in use"):
+        private_socket(Path("."))
+    replacement, reclaimed = private_socket(Path("."), recover_stale=True)
+    replacement.close()
+    reclaimed.unlink()
+    path.write_text("preserve this file")
+    with pytest.raises(ValueError, match="already in use"):
+        private_socket(Path("."), recover_stale=True)
+    assert path.read_text() == "preserve this file"
+
+
 def test_private_credentials_require_owner_only_regular_files(tmp_path):
     import os
 

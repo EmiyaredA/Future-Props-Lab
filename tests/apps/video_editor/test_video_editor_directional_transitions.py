@@ -69,9 +69,17 @@ def test_leak_is_a_moving_yellow_green_screen_light_that_preserves_alpha():
     assert light_leak_strip(161, 0.5, "left").getpixel((80, 0)) == (255, 255, 255)
 
 
-@pytest.mark.parametrize("kind", ["whip-pan", "light-leak"])
+@pytest.mark.parametrize(
+    ("kind", "direction"),
+    [
+        (kind, direction)
+        for kind in ("whip-pan", "light-leak", "page-curl")
+        for direction in (
+            ("left", "right") if kind == "page-curl" else ("left", "right", "up", "down")
+        )
+    ],
+)
 @pytest.mark.parametrize("placement", ["between", "in", "out"])
-@pytest.mark.parametrize("direction", ["left", "right", "up", "down"])
 def test_effect_rendering_has_no_residue_outside_window(kind, placement, direction):
     clips = [
         {
@@ -119,9 +127,17 @@ def test_effect_rendering_has_no_residue_outside_window(kind, placement, directi
         assert renderer.render(times[0]).tobytes() == baseline.render(times[0]).tobytes()
 
 
-@pytest.mark.parametrize("kind", ["whip-pan", "light-leak"])
+@pytest.mark.parametrize(
+    ("kind", "direction"),
+    [
+        (kind, direction)
+        for kind in ("whip-pan", "light-leak", "page-curl")
+        for direction in (
+            ("left", "right") if kind == "page-curl" else ("left", "right", "up", "down")
+        )
+    ],
+)
 @pytest.mark.parametrize("placement", ["between", "in", "out"])
-@pytest.mark.parametrize("direction", ["left", "right", "up", "down"])
 async def test_api_short_clip_undo_redo_and_snapshot_round_trip(kind, placement, direction):
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"

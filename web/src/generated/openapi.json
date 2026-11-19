@@ -39335,6 +39335,7 @@
               "light-leak",
               "flash",
               "eyelid",
+              "page-curl",
               "audio-crossfade",
               "audio-equal-power",
               "audio-dip",
@@ -39536,6 +39537,7 @@
               "light-leak",
               "flash",
               "eyelid",
+              "page-curl",
               "audio-crossfade"
             ],
             "title": "Kind",

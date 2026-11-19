@@ -6,12 +6,18 @@ import os
 import sys
 from pathlib import Path
 
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.runtime.lifecycle.locking import service_lock
 from studio.runtime.messaging.timed_peer import load_peer_key
 
 
 def parser():
     result = argparse.ArgumentParser(description="FPL Models")
+    add_runtime_options(result)
     result.add_argument(
         "command", choices=("serve", "migrate", "migration-export", "migration-import")
     )
@@ -71,6 +77,7 @@ def maintenance(options):
 
 
 def run(options):
+    runtime = runtime_for(options)
     if options.command.startswith("migration-"):
         maintenance(options)
         return
@@ -129,21 +136,32 @@ def run(options):
         has_web = (options.web_root / "build.json").is_file()
         if not has_web and not (options.web_root / ".api-only").is_file():
             raise ValueError("Models 缺少已安装的浏览器程序")
-        integration_intents = IntegrationIntentClient(service="models", credential=credential)
+        integration_intents = IntegrationIntentClient(
+            transport=runtime.transport(), service="models", credential=credential
+        )
         app = create_app(
             settings=settings,
             visual_generation_key=load_peer_key(
-                Path("/run/fpl/visual-generation-key"), excluded=(credential,)
+                runtime.path("/run/fpl/visual-generation-key"), excluded=(credential,)
             ),
             catalog=catalog,
             public_key=public,
-            identity=LiveAuthorization(service="models", credential=credential),
-            capabilities=CapabilityClient(service="models", credential=credential, catalog=catalog),
-            events=CatalogEventClient(credential=credential),
-            directory=TemplateDirectory(credential=credential),
-            audit=ModelAuditClient(credential=credential),
+            identity=LiveAuthorization(
+                transport=runtime.transport(), service="models", credential=credential
+            ),
+            capabilities=CapabilityClient(
+                transport=runtime.transport(),
+                service="models",
+                credential=credential,
+                catalog=catalog,
+            ),
+            events=CatalogEventClient(transport=runtime.transport(), credential=credential),
+            directory=TemplateDirectory(transport=runtime.transport(), credential=credential),
+            audit=ModelAuditClient(transport=runtime.transport(), credential=credential),
             integration_intents=integration_intents,
-            demo_install_client=DemoInstallClient(integration_intents),
+            demo_install_client=DemoInstallClient(
+                integration_intents, transport=runtime.transport()
+            ),
             native_ingress_token=options.native_ingress.read_text().strip()
             if options.native_ingress.exists()
             else None,
@@ -151,12 +169,14 @@ def run(options):
             web_root=options.web_root if has_web else None,
             version=os.environ.get("FPL_SERVICE_VERSION", "development"),
         )
-        uvicorn.run(app, host="0.0.0.0", port=options.port, proxy_headers=False, access_log=False)
+        uvicorn.run(
+            app, host=options.host, port=options.port, proxy_headers=False, access_log=False
+        )
 
 
 if __name__ == "__main__":
     try:
-        run(parser().parse_args())
+        run(parse_runtime_arguments(parser()))
     except (ValueError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)
         raise SystemExit(1) from None

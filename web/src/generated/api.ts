@@ -23158,7 +23158,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "whip-pan" | "light-leak" | "flash" | "eyelid" | "audio-crossfade" | "audio-equal-power" | "audio-dip" | "audio-filter-sweep";
+            kind: "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "whip-pan" | "light-leak" | "flash" | "eyelid" | "page-curl" | "audio-crossfade" | "audio-equal-power" | "audio-dip" | "audio-filter-sweep";
             /**
              * Placement
              * @default between
@@ -23266,7 +23266,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "whip-pan" | "light-leak" | "flash" | "eyelid" | "audio-crossfade";
+            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "wipe" | "wipe-left" | "wipe-right" | "zoom" | "blur" | "spin-blur" | "whip-pan" | "light-leak" | "flash" | "eyelid" | "page-curl" | "audio-crossfade";
         };
         /** VideoEnhancementAction */
         VideoEnhancementAction: {

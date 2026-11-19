@@ -10,11 +10,17 @@ import threading
 from contextlib import nullcontext
 from pathlib import Path
 
+from studio.assembly.independent.runtime_options import (
+    add_runtime_options,
+    parse_runtime_arguments,
+    runtime_for,
+)
 from studio.runtime.lifecycle.locking import service_lock
 
 
 def parser():
     result = argparse.ArgumentParser(description="FPL stable gateway")
+    add_runtime_options(result)
     result.add_argument("command", choices=("serve", "migrate"))
     result.add_argument("--config", type=Path, default=Path("/run/fpl/config.toml"))
     result.add_argument("--state-root", type=Path, default=Path("/state"))
@@ -32,6 +38,7 @@ def parser():
 
 
 def run(options):
+    runtime = runtime_for(options)
     if not options.config.is_file():
         raise ValueError("缺少只读网关配置")
     os.environ["FPL_CONFIG_FILE"] = str(options.config.resolve())
@@ -73,18 +80,24 @@ def run(options):
                 studio_origin=settings.fpl_happier_studio_origin,
                 origin=settings.fpl_happier_origin,
                 relay_port=settings.fpl_happier_relay_port,
-                identity=LiveAuthorization(service="gateway", credential=credential),
+                identity=LiveAuthorization(
+                    transport=runtime.transport(), service="gateway", credential=credential
+                ),
             )
         app = create_app(
+            transport=runtime.transport(),
             happier=happier,
             state_root=state,
             catalog=catalog,
             public_key=public,
             schema=json.loads(options.schema.read_text()),
             manifest=json.loads(
-                Path("/app/backend/studio/contracts/gateway/automation_operations.json").read_text()
+                runtime.path(
+                    "/app/backend/studio/contracts/gateway/automation_operations.json"
+                ).read_text()
             ),
             capabilities=CapabilityClient(
+                transport=runtime.transport(),
                 service="gateway",
                 credential=credential,
                 catalog=catalog,
@@ -94,7 +107,7 @@ def run(options):
         )
         subprocess.run(
             [
-                "/usr/bin/caddy",
+                str(runtime.path("/usr/bin/caddy")),
                 "validate",
                 "--config",
                 str(options.caddyfile),
@@ -109,7 +122,9 @@ def run(options):
             from studio.contracts.creative_workshop.creative_transport import CREATIVE_SOCKET_DIR
 
             bridge = serve_creative_bridge(
-                directory=CREATIVE_SOCKET_DIR,
+                recover_stale=bool(runtime.addresses),
+                transport=runtime.transport(),
+                directory=runtime.path(CREATIVE_SOCKET_DIR),
                 public_key=public,
                 gateway_credential=credential,
                 ingress_file=options.creative_bridge_ingress,
@@ -119,8 +134,16 @@ def run(options):
 
 
 def serve_caddy(options, app, uvicorn, bridge_worker):
+    runtime = runtime_for(options)
     child = subprocess.Popen(
-        ["/usr/bin/caddy", "run", "--config", str(options.caddyfile), "--adapter", "caddyfile"]
+        [
+            str(runtime.path("/usr/bin/caddy")),
+            "run",
+            "--config",
+            str(options.caddyfile),
+            "--adapter",
+            "caddyfile",
+        ]
     )
     stopping = threading.Event()
 
@@ -138,7 +161,7 @@ def serve_caddy(options, app, uvicorn, bridge_worker):
 
         uvicorn.run(
             app,
-            host="0.0.0.0",
+            host=options.host,
             port=options.port,
             proxy_headers=False,
             access_log=False,
@@ -157,7 +180,7 @@ def serve_caddy(options, app, uvicorn, bridge_worker):
 
 if __name__ == "__main__":
     try:
-        run(parser().parse_args())
+        run(parse_runtime_arguments(parser()))
     except (ValueError, RuntimeError) as exc:
         print(str(exc), file=sys.stderr)
         raise SystemExit(1) from None

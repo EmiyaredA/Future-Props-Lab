@@ -1,3 +1,4 @@
+import { pageCurlForClip, type PageCurlEffect } from "./pageCurlCanvas";
 import {
   useEffect,
   useRef,
@@ -21,6 +22,7 @@ export function VideoEditorTextLayer({
   style,
   spinBlur,
   whipPan,
+  pageCurl,
   canvasWidth,
   canvasHeight,
   stageRef,
@@ -38,6 +40,7 @@ export function VideoEditorTextLayer({
   style: CSSProperties;
   spinBlur?: number;
   whipPan?: WhipPanEffect;
+  pageCurl?: PageCurlEffect;
   canvasWidth: number;
   canvasHeight: number;
   stageRef: RefObject<HTMLDivElement | null>;
@@ -140,6 +143,7 @@ export function VideoEditorTextLayer({
             alt={clip.text ?? "文字"}
             spinBlur={spinBlur}
             whipPan={whipPan}
+            pageCurl={pageCurlForClip(pageCurl, clip.flipX ?? false)}
             onSize={setSize}
           />
         )}

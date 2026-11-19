@@ -11,6 +11,7 @@ from PIL import Image, ImageColor, ImageDraw, ImageFilter
 
 from studio.apps.media_rendering.local.chroma_key import apply_chroma_key
 from studio.apps.media_rendering.local.directional_transitions import light_leak, whip_pan
+from studio.apps.media_rendering.local.page_curl import page_curl
 from studio.apps.media_rendering.local.spin_blur import spin_blur
 from studio.apps.media_rendering.local.text_layer import render_text_layer
 from studio.apps.media_rendering.local.timed_effects import apply_timed_effects
@@ -26,7 +27,7 @@ from studio.contracts.video_editor.timeline_document import (
 )
 
 # Invalidate exact-frame caches when compositing geometry changes.
-FRAME_COMPOSITOR_VERSION = 4
+FRAME_COMPOSITOR_VERSION = 5
 
 
 def _curve(progress: float, interpolation: str) -> float:
@@ -88,7 +89,11 @@ def _edge_overlay(kind: str, visibility: float) -> tuple[tuple[int, int, int] | 
 
 
 def _edge_opacity(kind: str, visibility: float) -> float:
-    return 1 if kind in {"fade-black", "fade-white", "wipe", "eyelid", "light-leak"} else visibility
+    return (
+        1
+        if kind in {"fade-black", "fade-white", "wipe", "eyelid", "light-leak", "page-curl"}
+        else visibility
+    )
 
 
 def clip_edge_visual(clip: VideoEditorClip, local_us: int) -> ClipEdgeVisual | None:
@@ -219,6 +224,27 @@ class TimelineFrameRenderer:
                             handled_between.add(between.id)
                             seam_drawn_clips.add(left.id)
                             seam_drawn_clips.add(right.id)
+                            if between.kind == "page-curl":
+                                # Compose the next page first, then curl the outgoing sheet.
+                                for active in (right, left):
+                                    active_local_us = _media_local_us(active, time_us, transitions)
+                                    active_layer = self._layer(active, active_local_us)
+                                    if active_layer is not None:
+                                        self._composite_with_edge(
+                                            canvas,
+                                            active_layer,
+                                            active,
+                                            active_local_us,
+                                            edge_local_us=max(
+                                                0, time_us - active.timeline_start_us
+                                            ),
+                                            transition_kind="page-curl" if active is left else None,
+                                            transition_progress=1 - progress
+                                            if active is left
+                                            else None,
+                                            direction=between.direction,
+                                        )
+                                continue
                             if between.kind in {"light-leak", "whip-pan"}:
                                 active = left if progress < 0.5 else right
                                 active_local_us = _media_local_us(active, time_us, transitions)
@@ -552,6 +578,9 @@ class TimelineFrameRenderer:
                 if edge.kind == "spin-blur" and transition_kind != "spin-blur"
                 else 0
             ),
+            edge_curl=(1 - edge.progress, edge.direction)
+            if edge.kind == "page-curl" and transition_kind != "page-curl"
+            else None,
             whip=whip
             or (
                 ((1 - edge.progress) * (-1 if edge.incoming else 1), edge.direction)
@@ -574,6 +603,7 @@ class TimelineFrameRenderer:
         transition_progress: float | None = None,
         direction: str = "left",
         edge_spin_amount: float = 0,
+        edge_curl: tuple[float, str] | None = None,
         whip: tuple[float, str] | None = None,
     ) -> None:
         transform = clip.transform
@@ -618,6 +648,13 @@ class TimelineFrameRenderer:
             layer = spin_blur(layer, edge_spin_amount)
         if whip is not None:
             layer = whip_pan(layer, *whip)
+        if transition_kind == "page-curl" and transition_progress is not None:
+            edge_curl = (1 - transition_progress, direction)
+        if edge_curl is not None:
+            curl_progress, curl_direction = edge_curl
+            if clip.flip_x:
+                curl_direction = "right" if curl_direction == "left" else "left"
+            layer = page_curl(layer, curl_progress, curl_direction)
         if clip.flip_x:
             layer = layer.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         scale_x = property_at(clip, "scaleX", local_us, transform.scale_x)

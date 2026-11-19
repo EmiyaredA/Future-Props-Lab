@@ -10,13 +10,14 @@ from uuid import uuid4
 import httpx
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
-from studio.apps.gateway.service_status import ServiceMonitor
 from studio.apps.gateway.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.gateway.application import create_app
+from studio.contracts.gateway.catalog import SERVICES
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.contracts.gateway.service_status import DeploymentServicesOut
 from studio.contracts.identity.claims import Actor, issue_context, verify_context
 from studio.runtime.database.migrations import apply
+from studio.runtime.http.service_transport import LocalServiceTransport
 
 assert (
     "studio.assembly.website.application" not in sys.modules
@@ -63,6 +64,15 @@ class Capabilities:
 
 
 capabilities = Capabilities()
+probe_requests = []
+
+
+def probe(request):
+    probe_requests.append(request)
+    service = request.headers["host"].split(":")[0]
+    return httpx.Response(200, json={"status": "ready", "service": service})
+
+
 app = create_app(
     state_root=state,
     catalog=catalog,
@@ -71,13 +81,9 @@ app = create_app(
     schema=schema,
     manifest=manifest,
     publishers={"models": "test-publisher-" * 3},
-    monitor=ServiceMonitor(
-        capabilities,
-        transport=httpx.MockTransport(
-            lambda request: httpx.Response(
-                200, json={"status": "ready", "service": request.url.host}
-            )
-        ),
+    transport=LocalServiceTransport(
+        {service.id: f"127.0.0.1:{19100 + index}" for index, service in enumerate(SERVICES)},
+        transport=httpx.MockTransport(probe),
     ),
 )
 apply(state / "service.db", "gateway", MIGRATIONS)
@@ -138,6 +144,11 @@ async def journey():
             assert response.headers["cache-control"] == "no-store"
             assert response.json()["mode"] == "independent"
             assert all(item["phase"] == "running" for item in response.json()["services"])
+            assert len(probe_requests) == len(SERVICES) - 1
+            assert all(request.url.host == "127.0.0.1" for request in probe_requests)
+            assert {request.headers["host"] for request in probe_requests} == {
+                service.id + ":8080" for service in SERVICES if service.id != "gateway"
+            }
             assert (
                 await client.get(path, headers=headers("GET", path, api_key=True))
             ).status_code == 403

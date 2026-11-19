@@ -44,11 +44,14 @@ def create_app(
     publishers=None,
     access=None,
     monitor=None,
+    transport=None,
     happier=None,
     version="development",
 ):
     database = Database("gateway", state_root, models=MODELS)
-    service_monitor = monitor if monitor is not None else ServiceMonitor(capabilities)
+    service_monitor = (
+        monitor if monitor is not None else ServiceMonitor(capabilities, transport=transport)
+    )
     if get_settings().database_path != database.path:
         raise ValueError("网关配置必须指向自己的数据目录")
     catalog.check_openapi(

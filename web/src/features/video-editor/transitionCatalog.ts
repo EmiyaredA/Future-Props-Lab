@@ -100,6 +100,16 @@ export const transitionDefinitions: TransitionDefinition[] = [
     media: "visual",
   },
   {
+    kind: "page-curl",
+    label: "书页翻页",
+    category: "风格",
+    direction: "left",
+    description: "画面像纸页一样从边角卷起，带纸背与阴影露出下一画面",
+    keywords: "翻页 书页 page curl",
+    defaultDurationUs: 800_000,
+    media: "visual",
+  },
+  {
     kind: "eyelid",
     label: "闭眼睁眼",
     category: "风格",
@@ -153,8 +163,15 @@ export const transitionCategories = [
   "音频",
 ];
 
+export const transitionDirections = (kind: TransitionKind): Direction[] =>
+  kind === "page-curl"
+    ? ["left", "right"]
+    : kind === "wipe" || kind === "whip-pan" || kind === "light-leak"
+      ? ["left", "right", "up", "down"]
+      : [];
+
 export const directionalTransition = (kind: TransitionKind) =>
-  kind === "wipe" || kind === "whip-pan" || kind === "light-leak";
+  transitionDirections(kind).length > 0;
 
 export const transitionDefaultDuration = (kind: TransitionKind) =>
   transitionDefinitions.find((item) => item.kind === kind)?.defaultDurationUs ??
