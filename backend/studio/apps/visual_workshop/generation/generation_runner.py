@@ -6,7 +6,7 @@ from studio.apps.visual_workshop.generation.generation_batches import Generation
 from studio.apps.visual_workshop.generation.generation_decisions import GenerationDecisions
 from studio.apps.visual_workshop.generation.generation_output import GenerationOutput
 from studio.apps.visual_workshop.generation.generation_peer import GenerationPeer
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
 from studio.apps.visual_workshop.storage.generation_dispatch_records import (
     VisualGenerationDecision,
@@ -32,7 +32,7 @@ class GenerationRunner(PollingTaskRunner):
         self.sessions = state.database.sessions
         self.decisions = GenerationDecisions(state)
         self.batches = GenerationBatches(state)
-        self.peer = GenerationPeer(state)
+        self.peer = GenerationPeer(state.capabilities, state.visual_generation_peer)
         self.output = GenerationOutput(state, self.peer)
 
     async def recover(self):

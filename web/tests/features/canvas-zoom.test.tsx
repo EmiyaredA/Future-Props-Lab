@@ -2,7 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { vi } from "vitest";
 import { useCanvasKeyboardShortcuts } from "@features/visual-workshop/canvas/useCanvasKeyboardShortcuts";
-import { zoomViewportAt } from "@features/visual-workshop/canvas/useVisualCanvasController";
+import { zoomViewportAt } from "@features/visual-workshop/canvas/geometry";
 
 function ShortcutHarness() {
   const [zoom, setZoom] = useState(1);

@@ -50,12 +50,13 @@ function renderBoard() {
       projectId: "project",
       projectQuery: { data: { title: "节点管理" } },
       canvasQuery: {
-        data: { categories: [{ id: "cat", name: "人设", groups: ["主角"] }] },
+        data: { categories: [{ id: "cat", name: "镜头", groups: ["主角"] }] },
       },
       client,
       canvasReady: true,
       saveState: "saved",
       nodes,
+      readCanvas: () => ({ nodes, edges: [], projectCardIds: [] }),
       edges: [],
       selectedId,
       setSelectedId,
@@ -114,7 +115,7 @@ test("upload allows an explicit destination and clears the group when the catego
   );
   expect(screen.getByRole("combobox", { name: "上传分组" })).toBeDisabled();
   await user.click(screen.getByRole("combobox", { name: "上传分类" }));
-  await user.click(screen.getByRole("option", { name: "人设" }));
+  await user.click(screen.getByRole("option", { name: "镜头" }));
   await user.click(screen.getByRole("combobox", { name: "上传分组" }));
   await user.click(screen.getByRole("option", { name: "主角" }));
   await user.click(screen.getByRole("combobox", { name: "上传分类" }));
@@ -177,7 +178,7 @@ test("organizing a row selects it and opens classification; changes use the same
     "另一节点",
   );
   await user.click(screen.getByRole("combobox", { name: "节点主分类" }));
-  await user.click(screen.getByRole("option", { name: "人设" }));
+  await user.click(screen.getByRole("option", { name: "镜头" }));
   expect(patchNode).toHaveBeenCalledWith(
     "second",
     { category_id: "cat", group: null },

@@ -12,6 +12,7 @@ from studio.apps.asset_library.storage.service_models import (
 )
 from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.visual_workshop.visual_snapshot import (
+    CardMediaDescription,
     SnapshotAsset,
     SnapshotFiles,
     SnapshotFolder,
@@ -154,3 +155,25 @@ async def originals(session, settings, project, files, *, media_kind=None):
     if sum(size for _, size in result) > settings.fpl_project_snapshot_max_bytes:
         raise AssetError("项目快照超过大小限制", code="snapshot_too_large", status=413)
     return result
+
+
+async def card_media(session, owner, asset_ids):
+    """Return detached account-owned Visual media, excluding other application scopes."""
+    rows = await session.scalars(
+        select(VisualAsset).where(
+            VisualAsset.owner_user_id == owner,
+            VisualAsset.id.in_(asset_ids),
+            VisualAsset.galgame_project_id.is_(None),
+            VisualAsset.video_editor_project_id.is_(None),
+            VisualAsset.motion_compositor_project_id.is_(None),
+        )
+    )
+    return [
+        CardMediaDescription(
+            id=row.id,
+            project_id=row.project_id,
+            media_kind=row.media_kind,
+            mime_type=row.mime_type,
+        )
+        for row in rows
+    ]

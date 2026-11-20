@@ -5,7 +5,7 @@ from typing import Literal
 import httpx
 from pydantic import BaseModel, ConfigDict, Field
 
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.visual_workshop.visual_generation import (
@@ -17,7 +17,7 @@ from studio.contracts.visual_workshop.visual_generation import (
     GenerationAssetQuery,
     GenerationAssets,
     ModelSelection,
-    VisualModelChoice,
+    VisualModelSelection,
 )
 from studio.runtime.http.capability_client import CapabilityDenied, CapabilityUnavailable
 
@@ -67,9 +67,9 @@ def check(reply):
 
 
 class GenerationPeer:
-    def __init__(self, state, *, assertion=None, source=None):
-        self.client = state.capabilities
-        self.sign = state.visual_generation_peer
+    def __init__(self, capabilities, signer, *, assertion=None, source=None):
+        self.client = capabilities
+        self.sign = signer
         self.assertion, self.source = assertion, source
 
     async def token(self, purpose, service, path):
@@ -106,7 +106,7 @@ class GenerationPeer:
             audio_mode=body.mode if body.kind == "audio" else None,
         )
         raw = await self.request("models", query.path, MODEL_PURPOSE, query.model_dump(mode="json"))
-        choice = VisualModelChoice.model_validate_json(raw)
+        choice = VisualModelSelection.model_validate_json(raw)
         if choice.model_id != body.model_id:
             raise GenerationError(
                 "模型选择回执不一致", code="visual_generation_unavailable", status=503

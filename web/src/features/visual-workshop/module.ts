@@ -1,3 +1,4 @@
+import { visualWorkshopPath } from "./paths";
 import { VISUAL_WORKSHOP_DEFINITION } from "@features/applications";
 import { Box, FolderOpen, Library, ListChecks } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
@@ -58,19 +59,7 @@ const visualWorkshopModule = {
       return { page: "visual-workshop-projects" };
     return undefined;
   },
-  pathFor(page: string, projectId?: string) {
-    if (page === "visual-workshop-canvas" && projectId)
-      return `/apps/visual-workshop/projects/${encodeURIComponent(projectId)}/canvas`;
-    if (page === "visual-workshop-assets")
-      return projectId
-        ? `/apps/visual-workshop/projects/${encodeURIComponent(projectId)}/assets`
-        : "/apps/visual-workshop/assets";
-    if (page === "visual-workshop-tasks") return "/apps/visual-workshop/tasks";
-    if (page === "visual-workshop-card-library")
-      return "/apps/visual-workshop/card-library";
-    if (page === "visual-workshop-projects") return "/apps/visual-workshop";
-    return undefined;
-  },
+  pathFor: visualWorkshopPath,
   pages: {
     projects: () =>
       import("@features/visual-workshop/projects").then((module) => ({

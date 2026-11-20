@@ -78,7 +78,7 @@ from studio.contracts.visual_workshop.visual_generation import (
     GenerationAssets,
     GenerationFileScope,
     ModelSelection,
-    VisualModelChoice,
+    VisualModelSelection,
     settlement_path,
 )
 from studio.contracts.visual_workshop.visual_generation_plan import GenerationPlan, TaskPlan
@@ -323,7 +323,7 @@ async def verify_model_choice(case, visual, http, identity, database):
         await query(identity, body=ModelSelection(model_id=foreign_id, kind="image"))
     ).status_code == 403
 
-    return VisualModelChoice.model_validate(own.json())
+    return VisualModelSelection.model_validate(own.json()).choice
 
 
 async def verify_generation_plan(case, visual, http, models, choice, monkeypatch):

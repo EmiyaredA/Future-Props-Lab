@@ -1,7 +1,7 @@
 """Freeze and remap the project script and design library in portable snapshots."""
 
 from studio.apps.visual_workshop.creative_assets import model_id, model_path
-from studio.apps.visual_workshop.creative_workflow import CardOut, ScriptOut
+from studio.apps.visual_workshop.schemas.creative_workflow import CardOut, ScriptOut
 from studio.apps.visual_workshop.storage.models import (
     VisualAssetCard,
     VisualScript,

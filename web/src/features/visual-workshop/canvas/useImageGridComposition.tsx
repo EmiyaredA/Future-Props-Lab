@@ -4,8 +4,6 @@ import {
   useMemo,
   useState,
   type Dispatch,
-  type MutableRefObject,
-  type RefObject,
   type SetStateAction,
 } from "react";
 import { useQuery, type QueryClient } from "@tanstack/react-query";
@@ -33,8 +31,7 @@ export function useImageGridComposition({
   projectId,
   nodes,
   selectedNodeIds,
-  revisionRef,
-  nodesRef,
+  readCanvas,
   prepareCanvas,
   resolveNodePosition,
   revealNodes,
@@ -46,8 +43,7 @@ export function useImageGridComposition({
   projectId: string;
   nodes: VisualCanvasNode[];
   selectedNodeIds: string[];
-  revisionRef: MutableRefObject<number>;
-  nodesRef: RefObject<VisualCanvasNode[]>;
+  readCanvas: () => { revision: number; nodes: VisualCanvasNode[] };
   prepareCanvas: () => Promise<number>;
   resolveNodePosition: (kind: NodeKind, anchor: CanvasPoint) => CanvasPoint;
   revealNodes: (nodes: VisualCanvasNode[]) => void;
@@ -134,7 +130,7 @@ export function useImageGridComposition({
             (node): node is ImageNode => node.kind === "image",
           )}
           initialNodeIds={compositionOpen}
-          canvasRevision={revisionRef.current}
+          canvasRevision={readCanvas().revision}
           resultPosition={compositionResultPosition}
           onClose={() => setCompositionOpen(undefined)}
           onSubmit={async (body: ImageCompositionInput) => {
@@ -142,7 +138,7 @@ export function useImageGridComposition({
             const position = resolveNodePosition(
               "image",
               resultAnchor(
-                nodesRef.current,
+                readCanvas().nodes,
                 body.items.map((item) => item.node_id),
               ),
             );

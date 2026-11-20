@@ -6,11 +6,11 @@ from sqlalchemy import select, text
 
 from studio.apps.visual_workshop.acceptance.models import AcceptanceRun
 from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
-from studio.apps.visual_workshop.card_generation import card_generation_resource_id
-from studio.apps.visual_workshop.creative_workflow import require_project_card_media_clear
 from studio.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
 from studio.apps.visual_workshop.handoffs.segment_handoffs import require_canvas_unreserved
 from studio.apps.visual_workshop.previs_publication import RECEIPT_KIND, publication_resource_id
+from studio.apps.visual_workshop.storage.card_generation import card_generation_resource_id
+from studio.apps.visual_workshop.storage.creative_records import require_project_card_media_clear
 from studio.apps.visual_workshop.storage.generation_dispatch_records import VisualGenerationDispatch
 from studio.apps.visual_workshop.storage.models import (
     VisualGenerationBatch,

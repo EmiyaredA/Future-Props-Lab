@@ -317,6 +317,7 @@ TENANT_MODELS = (
     VisualWorkshopProject,
     VisualGenerationTask,
     VisualGenerationBatch,
+    VisualAssetCard,
     GalgameWorkshopProject,
     GalgameAnnotationImportTask,
     GalgameAssetTranscriptionTask,

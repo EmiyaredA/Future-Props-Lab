@@ -12,7 +12,7 @@ from anyio import open_file
 from studio.apps.visual_workshop.canvas_values import canvas_out
 from studio.apps.visual_workshop.canvas_writes import conflict
 from studio.apps.visual_workshop.generation.generation_peer import check
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.node_placement import automatic_node_position
 from studio.apps.visual_workshop.outputs.recording import register_output
 from studio.apps.visual_workshop.projects import Projects

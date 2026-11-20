@@ -10,17 +10,10 @@ from studio.apps.visual_workshop.previs_scenes import (
     PrevisSceneUpdate,
 )
 from studio.apps.visual_workshop.transport.creative_asset_scope import creative_asset_inspection
+from studio.apps.visual_workshop.transport.project_errors import resolve
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
-from studio.runtime.project_errors import ProjectResourceError
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
-
-
-async def resolve(action):
-    try:
-        return await action
-    except ProjectResourceError as exc:
-        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
 
 
 @router.get("/{project_id}/previs-scenes", response_model=list[PrevisSceneSummary])

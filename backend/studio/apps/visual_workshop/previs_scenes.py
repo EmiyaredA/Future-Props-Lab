@@ -12,8 +12,10 @@ from studio.apps.visual_workshop.creative_assets import (
     require_project_assets,
     scene_model_assets,
 )
-from studio.apps.visual_workshop.creative_workflow import CreativeWorkflow, ScriptSource
+from studio.apps.visual_workshop.creative_workflow import CreativeWorkflow
 from studio.apps.visual_workshop.projects import Projects
+from studio.apps.visual_workshop.schemas.creative_workflow import ScriptSource
+from studio.apps.visual_workshop.storage.creative_records import SqlCreativeRecords
 from studio.apps.visual_workshop.storage.models import VisualPrevisScene
 from studio.runtime.files.project_archives import ProjectSnapshotError
 from studio.runtime.project_errors import ProjectResourceError
@@ -111,7 +113,7 @@ class PrevisScenes:
     def __init__(self, session, owner, inspect_assets=None):
         self.session = session
         self.projects = Projects(session, owner)
-        self.workflow = CreativeWorkflow(session, owner)
+        self.workflow = CreativeWorkflow(SqlCreativeRecords(session, owner))
         self.inspect_assets = inspect_assets
 
     async def list(self, project_id):

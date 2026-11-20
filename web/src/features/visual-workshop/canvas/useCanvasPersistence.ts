@@ -54,10 +54,35 @@ export function useCanvasPersistence(
   >("saved");
   const [saveMessage, setSaveMessage] = useState("");
   const [conflict, setConflict] = useState<VisualCanvasDocument>();
+  const conflictSnapshot = useRef<VisualCanvasDocument | undefined>(undefined);
+
+  const registerConflict = useCallback((snapshot: VisualCanvasDocument) => {
+    if (snapshot.revision < revisionRef.current) return false;
+    conflictRef.current = true;
+    // Polling and save receipts can arrive out of order. Keep the newest known
+    // server version until the user explicitly chooses how to resolve it.
+    if (
+      !conflictSnapshot.current ||
+      snapshot.revision > conflictSnapshot.current.revision
+    ) {
+      conflictSnapshot.current = snapshot;
+      setConflict(snapshot);
+    }
+    setSaveState("conflict");
+    return true;
+  }, []);
 
   const applyServerCanvas = useCallback(
     (loaded: VisualCanvasDocument) => {
-      if (initialized.current && loaded.revision <= revisionRef.current) return;
+      if (
+        initialized.current &&
+        loaded.revision <=
+          Math.max(
+            revisionRef.current,
+            conflictSnapshot.current?.revision ?? -1,
+          )
+      )
+        return;
       const externalRevision =
         initialized.current && loaded.revision !== revisionRef.current;
       if (
@@ -67,9 +92,7 @@ export function useCanvasPersistence(
           conflictRef.current ||
           saveFailureRef.current)
       ) {
-        conflictRef.current = true;
-        setConflict(loaded);
-        setSaveState("conflict");
+        registerConflict(loaded);
         return;
       }
       nodesRef.current = loaded.nodes;
@@ -84,7 +107,7 @@ export function useCanvasPersistence(
       }
       initialized.current = true;
     },
-    [applyCanvasMetadata],
+    [applyCanvasMetadata, registerConflict],
   );
   useEffect(() => {
     if (loaded) applyServerCanvas(loaded);
@@ -144,7 +167,11 @@ export function useCanvasPersistence(
                 revisionRef.current,
                 edgeCopy,
               );
-          revisionRef.current = updated.revision;
+          revisionRef.current = Math.max(revisionRef.current, updated.revision);
+          if (conflictRef.current) {
+            registerConflict(updated);
+            return;
+          }
           if (JSON.stringify(nodesRef.current) === JSON.stringify(nodeCopy)) {
             nodesRef.current = updated.nodes;
             setNodes(updated.nodes);
@@ -162,14 +189,9 @@ export function useCanvasPersistence(
           if (error instanceof ApiError && error.status === 409) {
             const current = error.problem.current as
               VisualCanvasDocument | undefined;
-            if (current) {
-              conflictRef.current = true;
-              setConflict(current);
-              setSaveState("conflict");
-              return;
-            }
+            if (current && registerConflict(current)) return;
           }
-          setSaveState("error");
+          setSaveState(conflictRef.current ? "conflict" : "error");
           const message =
             error instanceof Error ? error.message : "画布保存失败";
           saveFailureRef.current = message;
@@ -179,7 +201,7 @@ export function useCanvasPersistence(
         }
       });
     },
-    [projectId],
+    [projectId, registerConflict],
   );
 
   const recordHistory = useCallback((snapshot: CanvasSnapshot) => {
@@ -380,7 +402,61 @@ export function useCanvasPersistence(
     [patchNode, prepareCanvasForAgent, scheduleSave],
   );
 
+  const readCanvas = useCallback(
+    () =>
+      structuredClone({
+        revision: revisionRef.current,
+        conflict: conflictRef.current,
+        nodes: nodesRef.current,
+        edges: edgesRef.current,
+        groups: groupsRef.current,
+        projectCardIds: projectCardIdsRef.current,
+      }),
+    [],
+  );
+
+  const resolveConflict = useCallback(
+    async (choice: "server" | "local") => {
+      if (!conflictRef.current) return;
+      if (autoSave.current) clearTimeout(autoSave.current);
+      autoSave.current = undefined;
+      // Keep the conflict guard raised until all old saves have settled. Otherwise
+      // a queued draft could overwrite the server snapshot chosen by the user.
+      if (pendingSaves.current > 0) {
+        let queued: Promise<void>;
+        do {
+          queued = saveQueue.current;
+          await queued;
+        } while (queued !== saveQueue.current);
+      }
+      const current = conflictSnapshot.current;
+      if (!current) return;
+      revisionRef.current = current.revision;
+      conflictRef.current = false;
+      conflictSnapshot.current = undefined;
+      saveFailureRef.current = "";
+      setSaveMessage("");
+      setConflict(undefined);
+      if (choice === "server") {
+        nodesRef.current = current.nodes;
+        edgesRef.current = current.edges;
+        setNodes(current.nodes);
+        setEdges(current.edges);
+        applyCanvasMetadata(current);
+        clearHistory();
+        setSaveState("saved");
+      } else {
+        enqueueSave(nodesRef.current, edgesRef.current);
+        await saveQueue.current;
+      }
+    },
+    [applyCanvasMetadata, clearHistory, enqueueSave],
+  );
+
   return {
+    saveNow: () => scheduleSave(true),
+    readCanvas,
+    resolveConflict,
     groups,
     groupsRef,
     setGroups,

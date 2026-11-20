@@ -19,7 +19,7 @@ export function TextWorkbench({
     setError("");
     try {
       const revision = await c.prepareCanvasForAgent();
-      const current = c.nodesRef.current.find((item) => item.id === node.id);
+      const current = c.readCanvas().nodes.find((item) => item.id === node.id);
       const updated = await saveNodeOutput(c.projectId, node.id, revision, {
         text: current?.kind === "text" ? current.text : node.text,
       });

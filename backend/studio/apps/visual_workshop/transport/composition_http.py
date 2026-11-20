@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Request
 
 from studio.apps.visual_workshop.composition.compositions import Compositions
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.generation_routes import generation_error
 from studio.apps.visual_workshop.schemas.generation import (
     GenerationBatchOut,

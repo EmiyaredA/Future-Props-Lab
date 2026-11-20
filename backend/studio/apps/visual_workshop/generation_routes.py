@@ -2,7 +2,7 @@ from typing import Literal
 
 from fastapi import APIRouter, HTTPException, Query
 
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.generation_records import GenerationRecords
 from studio.apps.visual_workshop.schemas.generation import (
     GenerationBatchListOut,

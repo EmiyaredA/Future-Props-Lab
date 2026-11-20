@@ -7,7 +7,7 @@ from sqlalchemy import select, text
 from studio.apps.visual_workshop.canvas_values import canvas_out
 from studio.apps.visual_workshop.canvas_writes import conflict
 from studio.apps.visual_workshop.composition.composition_peer import GridPeer
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.outputs.recording import register_output
 from studio.apps.visual_workshop.projects import Projects
 from studio.apps.visual_workshop.storage.models import VisualGenerationBatch, VisualGenerationTask

@@ -348,7 +348,6 @@ async def test_generated_grid_placeholders_avoid_existing_cards_and_preserve_tas
     from studio.apps.visual_workshop.batch_nodes import attach_grid_nodes
     from studio.apps.visual_workshop.node_placement import automatic_node_position
     from studio.apps.visual_workshop.storage.models import VisualGenerationTask
-    from studio.assembly.website.visual_workshop.website.generation import VisualGeneration
 
     async with httpx.AsyncClient(
         transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -373,7 +372,7 @@ async def test_generated_grid_placeholders_avoid_existing_cards_and_preserve_tas
             session.add_all(tasks)
             await session.flush()
             await attach_grid_nodes(
-                VisualGeneration(session, app.state.settings),
+                session,
                 project_id=project,
                 node_id="root",
                 expected_revision=canvas["revision"],

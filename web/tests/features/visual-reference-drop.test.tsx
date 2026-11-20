@@ -179,7 +179,12 @@ test("board media drag adds typed references anywhere in the bar, saves and subm
   mount(<Harness />);
   await waitFor(() => expect(getFiles).toHaveBeenCalledTimes(3));
   await waitFor(() =>
-    expect(screen.getByRole("button", { name: "上传参考图片" })).toBeEnabled(),
+    expect(screen.getByRole("button", { name: "添加参考素材" })).toBeEnabled(),
+  );
+  await waitFor(() =>
+    expect(
+      screen.queryAllByRole("status", { name: "正在读取项目素材…" }),
+    ).toHaveLength(0),
   );
   const source = screen.getByRole("button", { name: /参考角色/ });
   expect(source).toHaveAttribute("draggable", "true");
@@ -197,9 +202,10 @@ test("board media drag adds typed references anywhere in the bar, saves and subm
   fireEvent.dragOver(bar, { dataTransfer });
   expect(bar).toHaveClass("is-reference-dragover");
   // An image over the audio slot still routes by its actual media kind.
-  fireEvent.drop(screen.getByRole("button", { name: "上传参考音频" }), {
+  fireEvent.drop(screen.getByRole("group", { name: "参考音频" }), {
     dataTransfer,
   });
+  expect(bar).not.toHaveClass("is-reference-dragover");
   expect(
     await screen.findByRole("button", { name: "image素材" }),
   ).toBeVisible();

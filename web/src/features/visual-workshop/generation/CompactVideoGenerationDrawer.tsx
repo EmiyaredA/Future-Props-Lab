@@ -224,6 +224,7 @@ export function CompactVideoGenerationDrawer({
             <VideoReferenceStrip
               controller={controller}
               dropHandlers={referenceDrop.handlers}
+              dropActive={referenceDrop.active}
               modeControl={modeControl}
               expandControl={expandControl}
             />

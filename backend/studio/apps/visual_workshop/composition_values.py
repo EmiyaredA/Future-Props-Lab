@@ -2,7 +2,7 @@
 
 from uuid import uuid4
 
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.storage.models import VisualGenerationBatch
 
 

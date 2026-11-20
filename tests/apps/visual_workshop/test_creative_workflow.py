@@ -11,9 +11,13 @@ import httpx
 import pytest
 from PIL import Image
 
-from studio.apps.visual_workshop.card_generation import CardGeneration, CardGenerationIn
-from studio.apps.visual_workshop.creative_workflow import CardData, CardUpdate, CreativeWorkflow
+from studio.apps.visual_workshop.card_generation import CardGeneration
+from studio.apps.visual_workshop.creative_workflow import CreativeWorkflow
 from studio.apps.visual_workshop.generation_common import generation_task_out
+from studio.apps.visual_workshop.schemas.card_generation import CardGenerationIn
+from studio.apps.visual_workshop.schemas.creative_workflow import CardData, CardUpdate
+from studio.apps.visual_workshop.storage.card_generation import SqlCardGeneration
+from studio.apps.visual_workshop.storage.creative_records import SqlCreativeRecords
 from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS
 from studio.apps.visual_workshop.storage.models import VisualGenerationTask
 from studio.contracts.asset_library.file_types import ALLOWED_FILES
@@ -179,27 +183,54 @@ async def test_script_card_and_model_are_scoped_and_round_trip():
 async def test_account_card_can_be_created_without_project_and_is_isolated():
     async with SessionLocal() as session:
         owner, other = str(uuid4()), str(uuid4())
-        card = await CreativeWorkflow(session, owner).save_card(
+        card = await CreativeWorkflow(SqlCreativeRecords(session, owner)).save_card(
             None, CardData(title="共用卡", kind="character")
         )
         assert card.source_project_id is None
-        assert (await CreativeWorkflow(session, owner).cards())[0].id == card.id
-        assert await CreativeWorkflow(session, other).cards() == []
+        assert (await CreativeWorkflow(SqlCreativeRecords(session, owner)).cards())[0].id == card.id
+        assert await CreativeWorkflow(SqlCreativeRecords(session, other)).cards() == []
         with pytest.raises(ProjectResourceError):
-            await CreativeWorkflow(session, other).card_row(None, card.id)
+            await CreativeWorkflow(SqlCreativeRecords(session, other)).card(None, card.id)
         await session.rollback()
-        changed = await CreativeWorkflow(session, owner).save_card(
+        changed = await CreativeWorkflow(SqlCreativeRecords(session, owner)).save_card(
             None, CardUpdate(title="改过的共用卡", kind="character", expected_revision=0), card.id
         )
         assert changed.revision == 1
 
 
+async def test_website_card_storage_filters_bulk_queries_and_writes_by_bound_account():
+    from sqlalchemy import delete, select, update
+
+    from studio.apps.visual_workshop.storage.models import VisualAssetCard
+
+    owner, other = str(uuid4()), str(uuid4())
+    async with SessionLocal() as session:
+        own = VisualAssetCard(owner_user_id=owner, data={"kind": "character", "title": "own"})
+        foreign = VisualAssetCard(owner_user_id=other, data={"kind": "character", "title": "other"})
+        session.add_all([own, foreign])
+        await session.commit()
+        own_id, foreign_id = own.id, foreign.id
+    async with SessionLocal(info={"owner_user_id": owner}) as session:
+        selected = await session.scalars(select(VisualAssetCard))
+        assert [row.id for row in selected] == [own_id]
+        result = await session.execute(
+            update(VisualAssetCard).where(VisualAssetCard.id == foreign_id).values(revision=7)
+        )
+        assert result.rowcount == 0
+        result = await session.execute(
+            delete(VisualAssetCard).where(VisualAssetCard.id == foreign_id)
+        )
+        assert result.rowcount == 0
+        await session.commit()
+    async with SessionLocal(info={"owner_user_id": other}) as session:
+        row = await session.get(VisualAssetCard, foreign_id)
+        assert row is not None and row.revision == 0
+
+
 def test_registered_migration_preserves_legacy_card_and_its_media(tmp_path):
     database = tmp_path / "service.db"
     account_migration = next(
-        i
-        for i, item in enumerate(MIGRATIONS)
-        if item.id == "0014_visual_account_asset_cards"
+        i for i, item in enumerate(MIGRATIONS) if item.id == "0014_visual_account_asset_cards"
     )
     apply(database, "visual", MIGRATIONS[:account_migration])
     project, owner, asset, model, card = (str(uuid4()) for _ in range(5))
@@ -284,10 +315,14 @@ async def test_card_generation_replays_exact_paid_task():
             await session.commit()
             return result
 
-        first = await CardGeneration(session, owner, project, card["id"], data).run(submit)
-        second = await CardGeneration(session, owner, project, card["id"], data).run(submit)
+        first = await CardGeneration(
+            SqlCardGeneration(session, owner, project, card["id"], data), project, data
+        ).run(submit)
+        second = await CardGeneration(
+            SqlCardGeneration(session, owner, project, card["id"], data), project, data
+        ).run(submit)
         assert calls == 1 and first.id == second.id
-        cards = await CreativeWorkflow(session, owner).cards(project)
+        cards = await CreativeWorkflow(SqlCreativeRecords(session, owner)).cards(project)
         assert next(item for item in cards if item.id == card["id"]).candidate_task_ids == [
             first.id
         ]

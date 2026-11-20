@@ -107,13 +107,10 @@ def snapshot_grant(grant):
     if grant.caller != "visual":
         return False
     if grant.source_method in ("POST", "PUT"):
-        if (
-            re.fullmatch(
-                rf"/v1/visual-workshop(?:/projects/{ID})?/asset-cards(?:/{ID})?",
-                grant.source_path,
-            )
-            and card_media_target(grant.target_method, grant.target_path)
-        ):
+        if re.fullmatch(
+            rf"/v1/visual-workshop(?:/projects/{ID})?/asset-cards(?:/{ID})?",
+            grant.source_path,
+        ) and card_media_target(grant.target_method, grant.target_path):
             return (grant.purpose, grant.target_service) == (ASSET_PURPOSE, "assets")
         source = re.fullmatch(
             rf"{SOURCE}/({ID})/(?:asset-cards|previs-scenes)(?:/{ID})?",

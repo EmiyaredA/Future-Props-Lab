@@ -123,8 +123,8 @@ test("empty categories start collapsed and ungrouped nodes avoid redundant tree 
   render(
     <MaterialTree
       categories={[
-        { id: "character", name: "人设", groups: [] },
-        { id: "scene", name: "场景", groups: [] },
+        { id: "notes", name: "说明", groups: [] },
+        { id: "shots", name: "镜头", groups: [] },
       ]}
       nodes={[
         {
@@ -132,7 +132,7 @@ test("empty categories start collapsed and ungrouped nodes avoid redundant tree 
           kind: "text",
           title: "人物说明",
           text: "角色",
-          category_id: "character",
+          category_id: "notes",
           position: { x: 0, y: 0 },
         },
       ]}
@@ -141,8 +141,8 @@ test("empty categories start collapsed and ungrouped nodes avoid redundant tree 
       selectedId="text"
     />,
   );
-  expect(screen.getByText("人设").closest("details")).toHaveAttribute("open");
-  expect(screen.getByText("场景").closest("details")).not.toHaveAttribute(
+  expect(screen.getByText("说明").closest("details")).toHaveAttribute("open");
+  expect(screen.getByText("镜头").closest("details")).not.toHaveAttribute(
     "open",
   );
   expect(screen.queryByText("未分组")).not.toBeInTheDocument();

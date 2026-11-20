@@ -201,7 +201,9 @@ docs/
   `playback.ts` 声明播放能力，展示组件实现该接口；保存确认只推进 CAS，不能覆盖后续编辑。
 - 视觉生成的提交与批次反馈归 `useGenerationSubmission`，参数、草稿和素材顺序仍由原业务模块持有。
 - 视觉画布统一使用 `web/src/features/visual-workshop/canvas/ToonflowCanvas.tsx` 的 Vue Flow 视口适配。节点、连线和编辑历史继续由画布控制器维护。白模场景与其嵌入式编辑器共用项目顶栏，场景保存与回填归 `web/src/features/visual-workshop/previs/`，TrumanMap 源码与许可归 `web/vendor/toonflow/`。
-- 视觉项目的分集剧本、设定卡和候选图交互归 `web/src/features/visual-workshop/creative/`。Visual 的 `creative_workflow.py` 保存剧本和设定版本，`card_generation.py` 在现有生图提交中记录候选任务，文件校验由两套装配提供明确的项目素材读取端口。
+- 视觉项目的分集剧本、设定卡和候选图交互归 `web/src/features/visual-workshop/creative/`。`schemas/creative_workflow.py` 与 `schemas/card_generation.py` 拥有纯数据结构；`creative_workflow.py`、`creative_rules.py` 和 `creative_ports.py` 拥有用例、规则与具名素材描述端口，`storage/creative_records.py` 拥有账号范围查询、CAS 和短事务。`card_generation.py` 通过绑定端口提交候选，`storage/card_generation.py` 将卡片版本、候选任务和回执与生成任务原子提交。两套装配显式提供素材检查适配。
+- 视觉生成的 `generation/generation_intake.py` 只消费 `intake_ports.py` 的准备、存储及引用交付端口；`storage/generation_intake.py` 拥有准备决议、画布绑定和原子提交，`transport/generation_bindings.py` 绑定本次请求依赖。Models 的 `providers/visual_reference_rules.py` 统一解释供应商参考能力，选择元数据与冻结计划模型分开，网站和独立 Visual 使用同一规则。
+- 画布持久化唯一拥有服务器/本地冲突恢复、旧保存队列排空及错误清理；看板和画布视图只消费命令及快照。`board/useBoardGenerationTasks.ts` 拥有任务观察及缓存失效，`canvas/useCanvasViewportGestures.ts` 拥有滚轮与触控监听生命周期，`paths.ts` 拥有不加载页面注册的纯路径生成。
 - 看板 `board/CommonDesignCards.tsx` 按项目已收录 ID 分类、搜索并显示 `DesignCardRow.tsx` 独立项；账号库的设定组、高清变体滚动和父关系规则归 `creative/CardLibraryGroups.tsx`、`VariantStrip.tsx`、`cardFamilies.ts`。`useCardNameSort.ts` 保存账号与视图范围的类别排序偏好，`useCardCreation.ts` 拥有建卡后的项目收录及重试。共享 `ui/useBackdropDismiss.ts` 只识别遮罩点击，是否允许关闭仍由各弹窗的未保存与提交状态决定。
 - 文件库目录路径规则归 `folderPaths.ts` 并通过公共入口导出；两套文件 API 共用 `storage/asset_edits.py`。
 
@@ -1287,7 +1289,7 @@ Models 的 `storage/visual_generation_files.py` 拥有生成任务的账号输�
 
 兼容网站的浏览器入口为 `web/src/app/entries/website-bootstrap.ts`，先建立不依赖 React 的加载失败反馈，再动态载入 `website.tsx` 装配认证、QueryClient 与页面壳。独立 HTML 和兼容网站都从 `entries/` 启动；URL 与页面组合继续归 `routing/`，启动移动不增加新路由。
 
-Web 通用 UI 验收放在 `web/tests/shared/`，API、SSE、下载与传输验收放在 `web/tests/platform/`；共用初始化仍由 `web/tests/setup.ts` 提供。Vitest 的递归发现规则覆盖两个目录；业务测试随所属 feature 批次迁移。
+Web 通用 UI 验收放在 `web/tests/shared/`，API、SSE、下载与传输验收放在 `web/tests/platform/`；共用初始化仍由 `web/tests/setup.ts` 提供。`web/tests/support/dialog.ts` 统一补齐 jsdom 缺失的 dialog API，不改变生产弹窗。Vitest 的递归发现规则覆盖两个目录；业务测试随所属 feature 批次迁移。
 
 网站素材、演示、特效和视频剪辑适配器接收当前应用的配置或已构造的存储。特效网站 HTTP 操作从当前请求的应用取得配置，后台导出从其装配获得同一配置。演示、特效和视频剪辑的旧站资源工厂仍由会话适配器键选择，逐用例解耦继续按业务批次推进。
 

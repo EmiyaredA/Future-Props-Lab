@@ -39,6 +39,173 @@ function renderPersistence() {
   });
 }
 
+test.each([
+  { kind: "success", receiptRevision: 1, expectedRevision: 7 },
+  { kind: "success", receiptRevision: 8, expectedRevision: 8 },
+  { kind: "conflict", receiptRevision: 3, expectedRevision: 7 },
+  { kind: "network", receiptRevision: 0, expectedRevision: 7 },
+])(
+  "a late $kind receipt preserves the draft and newest conflict revision",
+  async ({ kind, receiptRevision, expectedRevision }) => {
+    let finish!: (value: VisualCanvasDocument) => void;
+    let fail!: (error: unknown) => void;
+    vi.mocked(putVisualCanvas).mockImplementationOnce(
+      () =>
+        new Promise((resolve, reject) => {
+          finish = resolve;
+          fail = reject;
+        }),
+    );
+    const { result } = renderPersistence();
+    await act(async () =>
+      result.current.patchNode("video", { title: "local draft" }, true),
+    );
+    const remote = {
+      ...canvas,
+      revision: 7,
+      nodes: [{ ...canvas.nodes[0], title: "newest server" }],
+    };
+    act(() => {
+      result.current.applyServerCanvas({ ...remote, revision: 5 });
+      result.current.applyServerCanvas(remote);
+      result.current.applyServerCanvas({ ...remote, revision: 6 });
+    });
+    expect(result.current.conflict?.revision).toBe(7);
+    const receipt = {
+      ...canvas,
+      revision: receiptRevision,
+      nodes: [{ ...canvas.nodes[0], title: "save receipt" }],
+    };
+    await act(async () => {
+      if (kind === "success") finish(receipt);
+      else if (kind === "conflict")
+        fail(new ApiError("conflict", { current: receipt }, 409));
+      else fail(new Error("network failed"));
+      await expect(result.current.prepareCanvasForAgent()).rejects.toThrow(
+        "保存冲突",
+      );
+    });
+    expect(result.current.conflict?.revision).toBe(expectedRevision);
+    expect(result.current.saveState).toBe("conflict");
+    expect(result.current.nodes[0].title).toBe("local draft");
+    await act(() => result.current.resolveConflict("server"));
+    expect(result.current.readCanvas().revision).toBe(expectedRevision);
+    expect(result.current.nodes[0].title).toBe(
+      expectedRevision === 8 ? "save receipt" : "newest server",
+    );
+    expect(await result.current.prepareCanvasForAgent()).toBe(expectedRevision);
+  },
+);
+
+test("a local overwrite uses the newest conflict rather than an older 409 receipt", async () => {
+  let fail!: (error: unknown) => void;
+  vi.mocked(putVisualCanvas).mockImplementationOnce(
+    () =>
+      new Promise((_resolve, reject) => {
+        fail = reject;
+      }),
+  );
+  const { result } = renderPersistence();
+  await act(async () =>
+    result.current.patchNode("video", { title: "keep local" }, true),
+  );
+  act(() => result.current.applyServerCanvas({ ...canvas, revision: 7 }));
+  await act(async () => {
+    fail(
+      new ApiError(
+        "old conflict",
+        { current: { ...canvas, revision: 3 } },
+        409,
+      ),
+    );
+    await expect(result.current.prepareCanvasForAgent()).rejects.toThrow(
+      "保存冲突",
+    );
+  });
+  await act(() => result.current.resolveConflict("local"));
+  expect(vi.mocked(putVisualCanvas).mock.calls[1][2]).toBe(7);
+  expect(result.current.nodes[0].title).toBe("keep local");
+  expect(await result.current.prepareCanvasForAgent()).toBe(8);
+  expect(result.current.saveState).toBe("saved");
+});
+
+test("loading the server version clears a prior save error and cancels pending autosave", async () => {
+  vi.mocked(putVisualCanvas).mockRejectedValueOnce(new Error("network failed"));
+  const { result } = renderPersistence();
+  await act(async () => {
+    result.current.patchNode("video", { title: "local" }, true);
+    await expect(result.current.prepareCanvasForAgent()).rejects.toThrow(
+      "network failed",
+    );
+  });
+  act(() => {
+    result.current.patchNode("video", { title: "later edit" });
+    result.current.applyServerCanvas({
+      ...canvas,
+      revision: 2,
+      project_card_ids: ["server-card"],
+    });
+  });
+  await act(() => result.current.resolveConflict("server"));
+  expect(result.current.saveState).toBe("saved");
+  expect(result.current.saveMessage).toBe("");
+  expect(result.current.readCanvas()).toMatchObject({
+    revision: 2,
+    projectCardIds: ["server-card"],
+  });
+  expect(result.current.nodes[0].title).toBe("视频");
+  expect(await result.current.prepareCanvasForAgent()).toBe(2);
+  await act(() => vi.advanceTimersByTimeAsync(1000));
+  expect(putVisualCanvas).toHaveBeenCalledTimes(1);
+});
+
+test("overwriting with the local version retries CAS using the conflict revision", async () => {
+  vi.mocked(putVisualCanvas).mockRejectedValueOnce(
+    new ApiError("conflict", { current: { ...canvas, revision: 5 } }, 409),
+  );
+  const { result } = renderPersistence();
+  await act(async () => {
+    result.current.patchNode("video", { title: "keep local" }, true);
+    await expect(result.current.prepareCanvasForAgent()).rejects.toThrow(
+      "保存冲突",
+    );
+  });
+  await act(() => result.current.resolveConflict("local"));
+  expect(vi.mocked(putVisualCanvas).mock.calls[1][2]).toBe(5);
+  expect(result.current.nodes[0].title).toBe("keep local");
+  expect(result.current.saveState).toBe("saved");
+  expect(await result.current.prepareCanvasForAgent()).toBe(6);
+});
+
+test("resolving a conflict drains old saves before loading the latest server snapshot", async () => {
+  let reject!: (error: unknown) => void;
+  vi.mocked(putVisualCanvas).mockImplementationOnce(
+    () =>
+      new Promise((_resolve, fail) => {
+        reject = fail;
+      }),
+  );
+  const { result } = renderPersistence();
+  await act(async () =>
+    result.current.patchNode("video", { title: "in flight" }, true),
+  );
+  let resolving!: Promise<void>;
+  act(() => {
+    result.current.patchNode("video", { title: "queued" }, true);
+    result.current.applyServerCanvas({ ...canvas, revision: 2 });
+    resolving = result.current.resolveConflict("server");
+  });
+  await act(async () => {
+    reject(
+      new ApiError("conflict", { current: { ...canvas, revision: 3 } }, 409),
+    );
+    await resolving;
+  });
+  expect(putVisualCanvas).toHaveBeenCalledTimes(1);
+  expect(await result.current.prepareCanvasForAgent()).toBe(3);
+  expect(result.current.nodes[0].title).toBe("视频");
+});
+
 test("generation preparation includes the draft save queued in the same React event", async () => {
   const { result } = renderPersistence();
   let submittedRevision = -1;

@@ -46,8 +46,12 @@ async def require_project_assets(project_id, *, inspect, images=(), models=()):
     if len(images | models) > 500:
         raise ProjectResourceError("关联素材数量超过限制", "visual_asset_scope_limit", 422)
     found = await inspect(project_id, images | models)
-    if any(found.get(identity, ("", ""))[0] != "image" for identity in images) or any(
-        found.get(identity, ("", ""))[1] != MODEL_MIME for identity in models
+    if any(
+        (found.get(identity) is None or found[identity].media_kind != "image")
+        for identity in images
+    ) or any(
+        (found.get(identity) is None or found[identity].mime_type != MODEL_MIME)
+        for identity in models
     ):
         raise ProjectResourceError(
             "素材已删除、类型不符或不属于当前项目", "visual_asset_scope", 422

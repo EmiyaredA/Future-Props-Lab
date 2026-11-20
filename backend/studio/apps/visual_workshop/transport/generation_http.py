@@ -2,18 +2,20 @@
 
 from fastapi import APIRouter, Request
 
-from studio.apps.visual_workshop.card_generation import CardGeneration, CardGenerationIn
+from studio.apps.visual_workshop.card_generation import CardGeneration
 from studio.apps.visual_workshop.generation.generation_controls import GenerationControls
-from studio.apps.visual_workshop.generation.generation_intake import GenerationIntake
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.generation_routes import generation_error
+from studio.apps.visual_workshop.schemas.card_generation import CardGenerationIn
 from studio.apps.visual_workshop.schemas.generation import (
     GenerationBatchOut,
     GenerationCancelIn,
     ImageGenerationBatchCreateIn,
 )
 from studio.apps.visual_workshop.schemas.workshop import GenerationTaskCreateIn, GenerationTaskOut
-from studio.apps.visual_workshop.transport.previs_http import resolve
+from studio.apps.visual_workshop.storage.card_generation import SqlCardGeneration
+from studio.apps.visual_workshop.transport.generation_bindings import generation_intake
+from studio.apps.visual_workshop.transport.project_errors import resolve
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 
 router = APIRouter(prefix="/v1/visual-workshop", tags=["visual-generation"])
@@ -28,9 +30,7 @@ async def create_generation_task(
     body: GenerationTaskCreateIn,
 ):
     try:
-        return await GenerationIntake.from_request(request, session, owner).create_task(
-            project_id, body
-        )
+        return await generation_intake(request, session, owner).create_task(project_id, body)
     except GenerationError as exc:
         raise generation_error(exc) from None
 
@@ -48,9 +48,9 @@ async def generate_visual_asset_card(
 ):
     try:
         return await resolve(
-            CardGeneration(session, owner, project_id, card_id, body).run(
-                GenerationIntake.from_request(request, session, owner).create_task
-            )
+            CardGeneration(
+                SqlCardGeneration(session, owner, project_id, card_id, body), project_id, body
+            ).run(generation_intake(request, session, owner).create_task)
         )
     except GenerationError as exc:
         raise generation_error(exc) from None
@@ -65,9 +65,7 @@ async def create_generation_batch(
     body: ImageGenerationBatchCreateIn,
 ):
     try:
-        return await GenerationIntake.from_request(request, session, owner).create_batch(
-            project_id, body
-        )
+        return await generation_intake(request, session, owner).create_batch(project_id, body)
     except GenerationError as exc:
         raise generation_error(exc) from None
 

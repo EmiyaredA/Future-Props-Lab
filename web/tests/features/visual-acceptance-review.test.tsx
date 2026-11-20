@@ -117,6 +117,10 @@ test("reference selection replaces and removes fixed assets without invented ver
   expect(screen.queryByText(/v1/)).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "替换参考 1" }));
   await user.click(screen.getByRole("button", { name: "绑定 角色基准" }));
+  await user.click(screen.getByRole("button", { name: "确认选择" }));
+  expect(
+    screen.queryByRole("dialog", { name: "选择项目参考素材" }),
+  ).not.toBeInTheDocument();
   expect(screen.getByText("角色基准")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "解除参考 1" }));
   expect(screen.getByText(/尚未绑定参考/)).toBeVisible();

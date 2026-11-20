@@ -45,9 +45,8 @@ function setup(prepare: Mock) {
       useImageGridComposition({
         projectId: "p",
         nodes: nodesRef.current,
-        nodesRef,
+        readCanvas: () => ({ nodes: nodesRef.current, revision: 1 }),
         selectedNodeIds: ["source"],
-        revisionRef: { current: 1 },
         prepareCanvas: () => prepare(nodesRef),
         client,
         resolveNodePosition: (kind, anchor) =>

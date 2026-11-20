@@ -1449,6 +1449,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations",
+    "sdk": "client.generation.generate_visual_asset_card",
+    "document": "/docs.html?page=sdk-reference-generation#generate-visual-asset-card",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/visual-workshop/projects/{project_id}/generation-batches",
     "sdk": "client.generation.create_generation_batch",
     "document": "/docs.html?page=sdk-reference-generation#create-generation-batch",
@@ -3668,6 +3675,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "DELETE /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}",
+    "sdk": "client.visual.delete_previs_scene",
+    "document": "/docs.html?page=sdk-reference-visual#delete-previs-scene",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/visual-workshop/acceptance-templates",
     "sdk": "client.visual.list_acceptance_templates",
     "document": "/docs.html?page=sdk-reference-visual#list-acceptance-templates",
@@ -3678,6 +3692,20 @@
     "http": "GET /v1/visual-workshop/acceptance/catalog",
     "sdk": "client.visual.acceptance_catalog",
     "document": "/docs.html?page=sdk-reference-visual#acceptance-catalog",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/asset-cards",
+    "sdk": "client.visual.list_account_asset_cards",
+    "document": "/docs.html?page=sdk-reference-visual#list-account-asset-cards",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/asset-cards/{card_id}",
+    "sdk": "client.visual.get_account_asset_card",
+    "document": "/docs.html?page=sdk-reference-visual#get-account-asset-card",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3738,6 +3766,20 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/asset-cards",
+    "sdk": "client.visual.list_visual_asset_cards",
+    "document": "/docs.html?page=sdk-reference-visual#list-visual-asset-cards",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}",
+    "sdk": "client.visual.get_visual_asset_card",
+    "document": "/docs.html?page=sdk-reference-visual#get-visual-asset-card",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/visual-workshop/projects/{project_id}/canvas",
     "sdk": "client.visual.get_canvas",
     "document": "/docs.html?page=sdk-reference-visual#get-canvas",
@@ -3766,6 +3808,27 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/previs-scenes",
+    "sdk": "client.visual.list_previs_scenes",
+    "document": "/docs.html?page=sdk-reference-visual#list-previs-scenes",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}",
+    "sdk": "client.visual.get_previs_scene",
+    "document": "/docs.html?page=sdk-reference-visual#get-previs-scene",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/script",
+    "sdk": "client.visual.get_visual_script",
+    "document": "/docs.html?page=sdk-reference-visual#get-visual-script",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/visual-workshop/projects/{project_id}/snapshot",
     "sdk": "client.visual.export_project_snapshot",
     "document": "/docs.html?page=sdk-reference-visual#export-project-snapshot",
@@ -3790,6 +3853,20 @@
     "http": "POST /v1/visual-workshop/acceptance-templates",
     "sdk": "client.visual.create_acceptance_template",
     "document": "/docs.html?page=sdk-reference-visual#create-acceptance-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/asset-cards",
+    "sdk": "client.visual.create_account_asset_card",
+    "document": "/docs.html?page=sdk-reference-visual#create-account-asset-card",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/asset-cards/regroup",
+    "sdk": "client.visual.regroup_account_asset_cards",
+    "document": "/docs.html?page=sdk-reference-visual#regroup-account-asset-cards",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3839,6 +3916,13 @@
     "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples",
     "sdk": "client.visual.sample_acceptance_video",
     "document": "/docs.html?page=sdk-reference-visual#sample-acceptance-video",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/asset-cards",
+    "sdk": "client.visual.create_visual_asset_card",
+    "document": "/docs.html?page=sdk-reference-visual#create-visual-asset-card",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3899,9 +3983,23 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/previs-scenes",
+    "sdk": "client.visual.create_previs_scene",
+    "document": "/docs.html?page=sdk-reference-visual#create-previs-scene",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PUT /v1/visual-workshop/acceptance-templates/{template_id}",
     "sdk": "client.visual.update_acceptance_template",
     "document": "/docs.html?page=sdk-reference-visual#update-acceptance-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/asset-cards/{card_id}",
+    "sdk": "client.visual.put_account_asset_card",
+    "document": "/docs.html?page=sdk-reference-visual#put-account-asset-card",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3916,6 +4014,13 @@
     "http": "PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard",
     "sdk": "client.visual.save_acceptance_standard",
     "document": "/docs.html?page=sdk-reference-visual#save-acceptance-standard",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}",
+    "sdk": "client.visual.put_visual_asset_card",
+    "document": "/docs.html?page=sdk-reference-visual#put-visual-asset-card",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3937,6 +4042,20 @@
     "http": "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output",
     "sdk": "client.visual.set_node_final_output",
     "document": "/docs.html?page=sdk-reference-visual#set-node-final-output",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}",
+    "sdk": "client.visual.update_previs_scene",
+    "document": "/docs.html?page=sdk-reference-visual#update-previs-scene",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/projects/{project_id}/script",
+    "sdk": "client.visual.put_visual_script",
+    "document": "/docs.html?page=sdk-reference-visual#put-visual-script",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   }

@@ -19,15 +19,13 @@ from studio.apps.model_service.providers.seedance_references import (
     validate_seedance_references,
 )
 from studio.apps.model_service.providers.senseaudio_image import IMAGE_MODEL_SIZES
+from studio.apps.model_service.providers.visual_reference_rules import visual_reference_rules
 from studio.apps.model_service.providers.volcengine_image import SEEDREAM_SIZES
 from studio.apps.model_service.storage.models.model_service import ModelEntry, ModelProvider
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.batch_nodes import attach_grid_nodes
-from studio.apps.visual_workshop.generation_common import (
-    GenerationError,
-    generation_batch_out,
-    generation_task_out,
-)
+from studio.apps.visual_workshop.generation_common import generation_batch_out, generation_task_out
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.generation_records import GenerationRecords
 from studio.apps.visual_workshop.outputs.references import resolve_references
 from studio.apps.visual_workshop.schemas.generation import (
@@ -204,12 +202,7 @@ class VisualGeneration(GenerationRecords):
         body, reference_titles, input_snapshot = await self._resolve_canvas_references(
             project_id,
             body,
-            supports_subject=(
-                provider.kind == "autodl_video" and model.slug == "minimax_h3_zm_titim"
-            ),
-            frame_constraints=provider.kind != "zealman_video",
-            frame_reference_slots=provider.kind == "autodl_video"
-            and model.slug == "minimax_h3_lightx2v",
+            **visual_reference_rules(provider.kind, model.slug).model_dump(),
         )
 
         async def reference(identity, kind, *, accepted_mimes=None):
@@ -408,7 +401,7 @@ class VisualGeneration(GenerationRecords):
         grid_size: int,
     ) -> None:
         await attach_grid_nodes(
-            self,
+            self.session,
             project_id=project_id,
             node_id=node_id,
             expected_revision=expected_revision,

@@ -17,7 +17,7 @@ import {
   type CardKind,
 } from "../creative/api";
 import { resolveDesignImage } from "../creative/cardMedia";
-import { useQuery } from "@tanstack/react-query";
+import { useBoardGenerationTasks } from "./useBoardGenerationTasks";
 import {
   ArrowLeft,
   FolderOpen,
@@ -38,8 +38,6 @@ import { isCanvasMediaKind } from "../canvas/canvasAssetDrag";
 import { batchInsertionAnchor, placeNode } from "../canvas/canvasPlacement";
 import { nextNodeId } from "../canvas/geometry";
 import {
-  getGenerationTasks,
-  getGenerationBatches,
   getVisualCanvas,
   putVisualCanvas,
   type VisualMaterialCategory,
@@ -127,77 +125,7 @@ export function ProjectBoard({
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
   }, []);
-  const seenTaskStates = useRef("");
-  const tasks = useQuery({
-    queryKey: visualWorkshopQueryKeys.generationTaskList(
-      c.projectId,
-      "board",
-      "all",
-    ),
-    queryFn: async () => {
-      const first = await getGenerationTasks({
-        projectId: c.projectId,
-        pageSize: 100,
-        currentNodes: true,
-      });
-      const items = [...first.items];
-      for (let page = 2; items.length < first.total; page++) {
-        const next = await getGenerationTasks({
-          projectId: c.projectId,
-          pageSize: 100,
-          currentNodes: true,
-          page,
-        });
-        if (!next.items.length) break;
-        items.push(...next.items);
-      }
-      return items;
-    },
-    refetchInterval: (query) =>
-      query.state.data?.some((task) =>
-        ["queued", "submitting", "pending", "processing"].includes(task.status),
-      )
-        ? 1500
-        : false,
-  });
-  const batches = useQuery({
-    queryKey: visualWorkshopQueryKeys.generationBatchList(c.projectId),
-    queryFn: async () => {
-      const first = await getGenerationBatches(c.projectId, 1, true);
-      const items = [...first.items];
-      for (let page = 2; items.length < first.total; page++) {
-        const next = await getGenerationBatches(c.projectId, page, true);
-        if (!next.items.length) break;
-        items.push(...next.items);
-      }
-      return items;
-    },
-    refetchInterval: (query) =>
-      query.state.data?.some((batch) =>
-        ["queued", "processing"].includes(batch.status),
-      )
-        ? 1500
-        : false,
-  });
-  const taskStates =
-    (tasks.data ?? [])
-      .map((task) => `${task.id}:${task.status}:${task.result_asset_id ?? ""}`)
-      .join(",") +
-    (batches.data ?? [])
-      .map(
-        (batch) => `${batch.id}:${batch.status}:${batch.result_asset_id ?? ""}`,
-      )
-      .join(",");
-  useEffect(() => {
-    if (seenTaskStates.current === taskStates) return;
-    seenTaskStates.current = taskStates;
-    void c.client.invalidateQueries({
-      queryKey: visualWorkshopQueryKeys.canvas(c.projectId),
-    });
-    void c.client.invalidateQueries({
-      queryKey: visualWorkshopQueryKeys.nodeOutputsProject(c.projectId),
-    });
-  }, [taskStates, c.client, c.projectId]);
+  const { tasks, batches } = useBoardGenerationTasks(c.projectId, c.client);
   const categories = c.canvasQuery.data?.categories ?? [];
   const selected =
     c.nodes.find((node) => node.id === c.selectedId) ?? c.nodes[0];
@@ -205,7 +133,7 @@ export function ProjectBoard({
     c.replaceProjectCardIds(
       [
         ...new Set([
-          ...c.projectCardIdsRef.current,
+          ...c.readCanvas().projectCardIds,
           ...cards.map(({ id }) => id),
         ]),
       ],
@@ -308,7 +236,7 @@ export function ProjectBoard({
   ) => {
     void invalidateFileScope(c.client, c.projectId);
     const revision = await c.prepareCanvasForAgent();
-    const current = c.nodesRef.current;
+    const current = c.readCanvas().nodes;
     if (materialBatch.current?.files !== files) {
       const anchor = c.getInsertionAnchor();
       const added: VisualCanvasNode[] = [];
@@ -343,7 +271,7 @@ export function ProjectBoard({
           c.projectId,
           [...current, ...missing],
           revision,
-          c.edgesRef.current,
+          c.readCanvas().edges,
         );
       } catch (error) {
         const latest = await getVisualCanvas(c.projectId).catch(
@@ -377,9 +305,9 @@ export function ProjectBoard({
       const revision = await c.prepareCanvasForAgent();
       const updated = await putVisualCanvas(
         c.projectId,
-        c.nodesRef.current,
+        c.readCanvas().nodes,
         revision,
-        c.edgesRef.current,
+        c.readCanvas().edges,
         next,
       );
       c.client.setQueryData(
@@ -574,7 +502,7 @@ export function ProjectBoard({
                       c.client,
                       c.projectId,
                       card,
-                      c.nodesRef.current,
+                      c.readCanvas().nodes,
                     );
                     c.createMediaNodeFromAsset(
                       {
@@ -600,7 +528,9 @@ export function ProjectBoard({
                 setNotice("");
                 void c
                   .replaceProjectCardIds(
-                    c.projectCardIdsRef.current.filter((id) => id !== card.id),
+                    c
+                      .readCanvas()
+                      .projectCardIds.filter((id) => id !== card.id),
                   )
                   .catch((error: unknown) => setNotice(apiErrorMessage(error)));
               }}
@@ -772,22 +702,7 @@ export function ProjectBoard({
           {c.conflict && (
             <div className="board-notice" role="alert">
               项目发生并发更新，本地草稿已保留。
-              <button
-                onClick={() => {
-                  c.conflictRef.current = false;
-                  c.revisionRef.current = c.conflict!.revision;
-                  if (c.autoSave.current) clearTimeout(c.autoSave.current);
-                  c.autoSave.current = undefined;
-                  c.setNodes(c.conflict!.nodes);
-                  c.nodesRef.current = c.conflict!.nodes;
-                  c.setEdges(c.conflict!.edges);
-                  c.applyCanvasMetadata(c.conflict!);
-                  c.clearHistory();
-                  c.edgesRef.current = c.conflict!.edges;
-                  c.setConflict(undefined);
-                  c.setSaveState("saved");
-                }}
-              >
+              <button onClick={() => void c.resolveConflict("server")}>
                 加载最新项目
               </button>
             </div>

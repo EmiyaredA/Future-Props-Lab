@@ -7,8 +7,6 @@ from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION,
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
-from studio.apps.visual_workshop.card_generation import card_generation_resource_id
-from studio.apps.visual_workshop.creative_workflow import require_project_card_media_clear
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.previs_publication import RECEIPT_KIND, publication_resource_id
 from studio.apps.visual_workshop.project_values import project_out as project_out
@@ -18,6 +16,8 @@ from studio.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectOut,
     VisualWorkshopProjectPatchIn,
 )
+from studio.apps.visual_workshop.storage.card_generation import card_generation_resource_id
+from studio.apps.visual_workshop.storage.creative_records import require_project_card_media_clear
 from studio.apps.visual_workshop.storage.models import (
     VisualCanvasDocument,
     VisualWorkshopProject,

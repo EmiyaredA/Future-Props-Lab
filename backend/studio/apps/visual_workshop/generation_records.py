@@ -2,11 +2,8 @@ from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.visual_workshop.batch_retry import reopen_batch_after_retry
-from studio.apps.visual_workshop.generation_common import (
-    GenerationError,
-    generation_batch_out,
-    generation_task_out,
-)
+from studio.apps.visual_workshop.generation_common import generation_batch_out, generation_task_out
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.schemas.generation import (
     GenerationBatchListOut,
     GenerationBatchOut,

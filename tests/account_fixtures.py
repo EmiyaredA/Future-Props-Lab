@@ -64,6 +64,7 @@ async def clear_private_projects(owner="test-user"):
         "presentation_examples",
         "director_desk_projects",
         "motion_compositor_projects",
+        "visual_asset_cards",
     }
     async with SessionLocal() as session:
         for model in TENANT_MODELS:

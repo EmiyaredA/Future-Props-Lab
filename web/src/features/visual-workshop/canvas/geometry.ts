@@ -62,3 +62,18 @@ export function nextNodeId(kind: NodeKind) {
 export function nodeLabel(kind: NodeKind) {
   return { text: "文本", image: "图片", video: "视频", audio: "音频" }[kind];
 }
+
+export function zoomViewportAt(
+  viewport: Viewport,
+  nextZoom: number,
+  anchorX: number,
+  anchorY: number,
+): Viewport {
+  const zoom = clampZoom(nextZoom);
+  const ratio = zoom / viewport.zoom;
+  return {
+    zoom,
+    x: anchorX - (anchorX - viewport.x) * ratio,
+    y: anchorY - (anchorY - viewport.y) * ratio,
+  };
+}

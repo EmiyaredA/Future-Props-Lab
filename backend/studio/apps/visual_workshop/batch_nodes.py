@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from sqlalchemy import update
 
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.node_placement import (
     NODE_SIZE,
     PLACEMENT_GAP,
@@ -15,7 +15,7 @@ from studio.runtime.time import utc_now
 
 
 async def attach_grid_nodes(
-    service,
+    session,
     *,
     project_id: str,
     node_id: str,
@@ -24,7 +24,7 @@ async def attach_grid_nodes(
     task_ids: list[str],
     grid_size: int,
 ) -> None:
-    row = await service.session.get(VisualCanvasDocument, project_id)
+    row = await session.get(VisualCanvasDocument, project_id)
     if row is None:
         raise GenerationError("项目画布不存在", code="canvas_not_found", status=404)
     nodes = [dict(node) for node in (row.nodes or [])]
@@ -33,7 +33,7 @@ async def attach_grid_nodes(
         raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
     root["generation_batch_id"] = batch_id
     root["generation_task_id"] = task_ids[0]
-    await service.session.execute(
+    await session.execute(
         update(VisualGenerationTask)
         .where(VisualGenerationTask.id == task_ids[0])
         .values(canvas_node_id=node_id)
@@ -44,7 +44,7 @@ async def attach_grid_nodes(
     for index, task_id in enumerate(task_ids[1:], start=1):
         col, line = index % side, index // side
         child_id = f"image-{uuid4()}"
-        await service.session.execute(
+        await session.execute(
             update(VisualGenerationTask)
             .where(VisualGenerationTask.id == task_id)
             .values(canvas_node_id=child_id)
@@ -70,7 +70,7 @@ async def attach_grid_nodes(
                 "generation_batch_id": batch_id,
             }
         )
-    result = await service.session.execute(
+    result = await session.execute(
         update(VisualCanvasDocument)
         .where(
             VisualCanvasDocument.project_id == project_id,

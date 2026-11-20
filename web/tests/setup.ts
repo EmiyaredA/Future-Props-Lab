@@ -2,8 +2,10 @@ import "@testing-library/jest-dom/vitest";
 import { afterEach, beforeEach, vi } from "vitest";
 import { configure } from "@testing-library/dom";
 import { cleanup } from "@testing-library/react";
+import { installDialogTestSupport } from "./support/dialog";
 
 configure({ asyncUtilTimeout: 5000 });
+installDialogTestSupport();
 
 // jsdom has no media engine. Keep defaults non-mocked so resetAllMocks in a
 // feature test cannot erase playback support; media tests install their spies.

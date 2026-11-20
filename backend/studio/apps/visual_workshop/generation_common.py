@@ -7,21 +7,6 @@ from studio.contracts.model_service.generation_recovery import can_recover_gener
 from studio.runtime.time import iso_utc
 
 
-class GenerationError(Exception):
-    def __init__(
-        self,
-        message: str,
-        *,
-        code: str = "generation_error",
-        status: int = 422,
-        current: dict | None = None,
-    ) -> None:
-        super().__init__(message)
-        self.code = code
-        self.status = status
-        self.current = current
-
-
 def generation_batch_out(row: VisualGenerationBatch) -> GenerationBatchOut:
     return GenerationBatchOut(
         id=row.id,

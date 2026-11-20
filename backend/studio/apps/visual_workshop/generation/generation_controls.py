@@ -2,7 +2,8 @@
 
 from sqlalchemy import text
 
-from studio.apps.visual_workshop.generation_common import GenerationError, generation_task_out
+from studio.apps.visual_workshop.generation_common import generation_task_out
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.generation_records import (
     GenerationRecords,
     reopen_batch_after_retry,

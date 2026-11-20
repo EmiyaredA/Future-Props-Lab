@@ -149,6 +149,15 @@ def test_studio_pure_components_do_not_load_adapters():
         pure |= parts[0] == "runtime" and len(parts) == 2
         pure |= "rules" in path.parts or "use_cases" in path.parts
         pure |= path.name == "ports.py"
+        pure |= path.relative_to(STUDIO).as_posix() in {
+            "apps/visual_workshop/creative_workflow.py",
+            "apps/visual_workshop/creative_rules.py",
+            "apps/visual_workshop/creative_ports.py",
+            "apps/visual_workshop/card_generation.py",
+            "apps/visual_workshop/generation_errors.py",
+            "apps/visual_workshop/generation/generation_intake.py",
+            "apps/visual_workshop/generation/intake_ports.py",
+        }
         if not pure:
             continue
         for module in imports(path):

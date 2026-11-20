@@ -5,7 +5,7 @@ from io import BytesIO
 import httpx
 from pydantic import TypeAdapter
 
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.visual_workshop.visual_composition import (

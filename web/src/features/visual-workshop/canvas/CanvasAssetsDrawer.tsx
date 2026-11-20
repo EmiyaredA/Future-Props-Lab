@@ -6,7 +6,7 @@ import { AssetBrowser, type AssetViewMode } from "@features/files";
 import type { ManagedFile } from "@features/files";
 import { getVisualWorkshopProjects } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
-import { VISUAL_WORKSHOP_MODULE } from "../module";
+import { visualWorkshopPath } from "../paths";
 import {
   isCanvasMediaKind,
   setCanvasAssetDragData,
@@ -86,10 +86,7 @@ export function CanvasAssetsDrawer({
         <div className="canvas-assets-header-actions">
           <a
             className="canvas-assets-manage"
-            href={VISUAL_WORKSHOP_MODULE.pathFor(
-              "visual-workshop-assets",
-              projectId,
-            )}
+            href={visualWorkshopPath("visual-workshop-assets", projectId)}
             target="_blank"
             rel="noopener"
           >

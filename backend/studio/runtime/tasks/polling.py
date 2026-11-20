@@ -5,7 +5,6 @@ import logging
 from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
 
-runner_task_semaphore = asyncio.Semaphore(4)
 logger = logging.getLogger(__name__)
 
 
@@ -25,7 +24,10 @@ class PollingTaskRunner:
     max_backoff_seconds = 60.0
     unhealthy_after_failures = 3
 
-    def __init__(self) -> None:
+    def __init__(self, *, concurrency: asyncio.Semaphore | None = None) -> None:
+        # A limit belongs to this lifecycle, never to a module or another app's
+        # event loop. Assemblies may explicitly inject a shared limit if needed.
+        self._concurrency = concurrency if concurrency is not None else asyncio.Semaphore(4)
         self._stop = asyncio.Event()
         self._task: asyncio.Task[None] | None = None
         self._consecutive_failures = 0
@@ -96,10 +98,31 @@ class PollingTaskRunner:
         handler: Callable[[str], Awaitable[None]],
     ) -> None:
         async def guarded(task_id: str) -> None:
-            async with runner_task_semaphore:
+            async with self._concurrency:
                 await handler(task_id)
 
-        await asyncio.gather(*(guarded(task_id) for task_id in task_ids))
+        tasks = [asyncio.create_task(guarded(task_id)) for task_id in task_ids]
+        batch = asyncio.gather(*tasks)
+        try:
+            await asyncio.shield(batch)
+        except BaseException as failure:
+            # A failed or cancelled poll must not leave siblings holding database
+            # transactions or writing files after its caller has begun cleanup.
+            for task in tasks:
+                if not task.done():
+                    task.cancel()
+            cleanup = asyncio.gather(batch, *tasks, return_exceptions=True)
+            cancelled = isinstance(failure, asyncio.CancelledError)
+            # Repeated stop requests must not cancel a handler's finally block.
+            # Cancel each worker once, then drain the entire batch under shield.
+            while not cleanup.done():
+                try:
+                    await asyncio.shield(cleanup)
+                except asyncio.CancelledError:
+                    cancelled = True
+            if cancelled:
+                raise asyncio.CancelledError from None
+            raise
 
 
 class RunnerSupervisor:

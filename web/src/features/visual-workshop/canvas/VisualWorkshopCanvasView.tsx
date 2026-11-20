@@ -79,12 +79,6 @@ export function VisualWorkshopCanvasView({
     arrangeNodes,
     canArrange,
     canArrangeSelected,
-    revisionRef,
-    nodesRef,
-    edgesRef,
-    conflictRef,
-    saveFailureRef,
-    autoSave,
     canPaste,
     clipboardNotice,
     copyNodes,
@@ -94,9 +88,7 @@ export function VisualWorkshopCanvasView({
     setToolMode,
     viewport,
     nodes,
-    setNodes,
     edges,
-    setEdges,
     replaceEdges,
     selectedEdgeId,
     setSelectedEdgeId,
@@ -111,7 +103,6 @@ export function VisualWorkshopCanvasView({
     groupSelection,
     ungroupSelection,
     renameGroup,
-    applyCanvasMetadata,
     setSelectedNodeIds,
     selectionBox,
     alignmentGuides,
@@ -131,15 +122,14 @@ export function VisualWorkshopCanvasView({
     setEditingTitle,
     title,
     setTitle,
+    readCanvas,
+    resolveConflict,
+    saveNow,
     saveState,
-    setSaveState,
     saveMessage,
     conflict,
-    setConflict,
     projectQuery,
     canvasQuery,
-    enqueueSave,
-    clearHistory,
     prepareCanvasForAgent,
     patchNode,
     linkGenerationTask,
@@ -192,8 +182,7 @@ export function VisualWorkshopCanvasView({
       projectId,
       nodes,
       selectedNodeIds,
-      revisionRef,
-      nodesRef,
+      readCanvas,
       prepareCanvas: prepareCanvasForAgent,
       resolveNodePosition,
       revealNodes,
@@ -403,8 +392,7 @@ export function VisualWorkshopCanvasView({
                     patchNode(node.id, { title: event.target.value })
                   }
                   onBlur={() => {
-                    if (autoSave.current) clearTimeout(autoSave.current);
-                    enqueueSave(nodesRef.current);
+                    saveNow();
                   }}
                 />
               ) : (
@@ -494,8 +482,7 @@ export function VisualWorkshopCanvasView({
                   patchNode(node.id, { text: event.target.value })
                 }
                 onBlur={() => {
-                  if (autoSave.current) clearTimeout(autoSave.current);
-                  enqueueSave(nodesRef.current);
+                  saveNow();
                 }}
               />
             ) : (
@@ -783,7 +770,7 @@ export function VisualWorkshopCanvasView({
             try {
               await addDerivedImageNode(previewNode.id, asset);
             } catch (error) {
-              if (conflictRef.current) setPreviewNodeId(undefined);
+              if (readCanvas().conflict) setPreviewNodeId(undefined);
               throw error;
             }
           }}
@@ -820,32 +807,12 @@ export function VisualWorkshopCanvasView({
             <strong>画布存在更新冲突</strong>
             本地草稿仍保留，请选择要使用的版本。
           </span>
-          <button
-            onClick={() => {
-              nodesRef.current = conflict.nodes;
-              edgesRef.current = conflict.edges;
-              revisionRef.current = conflict.revision;
-              conflictRef.current = false;
-              saveFailureRef.current = "";
-              clearHistory();
-              setNodes(conflict.nodes);
-              setEdges(conflict.edges);
-              applyCanvasMetadata(conflict);
-              setConflict(undefined);
-              setSaveState("saved");
-            }}
-          >
+          <button onClick={() => void resolveConflict("server")}>
             载入服务器版本
           </button>
           <button
             className="danger"
-            onClick={() => {
-              revisionRef.current = conflict.revision;
-              conflictRef.current = false;
-              saveFailureRef.current = "";
-              setConflict(undefined);
-              enqueueSave(nodesRef.current);
-            }}
+            onClick={() => void resolveConflict("local")}
           >
             用本地版本覆盖
           </button>

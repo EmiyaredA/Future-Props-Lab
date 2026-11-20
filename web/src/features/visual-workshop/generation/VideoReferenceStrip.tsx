@@ -18,11 +18,13 @@ export function VideoReferenceStrip({
   modeControl,
   expandControl,
   dropHandlers,
+  dropActive = false,
 }: {
   controller: ReturnType<typeof useGenerationDrawerController>;
   modeControl: ReactNode;
   expandControl: ReactNode;
   dropHandlers?: HTMLAttributes<HTMLElement>;
+  dropActive?: boolean;
 }) {
   const [request, setRequest] = useState<{
     id: number;
@@ -191,7 +193,7 @@ export function VideoReferenceStrip({
             {expandControl}
           </div>
           <div
-            className="reference-strip-media"
+            className={`reference-strip-media${dropActive ? " is-reference-dragover" : ""}`}
             role="group"
             aria-label="固定参考素材"
             onDragOverCapture={dropHandlers?.onDragOver}

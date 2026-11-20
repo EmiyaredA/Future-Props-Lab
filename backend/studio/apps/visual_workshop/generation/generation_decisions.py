@@ -3,7 +3,7 @@
 from sqlalchemy import select, update
 
 from studio.apps.visual_workshop.generation.generation_peer import GenerationPeer
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.storage.generation_dispatch_records import VisualGenerationDecision
 from studio.runtime.http.capability_client import CapabilityUnavailable
 from studio.runtime.time import utc_now
@@ -12,7 +12,7 @@ from studio.runtime.time import utc_now
 class GenerationDecisions:
     def __init__(self, state):
         self.sessions = state.database.sessions
-        self.peer = GenerationPeer(state)
+        self.peer = GenerationPeer(state.capabilities, state.visual_generation_peer)
 
     async def recover(self):
         row = VisualGenerationDecision

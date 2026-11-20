@@ -6,7 +6,8 @@ from uuid import uuid4
 from sqlalchemy import update
 
 from studio.apps.visual_workshop.composition_values import composition_items, new_composition
-from studio.apps.visual_workshop.generation_common import GenerationError, generation_batch_out
+from studio.apps.visual_workshop.generation_common import generation_batch_out
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.schemas.generation import (
     GenerationBatchOut,
     ImageCompositionCreateIn,

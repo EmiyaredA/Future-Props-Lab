@@ -283,6 +283,7 @@ def test_feature_query_keys_have_one_owner() -> None:
     }
     allowed_route_metadata = {
         WEB_SRC / "features" / "visual-workshop" / "module.ts",
+        WEB_SRC / "features" / "visual-workshop" / "paths.ts",
         WEB_SRC / "features" / "audio-annotation" / "module.ts",
     }
     violations: list[str] = []
@@ -297,6 +298,26 @@ def test_feature_query_keys_have_one_owner() -> None:
     assert not violations, "Feature 缓存键字面量只能由所属 queryKeys.ts 定义：\n" + "\n".join(
         violations
     )
+
+
+def test_visual_views_do_not_mutate_persistence_internals() -> None:
+    feature = WEB_SRC / "features" / "visual-workshop"
+    internals = {
+        "revisionRef",
+        "nodesRef",
+        "edgesRef",
+        "conflictRef",
+        "saveFailureRef",
+        "autoSave",
+        "setNodes",
+        "setEdges",
+        "setSaveState",
+        "setConflict",
+    }
+    for name in ("board/ProjectBoard.tsx", "canvas/VisualWorkshopCanvasView.tsx"):
+        source = (feature / name).read_text(encoding="utf-8")
+        identifiers = set(re.findall(r"\b[A-Za-z_][A-Za-z_0-9]*\b", source))
+        assert not (identifiers & internals), name
 
 
 def test_backend_routes_do_not_own_persistence() -> None:
@@ -984,7 +1005,16 @@ def test_project_applications_have_modules_routes_and_storage_roots() -> None:
         assert module.is_file(), f"{application} 缺少 feature module"
         source = module.read_text(encoding="utf-8")
         assert "supportsProjects: true" in source
-        assert f"/apps/{application}/projects/" in source
+        routing_sources = [module]
+        routing_sources.extend(
+            target
+            for specifier in _web_imports(module)
+            if (target := _resolve_web_module(module, specifier)) == feature / "paths.ts"
+        )
+        assert any(
+            f"/apps/{application}/projects/" in path.read_text(encoding="utf-8")
+            for path in routing_sources
+        )
         assert f'"{application}"' in settings + storage
         assert module.stem in registry or application.replace("-", "_").upper() in registry
 

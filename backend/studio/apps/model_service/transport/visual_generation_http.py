@@ -12,13 +12,14 @@ from studio.apps.model_service.catalog.visual_generation import (
 )
 from studio.apps.model_service.catalog_reads import owned_catalog
 from studio.apps.model_service.providers.autodl_workflows import reference_upload_url
+from studio.apps.model_service.providers.visual_reference_rules import visual_reference_rules
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.visual_workshop.visual_generation import (
     MODEL,
     ORIGINALS_HEADER,
     PLANS,
     ModelSelection,
-    VisualModelChoice,
+    VisualModelSelection,
     plan_target,
     settlement_path,
 )
@@ -27,7 +28,7 @@ from studio.contracts.visual_workshop.visual_generation_plan import GenerationPl
 router = APIRouter(include_in_schema=False)
 
 
-@router.post(MODEL + "/{digest}", response_model=VisualModelChoice)
+@router.post(MODEL + "/{digest}", response_model=VisualModelSelection)
 async def choose_visual_model(request: Request, digest: str, body: ModelSelection):
     if body.digest != digest:
         raise HTTPException(403, "visual_generation_model_query_changed")
@@ -43,7 +44,8 @@ async def choose_visual_model(request: Request, digest: str, body: ModelSelectio
             )
         except VisualGenerationValidationError as exc:
             raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
-        return VisualModelChoice(
+        return VisualModelSelection(
+            reference_rules=visual_reference_rules(provider.kind, model.slug),
             model_id=model.id,
             provider_id=provider.id,
             provider_kind=provider.kind,

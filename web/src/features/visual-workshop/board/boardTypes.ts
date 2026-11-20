@@ -7,7 +7,51 @@ import type {
 } from "../api";
 import { nodeGenerationActivity } from "../generation/generationActivityModel";
 
-export type BoardController = ReturnType<typeof useVisualCanvasController>;
+export type BoardController = Pick<
+  ReturnType<typeof useVisualCanvasController>,
+  | "applyServerCanvas"
+  | "assetTab"
+  | "assetView"
+  | "assetsOpen"
+  | "canvasQuery"
+  | "canvasReady"
+  | "client"
+  | "conflict"
+  | "createMediaNodeFromAsset"
+  | "createNode"
+  | "edges"
+  | "editingTitle"
+  | "getInsertionAnchor"
+  | "nodes"
+  | "onBack"
+  | "replaceEdges"
+  | "removeEdge"
+  | "linkGenerationTask"
+  | "patchNode"
+  | "prepareCanvasForAgent"
+  | "projectCardIds"
+  | "projectId"
+  | "projectQuery"
+  | "readCanvas"
+  | "removeNode"
+  | "renameMutation"
+  | "replaceProjectCardIds"
+  | "resolveConflict"
+  | "saveMessage"
+  | "saveState"
+  | "selectedId"
+  | "setAssetTab"
+  | "setAssetView"
+  | "setAssetsOpen"
+  | "setEditingTitle"
+  | "setSelectedId"
+  | "setSelectedNodeIds"
+  | "setTitle"
+  | "title"
+  | "upload"
+  | "uploadNotice"
+  | "uploadPosition"
+>;
 export const nodeTypeNames = {
   text: "文本",
   image: "图像",

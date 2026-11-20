@@ -5,16 +5,18 @@ from functools import partial
 from fastapi import APIRouter, Request
 
 from studio.apps.model_service.transport.website.model_capacity import task_admission
-from studio.apps.visual_workshop.card_generation import CardGeneration, CardGenerationIn
-from studio.apps.visual_workshop.generation_common import GenerationError
+from studio.apps.visual_workshop.card_generation import CardGeneration
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.generation_routes import generation_error
+from studio.apps.visual_workshop.schemas.card_generation import CardGenerationIn
 from studio.apps.visual_workshop.schemas.generation import (
     GenerationBatchOut,
     ImageCompositionCreateIn,
     ImageGenerationBatchCreateIn,
 )
 from studio.apps.visual_workshop.schemas.workshop import GenerationTaskCreateIn, GenerationTaskOut
-from studio.apps.visual_workshop.transport.previs_http import resolve
+from studio.apps.visual_workshop.storage.card_generation import SqlCardGeneration
+from studio.apps.visual_workshop.transport.project_errors import resolve
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.assembly.website.visual_workshop.website.generation import VisualGeneration
 from studio.contracts.model_service.schemas.visual_catalog import GenerationOptionsOut
@@ -60,9 +62,9 @@ async def generate_visual_asset_card(
     generation = VisualGeneration(session, request.app.state.settings)
     try:
         return await resolve(
-            CardGeneration(session, owner, project_id, card_id, body).run(
-                partial(generation.create, admission=task_admission(request, session, "visual"))
-            )
+            CardGeneration(
+                SqlCardGeneration(session, owner, project_id, card_id, body), project_id, body
+            ).run(partial(generation.create, admission=task_admission(request, session, "visual")))
         )
     except GenerationError as exc:
         raise generation_error(exc) from None

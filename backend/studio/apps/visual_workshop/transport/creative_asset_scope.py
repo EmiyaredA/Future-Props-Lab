@@ -5,6 +5,7 @@ from functools import partial
 import httpx
 from pydantic import TypeAdapter
 
+from studio.apps.visual_workshop.creative_ports import CreativeAsset
 from studio.contracts.asset_library.descriptions import LibraryAssetDescription, LibraryAssetQuery
 from studio.contracts.identity.claims import HEADER
 from studio.contracts.identity.delegation import RequestGrant
@@ -46,11 +47,11 @@ async def independent_creative_asset_scope(request, _session, _owner, project_id
         response.raise_for_status()
         if project_id is None:
             return {
-                item.id: (item.media_kind, item.mime_type, item.project_id)
+                item.id: CreativeAsset(item.media_kind, item.mime_type, item.project_id)
                 for item in CARD_DESCRIPTIONS.validate_json(response.content)
             }
         return {
-            item.id: (item.media_kind, item.mime_type)
+            item.id: CreativeAsset(item.media_kind, item.mime_type, project_id)
             for item in DESCRIPTIONS.validate_json(response.content)
         }
     except (CapabilityDenied, CapabilityUnavailable, httpx.HTTPError, ValueError) as exc:

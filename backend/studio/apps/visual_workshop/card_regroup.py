@@ -4,7 +4,8 @@ from pydantic import Field, model_validator
 from sqlalchemy import select, text
 
 from studio.apps.visual_workshop.creative_assets import model_id
-from studio.apps.visual_workshop.creative_workflow import Identifier, WorkflowModel, card_out
+from studio.apps.visual_workshop.schemas.creative_workflow import Identifier, WorkflowModel
+from studio.apps.visual_workshop.storage.creative_records import card_out
 from studio.apps.visual_workshop.storage.models import VisualAssetCard
 from studio.runtime.project_errors import ProjectResourceError
 

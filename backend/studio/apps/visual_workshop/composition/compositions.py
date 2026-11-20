@@ -6,7 +6,8 @@ from sqlalchemy import text
 
 from studio.apps.visual_workshop.composition.composition_peer import GridPeer
 from studio.apps.visual_workshop.composition_values import composition_items, new_composition
-from studio.apps.visual_workshop.generation_common import GenerationError, generation_batch_out
+from studio.apps.visual_workshop.generation_common import generation_batch_out
+from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.handoffs.segment_handoffs import require_canvas_unreserved
 from studio.apps.visual_workshop.projects import Projects
 from studio.apps.visual_workshop.reference_backlog import pending_outcomes

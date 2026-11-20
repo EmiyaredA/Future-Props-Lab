@@ -4,6 +4,7 @@ from sqlalchemy import or_, select
 
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
+from studio.apps.visual_workshop.creative_ports import CreativeAsset
 from studio.apps.visual_workshop.projects import Projects
 
 
@@ -23,7 +24,9 @@ async def website_creative_asset_scope(_request, session, owner, project_id, ide
                 VisualAsset.motion_compositor_project_id.is_(None),
             )
         )
-        return {identity: (kind, mime, scope) for identity, kind, mime, scope in records}
+        return {
+            identity: CreativeAsset(kind, mime, scope) for identity, kind, mime, scope in records
+        }
     await Projects(session, owner).row(project_id)
     linked = select(VisualProjectAssetReference.asset_id).where(
         VisualProjectAssetReference.owner_user_id == owner,
@@ -39,7 +42,7 @@ async def website_creative_asset_scope(_request, session, owner, project_id, ide
         )
     )
     return {
-        identity: (kind, mime)
+        identity: CreativeAsset(kind, mime, scope)
         for identity, kind, mime, scope in records
         if mime != "model/gltf-binary" or scope == project_id
     }

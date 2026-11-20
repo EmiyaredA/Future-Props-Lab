@@ -3,11 +3,10 @@
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
 
 from studio.apps.asset_library.scoped_project_files import check_project_scope
-from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.asset_library.visual.visual_snapshot_files import (
+    card_media,
     metadata,
     originals,
     scoped_assets,
@@ -63,24 +62,7 @@ async def card_media_selection(request: Request, digest: str, body: LibraryAsset
     if not 1 <= len(body.asset_ids) <= 500:
         raise HTTPException(422, "visual_asset_selection_size")
     async with request.app.state.database.sessions(info={"owner_user_id": owner}) as session:
-        rows = await session.scalars(
-            select(VisualAsset).where(
-                VisualAsset.owner_user_id == owner,
-                VisualAsset.id.in_(body.asset_ids),
-                VisualAsset.galgame_project_id.is_(None),
-                VisualAsset.video_editor_project_id.is_(None),
-                VisualAsset.motion_compositor_project_id.is_(None),
-            )
-        )
-        return [
-            CardMediaDescription(
-                id=row.id,
-                project_id=row.project_id,
-                media_kind=row.media_kind,
-                mime_type=row.mime_type,
-            )
-            for row in rows
-        ]
+        return await card_media(session, owner, body.asset_ids)
 
 
 @router.post(ASSETS + "/{project_id}/metadata/{digest}", response_model=SnapshotFiles)

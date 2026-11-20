@@ -7,7 +7,10 @@ import pytest
 from pydantic import ValidationError
 
 from studio.apps.visual_workshop.card_regroup import CardRegroupIn, regroup_cards
-from studio.apps.visual_workshop.creative_workflow import CardData, CreativeWorkflow
+from studio.apps.visual_workshop.creative_ports import CreativeAsset
+from studio.apps.visual_workshop.creative_workflow import CreativeWorkflow
+from studio.apps.visual_workshop.schemas.creative_workflow import CardData
+from studio.apps.visual_workshop.storage.creative_records import SqlCreativeRecords
 from studio.runtime.project_errors import ProjectResourceError
 from website_test_support import SessionLocal, app
 
@@ -17,9 +20,9 @@ async def cards(session):
     image = str(uuid4())
 
     async def inspect(_project, ids):
-        return {identity: ("image", "image/png", None) for identity in ids}
+        return {identity: CreativeAsset("image", "image/png", None) for identity in ids}
 
-    workflow = CreativeWorkflow(session, owner, inspect)
+    workflow = CreativeWorkflow(SqlCreativeRecords(session, owner), inspect)
     main = await workflow.save_card(
         None, CardData(kind="character", title="林夏", adopted_asset_id=image)
     )

@@ -49,6 +49,24 @@ class VisualModelChoice(BaseModel):
     temporary_upload_configured: bool
 
 
+class VisualReferenceRules(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    frame_constraints: bool
+    supports_subject: bool
+    frame_reference_slots: bool
+
+
+class VisualModelSelection(VisualModelChoice):
+    """Selection metadata is separate from the immutable, hashed task plan."""
+
+    reference_rules: VisualReferenceRules
+
+    @property
+    def choice(self) -> VisualModelChoice:
+        return VisualModelChoice.model_validate(self.model_dump(exclude={"reference_rules"}))
+
+
 def generation_source(method, path):
     return method == "POST" and re.fullmatch(
         rf"/v1/visual-workshop/projects/({ID})/(?:generation-(tasks|batches)|asset-cards/{ID}/generations)",

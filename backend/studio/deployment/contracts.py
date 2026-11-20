@@ -69,10 +69,12 @@ def operation_owner(path):
         "/v1/files/{asset_id}/thumbnail",
     }:
         return "rendering"
-    if path.startswith((
-        "/v1/visual-workshop/projects/{project_id}/asset-imports",
-        "/v1/visual-workshop/projects/{project_id}/asset-references",
-    )):
+    if path.startswith(
+        (
+            "/v1/visual-workshop/projects/{project_id}/asset-imports",
+            "/v1/visual-workshop/projects/{project_id}/asset-references",
+        )
+    ):
         return "assets"
     if path.startswith("/v1/account/demo-services/"):
         return "models"
