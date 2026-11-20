@@ -37,6 +37,7 @@
 | [append_run_event](#append-run-event) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events` |
 | [finish_run](#finish-run) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/finish` |
 | [heartbeat_run](#heartbeat-run) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat` |
+| [insert_instruction](#insert-instruction) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions` |
 | [pause_run_for_approval](#pause-run-for-approval) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval` |
 | [create_question](#create-question) | `POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question` |
 | [skill_load](#skill-load) | `POST /v1/amadeus/conversations/{conversation_id}/skills/{skill_id}/load` |
@@ -534,6 +535,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.agent_id` | 请求体 | codex / claude-code / opencode / dsh / pi | 是 |
 | `body.agent_model` | 请求体 | string | 否 |
 | `body.capabilities` | 请求体 | array | 否 |
+| `body.codex_image_generation` | 请求体 | boolean | 否 |
 | `body.context` | 请求体 | array | 否 |
 | `body.harness_effort` | 请求体 | string / null | 否 |
 | `body.mode` | 请求体 | agent / plan | 否 |
@@ -585,7 +587,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `run_id` | path | string | 是 |
 | `body` | application/json | RunEventIn | 是 |
 | `body.idempotency_key` | 请求体 | string | 是 |
-| `body.kind` | 请求体 | assistant_delta / assistant_message / reasoning_summary / run_usage / tool_call / tool_result / status / error / question / subagent_start / subagent_finish | 是 |
+| `body.kind` | 请求体 | assistant_delta / assistant_message / reasoning_summary / image_generation / run_usage / tool_call / tool_result / status / error / question / subagent_start / subagent_finish | 是 |
 | `body.payload` | 请求体 | object | 否 |
 
 **响应**：
@@ -633,6 +635,31 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `RunOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## insert_instruction {#insert-instruction}
+
+`client.amadeus.insert_instruction(...)`
+
+**接口**：`POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions`。**鉴权**：浏览器 Session；不接受 Management API Key。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `conversation_id` | path | string | 是 |
+| `run_id` | path | string | 是 |
+| `body` | application/json | InstructionCreate | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.references` | 请求体 | array | 否 |
+| `body.request_id` | 请求体 | string | 是 |
+| `body.text` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `InstructionOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

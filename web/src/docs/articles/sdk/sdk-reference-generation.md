@@ -17,6 +17,7 @@
 | [retry_image_composition](#retry-image-composition) | `POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition` |
 | [cancel_generation_task](#cancel-generation-task) | `POST /v1/visual-workshop/generation-tasks/{task_id}/cancel` |
 | [retry_materialization](#retry-materialization) | `POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization` |
+| [generate_visual_asset_card](#generate-visual-asset-card) | `POST /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations` |
 | [create_generation_batch](#create-generation-batch) | `POST /v1/visual-workshop/projects/{project_id}/generation-batches` |
 | [create_generation_task](#create-generation-task) | `POST /v1/visual-workshop/projects/{project_id}/generation-tasks` |
 | [create_image_composition](#create-image-composition) | `POST /v1/visual-workshop/projects/{project_id}/image-compositions` |
@@ -177,6 +178,32 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
 | `task_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `GenerationTaskOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## generate_visual_asset_card {#generate-visual-asset-card}
+
+`client.generation.generate_visual_asset_card(...)`
+
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`models.use`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `card_id` | path | string | 是 |
+| `body` | application/json | CardGenerationIn | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.model_id` | 请求体 | string | 是 |
+| `body.prompt` | 请求体 | string | 是 |
+| `body.request_id` | 请求体 | string | 是 |
+| `body.size` | 请求体 | string | 是 |
 
 **响应**：
 - `200` · `application/json` · `GenerationTaskOut`

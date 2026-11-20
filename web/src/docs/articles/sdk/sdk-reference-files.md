@@ -167,6 +167,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
 | `asset_id` | path | string | 是 |
+| `project_id` | query | string / null | 否 |
 
 **响应**：
 - `200` · `application/json` · `object`

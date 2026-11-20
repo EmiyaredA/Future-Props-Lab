@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 28, "title": "视觉工坊方法参考", "lead": "client.visual 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 29, "title": "视觉工坊方法参考", "lead": "client.visual 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 视觉工坊方法参考
 
@@ -13,8 +13,11 @@
 | [delete_project](#delete-project) | `DELETE /v1/visual-workshop/projects/{project_id}` |
 | [delete_asset_reference](#delete-asset-reference) | `DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}` |
 | [delete_node_output](#delete-node-output) | `DELETE /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}` |
+| [delete_previs_scene](#delete-previs-scene) | `DELETE /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}` |
 | [list_acceptance_templates](#list-acceptance-templates) | `GET /v1/visual-workshop/acceptance-templates` |
 | [acceptance_catalog](#acceptance-catalog) | `GET /v1/visual-workshop/acceptance/catalog` |
+| [list_account_asset_cards](#list-account-asset-cards) | `GET /v1/visual-workshop/asset-cards` |
+| [get_account_asset_card](#get-account-asset-card) | `GET /v1/visual-workshop/asset-cards/{card_id}` |
 | [list_projects](#list-projects) | `GET /v1/visual-workshop/projects` |
 | [get_project](#get-project) | `GET /v1/visual-workshop/projects/{project_id}` |
 | [list_acceptance_models](#list-acceptance-models) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/models` |
@@ -23,14 +26,21 @@
 | [get_acceptance_run](#get-acceptance-run) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}` |
 | [get_acceptance_standard](#get-acceptance-standard) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/standard` |
 | [acceptance_summary](#acceptance-summary) | `GET /v1/visual-workshop/projects/{project_id}/acceptance/summary` |
+| [list_visual_asset_cards](#list-visual-asset-cards) | `GET /v1/visual-workshop/projects/{project_id}/asset-cards` |
+| [get_visual_asset_card](#get-visual-asset-card) | `GET /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}` |
 | [get_canvas](#get-canvas) | `GET /v1/visual-workshop/projects/{project_id}/canvas` |
 | [get_node_acceptance](#get-node-acceptance) | `GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance` |
 | [list_node_outputs](#list-node-outputs) | `GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs` |
 | [get_node_output](#get-node-output) | `GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}` |
+| [list_previs_scenes](#list-previs-scenes) | `GET /v1/visual-workshop/projects/{project_id}/previs-scenes` |
+| [get_previs_scene](#get-previs-scene) | `GET /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}` |
+| [get_visual_script](#get-visual-script) | `GET /v1/visual-workshop/projects/{project_id}/script` |
 | [export_project_snapshot](#export-project-snapshot) | `GET /v1/visual-workshop/projects/{project_id}/snapshot` |
 | [patch_project](#patch-project) | `PATCH /v1/visual-workshop/projects/{project_id}` |
 | [patch_asset_reference](#patch-asset-reference) | `PATCH /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}` |
 | [create_acceptance_template](#create-acceptance-template) | `POST /v1/visual-workshop/acceptance-templates` |
+| [create_account_asset_card](#create-account-asset-card) | `POST /v1/visual-workshop/asset-cards` |
+| [regroup_account_asset_cards](#regroup-account-asset-cards) | `POST /v1/visual-workshop/asset-cards/regroup` |
 | [create_project](#create-project) | `POST /v1/visual-workshop/projects` |
 | [import_project_snapshot](#import-project-snapshot) | `POST /v1/visual-workshop/projects/snapshot-imports` |
 | [start_acceptance_runs](#start-acceptance-runs) | `POST /v1/visual-workshop/projects/{project_id}/acceptance/runs` |
@@ -38,6 +48,7 @@
 | [decide_acceptance_run](#decide-acceptance-run) | `POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions` |
 | [create_acceptance_repair](#create-acceptance-repair) | `POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts` |
 | [sample_acceptance_video](#sample-acceptance-video) | `POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples` |
+| [create_visual_asset_card](#create-visual-asset-card) | `POST /v1/visual-workshop/projects/{project_id}/asset-cards` |
 | [import_assets](#import-assets) | `POST /v1/visual-workshop/projects/{project_id}/asset-imports` |
 | [create_asset_reference](#create-asset-reference) | `POST /v1/visual-workshop/projects/{project_id}/asset-references` |
 | [apply_canvas_operations](#apply-canvas-operations) | `POST /v1/visual-workshop/projects/{project_id}/canvas/operations` |
@@ -46,12 +57,17 @@
 | [upload_node_output](#upload-node-output) | `POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads` |
 | [add_node_output](#add-node-output) | `POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs` |
 | [reveal_project_folder](#reveal-project-folder) | `POST /v1/visual-workshop/projects/{project_id}/open-folder` |
+| [create_previs_scene](#create-previs-scene) | `POST /v1/visual-workshop/projects/{project_id}/previs-scenes` |
 | [update_acceptance_template](#update-acceptance-template) | `PUT /v1/visual-workshop/acceptance-templates/{template_id}` |
+| [put_account_asset_card](#put-account-asset-card) | `PUT /v1/visual-workshop/asset-cards/{card_id}` |
 | [save_acceptance_repair](#save-acceptance-repair) | `PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}` |
 | [save_acceptance_standard](#save-acceptance-standard) | `PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard` |
+| [put_visual_asset_card](#put-visual-asset-card) | `PUT /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}` |
 | [put_canvas](#put-canvas) | `PUT /v1/visual-workshop/projects/{project_id}/canvas` |
 | [select_node_acceptance](#select-node-acceptance) | `PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance` |
 | [set_node_final_output](#set-node-final-output) | `PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output` |
+| [update_previs_scene](#update-previs-scene) | `PUT /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}` |
+| [put_visual_script](#put-visual-script) | `PUT /v1/visual-workshop/projects/{project_id}/script` |
 
 ## delete_acceptance_template {#delete-acceptance-template}
 
@@ -136,6 +152,27 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## delete_previs_scene {#delete-previs-scene}
+
+`client.visual.delete_previs_scene(...)`
+
+**接口**：`DELETE /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `scene_id` | path | string | 是 |
+| `expected_revision` | query | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## list_acceptance_templates {#list-acceptance-templates}
 
 `client.visual.list_acceptance_templates(...)`
@@ -169,6 +206,43 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `NodeAcceptanceCatalogOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_account_asset_cards {#list-account-asset-cards}
+
+`client.visual.list_account_asset_cards(...)`
+
+**接口**：`GET /v1/visual-workshop/asset-cards`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_account_asset_card {#get-account-asset-card}
+
+`client.visual.get_account_asset_card(...)`
+
+**接口**：`GET /v1/visual-workshop/asset-cards/{card_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `card_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `CardOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -327,6 +401,45 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## list_visual_asset_cards {#list-visual-asset-cards}
+
+`client.visual.list_visual_asset_cards(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/asset-cards`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_visual_asset_card {#get-visual-asset-card}
+
+`client.visual.get_visual_asset_card(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `card_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `CardOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## get_canvas {#get-canvas}
 
 `client.visual.get_canvas(...)`
@@ -407,6 +520,64 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `VisualNodeOutputOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## list_previs_scenes {#list-previs-scenes}
+
+`client.visual.list_previs_scenes(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/previs-scenes`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `array`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_previs_scene {#get-previs-scene}
+
+`client.visual.get_previs_scene(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `scene_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `PrevisSceneOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## get_visual_script {#get-visual-script}
+
+`client.visual.get_visual_script(...)`
+
+**接口**：`GET /v1/visual-workshop/projects/{project_id}/script`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ScriptOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -496,6 +667,60 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `AcceptanceTemplateOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## create_account_asset_card {#create-account-asset-card}
+
+`client.visual.create_account_asset_card(...)`
+
+**接口**：`POST /v1/visual-workshop/asset-cards`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | CardData | 是 |
+| `body.adopted_asset_id` | 请求体 | string / null | 否 |
+| `body.archived` | 请求体 | boolean | 否 |
+| `body.candidate_asset_ids` | 请求体 | array | 否 |
+| `body.candidate_task_ids` | 请求体 | array | 否 |
+| `body.design` | 请求体 | string | 否 |
+| `body.facts` | 请求体 | string | 否 |
+| `body.kind` | 请求体 | character / scene / prop | 是 |
+| `body.model_asset_key` | 请求体 | string / null | 否 |
+| `body.parent_asset_id` | 请求体 | string / null | 否 |
+| `body.parent_id` | 请求体 | string / null | 否 |
+| `body.proposed_design` | 请求体 | string | 否 |
+| `body.source` | 请求体 | ScriptSource / null | 否 |
+| `body.title` | 请求体 | string | 是 |
+
+**响应**：
+- `201` · `application/json` · `CardOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## regroup_account_asset_cards {#regroup-account-asset-cards}
+
+`client.visual.regroup_account_asset_cards(...)`
+
+**接口**：`POST /v1/visual-workshop/asset-cards/regroup`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `body` | application/json | CardRegroupIn | 是 |
+| `body.expected_revisions` | 请求体 | object | 是 |
+| `body.main_card_id` | 请求体 | string | 是 |
+| `body.variant_ids` | 请求体 | array | 是 |
+
+**响应**：
+- `200` · `application/json` · `array`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -661,6 +886,39 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## create_visual_asset_card {#create-visual-asset-card}
+
+`client.visual.create_visual_asset_card(...)`
+
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/asset-cards`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | CardData | 是 |
+| `body.adopted_asset_id` | 请求体 | string / null | 否 |
+| `body.archived` | 请求体 | boolean | 否 |
+| `body.candidate_asset_ids` | 请求体 | array | 否 |
+| `body.candidate_task_ids` | 请求体 | array | 否 |
+| `body.design` | 请求体 | string | 否 |
+| `body.facts` | 请求体 | string | 否 |
+| `body.kind` | 请求体 | character / scene / prop | 是 |
+| `body.model_asset_key` | 请求体 | string / null | 否 |
+| `body.parent_asset_id` | 请求体 | string / null | 否 |
+| `body.parent_id` | 请求体 | string / null | 否 |
+| `body.proposed_design` | 请求体 | string | 否 |
+| `body.source` | 请求体 | ScriptSource / null | 否 |
+| `body.title` | 请求体 | string | 是 |
+
+**响应**：
+- `201` · `application/json` · `CardOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## import_assets {#import-assets}
 
 `client.visual.import_assets(...)`
@@ -747,6 +1005,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.expected_revision` | 请求体 | integer | 是 |
 | `body.file` | 请求体 | string | 是 |
 | `body.group` | 请求体 | string / null | 否 |
+| `body.previs` | 请求体 | string / null | 否 |
 | `body.x` | 请求体 | number | 否 |
 | `body.y` | 请求体 | number | 否 |
 
@@ -852,6 +1111,30 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## create_previs_scene {#create-previs-scene}
+
+`client.visual.create_previs_scene(...)`
+
+**接口**：`POST /v1/visual-workshop/projects/{project_id}/previs-scenes`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | PrevisSceneCreate | 是 |
+| `body.document` | 请求体 | object | 是 |
+| `body.format_version` | 请求体 | integer | 是 |
+| `body.script_source` | 请求体 | ScriptSource / null | 否 |
+| `body.title` | 请求体 | string | 是 |
+
+**响应**：
+- `201` · `application/json` · `PrevisSceneOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## update_acceptance_template {#update-acceptance-template}
 
 `client.visual.update_acceptance_template(...)`
@@ -871,6 +1154,40 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `AcceptanceTemplateOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## put_account_asset_card {#put-account-asset-card}
+
+`client.visual.put_account_asset_card(...)`
+
+**接口**：`PUT /v1/visual-workshop/asset-cards/{card_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `card_id` | path | string | 是 |
+| `body` | application/json | CardUpdate | 是 |
+| `body.adopted_asset_id` | 请求体 | string / null | 否 |
+| `body.archived` | 请求体 | boolean | 否 |
+| `body.candidate_asset_ids` | 请求体 | array | 否 |
+| `body.candidate_task_ids` | 请求体 | array | 否 |
+| `body.design` | 请求体 | string | 否 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.facts` | 请求体 | string | 否 |
+| `body.kind` | 请求体 | character / scene / prop | 是 |
+| `body.model_asset_key` | 请求体 | string / null | 否 |
+| `body.parent_asset_id` | 请求体 | string / null | 否 |
+| `body.parent_id` | 请求体 | string / null | 否 |
+| `body.proposed_design` | 请求体 | string | 否 |
+| `body.source` | 请求体 | ScriptSource / null | 否 |
+| `body.title` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `CardOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
@@ -923,6 +1240,41 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
+## put_visual_asset_card {#put-visual-asset-card}
+
+`client.visual.put_visual_asset_card(...)`
+
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `card_id` | path | string | 是 |
+| `body` | application/json | CardUpdate | 是 |
+| `body.adopted_asset_id` | 请求体 | string / null | 否 |
+| `body.archived` | 请求体 | boolean | 否 |
+| `body.candidate_asset_ids` | 请求体 | array | 否 |
+| `body.candidate_task_ids` | 请求体 | array | 否 |
+| `body.design` | 请求体 | string | 否 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.facts` | 请求体 | string | 否 |
+| `body.kind` | 请求体 | character / scene / prop | 是 |
+| `body.model_asset_key` | 请求体 | string / null | 否 |
+| `body.parent_asset_id` | 请求体 | string / null | 否 |
+| `body.parent_id` | 请求体 | string / null | 否 |
+| `body.proposed_design` | 请求体 | string | 否 |
+| `body.source` | 请求体 | ScriptSource / null | 否 |
+| `body.title` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `CardOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
 ## put_canvas {#put-canvas}
 
 `client.visual.put_canvas(...)`
@@ -940,7 +1292,9 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.categories` | 请求体 | array / null | 否 |
 | `body.edges` | 请求体 | array | 否 |
 | `body.expected_revision` | 请求体 | integer | 是 |
+| `body.groups` | 请求体 | array / null | 否 |
 | `body.nodes` | 请求体 | array | 是 |
+| `body.project_card_ids` | 请求体 | array / null | 否 |
 
 **响应**：
 - `200` · `application/json` · `VisualCanvasDocumentOut`
@@ -990,5 +1344,53 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `VisualCanvasDocumentOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## update_previs_scene {#update-previs-scene}
+
+`client.visual.update_previs_scene(...)`
+
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `scene_id` | path | string | 是 |
+| `body` | application/json | PrevisSceneUpdate | 是 |
+| `body.document` | 请求体 | object | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.format_version` | 请求体 | integer | 是 |
+| `body.script_source` | 请求体 | ScriptSource / null | 否 |
+| `body.title` | 请求体 | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `PrevisSceneOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## put_visual_script {#put-visual-script}
+
+`client.visual.put_visual_script(...)`
+
+**接口**：`PUT /v1/visual-workshop/projects/{project_id}/script`。**鉴权**：Management API Key 或 Session；按当前账号固定权限校验。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `body` | application/json | ScriptUpdate | 是 |
+| `body.episodes` | 请求体 | array | 否 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+
+**响应**：
+- `200` · `application/json` · `ScriptOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
