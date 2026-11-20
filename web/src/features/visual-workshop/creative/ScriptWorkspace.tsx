@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Clapperboard, FileText, Plus } from "lucide-react";
 import { apiErrorMessage } from "@platform/api/errors";
+import { useNavigationGuard } from "@shared/ui/navigationGuards";
 import {
   getScript,
   saveScript,
@@ -55,6 +56,7 @@ export default function ScriptWorkspace({
   const [error, setError] = useState("");
   const [extract, setExtract] = useState<ScriptSeed>();
   const flight = useRef(false);
+  const leaving = useRef(false);
   const episode =
     current?.episodes.find((item) => item.id === episodeId) ??
     current?.episodes[0];
@@ -63,7 +65,9 @@ export default function ScriptWorkspace({
 
   useEffect(() => {
     if (!draft) return;
-    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    const warn = (event: BeforeUnloadEvent) => {
+      if (!leaving.current) event.preventDefault();
+    };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
   }, [draft]);
@@ -81,7 +85,12 @@ export default function ScriptWorkspace({
           client.setQueryData(key, saved);
           setDraft(undefined);
         }
-        await action?.(saved);
+        leaving.current = true;
+        try {
+          await action?.(saved);
+        } finally {
+          leaving.current = false;
+        }
       } catch (failure) {
         setError(apiErrorMessage(failure));
       } finally {
@@ -90,6 +99,12 @@ export default function ScriptWorkspace({
       }
     })();
   }
+
+  useNavigationGuard((resume) => {
+    if (leaving.current || (!draft && !flight.current)) return false;
+    commit(() => resume());
+    return true;
+  });
 
   function updateEpisodes(episodes: Script["episodes"]) {
     if (current && !readOnly) setDraft({ ...current, episodes });

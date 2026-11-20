@@ -9,6 +9,7 @@ import {
 } from "react";
 import { ArrowLeft, Clapperboard, FileText, Plus, Trash2 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigationGuard } from "@shared/ui/navigationGuards";
 import { apiErrorMessage } from "@platform/api/errors";
 import { createSceneDocument } from "../../../../vendor/toonflow/trumanScene";
 import type { VisualCanvasDocument } from "../api";
@@ -78,6 +79,7 @@ export default function PrevisWorkspace({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const flight = useRef(false);
+  const leaving = useRef(false);
   const editor = useRef<PrevisEditorHandle>(null);
   const nameInput = useRef<HTMLInputElement>(null);
   const nameId = useId();
@@ -102,9 +104,21 @@ export default function PrevisWorkspace({
   function leave(action: () => void | Promise<void>) {
     void run(async () => {
       if (editor.current && !(await editor.current.requestLeave())) return;
-      await action();
+      leaving.current = true;
+      try {
+        await action();
+      } finally {
+        leaving.current = false;
+      }
     });
   }
+
+  useNavigationGuard((resume) => {
+    if (leaving.current || (!editor.current && !flight.current && !importBusy))
+      return false;
+    leave(resume);
+    return true;
+  });
 
   function closeScene() {
     setActive(undefined);

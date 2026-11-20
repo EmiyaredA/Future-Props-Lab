@@ -4,6 +4,7 @@ import {
   useAssistantElements,
 } from "@platform/assistantElements";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { useUnsavedNavigation } from "@shared/ui/useUnsavedNavigation";
 import type { VisualWorkshopCanvasPageProps } from "@features/visual-workshop/canvas/visualCanvasTypes";
 import { useVisualCanvasController } from "@features/visual-workshop/canvas/useVisualCanvasController";
 import { VisualWorkshopCanvasView } from "@features/visual-workshop/canvas/VisualWorkshopCanvasView";
@@ -46,6 +47,12 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
   const { refetch: refetchProject } = projectQuery;
   const { refetch: refetchCanvas } = controller.canvasQuery;
   const dirty = saveState !== "saved" || controller.editingTitle;
+  const navigation = useUnsavedNavigation({
+    dirty,
+    busy: saveState === "saving",
+    title: "画布尚未保存",
+    description: "画布仍有未保存的修改，离开会丢失这些修改。",
+  });
   useEffect(
     () =>
       subscribeAmadeusMutation({ resource: "visual", projectId }, async () => {
@@ -180,6 +187,7 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
   );
   return (
     <>
+      {navigation.dialog}
       <TransferFeedback progress={controller.transferProgress} />
       {acceptanceError && (
         <p role="alert" className="acceptance-error">

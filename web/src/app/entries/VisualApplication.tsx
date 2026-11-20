@@ -1,5 +1,5 @@
 import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { RuntimeAccessProvider } from "@features/accounts";
@@ -7,8 +7,9 @@ import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
 import { VISUAL_WORKSHOP_MODULE as visual } from "@features/visual-workshop/module";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
+import { LoadingState } from "@shared/ui/LoadingState";
+import { useApplicationNavigation } from "@app/routing/useApplicationNavigation";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
 
 const Canvas = lazy(visual.pages.canvas);
 const Projects = lazy(visual.pages.projects);
@@ -22,30 +23,21 @@ const ReadOnlyVisual = lazy(() =>
   })),
 );
 
-function go(path: string) {
-  guardedNavigation(() => location.assign(path), true);
-}
-
-function navigate(page: string, projectId?: string) {
-  const path = visual.pathFor(page, projectId);
-  if (path && path !== location.pathname) go(path);
-}
-
-function openCanvas(id: string) {
-  navigate("visual-workshop-canvas", id);
-}
-
-function openAssets(id: string) {
-  navigate("visual-workshop-assets", id);
-}
-
-function openProjects() {
-  navigate("visual-workshop-projects");
-}
+const ownsPath = (pathname: string) => Boolean(visual.matchPath(pathname));
 
 function VisualWorkspace() {
   const writable = useAccountPermission("content.write");
-  const route = visual.matchPath(location.pathname);
+  const navigation = useApplicationNavigation(visual.definition.id, ownsPath);
+  const route = visual.matchPath(
+    new URL(navigation.path, location.origin).pathname,
+  );
+  const navigate = (page: string, projectId?: string) => {
+    const path = visual.pathFor(page, projectId);
+    if (path) navigation.navigate(path);
+  };
+  const openCanvas = (id: string) => navigate("visual-workshop-canvas", id);
+  const openAssets = (id: string) => navigate("visual-workshop-assets", id);
+  const openProjects = () => navigate("visual-workshop-projects");
   const page = route?.page ?? "visual-workshop-projects";
   const projectId = route?.projectId;
   const utilities = (
@@ -56,7 +48,13 @@ function VisualWorkspace() {
   );
 
   if (writable && page === "visual-workshop-canvas" && projectId) {
-    return <Canvas projectId={projectId} onBack={openProjects} />;
+    return (
+      <Suspense
+        fallback={<LoadingState label="正在打开画布…" variant="page" />}
+      >
+        <Canvas key={projectId} projectId={projectId} onBack={openProjects} />
+      </Suspense>
+    );
   }
 
   return (
@@ -69,51 +67,57 @@ function VisualWorkspace() {
           next === "visual-workshop-assets" ? projectId : undefined,
         )
       }
-      onBack={() => go("/apps")}
+      onBack={() => navigation.navigate("/apps")}
     >
-      {page === "visual-workshop-tasks" ? (
-        <Tasks
-          utilities={utilities}
-          onOpenProject={openCanvas}
-          onOpenAssets={openAssets}
-        />
-      ) : page === "visual-workshop-card-library" ? (
-        <CardLibrary utilities={utilities} readOnly={!writable} />
-      ) : page === "visual-workshop-assets" ? (
-        !projectId ? (
-          <AssetProjects utilities={utilities} onOpen={openAssets} />
+      <Suspense
+        fallback={<LoadingState label="正在打开页面…" variant="region" />}
+      >
+        {page === "visual-workshop-tasks" ? (
+          <Tasks
+            utilities={utilities}
+            onOpenProject={openCanvas}
+            onOpenAssets={openAssets}
+          />
+        ) : page === "visual-workshop-card-library" ? (
+          <CardLibrary utilities={utilities} readOnly={!writable} />
+        ) : page === "visual-workshop-assets" ? (
+          !projectId ? (
+            <AssetProjects utilities={utilities} onOpen={openAssets} />
+          ) : (
+            <Assets
+              key={projectId}
+              utilities={utilities}
+              projectId={projectId}
+              onCanvas={() => openCanvas(projectId)}
+              onProjects={openProjects}
+              readOnly={!writable}
+            />
+          )
+        ) : writable ? (
+          <Projects
+            utilities={utilities}
+            onOpenProject={openCanvas}
+            onOpenAssets={openAssets}
+          />
         ) : (
-          <Assets
-            utilities={utilities}
-            projectId={projectId}
-            onCanvas={() => openCanvas(projectId)}
-            onProjects={openProjects}
-            readOnly={!writable}
-          />
-        )
-      ) : writable ? (
-        <Projects
-          utilities={utilities}
-          onOpenProject={openCanvas}
-          onOpenAssets={openAssets}
-        />
-      ) : (
-        <>
-          {projectId && (
-            <div className="readonly-page button-row">
-              <button className="btn" onClick={() => openAssets(projectId)}>
-                项目素材
-              </button>
-            </div>
-          )}
-          <ReadOnlyVisual
-            utilities={utilities}
-            projectId={projectId}
-            onOpen={openCanvas}
-            onBack={openProjects}
-          />
-        </>
-      )}
+          <>
+            {projectId && (
+              <div className="readonly-page button-row">
+                <button className="btn" onClick={() => openAssets(projectId)}>
+                  项目素材
+                </button>
+              </div>
+            )}
+            <ReadOnlyVisual
+              key={projectId}
+              utilities={utilities}
+              projectId={projectId}
+              onOpen={openCanvas}
+              onBack={openProjects}
+            />
+          </>
+        )}
+      </Suspense>
     </WorkshopShell>
   );
 }
