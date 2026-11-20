@@ -1,9 +1,10 @@
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
+import { Search } from "lucide-react";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { useEffect, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CustomSelect } from "@shared/ui/CustomSelect";
+import { SearchablePickerDialog } from "@shared/ui/SearchablePickerDialog";
 import { listMedia, uploadImage } from "../api";
 import { presentationKeys } from "../queryKeys";
 
@@ -28,42 +29,64 @@ export function MediaChooser({
       mounted.current = false;
     };
   }, []);
+  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [selection, setSelection] = useState<{ id: string; label: string }>();
+  const search = useDeferredValue(query);
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
   const files = useQuery({
-    queryKey: presentationKeys.mediaSearch(kind, query),
-    queryFn: ({ signal }) => listMedia(kind, query, signal),
+    queryKey: presentationKeys.mediaSearch(kind, search),
+    queryFn: ({ signal }) => listMedia(kind, search, signal),
+    enabled: open,
   });
   return (
     <div className="presentation-object-media">
       <TransferFeedback progress={activeTransferProgress} />
 
-      <input
-        aria-label={`搜索${label}`}
-        value={query}
-        placeholder="搜索当前空间文件库"
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      <CustomSelect
-        ariaLabel={label}
-        value={value ?? ""}
-        options={[
-          {
-            value: "",
-            label: files.isPending ? "正在读取文件库…" : "选择文件库素材",
-            disabled: true,
-          },
-          ...(value && !files.data?.items.some((f) => f.id === value)
-            ? [{ value, label: "当前素材" }]
-            : []),
-          ...(files.data?.items ?? []).map((f) => ({
-            value: f.id,
-            label: f.display_name,
-          })),
-        ]}
-        onChange={change}
-      />
+      <button
+        type="button"
+        className="searchable-picker-trigger"
+        aria-label={label}
+        aria-haspopup="dialog"
+        onClick={() => {
+          setQuery("");
+          setOpen(true);
+        }}
+      >
+        <span>
+          {value
+            ? selection?.id === value
+              ? selection.label
+              : `更换${label}`
+            : `选择${label}`}
+        </span>
+        <Search size={15} aria-hidden />
+      </button>
+      {open && (
+        <SearchablePickerDialog
+          title={`选择${label}`}
+          searchLabel={`搜索${label}`}
+          value={value}
+          items={(files.data?.items ?? []).map((file) => ({
+            id: file.id,
+            label: file.display_name,
+            keywords: file.original_filename,
+            icon: kind,
+            preview:
+              kind !== "audio" ? `/v1/files/${file.id}/thumbnail` : undefined,
+          }))}
+          onSearch={setQuery}
+          loading={files.isPending || query !== search}
+          error={files.isError ? "文件库读取失败" : undefined}
+          onClose={() => setOpen(false)}
+          onChoose={(item) => {
+            if (!item) return;
+            setSelection(item);
+            change(item.id);
+          }}
+        />
+      )}
       <label className="btn presentation-object-upload">
         {busy ? (
           <LoadingState variant="inline" label="上传中…" />
@@ -86,6 +109,7 @@ export function MediaChooser({
               .then((asset) => {
                 if (!mounted.current) return;
                 change(asset.id);
+                setSelection({ id: asset.id, label: asset.display_name });
                 void files.refetch();
               })
               .catch((e) => {
@@ -98,9 +122,7 @@ export function MediaChooser({
           }}
         />
       </label>
-      {(error || files.isError) && (
-        <p role="alert">{error || "文件库读取失败"}</p>
-      )}
+      {error && <p role="alert">{error}</p>}
     </div>
   );
 }

@@ -129,6 +129,8 @@ def remap_canvas(
         node["generation_task_id"] = None
         if node["kind"] == "image":
             node["generation_batch_id"] = None
+            node["design_card_id"] = None
+            node["design_card_revision"] = None
         draft = node.get("generation_draft")
         if not isinstance(draft, dict):
             continue
@@ -138,6 +140,20 @@ def remap_canvas(
         for key in ("reference_asset_ids", "audio_asset_ids", "video_asset_ids"):
             draft[key] = [
                 mapped_asset(value, f"canvas.nodes[{index}].{key}") for value in draft.get(key, [])
+            ]
+        if "design_references" in draft:
+            draft["design_references"] = []
+        if draft.get("reference_subjects") is not None:
+            draft["reference_subjects"] = {
+                (f"asset:{asset_ids[key[6:]]}" if key.startswith("asset:") else key): value
+                for key, value in draft["reference_subjects"].items()
+                if not key.startswith("asset:") or key[6:] in asset_ids
+            }
+        if draft.get("reference_order") is not None:
+            draft["reference_order"] = [
+                f"asset:{asset_ids[key[6:]]}" if key.startswith("asset:") else key
+                for key in draft["reference_order"]
+                if not key.startswith("asset:") or key[6:] in asset_ids
             ]
         if "prompt_reference_names" in draft:
             draft["prompt_reference_names"] = {

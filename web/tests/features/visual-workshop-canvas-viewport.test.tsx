@@ -151,10 +151,12 @@ test("keeps canvas panning stable when pointer movement and release are batched"
   fireEvent.keyUp(window, { code: "Space", key: " " });
 
   expect(container.querySelector(".visual-canvas")).toBeInTheDocument();
-  expect(
-    container.querySelector<HTMLElement>(".visual-canvas-world")?.style
-      .transform,
-  ).toContain("translate(100px, 60px)");
+  await waitFor(() =>
+    expect(
+      container.querySelector<HTMLElement>(".vue-flow__transformationpane")
+        ?.style.transform,
+    ).toContain("translate(100px,60px)"),
+  );
 });
 
 test("captures trackpad pinch zoom after the asynchronous canvas mount", async () => {
@@ -236,10 +238,12 @@ test("handles native pinch gestures when the project initially opens in board mo
     expect(change.defaultPrevented).toBe(true);
   }
   expect(screen.getByRole("button", { name: "150%" })).toBeInTheDocument();
-  expect(
-    container.querySelector<HTMLElement>(".visual-canvas-world")?.style
-      .transform,
-  ).toContain("translate(-200px, -150px)");
+  await waitFor(() =>
+    expect(
+      container.querySelector<HTMLElement>(".vue-flow__transformationpane")
+        ?.style.transform,
+    ).toContain("translate(-200px,-150px)"),
+  );
   const end = new Event("gestureend", { cancelable: true });
   fireEvent(surface, end);
   expect(end.defaultPrevented).toBe(true);

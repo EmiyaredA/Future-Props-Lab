@@ -27,6 +27,7 @@ MODULES = (
     "pydantic_core",
     "websockets",
     "sniffio",
+    "PIL",
 )
 
 
@@ -53,6 +54,7 @@ def prepare_runtime(runtime_path):
                 digest.update(file.read_bytes())
     runner = Path(__file__).with_name("workspace_python.py")
     digest.update(runner.read_bytes())
+    digest.update(Path(__file__).read_bytes())
     parent = Path(runtime_path) / "agent-workspace"
     if parent.is_symlink():
         raise CliError("脚本运行环境不能经过符号链接")
@@ -85,7 +87,7 @@ def prepare_runtime(runtime_path):
                 # Use the base interpreter, never the backend editable virtualenv.
                 executable = Path(getattr(sys, "_base_executable", sys.executable)).resolve()
                 script.write_text(
-                    f"#!/bin/sh\nexec '{executable}' -I '{target / 'python.py'}'{suffix} \"$@\"\n"
+                    f"#!/bin/bash\nexec '{executable}' -I '{target / 'python.py'}'{suffix} \"$@\"\n"
                 )
                 script.chmod(0o500)
             (stage / "ready.json").write_text(json.dumps({"digest": digest.hexdigest()}))

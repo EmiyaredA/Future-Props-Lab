@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from functools import partial
+
 from fastapi import APIRouter, Request
 
 from studio.apps.model_service.transport.website.model_capacity import task_admission
+from studio.apps.visual_workshop.card_generation import CardGeneration, CardGenerationIn
 from studio.apps.visual_workshop.generation_common import GenerationError
 from studio.apps.visual_workshop.generation_routes import generation_error
 from studio.apps.visual_workshop.schemas.generation import (
@@ -11,7 +14,8 @@ from studio.apps.visual_workshop.schemas.generation import (
     ImageGenerationBatchCreateIn,
 )
 from studio.apps.visual_workshop.schemas.workshop import GenerationTaskCreateIn, GenerationTaskOut
-from studio.assembly.http_dependencies import SessionDep
+from studio.apps.visual_workshop.transport.previs_http import resolve
+from studio.assembly.http_dependencies import OwnerDep, SessionDep
 from studio.assembly.website.visual_workshop.website.generation import VisualGeneration
 from studio.contracts.model_service.schemas.visual_catalog import GenerationOptionsOut
 
@@ -38,6 +42,28 @@ async def create_generation_task(
             project_id, body, admission=task_admission(request, session, "visual")
         )
         return result
+    except GenerationError as exc:
+        raise generation_error(exc) from None
+
+
+@router.post(
+    "/projects/{project_id}/asset-cards/{card_id}/generations", response_model=GenerationTaskOut
+)
+async def generate_visual_asset_card(
+    request: Request,
+    session: SessionDep,
+    owner: OwnerDep,
+    project_id: str,
+    card_id: str,
+    body: CardGenerationIn,
+):
+    generation = VisualGeneration(session, request.app.state.settings)
+    try:
+        return await resolve(
+            CardGeneration(session, owner, project_id, card_id, body).run(
+                partial(generation.create, admission=task_admission(request, session, "visual"))
+            )
+        )
     except GenerationError as exc:
         raise generation_error(exc) from None
 

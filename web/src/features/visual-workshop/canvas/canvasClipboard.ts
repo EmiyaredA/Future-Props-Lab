@@ -1,5 +1,6 @@
 import type {
   VisualCanvasEdge,
+  VisualCanvasGroup,
   VisualCanvasNode,
 } from "@features/visual-workshop/api";
 import { removeDisconnectedEdgeReferences } from "./canvasGraph";
@@ -10,12 +11,14 @@ export type CanvasClipboardSnapshot = {
   nodes: VisualCanvasNode[];
   edges: VisualCanvasEdge[];
   origin: CanvasPoint;
+  groups?: VisualCanvasGroup[];
 };
 
 export function captureCanvasSelection(
   nodes: VisualCanvasNode[],
   edges: VisualCanvasEdge[],
   selectedIds: string[],
+  groups: VisualCanvasGroup[] = [],
 ): CanvasClipboardSnapshot | undefined {
   const selected = new Set(selectedIds);
   const internalEdges = edges.filter(
@@ -32,6 +35,9 @@ export function captureCanvasSelection(
   return structuredClone({
     nodes: copiedNodes,
     edges: internalEdges,
+    groups: groups.filter(({ node_ids }) =>
+      node_ids.every((id) => selected.has(id)),
+    ),
     origin: {
       x: Math.min(...copiedNodes.map((node) => node.position.x)),
       y: Math.min(...copiedNodes.map((node) => node.position.y)),
@@ -42,10 +48,13 @@ export function captureCanvasSelection(
 export function cloneCanvasSelection(
   snapshot: CanvasClipboardSnapshot,
   position: CanvasPoint,
-): Pick<CanvasClipboardSnapshot, "nodes" | "edges"> {
+): Pick<CanvasClipboardSnapshot, "nodes" | "edges" | "groups"> {
   const copy = structuredClone(snapshot);
   const ids = new Map(
     copy.nodes.map((node) => [node.id, nextNodeId(node.kind)]),
+  );
+  const edgeIds = new Map(
+    copy.edges.map((edge) => [edge.id, `edge-${crypto.randomUUID()}`]),
   );
   const nodes = copy.nodes.map((node): VisualCanvasNode => {
     const base = {
@@ -59,6 +68,41 @@ export function cloneCanvasSelection(
       },
     };
     if (base.kind === "text") return base;
+    if (
+      base.kind === "video" &&
+      base.generation_draft?.reference_order != null
+    ) {
+      base.generation_draft = {
+        ...base.generation_draft,
+        reference_order: base.generation_draft.reference_order
+          .filter(
+            (key) => !key.startsWith("edge:") || edgeIds.has(key.slice(5)),
+          )
+          .map((key) =>
+            key.startsWith("edge:") ? `edge:${edgeIds.get(key.slice(5))}` : key,
+          ),
+      };
+    }
+    if (
+      base.kind === "video" &&
+      base.generation_draft?.reference_subjects != null
+    ) {
+      base.generation_draft = {
+        ...base.generation_draft,
+        reference_subjects: Object.fromEntries(
+          Object.entries(base.generation_draft.reference_subjects)
+            .filter(
+              ([key]) => !key.startsWith("edge:") || edgeIds.has(key.slice(5)),
+            )
+            .map(([key, value]) => [
+              key.startsWith("edge:")
+                ? `edge:${edgeIds.get(key.slice(5))}`
+                : key,
+              value,
+            ]),
+        ),
+      };
+    }
     return {
       ...base,
       generation_task_id: null,
@@ -67,7 +111,7 @@ export function cloneCanvasSelection(
   });
   const edges = copy.edges.map((edge) => ({
     ...edge,
-    id: `edge-${crypto.randomUUID()}`,
+    id: edgeIds.get(edge.id)!,
     // A fixed version retains its owner; the copy continues referencing that exact output.
     source_node_id:
       edge.binding === "fixed"
@@ -75,7 +119,12 @@ export function cloneCanvasSelection(
         : ids.get(edge.source_node_id)!,
     target_node_id: ids.get(edge.target_node_id)!,
   }));
-  return { nodes, edges };
+  const groups = copy.groups?.map((group) => ({
+    ...group,
+    id: crypto.randomUUID(),
+    node_ids: group.node_ids.map((id) => ids.get(id)!),
+  }));
+  return { nodes, edges, groups };
 }
 
 export function canvasPasteError(

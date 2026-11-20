@@ -7,7 +7,10 @@ from studio.apps.asset_library.storage.file_paths import TARGET_STORAGE_VERSION,
 from studio.apps.asset_library.storage.models import VisualAsset
 from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
+from studio.apps.visual_workshop.card_generation import card_generation_resource_id
+from studio.apps.visual_workshop.creative_workflow import require_project_card_media_clear
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
+from studio.apps.visual_workshop.previs_publication import RECEIPT_KIND, publication_resource_id
 from studio.apps.visual_workshop.project_values import project_out as project_out
 from studio.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectCreateIn,
@@ -103,6 +106,7 @@ class VisualWorkshopProjects:
 
     async def delete(self, project_id: str, expected_revision: int) -> None:
         await self._row(project_id)
+        await require_project_card_media_clear(self.session, self.owner_user_id, project_id)
         assets = (
             (
                 await self.session.execute(
@@ -125,6 +129,7 @@ class VisualWorkshopProjects:
             owner_user_id=self.owner_user_id,
             legacy_paths=legacy_paths,
         ):
+            await require_project_card_media_clear(self.session, self.owner_user_id, project_id)
             await self.session.execute(
                 delete(VisualProjectAssetReference).where(
                     VisualProjectAssetReference.project_id == project_id
@@ -147,4 +152,16 @@ class VisualWorkshopProjects:
                 owner_user_id=self.owner_user_id,
                 kind="visual",
                 resource_id=project_id,
+            )
+            await forget(
+                self.session,
+                owner_user_id=self.owner_user_id,
+                kind=RECEIPT_KIND,
+                resource_id=publication_resource_id(project_id),
+            )
+            await forget(
+                self.session,
+                owner_user_id=self.owner_user_id,
+                kind="visual",
+                resource_id=card_generation_resource_id(project_id),
             )

@@ -1,5 +1,9 @@
 import { lazy, type ReactNode } from "react";
 import type { AppPage, AppRoute } from "@app/routes";
+import { VISUAL_WORKSHOP_MODULE } from "@features/visual-workshop/module";
+const VisualAssetProjects = lazy(VISUAL_WORKSHOP_MODULE.pages.assetProjects);
+const VisualAssets = lazy(VISUAL_WORKSHOP_MODULE.pages.assets);
+const VisualCardLibrary = lazy(VISUAL_WORKSHOP_MODULE.pages.cardLibrary);
 const Files = lazy(() =>
   import("@features/files/ReadOnlyFiles").then((m) => ({
     default: m.ReadOnlyFiles,
@@ -63,7 +67,20 @@ export function ReadOnlyRoutes({
       />
     );
   if (page === "visual-workshop-assets")
-    return <Files projectId={projectId} utilities={utilityBar} />;
+    return projectId ? (
+      <VisualAssets
+        projectId={projectId}
+        utilities={utilityBar}
+        onCanvas={() => navigate("visual-workshop-canvas", projectId)}
+        onProjects={() => navigate("visual-workshop-projects")}
+        readOnly
+      />
+    ) : (
+      <VisualAssetProjects
+        utilities={utilityBar}
+        onOpen={(id) => navigate("visual-workshop-assets", id)}
+      />
+    );
   if (page === "visual-workshop-tasks")
     return (
       <VisualTasks
@@ -72,6 +89,8 @@ export function ReadOnlyRoutes({
         onOpenAssets={(id) => navigate("visual-workshop-assets", id)}
       />
     );
+  if (page === "visual-workshop-card-library")
+    return <VisualCardLibrary utilities={utilityBar} readOnly />;
   if (page.startsWith("visual-workshop-"))
     return (
       <>

@@ -16,6 +16,7 @@ from studio.contracts.thought_workshop.thought_archives import ArchiveFileKey
 from studio.contracts.visual_workshop.visual_paths import SOURCE
 
 ASSETS = "/_internal/v1/visual-snapshot-assets"
+CARD_MEDIA = "/_internal/v1/visual-card-media"
 MODELS = "/_internal/v1/visual-snapshot-models"
 ASSET_PURPOSE = "visual.snapshot-assets.read"
 MODEL_PURPOSE = "visual.snapshot-models.read"
@@ -37,6 +38,14 @@ class SnapshotAssetQuery(LibraryAssetQuery):
 class SnapshotAsset(LibraryAssetDescription):
     display_name: str
     folder_id: str | None
+
+
+class CardMediaDescription(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+    id: str
+    project_id: str | None
+    media_kind: str
+    mime_type: str
 
 
 class SnapshotFolder(BaseModel):
@@ -80,8 +89,14 @@ class ModelIdentity(BaseModel):
 
 def asset_target(method, path):
     if method == "POST":
-        return re.fullmatch(rf"{ASSETS}/({ID})/(metadata|originals)/([a-f0-9]{{64}})", path)
+        return re.fullmatch(
+            rf"{ASSETS}/({ID})/(metadata|originals|selection)/([a-f0-9]{{64}})", path
+        )
     return None
+
+
+def card_media_target(method, path):
+    return method == "POST" and bool(re.fullmatch(rf"{CARD_MEDIA}/[a-f0-9]{{64}}", path))
 
 
 def model_target(method, path):
@@ -89,14 +104,37 @@ def model_target(method, path):
 
 
 def snapshot_grant(grant):
-    if grant.caller != "visual" or grant.source_method != "GET":
+    if grant.caller != "visual":
+        return False
+    if grant.source_method in ("POST", "PUT"):
+        if (
+            re.fullmatch(
+                rf"/v1/visual-workshop(?:/projects/{ID})?/asset-cards(?:/{ID})?",
+                grant.source_path,
+            )
+            and card_media_target(grant.target_method, grant.target_path)
+        ):
+            return (grant.purpose, grant.target_service) == (ASSET_PURPOSE, "assets")
+        source = re.fullmatch(
+            rf"{SOURCE}/({ID})/(?:asset-cards|previs-scenes)(?:/{ID})?",
+            grant.source_path,
+        )
+        target = asset_target(grant.target_method, grant.target_path)
+        return bool(
+            source
+            and target
+            and source[1] == target[1]
+            and target[2] == "selection"
+            and (grant.purpose, grant.target_service) == (ASSET_PURPOSE, "assets")
+        )
+    if grant.source_method != "GET":
         return False
     source = re.fullmatch(rf"{SOURCE}/({ID})/snapshot", grant.source_path)
     if source is None:
         return False
     if (grant.purpose, grant.target_service) == (ASSET_PURPOSE, "assets"):
         target = asset_target(grant.target_method, grant.target_path)
-        return bool(target and target[1] == source[1])
+        return bool(target and target[1] == source[1] and target[2] != "selection")
     return (grant.purpose, grant.target_service) == (MODEL_PURPOSE, "models") and model_target(
         grant.target_method, grant.target_path
     )

@@ -23,3 +23,11 @@ with website_client(profile="codex") as client:
 也可在进程环境中提供 `FPL_URL`、`FPL_API_KEY`，或向 `Client(base_url=..., api_key=...)` 显式传入凭据。CLI/MCP 只执行服务端登记的业务操作。`fpl open` 返回校验归属的网站链接，不控制浏览器标签页。写入不自动重试，CAS 冲突由调用者重新读取并处理。
 
 生成类型和具名方法来自 OpenAPI；修改后运行 `npm run contracts:generate`，使用 `npm run sdk:check` 检查漂移。业务工作流示例位于 `future_props_lab.workshop_examples`，版本化数据与素材契约以产品官方指南为准。
+
+## Amadeus 临时工作区
+
+在 Amadeus 的 `execute_workspace` 中可使用 `from future_props_lab import task_client`，
+或使用 `async_task_client()`。它们保留标准 SDK 的资源方法，但只通过当前运行的授权工具桥访问登记的 JSON 操作。
+CLI 使用 `fpl --task operations`、`fpl --task call visual.list_projects`，不需要网站登录配置。
+写操作抛出 `WaitingApproval` 并暂停运行；等待用户审批，不自动重跑脚本。
+任务模式不提供直接网络访问、个人配置、任意 API、上传及下载流。

@@ -470,3 +470,51 @@
     animation: none;
   }
 }
+
+.visual-canvas-group {
+  position: absolute;
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 45%, transparent);
+  pointer-events: none;
+}
+
+.visual-canvas-group.is-selected {
+  border: 2px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.visual-canvas-group-handle {
+  height: 34px;
+  padding: 0 38px 0 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-strong);
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.visual-canvas-group-handle small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.visual-canvas-group-rename {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  border: 0;
+  color: var(--muted);
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.visual-canvas-group-handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px 10px 4px 4px;
+}

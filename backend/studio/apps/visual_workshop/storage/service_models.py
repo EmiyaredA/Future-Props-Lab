@@ -25,9 +25,12 @@ from studio.apps.visual_workshop.storage.generation_dispatch_records import (
     VisualGenerationDispatch,
 )
 from studio.apps.visual_workshop.storage.models import (
+    VisualAssetCard,
     VisualCanvasDocument,
     VisualGenerationBatch,
     VisualGenerationTask,
+    VisualPrevisScene,
+    VisualScript,
     VisualWorkshopProject,
 )
 from studio.apps.visual_workshop.storage.review_dispatch_records import VisualReviewDispatch
@@ -114,6 +117,9 @@ MODELS = (
     AcceptanceRepairDraft,
     VisualWorkshopProject,
     VisualCanvasDocument,
+    VisualPrevisScene,
+    VisualScript,
+    VisualAssetCard,
     VisualGenerationTask,
     VisualGenerationBatch,
     VisualNodeOutput,

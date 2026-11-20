@@ -4,11 +4,13 @@ import json
 import os
 import time
 from functools import partial
+from io import BytesIO
 from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
 import pytest
+from PIL import Image
 from scripts.website import frontend
 from scripts.website.serve import authenticate_browser
 
@@ -297,6 +299,55 @@ async def test_api_key_automation_keeps_allowlist_and_reports_account_scoped_cha
         )
         assert project.status_code == 200
         assert (await website.local.get("/v1/automation/changes")).json()["revision"] == before + 1
+
+        image = BytesIO()
+        Image.new("RGB", (8, 8), color="#dad4cb").save(image, format="PNG")
+        project_id = project.json()["id"]
+        upload = await client.post(
+            "/v1/files",
+            data={"project_id": project_id},
+            files={"upload": ("角色.png", image.getvalue(), "image/png")},
+        )
+        assert upload.status_code in (200, 201), upload.text
+        import_path = "/v1/file-library/asset-imports"
+        import_body = {"source_project_id": project_id, "asset_ids": [upload.json()["id"]]}
+        imported = await client.post(import_path, json=import_body)
+        assert imported.status_code == 200, imported.text
+        asset = imported.json()["items"][0]
+        assert asset["project_id"] is None and asset["id"] != upload.json()["id"]
+
+        cards_path = "/v1/visual-workshop/asset-cards"
+        operations = catalog.json()["operations"]
+        assert operations["visual.list_account_asset_cards"]["path"] == cards_path
+        assert operations["visual.create_account_asset_card"]["method"] == "POST"
+        card = await client.post(
+            cards_path,
+            json={"title": "SDK 角色", "kind": "character", "adopted_asset_id": asset["id"]},
+        )
+        assert card.status_code == 201, card.text
+        card_id = card.json()["id"]
+        card_path = f"{cards_path}/{card_id}"
+        assert (await client.get(card_path)).json()["title"] == "SDK 角色"
+        update = {"title": "SDK 角色修订", "kind": "character", "expected_revision": 0}
+        assert (await client.put(card_path, json=update)).json()["revision"] == 1
+        assert (await client.put(card_path, json=update)).status_code == 409
+        project_cards = f"/v1/visual-workshop/projects/{project.json()['id']}/asset-cards"
+        assert {item["id"] for item in (await client.get(project_cards)).json()} == {card_id}
+        assert (
+            await client.post(f"{project_cards}/{card_id}/generations", json={})
+        ).status_code == 403
+
+        read_key = await website.local.post(
+            "/v1/account/api-keys",
+            json={"name": "cards-read", "scopes": ["studio:read"], "expires_in_days": 1},
+        )
+        assert read_key.status_code == 201, read_key.text
+        read_headers = {"Authorization": f"Bearer {read_key.json()['secret']}"}
+        assert (await client.get(card_path, headers=read_headers)).status_code == 200
+        assert (await client.put(card_path, headers=read_headers, json=update)).status_code == 403
+        assert (
+            await client.post(import_path, headers=read_headers, json=import_body)
+        ).status_code == 403
         assert (await client.get("/v1/automation/access")).status_code == 403
         assert (await client.get("/v1/platform/accounts")).status_code == 403
         assert (await client.get("/v1/amadeus/conversations")).status_code == 403

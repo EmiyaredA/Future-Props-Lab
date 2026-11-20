@@ -123,41 +123,6 @@
 
 .canvas-inspector-assets {
   margin-top: 14px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 7px;
-}
-
-.canvas-inspector-assets button {
-  min-width: 0;
-  min-height: 54px;
-  padding: 8px 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface);
-  color: var(--muted);
-  font-size: 9px;
-  text-align: left;
-}
-
-.canvas-inspector-assets button.selected {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.canvas-inspector-assets button svg {
-  width: 16px;
-  flex: none;
-}
-
-.canvas-inspector-assets button span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .canvas-inspector-state {

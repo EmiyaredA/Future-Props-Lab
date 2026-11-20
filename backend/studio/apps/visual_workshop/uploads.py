@@ -19,9 +19,11 @@ from studio.apps.visual_workshop.handoffs.segment_handoffs import require_canvas
 from studio.apps.visual_workshop.outputs.mutations import OutputMutations
 from studio.apps.visual_workshop.outputs.queries import OutputError
 from studio.apps.visual_workshop.outputs.schemas import VisualNodeOutputCreateIn
+from studio.apps.visual_workshop.previs_publication import PrevisPublicationScope, parse_publication
 from studio.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentPutIn,
     VisualCanvasPosition,
+    is_design_category,
 )
 from studio.contracts.asset_library.references import PrepareReferenceChange
 from studio.contracts.thought_workshop.thought_assets import AssetDescription
@@ -178,6 +180,7 @@ class Uploads:
         composition_batch_id=None,
         generation_task_id=None,
         required_asset_ids=(),
+        description=None,
     ):
         if current.revision != expected:
             raise conflict(expected, current)
@@ -188,7 +191,7 @@ class Uploads:
         carried.update(asset_id for asset_id, _ in expected_assets(current.nodes))
         for identity in await pending_outcomes(self.session, project_id):
             await self._deliver(identity)
-        description = await describe(
+        description = description or await describe(
             file,
             kind,
             composition_batch_id=composition_batch_id,
@@ -249,11 +252,31 @@ class Uploads:
 
         return await self.stage_and_commit(current, expected, file, node["kind"], apply)
 
-    async def material(self, project, file, expected, x, y, category_id, group):
+    async def material(self, project, file, expected, x, y, category_id, group, *, previs=None):
         current = await self.projects.canvas(project)
+        publication = parse_publication(previs)
+        scope = (
+            PrevisPublicationScope(self.session, self.owner, project, publication)
+            if publication
+            else None
+        )
+        description = None
+        if scope:
+            description = await describe(file, "material")
+            scope.verify_upload(description)
+            prior = await scope.check_replay()
+            if prior:
+                if prior.asset_request_id:
+                    await self._deliver(prior.asset_request_id)
+                return current
+            await scope.require_current()
         if current.revision != expected:
             raise conflict(expected, current)
         category = next((item for item in current.categories if item.id == category_id), None)
+        if category is not None and is_design_category(category.id, category.name):
+            raise ProjectResourceError(
+                "请从设定库引入角色、场景或道具", "design_card_required", 422
+            )
         if category_id and category is None:
             raise VisualCanvasError("上传目标分类不存在")
         if group and (category is None or group not in category.groups):
@@ -268,14 +291,17 @@ class Uploads:
             # by Assets before entering this Canvas write.
             pass
 
-        async def apply(assets, _request_id):
+        async def apply(assets, request_id):
             original = assets[0]
+            if scope:
+                await scope.require_current()
             body = VisualCanvasDocumentPutIn(
                 expected_revision=expected,
                 nodes=[
                     *current.nodes,
                     {
-                        "id": new_id(),
+                        "id": publication.node_id if publication else new_id(),
+                        "tags": publication.tags if publication else [],
                         "kind": original.media_kind,
                         "title": original.display_name[:120],
                         "position": position.model_dump(),
@@ -286,8 +312,13 @@ class Uploads:
                 ],
                 edges=current.edges,
             )
-            return await CanvasDocuments(self.session, validate_assets=verified_assets).replace(
+            result = await CanvasDocuments(self.session, validate_assets=verified_assets).replace(
                 project, body
             )
+            if scope:
+                scope.record(request_id)
+            return result
 
-        return await self.stage_and_commit(current, expected, file, "material", apply)
+        return await self.stage_and_commit(
+            current, expected, file, "material", apply, description=description
+        )

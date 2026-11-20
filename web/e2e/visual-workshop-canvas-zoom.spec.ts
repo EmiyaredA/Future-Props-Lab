@@ -53,7 +53,7 @@ test("双指缩放在看板往返与默认看板刷新后保持可用", async ({
   await page.screenshot({ path: resolve(screenshots, "before-pinch.png") });
 
   const pinch = async () => {
-    const world = page.locator(".visual-canvas-world");
+    const world = page.locator(".vue-flow__transformationpane");
     const previous = await world.getAttribute("style");
     await page.mouse.move(600, 450);
     // Chromium delivers trackpad pinch through wheel events with Ctrl set.
@@ -74,14 +74,14 @@ test("双指缩放在看板往返与默认看板刷新后保持可用", async ({
 
   for (let cycle = 0; cycle < 2; cycle++) {
     const previous = await page
-      .locator(".visual-canvas-world")
+      .locator(".vue-flow__transformationpane")
       .getAttribute("style");
     await page.getByRole("button", { name: "看板", exact: true }).click();
     await expect(
       page.getByRole("button", { name: "创作工作台", exact: true }),
     ).toBeVisible();
     await page.getByRole("button", { name: "画布", exact: true }).click();
-    await expect(page.locator(".visual-canvas-world")).toHaveAttribute(
+    await expect(page.locator(".vue-flow__transformationpane")).toHaveAttribute(
       "style",
       previous!,
     );

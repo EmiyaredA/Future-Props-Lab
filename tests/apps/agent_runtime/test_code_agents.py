@@ -197,6 +197,10 @@ if "app-server" in sys.argv:
                                 "title": "旧标题" if version == "OLD" else "新标题",
                                 "position": {"x": 80, "y": 120},
                                 "generation_draft": {"prompt": "日落城市镜头"}}}]}}}
+            workspace_command = re.search(r"WORKSPACE_COMMAND:([A-Za-z0-9+/=]+)", marker)
+            if workspace_command:
+                tool = "execute_workspace"
+                args = {"command": base64.b64decode(workspace_command[1]).decode()}
             send(
                 {
                     "id": "tool-1",
@@ -259,6 +263,10 @@ async def configured(tmp_path, monkeypatch):
     settings = get_settings()
     binary = fake_cli(tmp_path)
     monkeypatch.setenv("CODEX_HOME", str(tmp_path / "codex-home"))
+    claude_profile = tmp_path / "claude-home"
+    claude_profile.mkdir(mode=0o700)
+    (claude_profile / ".credentials.json").write_text("{}")
+    monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(claude_profile))
     monkeypatch.setenv("FPL_SECRETS_KEY", "not-for-cli")
     profile = profile_path(settings.runtime_path)
     profile.mkdir(mode=0o700, parents=True, exist_ok=True)

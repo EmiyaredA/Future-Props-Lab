@@ -102,6 +102,7 @@ from studio.contracts.visual_workshop.visual_snapshot import archive_target as v
 from studio.contracts.visual_workshop.visual_snapshot import (
     asset_target as visual_snapshot_asset_target,
 )
+from studio.contracts.visual_workshop.visual_snapshot import card_media_target
 from studio.contracts.visual_workshop.visual_snapshot import (
     model_target as visual_snapshot_model_target,
 )
@@ -245,6 +246,7 @@ async def live(request: Request, body: LiveRequest):
         or (body.service == "assets" and galgame_export_inputs_target(body.method, body.path))
         or (body.service == "assets" and acceptance_asset_target(body.method, body.path))
         or (body.service == "assets" and visual_snapshot_asset_target(body.method, body.path))
+        or (body.service == "assets" and card_media_target(body.method, body.path))
         or (body.service == "assets" and generation_asset_target(body.method, body.path))
         or (body.service == "assets" and export_download_target(body.method, body.path))
         or (body.service == "assets" and galgame_annotation_audio_target(body.method, body.path))

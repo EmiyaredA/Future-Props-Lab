@@ -192,10 +192,16 @@ elif "--mode" in sys.argv:
             )
             send({"type": "agent_settled", "aborted": False})
             break
-elif "--profile" in sys.argv:
-    assert os.environ["DSH_PERMISSION_MODE"] == "read-only"
-    assert Path(os.environ["DSH_HOME"]).name.startswith("fpl-cli-")
-    assert Path(sys.argv[sys.argv.index("--patch") + 1]).is_file()
+elif "--profile" in sys.argv or "acp" in sys.argv:
+    is_opencode = "--pure" in sys.argv and "acp" in sys.argv
+    if is_opencode:
+        assert "--pure" in sys.argv
+        config = json.loads(os.environ["OPENCODE_CONFIG_CONTENT"])
+        assert config["permission"]["*"] == "deny" and config["plugin"] == []
+    else:
+        assert os.environ["DSH_PERMISSION_MODE"] == "read-only"
+        assert Path(os.environ["DSH_HOME"]).name.startswith("fpl-cli-")
+        assert Path(sys.argv[sys.argv.index("--patch") + 1]).is_file()
     server = None
     prompt_id = None
     report = False
@@ -206,9 +212,14 @@ elif "--profile" in sys.argv:
         "options": [{"value": "fixture/model", "name": "Fixture"}],
     }
     effort_option = {
-        "id": "reasoning_effort",
+        "id": "effort" if is_opencode else "reasoning_effort",
         "currentValue": "low",
-        "options": [{"group": "available", "options": [{"value": "max", "name": "Max"}]}],
+        "options": [
+            {
+                "group": "available",
+                "options": [{"value": "provider_high" if is_opencode else "max", "name": "Max"}],
+            }
+        ],
     }
     for line in sys.stdin:
         value = json.loads(line)
@@ -223,7 +234,9 @@ elif "--profile" in sys.argv:
                     "id": value["id"],
                     "result": {
                         "sessionId": "native-session",
-                        "configOptions": [model_option],
+                        "configOptions": [model_option, effort_option]
+                        if is_opencode
+                        else [model_option],
                     },
                 }
             )
@@ -235,10 +248,14 @@ elif "--profile" in sys.argv:
                 model_option["currentValue"] = params["value"]
             else:
                 assert model_option["currentValue"] == "fixture/model"
-                assert params["configId"] == "reasoning_effort" and params["value"] == "max"
+                assert params["configId"] == ("effort" if is_opencode else "reasoning_effort")
+                assert params["value"] == ("provider_high" if is_opencode else "max")
                 effort_option["currentValue"] = params["value"]
             send({"id": value["id"], "result": {"configOptions": [model_option, effort_option]}})
         elif method == "session/prompt":
+            if is_opencode:
+                assert model_option["currentValue"] == "fixture/model"
+                assert effort_option["currentValue"] == "provider_high"
             if "DSH_EFFORT_FIXTURE" in value["params"]["prompt"][0]["text"]:
                 assert model_option["currentValue"] == "fixture/model"
                 assert effort_option["currentValue"] == "max"

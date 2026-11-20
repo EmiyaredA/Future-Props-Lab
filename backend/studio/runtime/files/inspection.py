@@ -16,6 +16,10 @@ def validate_json_file(path: Path) -> bool:
 
 def validate_file_structure(path: Path, extension: str) -> bool:
     """Validate complete text and archive structure without extracting file contents."""
+    if extension == ".glb":
+        from studio.runtime.files.glb import valid_glb
+
+        return valid_glb(path)
     if extension == ".svg":
         from studio.runtime.files.svg import MAX_SVG_BYTES, normalize_svg
 

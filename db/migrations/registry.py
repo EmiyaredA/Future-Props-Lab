@@ -133,6 +133,10 @@ from db.migrations.versions import (
     r0129_video_preview_renders,
     r0130_local_zonos_provider,
     r0131_amadeus_instructions,
+    r0132_visual_previs_scenes,
+    r0133_visual_creative_workflow,
+    r0134_visual_account_asset_cards,
+    r0135_visual_canvas_groups_and_cards,
 )
 
 
@@ -623,5 +627,20 @@ MIGRATIONS += (
 )
 
 MIGRATIONS += (Migration(r0131_amadeus_instructions.MIGRATION_ID, r0131_amadeus_instructions.SQL),)
+
+MIGRATIONS += (Migration(r0132_visual_previs_scenes.MIGRATION_ID, r0132_visual_previs_scenes.SQL),)
+MIGRATIONS += (
+    Migration(r0133_visual_creative_workflow.MIGRATION_ID, r0133_visual_creative_workflow.SQL),
+)
+MIGRATIONS += (
+    Migration(r0134_visual_account_asset_cards.MIGRATION_ID, r0134_visual_account_asset_cards.SQL),
+)
+
+MIGRATIONS += (
+    Migration(
+        r0135_visual_canvas_groups_and_cards.MIGRATION_ID,
+        r0135_visual_canvas_groups_and_cards.SQL,
+    ),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

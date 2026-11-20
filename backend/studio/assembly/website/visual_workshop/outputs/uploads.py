@@ -3,7 +3,13 @@
 from studio.apps.asset_library.storage.uploads import AssetLibrary
 from studio.apps.media_rendering.local.gif_upload import prepare_output_upload
 from studio.apps.visual_workshop.outputs.schemas import VisualNodeOutputCreateIn
-from studio.apps.visual_workshop.schemas.workshop import VisualCanvasDocumentPutIn
+from studio.apps.visual_workshop.previs_publication import PrevisPublicationScope, parse_publication
+from studio.apps.visual_workshop.projects import Projects
+from studio.apps.visual_workshop.schemas.workshop import (
+    VisualCanvasDocumentPutIn,
+    is_design_category,
+)
+from studio.apps.visual_workshop.uploads import describe
 from studio.assembly.website.visual_workshop.canvas import VisualCanvasDocuments, VisualCanvasError
 from studio.assembly.website.visual_workshop.outputs.history import NodeOutputs, OutputError
 from studio.config.settings import Settings
@@ -89,14 +95,30 @@ async def upload_material(
     y: float = 0,
     category_id: str | None = None,
     group: str | None = None,
+    previs: str | None = None,
 ):
     documents = VisualCanvasDocuments(session)
+    await Projects(session, owner_user_id).row(project_id)
     current = await documents.get(project_id)
+    publication = parse_publication(previs)
+    scope = (
+        PrevisPublicationScope(session, owner_user_id, project_id, publication)
+        if publication
+        else None
+    )
+    if scope:
+        description = await describe(upload, "material")
+        scope.verify_upload(description)
+        if await scope.check_replay():
+            return current
+        await scope.require_current()
     if current.revision != expected_revision:
         raise RevisionConflictError(
             expected_revision, current.revision, current.model_dump(mode="json")
         )
     category = next((item for item in current.categories if item.id == category_id), None)
+    if category is not None and is_design_category(category.id, category.name):
+        raise VisualCanvasError("请从设定库引入角色、场景或道具", code="design_card_required")
     if category_id and category is None:
         raise VisualCanvasError("上传目标分类不存在")
     if group and (category is None or group not in category.groups):
@@ -122,7 +144,8 @@ async def upload_material(
                 nodes=[
                     *current.nodes,
                     {
-                        "id": new_id(),
+                        "id": publication.node_id if publication else new_id(),
+                        "tags": publication.tags if publication else [],
                         "kind": asset.media_kind,
                         "title": asset.display_name,
                         "position": {"x": x, "y": y},
@@ -134,11 +157,17 @@ async def upload_material(
                 edges=current.edges,
             ),
         )
-        await session.commit()
-        return result
-    except Exception:
+        if scope:
+            await scope.require_current()
+            scope.record()
+            await session.flush()
+    except BaseException:
         path = library.storage.path_for(asset) if asset else None
         await session.rollback()
         if path:
             path.unlink(missing_ok=True)
         raise
+    # The operation may have committed if its acknowledgement is interrupted.
+    # Keep the file so a retry can recover from its persisted receipt.
+    await session.commit()
+    return result

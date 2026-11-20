@@ -139,7 +139,7 @@
   gap: 12px;
 }
 
-.generation-source-cross-controls > div {
+.generation-source-cross-controls > [role="tablist"] {
   padding: 3px;
   display: flex;
   gap: 3px;
@@ -147,7 +147,7 @@
   background: var(--surface-soft);
 }
 
-.generation-source-cross-controls > div button {
+.generation-source-cross-controls > [role="tablist"] button {
   min-height: 32px;
   padding: 0 13px;
   border: 0;
@@ -158,13 +158,13 @@
   font-weight: 700;
 }
 
-.generation-source-cross-controls > div button.active {
+.generation-source-cross-controls > [role="tablist"] button.active {
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--text) 8%, transparent);
 }
 
-.generation-source-cross-controls > label {
+.generation-source-cross-controls > .generation-source-project {
   min-width: 220px;
   display: grid;
   gap: 4px;
@@ -173,7 +173,7 @@
   font-weight: 700;
 }
 
-.generation-source-cross-controls .custom-select-trigger {
+.generation-source-project > .searchable-picker-trigger {
   min-height: 38px;
   padding: 0 30px 0 10px;
   border: 1px solid var(--border);
@@ -418,7 +418,7 @@
     align-items: stretch;
     flex-direction: column;
   }
-  .generation-source-cross-controls > label {
+  .generation-source-cross-controls > .generation-source-project {
     min-width: 0;
   }
   .generation-source-grid {

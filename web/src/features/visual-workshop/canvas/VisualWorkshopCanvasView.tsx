@@ -1,3 +1,5 @@
+import { canvasBounds } from "./canvasPlacement";
+import { ToonflowCanvas } from "./ToonflowCanvas";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
@@ -50,11 +52,16 @@ export function VisualWorkshopCanvasView({
   controller,
   onBoard,
   onAcceptance,
+  onPrevis,
+  onScript,
 }: {
   controller: ReturnType<typeof useVisualCanvasController>;
   onBoard?: () => void;
   onAcceptance?: () => void;
+  onPrevis?: () => void;
+  onScript?: () => void;
 }) {
+  const [editingGroupId, setEditingGroupId] = useState<string>();
   const { run: runTransfer, progress: activeTransferProgress } =
     useTransferProgress();
 
@@ -90,6 +97,7 @@ export function VisualWorkshopCanvasView({
     setNodes,
     edges,
     setEdges,
+    replaceEdges,
     selectedEdgeId,
     setSelectedEdgeId,
     connection,
@@ -97,6 +105,13 @@ export function VisualWorkshopCanvasView({
     actionsHiddenNodeId,
     setSelectedId,
     selectedNodeIds,
+    groups,
+    selectedGroup,
+    canGroup,
+    groupSelection,
+    ungroupSelection,
+    renameGroup,
+    applyCanvasMetadata,
     setSelectedNodeIds,
     selectionBox,
     alignmentGuides,
@@ -233,6 +248,370 @@ export function VisualWorkshopCanvasView({
       node.id === previewNodeId && node.kind !== "text",
   );
 
+  const world = (
+    <>
+      {groups.map((group) => {
+        const ids = new Set(group.node_ids);
+        const members = nodes.filter((node) => ids.has(node.id));
+        if (members.length < 2) return null;
+        const bounds = canvasBounds(members);
+        const active = selectedGroup?.id === group.id;
+        return (
+          <div
+            className={`visual-canvas-group${active ? " is-selected" : ""}`}
+            key={group.id}
+            style={{
+              left: bounds.x - 20,
+              top: bounds.y - 45,
+              width: bounds.width + 40,
+              height: bounds.height + 65,
+            }}
+          >
+            <div
+              className="visual-canvas-group-handle"
+              tabIndex={0}
+              role="button"
+              aria-label={`选择分组 ${group.title}`}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  controller.setSelectedNodeIds(group.node_ids);
+                }
+              }}
+              onPointerDown={(event) => {
+                setInspectedNodeId(undefined);
+                startNodeDrag(event, members[0]!, group.node_ids);
+              }}
+              onPointerMove={moveNode}
+              onPointerUp={stopNodeDrag}
+              onPointerCancel={stopNodeDrag}
+            >
+              {editingGroupId === group.id ? (
+                <input
+                  aria-label="分组名称"
+                  maxLength={120}
+                  defaultValue={group.title}
+                  autoFocus
+                  onFocus={(event) => event.currentTarget.select()}
+                  onBlur={(event) => {
+                    renameGroup(group.id, event.currentTarget.value);
+                    setEditingGroupId(undefined);
+                  }}
+                  onKeyDown={(event) => {
+                    event.stopPropagation();
+                    if (event.key === "Enter") event.currentTarget.blur();
+                    if (event.key === "Escape") {
+                      event.currentTarget.value = group.title;
+                      event.currentTarget.blur();
+                    }
+                  }}
+                />
+              ) : (
+                <strong>{group.title}</strong>
+              )}
+              <small>{group.node_ids.length} 个节点</small>
+            </div>
+            {active && (
+              <button
+                className="visual-canvas-group-rename"
+                type="button"
+                aria-label="重命名分组"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setEditingGroupId(group.id);
+                }}
+              >
+                <Pencil size={16} aria-hidden />
+              </button>
+            )}
+          </div>
+        );
+      })}
+      <CanvasAlignmentGuides guides={alignmentGuides} />
+      <CanvasEdgeLayer
+        nodes={nodes}
+        edges={edges}
+        selectedEdgeId={selectedEdgeId}
+        connection={connection}
+        onSelectEdge={(edgeId) => {
+          setSelectedId(undefined);
+          setSelectedEdgeId(edgeId);
+        }}
+        onRemoveEdge={removeEdge}
+      />
+      {nodes.map((node) => {
+        const selected = selectedNodeIds.includes(node.id);
+        const focused = node.id === selectedId;
+        const showNodeActions = focused && actionsHiddenNodeId !== node.id;
+        const connectionClass =
+          connection?.sourceNodeId === node.id
+            ? " is-connection-source"
+            : connection && connectionHoverTargetId === node.id
+              ? canConnect(connection.sourceNodeId, node.id)
+                ? " is-connectable-target"
+                : " is-unavailable-target"
+              : "";
+        return (
+          <article
+            className={`canvas-node ${node.kind}${selected ? " selected" : ""}${connectionClass}`}
+            style={{ left: node.position.x, top: node.position.y }}
+            data-node-id={node.id}
+            data-amadeus-id={node.id}
+            data-amadeus-name={node.title || nodeLabel(node.kind)}
+            data-amadeus-value={nodeLabel(node.kind)}
+            key={node.id}
+            onPointerDown={(event) => {
+              startNodeDrag(event, node);
+              if (event.defaultPrevented)
+                surface.current?.focus({ preventScroll: true });
+            }}
+            onPointerMove={moveNode}
+            onPointerUp={stopNodeDrag}
+            onPointerCancel={stopNodeDrag}
+            onClick={(event) => {
+              event.stopPropagation();
+              if (consumeSuppressedNodeClick(node.id)) return;
+              setSelectedId(node.id);
+              setSelectedEdgeId(undefined);
+              setAssetsOpen(false);
+            }}
+            onDoubleClick={(event) => {
+              if (node.kind === "text") return;
+              event.preventDefault();
+              event.stopPropagation();
+              setSelectedId(node.id);
+              setInspectedNodeId(undefined);
+              setPreviewNodeId(node.id);
+            }}
+          >
+            <header>
+              {node.kind === "image" ? (
+                <Image className="canvas-node-kind-icon" aria-hidden />
+              ) : node.kind === "video" ? (
+                <Video className="canvas-node-kind-icon" aria-hidden />
+              ) : node.kind === "audio" ? (
+                <Music className="canvas-node-kind-icon" aria-hidden />
+              ) : null}
+              {focused ? (
+                <input
+                  aria-label="节点标题"
+                  maxLength={120}
+                  value={node.title}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onChange={(event) =>
+                    patchNode(node.id, { title: event.target.value })
+                  }
+                  onBlur={() => {
+                    if (autoSave.current) clearTimeout(autoSave.current);
+                    enqueueSave(nodesRef.current);
+                  }}
+                />
+              ) : (
+                <strong>{node.title}</strong>
+              )}
+              {!focused && (node.kind === "image" || node.kind === "video") ? (
+                <Pencil className="canvas-node-title-edit" aria-hidden />
+              ) : null}
+              <NodeApproval
+                node={node}
+                compact
+                onChange={(approved) => patchNode(node.id, { approved }, true)}
+              />
+              {showNodeActions && node.kind === "text" ? (
+                <span className="canvas-node-actions">
+                  <button
+                    aria-label="复制节点"
+                    title="复制节点"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      copyNodes([node.id]);
+                    }}
+                  >
+                    <Copy aria-hidden />
+                  </button>
+                  <button
+                    aria-label="删除节点"
+                    title="删除节点"
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeNode(node.id);
+                    }}
+                  >
+                    <Trash2 aria-hidden />
+                  </button>
+                </span>
+              ) : showNodeActions && node.kind !== "text" ? (
+                <CanvasMediaNodeActions
+                  node={node}
+                  canExportFrame={
+                    node.kind === "video" && readyVideoIds.has(node.id)
+                  }
+                  onExportFrame={() => {
+                    if (node.kind !== "video") return;
+                    const video = videoElements.current.get(node.id);
+                    if (!video) return;
+                    video.pause();
+                    setFrameExport({
+                      node,
+                      video,
+                      capturedAt: video.currentTime,
+                    });
+                  }}
+                  onReplace={() => {
+                    setSelectedId(node.id);
+                    setInspectedNodeId(node.id);
+                    setMediaEditorTab("content");
+                    setAssetsOpen(false);
+                  }}
+                  onPreview={
+                    node.kind === "video"
+                      ? () => setInteractiveVideoId(node.id)
+                      : () => setPreviewNodeId(node.id)
+                  }
+                  onCopy={() => {
+                    copyNodes([node.id]);
+                  }}
+                  onCompose={
+                    node.kind === "image"
+                      ? () => openComposition([node.id])
+                      : undefined
+                  }
+                  onDelete={() => removeNode(node.id)}
+                />
+              ) : null}
+            </header>
+            {node.kind === "text" ? (
+              <textarea
+                aria-label={`${node.title}内容`}
+                maxLength={20_000}
+                placeholder="输入文本…"
+                value={node.text}
+                onPointerDown={(event) => event.stopPropagation()}
+                onChange={(event) =>
+                  patchNode(node.id, { text: event.target.value })
+                }
+                onBlur={() => {
+                  if (autoSave.current) clearTimeout(autoSave.current);
+                  enqueueSave(nodesRef.current);
+                }}
+              />
+            ) : (
+              <div className="canvas-node-media">
+                <CanvasMediaPreview
+                  node={node}
+                  interactive={interactiveVideoId === node.id}
+                  onVideoReadyChange={(video) => registerVideo(node.id, video)}
+                />
+                <button
+                  type="button"
+                  className="canvas-media-replace"
+                  aria-label={
+                    node.asset_id
+                      ? `替换${nodeLabel(node.kind)}素材`
+                      : `选择${nodeLabel(node.kind)}素材`
+                  }
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSelectedId(node.id);
+                    setInspectedNodeId(node.id);
+                    setMediaEditorTab("content");
+                    setAssetsOpen(false);
+                  }}
+                >
+                  <RefreshCw aria-hidden />
+                  {node.asset_id ? "替换" : "选择素材"}
+                </button>
+              </div>
+            )}
+            {node.kind !== "text" ? (
+              <>
+                <button
+                  type="button"
+                  className={`canvas-node-port is-input${
+                    connection &&
+                    connectionHoverTargetId === node.id &&
+                    canConnect(connection.sourceNodeId, node.id)
+                      ? " is-valid-target"
+                      : ""
+                  }`}
+                  aria-label={`连接到${node.title}`}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onPointerEnter={() => {
+                    if (connection) setConnectionHoverTargetId(node.id);
+                  }}
+                  onPointerLeave={() =>
+                    setConnectionHoverTargetId((current) =>
+                      current === node.id ? undefined : current,
+                    )
+                  }
+                  onPointerUp={(event) => {
+                    setConnectionHoverTargetId(undefined);
+                    finishConnection(event, node.id);
+                  }}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <Plus aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className="canvas-node-port is-output"
+                  aria-label={`从${node.title}创建连线`}
+                  onPointerDown={(event) => startConnection(event, node.id)}
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <Plus aria-hidden />
+                </button>
+              </>
+            ) : null}
+            {focused && inspectedNodeId === node.id && node.kind !== "text" ? (
+              <CanvasNodeInspector
+                referenceContext={{ nodes, edges, replaceEdges, removeEdge }}
+                embedded
+                initialTab={mediaEditorTab}
+                projectId={projectId}
+                node={node}
+                upstreamNodes={edges
+                  .filter((edge) => edge.target_node_id === node.id)
+                  .flatMap((edge) => {
+                    const upstream = nodes.find(
+                      (item) => item.id === edge.source_node_id,
+                    );
+                    return upstream && upstream.kind !== "text"
+                      ? [upstream]
+                      : [];
+                  })}
+                onClose={() => setInspectedNodeId(undefined)}
+                onPrepareCanvas={prepareCanvasForAgent}
+                onPatch={(patch, immediate) =>
+                  patchNode(node.id, patch, immediate)
+                }
+                onTaskLinked={(taskId) => linkGenerationTask(node.id, taskId)}
+                onBatchCreated={async (batch: GenerationBatch) => {
+                  if (batch.grid_output === "composite") {
+                    patchNode(
+                      node.id,
+                      {
+                        generation_batch_id: batch.id,
+                        generation_task_id: null,
+                      },
+                      true,
+                    );
+                  }
+                  await client.invalidateQueries({
+                    queryKey: visualWorkshopQueryKeys.canvas(projectId),
+                  });
+                }}
+              />
+            ) : null}
+          </article>
+        );
+      })}
+    </>
+  );
   return (
     <div className="visual-canvas">
       <TransferFeedback progress={activeTransferProgress} />
@@ -244,6 +623,11 @@ export function VisualWorkshopCanvasView({
         tabIndex={-1}
         className={`visual-canvas-surface tool-${toolMode}${pan.current ? " is-dragging" : ""}${selectionBox ? " is-selecting" : ""}`}
         style={{
+          ...({
+            "--canvas-ui-scale": 1 / viewport.zoom,
+            "--canvas-media-actions-top": `${-43 / viewport.zoom}px`,
+            "--canvas-inspector-gap": `${22 / viewport.zoom}px`,
+          } as CSSProperties),
           backgroundPosition: `${viewport.x}px ${viewport.y}px`,
           backgroundSize: `${24 * viewport.zoom}px ${24 * viewport.zoom}px`,
         }}
@@ -259,6 +643,8 @@ export function VisualWorkshopCanvasView({
       >
         <CanvasScreenChrome
           onBoard={onBoard}
+          onPrevis={onPrevis}
+          onScript={onScript}
           onAcceptance={onAcceptance}
           projectTitle={projectQuery.data.title}
           title={title}
@@ -328,6 +714,9 @@ export function VisualWorkshopCanvasView({
         <CanvasSelectionOverlay selectionBox={selectionBox} />
         <CanvasSelectionActions
           count={selectedNodeIds.length}
+          groupSelected={Boolean(selectedGroup)}
+          onGroup={canGroup ? groupSelection : undefined}
+          onUngroup={selectedGroup ? ungroupSelection : undefined}
           onCopy={copySelected}
           canArrange={canArrangeSelected}
           onArrange={(mode) => arrangeNodes(mode, true)}
@@ -337,308 +726,7 @@ export function VisualWorkshopCanvasView({
               : undefined
           }
         />
-        <div
-          className="visual-canvas-world"
-          style={
-            {
-              transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
-              "--canvas-ui-scale": 1 / viewport.zoom,
-              "--canvas-media-actions-top": `${-43 / viewport.zoom}px`,
-              "--canvas-inspector-gap": `${22 / viewport.zoom}px`,
-            } as CSSProperties
-          }
-        >
-          <CanvasAlignmentGuides guides={alignmentGuides} />
-          <CanvasEdgeLayer
-            nodes={nodes}
-            edges={edges}
-            selectedEdgeId={selectedEdgeId}
-            connection={connection}
-            onSelectEdge={(edgeId) => {
-              setSelectedId(undefined);
-              setSelectedEdgeId(edgeId);
-            }}
-            onRemoveEdge={removeEdge}
-          />
-          {nodes.map((node) => {
-            const selected = selectedNodeIds.includes(node.id);
-            const focused = node.id === selectedId;
-            const showNodeActions = focused && actionsHiddenNodeId !== node.id;
-            const connectionClass =
-              connection?.sourceNodeId === node.id
-                ? " is-connection-source"
-                : connection && connectionHoverTargetId === node.id
-                  ? canConnect(connection.sourceNodeId, node.id)
-                    ? " is-connectable-target"
-                    : " is-unavailable-target"
-                  : "";
-            return (
-              <article
-                className={`canvas-node ${node.kind}${selected ? " selected" : ""}${connectionClass}`}
-                style={{ left: node.position.x, top: node.position.y }}
-                data-node-id={node.id}
-                data-amadeus-id={node.id}
-                data-amadeus-name={node.title || nodeLabel(node.kind)}
-                data-amadeus-value={nodeLabel(node.kind)}
-                key={node.id}
-                onPointerDown={(event) => {
-                  startNodeDrag(event, node);
-                  if (event.defaultPrevented)
-                    surface.current?.focus({ preventScroll: true });
-                }}
-                onPointerMove={moveNode}
-                onPointerUp={stopNodeDrag}
-                onPointerCancel={stopNodeDrag}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  if (consumeSuppressedNodeClick(node.id)) return;
-                  setSelectedId(node.id);
-                  setSelectedEdgeId(undefined);
-                  setAssetsOpen(false);
-                }}
-                onDoubleClick={(event) => {
-                  if (node.kind === "text") return;
-                  event.preventDefault();
-                  event.stopPropagation();
-                  setSelectedId(node.id);
-                  setInspectedNodeId(undefined);
-                  setPreviewNodeId(node.id);
-                }}
-              >
-                <header>
-                  {node.kind === "image" ? (
-                    <Image className="canvas-node-kind-icon" aria-hidden />
-                  ) : node.kind === "video" ? (
-                    <Video className="canvas-node-kind-icon" aria-hidden />
-                  ) : node.kind === "audio" ? (
-                    <Music className="canvas-node-kind-icon" aria-hidden />
-                  ) : null}
-                  {focused ? (
-                    <input
-                      aria-label="节点标题"
-                      maxLength={120}
-                      value={node.title}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onChange={(event) =>
-                        patchNode(node.id, { title: event.target.value })
-                      }
-                      onBlur={() => {
-                        if (autoSave.current) clearTimeout(autoSave.current);
-                        enqueueSave(nodesRef.current);
-                      }}
-                    />
-                  ) : (
-                    <strong>{node.title}</strong>
-                  )}
-                  {!focused &&
-                  (node.kind === "image" || node.kind === "video") ? (
-                    <Pencil className="canvas-node-title-edit" aria-hidden />
-                  ) : null}
-                  <NodeApproval
-                    node={node}
-                    compact
-                    onChange={(approved) =>
-                      patchNode(node.id, { approved }, true)
-                    }
-                  />
-                  {showNodeActions && node.kind === "text" ? (
-                    <span className="canvas-node-actions">
-                      <button
-                        aria-label="复制节点"
-                        title="复制节点"
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          copyNodes([node.id]);
-                        }}
-                      >
-                        <Copy aria-hidden />
-                      </button>
-                      <button
-                        aria-label="删除节点"
-                        title="删除节点"
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          removeNode(node.id);
-                        }}
-                      >
-                        <Trash2 aria-hidden />
-                      </button>
-                    </span>
-                  ) : showNodeActions && node.kind !== "text" ? (
-                    <CanvasMediaNodeActions
-                      node={node}
-                      canExportFrame={
-                        node.kind === "video" && readyVideoIds.has(node.id)
-                      }
-                      onExportFrame={() => {
-                        if (node.kind !== "video") return;
-                        const video = videoElements.current.get(node.id);
-                        if (!video) return;
-                        video.pause();
-                        setFrameExport({
-                          node,
-                          video,
-                          capturedAt: video.currentTime,
-                        });
-                      }}
-                      onReplace={() => {
-                        setSelectedId(node.id);
-                        setInspectedNodeId(node.id);
-                        setMediaEditorTab("content");
-                        setAssetsOpen(false);
-                      }}
-                      onPreview={
-                        node.kind === "video"
-                          ? () => setInteractiveVideoId(node.id)
-                          : () => setPreviewNodeId(node.id)
-                      }
-                      onCopy={() => {
-                        copyNodes([node.id]);
-                      }}
-                      onCompose={
-                        node.kind === "image"
-                          ? () => openComposition([node.id])
-                          : undefined
-                      }
-                      onDelete={() => removeNode(node.id)}
-                    />
-                  ) : null}
-                </header>
-                {node.kind === "text" ? (
-                  <textarea
-                    aria-label={`${node.title}内容`}
-                    maxLength={20_000}
-                    placeholder="输入文本…"
-                    value={node.text}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    onChange={(event) =>
-                      patchNode(node.id, { text: event.target.value })
-                    }
-                    onBlur={() => {
-                      if (autoSave.current) clearTimeout(autoSave.current);
-                      enqueueSave(nodesRef.current);
-                    }}
-                  />
-                ) : (
-                  <div className="canvas-node-media">
-                    <CanvasMediaPreview
-                      node={node}
-                      interactive={interactiveVideoId === node.id}
-                      onVideoReadyChange={(video) =>
-                        registerVideo(node.id, video)
-                      }
-                    />
-                    <button
-                      type="button"
-                      className="canvas-media-replace"
-                      aria-label={
-                        node.asset_id
-                          ? `替换${nodeLabel(node.kind)}素材`
-                          : `选择${nodeLabel(node.kind)}素材`
-                      }
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        setSelectedId(node.id);
-                        setInspectedNodeId(node.id);
-                        setMediaEditorTab("content");
-                        setAssetsOpen(false);
-                      }}
-                    >
-                      <RefreshCw aria-hidden />
-                      {node.asset_id ? "替换" : "选择素材"}
-                    </button>
-                  </div>
-                )}
-                {node.kind !== "text" ? (
-                  <>
-                    <button
-                      type="button"
-                      className={`canvas-node-port is-input${
-                        connection &&
-                        connectionHoverTargetId === node.id &&
-                        canConnect(connection.sourceNodeId, node.id)
-                          ? " is-valid-target"
-                          : ""
-                      }`}
-                      aria-label={`连接到${node.title}`}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      onPointerEnter={() => {
-                        if (connection) setConnectionHoverTargetId(node.id);
-                      }}
-                      onPointerLeave={() =>
-                        setConnectionHoverTargetId((current) =>
-                          current === node.id ? undefined : current,
-                        )
-                      }
-                      onPointerUp={(event) => {
-                        setConnectionHoverTargetId(undefined);
-                        finishConnection(event, node.id);
-                      }}
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <Plus aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      className="canvas-node-port is-output"
-                      aria-label={`从${node.title}创建连线`}
-                      onPointerDown={(event) => startConnection(event, node.id)}
-                      onClick={(event) => event.stopPropagation()}
-                    >
-                      <Plus aria-hidden />
-                    </button>
-                  </>
-                ) : null}
-                {focused &&
-                inspectedNodeId === node.id &&
-                node.kind !== "text" ? (
-                  <CanvasNodeInspector
-                    embedded
-                    initialTab={mediaEditorTab}
-                    projectId={projectId}
-                    node={node}
-                    upstreamNodes={edges
-                      .filter((edge) => edge.target_node_id === node.id)
-                      .flatMap((edge) => {
-                        const upstream = nodes.find(
-                          (item) => item.id === edge.source_node_id,
-                        );
-                        return upstream && upstream.kind !== "text"
-                          ? [upstream]
-                          : [];
-                      })}
-                    onClose={() => setInspectedNodeId(undefined)}
-                    onPrepareCanvas={prepareCanvasForAgent}
-                    onPatch={(patch, immediate) =>
-                      patchNode(node.id, patch, immediate)
-                    }
-                    onTaskLinked={(taskId) =>
-                      linkGenerationTask(node.id, taskId)
-                    }
-                    onBatchCreated={async (batch: GenerationBatch) => {
-                      if (batch.grid_output === "composite") {
-                        patchNode(
-                          node.id,
-                          {
-                            generation_batch_id: batch.id,
-                            generation_task_id: null,
-                          },
-                          true,
-                        );
-                      }
-                      await client.invalidateQueries({
-                        queryKey: visualWorkshopQueryKeys.canvas(projectId),
-                      });
-                    }}
-                  />
-                ) : null}
-              </article>
-            );
-          })}
-        </div>
+        <ToonflowCanvas viewport={viewport}>{world}</ToonflowCanvas>
       </div>
       <input
         ref={uploadInput}
@@ -742,6 +830,7 @@ export function VisualWorkshopCanvasView({
               clearHistory();
               setNodes(conflict.nodes);
               setEdges(conflict.edges);
+              applyCanvasMetadata(conflict);
               setConflict(undefined);
               setSaveState("saved");
             }}

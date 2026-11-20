@@ -343,22 +343,24 @@
   font-size: 16px;
 }
 
-.canvas-assets-title span {
-  width: 16px;
-  height: 16px;
-  display: grid;
-  place-items: center;
-  color: var(--faint);
-}
-
-.canvas-assets-title svg {
-  width: 14px;
-  height: 14px;
-}
-
 .canvas-assets-header-actions {
   flex: none;
   gap: 8px;
+}
+
+.canvas-assets-manage {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-block: 7px;
+  color: var(--accent-text);
+  font-size: 12px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.canvas-assets-manage:hover {
+  text-decoration: underline;
 }
 
 .canvas-assets-header-actions .file-view-toggle {

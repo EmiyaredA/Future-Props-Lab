@@ -15,8 +15,15 @@ from studio.apps.visual_workshop.acceptance.models import (
     NodeAcceptanceBinding,
 )
 from studio.apps.visual_workshop.acceptance.snapshots import acceptance_records
+from studio.apps.visual_workshop.creative_assets import (
+    MODEL_MIME,
+    remap_scene_models,
+    scene_model_assets,
+)
+from studio.apps.visual_workshop.creative_snapshots import import_creative_workflow
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.outputs.snapshots import import_outputs
+from studio.apps.visual_workshop.previs_scenes import import_scenes
 from studio.apps.visual_workshop.project_values import project_out
 from studio.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentPutIn,
@@ -31,7 +38,13 @@ from studio.apps.visual_workshop.snapshot_values import (
     validated_asset_records,
     validated_folders,
 )
-from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
+from studio.apps.visual_workshop.storage.models import (
+    VisualAssetCard,
+    VisualCanvasDocument,
+    VisualPrevisScene,
+    VisualScript,
+    VisualWorkshopProject,
+)
 from studio.runtime.files.project_archives import ProjectSnapshotError
 from studio.runtime.time import utc_now
 
@@ -39,6 +52,9 @@ OWNED_RECORDS = {
     model.__tablename__: model
     for model in (
         VisualCanvasDocument,
+        VisualScript,
+        VisualAssetCard,
+        VisualPrevisScene,
         VisualNodeOutput,
         NodeAcceptanceBinding,
         AcceptanceStandard,
@@ -71,8 +87,9 @@ class SnapshotRow(BaseModel):
     def build(self):
         model = OWNED_RECORDS[self.table]
         values = dict(self.values)
-        if "created_at" in values:
-            values["created_at"] = datetime.fromisoformat(values["created_at"])
+        for name in ("created_at", "updated_at"):
+            if name in values:
+                values[name] = datetime.fromisoformat(values[name])
         return model(**values)
 
 
@@ -128,6 +145,8 @@ class SnapshotValues:
             raise ProjectSnapshotError("视觉项目素材引用的文件夹不存在")
         self.references = payload.get("model_references")
         self.outputs = payload.get("outputs", [])
+        self.scenes = import_scenes(payload)
+        self.creative = payload
         self.acceptance = payload.get("acceptance")
 
     def build(self, owner, project_id, asset_ids, model_ids):
@@ -142,6 +161,16 @@ class SnapshotValues:
         outputs = import_outputs(self.outputs, nodes, edges, asset_ids, project_id)
         metadata = {asset_ids[row["id"]]: row for row in self.assets}
         validate_output_media(outputs, metadata)
+        creative, creative_assets, models = import_creative_workflow(
+            self.creative, owner, project_id, asset_ids
+        )
+        if any(metadata[asset]["media_kind"] != "image" for asset in creative_assets):
+            raise ProjectSnapshotError("设定卡引用的素材不是图片")
+        models |= {
+            asset_ids[key] for scene in self.scenes for key in scene_model_assets(scene.document)
+        }
+        if any(metadata[asset]["mime_type"] != MODEL_MIME for asset in models):
+            raise ProjectSnapshotError("白模模型文件无效")
         node_ids = dict(zip(original_nodes, [node["id"] for node in nodes], strict=True))
         output_ids = {
             original["id"]: row.id for original, row in zip(self.outputs, outputs, strict=False)
@@ -161,12 +190,26 @@ class SnapshotValues:
             project_id=project_id,
             nodes=nodes,
             edges=edges,
+            groups=[
+                {**group.model_dump(), "node_ids": [node_ids[key] for key in group.node_ids]}
+                for group in self.canvas.groups or []
+            ],
             categories=[
                 row.model_dump(mode="json")
                 for row in (self.canvas.categories or default_material_categories())
             ],
         )
         now = utc_now()
+        scenes = [
+            VisualPrevisScene(
+                project_id=project_id,
+                created_at=now,
+                updated_at=now,
+                document=remap_scene_models(body.document, asset_ids),
+                **body.model_dump(exclude={"document"}),
+            )
+            for body in self.scenes
+        ]
         project = VisualWorkshopProject(
             id=project_id,
             owner_user_id=owner,
@@ -185,10 +228,10 @@ class SnapshotValues:
                 ),
                 phases=[
                     [SnapshotRow.freeze(row) for row in phase]
-                    for phase in ([canvas, *outputs], *acceptance)
+                    for phase in ([canvas, *outputs, *scenes, *creative], *acceptance)
                 ],
             ),
-            canvas_asset_ids(nodes) | output_references(outputs),
+            canvas_asset_ids(nodes) | output_references(outputs) | creative_assets | models,
             acceptance_references(acceptance),
         )
 

@@ -51,7 +51,8 @@ class VisualModelChoice(BaseModel):
 
 def generation_source(method, path):
     return method == "POST" and re.fullmatch(
-        rf"/v1/visual-workshop/projects/({ID})/generation-(tasks|batches)", path
+        rf"/v1/visual-workshop/projects/({ID})/(?:generation-(tasks|batches)|asset-cards/{ID}/generations)",
+        path,
     )
 
 

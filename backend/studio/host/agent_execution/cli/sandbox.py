@@ -1,7 +1,9 @@
 """Explicit macOS process policies; workspace access is enforced by the kernel."""
 
 import asyncio
+import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -30,10 +32,62 @@ def quote(path):
     return '"' + str(path).replace("\\", "\\\\").replace('"', '\\"') + '"'
 
 
+def library_paths(executable):
+    """Resolve the installed Mach-O dependency closure, not entire Homebrew prefixes."""
+    executable = Path(executable).resolve()
+    pending, visited, paths, rpaths = [executable], set(), set(), set()
+    while pending:
+        binary = pending.pop()
+        if binary in visited:
+            continue
+        visited.add(binary)
+        if len(visited) > 128:
+            raise CliError("CLI 动态库依赖超过限制")
+        result = subprocess.run(
+            ["/usr/bin/otool", "-L", str(binary)], capture_output=True, timeout=5, check=False
+        )
+        if result.returncode:
+            continue  # scripts and non-Mach-O resources have no load commands
+        commands = subprocess.run(
+            ["/usr/bin/otool", "-l", str(binary)], capture_output=True, timeout=5, check=False
+        ).stdout.decode()
+        for entry in re.findall(r"cmd LC_RPATH\s+cmdsize \d+\s+path (.*?) \(offset", commands):
+            entry = entry.replace("@loader_path", str(binary.parent)).replace(
+                "@executable_path", str(executable.parent)
+            )
+            if entry.startswith("/"):
+                rpaths.add(Path(entry).resolve())
+        for line in result.stdout.decode().splitlines()[1:]:
+            name = line.strip().split(" (", 1)[0]
+            if name.startswith("/System/") or name.startswith("/usr/lib/"):
+                continue
+            if name.startswith("@loader_path/"):
+                name = str(binary.parent / name.removeprefix("@loader_path/"))
+            elif name.startswith("@executable_path/"):
+                name = str(executable.parent / name.removeprefix("@executable_path/"))
+            elif name.startswith("@rpath/"):
+                suffix = name.removeprefix("@rpath/")
+                found = next(
+                    (base / suffix for base in sorted(rpaths) if (base / suffix).is_file()), None
+                )
+                if found is not None:
+                    name = str(found)
+            if not name.startswith("/"):
+                raise CliError("CLI 包含未登记的相对动态库依赖")
+            path = Path(name)
+            if path.is_file():
+                # dyld follows versioned dylib symlinks through intermediate names.
+                # Grant only the library directory of this declared dependency.
+                paths.update((path.parent, path.parent.resolve()))
+                pending.append(path.resolve())
+    return paths
+
+
 def program_paths(executable):
     """Allow the installed program's bundle, never an ancestor home/repository."""
     path = Path(executable).resolve(strict=True)
     paths = {path, Path(executable).absolute()}
+    paths.update(library_paths(path))
     for parent in path.parents:
         if (parent / ".git").exists() or parent == Path.home() or parent == Path("/"):
             break
@@ -54,6 +108,7 @@ def program_paths(executable):
         resolved = Path(interpreter).resolve(strict=True)
         paths.add(Path(interpreter).absolute())
         paths.add(resolved)
+        paths.update(library_paths(resolved))
         if "python" in resolved.name:
             paths.add(Path(sys.base_prefix).resolve())
             paths.add(Path(interpreter).parent.parent / "pyvenv.cfg")
@@ -81,6 +136,8 @@ def program_command(args):
         if not interpreter:
             raise CliError("CLI 解释器不可用")
         words = [interpreter]
+    if words[0] == "/bin/sh":
+        words = ["/bin/bash", "--posix", "--noprofile", "--norc", *words[1:]]
     return [str(Path(words[0]).resolve(strict=True)), *words[1:], str(executable), *args[1:]]
 
 
@@ -103,6 +160,8 @@ class ProcessSandbox:
             "(deny file-write*)",
             "(deny network*)",
             "(deny appleevent-send)",
+            '(deny mach-lookup (global-name "com.apple.securityd") '
+            '(global-name "com.apple.securityd.xpc"))',
             "(deny file-map-executable)",
             # macOS dyld shared-cache boot requires reading the root vnode itself.
             # This is a literal, not a recursive grant to the filesystem.

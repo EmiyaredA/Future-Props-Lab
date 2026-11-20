@@ -38,6 +38,22 @@ function References({ initial = [] as string[], disabled = false }) {
   );
 }
 beforeEach(() => {
+  if (!HTMLDialogElement.prototype.showModal) {
+    Object.defineProperties(HTMLDialogElement.prototype, {
+      showModal: {
+        configurable: true,
+        value(this: HTMLDialogElement) {
+          this.setAttribute("open", "");
+        },
+      },
+      close: {
+        configurable: true,
+        value(this: HTMLDialogElement) {
+          this.removeAttribute("open");
+        },
+      },
+    });
+  }
   sequence = 0;
   createUrl.mockClear();
   revokeUrl.mockClear();
@@ -67,7 +83,7 @@ afterEach(() => {
 });
 const openPicker = async () => {
   await userEvent.click(screen.getByRole("button", { name: "选择参考" }));
-  return screen.getByRole("region", { name: "选择项目参考素材" });
+  return screen.getByRole("dialog", { name: "选择项目参考素材" });
 };
 
 test("thumbnail list deduplicates assets, shows actual formats and binds, replaces and removes", async () => {
@@ -79,8 +95,11 @@ test("thumbnail list deduplicates assets, shows actual formats and binds, replac
   await userEvent.click(
     within(picker).getByRole("button", { name: "绑定 角色基准" }),
   );
+  await userEvent.click(
+    within(picker).getByRole("button", { name: "确认选择" }),
+  );
   expect(
-    screen.queryByRole("region", { name: "选择项目参考素材" }),
+    screen.queryByRole("dialog", { name: "选择项目参考素材" }),
   ).not.toBeInTheDocument();
   expect(screen.getByText("固定素材")).toBeVisible();
   await openPicker();
@@ -88,7 +107,13 @@ test("thumbnail list deduplicates assets, shows actual formats and binds, replac
   expect(screen.getByText(/已绑定$/)).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: "取消" }));
   await userEvent.click(screen.getByRole("button", { name: "替换参考 1" }));
+  const search = screen.getByRole("searchbox", { name: "搜索图片或视频" });
+  await userEvent.type(search, "动作");
+  expect(
+    screen.queryByRole("button", { name: "绑定 角色基准" }),
+  ).not.toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "绑定 动作参考" }));
+  await userEvent.click(screen.getByRole("button", { name: "确认选择" }));
   expect(screen.getByRole("list", { name: "已绑定参考" })).toHaveTextContent(
     "动作参考",
   );
@@ -121,10 +146,10 @@ test("reference rows do not open previews and Escape closes the picker with focu
   expect(
     screen.queryByRole("button", { name: /^预览 / }),
   ).not.toBeInTheDocument();
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-  await userEvent.keyboard("{Escape}");
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  fireEvent(picker, new Event("cancel", { cancelable: true }));
   expect(
-    screen.queryByRole("region", { name: "选择项目参考素材" }),
+    screen.queryByRole("dialog", { name: "选择项目参考素材" }),
   ).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "选择参考" })).toHaveFocus();
 });
@@ -193,7 +218,7 @@ test("only intersecting rows request blobs, visibility loss and picker close abo
   expect(fetchBlob).toHaveBeenCalledTimes(1);
   const firstSignal = fetchBlob.mock.calls[0][1]!.signal!;
   intersect(0, false);
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(firstSignal.aborted).toBe(true);
   expect(revokeUrl).toHaveBeenCalledWith("blob:reference-1");
   intersect(1, true);

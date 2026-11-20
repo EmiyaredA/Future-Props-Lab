@@ -7,6 +7,7 @@ import {
 } from "react";
 import type {
   VisualCanvasEdge,
+  VisualCanvasGroup,
   VisualCanvasNode,
 } from "@features/visual-workshop/api";
 import {
@@ -24,6 +25,7 @@ export function useCanvasClipboard({
   projectId,
   nodesRef,
   edgesRef,
+  groupsRef,
   conflictRef,
   selectedNodeIds,
   getPastePosition,
@@ -35,12 +37,14 @@ export function useCanvasClipboard({
   projectId: string;
   nodesRef: RefObject<VisualCanvasNode[]>;
   edgesRef: RefObject<VisualCanvasEdge[]>;
+  groupsRef?: RefObject<VisualCanvasGroup[]>;
   conflictRef: RefObject<boolean>;
   selectedNodeIds: string[];
   getPastePosition: () => CanvasPoint;
   commitSnapshot: (
     nodes: VisualCanvasNode[],
     edges: VisualCanvasEdge[],
+    groups?: VisualCanvasGroup[],
   ) => void;
   selectPasted: (ids: string[]) => void;
   closeContextMenu: () => void;
@@ -73,6 +77,7 @@ export function useCanvasClipboard({
         nodesRef.current,
         edgesRef.current,
         ids,
+        groupsRef?.current,
       );
       if (!snapshot) return;
       clipboard.current = snapshot;
@@ -84,7 +89,7 @@ export function useCanvasClipboard({
       });
       closeContextMenu();
     },
-    [closeContextMenu, edgesRef, nodesRef],
+    [closeContextMenu, edgesRef, groupsRef, nodesRef],
   );
   const copySelected = useCallback(
     () => copyNodes(selectedNodeIds),
@@ -135,6 +140,7 @@ export function useCanvasClipboard({
       commitSnapshot(
         [...nodesRef.current, ...added.nodes],
         [...edgesRef.current, ...added.edges],
+        [...(groupsRef?.current ?? []), ...(added.groups ?? [])],
       );
       lastPaste.current = { anchor, count };
       selectPasted(added.nodes.map((node) => node.id));
@@ -150,6 +156,7 @@ export function useCanvasClipboard({
       commitSnapshot,
       conflictRef,
       edgesRef,
+      groupsRef,
       getPastePosition,
       nodesRef,
       revealNodes,

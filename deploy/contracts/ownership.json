@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "faa343c214c50000959f1cc4f2d85421302cfb4cc653bc3fb510602af4dbf382",
+  "openapi_sha256": "028520e111289f93951d7c214e63d167aaaee2436e6829fe84d838525e41eb63",
   "operations": [
     {
       "service": "identity",
@@ -3359,6 +3359,36 @@
     {
       "service": "visual",
       "method": "GET",
+      "path": "/v1/visual-workshop/asset-cards",
+      "operation_id": "list_account_asset_cards_v1_visual_workshop_asset_cards_get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/asset-cards",
+      "operation_id": "create_account_asset_card_v1_visual_workshop_asset_cards_post"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/asset-cards/regroup",
+      "operation_id": "regroup_account_asset_cards_v1_visual_workshop_asset_cards_regroup_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/asset-cards/{card_id}",
+      "operation_id": "get_account_asset_card_v1_visual_workshop_asset_cards__card_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/asset-cards/{card_id}",
+      "operation_id": "put_account_asset_card_v1_visual_workshop_asset_cards__card_id__put"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
       "path": "/v1/visual-workshop/generation-batches",
       "operation_id": "list_generation_batches_v1_visual_workshop_generation_batches_get"
     },
@@ -3519,6 +3549,36 @@
       "operation_id": "acceptance_summary_v1_visual_workshop_projects__project_id__acceptance_summary_get"
     },
     {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/asset-cards",
+      "operation_id": "list_visual_asset_cards_v1_visual_workshop_projects__project_id__asset_cards_get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/asset-cards",
+      "operation_id": "create_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}",
+      "operation_id": "get_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}",
+      "operation_id": "put_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__put"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations",
+      "operation_id": "generate_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__generations_post"
+    },
+    {
       "service": "assets",
       "method": "POST",
       "path": "/v1/visual-workshop/projects/{project_id}/asset-imports",
@@ -3643,6 +3703,48 @@
       "method": "POST",
       "path": "/v1/visual-workshop/projects/{project_id}/open-folder",
       "operation_id": "reveal_project_folder_v1_visual_workshop_projects__project_id__open_folder_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/previs-scenes",
+      "operation_id": "list_previs_scenes_v1_visual_workshop_projects__project_id__previs_scenes_get"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/previs-scenes",
+      "operation_id": "create_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes_post"
+    },
+    {
+      "service": "visual",
+      "method": "DELETE",
+      "path": "/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}",
+      "operation_id": "delete_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__delete"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}",
+      "operation_id": "get_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}",
+      "operation_id": "update_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__put"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/script",
+      "operation_id": "get_visual_script_v1_visual_workshop_projects__project_id__script_get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/script",
+      "operation_id": "put_visual_script_v1_visual_workshop_projects__project_id__script_put"
     },
     {
       "service": "visual",
@@ -5270,6 +5372,24 @@
       "service": "visual",
       "module": "studio.apps.visual_workshop.storage.models",
       "model": "VisualCanvasDocument"
+    },
+    {
+      "table": "visual_previs_scenes",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualPrevisScene"
+    },
+    {
+      "table": "visual_scripts",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualScript"
+    },
+    {
+      "table": "visual_asset_cards",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storage.models",
+      "model": "VisualAssetCard"
     },
     {
       "table": "visual_generation_tasks",

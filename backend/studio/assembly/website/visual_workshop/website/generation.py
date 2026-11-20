@@ -171,7 +171,13 @@ class VisualGeneration(GenerationRecords):
             )
 
     async def _resolve_canvas_references(
-        self, project_id, body, *, frame_constraints=True, frame_reference_slots=False
+        self,
+        project_id,
+        body,
+        *,
+        frame_constraints=True,
+        frame_reference_slots=False,
+        supports_subject=False,
     ):
         try:
             return await resolve_references(
@@ -180,6 +186,7 @@ class VisualGeneration(GenerationRecords):
                 body,
                 frame_constraints=frame_constraints,
                 frame_reference_slots=frame_reference_slots,
+                supports_subject=supports_subject,
             )
         except OutputError as exc:
             raise GenerationError(str(exc), code=exc.code, status=exc.status) from None
@@ -197,6 +204,9 @@ class VisualGeneration(GenerationRecords):
         body, reference_titles, input_snapshot = await self._resolve_canvas_references(
             project_id,
             body,
+            supports_subject=(
+                provider.kind == "autodl_video" and model.slug == "minimax_h3_zm_titim"
+            ),
             frame_constraints=provider.kind != "zealman_video",
             frame_reference_slots=provider.kind == "autodl_video"
             and model.slug == "minimax_h3_lightx2v",
@@ -264,6 +274,7 @@ class VisualGeneration(GenerationRecords):
         body: GenerationTaskCreateIn,
         *,
         admission: TaskAdmission | None = None,
+        on_created=None,
     ) -> GenerationTaskOut:
         row = await self.prepare_create(project_id, body)
         if body.canvas_node_id is not None and body.expected_canvas_revision is not None:
@@ -274,6 +285,8 @@ class VisualGeneration(GenerationRecords):
                 task_id=row.id,
                 kind=body.kind,
             )
+        if on_created is not None:
+            await on_created(row.id)
         if admission:
             await admission([row.id])
         await self.session.commit()

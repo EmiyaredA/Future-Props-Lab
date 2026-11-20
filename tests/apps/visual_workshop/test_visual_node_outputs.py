@@ -540,13 +540,13 @@ async def test_atomic_media_upload_and_snapshot_preserve_full_history_and_fixed_
             canvas = response.json()
         versions = (await client.get(base + "/outputs")).json()["items"]
         categories = [
-            {"id": "character", "name": "人设", "groups": ["主角"]},
+            {"id": "artwork", "name": "美术素材", "groups": ["主角"]},
             {"id": "scene", "name": "场景", "groups": []},
             {"id": "storyboard", "name": "分镜", "groups": []},
             {"id": "sound", "name": "声音设计", "groups": []},
         ]
         material = canvas["nodes"][0]
-        material.update(category_id="character", group="主角", tags=["小夏"])
+        material.update(category_id="artwork", group="主角", tags=["小夏"])
         edge = {
             "id": "fixed-1",
             "source_node_id": material["id"],
@@ -561,6 +561,7 @@ async def test_atomic_media_upload_and_snapshot_preserve_full_history_and_fixed_
             canvas["revision"],
             [edge],
             categories=categories,
+            groups=[{"id": "shot-group", "title": "镜头", "node_ids": [material["id"], "shot"]}],
         )
         response = await client.get(f"/v1/visual-workshop/projects/{project}/snapshot")
         assert response.status_code == 200, response.text
@@ -572,6 +573,13 @@ async def test_atomic_media_upload_and_snapshot_preserve_full_history_and_fixed_
         copied = imported.json()["project"]["id"]
         copied_canvas = (await client.get(f"/v1/visual-workshop/projects/{copied}/canvas")).json()
         assert copied_canvas["categories"] == categories
+        assert copied_canvas["groups"] == [
+            {
+                "id": "shot-group",
+                "title": "镜头",
+                "node_ids": [item["id"] for item in copied_canvas["nodes"]],
+            }
+        ]
         copied_node = copied_canvas["nodes"][0]
         assert copied_node["id"] != material["id"]
         assert copied_node["position"] == material["position"] and copied_node["final_version"] == 3

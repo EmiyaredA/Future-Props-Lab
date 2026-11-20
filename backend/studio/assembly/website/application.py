@@ -15,6 +15,9 @@ from studio.runtime.database.website import WebsiteDatabase
 def create_app(settings, *, database=None, read_cloud_settings=None):
     database = database or WebsiteDatabase(settings.database_url, session_class=WebsiteSession)
     app = create_http_app(lifespan_context=lifespan)
+    from studio.assembly.website.visual_workshop.creative_assets import website_creative_asset_scope
+
+    app.state.creative_asset_scope = website_creative_asset_scope
     app.state.settings, app.state.database = settings, database
     app.state.thought_official_imports = Lock()
 

@@ -1,11 +1,12 @@
 import type { DragEvent } from "react";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { CircleQuestionMark, Grid2X2, List, X } from "lucide-react";
+import { ArrowUpRight, Grid2X2, List, X } from "lucide-react";
 import { AssetBrowser, type AssetViewMode } from "@features/files";
 import type { ManagedFile } from "@features/files";
 import { getVisualWorkshopProjects } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
+import { VISUAL_WORKSHOP_MODULE } from "../module";
 import {
   isCanvasMediaKind,
   setCanvasAssetDragData,
@@ -81,11 +82,20 @@ export function CanvasAssetsDrawer({
       <header>
         <div className="canvas-assets-title">
           <strong>素材库</strong>
-          <span title="管理本项目与总文件公共库，或从其他项目导入">
-            <CircleQuestionMark aria-hidden />
-          </span>
         </div>
         <div className="canvas-assets-header-actions">
+          <a
+            className="canvas-assets-manage"
+            href={VISUAL_WORKSHOP_MODULE.pathFor(
+              "visual-workshop-assets",
+              projectId,
+            )}
+            target="_blank"
+            rel="noopener"
+          >
+            管理素材与设定
+            <ArrowUpRight size={13} aria-hidden />
+          </a>
           <div className="file-view-toggle" role="group" aria-label="文件视图">
             <button
               type="button"

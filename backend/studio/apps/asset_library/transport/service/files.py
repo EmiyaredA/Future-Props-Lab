@@ -226,10 +226,18 @@ async def delete_file(
 
 @router.get("/files/{asset_id}/content", responses={200: {"headers": FILE_CONTENT_HEADERS}})
 async def preview_file(
-    request: Request, session: SessionDep, owner_user_id: OwnerDep, asset_id: str
+    request: Request,
+    session: SessionDep,
+    owner_user_id: OwnerDep,
+    asset_id: str,
+    project_id: str | None = None,
 ) -> FileResponse:
     try:
         row, path = await cases(request, session, owner_user_id).content(asset_id)
+        if project_id is not None and (
+            row.project_id != project_id or row.mime_type != "model/gltf-binary"
+        ):
+            raise AssetError("项目模型不存在", code="not_found", status=404)
     except AssetError as exc:
         raise asset_http_error(exc) from None
     return FileResponse(

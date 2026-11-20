@@ -51,6 +51,13 @@ function walk(directory, prefix = "") {
     });
 }
 const sources = walk(path.join(web, "src")).map((name) => "web/src/" + name);
+if (service === "visual") {
+  sources.push(
+    ...walk(path.join(web, "vendor/toonflow")).map(
+      (name) => "web/vendor/toonflow/" + name,
+    ),
+  );
+}
 sources.push(
   ...walk(path.join(repo, "vendor/fortune-sheet")).map(
     (name) => "vendor/fortune-sheet/" + name,
@@ -108,6 +115,7 @@ if (fs.existsSync(output)) {
 const result = spawnSync(
   process.execPath,
   [
+    "--max-old-space-size=8192",
     path.join(repo, "node_modules/vite/bin/vite.js"),
     "build",
     "--config",

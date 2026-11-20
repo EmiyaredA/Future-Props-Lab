@@ -48,6 +48,7 @@ export const responsiveOwners = {
   "visual-workshop-projects": "shell",
   "visual-workshop-canvas": "editors",
   "visual-workshop-assets": "editors",
+  "visual-workshop-card-library": "shell",
   "visual-workshop-tasks": "shell",
   "galgame-workshop-projects": "shell",
   "galgame-workshop-overview": "editors",
@@ -104,6 +105,7 @@ export const independentApplications = {
   visual: [
     "/apps/visual-workshop",
     "/apps/visual-workshop/tasks",
+    "/apps/visual-workshop/card-library",
     "/apps/visual-workshop/projects/:id/canvas",
     "/apps/visual-workshop/projects/:id/assets",
   ],
@@ -159,6 +161,7 @@ export const staticPaths = [
   "/apps/thought-workshop/official-knowledge-bases/technical/documents/system",
   "/apps/visual-workshop",
   "/apps/visual-workshop/tasks",
+  "/apps/visual-workshop/card-library",
   "/apps/galgame-workshop",
   "/apps/presentation-workshop",
   "/apps/presentation-workshop/templates",

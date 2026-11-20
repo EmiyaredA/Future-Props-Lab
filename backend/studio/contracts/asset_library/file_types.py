@@ -69,6 +69,7 @@ ALLOWED_FILES = MappingProxyType(
         ".pdf": ("document", frozenset({"application/pdf"})),
         ".txt": ("document", frozenset({"text/plain"})),
         ".md": ("document", frozenset({"text/markdown", "text/plain"})),
+        ".glb": ("document", frozenset({"model/gltf-binary"})),
         ".json": ("document", frozenset({"application/json", "text/json", "text/plain"})),
     }
 )

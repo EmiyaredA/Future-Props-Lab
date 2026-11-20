@@ -14,9 +14,13 @@ from tempfile import TemporaryDirectory
 from studio.contracts.amadeus.tools import definition
 
 from .sandbox import (
-    ProcessSandbox, clean_script_environment, program_command, program_paths, verify_sandbox,
+    ProcessSandbox,
+    clean_script_environment,
+    program_command,
+    program_paths,
+    verify_sandbox,
 )
-from .transport import CliError, close_transport
+from .transport import CliError, close_transport, spawn_transport
 from .workspace_runtime import prepare_runtime
 
 WORKSPACE_TOOLS = [
@@ -70,7 +74,7 @@ def copy_regular(source, destination, *, required=False):
 class RunWorkspace:
     def __init__(self, private, runtime):
         self.private, self.runtime = Path(private).resolve(), Path(runtime).resolve()
-        self.root = self.private / "work"
+        self.root = self.private / "fpl-codex-work-current"
         self.root.mkdir(mode=0o700, parents=True)
         (self.root / "tmp").mkdir(mode=0o700)
         (self.private / "home").mkdir(mode=0o700)
@@ -82,7 +86,9 @@ class RunWorkspace:
 
     def attach(self, config, *, task=True):
         server = config["mcpServers"]["fpl"]
-        self.sockets.append(Path(server["env"]["FPL_TOOL_SOCKET"]).resolve())
+        endpoint = Path(server["env"]["FPL_TOOL_SOCKET"]).resolve()
+        server["env"]["FPL_TOOL_SOCKET"] = str(endpoint)
+        self.sockets.append(endpoint)
         if task:
             self.socket = Path(server["env"]["FPL_TOOL_SOCKET"]).resolve()
             self.token = server["env"]["FPL_TOOL_TOKEN"]
@@ -99,6 +105,7 @@ class RunWorkspace:
             "XDG_DATA_HOME": str(self.private / "data"),
             "PYTHONDONTWRITEBYTECODE": "1",
             "PYTHONNOUSERSITE": "1",
+            "OPENSSL_CONF": "/dev/null",
         }
 
     def command(self, args, *, read=()):
@@ -114,14 +121,17 @@ class RunWorkspace:
             sockets=self.sockets,
             network=True,
         )
-        return policy.command(program_command(args))
+        command = program_command(args)
+        if len(command) > 1 and "python" in Path(command[0]).name:
+            command = [str(self.runtime / "bin" / "python"), *command[1:]]
+        return policy.command(command)
 
     def codex_profile(self, original):
         from .codex_profile import profile_environment
 
         profile_environment(original)
-        profile = self.private / "codex"
-        profile.mkdir(mode=0o700)
+        profile = self.private / "profiles" / "codex-app-server"
+        profile.mkdir(mode=0o700, parents=True)
         copy_regular(Path(original) / "auth.json", profile / "auth.json", required=True)
         return profile
 
@@ -135,7 +145,7 @@ class RunWorkspace:
             service = "Claude Code-credentials"
             if env.get("CLAUDE_CONFIG_DIR"):
                 service += "-" + hashlib.sha256(str(home).encode()).hexdigest()[:8]
-            process = await asyncio.create_subprocess_exec(
+            process = await spawn_transport(
                 "/usr/bin/security",
                 "find-generic-password",
                 "-s",
@@ -247,8 +257,24 @@ class RunWorkspace:
         from jsonschema import validate
 
         validate(arguments, WORKSPACE_TOOLS[1]["inputSchema"])
-        path = self.path(arguments["path"])
-        fd = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+        path = Path(arguments["path"])
+        if path.is_absolute() or not path.parts or ".." in path.parts:
+            raise CliError("路径只能位于本轮临时工作区")
+        # Open every component relative to an anchored directory FD. A background
+        # process swapping a parent for a symlink must never turn this host read
+        # into a read outside the workspace.
+        flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+        directory = os.open(self.root, flags)
+        try:
+            for part in path.parts[:-1]:
+                child = os.open(part, flags, dir_fd=directory)
+                os.close(directory)
+                directory = child
+            fd = os.open(
+                path.parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory
+            )
+        finally:
+            os.close(directory)
         with os.fdopen(fd, "rb") as handle:
             if not stat.S_ISREG(os.fstat(handle.fileno()).st_mode):
                 raise CliError("只可保存普通 UTF-8 文件")

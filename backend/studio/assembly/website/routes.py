@@ -52,6 +52,10 @@ from studio.apps.tools.transport.navigation_http import router as tool_navigatio
 from studio.apps.visual_workshop.acceptance.review_routes import router as visual_review_router
 from studio.apps.visual_workshop.acceptance.standard_routes import router as visual_standard_router
 from studio.apps.visual_workshop.generation_routes import router as visual_generation_records_router
+from studio.apps.visual_workshop.transport.creative_workflow_http import (
+    router as visual_creative_workflow_router,
+)
+from studio.apps.visual_workshop.transport.previs_http import router as visual_previs_router
 from studio.assembly.http_dependencies import require_studio_auth
 from studio.assembly.website.asset_library.transport.website.files import (
     router as file_management_router,
@@ -160,6 +164,12 @@ api_router.include_router(
 )
 api_router.include_router(
     visual_workshop_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    visual_previs_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+api_router.include_router(
+    visual_creative_workflow_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
 api_router.include_router(
     visual_outputs_router, dependencies=[Depends(require_studio_auth), ModelCapacity]

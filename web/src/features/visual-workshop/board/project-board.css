@@ -221,7 +221,7 @@
   min-height: 0;
 }
 .board-materials {
-  width: 240px;
+  width: 300px;
   flex-shrink: 0;
   background: var(--board-panel);
   border-right: 1px solid var(--board-border);
@@ -630,4 +630,30 @@
   .visual-project-board button {
     transition: none;
   }
+}
+
+.board-material-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin: 0 0 10px;
+  padding: 3px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.board-material-mode button {
+  min-height: 31px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.board-material-mode button[aria-pressed="true"] {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--accent);
+  font-weight: 650;
 }

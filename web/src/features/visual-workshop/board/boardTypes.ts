@@ -1,5 +1,10 @@
 import type { useVisualCanvasController } from "../canvas/useVisualCanvasController";
-import type { GenerationTask, GenerationBatch, VisualCanvasNode } from "../api";
+import type {
+  GenerationTask,
+  GenerationBatch,
+  VisualCanvasNode,
+  VisualNodeOutput,
+} from "../api";
 import { nodeGenerationActivity } from "../generation/generationActivityModel";
 
 export type BoardController = ReturnType<typeof useVisualCanvasController>;
@@ -37,3 +42,18 @@ export function nodeStatus(
     ? "可生成"
     : "待准备";
 }
+
+export type ProjectBoardProps = {
+  acceptanceEntry?: {
+    nodeId: string;
+    output?: VisualNodeOutput;
+    entry: number;
+  };
+  controller: BoardController;
+  onCanvas: () => void;
+  onPrevis?: () => void;
+  onScript?: () => void;
+  onAcceptance?: (output?: VisualNodeOutput) => void;
+  previews: Record<string, VisualNodeOutput | undefined>;
+  onPreview: (nodeId: string, version?: VisualNodeOutput) => void;
+};

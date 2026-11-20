@@ -1,4 +1,5 @@
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { SearchablePickerField } from "@shared/ui/SearchablePickerDialog";
 import { AudioInspectorFields } from "@features/galgame-workshop/editor/AudioInspectorFields";
 import { CurtainInspectorFields } from "@features/galgame-workshop/editor/CurtainInspectorFields";
 import { Field } from "@features/galgame-workshop/editor/InspectorFieldControls";
@@ -47,15 +48,19 @@ export function MediaBlockInspectorFields({
       </Field>
       {block.action === "play" ? (
         <>
-          <Field label="视频素材">
-            <CustomSelect
-              ariaLabel="视频素材"
-              value={block.assetId ?? ""}
-              options={(document.assets ?? [])
+          <div className="galgame-field">
+            <span>视频素材</span>
+            <SearchablePickerField
+              title="视频素材"
+              searchLabel="搜索视频"
+              value={block.assetId}
+              items={(document.assets ?? [])
                 .filter((asset) => asset.type === "video")
                 .map((asset) => ({
-                  value: asset.id,
+                  id: asset.id,
                   label: asset.label,
+                  icon: "video",
+                  preview: `/v1/files/${asset.fileId}/thumbnail`,
                 }))}
               onChange={(assetId) =>
                 patch((current) =>
@@ -63,7 +68,7 @@ export function MediaBlockInspectorFields({
                 )
               }
             />
-          </Field>
+          </div>
           <Field label="画面适配">
             <CustomSelect
               ariaLabel="视频画面适配"

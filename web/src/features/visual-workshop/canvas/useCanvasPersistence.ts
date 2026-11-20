@@ -4,12 +4,14 @@ import {
   putVisualCanvas,
   type VisualCanvasDocument,
   type VisualCanvasEdge,
+  type VisualCanvasGroup,
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
 
 type CanvasSnapshot = {
   nodes: VisualCanvasNode[];
   edges: VisualCanvasEdge[];
+  groups?: VisualCanvasGroup[];
 };
 
 function snapshotSignature(snapshot: CanvasSnapshot) {
@@ -23,6 +25,20 @@ export function useCanvasPersistence(
   const revisionRef = useRef(0);
   const nodesRef = useRef<VisualCanvasNode[]>([]);
   const edgesRef = useRef<VisualCanvasEdge[]>([]);
+  const metadataWritten = useRef(false);
+  const groupsRef = useRef<VisualCanvasGroup[]>([]);
+  const projectCardIdsRef = useRef<string[]>([]);
+  const [groups, setGroups] = useState<VisualCanvasGroup[]>([]);
+  const [projectCardIds, setProjectCardIds] = useState<string[]>([]);
+  const applyCanvasMetadata = useCallback((document: VisualCanvasDocument) => {
+    groupsRef.current = document.groups ?? [];
+    projectCardIdsRef.current = document.project_card_ids ?? [];
+    setGroups(groupsRef.current);
+    setProjectCardIds(projectCardIdsRef.current);
+    metadataWritten.current = Boolean(
+      groupsRef.current.length || projectCardIdsRef.current.length,
+    );
+  }, []);
   const conflictRef = useRef(false);
   const saveFailureRef = useRef("");
   const saveQueue = useRef(Promise.resolve());
@@ -39,33 +55,37 @@ export function useCanvasPersistence(
   const [saveMessage, setSaveMessage] = useState("");
   const [conflict, setConflict] = useState<VisualCanvasDocument>();
 
-  const applyServerCanvas = useCallback((loaded: VisualCanvasDocument) => {
-    if (initialized.current && loaded.revision <= revisionRef.current) return;
-    const externalRevision =
-      initialized.current && loaded.revision !== revisionRef.current;
-    if (
-      externalRevision &&
-      (autoSave.current ||
-        pendingSaves.current > 0 ||
-        conflictRef.current ||
-        saveFailureRef.current)
-    ) {
-      conflictRef.current = true;
-      setConflict(loaded);
-      setSaveState("conflict");
-      return;
-    }
-    nodesRef.current = loaded.nodes;
-    edgesRef.current = loaded.edges;
-    revisionRef.current = loaded.revision;
-    setNodes(loaded.nodes);
-    setEdges(loaded.edges);
-    if (!initialized.current || externalRevision) {
-      historyPast.current = [];
-      historyFuture.current = [];
-    }
-    initialized.current = true;
-  }, []);
+  const applyServerCanvas = useCallback(
+    (loaded: VisualCanvasDocument) => {
+      if (initialized.current && loaded.revision <= revisionRef.current) return;
+      const externalRevision =
+        initialized.current && loaded.revision !== revisionRef.current;
+      if (
+        externalRevision &&
+        (autoSave.current ||
+          pendingSaves.current > 0 ||
+          conflictRef.current ||
+          saveFailureRef.current)
+      ) {
+        conflictRef.current = true;
+        setConflict(loaded);
+        setSaveState("conflict");
+        return;
+      }
+      nodesRef.current = loaded.nodes;
+      edgesRef.current = loaded.edges;
+      revisionRef.current = loaded.revision;
+      setNodes(loaded.nodes);
+      setEdges(loaded.edges);
+      applyCanvasMetadata(loaded);
+      if (!initialized.current || externalRevision) {
+        historyPast.current = [];
+        historyFuture.current = [];
+      }
+      initialized.current = true;
+    },
+    [applyCanvasMetadata],
+  );
   useEffect(() => {
     if (loaded) applyServerCanvas(loaded);
   }, [loaded, applyServerCanvas]);
@@ -86,6 +106,18 @@ export function useCanvasPersistence(
     (snapshot: VisualCanvasNode[], edgeSnapshot = edgesRef.current) => {
       const nodeCopy = structuredClone(snapshot);
       const edgeCopy = structuredClone(edgeSnapshot);
+      const ids = new Set(snapshot.map((node) => node.id));
+      const pendingGroups = groupsRef.current;
+      const groupCopy = pendingGroups
+        .map((group) => ({
+          ...group,
+          node_ids: group.node_ids.filter((id) => ids.has(id)),
+        }))
+        .filter((group) => group.node_ids.length >= 2);
+      const cardCopy = [...projectCardIdsRef.current];
+      const includeMetadata =
+        metadataWritten.current || Boolean(groupCopy.length || cardCopy.length);
+      metadataWritten.current = includeMetadata;
       pendingSaves.current += 1;
       saveQueue.current = saveQueue.current.then(async () => {
         if (conflictRef.current) {
@@ -96,16 +128,34 @@ export function useCanvasPersistence(
         setSaveMessage("");
         saveFailureRef.current = "";
         try {
-          const updated = await putVisualCanvas(
-            projectId,
-            nodeCopy,
-            revisionRef.current,
-            edgeCopy,
-          );
+          const updated = includeMetadata
+            ? await putVisualCanvas(
+                projectId,
+                nodeCopy,
+                revisionRef.current,
+                edgeCopy,
+                undefined,
+                groupCopy,
+                cardCopy,
+              )
+            : await putVisualCanvas(
+                projectId,
+                nodeCopy,
+                revisionRef.current,
+                edgeCopy,
+              );
           revisionRef.current = updated.revision;
           if (JSON.stringify(nodesRef.current) === JSON.stringify(nodeCopy)) {
             nodesRef.current = updated.nodes;
             setNodes(updated.nodes);
+          }
+          if (
+            JSON.stringify(nodesRef.current.map(({ id }) => id)) ===
+              JSON.stringify(nodeCopy.map(({ id }) => id)) &&
+            groupsRef.current === pendingGroups
+          ) {
+            groupsRef.current = updated.groups ?? [];
+            setGroups(groupsRef.current);
           }
           setSaveState("saved");
         } catch (error) {
@@ -133,6 +183,7 @@ export function useCanvasPersistence(
   );
 
   const recordHistory = useCallback((snapshot: CanvasSnapshot) => {
+    snapshot = { ...snapshot, groups: snapshot.groups ?? groupsRef.current };
     const past = historyPast.current;
     const previous = past[past.length - 1];
     if (previous && snapshotSignature(previous) === snapshotSignature(snapshot))
@@ -159,6 +210,8 @@ export function useCanvasPersistence(
       edgesRef.current = edgesCopy;
       setNodes(nodesCopy);
       setEdges(edgesCopy);
+      groupsRef.current = structuredClone(snapshot.groups ?? []);
+      setGroups(groupsRef.current);
       enqueueSave(nodesCopy, edgesCopy);
     },
     [enqueueSave],
@@ -170,6 +223,7 @@ export function useCanvasPersistence(
     historyFuture.current.push({
       nodes: structuredClone(nodesRef.current),
       edges: structuredClone(edgesRef.current),
+      groups: structuredClone(groupsRef.current),
     });
     applyHistorySnapshot(target);
     return true;
@@ -181,6 +235,7 @@ export function useCanvasPersistence(
     historyPast.current.push({
       nodes: structuredClone(nodesRef.current),
       edges: structuredClone(edgesRef.current),
+      groups: structuredClone(groupsRef.current),
     });
     applyHistorySnapshot(target);
     return true;
@@ -269,6 +324,15 @@ export function useCanvasPersistence(
               node.asset_id !== next.asset_id)
           )
             next.approved = false;
+          if (
+            node.kind === "image" &&
+            next.kind === "image" &&
+            node.asset_id !== next.asset_id &&
+            !("design_card_id" in patch)
+          ) {
+            next.design_card_id = null;
+            next.design_card_revision = null;
+          }
           return next;
         });
         return changed ? next : current;
@@ -300,7 +364,30 @@ export function useCanvasPersistence(
     [recordHistory, scheduleSave],
   );
 
+  const replaceProjectCardIds = useCallback(
+    async (ids: string[], association?: { nodeId: string; cardId: string }) => {
+      projectCardIdsRef.current = ids;
+      setProjectCardIds(ids);
+      if (association)
+        patchNode(
+          association.nodeId,
+          { design_card_id: association.cardId },
+          true,
+        );
+      else scheduleSave(true);
+      await prepareCanvasForAgent();
+    },
+    [patchNode, prepareCanvasForAgent, scheduleSave],
+  );
+
   return {
+    groups,
+    groupsRef,
+    setGroups,
+    projectCardIds,
+    projectCardIdsRef,
+    replaceProjectCardIds,
+    applyCanvasMetadata,
     revisionRef,
     nodesRef,
     edgesRef,

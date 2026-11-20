@@ -7621,6 +7621,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/asset-cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Account Asset Cards */
+        get: operations["list_account_asset_cards_v1_visual_workshop_asset_cards_get"];
+        put?: never;
+        /** Create Account Asset Card */
+        post: operations["create_account_asset_card_v1_visual_workshop_asset_cards_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/asset-cards/regroup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Regroup Account Asset Cards */
+        post: operations["regroup_account_asset_cards_v1_visual_workshop_asset_cards_regroup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/asset-cards/{card_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Account Asset Card */
+        get: operations["get_account_asset_card_v1_visual_workshop_asset_cards__card_id__get"];
+        /** Put Account Asset Card */
+        put: operations["put_account_asset_card_v1_visual_workshop_asset_cards__card_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/generation-batches": {
         parameters: {
             query?: never;
@@ -7984,6 +8037,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/asset-cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Visual Asset Cards */
+        get: operations["list_visual_asset_cards_v1_visual_workshop_projects__project_id__asset_cards_get"];
+        put?: never;
+        /** Create Visual Asset Card */
+        post: operations["create_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Visual Asset Card */
+        get: operations["get_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__get"];
+        /** Put Visual Asset Card */
+        put: operations["put_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Visual Asset Card */
+        post: operations["generate_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__generations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/asset-imports": {
         parameters: {
             query?: never;
@@ -8255,6 +8361,61 @@ export interface paths {
         put?: never;
         /** Reveal Project Folder */
         post: operations["reveal_project_folder_v1_visual_workshop_projects__project_id__open_folder_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/previs-scenes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Previs Scenes */
+        get: operations["list_previs_scenes_v1_visual_workshop_projects__project_id__previs_scenes_get"];
+        put?: never;
+        /** Create Previs Scene */
+        post: operations["create_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Previs Scene */
+        get: operations["get_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__get"];
+        /** Update Previs Scene */
+        put: operations["update_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__put"];
+        post?: never;
+        /** Delete Previs Scene */
+        delete: operations["delete_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/script": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Visual Script */
+        get: operations["get_visual_script_v1_visual_workshop_projects__project_id__script_get"];
+        /** Put Visual Script */
+        put: operations["put_visual_script_v1_visual_workshop_projects__project_id__script_put"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -10038,6 +10199,8 @@ export interface components {
             file: string;
             /** Group */
             group?: string | null;
+            /** Previs */
+            previs?: string | null;
             /**
              * X
              * @default 0
@@ -10202,6 +10365,171 @@ export interface components {
             errors_today: number;
             /** Total Tokens Today */
             total_tokens_today: number;
+        };
+        /** CardData */
+        CardData: {
+            /** Adopted Asset Id */
+            adopted_asset_id?: string | null;
+            /**
+             * Archived
+             * @default false
+             */
+            archived: boolean;
+            /** Candidate Asset Ids */
+            candidate_asset_ids?: string[];
+            /** Candidate Task Ids */
+            candidate_task_ids?: string[];
+            /**
+             * Design
+             * @default
+             */
+            design: string;
+            /**
+             * Facts
+             * @default
+             */
+            facts: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "character" | "scene" | "prop";
+            /** Model Asset Key */
+            model_asset_key?: string | null;
+            /** Parent Asset Id */
+            parent_asset_id?: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            /**
+             * Proposed Design
+             * @default
+             */
+            proposed_design: string;
+            source?: components["schemas"]["ScriptSource"] | null;
+            /** Title */
+            title: string;
+        };
+        /** CardGenerationIn */
+        CardGenerationIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Model Id */
+            model_id: string;
+            /** Prompt */
+            prompt: string;
+            /** Request Id */
+            request_id: string;
+            /** Size */
+            size: string;
+        };
+        /** CardOut */
+        CardOut: {
+            /** Adopted Asset Id */
+            adopted_asset_id?: string | null;
+            /**
+             * Archived
+             * @default false
+             */
+            archived: boolean;
+            /** Candidate Asset Ids */
+            candidate_asset_ids?: string[];
+            /** Candidate Task Ids */
+            candidate_task_ids?: string[];
+            /**
+             * Design
+             * @default
+             */
+            design: string;
+            /**
+             * Facts
+             * @default
+             */
+            facts: string;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "character" | "scene" | "prop";
+            /** Media Projects */
+            media_projects?: {
+                [key: string]: string | null;
+            };
+            /** Model Asset Key */
+            model_asset_key?: string | null;
+            /** Parent Asset Id */
+            parent_asset_id?: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            /**
+             * Proposed Design
+             * @default
+             */
+            proposed_design: string;
+            /** Revision */
+            revision: number;
+            source?: components["schemas"]["ScriptSource"] | null;
+            /** Source Project Id */
+            source_project_id?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** CardRegroupIn */
+        CardRegroupIn: {
+            /** Expected Revisions */
+            expected_revisions: {
+                [key: string]: number;
+            };
+            /** Main Card Id */
+            main_card_id: string;
+            /** Variant Ids */
+            variant_ids: string[];
+        };
+        /** CardUpdate */
+        CardUpdate: {
+            /** Adopted Asset Id */
+            adopted_asset_id?: string | null;
+            /**
+             * Archived
+             * @default false
+             */
+            archived: boolean;
+            /** Candidate Asset Ids */
+            candidate_asset_ids?: string[];
+            /** Candidate Task Ids */
+            candidate_task_ids?: string[];
+            /**
+             * Design
+             * @default
+             */
+            design: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Facts
+             * @default
+             */
+            facts: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "character" | "scene" | "prop";
+            /** Model Asset Key */
+            model_asset_key?: string | null;
+            /** Parent Asset Id */
+            parent_asset_id?: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            /**
+             * Proposed Design
+             * @default
+             */
+            proposed_design: string;
+            source?: components["schemas"]["ScriptSource"] | null;
+            /** Title */
+            title: string;
         };
         /** CatalogOut */
         CatalogOut: {
@@ -18886,6 +19214,76 @@ export interface components {
              */
             effect: "none" | "fade" | "slideX" | "slideY" | "slideX3D" | "slideY3D" | "rotate" | "scaleX" | "scaleY" | "scale" | "scaleReverse" | "random";
         };
+        /** PrevisSceneCreate */
+        PrevisSceneCreate: {
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format Version
+             * @constant
+             */
+            format_version: 1;
+            script_source?: components["schemas"]["ScriptSource"] | null;
+            /** Title */
+            title: string;
+        };
+        /** PrevisSceneOut */
+        PrevisSceneOut: {
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /**
+             * Format Version
+             * @constant
+             */
+            format_version: 1;
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            script_source?: components["schemas"]["ScriptSource"] | null;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PrevisSceneSummary */
+        PrevisSceneSummary: {
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PrevisSceneUpdate */
+        PrevisSceneUpdate: {
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Format Version
+             * @constant
+             */
+            format_version: 1;
+            script_source?: components["schemas"]["ScriptSource"] | null;
+            /** Title */
+            title: string;
+        };
         /** ProjectCreateIn */
         ProjectCreateIn: {
             /**
@@ -20008,6 +20406,53 @@ export interface components {
             model_id: string;
             /** Target Language */
             target_language?: string | null;
+        };
+        /** ScriptEpisode */
+        ScriptEpisode: {
+            /** Id */
+            id: string;
+            /** Scenes */
+            scenes?: components["schemas"]["ScriptScene"][];
+            /** Title */
+            title: string;
+        };
+        /** ScriptOut */
+        ScriptOut: {
+            /** Episodes */
+            episodes?: components["schemas"]["ScriptEpisode"][];
+            /** Revision */
+            revision: number;
+        };
+        /** ScriptScene */
+        ScriptScene: {
+            /**
+             * Heading
+             * @default
+             */
+            heading: string;
+            /** Id */
+            id: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /** Title */
+            title: string;
+        };
+        /** ScriptSource */
+        ScriptSource: {
+            /** Revision */
+            revision: number;
+            /** Scene Id */
+            scene_id: string;
+        };
+        /** ScriptUpdate */
+        ScriptUpdate: {
+            /** Episodes */
+            episodes?: components["schemas"]["ScriptEpisode"][];
+            /** Expected Revision */
+            expected_revision: number;
         };
         /** SearchCriteria */
         SearchCriteria: {
@@ -23776,8 +24221,12 @@ export interface components {
             categories?: components["schemas"]["VisualMaterialCategory"][];
             /** Edges */
             edges: components["schemas"]["VisualCanvasEdge"][];
+            /** Groups */
+            groups?: components["schemas"]["VisualCanvasGroup"][];
             /** Nodes */
             nodes: (components["schemas"]["VisualCanvasTextNode"] | components["schemas"]["VisualCanvasImageNode"] | components["schemas"]["VisualCanvasVideoNode"] | components["schemas"]["VisualCanvasAudioNode"])[];
+            /** Project Card Ids */
+            project_card_ids?: string[];
             /** Project Id */
             project_id: string;
             /** Revision */
@@ -23793,8 +24242,12 @@ export interface components {
             edges?: components["schemas"]["VisualCanvasEdge"][];
             /** Expected Revision */
             expected_revision: number;
+            /** Groups */
+            groups?: components["schemas"]["VisualCanvasGroup"][] | null;
             /** Nodes */
             nodes: (components["schemas"]["VisualCanvasTextNode"] | components["schemas"]["VisualCanvasImageNode"] | components["schemas"]["VisualCanvasVideoNode"] | components["schemas"]["VisualCanvasAudioNode"])[];
+            /** Project Card Ids */
+            project_card_ids?: string[] | null;
         };
         /** VisualCanvasEdge */
         VisualCanvasEdge: {
@@ -23818,6 +24271,15 @@ export interface components {
             source_node_id: string;
             /** Target Node Id */
             target_node_id: string;
+        };
+        /** VisualCanvasGroup */
+        VisualCanvasGroup: {
+            /** Id */
+            id: string;
+            /** Node Ids */
+            node_ids: string[];
+            /** Title */
+            title: string;
         };
         /** VisualCanvasImageGenerationDraft */
         VisualCanvasImageGenerationDraft: {
@@ -23868,6 +24330,10 @@ export interface components {
             asset_id?: string | null;
             /** Category Id */
             category_id?: string | null;
+            /** Design Card Id */
+            design_card_id?: string | null;
+            /** Design Card Revision */
+            design_card_revision?: number | null;
             /** Final Output Id */
             final_output_id?: string | null;
             /** Final Version */
@@ -23942,6 +24408,8 @@ export interface components {
             active_prompt_version_id?: string | null;
             /** Audio Asset Ids */
             audio_asset_ids?: string[];
+            /** Design References */
+            design_references?: components["schemas"]["VisualDesignReference"][];
             /**
              * Duration
              * @default 5
@@ -23983,6 +24451,12 @@ export interface components {
             ratio: "16:9" | "9:16" | "4:3" | "3:4" | "1:1" | "21:9" | "adaptive";
             /** Reference Asset Ids */
             reference_asset_ids?: string[];
+            /** Reference Order */
+            reference_order?: string[] | null;
+            /** Reference Subjects */
+            reference_subjects?: {
+                [key: string]: string;
+            } | null;
             /**
              * Resolution
              * @default 720p
@@ -24030,6 +24504,17 @@ export interface components {
             position: components["schemas"]["VisualCanvasPosition"];
             /** Tags */
             tags?: string[];
+            /** Title */
+            title: string;
+        };
+        /** VisualDesignReference */
+        VisualDesignReference: {
+            /** Asset Id */
+            asset_id: string;
+            /** Card Id */
+            card_id: string;
+            /** Card Revision */
+            card_revision: number;
             /** Title */
             title: string;
         };
@@ -28985,7 +29470,9 @@ export interface operations {
     };
     preview_file_v1_files__asset_id__content_get: {
         parameters: {
-            query?: never;
+            query?: {
+                project_id?: string | null;
+            };
             header?: never;
             path: {
                 asset_id: string;
@@ -42275,6 +42762,158 @@ export interface operations {
             };
         };
     };
+    list_account_asset_cards_v1_visual_workshop_asset_cards_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"][];
+                };
+            };
+        };
+    };
+    create_account_asset_card_v1_visual_workshop_asset_cards_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardData"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regroup_account_asset_cards_v1_visual_workshop_asset_cards_regroup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardRegroupIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_account_asset_card_v1_visual_workshop_asset_cards__card_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_account_asset_card_v1_visual_workshop_asset_cards__card_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_generation_batches_v1_visual_workshop_generation_batches_get: {
         parameters: {
             query?: {
@@ -43147,6 +43786,176 @@ export interface operations {
             };
         };
     };
+    list_visual_asset_cards_v1_visual_workshop_projects__project_id__asset_cards_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardData"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__generations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                card_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CardGenerationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     import_assets_v1_visual_workshop_projects__project_id__asset_imports_post: {
         parameters: {
             query?: never;
@@ -43865,6 +44674,242 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectFolderOpenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_previs_scenes_v1_visual_workshop_projects__project_id__previs_scenes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrevisSceneSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrevisSceneCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrevisSceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                scene_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrevisSceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                scene_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrevisSceneUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrevisSceneOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                scene_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_visual_script_v1_visual_workshop_projects__project_id__script_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScriptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_visual_script_v1_visual_workshop_projects__project_id__script_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScriptUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScriptOut"];
                 };
             };
             /** @description Validation Error */

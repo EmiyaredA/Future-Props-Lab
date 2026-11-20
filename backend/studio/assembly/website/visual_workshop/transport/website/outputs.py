@@ -133,6 +133,7 @@ async def upload_material_node(
     y: Annotated[float, Form()] = 0,
     category_id: Annotated[str | None, Form(max_length=64)] = None,
     group: Annotated[str | None, Form(max_length=120)] = None,
+    previs: Annotated[str | None, Form(max_length=1024)] = None,
 ):
     from studio.assembly.website.visual_workshop.canvas import VisualCanvasError
     from studio.assembly.website.visual_workshop.outputs.uploads import upload_material
@@ -149,6 +150,7 @@ async def upload_material_node(
             y=y,
             category_id=category_id,
             group=group,
+            previs=previs,
         )
     except (OutputError, AssetError, VisualCanvasError) as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

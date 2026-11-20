@@ -16,4 +16,6 @@ def canvas_out(row: VisualCanvasDocument) -> VisualCanvasDocumentOut:
         revision=row.revision,
         updated_at=iso_utc(row.updated_at),
         categories=row.categories or default_material_categories(),
+        groups=row.groups or [],
+        project_card_ids=row.project_card_ids or [],
     )

@@ -256,7 +256,7 @@ test("batch uploads use latest returned nodes and stop on failure without replay
 test("board uploads keep the chosen category and group for every file and persist on reload", async () => {
   const user = userEvent.setup();
   saved.categories = [
-    { id: "character", name: "人设", groups: ["主角"] },
+    { id: "artwork", name: "美术素材", groups: ["主角"] },
     { id: "scene", name: "场景", groups: [] },
   ];
   saved.nodes = [];
@@ -282,10 +282,10 @@ test("board uploads keep the chosen category and group for every file and persis
   const view = renderCanvas();
   await screen.findByRole("button", { name: "添加内容" });
   await user.click(screen.getByRole("button", { name: "看板" }));
-  await user.click(screen.getByRole("button", { name: "管理分类 人设" }));
+  await user.click(screen.getByRole("button", { name: "管理分类 美术素材" }));
   await user.click(screen.getByRole("menuitem", { name: "上传到此分类" }));
   expect(screen.getByRole("combobox", { name: "上传分类" })).toHaveTextContent(
-    "人设",
+    "美术素材",
   );
   await user.click(screen.getByRole("combobox", { name: "上传分组" }));
   await user.click(screen.getByRole("option", { name: "主角" }));
@@ -297,15 +297,15 @@ test("board uploads keep the chosen category and group for every file and persis
   expect(
     vi.mocked(uploadMaterialNode).mock.calls.map((call) => [call[2], call[4]]),
   ).toEqual([
-    [0, { category_id: "character", group: "主角" }],
-    [1, { category_id: "character", group: "主角" }],
+    [0, { category_id: "artwork", group: "主角" }],
+    [1, { category_id: "artwork", group: "主角" }],
   ]);
   view.unmount();
   renderCanvas();
   const material = await screen.findByRole("button", {
     name: /^one\.png 图像/,
   });
-  expect(material.closest(".board-category")).toHaveTextContent("人设");
+  expect(material.closest(".board-category")).toHaveTextContent("美术素材");
   expect(material.closest(".board-group")).toHaveTextContent("主角");
 });
 

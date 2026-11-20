@@ -54,8 +54,8 @@ class GenerationIntake:
             source=request.url.path,
         )
 
-    async def create_task(self, project, body):
-        return await self.create(project, body)
+    async def create_task(self, project, body, *, on_created=None):
+        return await self.create(project, body, on_created=on_created)
 
     async def create_batch(self, project, body):
         task = ImageGenerationTaskCreateIn(
@@ -71,7 +71,7 @@ class GenerationIntake:
         )
         return await self.create(project, task, batch=body)
 
-    async def create(self, project, arguments, batch=None):
+    async def create(self, project, arguments, batch=None, *, on_created=None):
         await self.projects.row(project)
         for identity in await pending_outcomes(self.session, project):
             try:
@@ -102,6 +102,8 @@ class GenerationIntake:
             payloads = await self.peer.prepare(plan)
             await self.session.execute(text("BEGIN IMMEDIATE"))
             result = await self.persist(plan, payloads, arguments, batch)
+            if on_created is not None:
+                await on_created(result.id)
             await self.session.commit()
             return result
         except BaseException:
@@ -117,6 +119,10 @@ class GenerationIntake:
                 project,
                 arguments,
                 frame_constraints=choice.provider_kind != "zealman_video",
+                supports_subject=(
+                    choice.provider_kind == "autodl_video"
+                    and choice.model_slug == "minimax_h3_zm_titim"
+                ),
                 frame_reference_slots=(
                     choice.provider_kind == "autodl_video"
                     and choice.model_slug == "minimax_h3_lightx2v"

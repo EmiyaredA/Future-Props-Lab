@@ -63,7 +63,7 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
   canvas.nodes[0] = {
     ...canvas.nodes[0],
     title: "小夏 · 人设图",
-    category_id: "character",
+    category_id: "source-design",
     group: "主角",
   };
   const nodes = [
@@ -80,7 +80,7 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
       id: "scene",
       kind: "image",
       title: "卧室 · 场景图",
-      category_id: "scene",
+      category_id: "source-environment",
       position: { x: 600, y: 100 },
       asset_id: null,
     },
@@ -108,8 +108,8 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
       nodes,
       edges: [],
       categories: [
-        { id: "character", name: "人设", groups: ["主角"] },
-        { id: "scene", name: "场景", groups: [] },
+        { id: "source-design", name: "设定来源", groups: ["主角"] },
+        { id: "source-environment", name: "环境参考", groups: [] },
         { id: "storyboard", name: "分镜", groups: [] },
         { id: "sound", name: "声音设计", groups: [] },
       ],
@@ -156,21 +156,35 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
   await page.getByRole("button", { name: "保存文本版本" }).click();
   await expect(page.getByLabel("当前预览 v1 · 最终输出 v1")).toBeVisible();
   await tree.getByRole("button", { name: /^镜头 01 · 视频/ }).click();
-  await page.getByRole("button", { name: "引用任务输出" }).click();
-  await page.getByRole("combobox", { name: "选择上游任务" }).click();
+  await page.getByRole("combobox", { name: "视频生成方式" }).click();
+  await page.getByRole("option", { name: "全能参考", exact: true }).click();
+  await page.getByRole("button", { name: "添加参考素材" }).click();
+  await page
+    .getByRole("menuitem", { name: "引用任务输出", exact: true })
+    .click();
+  await page.getByRole("button", { name: "选择上游任务", exact: true }).click();
   await expect(
-    page.getByRole("option", { name: /卧室 · 场景图/ }),
+    page.getByRole("button", { name: /卧室 · 场景图/ }),
   ).toBeDisabled();
-  await page.getByRole("option", { name: /小夏 · 人设图/ }).click();
-  await page.getByRole("button", { name: "固定版本", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "选择上游任务", exact: true })
+    .getByRole("button", { name: /小夏 · 人设图/ })
+    .click();
+  await page
+    .getByRole("dialog", { name: "选择上游任务", exact: true })
+    .getByRole("button", { name: "确认选择", exact: true })
+    .click();
+  await page.getByRole("combobox", { name: "输入绑定方式" }).click();
+  await page.getByRole("option", { name: "固定版本", exact: true }).click();
   await page.getByRole("combobox", { name: "固定历史版本" }).click();
-  await page.getByRole("option", { name: /v2 ·/ }).click();
+  await page.getByRole("option", { name: /v2/ }).click();
   await page.screenshot({
     animations: "disabled",
     path: resolve(screenshots, "d-input-binding.png"),
   });
   await page.getByRole("button", { name: "绑定输入" }).click();
-  await expect(page.getByText("固定版本 · v2")).toBeVisible();
+  await page.getByRole("button", { name: /参考详情.*小夏/ }).hover();
+  await expect(page.getByRole("tooltip")).toContainText("固定 v2");
   await expect
     .poll(
       async () =>
@@ -183,11 +197,8 @@ test("看板与画布共用节点，历史预览、最终版本、文本和固�
     page.getByRole("button", { name: "创作工作台", exact: true }),
   ).toBeVisible();
   await tree.getByRole("button", { name: /^镜头 01 · 视频/ }).click();
-  await page
-    .getByRole("region", { name: "输入引用" })
-    .getByRole("button", { name: "输入素材 1", exact: true })
-    .click();
-  await expect(page.getByText("固定版本 · v2")).toBeVisible();
+  await page.getByRole("button", { name: /参考详情.*小夏/ }).hover();
+  await expect(page.getByRole("tooltip")).toContainText("固定 v2");
   await page.getByRole("button", { name: "状态分组", exact: true }).click();
   for (const status of ["待准备", "可生成", "生成中", "已完成"])
     await expect(

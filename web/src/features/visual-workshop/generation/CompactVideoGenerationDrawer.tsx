@@ -1,3 +1,6 @@
+import { VideoReferenceStrip } from "./VideoReferenceStrip";
+import { VideoContextReferences } from "./VideoContextReferences";
+import { VideoDesignReferences } from "./VideoDesignReferences";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useId, useState, type CSSProperties } from "react";
 import {
@@ -82,6 +85,7 @@ export function CompactVideoGenerationDrawer({
     submit,
     hasLinkedVideoReferences,
   } = controller;
+  const isReferenceMode = videoMode === "reference";
   const characterReplacement =
     controller.videoCapabilities?.uses_temporary_reference_urls;
   const minimumDuration =
@@ -137,7 +141,7 @@ export function CompactVideoGenerationDrawer({
         linkedValue: linkedAssetIds.image,
         multiple: true,
         max: referenceLimits.image,
-        disabled: videoMode !== "reference",
+        disabled: !isReferenceMode,
         onChange: changeImages,
       },
       {
@@ -146,7 +150,7 @@ export function CompactVideoGenerationDrawer({
         linkedValue: linkedAssetIds.video,
         multiple: true,
         max: referenceLimits.video,
-        disabled: videoMode !== "reference",
+        disabled: !isReferenceMode,
         onChange: changeVideos,
       },
       {
@@ -155,86 +159,83 @@ export function CompactVideoGenerationDrawer({
         linkedValue: linkedAssetIds.audio,
         multiple: true,
         max: referenceLimits.audio,
-        disabled: videoMode !== "reference",
+        disabled: !isReferenceMode,
         onChange: changeAudio,
       },
     ],
   });
+  const modeControl = (
+    <CustomSelect
+      className="video-mode-select"
+      ariaLabel="视频生成方式"
+      value={videoMode}
+      options={modeLabels
+        .filter(
+          (mode) =>
+            (!workflowCapabilities ||
+              ["text", "reference"].includes(mode.value)) &&
+            (!controller.videoCapabilities?.supported_modes ||
+              controller.videoCapabilities.supported_modes.includes(
+                mode.value,
+              )),
+        )
+        .map((mode) => ({
+          ...mode,
+          disabled:
+            hasLinkedVideoReferences &&
+            !controller.framesOnly &&
+            mode.value !== "reference",
+        }))}
+      onChange={(value) => {
+        setVideoMode(value as VideoMode);
+        persistDraft({ mode: value }, true);
+      }}
+    />
+  );
+  const expandControl = (
+    <button
+      type="button"
+      className="video-composer-close"
+      aria-label={composerExpanded ? "收起视频生成器" : "展开视频生成器"}
+      title={composerExpanded ? "收起" : "展开"}
+      onClick={() => setComposerExpanded((current) => !current)}
+    >
+      {composerExpanded ? <Minimize2 aria-hidden /> : <Maximize2 aria-hidden />}
+    </button>
+  );
   return (
     <aside
       className={`canvas-generation-drawer is-compact video-node-composer${composerExpanded ? " is-expanded" : ""}`}
       aria-label="节点 AI 生成"
     >
       <form className="video-node-composer-form" onSubmit={submit}>
-        <header className="video-composer-header">
-          <nav aria-label="视频生成方式">
-            {modeLabels
-              .filter(
-                (mode) =>
-                  (!workflowCapabilities ||
-                    mode.value === "text" ||
-                    mode.value === "reference") &&
-                  (!controller.videoCapabilities?.supported_modes ||
-                    controller.videoCapabilities.supported_modes.includes(
-                      mode.value,
-                    )),
-              )
-              .map((mode) => (
-                <button
-                  type="button"
-                  className={videoMode === mode.value ? "active" : ""}
-                  aria-pressed={videoMode === mode.value}
-                  disabled={
-                    hasLinkedVideoReferences &&
-                    !controller.framesOnly &&
-                    mode.value !== "reference"
-                  }
-                  title={
-                    hasLinkedVideoReferences &&
-                    !controller.framesOnly &&
-                    mode.value !== "reference"
-                      ? "存在画布连线素材时需使用全能参考"
-                      : undefined
-                  }
-                  key={mode.value}
-                  onClick={() => {
-                    setVideoMode(mode.value);
-                    persistDraft({ mode: mode.value }, true);
-                  }}
-                >
-                  {mode.label}
-                </button>
-              ))}
-          </nav>
-          <button
-            type="button"
-            className="video-composer-close"
-            aria-label={composerExpanded ? "收起视频生成器" : "展开视频生成器"}
-            title={composerExpanded ? "收起" : "展开"}
-            onClick={() => setComposerExpanded((current) => !current)}
-          >
-            {composerExpanded ? (
-              <Minimize2 aria-hidden />
-            ) : (
-              <Maximize2 aria-hidden />
-            )}
-          </button>
-        </header>
+        {!isReferenceMode && (
+          <header className="video-composer-header">
+            {modeControl}
+            {expandControl}
+          </header>
+        )}
 
         <div className="video-composer-body">
-          {showReferenceBar ? (
+          {!isReferenceMode && controller.lockedKind === "video" && (
+            <VideoDesignReferences controller={controller} />
+          )}
+          {isReferenceMode ? (
+            <VideoReferenceStrip
+              controller={controller}
+              dropHandlers={referenceDrop.handlers}
+              modeControl={modeControl}
+              expandControl={expandControl}
+            />
+          ) : showReferenceBar ? (
             <div
               className={`video-composer-reference${referenceDrop.active ? " is-reference-dragover" : ""}`}
               {...referenceDrop.handlers}
               onDragOverCapture={
-                videoMode === "reference"
-                  ? referenceDrop.handlers.onDragOver
-                  : undefined
+                isReferenceMode ? referenceDrop.handlers.onDragOver : undefined
               }
               onDropCapture={
-                videoMode === "reference"
-                  ? referenceDrop.handlers.onDrop
-                  : undefined
+                isReferenceMode ? referenceDrop.handlers.onDrop : undefined
               }
               role="group"
               aria-label="固定参考素材"
@@ -322,9 +323,9 @@ export function CompactVideoGenerationDrawer({
                   onInvalidSelection={invalidSelection}
                 />
               ) : null}
-              {videoMode === "reference" || hasOmniReferences ? (
+              {isReferenceMode || hasOmniReferences ? (
                 <>
-                  {videoMode === "reference" ||
+                  {isReferenceMode ||
                   references.length ||
                   linkedAssetIds.image.length ? (
                     <ProjectMediaPicker
@@ -343,13 +344,13 @@ export function CompactVideoGenerationDrawer({
                       linkedValue={linkedAssetIds.image}
                       multiple
                       max={referenceLimits.image}
-                      disabled={videoMode !== "reference"}
+                      disabled={!isReferenceMode}
                       onChange={changeImages}
                       onFilesLoaded={rememberPromptFiles}
                       onInvalidSelection={invalidSelection}
                     />
                   ) : null}
-                  {(videoMode === "reference" && referenceLimits.video > 0) ||
+                  {(isReferenceMode && referenceLimits.video > 0) ||
                   videoReferences.length ||
                   linkedAssetIds.video.length ? (
                     <ProjectMediaPicker
@@ -364,13 +365,13 @@ export function CompactVideoGenerationDrawer({
                       linkedValue={linkedAssetIds.video}
                       multiple
                       max={referenceLimits.video}
-                      disabled={videoMode !== "reference"}
+                      disabled={!isReferenceMode}
                       onChange={changeVideos}
                       onFilesLoaded={rememberPromptFiles}
                       onInvalidSelection={invalidSelection}
                     />
                   ) : null}
-                  {(videoMode === "reference" && referenceLimits.audio > 0) ||
+                  {(isReferenceMode && referenceLimits.audio > 0) ||
                   audioReferences.length ||
                   linkedAssetIds.audio.length ? (
                     <ProjectMediaPicker
@@ -385,7 +386,7 @@ export function CompactVideoGenerationDrawer({
                       linkedValue={linkedAssetIds.audio}
                       multiple
                       max={referenceLimits.audio}
-                      disabled={videoMode !== "reference"}
+                      disabled={!isReferenceMode}
                       onChange={changeAudio}
                       onFilesLoaded={rememberPromptFiles}
                       onInvalidSelection={invalidSelection}
@@ -396,13 +397,17 @@ export function CompactVideoGenerationDrawer({
             </div>
           ) : null}
           <ReferenceDropNotice notice={dropNotice} />
-          {controller.videoCapabilities?.supports_video_subject_to_replace && (
-            <VideoSubjectControl
-              value={controller.workflowValues.video_subject_to_replace ?? ""}
-              onChange={controller.changeVideoSubject}
-              onBlur={() => persistDraft({}, true)}
-            />
+          {!isReferenceMode && (
+            <VideoContextReferences controller={controller} />
           )}
+          {!isReferenceMode &&
+            controller.videoCapabilities?.supports_video_subject_to_replace && (
+              <VideoSubjectControl
+                value={controller.workflowValues.video_subject_to_replace ?? ""}
+                onChange={controller.changeVideoSubject}
+                onBlur={() => persistDraft({}, true)}
+              />
+            )}
           {controller.videoCapabilities?.supports_prompt !== false && (
             <div className="video-composer-prompt">
               {controller.promptVersions && (

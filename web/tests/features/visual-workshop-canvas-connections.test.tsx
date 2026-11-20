@@ -388,10 +388,9 @@ test("merges direct linked assets into reference rows and prompt mentions", asyn
   );
   await user.click(screen.getByRole("button", { name: "替换素材" }));
   await user.click(screen.getByRole("tab", { name: "生成设置" }));
-  expect(screen.getByRole("button", { name: "全能参考" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  expect(
+    screen.getByRole("combobox", { name: "视频生成方式" }),
+  ).toHaveTextContent("全能参考");
   const referenceBar = screen.getByRole("group", { name: "固定参考素材" });
   expect(screen.queryByText("上游引用")).not.toBeInTheDocument();
   const cards = referenceBar.querySelectorAll<HTMLElement>(
@@ -412,9 +411,13 @@ test("merges direct linked assets into reference rows and prompt mentions", asyn
   expect(
     screen.queryByRole("button", { name: "移除参考文件 连线图片.png" }),
   ).not.toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "参考详情 手动图片.png" }),
+  );
   expect(
-    screen.getByRole("button", { name: "移除参考文件 手动图片.png" }),
+    screen.getByRole("menuitem", { name: "移除引用" }),
   ).toBeInTheDocument();
+  await user.keyboard("{Escape}");
   expect(screen.getAllByRole("button", { name: "连线图片.png" })).toHaveLength(
     1,
   );

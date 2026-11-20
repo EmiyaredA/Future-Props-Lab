@@ -12,7 +12,17 @@ from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFol
 from studio.apps.model_service.catalog.visual import resolve_snapshot_models, snapshot_model_labels
 from studio.apps.visual_workshop.acceptance.snapshots import export_acceptance, import_acceptance
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
+from studio.apps.visual_workshop.creative_assets import (
+    MODEL_MIME,
+    remap_scene_models,
+    scene_model_assets,
+)
+from studio.apps.visual_workshop.creative_snapshots import (
+    export_creative_workflow,
+    import_creative_workflow,
+)
 from studio.apps.visual_workshop.outputs.snapshots import export_outputs, import_outputs
+from studio.apps.visual_workshop.previs_scenes import export_scenes, import_scenes
 from studio.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentPutIn,
     VisualProjectSnapshotImportOut,
@@ -29,6 +39,7 @@ from studio.apps.visual_workshop.snapshot_values import (
 from studio.apps.visual_workshop.storage.models import (
     VisualCanvasDocument,
     VisualGenerationTask,
+    VisualPrevisScene,
     VisualWorkshopProject,
 )
 from studio.assembly.website.visual_workshop.website.projects import project_out
@@ -123,7 +134,10 @@ class VisualWorkshopProjectSnapshots:
             if output["node_id"] in node_ids
         ]
         acceptance, acceptance_assets = await export_acceptance(self.session, project_id)
+        creative = await export_creative_workflow(self.session, project_id)
+        previews = await export_scenes(self.session, project_id)
         used_ids = canvas_asset_ids(nodes) | acceptance_assets
+        used_ids.update(key for scene in previews for key in scene_model_assets(scene["document"]))
         for output in outputs:
             if output.get("inspection_asset_id"):
                 used_ids.add(output["inspection_asset_id"])
@@ -191,15 +205,18 @@ class VisualWorkshopProjectSnapshots:
             if isinstance(draft, dict) and draft.get("model_id")
         }
         payload = {
+            **creative,
             "schema_version": 1,
             "project": {"title": project.title, "kind": project.kind, "status": project.status},
             "canvas": {
                 "nodes": nodes,
                 "edges": deepcopy(canvas.edges or []),
+                "groups": deepcopy(canvas.groups or []),
                 "categories": canvas.categories
                 or [item.model_dump(mode="json") for item in default_material_categories()],
             },
             "outputs": outputs,
+            "previs_scenes": previews,
             "acceptance": acceptance,
             "folders": [
                 {"id": row.id, "parent_id": row.parent_id, "name": row.name} for row in folders
@@ -230,6 +247,7 @@ class VisualWorkshopProjectSnapshots:
             if payload.get("schema_version") != 1 or not isinstance(payload.get("project"), dict):
                 raise ProjectSnapshotError("project.json 不是受支持的视觉工坊快照")
             source_project = payload["project"]
+            scenes = import_scenes(payload)
             try:
                 create = VisualWorkshopProjectCreateIn.model_validate(source_project)
                 canvas = VisualCanvasDocumentPutIn.model_validate(
@@ -268,7 +286,20 @@ class VisualWorkshopProjectSnapshots:
                 payload.get("outputs", []), nodes, edges, asset_ids, project.id
             )
             asset_kinds = {asset_ids[item["id"]]: item["media_kind"] for item in assets}
+            creative, creative_assets, models = import_creative_workflow(
+                payload, self.owner_user_id, project.id, asset_ids
+            )
+            if any(asset_kinds[asset] != "image" for asset in creative_assets):
+                raise ProjectSnapshotError("设定卡引用的素材不是图片")
             asset_mimes = {asset_ids[item["id"]]: item["mime_type"] for item in assets}
+            try:
+                models |= {
+                    asset_ids[key] for scene in scenes for key in scene_model_assets(scene.document)
+                }
+            except KeyError as exc:
+                raise ProjectSnapshotError("白模缺少引用的模型") from exc
+            if any(asset_mimes[asset] != MODEL_MIME for asset in models):
+                raise ProjectSnapshotError("白模模型文件无效")
             if any(row.asset_id and asset_kinds[row.asset_id] != row.kind for row in outputs):
                 raise ProjectSnapshotError("历史版本与素材类型不匹配")
             if any(
@@ -350,11 +381,27 @@ class VisualWorkshopProjectSnapshots:
                 ):
                     for node in nodes:
                         node["approved"] = False
+                self.session.add_all(
+                    VisualPrevisScene(
+                        project_id=project.id,
+                        document=remap_scene_models(body.document, asset_ids),
+                        **body.model_dump(exclude={"document"}),
+                    )
+                    for body in scenes
+                )
+                self.session.add_all(creative)
                 self.session.add(
                     VisualCanvasDocument(
                         project_id=project.id,
                         nodes=nodes,
                         edges=edges,
+                        groups=[
+                            {
+                                **group.model_dump(),
+                                "node_ids": [node_ids[key] for key in group.node_ids],
+                            }
+                            for group in canvas.groups or []
+                        ],
                         categories=[
                             item.model_dump(mode="json")
                             for item in (canvas.categories or default_material_categories())

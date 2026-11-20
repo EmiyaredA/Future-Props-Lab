@@ -155,7 +155,8 @@ test("moves connected images with keyboard, saves prompt and order together, and
   expect(
     screen.queryByRole("button", { name: "移除参考文件 roof.png" }),
   ).not.toBeInTheDocument();
-  const back = screen.getByRole("button", { name: "后移 roof.png" });
+  await user.click(screen.getByRole("button", { name: "参考详情 roof.png" }));
+  const back = screen.getByRole("menuitem", { name: "后移" });
   back.focus();
   await user.keyboard("{Enter}");
   expect(order()).toEqual(["reaction.png", "okabe.png", "roof.png"]);
@@ -167,7 +168,11 @@ test("moves connected images with keyboard, saves prompt and order together, and
     }),
     true,
   );
-  expect(screen.getByRole("button", { name: "后移 roof.png" })).toBeDisabled();
+  await user.click(screen.getByRole("button", { name: "参考详情 roof.png" }));
+  expect(screen.getByRole("menuitem", { name: "后移" })).toHaveAttribute(
+    "data-disabled",
+  );
+  await user.keyboard("{Escape}");
   await user.click(screen.getByRole("button", { name: "生成视频" }));
   await waitFor(() =>
     expect(createGenerationTask).toHaveBeenCalledWith(
@@ -225,8 +230,9 @@ test("reorders asset mentions in every prompt variant, including inactive varian
     active_prompt_version_id: "one",
   });
   await userEvent.click(
-    await screen.findByRole("button", { name: "前移 roof.png" }),
+    await screen.findByRole("button", { name: "参考详情 roof.png" }),
   );
+  await userEvent.click(screen.getByRole("menuitem", { name: "前移" }));
   const next = saved.mock.lastCall![0];
   expect(next.prompt_versions[0].prompt).toBe(next.prompt);
   expect(next.prompt_versions[1].prompt).toBe(

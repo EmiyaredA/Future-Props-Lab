@@ -39,6 +39,7 @@ from studio.contracts.asset_library.project_snapshots import ProjectFolderOpenOu
 from studio.host.project_files.folders import ProjectFolderError, open_project_folder
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.files.project_archives import ProjectSnapshotError
+from studio.runtime.project_errors import ProjectResourceError
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
 
@@ -217,6 +218,8 @@ async def delete_project(
         await _projects(request, session, owner_user_id).delete(project_id, expected_revision)
     except VisualWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
+    except ProjectResourceError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
     return {"deleted": True}
 
 

@@ -12,6 +12,8 @@ type CanvasKeyboardShortcutOptions = {
   pasteAtPointer: () => void;
   removeNodes: (ids: string[]) => void;
   removeEdge: (id: string) => void;
+  groupSelection?: () => void;
+  ungroupSelection?: () => void;
   setToolMode: (tool: CanvasTool) => void;
   fitView: () => void;
   zoomIn: () => void;
@@ -33,6 +35,8 @@ export function useCanvasKeyboardShortcuts({
   pasteAtPointer,
   removeNodes,
   removeEdge,
+  groupSelection,
+  ungroupSelection,
   setToolMode,
   fitView,
   zoomIn,
@@ -67,7 +71,11 @@ export function useCanvasKeyboardShortcuts({
       const modifier = event.metaKey || event.ctrlKey;
       const insideModal =
         event.target instanceof Element &&
-        Boolean(event.target.closest('[role="dialog"][aria-modal="true"]'));
+        Boolean(
+          event.target.closest(
+            'dialog[open], [role="dialog"][aria-modal="true"]',
+          ),
+        );
       const usesCanvasHistory =
         event.target instanceof Element &&
         Boolean(event.target.closest("[data-canvas-history-shortcuts='true']"));
@@ -90,6 +98,12 @@ export function useCanvasKeyboardShortcuts({
         return;
       }
       if (editing || insideModal) return;
+      if (modifier && shortcut === "g") {
+        event.preventDefault();
+        if (event.shiftKey) ungroupSelection?.();
+        else groupSelection?.();
+        return;
+      }
       if ((event.metaKey || event.ctrlKey) && shortcut === "a") {
         event.preventDefault();
         selectAllNodes();
@@ -142,6 +156,8 @@ export function useCanvasKeyboardShortcuts({
     return () => window.removeEventListener("keydown", handleKeys);
   }, [
     clearContextMenu,
+    groupSelection,
+    ungroupSelection,
     clearEdgeSelection,
     clearNodeSelection,
     copySelected,

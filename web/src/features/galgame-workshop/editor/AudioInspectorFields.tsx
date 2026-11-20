@@ -1,4 +1,4 @@
-import { CustomSelect } from "@shared/ui/CustomSelect";
+import { SearchablePickerField } from "@shared/ui/SearchablePickerDialog";
 import "@features/galgame-workshop/galgameStyles";
 import type { BlockInspectorViewModel } from "@features/galgame-workshop/editor/InspectorFieldControls";
 import { Field } from "@features/galgame-workshop/editor/InspectorFieldControls";
@@ -124,27 +124,22 @@ export function AudioInspectorFields({
         </div>
       </div>
       {block.action === "play" ? (
-        <Field label="声音素材">
-          <CustomSelect
-            ariaLabel="声音素材"
-            value={block.assetId ?? ""}
-            options={[
-              {
-                value: "",
-                label: "点击选择音频文件…",
-                disabled: true,
-              },
-              ...(document.assets ?? [])
-                .filter(
-                  (asset) =>
-                    asset.type === "audio" &&
-                    asset.role === audioInspectorRole(block.channel),
-                )
-                .map((asset) => ({
-                  value: asset.id,
-                  label: asset.type === "audio" ? asset.label : "未知声音",
-                })),
-            ]}
+        <div className="galgame-field">
+          <span>声音素材</span>
+          <SearchablePickerField
+            title="声音素材"
+            searchLabel="搜索音频"
+            value={block.assetId}
+            items={(document.assets ?? [])
+              .filter((asset) => asset.type === "audio")
+              .filter(
+                (asset) => asset.role === audioInspectorRole(block.channel),
+              )
+              .map((asset) => ({
+                id: asset.id,
+                label: asset.label,
+                icon: "audio",
+              }))}
             onChange={(assetId) =>
               patch((current) =>
                 current.type === "audio"
@@ -153,7 +148,7 @@ export function AudioInspectorFields({
               )
             }
           />
-        </Field>
+        </div>
       ) : null}
       <Field label="音轨 ID">
         <input aria-label="音轨 ID" value={block.channel} readOnly />

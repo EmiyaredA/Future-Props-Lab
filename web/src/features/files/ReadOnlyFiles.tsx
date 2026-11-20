@@ -10,10 +10,12 @@ export function ReadOnlyFiles({
   projectId,
   initialKind,
   utilities,
+  embedded = false,
 }: {
   projectId?: string;
   initialKind?: string;
   utilities?: ReactNode;
+  embedded?: boolean;
 }) {
   const [mediaKind, setMediaKind] = useState<MediaKind | undefined>(() =>
     ["image", "video", "audio", "document"].includes(initialKind ?? "")
@@ -41,7 +43,7 @@ export function ReadOnlyFiles({
   return (
     <ReadOnlyPage
       utilities={utilities}
-      title={projectId ? "项目素材" : "文件管理"}
+      title={embedded ? undefined : projectId ? "项目素材" : "文件管理"}
       loading={files.isPending}
       error={files.error || folders.error}
     >

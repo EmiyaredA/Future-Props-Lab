@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Request
 
+from studio.apps.visual_workshop.card_generation import CardGeneration, CardGenerationIn
 from studio.apps.visual_workshop.generation.generation_controls import GenerationControls
 from studio.apps.visual_workshop.generation.generation_intake import GenerationIntake
 from studio.apps.visual_workshop.generation_common import GenerationError
@@ -12,6 +13,7 @@ from studio.apps.visual_workshop.schemas.generation import (
     ImageGenerationBatchCreateIn,
 )
 from studio.apps.visual_workshop.schemas.workshop import GenerationTaskCreateIn, GenerationTaskOut
+from studio.apps.visual_workshop.transport.previs_http import resolve
 from studio.runtime.http.dependencies import OwnerDep, SessionDep
 
 router = APIRouter(prefix="/v1/visual-workshop", tags=["visual-generation"])
@@ -28,6 +30,27 @@ async def create_generation_task(
     try:
         return await GenerationIntake.from_request(request, session, owner).create_task(
             project_id, body
+        )
+    except GenerationError as exc:
+        raise generation_error(exc) from None
+
+
+@router.post(
+    "/projects/{project_id}/asset-cards/{card_id}/generations", response_model=GenerationTaskOut
+)
+async def generate_visual_asset_card(
+    request: Request,
+    session: SessionDep,
+    owner: OwnerDep,
+    project_id: str,
+    card_id: str,
+    body: CardGenerationIn,
+):
+    try:
+        return await resolve(
+            CardGeneration(session, owner, project_id, card_id, body).run(
+                GenerationIntake.from_request(request, session, owner).create_task
+            )
         )
     except GenerationError as exc:
         raise generation_error(exc) from None

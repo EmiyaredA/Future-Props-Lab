@@ -200,6 +200,9 @@ docs/
   转录通过快照读取与提交命令接入，异步结果核对账号/项目范围、片段及音频区间。
   `playback.ts` 声明播放能力，展示组件实现该接口；保存确认只推进 CAS，不能覆盖后续编辑。
 - 视觉生成的提交与批次反馈归 `useGenerationSubmission`，参数、草稿和素材顺序仍由原业务模块持有。
+- 视觉画布统一使用 `web/src/features/visual-workshop/canvas/ToonflowCanvas.tsx` 的 Vue Flow 视口适配。节点、连线和编辑历史继续由画布控制器维护。白模场景与其嵌入式编辑器共用项目顶栏，场景保存与回填归 `web/src/features/visual-workshop/previs/`，TrumanMap 源码与许可归 `web/vendor/toonflow/`。
+- 视觉项目的分集剧本、设定卡和候选图交互归 `web/src/features/visual-workshop/creative/`。Visual 的 `creative_workflow.py` 保存剧本和设定版本，`card_generation.py` 在现有生图提交中记录候选任务，文件校验由两套装配提供明确的项目素材读取端口。
+- 看板 `board/CommonDesignCards.tsx` 按项目已收录 ID 分类、搜索并显示 `DesignCardRow.tsx` 独立项；账号库的设定组、高清变体滚动和父关系规则归 `creative/CardLibraryGroups.tsx`、`VariantStrip.tsx`、`cardFamilies.ts`。`useCardNameSort.ts` 保存账号与视图范围的类别排序偏好，`useCardCreation.ts` 拥有建卡后的项目收录及重试。共享 `ui/useBackdropDismiss.ts` 只识别遮罩点击，是否允许关闭仍由各弹窗的未保存与提交状态决定。
 - 文件库目录路径规则归 `folderPaths.ts` 并通过公共入口导出；两套文件 API 共用 `storage/asset_edits.py`。
 
 [源码迁移清单](source-relocations.json) 为历史文档中的代码依据提供静态定位；不参与服务加载，
@@ -1027,6 +1030,8 @@ Web 编辑器入口装配播放时钟和帧展示。`editor/playback-clock.ts` �
 裁剪保存失败保留已上传素材并重试同一节点；冲突返回现有画布版本选择界面。裁剪不创建生成任务或修改原素材。
 样式归属 `styles/image-crop.css`，浏览器验收由 `canvas-image-crop.spec.ts` 覆盖。
 
+视频生成的统一素材区归 `generation/VideoReferenceStrip.tsx`，图片级追踪编辑、来源详情、任务输出绑定与旧目标关联弹层在同目录按职责组合。`useResolvedCanvasInputs.ts` 为看板和画布提供固定／最终输出的相同快照；`useReferenceImageOrder.ts` 与 `useReferenceSubjectBindings.ts` 维护稳定引用身份，`usePromptReferenceFiles.ts` 维护提示词素材描述。看板的节点上下文与共享检查器装配归 `board/BoardNodeEditor.tsx`，页面输入类型归 `boardTypes.ts`。后端 `apps/visual_workshop/reference_subjects.py` 在输出解析后统一组装参考顺序和追踪目标，草稿继续存入画布 JSON。样式归 `styles/compact-references.css`。
+
 视觉画布的 `canvasClipboard.ts` 拥有选区深拷贝、外部连线引用清理、节点与连线身份重映射及粘贴边界检查；
 `useCanvasClipboard.ts` 管理当前项目内的临时剪贴板、连续粘贴偏移与反馈，所有复制入口共享同一逻辑。
 `CanvasSelectionActions.tsx` 展示多选复制及符合条件的宫格合成操作，合成状态仍由 `useImageGridComposition.tsx` 拥有。
@@ -1146,6 +1151,11 @@ FFmpeg 快版复用同一任务队列和媒体边界。长镜头最多每 240 �
 `backend/studio/apps/visual_workshop/acceptance/` 拥有只读动作迁移定义、节点方案 CAS 绑定、自动生成依据、不可变输出验收记录、人工结论、证据、返修和快照兼容。`execution/` 负责无凭据任务包、专用媒体 MCP 和 Agent 报告转换。`runner.py` 复用短事务及 RunnerSupervisor，模型 API 与 Agent 专属结果分别保存。生成快照与上传版本的节点设置明确区分，验收不参与生成、上传、画布保存及最终输出采用的门禁。
 
 `backend/studio/host/agent_execution/cli/` 拥有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 的非交互执行。`transport.py` 维护受控环境与进程生命周期，`conversation.py` 维护原有 Codex/Claude 对话协议，`native.py` 维护 OpenCode JSON 事件、Harness ACP 与 Pi RPC，`isolation.py` 只继承模型连接与认证配置并生成临时执行配置；旁置 `.mjs` 资源提供 Pi 的唯一任务工具桥与 Harness 的不可放宽工具 guard，桌面构建显式打包。不包含验收业务。`studio/apps/identity/website_access/visual_acceptance.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
+
+该目录的 `sandbox.py` 拥有 macOS 系统策略与程序依赖白名单；`workspace.py` 拥有 Amadeus 每轮临时工作区、
+私有登录快照及脚本执行生命周期；`workspace_runtime.py` 与独立的 `workspace_python.py` 发布不依赖源码的
+SDK 解释器入口，正式产物位于运行根目录的 `agent-workspace/`。Python SDK 的 `task.py` 拥有任务 socket
+客户端和同步／异步传输；CLI 的 `--task` 模式复用该传输，不读取个人网站配置。
 
 `web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。
 

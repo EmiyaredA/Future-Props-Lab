@@ -246,7 +246,8 @@ test("switching to Seedance 2.5 frames persists the effective adaptive ratio", a
       screen.getByRole("combobox", { name: "生成模型" }),
     ).toHaveTextContent("Seedance 2.5"),
   );
-  await userEvent.click(screen.getByRole("button", { name: "首尾帧" }));
+  await userEvent.click(screen.getByRole("combobox", { name: "视频生成方式" }));
+  await userEvent.click(screen.getByRole("option", { name: "首尾帧" }));
   expect(save.mock.lastCall?.[0]).toMatchObject({
     mode: "frames",
     ratio: "adaptive",

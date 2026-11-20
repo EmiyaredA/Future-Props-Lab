@@ -30,7 +30,7 @@ for (const theme of ["light", "dark"] as const) {
         expected_revision: 0,
         nodes: [],
         edges: [],
-        categories: [{ id: "character", name: "人设", groups: ["主角"] }],
+        categories: [{ id: "artwork", name: "美术素材", groups: ["主角"] }],
       },
     });
     expect(saved.ok()).toBeTruthy();
@@ -38,15 +38,15 @@ for (const theme of ["light", "dark"] as const) {
     await page.getByRole("button", { name: "看板", exact: true }).click();
     await setResponsiveTheme(page, theme);
     if (theme === "light") {
-      await page.getByRole("button", { name: "管理分类 人设" }).click();
+      await page.getByRole("button", { name: "管理分类 美术素材" }).click();
       await page.getByRole("menuitem", { name: "上传到此分类" }).click();
     } else {
       await page.getByRole("button", { name: "上传素材", exact: true }).click();
       await page.getByRole("combobox", { name: "上传分类" }).click();
-      await page.getByRole("option", { name: "人设", exact: true }).click();
+      await page.getByRole("option", { name: "美术素材", exact: true }).click();
     }
     await expect(page.getByRole("combobox", { name: "上传分类" })).toHaveText(
-      "人设",
+      "美术素材",
     );
     await page.getByRole("combobox", { name: "上传分组" }).click();
     await page.getByRole("option", { name: "主角", exact: true }).click();
@@ -88,8 +88,8 @@ for (const theme of ["light", "dark"] as const) {
         );
       })
       .toEqual([
-        ["character", "主角", 1],
-        ["character", "主角", 1],
+        ["artwork", "主角", 1],
+        ["artwork", "主角", 1],
       ]);
     await page.setViewportSize({ width: 1600, height: 1000 });
     await page.reload();
@@ -131,7 +131,7 @@ test("看板从应用导入素材并可直接修改项目名称", async ({ page 
       expected_revision: 0,
       nodes: [],
       edges: [],
-      categories: [{ id: "character", name: "人设", groups: ["主角"] }],
+      categories: [{ id: "artwork", name: "美术素材", groups: ["主角"] }],
     },
   });
   expect(category.ok(), await category.text()).toBeTruthy();
@@ -184,7 +184,7 @@ test("看板从应用导入素材并可直接修改项目名称", async ({ page 
 
   await page.getByRole("button", { name: "上传素材", exact: true }).click();
   await page.getByRole("combobox", { name: "上传分类" }).click();
-  await page.getByRole("option", { name: "人设", exact: true }).click();
+  await page.getByRole("option", { name: "美术素材", exact: true }).click();
   await page.getByRole("combobox", { name: "上传分组" }).click();
   await page.getByRole("option", { name: "主角", exact: true }).click();
   const open = page.getByRole("button", { name: "从应用选择", exact: true });
@@ -229,10 +229,26 @@ test("看板从应用导入素材并可直接修改项目名称", async ({ page 
     await open.click();
     await picker.getByRole("tab", { name: scope, exact: true }).click();
     if (scope === "其他项目") {
-      await picker.getByRole("combobox", { name: "来源项目" }).click();
-      await picker
-        .getByRole("option", { name: "素材来源项目", exact: true })
+      const sourceTrigger = picker.getByRole("button", { name: "来源项目" });
+      await sourceTrigger.click();
+      const projects = page.getByRole("dialog", {
+        name: "来源项目",
+        exact: true,
+      });
+      await expect(
+        projects.getByRole("searchbox", { name: "搜索项目" }),
+      ).toBeFocused();
+      await page.keyboard.press("Escape");
+      await expect(projects).toBeHidden();
+      await expect(sourceTrigger).toBeFocused();
+      await sourceTrigger.click();
+      await projects
+        .getByRole("searchbox", { name: "搜索项目" })
+        .fill("素材来源");
+      await projects
+        .getByRole("button", { name: "素材来源项目", exact: true })
         .click();
+      await projects.getByRole("button", { name: "确认选择" }).click();
     }
     await picker.getByRole("option", { name, exact: true }).click();
     await picker.getByRole("button", { name: "添加到看板" }).click();
@@ -243,7 +259,7 @@ test("看板从应用导入素材并可直接修改项目名称", async ({ page 
   expect(canvas.nodes).toHaveLength(4);
   for (const [index, node] of canvas.nodes.entries()) {
     expect(node).toMatchObject({
-      category_id: "character",
+      category_id: "artwork",
       group: "主角",
       final_version: 1,
     });

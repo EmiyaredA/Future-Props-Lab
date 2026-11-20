@@ -132,3 +132,14 @@
     flex-wrap: nowrap;
   }
 }
+
+.searchable-picker .searchable-picker-list .acceptance-reference-select {
+  border: 0;
+  background: transparent;
+}
+
+.searchable-picker
+  .searchable-picker-list
+  .acceptance-reference-select[aria-pressed="true"] {
+  background: var(--accent-soft);
+}

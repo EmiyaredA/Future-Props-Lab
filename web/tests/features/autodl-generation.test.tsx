@@ -520,6 +520,30 @@ test("model test submits numbered role images in the chosen order with an option
 });
 
 test("workshop saves the tracking subject and submits references provided by canvas links", async () => {
+  const { getFiles } = await import("@features/files/api");
+  vi.mocked(getFiles).mockImplementation(async ({ mediaKind }) => ({
+    items:
+      mediaKind === "image"
+        ? [
+            {
+              id: "image",
+              project_id: "project",
+              folder_id: null,
+              reference_id: null,
+              original_filename: "image.png",
+              display_name: "image.png",
+              media_kind: "image",
+              mime_type: "image/png",
+              byte_size: 100,
+              source: "project",
+              is_reference: false,
+              revision: 0,
+              created_at: "",
+              updated_at: "",
+            },
+          ]
+        : [],
+  }));
   const client = setup(replacementCaps);
   const save = vi.fn();
   render(
@@ -536,9 +560,12 @@ test("workshop saves the tracking subject and submits references provided by can
       />
     </QueryClientProvider>,
   );
-  const input = await screen.findByRole("textbox", { name: /追踪对象/ });
+  await userEvent.click(
+    await screen.findByRole("button", { name: "追踪对象 image.png" }),
+  );
+  const input = screen.getByRole("textbox", { name: "自定义追踪对象" });
   fireEvent.change(input, { target: { value: "white dog" } });
-  fireEvent.blur(input);
+  await userEvent.click(screen.getByRole("button", { name: /^保存$/ }));
   expect(save).toHaveBeenLastCalledWith(
     expect.objectContaining({
       workflow_parameters: { video_subject_to_replace: "white dog" },

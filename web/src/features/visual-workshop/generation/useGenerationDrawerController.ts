@@ -1,3 +1,6 @@
+import { useReferenceImageOrder } from "./useReferenceImageOrder";
+import { useReferenceSubjectBindings } from "./useReferenceSubjectBindings";
+import { type ReferenceSubjects } from "./referenceSubjects";
 import { useGenerationSubmission } from "./useGenerationSubmission";
 import { useVideoDefaults } from "./useVideoDefaults";
 import {
@@ -16,7 +19,7 @@ import {
   useState,
 } from "react";
 import { useQuery } from "@tanstack/react-query";
-import type { ManagedFile } from "@features/files";
+import { usePromptReferenceFiles } from "./usePromptReferenceFiles";
 import {
   getGenerationOptions,
   type GenerationTaskInput,
@@ -36,33 +39,20 @@ import {
 import { visualWorkshopQueryKeys as visualKeys } from "@features/visual-workshop/queryKeys";
 import type { GenerationDrawerProps } from "@features/visual-workshop/generation/generationDrawerTypes";
 import {
+  sameAssetIds,
+  uniqueAssetIds,
   orderedReferenceIds,
   reorderPictureReferences,
 } from "@features/visual-workshop/generation/referenceOrder";
-import {
-  promptAssetReferenceNameForBase,
-  type PromptManagedFile,
-} from "@features/visual-workshop/generation/generationPromptModel";
-
-function errorMessage(error: unknown) {
-  return apiErrorMessage(error, "创建任务失败，请稍后重试。");
-}
-
-function uniqueAssetIds(...groups: string[][]) {
-  return [...new Set(groups.flat())];
-}
-
-function sameAssetIds(left: string[], right: string[]) {
-  return (
-    left.length === right.length &&
-    left.every((id, index) => id === right[index])
-  );
-}
 
 export function useGenerationDrawerController({
   projectId,
+  referenceContext,
+  referenceInputs = [],
+  referencesReady = true,
   lockedKind,
   draft,
+  designReferenceRequest,
   onDraftChange,
   onBeforeSubmit,
   onTaskCreated,
@@ -143,6 +133,13 @@ export function useGenerationDrawerController({
   const [videoReferences, setVideoReferences] = useState<string[]>(
     videoDraft?.video_asset_ids ?? [],
   );
+  const imageOrder = useReferenceImageOrder(
+    references,
+    linkedAssetIds.image,
+    referenceInputs,
+    videoDraft?.reference_order,
+  );
+  const imageReferences = imageOrder.images;
   const [workflowValues, setWorkflowValues] = useState<Record<string, string>>(
     Object.fromEntries(
       Object.entries(videoDraft?.workflow_parameters ?? {})
@@ -150,11 +147,25 @@ export function useGenerationDrawerController({
         .map(([key, value]) => [key, String(value)]),
     ),
   );
+  const saveSubjects = useRef<
+    (value: ReferenceSubjects, subject: string) => void
+  >(() => {});
+  const {
+    referenceSubjects,
+    subjectKey,
+    effectiveSubject,
+    changeReferenceSubject,
+    replaceReferenceSubjects,
+  } = useReferenceSubjectBindings({
+    saved: videoDraft?.reference_subjects,
+    legacy: workflowValues.video_subject_to_replace ?? "",
+    images: imageReferences,
+    inputs: referenceInputs,
+    ready: referencesReady,
+    onSave: (value, subject) => saveSubjects.current(value, subject),
+  });
   const [composerExpanded, setComposerExpanded] = useState(false);
   const [notice, setNotice] = useState("");
-  const [promptFiles, setPromptFiles] = useState<Record<string, ManagedFile>>(
-    {},
-  );
   const [promptReferenceNames, setPromptReferenceNames] = useState<
     Record<string, string>
   >(
@@ -162,19 +173,6 @@ export function useGenerationDrawerController({
       videoDraft?.prompt_reference_names ??
       {},
   );
-  const rememberPromptFiles = useCallback((files: ManagedFile[]) => {
-    setPromptFiles((current) => {
-      let changed = false;
-      const next = { ...current };
-      files.forEach((file) => {
-        if (next[file.id] !== file) {
-          next[file.id] = file;
-          changed = true;
-        }
-      });
-      return changed ? next : current;
-    });
-  }, []);
   const selectedPromptAssetIds = useMemo(() => {
     const linked = uniqueAssetIds(
       linkedAssetIds.image,
@@ -188,13 +186,14 @@ export function useGenerationDrawerController({
       return uniqueAssetIds(linked, firstFrame, lastFrame);
     if (videoMode === "reference")
       return uniqueAssetIds(
-        orderedReferenceIds(references, linkedAssetIds.image),
+        imageReferences,
         orderedReferenceIds(videoReferences, linkedAssetIds.video),
         orderedReferenceIds(audioReferences, linkedAssetIds.audio),
       );
     return linked;
   }, [
     audioReferences,
+    imageReferences,
     firstFrame,
     imageReference,
     kind,
@@ -202,43 +201,18 @@ export function useGenerationDrawerController({
     linkedAssetIds.audio,
     linkedAssetIds.image,
     linkedAssetIds.video,
-    references,
     videoMode,
     videoReferences,
   ]);
-  const resolvedLinkedReferenceNames = useMemo(() => {
-    const names: Record<string, string> = {};
-    Object.entries(linkedReferenceNames).forEach(([assetId, baseName]) => {
-      const file = promptFiles[assetId];
-      if (file)
-        names[assetId] = promptAssetReferenceNameForBase(file, baseName);
-    });
-    return names;
-  }, [linkedReferenceNames, promptFiles]);
-  const promptAssets = useMemo(
-    () =>
-      selectedPromptAssetIds.flatMap((id) => {
-        const file = promptFiles[id];
-        if (!file) return [];
-        const referenceName =
-          resolvedLinkedReferenceNames[id] ?? promptReferenceNames[id];
-        if (!referenceName) return [file];
-        return [
-          {
-            ...file,
-            prompt_reference_name: referenceName,
-            prompt_legacy_names: promptReferenceNames[id]
-              ? [promptReferenceNames[id]]
-              : [],
-          } satisfies PromptManagedFile,
-        ];
-      }),
-    [
-      promptFiles,
-      promptReferenceNames,
-      resolvedLinkedReferenceNames,
-      selectedPromptAssetIds,
-    ],
+  const {
+    promptFiles,
+    rememberPromptFiles,
+    resolvedLinkedReferenceNames,
+    promptAssets,
+  } = usePromptReferenceFiles(
+    selectedPromptAssetIds,
+    linkedReferenceNames,
+    promptReferenceNames,
   );
   const options = useQuery({
     queryKey: visualKeys.generationOptions,
@@ -277,14 +251,17 @@ export function useGenerationDrawerController({
   const workflowParameters = useMemo(
     () =>
       Object.fromEntries(
-        Object.entries(workflowValues)
+        Object.entries({
+          ...workflowValues,
+          video_subject_to_replace: effectiveSubject,
+        })
           .filter(([, value]) => value !== "")
           .map(([key, value]) => [
             key,
             key === "video_subject_to_replace" ? value : Number(value),
           ]),
       ),
-    [workflowValues],
+    [workflowValues, effectiveSubject],
   );
   const referenceLimits = workflowCapabilities?.reference_limits ??
     videoCapabilities?.reference_limits ?? {
@@ -326,6 +303,12 @@ export function useGenerationDrawerController({
         );
         return;
       }
+      const designReferences = (changes.design_references ??
+        videoDraft?.design_references ??
+        []) as NonNullable<
+        VisualCanvasVideoGenerationDraft["design_references"]
+      >;
+      const imageIds = (changes.reference_asset_ids ?? references) as string[];
       onDraftChange(
         {
           model_id: modelId || null,
@@ -341,11 +324,13 @@ export function useGenerationDrawerController({
           watermark,
           generate_audio: generateAudio,
           workflow_parameters: workflowParameters,
+          reference_subjects: referenceSubjects,
+          reference_order: referencesReady
+            ? imageOrder.order
+            : (videoDraft?.reference_order ?? null),
           first_frame_asset_id: firstFrame[0] ?? null,
           last_frame_asset_id: lastFrame[0] ?? null,
-          reference_asset_ids: canvasNodeId
-            ? references
-            : orderedReferenceIds(references, linkedAssetIds.image),
+          reference_asset_ids: canvasNodeId ? references : imageReferences,
           audio_asset_ids: canvasNodeId
             ? audioReferences
             : orderedReferenceIds(audioReferences, linkedAssetIds.audio),
@@ -354,12 +339,30 @@ export function useGenerationDrawerController({
             : orderedReferenceIds(videoReferences, linkedAssetIds.video),
           prompt_reference_names: promptReferenceNames,
           ...changes,
+          ...(referenceContext
+            ? {
+                reference_asset_ids: imageIds.filter(
+                  (id) =>
+                    !linkedAssetIds.image.includes(id) ||
+                    designReferences.some((item) => item.asset_id === id),
+                ),
+              }
+            : {}),
+          design_references: designReferences.filter((reference) =>
+            imageIds.includes(reference.asset_id),
+          ),
         } as VisualCanvasVideoGenerationDraft,
         immediate,
       );
     },
     [
       audioReferences,
+      imageReferences,
+      imageOrder.order,
+      referencesReady,
+      videoDraft?.reference_order,
+      referenceContext,
+      referenceSubjects,
       duration,
       firstFrame,
       generateAudio,
@@ -384,6 +387,7 @@ export function useGenerationDrawerController({
       size,
       videoMode,
       videoCapabilities,
+      videoDraft?.design_references,
       videoReferences,
       watermark,
       workflowParameters,
@@ -457,6 +461,17 @@ export function useGenerationDrawerController({
     }
     persistDraft(changes, true);
   };
+  saveSubjects.current = (next, subject) =>
+    persistDraft(
+      {
+        reference_subjects: next,
+        workflow_parameters: {
+          ...workflowParameters,
+          video_subject_to_replace: subject,
+        },
+      },
+      true,
+    );
   const changeVideoSubject = (value: string) => {
     setWorkflowValues({ ...workflowValues, video_subject_to_replace: value });
     persistDraft({
@@ -470,7 +485,7 @@ export function useGenerationDrawerController({
   };
   const reorderImages = (next: string[]) => {
     const previous = orderedReferenceIds(
-      kind === "image" ? imageReference : references,
+      kind === "image" ? imageReference : imageReferences,
       linkedAssetIds.image,
     );
     if (
@@ -480,7 +495,14 @@ export function useGenerationDrawerController({
     )
       return;
     if (kind === "image") setImageReference(next);
-    else setReferences(next);
+    else {
+      setReferences(
+        referenceContext
+          ? next.filter((id) => !linkedAssetIds.image.includes(id))
+          : next,
+      );
+      imageOrder.setOrder(next.map(imageOrder.keyFor));
+    }
     promptVersions.update(
       (current) => ({
         ...current,
@@ -497,7 +519,15 @@ export function useGenerationDrawerController({
       true,
       false,
     );
-    persistDraft({ reference_asset_ids: next }, true);
+    persistDraft(
+      {
+        reference_asset_ids: next,
+        ...(kind === "video"
+          ? { reference_order: next.map(imageOrder.keyFor) }
+          : {}),
+      },
+      true,
+    );
   };
   useEffect(() => {
     if (lockedKind === "image") {
@@ -554,7 +584,13 @@ export function useGenerationDrawerController({
     Boolean(promptFiles[assetId]),
   );
   useEffect(() => {
-    if (!lockedKind || lockedKind === "audio" || !linkedNamesReady) return;
+    if (
+      !lockedKind ||
+      lockedKind === "audio" ||
+      !linkedNamesReady ||
+      !referencesReady
+    )
+      return;
     const current = JSON.stringify(promptReferenceNames);
     const next = JSON.stringify(resolvedLinkedReferenceNames);
     if (current === next) return;
@@ -565,6 +601,7 @@ export function useGenerationDrawerController({
     );
   }, [
     linkedNamesReady,
+    referencesReady,
     lockedKind,
     persistDraft,
     promptReferenceNames,
@@ -715,13 +752,13 @@ export function useGenerationDrawerController({
         ),
         prompt,
         seed: workflowValues.seed,
-        subject: workflowValues.video_subject_to_replace,
+        subject: effectiveSubject,
         duration,
         resolution,
         ratio: effectiveRatio,
         image:
           videoMode === "reference"
-            ? orderedReferenceIds(references, linkedAssetIds.image).length
+            ? imageReferences.length
             : framesOnly
               ? linkedFrames.length
               : firstFrame.length + lastFrame.length,
@@ -746,7 +783,7 @@ export function useGenerationDrawerController({
         prompt,
         videoMode,
         {
-          image: orderedReferenceIds(references, linkedAssetIds.image),
+          image: imageReferences,
           audio: orderedReferenceIds(audioReferences, linkedAssetIds.audio),
           video: orderedReferenceIds(videoReferences, linkedAssetIds.video),
         },
@@ -813,7 +850,13 @@ export function useGenerationDrawerController({
         duration,
         ...(workflowCapabilities
           ? {
-              workflow_parameters: workflowParameters,
+              workflow_parameters: Object.fromEntries(
+                Object.entries(workflowParameters).filter(
+                  ([key]) =>
+                    key !== "video_subject_to_replace" ||
+                    videoCapabilities?.supports_video_subject_to_replace,
+                ),
+              ),
               ...(workflowCapabilities.supports_ratio ? { ratio } : {}),
             }
           : {
@@ -823,7 +866,7 @@ export function useGenerationDrawerController({
                 watermark,
                 generateAudio,
                 seed: workflowValues.seed,
-                subject: workflowValues.video_subject_to_replace,
+                subject: effectiveSubject,
               }),
             }),
         first_frame_asset_id:
@@ -836,7 +879,7 @@ export function useGenerationDrawerController({
           videoMode === "reference"
             ? canvasNodeId
               ? references
-              : orderedReferenceIds(references, linkedAssetIds.image)
+              : imageReferences
             : [],
         audio_asset_ids:
           videoMode === "reference"
@@ -853,17 +896,30 @@ export function useGenerationDrawerController({
       } satisfies GenerationTaskInput;
       createMutation.mutate({ body: { ...body, ...canvasLink } });
     } catch (error) {
-      setNotice(errorMessage(error));
+      setNotice(apiErrorMessage(error, "创建任务失败，请稍后重试。"));
       return;
     }
   };
 
   return {
+    imageReferences,
+    referenceOrder: imageOrder.order,
+    canvasNodeId,
+    referenceContext,
+    referenceInputs,
+    referencesReady,
+    referenceSubjects,
+    subjectKey,
+    changeReferenceSubject,
+    replaceReferenceSubjects,
+    effectiveSubject,
     videoCapabilities,
     videoOptions,
     effectiveRatio,
     promptVersions: lockedKind && onDraftChange ? promptVersions : undefined,
     availableReferenceFiles: Object.values(promptFiles),
+    designReferenceRequest,
+    designReferences: videoDraft?.design_references ?? [],
     excludedAssetIds,
     projectId,
     onClose,

@@ -1,0 +1,330 @@
+.design-library-page > .creative-card-library {
+  max-width: 1120px;
+  margin: 24px auto 0;
+}
+
+.creative-card-library {
+  container-type: inline-size;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.card-library-toolbar,
+.card-library-actions,
+.card-library-categories {
+  display: flex;
+  align-items: center;
+}
+
+.card-library-toolbar {
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 13px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card-library-toolbar > strong {
+  flex: none;
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.card-library-actions {
+  flex: 0 1 auto;
+  justify-content: flex-end;
+  min-width: 0;
+  gap: 8px;
+}
+
+.card-library-actions .workshop-header-search {
+  flex: 0 1 188px;
+  width: 188px;
+  min-width: 0;
+}
+
+.card-library-actions .workshop-header-search input {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.card-library-toolbar button svg,
+.card-library-toolbar > .card-library-categories,
+.card-library-actions > button {
+  flex: none;
+}
+
+.card-library-actions > button {
+  white-space: nowrap;
+}
+
+.card-library-categories {
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+
+.card-library-categories button,
+.card-library-archive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 4px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  white-space: nowrap;
+}
+
+.card-library-categories button:hover,
+.card-library-archive:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.card-library-categories button[aria-pressed="true"],
+.card-library-archive[aria-pressed="true"] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.card-library-categories button[aria-pressed="true"] {
+  font-weight: 650;
+}
+
+.card-library-intro {
+  display: grid;
+  grid-template-columns: minmax(0, 0.94fr) minmax(0, 1fr);
+  min-height: 322px;
+  margin: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+}
+
+.card-library-intro-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(24px, 4vw, 58px);
+}
+
+.card-library-intro-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  margin-bottom: 16px;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+
+.card-library-intro-copy h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: clamp(21px, 2vw, 27px);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.card-library-intro-copy p {
+  max-width: 26ch;
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.card-library-intro-copy button {
+  min-height: 36px;
+  margin-top: 20px;
+  padding-inline: 12px;
+}
+
+.card-library-art {
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background:
+    radial-gradient(var(--border-strong) 0.65px, transparent 0.7px) center /
+      15px 15px,
+    radial-gradient(
+      ellipse at 52% 53%,
+      var(--accent-soft),
+      var(--surface-soft) 83%
+    );
+}
+
+.card-library-art img {
+  width: min(100%, 296px);
+  height: auto;
+  filter: drop-shadow(0 14px 20px rgb(82 51 33 / 16%));
+}
+
+.card-library-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 14px;
+  padding: 16px;
+}
+
+.card-library-grid .creative-design-card {
+  gap: 8px;
+  background: var(--surface-raised);
+}
+
+.card-library-grid .creative-design-card:hover {
+  box-shadow: 0 3px 12px var(--accent-glow);
+}
+
+@media (max-width: 680px) {
+  .design-library-page > .creative-card-library {
+    margin-top: 12px;
+  }
+
+  .card-library-toolbar {
+    padding: 10px;
+  }
+
+  .card-library-intro {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    margin: 9px;
+  }
+
+  .card-library-intro-copy {
+    padding: 20px 16px;
+  }
+
+  .card-library-art {
+    padding: 6px;
+  }
+
+  .card-library-art img {
+    width: min(71%, 174px);
+  }
+}
+
+@container (max-width: 675px) {
+  .card-library-toolbar,
+  .card-library-actions {
+    gap: 5px;
+  }
+
+  .card-library-toolbar {
+    padding-inline: 9px;
+  }
+
+  .card-library-actions {
+    flex: 1;
+  }
+
+  .card-library-actions > button {
+    inline-size: 34px;
+    padding-inline: 0;
+  }
+
+  .card-library-actions > button > span {
+    display: none;
+  }
+
+  .card-library-actions .workshop-header-search {
+    padding-inline: 7px;
+  }
+}
+
+@container (max-width: 440px) {
+  .card-library-categories button {
+    inline-size: 28px;
+    padding-inline: 0;
+  }
+
+  .card-library-categories button > span {
+    display: none;
+  }
+}
+
+@media (pointer: coarse) {
+  .card-library-categories button,
+  .card-library-archive,
+  .card-library-actions .creative-primary,
+  .card-library-intro-copy .creative-primary {
+    min-height: 44px;
+  }
+}
+
+.card-library-family {
+  align-self: start;
+}
+.card-family-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: inherit;
+  background: transparent;
+}
+.card-family-main .creative-card-cover {
+  width: 100%;
+}
+.card-family-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+.card-family-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.card-family-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 5px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 11px;
+}
+.card-family-context {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.card-library-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--muted);
+}
+.card-library-sort[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.card-library-family .card-variant-strip {
+  margin: 0;
+  padding-bottom: 4px;
+}

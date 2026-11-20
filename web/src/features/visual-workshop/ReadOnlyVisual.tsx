@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { NodeAcceptancePanel } from "./acceptance/NodeAcceptancePanel";
 import { AcceptanceWorkspace } from "./acceptance/AcceptanceWorkspace";
 import { useQuery } from "@tanstack/react-query";
@@ -15,6 +15,14 @@ import {
   getVisualWorkshopProject,
 } from "./api";
 import { visualWorkshopQueryKeys } from "./queryKeys";
+const ScriptWorkspace = lazy(() => import("./creative/ScriptWorkspace"));
+const AssetCards = lazy(() =>
+  import("./creative/AssetCards").then(({ AssetCards }) => ({
+    default: AssetCards,
+  })),
+);
+const PrevisWorkspace = lazy(() => import("./previs/PrevisWorkspace"));
+
 export function ReadOnlyVisual({
   utilities,
   libraryActions,
@@ -28,6 +36,8 @@ export function ReadOnlyVisual({
   onOpen: (id: string) => void;
   onBack: () => void;
 }) {
+  const [creative, setCreative] = useState<"script" | "cards">();
+  const [previs, setPrevis] = useState(false);
   const [acceptance, setAcceptance] = useState(false);
   const [inspection, setInspection] = useState<{
     nodeId: string;
@@ -48,6 +58,44 @@ export function ReadOnlyVisual({
     queryFn: () => getVisualCanvas(projectId!),
     enabled: !!projectId,
   });
+  if (creative && projectId)
+    return (
+      <Suspense fallback={<p role="status">正在打开项目资料…</p>}>
+        {creative === "script" ? (
+          <ScriptWorkspace
+            project={projectId}
+            readOnly
+            renderHeader={() => (
+              <header className="visual-previs-readonly-header">
+                <button onClick={() => setCreative(undefined)}>返回项目</button>
+                <strong>{project.data?.title}</strong>
+                {utilities}
+              </header>
+            )}
+          />
+        ) : (
+          <ReadOnlyPage
+            utilities={utilities}
+            title={`${project.data?.title ?? "视觉工坊"} · 设定卡`}
+            onBack={() => setCreative(undefined)}
+          >
+            <AssetCards project={projectId} readOnly />
+          </ReadOnlyPage>
+        )}
+      </Suspense>
+    );
+  if (previs && projectId)
+    return (
+      <Suspense fallback={<p role="status">正在打开白模预演…</p>}>
+        <PrevisWorkspace
+          projectId={projectId}
+          projectTitle={project.data?.title}
+          utilities={utilities}
+          readOnly
+          onBack={() => setPrevis(false)}
+        />
+      </Suspense>
+    );
   if (inspection && projectId)
     return (
       <ReadOnlyPage
@@ -128,7 +176,12 @@ export function ReadOnlyVisual({
         </div>
       )}
       {projectId && (
-        <button onClick={() => setAcceptance(true)}>查看项目验收</button>
+        <>
+          <button onClick={() => setAcceptance(true)}>查看项目验收</button>
+          <button onClick={() => setCreative("script")}>分集剧本</button>
+          <button onClick={() => setCreative("cards")}>设定卡</button>
+          <button onClick={() => setPrevis(true)}>白模预演</button>
+        </>
       )}
     </ReadOnlyPage>
   );

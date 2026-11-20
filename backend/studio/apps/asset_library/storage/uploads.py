@@ -15,6 +15,7 @@ from studio.contracts.asset_library.errors import AssetError
 from studio.contracts.asset_library.file_types import ALLOWED_FILES
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.files.content_types import looks_like, normalize_content_type
+from studio.runtime.files.glb import MAX_GLB_BYTES
 from studio.runtime.files.inspection import validate_file_structure
 from studio.runtime.files.names import display_name_without_original_extension
 
@@ -83,6 +84,8 @@ class AssetLibrary:
         maximum = max_bytes if max_bytes is not None else self.settings.fpl_visual_asset_max_bytes
         if extension == ".svg":
             maximum = min(maximum, 2 * 1024 * 1024)
+        if extension == ".glb":
+            maximum = min(maximum, MAX_GLB_BYTES)
         size = 0
         head = bytearray()
         commit_started = False

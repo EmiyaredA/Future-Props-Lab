@@ -7,13 +7,23 @@ import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import type { VisualWorkshopCanvasPageProps } from "@features/visual-workshop/canvas/visualCanvasTypes";
 import { useVisualCanvasController } from "@features/visual-workshop/canvas/useVisualCanvasController";
 import { VisualWorkshopCanvasView } from "@features/visual-workshop/canvas/VisualWorkshopCanvasView";
+import { VisualProjectHeader } from "./VisualProjectHeader";
 import { AcceptanceWorkspace } from "../acceptance/AcceptanceWorkspace";
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
+import { visualWorkshopQueryKeys } from "../queryKeys";
 import { nodeLabel } from "./geometry";
 import { ProjectBoard } from "@features/visual-workshop/board/ProjectBoard";
 import { getNodeOutput, type VisualNodeOutput } from "../api";
 
+import type { ScriptSeed } from "../creative/api";
+
+const ScriptWorkspace = lazy(() => import("../creative/ScriptWorkspace"));
+const PrevisWorkspace = lazy(() => import("../previs/PrevisWorkspace"));
+
 export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
+  const [previs, setPrevis] = useState(false);
+  const [script, setScript] = useState(false);
+  const [previsSeed, setPrevisSeed] = useState<ScriptSeed>();
   const [acceptance, setAcceptance] = useState(false);
   const [acceptanceError, setAcceptanceError] = useState("");
   const [acceptanceEntry, setAcceptanceEntry] = useState<{
@@ -102,7 +112,20 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
   const switchView = (next: "canvas" | "board") => {
     localStorage.setItem(`visual-project-view:${props.projectId}`, next);
     setView(next);
+    setPrevis(false);
+    setScript(false);
+    setPrevisSeed(undefined);
   };
+  function openPrevis(seed?: ScriptSeed) {
+    setPrevisSeed(seed);
+    setScript(false);
+    setPrevis(true);
+  }
+  function openScript() {
+    setPrevis(false);
+    setPrevisSeed(undefined);
+    setScript(true);
+  }
   const openAcceptance = async (output?: VisualNodeOutput) => {
     try {
       await controller.prepareCanvasForAgent();
@@ -125,6 +148,36 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
       );
     }
   };
+  const renderWorkflowHeader = (
+    mode: "script" | "previs",
+    busy: boolean,
+    leave: (action: () => void | Promise<void>) => void,
+  ) => (
+    <VisualProjectHeader
+      activeView={mode}
+      onScript={mode === "previs" ? () => leave(openScript) : undefined}
+      onPrevis={mode === "script" ? () => leave(() => openPrevis()) : undefined}
+      projectTitle={projectQuery.data?.title ?? "创作项目"}
+      title={title}
+      editingTitle={controller.editingTitle}
+      saveState={saveState}
+      busy={busy}
+      onBack={() => leave(controller.onBack)}
+      onCanvas={() => leave(() => switchView("canvas"))}
+      onBoard={() => leave(() => switchView("board"))}
+      onAcceptance={() => leave(openAcceptance)}
+      onStartTitleEditing={() => controller.setEditingTitle(true)}
+      onTitleChange={controller.setTitle}
+      onSubmitTitle={() => {
+        if (title.trim()) controller.renameMutation.mutate();
+      }}
+      onBlurTitle={() => {
+        if (title.trim() && title !== projectQuery.data?.title)
+          controller.renameMutation.mutate();
+        else controller.setEditingTitle(false);
+      }}
+    />
+  );
   return (
     <>
       <TransferFeedback progress={controller.transferProgress} />
@@ -172,7 +225,43 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
           onBack={() => setAcceptance(false)}
         />
       )}
-      <div style={{ display: acceptance ? "none" : undefined }}>
+      {script && !acceptance && (
+        <Suspense fallback={<p role="status">正在打开剧本…</p>}>
+          <ScriptWorkspace
+            key={projectId}
+            project={projectId}
+            onPrevis={openPrevis}
+            renderHeader={(busy, leave) =>
+              renderWorkflowHeader("script", busy, leave)
+            }
+          />
+        </Suspense>
+      )}
+      {previs && !acceptance && (
+        <Suspense fallback={<p role="status">正在打开白模预演…</p>}>
+          <PrevisWorkspace
+            key={projectId}
+            projectId={projectId}
+            onBack={() => switchView("canvas")}
+            seed={previsSeed}
+            renderHeader={(busy, leave) =>
+              renderWorkflowHeader("previs", busy, leave)
+            }
+            beforePublish={async () => {
+              await controller.prepareCanvasForAgent();
+            }}
+            onPublished={(canvas) =>
+              controller.client.setQueryData(
+                visualWorkshopQueryKeys.canvas(projectId),
+                canvas,
+              )
+            }
+          />
+        </Suspense>
+      )}
+      <div
+        style={{ display: acceptance || previs || script ? "none" : undefined }}
+      >
         {view === "board" ? (
           <ProjectBoard
             controller={controller}
@@ -181,6 +270,8 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
               void openAcceptance(output);
             }}
             onCanvas={() => switchView("canvas")}
+            onPrevis={() => openPrevis()}
+            onScript={openScript}
             previews={
               historyPreviews.projectId === props.projectId
                 ? historyPreviews.items
@@ -205,6 +296,8 @@ export function VisualWorkshopCanvasPage(props: VisualWorkshopCanvasPageProps) {
               void openAcceptance();
             }}
             onBoard={() => switchView("board")}
+            onPrevis={() => openPrevis()}
+            onScript={openScript}
           />
         )}
       </div>

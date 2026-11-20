@@ -1,20 +1,29 @@
-import type { VisualCanvasEdge, VisualCanvasNode } from "../api";
-import { NODE_SIZE } from "./geometry";
+import type {
+  VisualCanvasEdge,
+  VisualCanvasGroup,
+  VisualCanvasNode,
+} from "../api";
 import {
   canvasBounds,
+  findFreePosition,
+  nodeRect,
   placeNodeGroup,
   type CanvasPoint,
 } from "./canvasPlacement";
 
 export type CanvasLayoutMode = "flow" | "grid";
 
-function grid(
-  nodes: VisualCanvasNode[],
-  anchor: CanvasPoint,
-): VisualCanvasNode[] {
+type LayoutUnit = {
+  id: string;
+  position: CanvasPoint;
+  width: number;
+  height: number;
+};
+
+function grid(nodes: LayoutUnit[], anchor: CanvasPoint): LayoutUnit[] {
   const columns = Math.ceil(Math.sqrt(nodes.length));
-  const width = Math.max(...nodes.map((node) => NODE_SIZE[node.kind].width));
-  const height = Math.max(...nodes.map((node) => NODE_SIZE[node.kind].height));
+  const width = Math.max(...nodes.map((node) => node.width));
+  const height = Math.max(...nodes.map((node) => node.height));
   return nodes.map((node, index) => ({
     ...node,
     position: {
@@ -25,10 +34,10 @@ function grid(
 }
 
 function flow(
-  nodes: VisualCanvasNode[],
+  nodes: LayoutUnit[],
   edges: VisualCanvasEdge[],
   anchor: CanvasPoint,
-): VisualCanvasNode[] {
+): LayoutUnit[] {
   const ids = new Set(nodes.map((node) => node.id));
   const internal = edges.filter(
     (edge) => ids.has(edge.source_node_id) && ids.has(edge.target_node_id),
@@ -57,8 +66,8 @@ function flow(
   if (queue.length !== nodes.length)
     throw new Error("画布连线包含依赖环，无法按连线整理");
   const visited = new Set<string>();
-  const components: VisualCanvasNode[][] = [];
-  const isolated: VisualCanvasNode[] = [];
+  const components: LayoutUnit[][] = [];
+  const isolated: LayoutUnit[] = [];
   for (const node of nodes) {
     if (!neighbors.get(node.id)!.size) {
       isolated.push(node);
@@ -78,26 +87,28 @@ function flow(
     const memberIds = new Set(members);
     components.push(nodes.filter((item) => memberIds.has(item.id)));
   }
-  const arranged: VisualCanvasNode[] = [];
+  const arranged: LayoutUnit[] = [];
   let nextY = anchor.y;
   let right = anchor.x;
   for (const component of components) {
     let nextX = anchor.x;
     const maxRank = Math.max(...component.map((node) => rank.get(node.id)!));
-    const placed: VisualCanvasNode[] = [];
+    const placed: LayoutUnit[] = [];
     for (let layer = 0; layer <= maxRank; layer++) {
       const members = component.filter((node) => rank.get(node.id) === layer);
       let y = nextY;
       for (const node of members) {
         placed.push({ ...node, position: { x: nextX, y } });
-        y += NODE_SIZE[node.kind].height + 48;
+        y += node.height + 48;
       }
-      nextX +=
-        Math.max(...members.map((node) => NODE_SIZE[node.kind].width)) + 96;
+      nextX += Math.max(...members.map((node) => node.width)) + 96;
     }
-    const bounds = canvasBounds(placed);
-    right = Math.max(right, bounds.x + bounds.width);
-    nextY += bounds.height + 96;
+    right = Math.max(
+      right,
+      ...placed.map((item) => item.position.x + item.width),
+    );
+    nextY =
+      Math.max(...placed.map((item) => item.position.y + item.height)) + 96;
     arranged.push(...placed);
   }
   if (isolated.length)
@@ -115,21 +126,82 @@ export function arrangeCanvasNodes(
   edges: VisualCanvasEdge[],
   mode: CanvasLayoutMode,
   targetIds?: string[],
+  groups: VisualCanvasGroup[] = [],
 ): VisualCanvasNode[] {
-  const target = targetIds
-    ? new Set(targetIds)
-    : new Set(nodes.map((node) => node.id));
-  const selected = nodes.filter((node) => target.has(node.id));
-  if (selected.length < 2) return nodes;
-  const anchor = canvasBounds(selected);
-  const arranged =
-    mode === "grid" ? grid(selected, anchor) : flow(selected, edges, anchor);
-  const placed = placeNodeGroup(
-    arranged,
-    nodes.filter((node) => !target.has(node.id)),
-    anchor,
+  const target = new Set(targetIds ?? nodes.map((node) => node.id));
+  const groupByNode = new Map(
+    groups.flatMap((group) =>
+      group.node_ids.map((id) => [id, group.id] as const),
+    ),
   );
-  const positions = new Map(placed.map((node) => [node.id, node.position]));
+  for (const group of groups) {
+    if (group.node_ids.some((id) => target.has(id))) {
+      for (const id of group.node_ids) target.add(id);
+    }
+  }
+  const selected = nodes.filter((node) => target.has(node.id));
+  const members = new Map<string, VisualCanvasNode[]>();
+  for (const node of selected) {
+    const unit = groupByNode.get(node.id) ?? node.id;
+    const existing = members.get(unit);
+    if (existing) existing.push(node);
+    else members.set(unit, [node]);
+  }
+  if (members.size < 2) return nodes;
+  const units = [...members].map(([id, items]) => {
+    const { x, y, width, height } = canvasBounds(items);
+    return { id, position: { x, y }, width, height };
+  });
+  const anchor = canvasBounds(selected);
+  const unitEdges = edges.flatMap((edge) => {
+    const source = groupByNode.get(edge.source_node_id) ?? edge.source_node_id;
+    const target = groupByNode.get(edge.target_node_id) ?? edge.target_node_id;
+    return source === target
+      ? []
+      : [{ ...edge, source_node_id: source, target_node_id: target }];
+  });
+  let arranged: LayoutUnit[];
+  if (mode === "grid") arranged = grid(units, anchor);
+  else {
+    try {
+      arranged = flow(units, unitEdges, anchor);
+    } catch (error) {
+      if (!groups.length) throw error;
+      // Collapsing a group can create a cycle between otherwise acyclic units.
+      arranged = grid(units, anchor);
+    }
+  }
+  const positions = new Map<string, CanvasPoint>();
+  if (groups.length) {
+    const obstacles = nodes
+      .filter((node) => !target.has(node.id))
+      .map(nodeRect);
+    const originals = new Map(units.map(({ id, position }) => [id, position]));
+    for (const unit of arranged) {
+      const next = findFreePosition(obstacles, unit, unit.position);
+      obstacles.push({ ...next, width: unit.width, height: unit.height });
+      const origin = originals.get(unit.id)!;
+      for (const node of members.get(unit.id)!) {
+        positions.set(node.id, {
+          x: node.position.x - origin.x + next.x,
+          y: node.position.y - origin.y + next.y,
+        });
+      }
+    }
+  } else {
+    const arrangedPositions = new Map(
+      arranged.map((unit) => [unit.id, unit.position]),
+    );
+    const placed = placeNodeGroup(
+      selected.map((node) => ({
+        ...node,
+        position: arrangedPositions.get(node.id)!,
+      })),
+      nodes.filter((node) => !target.has(node.id)),
+      anchor,
+    );
+    for (const node of placed) positions.set(node.id, node.position);
+  }
   let changed = false;
   const result = nodes.map((node) => {
     const position = positions.get(node.id);

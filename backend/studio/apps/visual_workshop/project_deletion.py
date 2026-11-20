@@ -6,8 +6,11 @@ from sqlalchemy import select, text
 
 from studio.apps.visual_workshop.acceptance.models import AcceptanceRun
 from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
+from studio.apps.visual_workshop.card_generation import card_generation_resource_id
+from studio.apps.visual_workshop.creative_workflow import require_project_card_media_clear
 from studio.apps.visual_workshop.generation_records import ACTIVE_TASK_STATUSES
 from studio.apps.visual_workshop.handoffs.segment_handoffs import require_canvas_unreserved
+from studio.apps.visual_workshop.previs_publication import RECEIPT_KIND, publication_resource_id
 from studio.apps.visual_workshop.storage.generation_dispatch_records import VisualGenerationDispatch
 from studio.apps.visual_workshop.storage.models import (
     VisualGenerationBatch,
@@ -41,6 +44,7 @@ class ProjectDeletion:
             ) from exc
 
     async def _require_idle(self, project_id):
+        await require_project_card_media_clear(self.session, self.owner, project_id)
         await require_canvas_unreserved(self.session, self.owner, project_id)
         for model, statuses in (
             (VisualGenerationTask, ACTIVE_TASK_STATUSES),
@@ -123,6 +127,18 @@ class ProjectDeletion:
             )
             await forget(
                 self.session, owner_user_id=self.owner, kind="visual", resource_id=project_id
+            )
+            await forget(
+                self.session,
+                owner_user_id=self.owner,
+                kind=RECEIPT_KIND,
+                resource_id=publication_resource_id(project_id),
+            )
+            await forget(
+                self.session,
+                owner_user_id=self.owner,
+                kind="visual",
+                resource_id=card_generation_resource_id(project_id),
             )
             await self.references.record(
                 self.session, prepared, resource_revision=revision + 1, deleted=True

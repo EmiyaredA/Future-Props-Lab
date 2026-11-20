@@ -102,6 +102,8 @@ const ModelCallLogsPage = lazy(() =>
 const VisualWorkshopCanvasPage = lazy(VISUAL_WORKSHOP_MODULE.pages.canvas);
 const VisualWorkshopProjectsPage = lazy(VISUAL_WORKSHOP_MODULE.pages.projects);
 const VisualWorkshopAssetsPage = lazy(VISUAL_WORKSHOP_MODULE.pages.assets);
+const VisualAssetProjects = lazy(VISUAL_WORKSHOP_MODULE.pages.assetProjects);
+const VisualCardLibrary = lazy(VISUAL_WORKSHOP_MODULE.pages.cardLibrary);
 const VisualWorkshopTasksPage = lazy(VISUAL_WORKSHOP_MODULE.pages.tasks);
 const VisualWorkshopEmptyPage = lazy(VISUAL_WORKSHOP_MODULE.pages.empty);
 const GalgameWorkshopProjectsPage = lazy(
@@ -381,7 +383,12 @@ export default function WebsiteRoutes({
         <WorkshopShell
           module={workshop}
           page={page}
-          navigate={(next) => navigate(next as WorkshopPage)}
+          navigate={(next) =>
+            navigate(
+              next as WorkshopPage,
+              next === "visual-workshop-assets" ? route.projectId : undefined,
+            )
+          }
           onBack={() => navigate("apps")}
         >
           <PageBoundary>
@@ -650,7 +657,12 @@ export default function WebsiteRoutes({
       <WorkshopShell
         module={VISUAL_WORKSHOP_MODULE}
         page={page}
-        navigate={(next) => navigate(next as WorkshopPage)}
+        navigate={(next) =>
+          navigate(
+            next as WorkshopPage,
+            next === "visual-workshop-assets" ? route.projectId : undefined,
+          )
+        }
         onBack={() => navigate("apps")}
       >
         <PageBoundary>
@@ -668,6 +680,14 @@ export default function WebsiteRoutes({
                 navigate("visual-workshop-assets", projectId)
               }
             />
+          ) : page === "visual-workshop-card-library" ? (
+            <VisualCardLibrary
+              utilities={
+                <WorkshopUtilities
+                  application={VISUAL_WORKSHOP_MODULE.definition.name}
+                />
+              }
+            />
           ) : page === "visual-workshop-assets" && route.projectId ? (
             <VisualWorkshopAssetsPage
               utilities={
@@ -681,6 +701,15 @@ export default function WebsiteRoutes({
                 navigate("visual-workshop-canvas", route.projectId)
               }
               onProjects={() => navigate("visual-workshop-projects")}
+            />
+          ) : page === "visual-workshop-assets" ? (
+            <VisualAssetProjects
+              utilities={
+                <WorkshopUtilities
+                  application={VISUAL_WORKSHOP_MODULE.definition.name}
+                />
+              }
+              onOpen={(id) => navigate("visual-workshop-assets", id)}
             />
           ) : page === "visual-workshop-tasks" ? (
             <VisualWorkshopTasksPage
@@ -698,7 +727,7 @@ export default function WebsiteRoutes({
             />
           ) : (
             <VisualWorkshopEmptyPage
-              page={page === "visual-workshop-assets" ? "assets" : "tasks"}
+              page="tasks"
               onProjects={() => navigate("visual-workshop-projects")}
             />
           )}

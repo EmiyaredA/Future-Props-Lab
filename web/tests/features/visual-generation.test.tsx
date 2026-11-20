@@ -727,9 +727,10 @@ test("uses the compact video node composer for image-to-video tasks", async () =
   await user.click(screen.getByRole("option", { name: "9:16" }));
   expect(screen.getByText("9:16 · 8S · 1080P")).toBeInTheDocument();
   expect(
-    screen.getByRole("navigation", { name: "视频生成方式" }),
+    screen.getByRole("combobox", { name: "视频生成方式" }),
   ).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "图生视频" }));
+  await user.click(screen.getByRole("combobox", { name: "视频生成方式" }));
+  await user.click(screen.getByRole("option", { name: "图生视频" }));
   const startFramePicker = screen
     .getByRole("group", { name: "起始画面" })
     .querySelector<HTMLInputElement>('input[type="file"]')!;
@@ -808,8 +809,8 @@ test("restores a node video draft, saves edits, and keeps it after submission", 
   );
 
   expect(
-    await screen.findByRole("button", { name: "图生视频" }),
-  ).toHaveAttribute("aria-pressed", "true");
+    await screen.findByRole("combobox", { name: "视频生成方式" }),
+  ).toHaveTextContent("图生视频");
   expect(screen.getByRole("textbox", { name: "视频提示词" })).toHaveTextContent(
     "已保存的推进镜头",
   );
@@ -875,7 +876,8 @@ test("retains incompatible video references with per-item disabled styling", asy
   expect(
     await screen.findByRole("button", { name: "参考视频.mp4" }),
   ).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "文生视频" }));
+  await user.click(screen.getByRole("combobox", { name: "视频生成方式" }));
+  await user.click(screen.getByRole("option", { name: "文生视频" }));
 
   expect(screen.getByRole("group", { name: "参考图片" })).toBeDisabled();
   expect(screen.getByRole("group", { name: "参考视频" })).toBeDisabled();
@@ -892,7 +894,8 @@ test("retains incompatible video references with per-item disabled styling", asy
     screen.queryByRole("listbox", { name: "引用已选素材" }),
   ).not.toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "全能参考" }));
+  await user.click(screen.getByRole("combobox", { name: "视频生成方式" }));
+  await user.click(screen.getByRole("option", { name: "全能参考" }));
   expect(
     screen.getByRole("button", { name: "参考视频.mp4" }),
   ).toBeInTheDocument();
@@ -1089,20 +1092,15 @@ test("uploads local reference media, auto-selects it and submits asset ids", asy
   expect(
     screen.getByRole("option", { name: /Doubao Seedance 2.0/ }),
   ).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "全能参考" }));
+  await user.click(screen.getByRole("combobox", { name: "视频生成方式" }));
+  await user.click(screen.getByRole("option", { name: "全能参考" }));
   const stickyReferenceBar = screen.getByRole("group", {
     name: "固定参考素材",
   });
-  expect(stickyReferenceBar).toHaveClass("video-composer-reference");
+  expect(stickyReferenceBar).toHaveClass("reference-strip-media");
   expect(screen.queryByText(/已选 0\//)).not.toBeInTheDocument();
   expect(
-    within(stickyReferenceBar).getByRole("button", { name: "上传参考图片" }),
-  ).toBeInTheDocument();
-  expect(
-    within(stickyReferenceBar).getByRole("button", { name: "上传参考视频" }),
-  ).toBeInTheDocument();
-  expect(
-    within(stickyReferenceBar).getByRole("button", { name: "上传参考音频" }),
+    screen.getByRole("button", { name: "添加参考素材" }),
   ).toBeInTheDocument();
 
   const videoPicker = screen.getByText("参考视频").closest("fieldset");

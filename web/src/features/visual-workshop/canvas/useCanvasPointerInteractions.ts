@@ -373,7 +373,12 @@ export function useCanvasPointerInteractions({
   }, []);
 
   const onSurfacePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    const isBackground = event.target === event.currentTarget;
+    const isBackground =
+      event.target === event.currentTarget ||
+      (event.target instanceof Element &&
+        event.target.matches(
+          ".visual-toonflow-canvas, .visual-toonflow-canvas .vue-flow, .visual-toonflow-canvas .vue-flow__pane, .visual-toonflow-canvas .vue-flow__transformationpane",
+        ));
     const shouldPan = event.button === 1 || toolMode === "pan";
     if (event.button !== 0 && event.button !== 1) return;
     if (!shouldPan && !isBackground) return;
@@ -460,6 +465,7 @@ export function useCanvasPointerInteractions({
   const startNodeDrag = (
     event: PointerEvent<HTMLElement>,
     node: VisualCanvasNode,
+    groupIds?: string[],
   ) => {
     const target = event.target;
     if (
@@ -473,14 +479,16 @@ export function useCanvasPointerInteractions({
     event.currentTarget.setPointerCapture(event.pointerId);
     setInteractionActive(true);
     setActionsHiddenNodeId(undefined);
-    const ids = selectedNodeIds.includes(node.id) ? selectedNodeIds : [node.id];
-    if (!selectedNodeIds.includes(node.id)) setSelectedNodeIds(ids);
+    const ids =
+      groupIds ??
+      (selectedNodeIds.includes(node.id) ? selectedNodeIds : [node.id]);
+    if (groupIds || !selectedNodeIds.includes(node.id)) setSelectedNodeIds(ids);
     clearEdgeSelection();
     closeAssets();
     closeContextMenu();
     nodeDrag.current = {
       id: node.id,
-      kind: node.kind,
+      kind: groupIds ? "text" : node.kind,
       x: event.clientX,
       y: event.clientY,
       origins: nodesRef.current

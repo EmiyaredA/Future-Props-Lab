@@ -1,3 +1,5 @@
 @import "./generation-foundation.css";
 @import "./generation-components.css";
 @import "./reference-order.css";
+
+@import "./compact-references.css";

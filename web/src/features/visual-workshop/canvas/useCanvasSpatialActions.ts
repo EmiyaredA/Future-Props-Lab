@@ -1,3 +1,4 @@
+import type { VisualCanvasGroup } from "../api";
 import {
   useCallback,
   type Dispatch,
@@ -29,6 +30,7 @@ export function useCanvasSpatialActions({
   conflictRef,
   interactionActive,
   selectedNodeIds,
+  groupsRef,
   setSaveMessage,
 }: {
   surface: RefObject<HTMLDivElement | null>;
@@ -43,6 +45,7 @@ export function useCanvasSpatialActions({
   conflictRef: RefObject<boolean>;
   interactionActive: boolean;
   selectedNodeIds: string[];
+  groupsRef?: RefObject<VisualCanvasGroup[]>;
   setSaveMessage: (message: string) => void;
 }) {
   const getArea = useCallback(() => {
@@ -121,6 +124,7 @@ export function useCanvasSpatialActions({
           edgesRef.current,
           mode,
           selected ? selectedNodeIds : undefined,
+          groupsRef?.current,
         );
         if (next === current) return;
         commitSnapshot(next, edgesRef.current);
@@ -140,6 +144,7 @@ export function useCanvasSpatialActions({
       conflictRef,
       edgesRef,
       fitNodes,
+      groupsRef,
       interactionActive,
       nodesRef,
       selectedNodeIds,

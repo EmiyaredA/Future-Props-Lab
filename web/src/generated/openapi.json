@@ -4820,6 +4820,18 @@
             ],
             "title": "Group"
           },
+          "previs": {
+            "anyOf": [
+              {
+                "maxLength": 1024,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Previs"
+          },
           "x": {
             "default": 0,
             "title": "X",
@@ -5386,6 +5398,502 @@
           "errors_today"
         ],
         "title": "CallLogStatsOut",
+        "type": "object"
+      },
+      "CardData": {
+        "additionalProperties": false,
+        "properties": {
+          "adopted_asset_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adopted Asset Id"
+          },
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "candidate_asset_ids": {
+            "items": {
+              "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            "maxItems": 80,
+            "title": "Candidate Asset Ids",
+            "type": "array"
+          },
+          "candidate_task_ids": {
+            "items": {
+              "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            "maxItems": 80,
+            "title": "Candidate Task Ids",
+            "type": "array"
+          },
+          "design": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Design",
+            "type": "string"
+          },
+          "facts": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Facts",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "character",
+              "scene",
+              "prop"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "model_asset_key": {
+            "anyOf": [
+              {
+                "maxLength": 180,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Asset Key"
+          },
+          "parent_asset_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Asset Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "proposed_design": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Proposed Design",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScriptSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title"
+        ],
+        "title": "CardData",
+        "type": "object"
+      },
+      "CardGenerationIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "prompt": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "request_id": {
+            "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "size": {
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Size",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "model_id",
+          "prompt",
+          "size"
+        ],
+        "title": "CardGenerationIn",
+        "type": "object"
+      },
+      "CardOut": {
+        "additionalProperties": false,
+        "properties": {
+          "adopted_asset_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adopted Asset Id"
+          },
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "candidate_asset_ids": {
+            "items": {
+              "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            "maxItems": 80,
+            "title": "Candidate Asset Ids",
+            "type": "array"
+          },
+          "candidate_task_ids": {
+            "items": {
+              "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            "maxItems": 80,
+            "title": "Candidate Task Ids",
+            "type": "array"
+          },
+          "design": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Design",
+            "type": "string"
+          },
+          "facts": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Facts",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "character",
+              "scene",
+              "prop"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "media_projects": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Media Projects",
+            "type": "object"
+          },
+          "model_asset_key": {
+            "anyOf": [
+              {
+                "maxLength": 180,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Asset Key"
+          },
+          "parent_asset_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Asset Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "proposed_design": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Proposed Design",
+            "type": "string"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScriptSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Project Id"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "id",
+          "revision"
+        ],
+        "title": "CardOut",
+        "type": "object"
+      },
+      "CardRegroupIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revisions": {
+            "maxProperties": 500,
+            "minProperties": 2,
+            "patternProperties": {
+              "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$": {
+                "type": "integer"
+              }
+            },
+            "title": "Expected Revisions",
+            "type": "object"
+          },
+          "main_card_id": {
+            "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+            "title": "Main Card Id",
+            "type": "string"
+          },
+          "variant_ids": {
+            "items": {
+              "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            "maxItems": 499,
+            "minItems": 1,
+            "title": "Variant Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "main_card_id",
+          "variant_ids",
+          "expected_revisions"
+        ],
+        "title": "CardRegroupIn",
+        "type": "object"
+      },
+      "CardUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "adopted_asset_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Adopted Asset Id"
+          },
+          "archived": {
+            "default": false,
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "candidate_asset_ids": {
+            "items": {
+              "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            "maxItems": 80,
+            "title": "Candidate Asset Ids",
+            "type": "array"
+          },
+          "candidate_task_ids": {
+            "items": {
+              "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            "maxItems": 80,
+            "title": "Candidate Task Ids",
+            "type": "array"
+          },
+          "design": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Design",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "facts": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Facts",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "character",
+              "scene",
+              "prop"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "model_asset_key": {
+            "anyOf": [
+              {
+                "maxLength": 180,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Asset Key"
+          },
+          "parent_asset_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Asset Id"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "proposed_design": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Proposed Design",
+            "type": "string"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScriptSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "expected_revision"
+        ],
+        "title": "CardUpdate",
         "type": "object"
       },
       "CatalogOut": {
@@ -28174,6 +28682,169 @@
         "title": "PresentationTransition",
         "type": "object"
       },
+      "PrevisSceneCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "additionalProperties": true,
+            "title": "Document",
+            "type": "object"
+          },
+          "format_version": {
+            "const": 1,
+            "title": "Format Version",
+            "type": "integer"
+          },
+          "script_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScriptSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "format_version",
+          "document",
+          "title"
+        ],
+        "title": "PrevisSceneCreate",
+        "type": "object"
+      },
+      "PrevisSceneOut": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "additionalProperties": true,
+            "title": "Document",
+            "type": "object"
+          },
+          "format_version": {
+            "const": 1,
+            "title": "Format Version",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "script_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScriptSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "format_version",
+          "document",
+          "title",
+          "id",
+          "revision",
+          "updated_at"
+        ],
+        "title": "PrevisSceneOut",
+        "type": "object"
+      },
+      "PrevisSceneSummary": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "updated_at"
+        ],
+        "title": "PrevisSceneSummary",
+        "type": "object"
+      },
+      "PrevisSceneUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "additionalProperties": true,
+            "title": "Document",
+            "type": "object"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "format_version": {
+            "const": 1,
+            "title": "Format Version",
+            "type": "integer"
+          },
+          "script_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScriptSource"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "format_version",
+          "document",
+          "title",
+          "expected_revision"
+        ],
+        "title": "PrevisSceneUpdate",
+        "type": "object"
+      },
       "ProjectCreateIn": {
         "properties": {
           "aspect": {
@@ -31112,6 +31783,137 @@
           "model_id"
         ],
         "title": "SavedSegmentTranscriptionIn",
+        "type": "object"
+      },
+      "ScriptEpisode": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "scenes": {
+            "items": {
+              "$ref": "#/components/schemas/ScriptScene"
+            },
+            "maxItems": 200,
+            "title": "Scenes",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "ScriptEpisode",
+        "type": "object"
+      },
+      "ScriptOut": {
+        "additionalProperties": false,
+        "properties": {
+          "episodes": {
+            "items": {
+              "$ref": "#/components/schemas/ScriptEpisode"
+            },
+            "maxItems": 100,
+            "title": "Episodes",
+            "type": "array"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "revision"
+        ],
+        "title": "ScriptOut",
+        "type": "object"
+      },
+      "ScriptScene": {
+        "additionalProperties": false,
+        "properties": {
+          "heading": {
+            "default": "",
+            "maxLength": 240,
+            "title": "Heading",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 12000,
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title"
+        ],
+        "title": "ScriptScene",
+        "type": "object"
+      },
+      "ScriptSource": {
+        "additionalProperties": false,
+        "properties": {
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          },
+          "scene_id": {
+            "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+            "title": "Scene Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scene_id",
+          "revision"
+        ],
+        "title": "ScriptSource",
+        "type": "object"
+      },
+      "ScriptUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "episodes": {
+            "items": {
+              "$ref": "#/components/schemas/ScriptEpisode"
+            },
+            "maxItems": 100,
+            "title": "Episodes",
+            "type": "array"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "ScriptUpdate",
         "type": "object"
       },
       "SearchCriteria": {
@@ -41019,6 +41821,13 @@
             "title": "Edges",
             "type": "array"
           },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/VisualCanvasGroup"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
           "nodes": {
             "items": {
               "discriminator": {
@@ -41046,6 +41855,13 @@
               ]
             },
             "title": "Nodes",
+            "type": "array"
+          },
+          "project_card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Project Card Ids",
             "type": "array"
           },
           "project_id": {
@@ -41101,6 +41917,21 @@
             "title": "Expected Revision",
             "type": "integer"
           },
+          "groups": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/VisualCanvasGroup"
+                },
+                "maxItems": 500,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Groups"
+          },
           "nodes": {
             "items": {
               "discriminator": {
@@ -41130,6 +41961,21 @@
             "maxItems": 1000,
             "title": "Nodes",
             "type": "array"
+          },
+          "project_card_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 1000,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Card Ids"
           }
         },
         "required": [
@@ -41197,6 +42043,38 @@
           "target_node_id"
         ],
         "title": "VisualCanvasEdge",
+        "type": "object"
+      },
+      "VisualCanvasGroup": {
+        "properties": {
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "node_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "minItems": 2,
+            "title": "Node Ids",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "node_ids"
+        ],
+        "title": "VisualCanvasGroup",
         "type": "object"
       },
       "VisualCanvasImageGenerationDraft": {
@@ -41356,6 +42234,30 @@
               }
             ],
             "title": "Category Id"
+          },
+          "design_card_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Design Card Id"
+          },
+          "design_card_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Design Card Revision"
           },
           "final_output_id": {
             "anyOf": [
@@ -41626,6 +42528,14 @@
             "title": "Audio Asset Ids",
             "type": "array"
           },
+          "design_references": {
+            "items": {
+              "$ref": "#/components/schemas/VisualDesignReference"
+            },
+            "maxItems": 30,
+            "title": "Design References",
+            "type": "array"
+          },
           "duration": {
             "default": 5,
             "maximum": 30.0,
@@ -41726,6 +42636,36 @@
             "maxItems": 30,
             "title": "Reference Asset Ids",
             "type": "array"
+          },
+          "reference_order": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 60,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Order"
+          },
+          "reference_subjects": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "maxProperties": 60,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Subjects"
           },
           "resolution": {
             "default": "720p",
@@ -41901,6 +42841,41 @@
           "kind"
         ],
         "title": "VisualCanvasVideoNode",
+        "type": "object"
+      },
+      "VisualDesignReference": {
+        "properties": {
+          "asset_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "card_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Card Id",
+            "type": "string"
+          },
+          "card_revision": {
+            "minimum": 0.0,
+            "title": "Card Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "card_id",
+          "card_revision",
+          "asset_id",
+          "title"
+        ],
+        "title": "VisualDesignReference",
         "type": "object"
       },
       "VisualEntityOperation": {
@@ -49509,6 +50484,22 @@
             "schema": {
               "title": "Asset Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
             }
           }
         ],
@@ -69647,6 +70638,207 @@
         ]
       }
     },
+    "/v1/visual-workshop/asset-cards": {
+      "get": {
+        "operationId": "list_account_asset_cards_v1_visual_workshop_asset_cards_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CardOut"
+                  },
+                  "title": "Response List Account Asset Cards V1 Visual Workshop Asset Cards Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Account Asset Cards",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_account_asset_card_v1_visual_workshop_asset_cards_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Account Asset Card",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/asset-cards/regroup": {
+      "post": {
+        "operationId": "regroup_account_asset_cards_v1_visual_workshop_asset_cards_regroup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardRegroupIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CardOut"
+                  },
+                  "title": "Response Regroup Account Asset Cards V1 Visual Workshop Asset Cards Regroup Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Regroup Account Asset Cards",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/asset-cards/{card_id}": {
+      "get": {
+        "operationId": "get_account_asset_card_v1_visual_workshop_asset_cards__card_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Account Asset Card",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "put_account_asset_card_v1_visual_workshop_asset_cards__card_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Account Asset Card",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
     "/v1/visual-workshop/generation-batches": {
       "get": {
         "operationId": "list_generation_batches_v1_visual_workshop_generation_batches_get",
@@ -71053,6 +72245,273 @@
         ]
       }
     },
+    "/v1/visual-workshop/projects/{project_id}/asset-cards": {
+      "get": {
+        "operationId": "list_visual_asset_cards_v1_visual_workshop_projects__project_id__asset_cards_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CardOut"
+                  },
+                  "title": "Response List Visual Asset Cards V1 Visual Workshop Projects  Project Id  Asset Cards Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Visual Asset Cards",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardData"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Visual Asset Card",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}": {
+      "get": {
+        "operationId": "get_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Visual Asset Card",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "put_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CardOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Visual Asset Card",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations": {
+      "post": {
+        "operationId": "generate_visual_asset_card_v1_visual_workshop_projects__project_id__asset_cards__card_id__generations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "card_id",
+            "required": true,
+            "schema": {
+              "title": "Card Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CardGenerationIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate Visual Asset Card",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
     "/v1/visual-workshop/projects/{project_id}/asset-imports": {
       "post": {
         "operationId": "import_assets_v1_visual_workshop_projects__project_id__asset_imports_post",
@@ -72259,6 +73718,367 @@
           }
         },
         "summary": "Reveal Project Folder",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/previs-scenes": {
+      "get": {
+        "operationId": "list_previs_scenes_v1_visual_workshop_projects__project_id__previs_scenes_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PrevisSceneSummary"
+                  },
+                  "title": "Response List Previs Scenes V1 Visual Workshop Projects  Project Id  Previs Scenes Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Previs Scenes",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrevisSceneCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrevisSceneOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Previs Scene",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}": {
+      "delete": {
+        "operationId": "delete_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Previs Scene V1 Visual Workshop Projects  Project Id  Previs Scenes  Scene Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Previs Scene",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "get": {
+        "operationId": "get_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrevisSceneOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Previs Scene",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "update_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "scene_id",
+            "required": true,
+            "schema": {
+              "title": "Scene Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrevisSceneUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrevisSceneOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Previs Scene",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/script": {
+      "get": {
+        "operationId": "get_visual_script_v1_visual_workshop_projects__project_id__script_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Visual Script",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "put_visual_script_v1_visual_workshop_projects__project_id__script_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScriptUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScriptOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Visual Script",
         "tags": [
           "visual-workshop"
         ]

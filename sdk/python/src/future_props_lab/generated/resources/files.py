@@ -75,9 +75,9 @@ class Files:
         'Patch File. PATCH /v1/files/{asset_id}'
         return self._client._call('PATCH', '/v1/files/{asset_id}', parameters=[('asset_id', 'path', asset_id)], body=body, media_type='application/json', response_type=models.VisualAssetOut)
 
-    def preview_file(self, *, asset_id: str) -> Any:
+    def preview_file(self, *, asset_id: str, project_id: str | None | Unset = UNSET) -> Any:
         'Preview File. GET /v1/files/{asset_id}/content'
-        return self._client._call('GET', '/v1/files/{asset_id}/content', parameters=[('asset_id', 'path', asset_id)], response_type=Any)
+        return self._client._call('GET', '/v1/files/{asset_id}/content', parameters=[('asset_id', 'path', asset_id), ('project_id', 'query', project_id)], response_type=Any)
 
     def crop_file_image(self, *, asset_id: str, body: models.ImageCropIn | dict) -> Download:
         'Crop File Image. POST /v1/files/{asset_id}/crop'
@@ -171,9 +171,9 @@ class AsyncFiles:
         'Patch File. PATCH /v1/files/{asset_id}'
         return await self._client._call('PATCH', '/v1/files/{asset_id}', parameters=[('asset_id', 'path', asset_id)], body=body, media_type='application/json', response_type=models.VisualAssetOut)
 
-    async def preview_file(self, *, asset_id: str) -> Any:
+    async def preview_file(self, *, asset_id: str, project_id: str | None | Unset = UNSET) -> Any:
         'Preview File. GET /v1/files/{asset_id}/content'
-        return await self._client._call('GET', '/v1/files/{asset_id}/content', parameters=[('asset_id', 'path', asset_id)], response_type=Any)
+        return await self._client._call('GET', '/v1/files/{asset_id}/content', parameters=[('asset_id', 'path', asset_id), ('project_id', 'query', project_id)], response_type=Any)
 
     async def crop_file_image(self, *, asset_id: str, body: models.ImageCropIn | dict) -> AsyncDownload:
         'Crop File Image. POST /v1/files/{asset_id}/crop'

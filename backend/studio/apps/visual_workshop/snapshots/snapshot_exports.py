@@ -11,7 +11,10 @@ from pydantic import TypeAdapter
 from sqlalchemy import select, text
 
 from studio.apps.visual_workshop.acceptance.snapshots import export_acceptance
+from studio.apps.visual_workshop.creative_assets import scene_model_assets
+from studio.apps.visual_workshop.creative_snapshots import export_creative_workflow
 from studio.apps.visual_workshop.outputs.snapshots import export_outputs
+from studio.apps.visual_workshop.previs_scenes import export_scenes
 from studio.apps.visual_workshop.project_values import project_out
 from studio.apps.visual_workshop.projects import Projects
 from studio.apps.visual_workshop.schemas.workshop import default_material_categories
@@ -130,16 +133,22 @@ class SnapshotExports:
             )
         )
         project_values = {"title": project.title, "kind": project.kind, "status": project.status}
+        creative = await export_creative_workflow(self.session, project_id)
+        scenes = await export_scenes(self.session, project_id)
+        used.update(key for scene in scenes for key in scene_model_assets(scene["document"]))
         payload = {
+            **creative,
             "schema_version": 1,
             "project": project_values,
             "canvas": {
                 "nodes": nodes,
                 "edges": deepcopy(canvas.edges or []),
+                "groups": deepcopy(canvas.groups or []),
                 "categories": canvas.categories
                 or [item.model_dump(mode="json") for item in default_material_categories()],
             },
             "outputs": outputs,
+            "previs_scenes": scenes,
             "acceptance": acceptance,
         }
         source = project_out(project).model_dump(mode="json")

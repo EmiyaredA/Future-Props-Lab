@@ -147,14 +147,16 @@ test.each([0.5, 1, 2])(
     const { container } = renderCanvas();
 
     expect(await screen.findByText("视频1")).toBeInTheDocument();
-    const world = container.querySelector<HTMLElement>(".visual-canvas-world")!;
-    expect(world.style.getPropertyValue("--canvas-ui-scale")).toBe(
+    const surface = container.querySelector<HTMLElement>(
+      ".visual-canvas-surface",
+    )!;
+    expect(surface.style.getPropertyValue("--canvas-ui-scale")).toBe(
       String(1 / zoom),
     );
-    expect(world.style.getPropertyValue("--canvas-media-actions-top")).toBe(
+    expect(surface.style.getPropertyValue("--canvas-media-actions-top")).toBe(
       `${-43 / zoom}px`,
     );
-    expect(world.style.getPropertyValue("--canvas-inspector-gap")).toBe(
+    expect(surface.style.getPropertyValue("--canvas-inspector-gap")).toBe(
       `${22 / zoom}px`,
     );
 

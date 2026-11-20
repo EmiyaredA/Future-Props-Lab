@@ -163,9 +163,12 @@ from studio.apps.visual_workshop.acceptance.models import (
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import (
+    VisualAssetCard,
     VisualCanvasDocument,
     VisualGenerationBatch,
     VisualGenerationTask,
+    VisualPrevisScene,
+    VisualScript,
     VisualWorkshopProject,
 )
 from studio.runtime.database.orm_base import Base
@@ -233,6 +236,9 @@ _ = (
     VideoEditorTimeline,
     MotionDocument,
     VisualCanvasDocument,
+    VisualPrevisScene,
+    VisualScript,
+    VisualAssetCard,
     VisualNodeOutput,
     AcceptanceAssetReference,
     GalgameAssetMetadata,

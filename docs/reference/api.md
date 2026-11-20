@@ -430,7 +430,16 @@ OpenAPI 或执行定时健康检查。
 `generation_draft`，分别保存节点级提示词、模型、生成参数与参考素材选择；草稿允许尚未满足生成
 条件，但仍校验字段范围、素材数量、媒体类型和项目归属。图片和视频草稿的
 `prompt_reference_names` 保存素材 ID 到“画布节点标题 + 真实后缀”的局部提示词别名；它不修改
-文件库名称，旧草稿缺少该字段时按空映射处理。`PUT` 必须携带
+文件库名称，旧草稿缺少该字段时按空映射处理。
+视频草稿的 `reference_subjects` 按 `asset:<素材 ID>` 或 `edge:<连线 ID>` 保存英文追踪目标；
+`null` 表示旧逗号分隔参数，空映射表示显式清除。`reference_order` 保存同样身份组成的图片顺序。
+关联生成在解析固定或最终输出后按该顺序组装图片和 `video_subject_to_replace`，跟随输出更新不保留旧图片。
+两字段沿用画布 CAS；旧客户端省略时保留已存内容，显式传入可覆盖。SDK 的画布方法使用相同字段。
+画布文档的 `groups` 保存单层编组及其成员 ID，`project_card_ids` 保存项目常用设定卡 ID。
+SDK 的 `visual.get_canvas` 和 `visual.put_canvas` 可读取和按版本更新这两个字段。CLI 使用相同的
+画布操作契约。省略字段会保留已保存的值。视频草稿的 `design_references` 保存卡片版本与对应的
+项目参考图。可移植快照保留编组和参考图，导入后可重新关联账号设定卡。
+`PUT` 必须携带
 `expected_revision`；冲突返回服务器画布快照，Web 不会静默覆盖。媒体节点创建生成任务后
 保存任务 ID，任务完成时把结果素材回填到原节点，同时保留原生成草稿。Web 对草稿文字使用画布
 自动保存，对素材和离散参数立即保存，并在创建生成任务前等待画布保存完成。上传文件本身立即进入
@@ -846,6 +855,13 @@ ZEALMAN 新提交使用应用独立实时连接，旧控制台客户端身份只
 - `GET /v1/files/{asset_id}/content`、`/download`：鉴权预览或下载原始内容；下载接口可传
   `download_name` 作为本次下载的显示名，服务端始终追加素材自身的真实后缀并清理路径字符。
 - `POST /v1/visual-workshop/projects/{project_id}/asset-imports`：批量导入公共库引用，或把其他视觉项目素材复制为当前项目的独立副本。
+- `GET/PUT /v1/visual-workshop/projects/{project_id}/script` 读取或更新按集、场排列的剧本。保存提交 `expected_revision`，空项目从 0 开始。每集与场保留稳定 ID，场正文和地点、人物、道具分别保存。
+- `GET/POST /v1/visual-workshop/asset-cards` 列出或新建账号通用的角色、场景和道具设定卡。`GET/PUT .../asset-cards/{card_id}` 读取或按版本更新、归档。兼容的项目路由读取同一套卡，新建时可验证来源剧本。采用图和模型限当前账号，响应标记原件所在项目或总文件。图片候选任务仍通过 `/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations` 进入任务队列，以请求 ID 安全重试。
+- `POST /v1/visual-workshop/asset-cards/regroup` 显式归组已有卡：提交 `main_card_id`、不重复的 `variant_ids`，以及包含主卡和所有变体的 `expected_revisions`。同账号、同类型的有效卡原子归组，保留卡片 ID 与自身采用图，父图记录主卡当前采用图；响应为主卡和变体的 `CardOut[]`。主卡必须没有父卡且已有采用图，归组卡的子卡也须同时提交。冲突返回 409，无效关系返回 422，其他账号的卡按不存在处理。SDK/CLI 方法为 `visual.regroup_account_asset_cards`。
+  CLI 和 SDK 通过 `visual.list_account_asset_cards`、`visual.get_account_asset_card`、`visual.create_account_asset_card` 和 `visual.put_account_asset_card` 操作账号设定库。兼容项目下的读取方法也在自动化操作清单中。网关应用同一账号读写权限，更新须传 `expected_revision`。项目原件可通过 `files.import_project_assets_to_library` 复制到账号文件库。
+- 3D 素材使用当前视觉项目作用域的 `/v1/files` 上传 `model/gltf-binary`。单个 GLB 上限 50 MiB，缓冲区和图片必须嵌入文件。读取模型文件须附当前视觉项目 ID。
+- `GET/POST /v1/visual-workshop/projects/{project_id}/previs-scenes` 列出或创建预演场景。场景包含标题、格式版本 1 与本地场景文档，从剧本创建时还可包含场 ID 和来源 revision。`GET/PUT/DELETE .../previs-scenes/{scene_id}` 读取、保存或删除。保存与删除须提交 `expected_revision`，过期返回 409。
+- `POST /v1/visual-workshop/projects/{project_id}/node-uploads` 可用 multipart 字段 `previs` 回填分镜图、四视图、逐镜片段和 MP4/WebM 的预演视频。填写请求 ID、场景 ID 与 revision、素材类别、可选原镜号以及 SHA-256。相同请求 ID 和相同来源/摘要可安全重试，成功返回当前画布。
 
 不带 `project_id` 的文件和文件夹属于 Studio 一级“文件管理”；带 `project_id` 的内容属于项目
 私有素材。项目导入公共文件时只建立引用，不复制磁盘内容；存在项目引用的公共文件或包含它的

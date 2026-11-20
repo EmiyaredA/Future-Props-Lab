@@ -10,7 +10,7 @@ from urllib.parse import unquote
 import httpx
 
 from .client import AsyncClient, Client
-from .errors import ApiError
+from .errors import ApiError, RevisionConflict
 
 MAX_MESSAGE = 2 * 1024 * 1024
 
@@ -46,7 +46,13 @@ class TaskConnection:
             problem = value["error"]
             if not isinstance(problem, dict):
                 problem = {"code": "task_tool_failed"}
-            raise ApiError(int(problem.pop("status", 403)), problem)
+            status = int(problem.pop("status", 403))
+            error = (
+                RevisionConflict
+                if status == 409 and problem.get("code") == "revision_conflict"
+                else ApiError
+            )
+            raise error(status, problem)
         result = value["result"]
         if isinstance(result, dict) and "waiting_approval" in result:
             raise WaitingApproval(result["waiting_approval"])
@@ -104,7 +110,15 @@ class TaskTransport(httpx.BaseTransport):
             raw = request.read()
             if raw and "application/json" not in request.headers.get("content-type", ""):
                 raise ValueError("任务 SDK 当前仅支持 JSON 操作；文件通过会话文件工具交付")
-            arguments = {"path_params": parameters, "query": dict(request.url.params)}
+            query = {}
+            for key, value in request.url.params.multi_items():
+                if key not in query:
+                    query[key] = value
+                elif isinstance(query[key], list):
+                    query[key].append(value)
+                else:
+                    query[key] = [query[key], value]
+            arguments = {"path_params": parameters, "query": query}
             if raw:
                 arguments["body"] = json.loads(raw)
             result = self.connection.call("call", {"operation": item["id"], "arguments": arguments})

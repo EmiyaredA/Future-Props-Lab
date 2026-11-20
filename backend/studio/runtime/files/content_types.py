@@ -45,6 +45,7 @@ def looks_like(extension: str, head: bytes) -> bool:
         ".otf": head.startswith(b"OTTO"),
         ".woff": head.startswith(b"wOFF"),
         ".woff2": head.startswith(b"wOF2"),
+        ".glb": head.startswith(b"glTF"),
         ".pdf": head.startswith(b"%PDF-"),
     }
     return checks.get(extension, False)

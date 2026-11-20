@@ -1,3 +1,4 @@
+import { designKind } from "./designCategories";
 import { useState } from "react";
 import { Tags } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -60,14 +61,20 @@ export function NodeMetadata({
               }
               options={[
                 { value: "", label: "未分类" },
-                ...categories.map((category) => ({
-                  value: category.id,
-                  label: category.name,
-                })),
+                ...categories
+                  .filter(
+                    (entry) =>
+                      !designKind(entry) || entry.id === node.category_id,
+                  )
+                  .map((category) => ({
+                    value: category.id,
+                    label: category.name,
+                  })),
               ]}
             />
             <CustomSelect
               ariaLabel="节点分组"
+              disabled={Boolean(designKind(category))}
               value={node.group ?? ""}
               onChange={(value) =>
                 onPatch(node.id, { group: value || null }, true)

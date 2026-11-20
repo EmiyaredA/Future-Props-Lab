@@ -1,0 +1,28 @@
+.project-asset-tabs {
+  flex-wrap: wrap;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.project-asset-tabs button {
+  white-space: nowrap;
+}
+
+.project-asset-tabs button[data-import-start] {
+  margin-inline-start: auto;
+}
+
+.project-asset-tabs button:focus-visible {
+  outline-offset: -3px;
+}
+
+@media (max-width: 720px) {
+  .project-asset-tabs button {
+    min-height: 44px;
+    padding-inline: 8px;
+  }
+
+  .project-asset-tabs button[data-import-start] {
+    margin-inline-start: 0;
+  }
+}

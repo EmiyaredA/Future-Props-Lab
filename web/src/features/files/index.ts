@@ -5,6 +5,7 @@ export {
   type AssetBrowserSourceProject,
 } from "./AssetBrowser";
 export { FileManagementPage } from "./FileManagementPage";
+export { ReadOnlyFiles } from "./ReadOnlyFiles";
 export {
   createFolder,
   deleteFolder,

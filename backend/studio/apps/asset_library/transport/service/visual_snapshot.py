@@ -3,16 +3,27 @@
 import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
+from sqlalchemy import select
 
-from studio.apps.asset_library.visual.visual_snapshot_files import metadata, originals
+from studio.apps.asset_library.scoped_project_files import check_project_scope
+from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.visual.visual_snapshot_files import (
+    metadata,
+    originals,
+    scoped_assets,
+)
+from studio.contracts.asset_library.descriptions import LibraryAssetDescription, LibraryAssetQuery
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
 from studio.contracts.motion_compositor.motion_snapshot import SnapshotScope
 from studio.contracts.visual_workshop.visual_snapshot import (
     ASSETS,
+    CARD_MEDIA,
+    CardMediaDescription,
     SnapshotAssetQuery,
     SnapshotFiles,
     asset_target,
+    card_media_target,
 )
 from studio.runtime.http.framed_media import content_length, stream_files
 
@@ -22,7 +33,7 @@ router = APIRouter(include_in_schema=False)
 async def authorize(request, digest, expected):
     path = request.url.path
     if (
-        asset_target("POST", path) is None
+        not (asset_target("POST", path) or card_media_target("POST", path))
         or "cookie" in request.headers
         or "origin" in request.headers
         or digest != expected
@@ -46,12 +57,65 @@ async def authorize(request, digest, expected):
     return actor.user_id
 
 
+@router.post(CARD_MEDIA + "/{digest}", response_model=list[CardMediaDescription])
+async def card_media_selection(request: Request, digest: str, body: LibraryAssetQuery):
+    owner = await authorize(request, digest, body.digest)
+    if not 1 <= len(body.asset_ids) <= 500:
+        raise HTTPException(422, "visual_asset_selection_size")
+    async with request.app.state.database.sessions(info={"owner_user_id": owner}) as session:
+        rows = await session.scalars(
+            select(VisualAsset).where(
+                VisualAsset.owner_user_id == owner,
+                VisualAsset.id.in_(body.asset_ids),
+                VisualAsset.galgame_project_id.is_(None),
+                VisualAsset.video_editor_project_id.is_(None),
+                VisualAsset.motion_compositor_project_id.is_(None),
+            )
+        )
+        return [
+            CardMediaDescription(
+                id=row.id,
+                project_id=row.project_id,
+                media_kind=row.media_kind,
+                mime_type=row.mime_type,
+            )
+            for row in rows
+        ]
+
+
 @router.post(ASSETS + "/{project_id}/metadata/{digest}", response_model=SnapshotFiles)
 async def visual_metadata(request: Request, project_id: str, digest: str, body: SnapshotAssetQuery):
     owner = await authorize(request, digest, body.digest)
     state = request.app.state
     async with state.database.sessions(info={"owner_user_id": owner}) as session:
         return await metadata(session, state.settings, project_id, body)
+
+
+@router.post(
+    ASSETS + "/{project_id}/selection/{digest}", response_model=list[LibraryAssetDescription]
+)
+async def visual_asset_selection(
+    request: Request, project_id: str, digest: str, body: LibraryAssetQuery
+):
+    owner = await authorize(request, digest, body.digest)
+    if not 1 <= len(body.asset_ids) <= 500:
+        raise HTTPException(422, "visual_asset_selection_size")
+    state = request.app.state
+    async with state.database.sessions(info={"owner_user_id": owner}) as session:
+        await check_project_scope(session, "visual", project_id)
+        rows = await scoped_assets(session, project_id, body.asset_ids, include_private=False)
+        return [
+            LibraryAssetDescription(
+                id=row.id,
+                original_filename=row.original_filename,
+                mime_type=row.mime_type,
+                media_kind=row.media_kind,
+                byte_size=row.byte_size,
+                revision=row.revision,
+            )
+            for row, _ in rows
+            if row.mime_type != "model/gltf-binary" or row.project_id == project_id
+        ]
 
 
 @router.post(ASSETS + "/{project_id}/originals/{digest}")

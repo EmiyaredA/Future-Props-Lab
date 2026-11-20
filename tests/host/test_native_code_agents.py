@@ -160,7 +160,8 @@ async def test_native_amadeus_calls_backend_tools_and_records_events(native_cli,
                     "total_tokens": 20,
                 },
                 "dsh": {"context_used": 25, "context_limit": 1000},
-                "opencode": {"input_tokens": 22, "output_tokens": 5, "cached_input_tokens": 0},
+                # Interactive OpenCode uses ACP, which reports context occupancy.
+                "opencode": {"context_used": 25, "context_limit": 1000},
             }[kind]
         )
         if kind != "pi":

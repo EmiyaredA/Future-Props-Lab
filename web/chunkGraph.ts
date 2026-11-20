@@ -4,11 +4,43 @@ import type { GetManualChunk } from "rollup";
  * A directory split would create artificial cycles between renderers and scene objects.
  */
 export function assistantRenderingChunks(): GetManualChunk {
+  return dependencyChunks(
+    (key) =>
+      key.includes("/node_modules/pixi.js/") ||
+      key.includes("/node_modules/earcut/"),
+    "assistant-rendering",
+  );
+}
+
+export function trumanMapChunks(): GetManualChunk {
+  const editorScripts = dependencyChunks(
+    (key) =>
+      key.includes("/vendor/toonflow/truman-map/") &&
+      !key.includes("?vue&type=style") &&
+      !key.endsWith("/sceneDocument.ts"),
+    "truman-map",
+  );
+  return (id, context) => {
+    if (id.includes("/element-plus/theme-chalk/"))
+      return "truman-controls-style";
+    if (
+      id.includes("/vendor/toonflow/truman-map/") &&
+      id.includes("?vue&type=style")
+    ) {
+      return id.includes("/sceneStudio.vue?")
+        ? "truman-stage-style"
+        : "truman-tools-style";
+    }
+    return editorScripts(id, context);
+  };
+}
+
+function dependencyChunks(
+  owns: (key: string) => boolean,
+  name: string,
+): GetManualChunk {
   let chunks: Map<string, string> | undefined;
   return (id, context) => {
-    const owns = (key: string) =>
-      key.includes("/node_modules/pixi.js/") ||
-      key.includes("/node_modules/earcut/");
     if (!owns(id)) return;
     if (!chunks) {
       const all = new Set([...context.getModuleIds()].filter(owns));
@@ -57,9 +89,7 @@ export function assistantRenderingChunks(): GetManualChunk {
           group++;
           bytes = 0;
         }
-        members.forEach((key) =>
-          chunks!.set(key, `assistant-rendering-${group}`),
-        );
+        members.forEach((key) => chunks!.set(key, `${name}-${group}`));
         bytes += size;
       }
     }

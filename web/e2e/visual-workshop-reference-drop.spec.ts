@@ -61,22 +61,20 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto(`/apps/visual-workshop/projects/${id}/canvas`);
     await page.getByRole("button", { name: "看板", exact: true }).click();
     await setResponsiveTheme(page, theme);
-    await page.getByRole("button", { name: "全能参考", exact: true }).click();
+    await page.getByRole("combobox", { name: "视频生成方式" }).click();
+    await page.getByRole("option", { name: "全能参考", exact: true }).click();
     const source = page.getByRole("button", { name: /参考角色.*最终/ });
     await expect(source).toHaveAttribute("draggable", "true");
     const bar = page.getByRole("group", { name: "固定参考素材" });
-    await expect(
-      bar.getByRole("button", { name: "上传参考音频" }),
-    ).toBeEnabled();
-    const addImage = bar.getByRole("button", { name: "上传参考图片" });
+    const addImage = page.getByRole("button", { name: "添加参考素材" });
+    await expect(addImage).toBeEnabled();
     const beforeDrop = (await addImage.boundingBox())!;
-    await source.dragTo(bar.getByRole("button", { name: "上传参考音频" }));
+    await source.dragTo(bar);
     await expect(
       bar.getByRole("button", { name: "参考角色", exact: true }),
     ).toBeVisible();
     const afterDrop = (await addImage.boundingBox())!;
     expect(afterDrop.height).toBeCloseTo(beforeDrop.height, 0);
-    expect(afterDrop.height).toBeCloseTo(afterDrop.width, 0);
     await expect(page.getByRole("textbox", { name: "节点名称" })).toHaveValue(
       "生成目标",
     );
@@ -123,12 +121,11 @@ for (const theme of ["light", "dark"] as const) {
       .getByRole("button", { name: "选择视频素材" })
       .click();
     await page.getByRole("tab", { name: "生成设置", exact: true }).click();
-    const canvasAdd = page
-      .getByRole("group", { name: "固定参考素材" })
-      .getByRole("button", { name: "上传参考图片" });
+    const canvasAdd = page.getByRole("button", { name: "添加参考素材" });
     await expect(canvasAdd).toBeVisible();
-    const canvasBounds = (await canvasAdd.boundingBox())!;
-    expect(canvasBounds.height).toBeCloseTo(canvasBounds.width, 0);
+    await expect(
+      page.getByRole("region", { name: "参考素材", exact: true }),
+    ).toBeVisible();
     await page.screenshot({ path: info.outputPath("canvas-reference.png") });
   });
 }

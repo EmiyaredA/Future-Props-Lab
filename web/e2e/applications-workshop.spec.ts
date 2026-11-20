@@ -296,7 +296,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await expect(page.getByRole("heading", { name: "项目素材库" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "总文件" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "跨项目" })).toBeVisible();
-  await page.getByRole("button", { name: "返回画布" }).click();
+  await page.getByRole("button", { name: "前往画布" }).click();
   await page.reload();
   await expect(page.getByText("未命名项目")).toBeVisible();
   const canvasSaved = page.waitForResponse(

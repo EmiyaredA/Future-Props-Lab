@@ -5,13 +5,21 @@ import { THEME_KEY } from "../src/shared/ui/theme";
 export async function setResponsiveTheme(page: Page, theme: string) {
   await page.evaluate(
     ({ theme, key }) => {
+      const root = document.documentElement;
+      root.setAttribute("data-theme-changing", "");
       localStorage.setItem(key, theme);
       window.dispatchEvent(
         new StorageEvent("storage", { key, newValue: theme }),
       );
       document.documentElement.dataset.theme = theme;
+      void root.offsetHeight;
       return new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            root.removeAttribute("data-theme-changing");
+            resolve();
+          }),
+        ),
       );
     },
     { theme, key: THEME_KEY },

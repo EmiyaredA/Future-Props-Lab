@@ -41,6 +41,7 @@ export type WorkshopPage =
   | "visual-workshop-projects"
   | "visual-workshop-canvas"
   | "visual-workshop-assets"
+  | "visual-workshop-card-library"
   | "visual-workshop-tasks"
   | "galgame-workshop-projects"
   | "galgame-workshop-overview"
@@ -229,7 +230,8 @@ export function pathFor(
       : studioPaths["creative-workshop-detail"],
     "visual-workshop-projects": "/apps/visual-workshop",
     "visual-workshop-canvas": "/apps/visual-workshop",
-    "visual-workshop-assets": "/apps/visual-workshop",
+    "visual-workshop-assets": "/apps/visual-workshop/assets",
+    "visual-workshop-card-library": "/apps/visual-workshop/card-library",
     "visual-workshop-tasks": "/apps/visual-workshop/tasks",
     "galgame-workshop-projects": "/apps/galgame-workshop",
     "galgame-workshop-overview": "/apps/galgame-workshop",

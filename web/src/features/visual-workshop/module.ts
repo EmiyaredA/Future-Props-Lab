@@ -1,5 +1,5 @@
 import { VISUAL_WORKSHOP_DEFINITION } from "@features/applications";
-import { Box, ListChecks } from "lucide-react";
+import { Box, FolderOpen, Library, ListChecks } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const visualWorkshopModule = {
@@ -15,6 +15,18 @@ const visualWorkshopModule = {
         label: "项目工作台",
         icon: Box,
         activePages: ["visual-workshop-projects"],
+      },
+      {
+        page: "visual-workshop-assets",
+        label: "项目素材库",
+        icon: FolderOpen,
+        activePages: ["visual-workshop-assets"],
+      },
+      {
+        page: "visual-workshop-card-library",
+        label: "设定库",
+        icon: Library,
+        activePages: ["visual-workshop-card-library"],
       },
       {
         page: "visual-workshop-tasks",
@@ -36,6 +48,10 @@ const visualWorkshopModule = {
             : "visual-workshop-assets",
         projectId: decodeURIComponent(project[1]),
       };
+    if (/^\/apps\/visual-workshop\/assets\/?$/.test(pathname))
+      return { page: "visual-workshop-assets" };
+    if (/^\/apps\/visual-workshop\/card-library\/?$/.test(pathname))
+      return { page: "visual-workshop-card-library" };
     if (pathname.startsWith("/apps/visual-workshop/tasks"))
       return { page: "visual-workshop-tasks" };
     if (pathname.startsWith("/apps/visual-workshop"))
@@ -45,9 +61,13 @@ const visualWorkshopModule = {
   pathFor(page: string, projectId?: string) {
     if (page === "visual-workshop-canvas" && projectId)
       return `/apps/visual-workshop/projects/${encodeURIComponent(projectId)}/canvas`;
-    if (page === "visual-workshop-assets" && projectId)
-      return `/apps/visual-workshop/projects/${encodeURIComponent(projectId)}/assets`;
+    if (page === "visual-workshop-assets")
+      return projectId
+        ? `/apps/visual-workshop/projects/${encodeURIComponent(projectId)}/assets`
+        : "/apps/visual-workshop/assets";
     if (page === "visual-workshop-tasks") return "/apps/visual-workshop/tasks";
+    if (page === "visual-workshop-card-library")
+      return "/apps/visual-workshop/card-library";
     if (page === "visual-workshop-projects") return "/apps/visual-workshop";
     return undefined;
   },
@@ -64,6 +84,10 @@ const visualWorkshopModule = {
       import("@features/visual-workshop/assets").then((module) => ({
         default: module.VisualWorkshopAssetsPage,
       })),
+    assetProjects: () =>
+      import("@features/visual-workshop/assets/AssetProjectPicker"),
+    cardLibrary: () =>
+      import("@features/visual-workshop/creative/CardLibraryPage"),
     tasks: () =>
       import("@features/visual-workshop/generation").then((module) => ({
         default: module.VisualWorkshopTasksPage,

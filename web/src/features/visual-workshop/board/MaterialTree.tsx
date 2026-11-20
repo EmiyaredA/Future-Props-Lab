@@ -1,3 +1,4 @@
+import { designKind } from "./designCategories";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { ChevronRight, Folder } from "lucide-react";
 import type { VisualCanvasNode, VisualMaterialCategory } from "../api";
@@ -127,6 +128,8 @@ export function MaterialTree({
         const entries = nodes.filter(
           (node) => node.category_id === category.id,
         );
+        const legacy = Boolean(designKind(category));
+        if (legacy && !entries.length) return null;
         const groups = [
           ...new Set([
             ...(category.groups ?? []),
@@ -142,7 +145,9 @@ export function MaterialTree({
               <summary>
                 <ChevronRight size={14} />
                 <Folder size={14} />
-                <span>{category.name}</span>
+                <span>
+                  {legacy ? `${category.name} · 旧素材` : category.name}
+                </span>
                 <small>{entries.length}</small>
               </summary>
               {!groups.length ? (
@@ -178,36 +183,38 @@ export function MaterialTree({
                 </>
               )}
             </details>
-            <div className="board-category-menu">
-              <BoardMenu
-                label={`管理分类 ${category.name}`}
-                items={[
-                  ...(onUpload
-                    ? [
-                        {
-                          label: "上传到此分类",
-                          disabled: uploadDisabled,
-                          onSelect: () => onUpload(category.id),
-                        },
-                      ]
-                    : []),
-                  {
-                    label: "新建分组",
-                    onSelect: () =>
-                      onAction({ kind: "group", categoryId: category.id }),
-                  },
-                  {
-                    label: "编辑分类",
-                    onSelect: () =>
-                      onAction({
-                        kind: "rename",
-                        categoryId: category.id,
-                        initialValue: category.name,
-                      }),
-                  },
-                ]}
-              />
-            </div>
+            {!legacy && (
+              <div className="board-category-menu">
+                <BoardMenu
+                  label={`管理分类 ${category.name}`}
+                  items={[
+                    ...(onUpload
+                      ? [
+                          {
+                            label: "上传到此分类",
+                            disabled: uploadDisabled,
+                            onSelect: () => onUpload(category.id),
+                          },
+                        ]
+                      : []),
+                    {
+                      label: "新建分组",
+                      onSelect: () =>
+                        onAction({ kind: "group", categoryId: category.id }),
+                    },
+                    {
+                      label: "编辑分类",
+                      onSelect: () =>
+                        onAction({
+                          kind: "rename",
+                          categoryId: category.id,
+                          initialValue: category.name,
+                        }),
+                    },
+                  ]}
+                />
+              </div>
+            )}
           </div>
         );
       })}

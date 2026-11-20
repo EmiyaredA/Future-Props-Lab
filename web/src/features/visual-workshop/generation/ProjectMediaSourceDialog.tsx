@@ -17,7 +17,8 @@ import { getVisualWorkshopProjects } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { GenerationMediaPreview } from "@features/visual-workshop/generation/GenerationMediaPreview";
 import { apiErrorMessage } from "@platform/api/errors";
-import { CustomSelect } from "@shared/ui/CustomSelect";
+import { SearchablePickerField } from "@shared/ui/SearchablePickerDialog";
+import { keepPickerEscapeLocal } from "@shared/ui/pickerKeyboard";
 import { isCanvasMediaKind } from "../canvas/canvasAssetDrag";
 
 type PickerMode = "project" | "cross" | "board";
@@ -111,14 +112,15 @@ export function ProjectMediaSourceDialog({
   const libraryPath =
     source === "library" ? pathToFolder(libraryFolderId, libraryFolders) : [];
   const activeFolderId = libraryPath.at(-1)?.id;
+  const normalized = query.trim().toLocaleLowerCase("zh-CN");
   const folderIds = useMemo(
     () =>
       folders.isSuccess
-        ? source === "library"
+        ? source === "library" && !normalized
           ? [activeFolderId]
           : [undefined, ...folders.data.items.map((folder) => folder.id)]
         : [],
-    [activeFolderId, folders.data, folders.isSuccess, source],
+    [activeFolderId, folders.data, folders.isSuccess, source, normalized],
   );
   const fileQueries = useQueries({
     queries: folderIds.map((folderId) => ({
@@ -154,9 +156,10 @@ export function ProjectMediaSourceDialog({
         left.display_name.localeCompare(right.display_name, "zh-CN"),
       );
   }, [fileQueries, excludedAssetIds, mode]);
-  const normalized = query.trim().toLocaleLowerCase("zh-CN");
   const files = available.filter((file) =>
-    file.display_name.toLocaleLowerCase("zh-CN").includes(normalized),
+    [file.display_name, file.original_filename].some((name) =>
+      name?.toLocaleLowerCase("zh-CN").includes(normalized),
+    ),
   );
   const childFolders =
     source === "library"
@@ -164,7 +167,7 @@ export function ProjectMediaSourceDialog({
           .filter(
             (folder) =>
               folder.parent_id === (activeFolderId ?? null) &&
-              folder.name.toLocaleLowerCase("zh-CN").includes(normalized),
+              folder.name?.toLocaleLowerCase("zh-CN").includes(normalized),
           )
           .sort((left, right) => left.name.localeCompare(right.name, "zh-CN"))
       : [];
@@ -236,7 +239,7 @@ export function ProjectMediaSourceDialog({
       importMutation.mutate();
       return;
     }
-    const byId = new Map(files.map((file) => [file.id, file]));
+    const byId = new Map(available.map((file) => [file.id, file]));
     onConfirm(
       selected,
       selected.flatMap((assetId) => {
@@ -257,6 +260,7 @@ export function ProjectMediaSourceDialog({
         <Dialog.Content
           className="generation-source-dialog"
           aria-describedby={undefined}
+          onEscapeKeyDown={keepPickerEscapeLocal}
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             searchInput.current?.focus();
@@ -312,11 +316,13 @@ export function ProjectMediaSourceDialog({
                 ))}
               </div>
               {source === "project" ? (
-                <label>
+                <div className="generation-source-project">
                   <span>来源项目</span>
-                  <CustomSelect
-                    ariaLabel="来源项目"
+                  <SearchablePickerField
+                    title="来源项目"
+                    searchLabel="搜索项目"
                     value={sourceProjectId}
+                    placeholder="暂无其他项目"
                     disabled={
                       importMutation.isPending ||
                       projects.isLoading ||
@@ -327,16 +333,13 @@ export function ProjectMediaSourceDialog({
                       changeSelection([]);
                       setQuery("");
                     }}
-                    options={
-                      sourceProjects.length === 0
-                        ? [{ value: "", label: "暂无其他项目", disabled: true }]
-                        : sourceProjects.map((project) => ({
-                            value: project.id,
-                            label: project.title,
-                          }))
-                    }
+                    items={sourceProjects.map(({ id, title }) => ({
+                      id,
+                      label: title,
+                      icon: "folder",
+                    }))}
                   />
-                </label>
+                </div>
               ) : null}
             </div>
           ) : null}
@@ -347,7 +350,7 @@ export function ProjectMediaSourceDialog({
               ref={searchInput}
               type="search"
               value={query}
-              placeholder={source === "library" ? "搜索当前文件夹" : "搜索素材"}
+              placeholder="搜索素材文件名"
               aria-label="搜索素材"
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -454,10 +457,7 @@ export function ProjectMediaSourceDialog({
                       onClick={() => toggle(file.id)}
                     >
                       <span className="generation-source-preview">
-                        <GenerationMediaPreview
-                          file={file}
-                          thumbnailOnly={mode === "board"}
-                        />
+                        <GenerationMediaPreview file={file} thumbnailOnly />
                       </span>
                       <span title={file.display_name}>{file.display_name}</span>
                       {checked ? <Check aria-hidden /> : null}

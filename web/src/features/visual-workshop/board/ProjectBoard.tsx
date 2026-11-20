@@ -1,10 +1,22 @@
+import { BoardNodeEditor } from "./BoardNodeEditor";
 import { AmadeusButton } from "@platform/AmadeusButton";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { invalidateFileScope, type ManagedFile } from "@features/files";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { apiErrorMessage } from "@platform/api/errors";
+import { CommonDesignCards } from "./CommonDesignCards";
+import { designKind } from "./designCategories";
+import { DesignCardPicker } from "../creative/DesignCardPicker";
+import {
+  cardsKey,
+  createCard,
+  type Card,
+  type CardKind,
+} from "../creative/api";
+import { resolveDesignImage } from "../creative/cardMedia";
 import { useQuery } from "@tanstack/react-query";
 import {
   ArrowLeft,
@@ -21,7 +33,6 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
-import { CanvasNodeInspector } from "../canvas/CanvasNodeInspector";
 import { CanvasAssetsDrawer } from "../canvas/CanvasAssetsDrawer";
 import { isCanvasMediaKind } from "../canvas/canvasAssetDrag";
 import { batchInsertionAnchor, placeNode } from "../canvas/canvasPlacement";
@@ -35,14 +46,15 @@ import {
   type MaterialUploadDestination,
 } from "../api";
 import { visualWorkshopQueryKeys } from "../queryKeys";
-import { nodeStatus, nodeTypeNames, type BoardController } from "./boardTypes";
-import { InputReferences } from "./InputReferences";
+import {
+  nodeStatus,
+  nodeTypeNames,
+  type ProjectBoardProps,
+} from "./boardTypes";
 import { OutputHistory } from "./OutputHistory";
 import { BoardMenu } from "./BoardMenu";
 import { MaterialTree, type TreeAction } from "./MaterialTree";
 import { MaterialUpload } from "./MaterialUpload";
-import { TextWorkbench } from "./TextWorkbench";
-import { NodeMetadata } from "./NodeMetadata";
 import {
   NodeManagementMenu,
   type NodeManagementAction,
@@ -53,34 +65,41 @@ import { statusIcons, statusKeys, typeIcons } from "./boardPresentation";
 import { GenerationSpinner } from "../generation/GenerationActivity";
 import type { VisualCanvasNode, VisualNodeOutput } from "../api";
 import "./project-board.css";
+import "./board-design-cards.css";
 import "./workbench.css";
 import "./status-board.css";
+
+const ProjectAssetCardEditor = lazy(() =>
+  import("../creative/AssetCards").then(({ AssetCards }) => ({
+    default: AssetCards,
+  })),
+);
 
 export function ProjectBoard({
   controller: c,
   onCanvas,
+  onPrevis,
+  onScript,
   onAcceptance,
   previews,
   onPreview,
   acceptanceEntry,
-}: {
-  acceptanceEntry?: {
-    nodeId: string;
-    output?: VisualNodeOutput;
-    entry: number;
-  };
-  controller: BoardController;
-  onCanvas: () => void;
-  onAcceptance?: (output?: VisualNodeOutput) => void;
-  previews: Record<string, VisualNodeOutput | undefined>;
-  onPreview: (nodeId: string, version?: VisualNodeOutput) => void;
-}) {
+}: ProjectBoardProps) {
   const transfer = useTransferProgress();
   const [nodeTab, setNodeTab] = useState<"content" | "generate" | "acceptance">(
     "generate",
   );
   const [tab, setTab] = useState<"workbench" | "status">("workbench");
   const [search, setSearch] = useState("");
+  const [cardPicker, setCardPicker] = useState<{
+    nodeId?: string;
+    kind?: CardKind;
+  }>();
+  const [viewCard, setViewCard] = useState<Card>();
+  const [cardRequest, setCardRequest] = useState<{
+    nodeId: string;
+    card: Card;
+  }>();
   const [action, setAction] = useState<TreeAction>();
   const [nodeAction, setNodeAction] = useState<{
     kind: "rename" | "delete";
@@ -182,6 +201,49 @@ export function ProjectBoard({
   const categories = c.canvasQuery.data?.categories ?? [];
   const selected =
     c.nodes.find((node) => node.id === c.selectedId) ?? c.nodes[0];
+  const addCards = (cards: Card[], legacyNodeId?: string) =>
+    c.replaceProjectCardIds(
+      [
+        ...new Set([
+          ...c.projectCardIdsRef.current,
+          ...cards.map(({ id }) => id),
+        ]),
+      ],
+      legacyNodeId && cards[0]
+        ? { nodeId: legacyNodeId, cardId: cards[0].id }
+        : undefined,
+    );
+  const selectedDesignKind = designKind(
+    categories.find(({ id }) => id === selected?.category_id),
+  );
+  const legacyKind =
+    selected?.kind === "image" && selected.asset_id
+      ? selectedDesignKind
+      : undefined;
+  async function createLegacyCard() {
+    if (
+      !legacyKind ||
+      selected?.kind !== "image" ||
+      !selected.asset_id ||
+      pending
+    )
+      return;
+    setPending(true);
+    setNotice("");
+    try {
+      const card = await createCard(c.projectId, {
+        title: selected.title,
+        kind: legacyKind,
+        adopted_asset_id: selected.asset_id,
+      });
+      c.client.setQueryData<Card[]>(cardsKey, (old) => [...(old ?? []), card]);
+      await addCards([card], selected.id);
+    } catch (error) {
+      setNotice(apiErrorMessage(error));
+    } finally {
+      setPending(false);
+    }
+  }
   const filtered = c.nodes.filter((node) =>
     `${node.title} ${(node.tags ?? []).join(" ")}`
       .toLowerCase()
@@ -430,6 +492,8 @@ export function ProjectBoard({
             <button className="active" aria-pressed="true">
               看板
             </button>
+            {onScript && <button onClick={onScript}>剧本</button>}
+            {onPrevis && <button onClick={onPrevis}>白模预演</button>}
           </div>
           <AmadeusButton />
           {onAcceptance && (
@@ -462,90 +526,206 @@ export function ProjectBoard({
             <Search size={16} />
             <input
               aria-label="搜索项目素材"
-              placeholder="搜索名称、标签…"
+              placeholder="搜索设定、名称、标签…"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
             />
           </label>
-          <div className="board-create-row">
-            <CustomSelect
-              value={newKind}
-              ariaLabel="新建节点类型"
-              onChange={setNewKind}
-              options={Object.entries(nodeTypeNames).map(([value, label]) => ({
-                value,
-                label,
-              }))}
+          <div className="board-material-content">
+            <CommonDesignCards
+              projectId={c.projectId}
+              ids={c.projectCardIds}
+              search={search}
+              canUse={selected?.kind === "video"}
+              disabled={!c.canvasReady || Boolean(c.conflict) || pending}
+              onAdd={(kind) => setCardPicker({ kind })}
+              onCreate={(kind) => {
+                setPending(true);
+                const label = {
+                  character: "人设",
+                  scene: "场景",
+                  prop: "道具",
+                }[kind];
+                void createCard(c.projectId, { kind, title: `新建${label}卡` })
+                  .then(async (card) => {
+                    c.client.setQueryData<Card[]>(cardsKey, (old) => [
+                      ...(old ?? []),
+                      card,
+                    ]);
+                    await addCards([card]);
+                    setViewCard(card);
+                  })
+                  .catch((error: unknown) => setNotice(apiErrorMessage(error)))
+                  .finally(() => setPending(false));
+              }}
+              sources={c.nodes}
+              onSource={select}
+              onUse={(card) => {
+                if (selected?.kind !== "video") return;
+                setTab("workbench");
+                setCardRequest({ nodeId: selected.id, card });
+              }}
+              onCanvas={(card) => {
+                setNotice("");
+                void (async () => {
+                  setPending(true);
+                  try {
+                    const id = await resolveDesignImage(
+                      c.client,
+                      c.projectId,
+                      card,
+                      c.nodesRef.current,
+                    );
+                    c.createMediaNodeFromAsset(
+                      {
+                        id,
+                        media_kind: "image",
+                        display_name: card.title,
+                        design_card_id: card.id,
+                        design_card_revision: card.revision,
+                      },
+                      c.getInsertionAnchor(),
+                    );
+                    await c.prepareCanvasForAgent();
+                    onCanvas();
+                  } catch (error) {
+                    setNotice(apiErrorMessage(error));
+                  } finally {
+                    setPending(false);
+                  }
+                })();
+              }}
+              onView={setViewCard}
+              onRemove={(card) => {
+                setNotice("");
+                void c
+                  .replaceProjectCardIds(
+                    c.projectCardIdsRef.current.filter((id) => id !== card.id),
+                  )
+                  .catch((error: unknown) => setNotice(apiErrorMessage(error)));
+              }}
             />
+            <h3 className="board-files-heading">项目文件</h3>
+            <div className="board-create-row">
+              <CustomSelect
+                value={newKind}
+                ariaLabel="新建节点类型"
+                onChange={setNewKind}
+                options={Object.entries(nodeTypeNames).map(
+                  ([value, label]) => ({
+                    value,
+                    label,
+                  }),
+                )}
+              />
+              <button
+                className="board-primary"
+                onClick={() =>
+                  c.createNode(newKind as keyof typeof nodeTypeNames)
+                }
+              >
+                <Plus size={15} /> 新建
+              </button>
+            </div>
             <button
-              className="board-primary"
-              onClick={() =>
-                c.createNode(newKind as keyof typeof nodeTypeNames)
-              }
+              className="board-upload"
+              disabled={c.upload.isPending || !c.canvasReady}
+              aria-expanded={!!uploadDestination}
+              onClick={() => {
+                setUploadDestination(
+                  uploadDestination
+                    ? undefined
+                    : {
+                        category_id: selectedDesignKind
+                          ? null
+                          : (selected?.category_id ?? null),
+                        group: selectedDesignKind
+                          ? null
+                          : (selected?.group ?? null),
+                      },
+                );
+              }}
             >
-              <Plus size={15} /> 新建
+              <Upload size={14} /> 上传素材
             </button>
-          </div>
-          <button
-            className="board-upload"
-            disabled={c.upload.isPending || !c.canvasReady}
-            aria-expanded={!!uploadDestination}
-            onClick={() => {
-              setUploadDestination(
-                uploadDestination
-                  ? undefined
-                  : {
-                      category_id: selected?.category_id ?? null,
-                      group: selected?.group ?? null,
-                    },
-              );
-            }}
-          >
-            <Upload size={14} /> 上传素材
-          </button>
-          {uploadDestination && (
-            <MaterialUpload
+            {uploadDestination && (
+              <MaterialUpload
+                projectId={c.projectId}
+                categories={categories.filter(
+                  (category) => !designKind(category),
+                )}
+                destination={uploadDestination}
+                disabled={c.upload.isPending || !c.canvasReady}
+                onChange={setUploadDestination}
+                onUpload={(files, destination) => {
+                  c.uploadPosition.current = undefined;
+                  c.upload.mutate({ files, destination });
+                }}
+                onAddFiles={addExistingMaterials}
+              />
+            )}
+            <MaterialTree
               projectId={c.projectId}
               categories={categories}
-              destination={uploadDestination}
-              disabled={c.upload.isPending || !c.canvasReady}
-              onChange={setUploadDestination}
-              onUpload={(files, destination) => {
-                c.uploadPosition.current = undefined;
-                c.upload.mutate({ files, destination });
-              }}
-              onAddFiles={addExistingMaterials}
+              nodes={filtered.filter(
+                (node) =>
+                  node.kind !== "image" ||
+                  !node.design_card_id ||
+                  !c.projectCardIds.includes(node.design_card_id),
+              )}
+              runningNodeIds={
+                new Set(
+                  c.nodes
+                    .filter(
+                      (node) =>
+                        nodeStatus(
+                          node,
+                          tasks.data ?? [],
+                          ready(node.id),
+                          batches.data ?? [],
+                        ) === "生成中",
+                    )
+                    .map((node) => node.id),
+                )
+              }
+              selectedId={selected?.id}
+              onSelect={select}
+              onAction={setAction}
+              onNodeAction={manageNode}
+              downloading={downloading}
+              onUpload={(categoryId) =>
+                setUploadDestination({ category_id: categoryId, group: null })
+              }
+              uploadDisabled={c.upload.isPending || !c.canvasReady}
+            />
+          </div>
+          {cardPicker && (
+            <DesignCardPicker
+              title={cardPicker.nodeId ? "关联已有设定卡" : "从设定库添加"}
+              kind={cardPicker.kind}
+              exclude={cardPicker.nodeId ? [] : c.projectCardIds}
+              excludedLabel={cardPicker.nodeId ? undefined : "已添加到项目"}
+              confirmLabel={cardPicker.nodeId ? undefined : "添加到项目"}
+              onClose={() => setCardPicker(undefined)}
+              onChoose={(cards) => addCards(cards, cardPicker.nodeId)}
             />
           )}
-          <MaterialTree
-            projectId={c.projectId}
-            categories={categories}
-            nodes={filtered}
-            runningNodeIds={
-              new Set(
-                c.nodes
-                  .filter(
-                    (node) =>
-                      nodeStatus(
-                        node,
-                        tasks.data ?? [],
-                        ready(node.id),
-                        batches.data ?? [],
-                      ) === "生成中",
-                  )
-                  .map((node) => node.id),
-              )
-            }
-            selectedId={selected?.id}
-            onSelect={select}
-            onAction={setAction}
-            onNodeAction={manageNode}
-            downloading={downloading}
-            onUpload={(categoryId) =>
-              setUploadDestination({ category_id: categoryId, group: null })
-            }
-            uploadDisabled={c.upload.isPending || !c.canvasReady}
-          />
+          {viewCard && (
+            <Suspense
+              fallback={
+                <LoadingState variant="inline" label="正在打开设定卡" />
+              }
+            >
+              <ProjectAssetCardEditor
+                key={viewCard.id}
+                project={c.projectId}
+                fixedKind={viewCard.kind}
+                initialCardId={viewCard.id}
+                onCreated={(card) => addCards([card])}
+                onCloseCard={() => setViewCard(undefined)}
+              />
+            </Suspense>
+          )}
           <div className="board-material-footer">
             <button onClick={() => c.setAssetsOpen(true)}>
               <FolderOpen size={15} /> 导入 / 管理素材
@@ -601,6 +781,8 @@ export function ProjectBoard({
                   c.setNodes(c.conflict!.nodes);
                   c.nodesRef.current = c.conflict!.nodes;
                   c.setEdges(c.conflict!.edges);
+                  c.applyCanvasMetadata(c.conflict!);
+                  c.clearHistory();
                   c.edgesRef.current = c.conflict!.edges;
                   c.setConflict(undefined);
                   c.setSaveState("saved");
@@ -672,61 +854,46 @@ export function ProjectBoard({
                     }
                   />
                 </div>
-                <div
-                  className="board-generation-context"
-                  hidden={selected.kind === "video" && nodeTab === "acceptance"}
-                >
-                  <NodeMetadata
-                    node={selected}
-                    categories={categories}
-                    onPatch={c.patchNode}
-                    open={metadataNodeId === selected.id}
-                    onOpenChange={(open) =>
-                      setMetadataNodeId(open ? selected.id : undefined)
-                    }
-                  />
-                  <InputReferences controller={c} nodeId={selected.id} />
-                </div>
-                {selected.kind === "text" ? (
-                  <TextWorkbench controller={c} node={selected} />
-                ) : (
-                  <CanvasNodeInspector
-                    key={`${selected.id}:${acceptanceEntry?.nodeId === selected.id ? acceptanceEntry.entry : 0}`}
-                    initialTab={
-                      acceptanceEntry?.nodeId === selected.id
-                        ? "acceptance"
-                        : undefined
-                    }
-                    acceptanceOutput={
-                      previews[selected.id] ??
-                      (acceptanceEntry?.nodeId === selected.id
-                        ? acceptanceEntry.output
-                        : selected.final_output_id
-                          ? ({
-                              id: selected.final_output_id,
-                            } as VisualNodeOutput)
-                          : undefined)
-                    }
-                    onTabChange={setNodeTab}
-                    onAcceptanceTemplate={() => onAcceptance?.()}
-                    generating={selectedStatus === "生成中"}
-                    projectId={c.projectId}
-                    node={selected}
-                    onClose={() => undefined}
-                    onPatch={(patch, immediate) =>
-                      c.patchNode(selected.id, patch, immediate)
-                    }
-                    onPrepareCanvas={c.prepareCanvasForAgent}
-                    onTaskLinked={(taskId) =>
-                      c.linkGenerationTask(selected.id, taskId)
-                    }
-                    onBatchCreated={async () => {
-                      await c.canvasQuery.refetch();
-                    }}
-                    embedded
-                    generationLayout="workbench"
-                  />
-                )}
+                <BoardNodeEditor
+                  key={`${selected.id}:${acceptanceEntry?.nodeId === selected.id ? acceptanceEntry.entry : 0}`}
+                  controller={c}
+                  node={selected}
+                  categories={categories}
+                  nodeTab={nodeTab}
+                  onTabChange={setNodeTab}
+                  showMetadata={metadataNodeId === selected.id}
+                  onMetadataChange={(open) =>
+                    setMetadataNodeId(open ? selected.id : undefined)
+                  }
+                  legacyKind={legacyKind}
+                  pending={pending}
+                  onLegacyPick={() =>
+                    legacyKind &&
+                    setCardPicker({ nodeId: selected.id, kind: legacyKind })
+                  }
+                  onLegacyCreate={() => void createLegacyCard()}
+                  initialAcceptance={acceptanceEntry?.nodeId === selected.id}
+                  card={
+                    cardRequest?.nodeId === selected.id
+                      ? cardRequest.card
+                      : undefined
+                  }
+                  onCardHandled={() =>
+                    setCardRequest((current) =>
+                      current === cardRequest ? undefined : current,
+                    )
+                  }
+                  acceptanceOutput={
+                    previews[selected.id] ??
+                    (acceptanceEntry?.nodeId === selected.id
+                      ? acceptanceEntry.output
+                      : selected.final_output_id
+                        ? ({ id: selected.final_output_id } as VisualNodeOutput)
+                        : undefined)
+                  }
+                  generating={selectedStatus === "生成中"}
+                  onAcceptance={onAcceptance}
+                />
               </section>
               <OutputHistory
                 acceptanceMode={

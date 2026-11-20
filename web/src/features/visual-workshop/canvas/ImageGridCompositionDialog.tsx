@@ -1,3 +1,4 @@
+import { useBackdropDismiss } from "@shared/ui/useBackdropDismiss";
 import { LoadingScene } from "@shared/ui/LoadingScene";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
@@ -119,8 +120,15 @@ export function ImageGridCompositionDialog({
     }
   };
 
+  const backdrop = useBackdropDismiss(() => {
+    if (!busy) onClose();
+  });
   return (
-    <div className="image-grid-dialog-backdrop" role="presentation">
+    <div
+      className="image-grid-dialog-backdrop"
+      role="presentation"
+      {...backdrop}
+    >
       <section
         className="image-grid-dialog"
         role="dialog"

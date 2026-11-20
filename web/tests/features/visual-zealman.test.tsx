@@ -129,7 +129,8 @@ test("workbench model selector supports keyboard selection and exposes workflow-
     "min",
     "4",
   );
-  await user.click(screen.getByRole("button", { name: "全能参考" }));
+  await user.click(screen.getByRole("combobox", { name: "视频生成方式" }));
+  await user.click(screen.getByRole("option", { name: "全能参考" }));
   expect(
     screen.queryByRole("group", { name: "参考视频" }),
   ).not.toBeInTheDocument();

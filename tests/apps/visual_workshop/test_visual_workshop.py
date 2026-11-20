@@ -661,6 +661,9 @@ async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_a
             "prompt_versions": [{"id": "v1", "name": "v1", "prompt": "镜头缓慢推进"}],
             "active_prompt_version_id": "v1",
             "workflow_parameters": None,
+            "design_references": [],
+            "reference_subjects": None,
+            "reference_order": None,
         }
 
         structured_nodes = saved.json()["nodes"]

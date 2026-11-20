@@ -434,3 +434,41 @@ test("触控设备保留按钮和选色器的点击区域", async ({
   }
   await context.close();
 });
+
+test("演示文稿媒体选择弹窗可搜索文件，Esc 保留对象编辑窗", async ({ page }) => {
+  await create(page);
+  const csrf = (await page.context().cookies()).find(
+    ({ name }) => name === "fpl_csrf",
+  )!.value;
+  const uploaded = await page.request.post("/v1/files", {
+    headers: { "X-CSRF-Token": csrf, Origin: new URL(page.url()).origin },
+    multipart: {
+      upload: {
+        name: "雨夜封面.svg",
+        mimeType: "image/svg+xml",
+        buffer: Buffer.from(
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 50"><rect width="80" height="50" fill="#ebe2d1"/></svg>',
+        ),
+      },
+    },
+  });
+  expect(uploaded.ok(), await uploaded.text()).toBeTruthy();
+  const editor = await insert(page, "视频");
+  const trigger = editor.getByRole("button", { name: "视频封面", exact: true });
+  await trigger.click();
+  const picker = page.getByRole("dialog", {
+    name: "选择视频封面",
+    exact: true,
+  });
+  const search = picker.getByRole("searchbox", { name: "搜索视频封面" });
+  await expect(search).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(picker).toBeHidden();
+  await expect(editor).toBeVisible();
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await search.fill("雨夜");
+  await picker.getByRole("button", { name: "雨夜封面", exact: true }).click();
+  await picker.getByRole("button", { name: "确认选择" }).click();
+  await expect(trigger).toHaveText("雨夜封面");
+});

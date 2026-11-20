@@ -132,10 +132,11 @@ async def upload_material_node(
     y: Annotated[float, Form()] = 0,
     category_id: Annotated[str | None, Form(max_length=64)] = None,
     group: Annotated[str | None, Form(max_length=120)] = None,
+    previs: Annotated[str | None, Form(max_length=1024)] = None,
 ):
     try:
         return await Uploads.from_request(request, session, owner_user_id).material(
-            project_id, file, expected_revision, x, y, category_id, group
+            project_id, file, expected_revision, x, y, category_id, group, previs=previs
         )
     except (OutputError, VisualCanvasError) as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None

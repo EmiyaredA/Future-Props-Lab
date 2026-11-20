@@ -1,10 +1,11 @@
 import react from "@vitejs/plugin-react";
+import vue from "@vitejs/plugin-vue";
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   cacheDir: "node_modules/.vite-vitest",
-  plugins: [react()],
+  plugins: [react(), vue()],
   resolve: {
     dedupe: ["react", "react-dom"],
     alias: {

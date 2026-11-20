@@ -125,3 +125,38 @@ async def test_claude_keeps_stdin_open_and_waits_for_interrupted_result():
         "接续回复",
     ]
     assert messages[-1] == ("run_usage", {"output_tokens": 5})
+
+
+@pytest.mark.parametrize("phase", ["flush", "claim"])
+async def test_instruction_shutdown_waits_for_owned_transaction_after_repeated_cancel(phase):
+    from studio.host.agent_execution.cli.instruction_delivery import deliver_instructions
+
+    entered, release, committed = asyncio.Event(), asyncio.Event(), asyncio.Event()
+
+    async def owned():
+        entered.set()
+        await release.wait()
+        committed.set()
+
+    async def flush():
+        if phase == "flush":
+            await owned()
+
+    async def claim(_ready):
+        if phase == "claim":
+            await owned()
+
+    async def settle(_receipt):
+        raise AssertionError("Cancelled claim must not dispatch a model instruction")
+
+    task = asyncio.create_task(deliver_instructions(LiveInstructions(), claim, settle, flush))
+    await entered.wait()
+    task.cancel()
+    await asyncio.sleep(0)
+    task.cancel()
+    await asyncio.sleep(0)
+    assert not task.done()
+    release.set()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert committed.is_set()

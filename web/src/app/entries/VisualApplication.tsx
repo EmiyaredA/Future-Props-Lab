@@ -13,15 +13,12 @@ import { guardedNavigation } from "./navigation";
 const Canvas = lazy(visual.pages.canvas);
 const Projects = lazy(visual.pages.projects);
 const Assets = lazy(visual.pages.assets);
+const AssetProjects = lazy(visual.pages.assetProjects);
+const CardLibrary = lazy(visual.pages.cardLibrary);
 const Tasks = lazy(visual.pages.tasks);
 const ReadOnlyVisual = lazy(() =>
   import("@features/visual-workshop/ReadOnlyVisual").then((module) => ({
     default: module.ReadOnlyVisual,
-  })),
-);
-const ReadOnlyFiles = lazy(() =>
-  import("@features/files/ReadOnlyFiles").then((module) => ({
-    default: module.ReadOnlyFiles,
   })),
 );
 
@@ -66,7 +63,12 @@ function VisualWorkspace() {
     <WorkshopShell
       module={visual}
       page={page}
-      navigate={navigate}
+      navigate={(next) =>
+        navigate(
+          next,
+          next === "visual-workshop-assets" ? projectId : undefined,
+        )
+      }
       onBack={() => go("/apps")}
     >
       {page === "visual-workshop-tasks" ? (
@@ -75,16 +77,19 @@ function VisualWorkspace() {
           onOpenProject={openCanvas}
           onOpenAssets={openAssets}
         />
-      ) : page === "visual-workshop-assets" && projectId ? (
-        writable ? (
+      ) : page === "visual-workshop-card-library" ? (
+        <CardLibrary utilities={utilities} readOnly={!writable} />
+      ) : page === "visual-workshop-assets" ? (
+        !projectId ? (
+          <AssetProjects utilities={utilities} onOpen={openAssets} />
+        ) : (
           <Assets
             utilities={utilities}
             projectId={projectId}
             onCanvas={() => openCanvas(projectId)}
             onProjects={openProjects}
+            readOnly={!writable}
           />
-        ) : (
-          <ReadOnlyFiles utilities={utilities} projectId={projectId} />
         )
       ) : writable ? (
         <Projects

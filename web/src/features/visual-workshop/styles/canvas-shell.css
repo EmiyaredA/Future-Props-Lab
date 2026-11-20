@@ -100,3 +100,20 @@
   background: var(--accent-soft);
   color: var(--accent);
 }
+
+.visual-toonflow-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+.visual-toonflow-canvas .vue-flow__pane {
+  cursor: inherit;
+}
+
+.visual-toonflow-canvas .visual-canvas-world {
+  transform: none;
+}
+
+.visual-toonflow-canvas .canvas-node {
+  pointer-events: auto;
+}

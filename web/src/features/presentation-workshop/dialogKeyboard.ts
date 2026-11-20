@@ -1,7 +1,9 @@
 import { useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { keepPickerEscapeLocal } from "@shared/ui/pickerKeyboard";
 
 /** Radix handles Escape at document capture, before the nested control can close. */
 export function keepDialogEscapeLocal(event: KeyboardEvent) {
+  if (keepPickerEscapeLocal(event)) return;
   if (
     event.isComposing ||
     (event.target instanceof Element &&

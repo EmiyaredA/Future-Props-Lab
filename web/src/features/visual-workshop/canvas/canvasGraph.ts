@@ -89,12 +89,29 @@ export function removeDisconnectedEdgeReferences(
     addAsset(target.id, field, assetId, removals);
   }
 
-  if (!removals.size) return nodes;
   return nodes.map((node) => {
     const fields = removals.get(node.id);
-    if (node.kind === "text" || !fields || !node.generation_draft) return node;
+    if (node.kind === "text" || !node.generation_draft) return node;
     const draft = { ...node.generation_draft } as Record<string, unknown>;
-    for (const [field, assetIds] of fields) {
+    if (
+      node.kind === "video" &&
+      node.generation_draft.reference_subjects != null
+    ) {
+      draft.reference_subjects = Object.fromEntries(
+        Object.entries(node.generation_draft.reference_subjects).filter(
+          ([key]) => !key.startsWith("edge:") || !removed.has(key.slice(5)),
+        ),
+      );
+    }
+    if (
+      node.kind === "video" &&
+      node.generation_draft.reference_order != null
+    ) {
+      draft.reference_order = node.generation_draft.reference_order.filter(
+        (key) => !key.startsWith("edge:") || !removed.has(key.slice(5)),
+      );
+    }
+    for (const [field, assetIds] of fields ?? []) {
       if (field === "reference_asset_id") {
         if (assetIds.has(draft.reference_asset_id as string))
           draft.reference_asset_id = null;
@@ -114,7 +131,7 @@ export function removeDisconnectedEdgeReferences(
         ...(draft.prompt_reference_names as Record<string, string>),
       };
       for (const assetId of new Set(
-        [...fields.values()].flatMap((ids) => [...ids]),
+        [...(fields?.values() ?? [])].flatMap((ids) => [...ids]),
       )) {
         if (!draftAssetIds(draft).includes(assetId)) delete names[assetId];
       }

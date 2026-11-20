@@ -10,7 +10,7 @@ export function ReadOnlyPage({
   onBack,
   utilities,
 }: {
-  title: string;
+  title?: string;
   children?: ReactNode;
   error?: unknown;
   loading?: boolean;
@@ -19,20 +19,22 @@ export function ReadOnlyPage({
 }) {
   return (
     <section className="readonly-page">
-      <header>
-        {onBack ? (
-          <button className="btn small" onClick={onBack}>
-            返回列表
-          </button>
-        ) : null}
-        <div>
-          <h1>{title}</h1>
-          <p className="readonly-badge">
-            只读成员 · 可浏览、播放和下载已有内容
-          </p>
-        </div>
-        {utilities}
-      </header>
+      {title && (
+        <header>
+          {onBack ? (
+            <button className="btn small" onClick={onBack}>
+              返回列表
+            </button>
+          ) : null}
+          <div>
+            <h1>{title}</h1>
+            <p className="readonly-badge">
+              只读成员 · 可浏览、播放和下载已有内容
+            </p>
+          </div>
+          {utilities}
+        </header>
+      )}
       {loading ? <LoadingState label="正在加载…" variant="region" /> : null}
       {error ? (
         <p role="alert">

@@ -43,6 +43,10 @@ class Generation:
         'Retry Materialization. POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization'
         return self._client._call('POST', '/v1/visual-workshop/generation-tasks/{task_id}/retry-materialization', parameters=[('task_id', 'path', task_id)], response_type=models.GenerationTaskOut)
 
+    def generate_visual_asset_card(self, *, project_id: str, card_id: str, body: models.CardGenerationIn | dict) -> models.GenerationTaskOut:
+        'Generate Visual Asset Card. POST /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations'
+        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations', parameters=[('project_id', 'path', project_id), ('card_id', 'path', card_id)], body=body, media_type='application/json', response_type=models.GenerationTaskOut)
+
     def create_generation_batch(self, *, project_id: str, body: models.ImageGenerationBatchCreateIn | dict) -> models.GenerationBatchOut:
         'Create Generation Batch. POST /v1/visual-workshop/projects/{project_id}/generation-batches'
         return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/generation-batches', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.GenerationBatchOut)
@@ -90,6 +94,10 @@ class AsyncGeneration:
     async def retry_materialization(self, *, task_id: str) -> models.GenerationTaskOut:
         'Retry Materialization. POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization'
         return await self._client._call('POST', '/v1/visual-workshop/generation-tasks/{task_id}/retry-materialization', parameters=[('task_id', 'path', task_id)], response_type=models.GenerationTaskOut)
+
+    async def generate_visual_asset_card(self, *, project_id: str, card_id: str, body: models.CardGenerationIn | dict) -> models.GenerationTaskOut:
+        'Generate Visual Asset Card. POST /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations'
+        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations', parameters=[('project_id', 'path', project_id), ('card_id', 'path', card_id)], body=body, media_type='application/json', response_type=models.GenerationTaskOut)
 
     async def create_generation_batch(self, *, project_id: str, body: models.ImageGenerationBatchCreateIn | dict) -> models.GenerationBatchOut:
         'Create Generation Batch. POST /v1/visual-workshop/projects/{project_id}/generation-batches'

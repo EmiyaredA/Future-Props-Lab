@@ -43,8 +43,13 @@ from studio.apps.visual_workshop.transport.catalog_http import (
     generation as generation_catalog_router,
 )
 from studio.apps.visual_workshop.transport.composition_http import router as composition_router
+from studio.apps.visual_workshop.transport.creative_asset_scope import (
+    independent_creative_asset_scope,
+)
+from studio.apps.visual_workshop.transport.creative_workflow_http import router as workflow_router
 from studio.apps.visual_workshop.transport.generation_http import router as generation_router
 from studio.apps.visual_workshop.transport.outputs_http import router as outputs_router
+from studio.apps.visual_workshop.transport.previs_http import router as previs_router
 from studio.apps.visual_workshop.transport.projects_http import router as project_router
 from studio.apps.visual_workshop.transport.repair_routes import router as repair_router
 from studio.apps.visual_workshop.transport.review_authority_http import (
@@ -156,6 +161,9 @@ def create_app(
         run_worker=run_worker,
     )
     app.include_router(project_router)
+    app.include_router(previs_router, prefix="/v1")
+    app.include_router(workflow_router, prefix="/v1")
+    app.state.creative_asset_scope = independent_creative_asset_scope
     app.include_router(snapshot_router)
     app.include_router(composition_router)
     app.include_router(outputs_router)

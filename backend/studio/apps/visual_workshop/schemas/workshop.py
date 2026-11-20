@@ -143,6 +143,13 @@ class VisualCanvasImageGenerationDraft(VisualPromptDraft):
         return _clean_prompt_reference_names(value)
 
 
+class VisualDesignReference(BaseModel):
+    card_id: str = Field(min_length=1, max_length=64)
+    card_revision: int = Field(ge=0)
+    asset_id: str = Field(min_length=1, max_length=64)
+    title: str = Field(min_length=1, max_length=120)
+
+
 class VisualCanvasVideoGenerationDraft(VisualPromptDraft):
     version_type = VisualVideoPromptVersion
     prompt_versions: list[VisualVideoPromptVersion] = Field(
@@ -161,10 +168,32 @@ class VisualCanvasVideoGenerationDraft(VisualPromptDraft):
     first_frame_asset_id: str | None = None
     last_frame_asset_id: str | None = None
     reference_asset_ids: list[str] = Field(default_factory=list, max_length=30)
+    design_references: list[VisualDesignReference] = Field(default_factory=list, max_length=30)
+    # None identifies legacy comma-separated targets; {} explicitly clears bindings.
+    reference_subjects: dict[str, str] | None = Field(default=None, max_length=60)
+    reference_order: list[str] | None = Field(default=None, max_length=60)
     audio_asset_ids: list[str] = Field(default_factory=list, max_length=10)
     video_asset_ids: list[str] = Field(default_factory=list, max_length=10)
     workflow_parameters: WorkflowVideoParameters | None = None
     prompt_reference_names: dict[str, str] = Field(default_factory=dict, max_length=50)
+
+    @field_validator("reference_subjects")
+    @classmethod
+    def valid_reference_subjects(cls, value: dict[str, str] | None):
+        from studio.apps.visual_workshop.reference_subjects import clean_subjects
+
+        return clean_subjects(value)
+
+    @field_validator("reference_order")
+    @classmethod
+    def valid_reference_order(cls, value: list[str] | None):
+        from studio.apps.visual_workshop.reference_subjects import clean_subjects
+
+        if value is not None:
+            if len(value) != len(set(value)):
+                raise ValueError("参考顺序不能重复")
+            clean_subjects(dict.fromkeys(value, "image"))
+        return value
 
     @field_validator("prompt_reference_names")
     @classmethod
@@ -180,6 +209,11 @@ class VisualCanvasVideoGenerationDraft(VisualPromptDraft):
         ):
             if len(values) != len(set(values)):
                 raise ValueError("同类参考素材不能重复")
+        design_assets = [ref.asset_id for ref in self.design_references]
+        if len(design_assets) != len(set(design_assets)) or not set(design_assets).issubset(
+            self.reference_asset_ids
+        ):
+            raise ValueError("设定参考必须对应当前镜头的唯一参考图")
         if (
             self.first_frame_asset_id is not None
             and self.first_frame_asset_id == self.last_frame_asset_id
@@ -239,6 +273,8 @@ class VisualCanvasTextNode(VisualCanvasNodeBase):
 
 class VisualCanvasImageNode(VisualCanvasNodeBase):
     kind: Literal["image"]
+    design_card_id: str | None = Field(default=None, max_length=64)
+    design_card_revision: int | None = Field(default=None, ge=0)
     asset_id: str | None = None
     generation_task_id: str | None = None
     generation_batch_id: str | None = None
@@ -362,11 +398,40 @@ def default_material_categories() -> list[VisualMaterialCategory]:
     ]
 
 
+def design_category_kind(category_id: str | None, name: str = "") -> str | None:
+    if category_id == "character" or name.strip() in {"角色", "人设", "角色卡"}:
+        return "character"
+    if category_id == "scene" or name.strip() in {"场景", "场景卡"}:
+        return "scene"
+    if category_id in {"prop", "props"} or name.strip() in {"道具", "道具卡"}:
+        return "prop"
+    return None
+
+
+def is_design_category(category_id: str | None, name: str = "") -> bool:
+    return design_category_kind(category_id, name) is not None
+
+
+class VisualCanvasGroup(BaseModel):
+    id: str = Field(min_length=1, max_length=64)
+    title: str = Field(min_length=1, max_length=120)
+    node_ids: list[str] = Field(min_length=2, max_length=1000)
+
+    @field_validator("title")
+    @classmethod
+    def nonblank_title(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("请填写编组名称")
+        return value.strip()
+
+
 class VisualCanvasDocumentPutIn(BaseModel):
     expected_revision: int = Field(ge=0)
     nodes: list[VisualCanvasNode] = Field(max_length=1000)
     edges: list[VisualCanvasEdge] = Field(default_factory=list, max_length=2000)
     categories: list[VisualMaterialCategory] | None = Field(default=None, max_length=100)
+    groups: list[VisualCanvasGroup] | None = Field(default=None, max_length=500)
+    project_card_ids: list[str] | None = Field(default=None, max_length=1000)
 
     @field_validator("nodes")
     @classmethod
@@ -379,6 +444,18 @@ class VisualCanvasDocumentPutIn(BaseModel):
     @model_validator(mode="after")
     def graph_is_valid(self) -> VisualCanvasDocumentPutIn:
         _validate_canvas_edges(self.nodes, self.edges)
+        if self.groups is not None:
+            ids = {group.id for group in self.groups}
+            members = [node for group in self.groups for node in group.node_ids]
+            nodes = {node.id for node in self.nodes}
+            if len(ids) != len(self.groups) or ids & nodes:
+                raise ValueError("画布编组 ID 必须唯一")
+            if len(members) != len(set(members)) or not nodes.issuperset(members):
+                raise ValueError("编组成员必须是画布中的节点，且只能属于一个组")
+        if self.project_card_ids is not None and len(self.project_card_ids) != len(
+            set(self.project_card_ids)
+        ):
+            raise ValueError("项目设定卡不能重复")
         if self.categories is not None:
             ids = [category.id for category in self.categories]
             if len(ids) != len(set(ids)):
@@ -395,6 +472,8 @@ class VisualCanvasDocumentOut(BaseModel):
     revision: int
     updated_at: str
     categories: list[VisualMaterialCategory] = Field(default_factory=default_material_categories)
+    groups: list[VisualCanvasGroup] = Field(default_factory=list)
+    project_card_ids: list[str] = Field(default_factory=list)
 
 
 class GenerationTaskOut(BaseModel):

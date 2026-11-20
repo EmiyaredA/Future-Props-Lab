@@ -14,9 +14,13 @@ from studio.apps.visual_workshop.schemas.workshop import (
     VisualCanvasDocumentOut,
     VisualCanvasDocumentPutIn,
     VisualCanvasNode,
+    VisualDesignReference,
     default_material_categories,
+    design_category_kind,
+    is_design_category,
 )
 from studio.apps.visual_workshop.storage.models import (
+    VisualAssetCard,
     VisualCanvasDocument,
     VisualGenerationTask,
     VisualWorkshopProject,
@@ -81,10 +85,35 @@ class CanvasDocuments:
         body: VisualCanvasDocumentPutIn,
     ) -> VisualCanvasDocumentOut:
         row = await self._row(project_id)
+        old = {node["id"]: node for node in row.nodes or []}
+        for node in body.nodes:
+            previous = old.get(node.id, {})
+            if node.kind == "image" and node.asset_id == previous.get("asset_id"):
+                if "design_card_id" not in node.model_fields_set:
+                    node.design_card_id = previous.get("design_card_id")
+                    node.design_card_revision = previous.get("design_card_revision")
+            if node.kind == "video" and node.generation_draft:
+                draft = node.generation_draft
+                if "reference_subjects" not in draft.model_fields_set:
+                    draft.reference_subjects = (previous.get("generation_draft") or {}).get(
+                        "reference_subjects"
+                    )
+                if "reference_order" not in draft.model_fields_set:
+                    draft.reference_order = (previous.get("generation_draft") or {}).get(
+                        "reference_order"
+                    )
+                if "design_references" not in draft.model_fields_set:
+                    assets = set(draft.reference_asset_ids)
+                    draft.design_references = [
+                        VisualDesignReference.model_validate(reference)
+                        for reference in (previous.get("generation_draft") or {}).get(
+                            "design_references", []
+                        )
+                        if reference["asset_id"] in assets
+                    ]
         preserve_legacy_prompt_versions(body.nodes, row.nodes or [])
         await self.validate_assets(project_id, body.nodes, row.nodes or [])
         await self._validate_tasks(project_id, body.nodes)
-        old = {node["id"]: node for node in row.nodes or []}
         removed = set(old) - {node.id for node in body.nodes}
         if any(
             edge.get("source_node_id") in removed and edge.get("target_node_id") not in removed
@@ -116,7 +145,91 @@ class CanvasDocuments:
                 or [category.model_dump(mode="json") for category in default_material_categories()]
             )
         }
+        old_categories = {
+            item["id"]: item["name"]
+            for item in (
+                row.categories
+                or [category.model_dump() for category in default_material_categories()]
+            )
+        }
+        if any(
+            is_design_category(item["id"], item["name"])
+            and old_categories.get(item["id"]) != item["name"]
+            for item in known_categories.values()
+        ):
+            raise VisualCanvasError("设定分类由设定库提供", code="design_card_required")
+        group_values = (
+            [group.model_dump(mode="json") for group in body.groups]
+            if body.groups is not None
+            else [
+                {**group, "node_ids": members}
+                for group in row.groups or []
+                if len(members := [key for key in group["node_ids"] if key not in removed]) >= 2
+            ]
+        )
+        project_card_ids = (
+            body.project_card_ids
+            if body.project_card_ids is not None
+            else row.project_card_ids or []
+        )
+        new_cards = set(project_card_ids) - set(row.project_card_ids or [])
+        new_cards.update(
+            node.design_card_id
+            for node in body.nodes
+            if node.kind == "image"
+            and node.design_card_id
+            and node.design_card_id != old.get(node.id, {}).get("design_card_id")
+        )
+        previous_refs = {
+            (ref["card_id"], ref["card_revision"], ref["asset_id"])
+            for node in old.values()
+            for ref in (node.get("generation_draft") or {}).get("design_references", [])
+        }
+        new_refs = {
+            (ref.card_id, ref.card_revision, ref.asset_id)
+            for node in body.nodes
+            if node.kind == "video" and node.generation_draft
+            for ref in node.generation_draft.design_references
+        } - previous_refs
+        new_cards.update(card_id for card_id, _, _ in new_refs)
+        usable: dict[str, VisualAssetCard] = {}
+        if new_cards:
+            owner = await self.session.scalar(
+                select(VisualWorkshopProject.owner_user_id).where(
+                    VisualWorkshopProject.id == project_id
+                )
+            )
+            cards = await self.session.scalars(
+                select(VisualAssetCard).where(
+                    VisualAssetCard.id.in_(new_cards), VisualAssetCard.owner_user_id == owner
+                )
+            )
+            usable = {card.id: card for card in cards if not card.data.get("archived")}
+            if usable.keys() != new_cards:
+                raise VisualCanvasError("设定卡不可用或已归档", code="invalid_design_card")
+            if any(
+                usable[card_id].revision != revision
+                or not usable[card_id].data.get("adopted_asset_id")
+                for card_id, revision, _ in new_refs
+            ):
+                raise VisualCanvasError(
+                    "设定卡已更新，请重新选择采用图", code="design_card_changed"
+                )
         for node in body.nodes:
+            category = known_categories.get(node.category_id, {})
+            previous = old.get(node.id, {})
+            if node.kind == "image" and node.design_card_id in usable:
+                required_kind = design_category_kind(node.category_id, category.get("name", ""))
+                if required_kind and usable[node.design_card_id].data.get("kind") != required_kind:
+                    raise VisualCanvasError("请选择对应类型的设定卡", code="invalid_design_card")
+            if is_design_category(node.category_id, category.get("name", "")) and (
+                previous.get("category_id") != node.category_id
+                or previous.get("group") != node.group
+                or previous.get("asset_id") != getattr(node, "asset_id", None)
+            ):
+                raise VisualCanvasError(
+                    "请从设定库引入角色、场景或道具", code="design_card_required"
+                )
             if node.category_id and node.category_id not in known_categories:
                 raise VisualCanvasError("节点分类不存在")
             if node.group and (
@@ -136,6 +249,8 @@ class CanvasDocuments:
             .values(
                 edges=[edge.model_dump(mode="json") for edge in body.edges],
                 categories=categories,
+                groups=group_values,
+                project_card_ids=project_card_ids,
                 revision=body.expected_revision + 1,
                 updated_at=now,
             )

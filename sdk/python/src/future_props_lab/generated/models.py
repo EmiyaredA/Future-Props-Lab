@@ -785,6 +785,7 @@ class Body_upload_material_node_v1_visual_workshop_projects__project_id__node_up
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     file: str = Field(default=..., alias='file')
     group: str | None = Field(default=None, alias='group')
+    previs: str | None = Field(default=None, alias='previs')
     x: float = Field(default=0, alias='x')
     y: float = Field(default=0, alias='y')
 
@@ -867,6 +868,68 @@ class CallLogStatsOut(WireModel):
     calls_today: int = Field(default=..., alias='calls_today')
     errors_today: int = Field(default=..., alias='errors_today')
     total_tokens_today: int = Field(default=..., alias='total_tokens_today', repr=False)
+
+class CardData(WireModel):
+    adopted_asset_id: str | None = Field(default=None, alias='adopted_asset_id')
+    archived: bool = Field(default=False, alias='archived')
+    candidate_asset_ids: list[str] | None = Field(default=None, alias='candidate_asset_ids', max_length=80)
+    candidate_task_ids: list[str] | None = Field(default=None, alias='candidate_task_ids', max_length=80)
+    design: str = Field(default='', alias='design', max_length=12000)
+    facts: str = Field(default='', alias='facts', max_length=12000)
+    kind: Literal['character', 'scene', 'prop'] = Field(default=..., alias='kind')
+    model_asset_key: str | None = Field(default=None, alias='model_asset_key')
+    parent_asset_id: str | None = Field(default=None, alias='parent_asset_id')
+    parent_id: str | None = Field(default=None, alias='parent_id')
+    proposed_design: str = Field(default='', alias='proposed_design', max_length=12000)
+    source: ScriptSource | None = Field(default=None, alias='source')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class CardGenerationIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    model_id: str = Field(default=..., alias='model_id')
+    prompt: str = Field(default=..., alias='prompt', min_length=1, max_length=6000)
+    request_id: str = Field(default=..., alias='request_id')
+    size: str = Field(default=..., alias='size', min_length=1, max_length=32)
+
+class CardOut(WireModel):
+    adopted_asset_id: str | None = Field(default=None, alias='adopted_asset_id')
+    archived: bool = Field(default=False, alias='archived')
+    candidate_asset_ids: list[str] | None = Field(default=None, alias='candidate_asset_ids', max_length=80)
+    candidate_task_ids: list[str] | None = Field(default=None, alias='candidate_task_ids', max_length=80)
+    design: str = Field(default='', alias='design', max_length=12000)
+    facts: str = Field(default='', alias='facts', max_length=12000)
+    id: str = Field(default=..., alias='id')
+    kind: Literal['character', 'scene', 'prop'] = Field(default=..., alias='kind')
+    media_projects: dict[str, str | None] = Field(default=None, alias='media_projects')
+    model_asset_key: str | None = Field(default=None, alias='model_asset_key')
+    parent_asset_id: str | None = Field(default=None, alias='parent_asset_id')
+    parent_id: str | None = Field(default=None, alias='parent_id')
+    proposed_design: str = Field(default='', alias='proposed_design', max_length=12000)
+    revision: int = Field(default=..., alias='revision', ge=0.0)
+    source: ScriptSource | None = Field(default=None, alias='source')
+    source_project_id: str | None = Field(default=None, alias='source_project_id')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class CardRegroupIn(WireModel):
+    expected_revisions: dict[str, Any] = Field(default=..., alias='expected_revisions')
+    main_card_id: str = Field(default=..., alias='main_card_id')
+    variant_ids: list[str] = Field(default=..., alias='variant_ids', min_length=1, max_length=499)
+
+class CardUpdate(WireModel):
+    adopted_asset_id: str | None = Field(default=None, alias='adopted_asset_id')
+    archived: bool = Field(default=False, alias='archived')
+    candidate_asset_ids: list[str] | None = Field(default=None, alias='candidate_asset_ids', max_length=80)
+    candidate_task_ids: list[str] | None = Field(default=None, alias='candidate_task_ids', max_length=80)
+    design: str = Field(default='', alias='design', max_length=12000)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    facts: str = Field(default='', alias='facts', max_length=12000)
+    kind: Literal['character', 'scene', 'prop'] = Field(default=..., alias='kind')
+    model_asset_key: str | None = Field(default=None, alias='model_asset_key')
+    parent_asset_id: str | None = Field(default=None, alias='parent_asset_id')
+    parent_id: str | None = Field(default=None, alias='parent_id')
+    proposed_design: str = Field(default='', alias='proposed_design', max_length=12000)
+    source: ScriptSource | None = Field(default=None, alias='source')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class CatalogOut(WireModel):
     can_enable: bool = Field(default=False, alias='can_enable')
@@ -4343,6 +4406,34 @@ class PresentationTransition(WireModel):
     duration: int = Field(default=600, alias='duration', ge=50.0, le=10000.0)
     effect: Literal['none', 'fade', 'slideX', 'slideY', 'slideX3D', 'slideY3D', 'rotate', 'scaleX', 'scaleY', 'scale', 'scaleReverse', 'random'] = Field(default='none', alias='effect')
 
+class PrevisSceneCreate(WireModel):
+    document: dict[str, Any] = Field(default=..., alias='document')
+    format_version: Literal[1] = Field(default=..., alias='format_version')
+    script_source: ScriptSource | None = Field(default=None, alias='script_source')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class PrevisSceneOut(WireModel):
+    document: dict[str, Any] = Field(default=..., alias='document')
+    format_version: Literal[1] = Field(default=..., alias='format_version')
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    script_source: ScriptSource | None = Field(default=None, alias='script_source')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class PrevisSceneSummary(WireModel):
+    id: str = Field(default=..., alias='id')
+    revision: int = Field(default=..., alias='revision')
+    title: str = Field(default=..., alias='title')
+    updated_at: datetime = Field(default=..., alias='updated_at')
+
+class PrevisSceneUpdate(WireModel):
+    document: dict[str, Any] = Field(default=..., alias='document')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    format_version: Literal[1] = Field(default=..., alias='format_version')
+    script_source: ScriptSource | None = Field(default=None, alias='script_source')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
 class ProjectCreateIn(WireModel):
     aspect: Literal['16:9', '9:16', '1:1'] = Field(default='16:9', alias='aspect')
     fps: Literal[30, 60] = Field(default=30, alias='fps')
@@ -4829,6 +4920,29 @@ class SavedSegmentTranscriptionIn(WireModel):
     language: str | None = Field(default=None, alias='language')
     model_id: str = Field(default=..., alias='model_id')
     target_language: str | None = Field(default=None, alias='target_language')
+
+class ScriptEpisode(WireModel):
+    id: str = Field(default=..., alias='id')
+    scenes: list[ScriptScene] | None = Field(default=None, alias='scenes', max_length=200)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class ScriptOut(WireModel):
+    episodes: list[ScriptEpisode] | None = Field(default=None, alias='episodes', max_length=100)
+    revision: int = Field(default=..., alias='revision', ge=0.0)
+
+class ScriptScene(WireModel):
+    heading: str = Field(default='', alias='heading', max_length=240)
+    id: str = Field(default=..., alias='id')
+    text: str = Field(default='', alias='text', max_length=12000)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class ScriptSource(WireModel):
+    revision: int = Field(default=..., alias='revision', ge=0.0)
+    scene_id: str = Field(default=..., alias='scene_id')
+
+class ScriptUpdate(WireModel):
+    episodes: list[ScriptEpisode] | None = Field(default=None, alias='episodes', max_length=100)
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
 class SearchCriteria(WireModel):
     favorite: bool = Field(default=False, alias='favorite')
@@ -6323,7 +6437,9 @@ class VisualCanvasAudioNode(WireModel):
 class VisualCanvasDocumentOut(WireModel):
     categories: list[VisualMaterialCategory] | None = Field(default=None, alias='categories')
     edges: list[VisualCanvasEdge] = Field(default=..., alias='edges')
+    groups: list[VisualCanvasGroup] | None = Field(default=None, alias='groups')
     nodes: list[VisualCanvasTextNode | VisualCanvasImageNode | VisualCanvasVideoNode | VisualCanvasAudioNode] = Field(default=..., alias='nodes')
+    project_card_ids: list[str] | None = Field(default=None, alias='project_card_ids')
     project_id: str = Field(default=..., alias='project_id')
     revision: int = Field(default=..., alias='revision')
     updated_at: str = Field(default=..., alias='updated_at')
@@ -6332,7 +6448,9 @@ class VisualCanvasDocumentPutIn(WireModel):
     categories: list[VisualMaterialCategory] | None = Field(default=None, alias='categories')
     edges: list[VisualCanvasEdge] | None = Field(default=None, alias='edges', max_length=2000)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    groups: list[VisualCanvasGroup] | None = Field(default=None, alias='groups')
     nodes: list[VisualCanvasTextNode | VisualCanvasImageNode | VisualCanvasVideoNode | VisualCanvasAudioNode] = Field(default=..., alias='nodes', max_length=1000)
+    project_card_ids: list[str] | None = Field(default=None, alias='project_card_ids')
 
 class VisualCanvasEdge(WireModel):
     binding: Literal['final', 'fixed'] = Field(default='final', alias='binding')
@@ -6341,6 +6459,11 @@ class VisualCanvasEdge(WireModel):
     purpose: Literal['reference', 'context', 'first_frame', 'last_frame'] = Field(default='reference', alias='purpose')
     source_node_id: str = Field(default=..., alias='source_node_id', min_length=1, max_length=64)
     target_node_id: str = Field(default=..., alias='target_node_id', min_length=1, max_length=64)
+
+class VisualCanvasGroup(WireModel):
+    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
+    node_ids: list[str] = Field(default=..., alias='node_ids', min_length=2, max_length=1000)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class VisualCanvasImageGenerationDraft(WireModel):
     active_prompt_version_id: str | None = Field(default=None, alias='active_prompt_version_id')
@@ -6360,6 +6483,8 @@ class VisualCanvasImageNode(WireModel):
     approved: bool | None = Field(default=None, alias='approved')
     asset_id: str | None = Field(default=None, alias='asset_id')
     category_id: str | None = Field(default=None, alias='category_id')
+    design_card_id: str | None = Field(default=None, alias='design_card_id')
+    design_card_revision: int | None = Field(default=None, alias='design_card_revision')
     final_output_id: str | None = Field(default=None, alias='final_output_id')
     final_version: int | None = Field(default=None, alias='final_version')
     generation_batch_id: str | None = Field(default=None, alias='generation_batch_id')
@@ -6394,6 +6519,7 @@ class VisualCanvasTextNode(WireModel):
 class VisualCanvasVideoGenerationDraft(WireModel):
     active_prompt_version_id: str | None = Field(default=None, alias='active_prompt_version_id')
     audio_asset_ids: list[str] | None = Field(default=None, alias='audio_asset_ids', max_length=10)
+    design_references: list[VisualDesignReference] | None = Field(default=None, alias='design_references', max_length=30)
     duration: int = Field(default=5, alias='duration', ge=-1.0, le=30.0)
     first_frame_asset_id: str | None = Field(default=None, alias='first_frame_asset_id')
     generate_audio: bool = Field(default=False, alias='generate_audio')
@@ -6405,6 +6531,8 @@ class VisualCanvasVideoGenerationDraft(WireModel):
     prompt_versions: list[VisualVideoPromptVersion] | None = Field(default=None, alias='prompt_versions', min_length=1, max_length=20)
     ratio: Literal['16:9', '9:16', '4:3', '3:4', '1:1', '21:9', 'adaptive'] = Field(default='16:9', alias='ratio')
     reference_asset_ids: list[str] | None = Field(default=None, alias='reference_asset_ids', max_length=30)
+    reference_order: list[str] | None = Field(default=None, alias='reference_order')
+    reference_subjects: dict[str, str] | None = Field(default=None, alias='reference_subjects')
     resolution: Literal['480p', '720p', '1080p', '4k', '768p', '960p', '464x832', '832x464'] = Field(default='720p', alias='resolution')
     video_asset_ids: list[str] | None = Field(default=None, alias='video_asset_ids', max_length=10)
     watermark: bool = Field(default=True, alias='watermark')
@@ -6424,6 +6552,12 @@ class VisualCanvasVideoNode(WireModel):
     output_sequence: int | None = Field(default=None, alias='output_sequence')
     position: VisualCanvasPosition = Field(default=..., alias='position')
     tags: list[str] | None = Field(default=None, alias='tags', max_length=20)
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class VisualDesignReference(WireModel):
+    asset_id: str = Field(default=..., alias='asset_id', min_length=1, max_length=64)
+    card_id: str = Field(default=..., alias='card_id', min_length=1, max_length=64)
+    card_revision: int = Field(default=..., alias='card_revision', ge=0.0)
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class VisualEntityOperation(WireModel):
@@ -6669,6 +6803,11 @@ CallLogListItem.model_rebuild()
 CallLogListOut.model_rebuild()
 CallLogOut.model_rebuild()
 CallLogStatsOut.model_rebuild()
+CardData.model_rebuild()
+CardGenerationIn.model_rebuild()
+CardOut.model_rebuild()
+CardRegroupIn.model_rebuild()
+CardUpdate.model_rebuild()
 CatalogOut.model_rebuild()
 CertificationIn.model_rebuild()
 CertificationOut.model_rebuild()
@@ -7152,6 +7291,10 @@ PresentationTemplateOut.model_rebuild()
 PresentationTemplatePut.model_rebuild()
 PresentationTextLayout.model_rebuild()
 PresentationTransition.model_rebuild()
+PrevisSceneCreate.model_rebuild()
+PrevisSceneOut.model_rebuild()
+PrevisSceneSummary.model_rebuild()
+PrevisSceneUpdate.model_rebuild()
 ProjectCreateIn.model_rebuild()
 ProjectFolderOpenOut.model_rebuild()
 ProjectListOut.model_rebuild()
@@ -7232,6 +7375,11 @@ SavedFilterIn.model_rebuild()
 SavedFilterOut.model_rebuild()
 SavedFilterPut.model_rebuild()
 SavedSegmentTranscriptionIn.model_rebuild()
+ScriptEpisode.model_rebuild()
+ScriptOut.model_rebuild()
+ScriptScene.model_rebuild()
+ScriptSource.model_rebuild()
+ScriptUpdate.model_rebuild()
 SearchCriteria.model_rebuild()
 SearchHit.model_rebuild()
 SearchResult.model_rebuild()
@@ -7432,12 +7580,14 @@ VisualCanvasAudioNode.model_rebuild()
 VisualCanvasDocumentOut.model_rebuild()
 VisualCanvasDocumentPutIn.model_rebuild()
 VisualCanvasEdge.model_rebuild()
+VisualCanvasGroup.model_rebuild()
 VisualCanvasImageGenerationDraft.model_rebuild()
 VisualCanvasImageNode.model_rebuild()
 VisualCanvasPosition.model_rebuild()
 VisualCanvasTextNode.model_rebuild()
 VisualCanvasVideoGenerationDraft.model_rebuild()
 VisualCanvasVideoNode.model_rebuild()
+VisualDesignReference.model_rebuild()
 VisualEntityOperation.model_rebuild()
 VisualMaterialCategory.model_rebuild()
 VisualNodeFinalOutputIn.model_rebuild()

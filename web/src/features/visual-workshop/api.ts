@@ -17,6 +17,7 @@ type CanvasDocumentContract = components["schemas"]["VisualCanvasDocumentOut"];
 export type VisualCanvasDocument = Omit<CanvasDocumentContract, "edges"> & {
   edges: VisualCanvasEdge[];
 };
+export type VisualCanvasGroup = components["schemas"]["VisualCanvasGroup"];
 export type VisualCanvasNode = CanvasDocumentContract["nodes"][number];
 type CanvasEdgeContract = CanvasDocumentContract["edges"][number];
 export type VisualCanvasEdge = Omit<CanvasEdgeContract, "binding" | "purpose"> &
@@ -133,10 +134,12 @@ export function openVisualWorkshopProjectFolder(projectId: string) {
 
 export async function getVisualCanvas(
   projectId: string,
+  signal?: AbortSignal,
 ): Promise<VisualCanvasDocument> {
   return unwrap(
     await api.GET("/v1/visual-workshop/projects/{project_id}/canvas", {
       params: { path: { project_id: projectId } },
+      signal,
     }),
   );
 }
@@ -157,6 +160,8 @@ export async function putVisualCanvas(
   expectedRevision: number,
   edges: VisualCanvasEdge[] = [],
   categories?: VisualMaterialCategory[],
+  groups?: VisualCanvasGroup[],
+  projectCardIds?: string[],
 ): Promise<VisualCanvasDocument> {
   return unwrap(
     await api.PUT("/v1/visual-workshop/projects/{project_id}/canvas", {
@@ -170,6 +175,8 @@ export async function putVisualCanvas(
         })),
         expected_revision: expectedRevision,
         categories,
+        groups,
+        project_card_ids: projectCardIds,
       },
     }),
   );
@@ -371,11 +378,13 @@ export async function getNodeOutput(
   projectId: string,
   nodeId: string,
   outputId: string,
+  signal?: AbortSignal,
 ) {
   return unwrap(
     await api.GET(
       "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}",
       {
+        signal,
         params: {
           path: { project_id: projectId, node_id: nodeId, output_id: outputId },
         },
@@ -413,10 +422,19 @@ export async function uploadMaterialNode(
   revision: number,
   position: { x: number; y: number },
   destination?: MaterialUploadDestination,
-  transfer: TransferOptions = {},
+  transfer: TransferOptions & Pick<RequestInit, "signal"> = {},
+  previs?: {
+    request_id: string;
+    scene_id: string;
+    scene_revision: number;
+    shot_number?: number;
+    artifact_kind?: "frame" | "views" | "clip" | "previs";
+    sha256: string;
+  },
 ) {
   const form = new FormData();
   form.append("file", file);
+  if (previs) form.append("previs", JSON.stringify(previs));
   form.append("expected_revision", String(revision));
   form.append("x", String(position.x));
   form.append("y", String(position.y));

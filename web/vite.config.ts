@@ -1,7 +1,12 @@
-import { assistantRenderingChunks, directorResourceChunks } from "./chunkGraph";
+import {
+  assistantRenderingChunks,
+  directorResourceChunks,
+  trumanMapChunks,
+} from "./chunkGraph";
 import { mathFontData } from "./mathFontData";
 import { applicationIcons } from "./applicationIcons";
 import react from "@vitejs/plugin-react";
+import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -38,9 +43,36 @@ function fortuneLicense(): Plugin {
   };
 }
 
+function toonflowLicenses(): Plugin {
+  return {
+    name: "toonflow-licenses",
+    generateBundle(_options, bundle) {
+      const includesToonflow = Object.values(bundle).some(
+        (chunk) =>
+          chunk.type === "chunk" &&
+          Object.keys(chunk.modules).some((id) =>
+            id.includes("/vendor/toonflow/"),
+          ),
+      );
+      if (!includesToonflow) return;
+      const source = ["LICENSE", "TRUMANMAP-UPSTREAM.md"]
+        .map((name) =>
+          readFileSync(resolve(__dirname, "vendor/toonflow", name), "utf8"),
+        )
+        .join("\n\n");
+      this.emitFile({
+        type: "asset",
+        fileName: "assets/toonflow-LICENSES.txt",
+        source,
+      });
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const directorChunk = directorResourceChunks();
   const assistantRenderingChunk = assistantRenderingChunks();
+  const trumanMapChunk = trumanMapChunks();
   return {
     cacheDir:
       configuredCacheDir || resolve(__dirname, `node_modules/.vite-${mode}`),
@@ -51,9 +83,11 @@ export default defineConfig(({ mode }) => {
         : undefined,
     plugins: [
       react(),
+      vue(),
       tailwindcss(),
       mathFontData(),
       fortuneLicense(),
+      toonflowLicenses(),
       applicationIcons(),
     ],
     resolve: {
@@ -118,6 +152,8 @@ export default defineConfig(({ mode }) => {
           manualChunks(id, context) {
             const rendering = assistantRenderingChunk(id, context);
             if (rendering) return rendering;
+            const truman = trumanMapChunk(id, context);
+            if (truman) return truman;
             if (id.includes("/vendor/fortune-sheet/packages/core/src/locale/"))
               return /\/locale\/zh\./.test(id)
                 ? "spreadsheet-locale-zh"

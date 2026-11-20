@@ -516,6 +516,14 @@
       "method": "acceptance_catalog",
       "resource": "visual"
     },
+    "GET /v1/visual-workshop/asset-cards": {
+      "method": "list_account_asset_cards",
+      "resource": "visual"
+    },
+    "GET /v1/visual-workshop/asset-cards/{card_id}": {
+      "method": "get_account_asset_card",
+      "resource": "visual"
+    },
     "GET /v1/visual-workshop/generation-batches": {
       "method": "list_generation_batches",
       "resource": "generation"
@@ -566,6 +574,14 @@
     },
     "GET /v1/visual-workshop/projects/{project_id}/acceptance/summary": {
       "method": "acceptance_summary",
+      "resource": "visual"
+    },
+    "GET /v1/visual-workshop/projects/{project_id}/asset-cards": {
+      "method": "list_visual_asset_cards",
+      "resource": "visual"
+    },
+    "GET /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}": {
+      "method": "get_visual_asset_card",
       "resource": "visual"
     },
     "GET /v1/visual-workshop/projects/{project_id}/canvas": {
@@ -698,6 +714,10 @@
     },
     "POST /v1/file-folders": {
       "method": "create_file_folder",
+      "resource": "files"
+    },
+    "POST /v1/file-library/asset-imports": {
+      "method": "import_project_assets_to_library",
       "resource": "files"
     },
     "POST /v1/file-storage/open-folder": {
@@ -1092,6 +1112,14 @@
       "method": "apply_timeline_operations",
       "resource": "video"
     },
+    "POST /v1/visual-workshop/asset-cards": {
+      "method": "create_account_asset_card",
+      "resource": "visual"
+    },
+    "POST /v1/visual-workshop/asset-cards/regroup": {
+      "method": "regroup_account_asset_cards",
+      "resource": "visual"
+    },
     "POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition": {
       "method": "retry_image_composition",
       "resource": "generation"
@@ -1215,6 +1243,10 @@
     "PUT /v1/thought-workshop/templates/{template_id}": {
       "method": "put_template",
       "resource": "thought"
+    },
+    "PUT /v1/visual-workshop/asset-cards/{card_id}": {
+      "method": "put_account_asset_card",
+      "resource": "visual"
     },
     "PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}": {
       "method": "save_acceptance_repair",

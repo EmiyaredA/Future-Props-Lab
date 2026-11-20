@@ -17,6 +17,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { Image, Music, Upload, Video, X } from "lucide-react";
+import { SearchablePickerField } from "@shared/ui/SearchablePickerDialog";
 import {
   fileQueryKeys,
   getFiles,
@@ -40,6 +41,8 @@ import {
   batchActivity,
 } from "../generation/generationActivityModel";
 import { GenerationSpinner } from "../generation/GenerationActivity";
+import { useResolvedCanvasInputs } from "../generation/useResolvedCanvasInputs";
+import type { CanvasReferenceContext } from "../generation/generationDrawerTypes";
 
 type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
 
@@ -114,8 +117,12 @@ export function CanvasNodeInspector({
   acceptanceOutput,
   onAcceptanceTemplate,
   onTabChange,
+  designReferenceRequest,
+  referenceContext,
 }: {
   projectId: string;
+  referenceContext?: CanvasReferenceContext;
+  designReferenceRequest?: import("../generation/generationDrawerTypes").DesignReferenceRequest;
   node: MediaNode;
   onClose: () => void;
   onPatch: (
@@ -138,11 +145,20 @@ export function CanvasNodeInspector({
     useTransferProgress();
 
   const client = useQueryClient();
+  const resolvedInputs = useResolvedCanvasInputs(
+    projectId,
+    node.id,
+    referenceContext,
+  );
   const input = useRef<HTMLInputElement>(null);
   const preferredTab = initialTab ?? (embedded ? "generate" : "content");
   const [tab, setTab] = useState<"content" | "generate" | "acceptance">(
     preferredTab,
   );
+  useEffect(() => {
+    if (designReferenceRequest) setTab("generate");
+  }, [designReferenceRequest]);
+
   useEffect(() => {
     onTabChange?.(tab);
   }, [tab, onTabChange]);
@@ -174,6 +190,20 @@ export function CanvasNodeInspector({
       audio: new Set<string>(),
     };
     const names: Record<string, string> = {};
+    if (referenceContext) {
+      for (const input of resolvedInputs.inputs) {
+        if (
+          input.kind === "text" ||
+          !input.assetId ||
+          seen[input.kind].has(input.assetId)
+        )
+          continue;
+        seen[input.kind].add(input.assetId);
+        grouped[input.kind].push(input.assetId);
+        names[input.assetId] = input.title;
+      }
+      return { assetIds: grouped, names };
+    }
     upstreamNodes.forEach((upstream) => {
       const assetId = upstream.asset_id;
       if (!assetId || seen[upstream.kind].has(assetId)) return;
@@ -182,7 +212,7 @@ export function CanvasNodeInspector({
       names[assetId] = upstream.title;
     });
     return { assetIds: grouped, names };
-  }, [upstreamNodes]);
+  }, [upstreamNodes, referenceContext, resolvedInputs.inputs]);
   const task = useQuery({
     queryKey: visualWorkshopQueryKeys.generationTask(taskId),
     queryFn: () => getGenerationTask(taskId!),
@@ -351,6 +381,10 @@ export function CanvasNodeInspector({
       ) : tab === "generate" ? (
         <GenerationDrawer
           compact
+          referenceContext={referenceContext}
+          referenceInputs={resolvedInputs.inputs}
+          referencesReady={resolvedInputs.ready}
+          designReferenceRequest={designReferenceRequest}
           layout={generationLayout}
           projectId={projectId}
           canvasNodeId={node.id}
@@ -475,17 +509,22 @@ export function CanvasNodeInspector({
                 <LoadingScene /> 正在读取项目素材…
               </span>
             ) : files.length ? (
-              files.map((file) => (
-                <button
-                  className={file.id === node.asset_id ? "selected" : ""}
-                  aria-pressed={file.id === node.asset_id}
-                  key={file.id}
-                  onClick={() => onPatch({ asset_id: file.id }, true)}
-                >
-                  <Icon aria-hidden />
-                  <span>{file.display_name}</span>
-                </button>
-              ))
+              <SearchablePickerField
+                title="选择项目素材"
+                placeholder="选择项目素材"
+                value={node.asset_id}
+                items={files.map((file) => ({
+                  id: file.id,
+                  label: file.display_name,
+                  keywords: file.original_filename,
+                  icon: node.kind,
+                  preview:
+                    node.kind === "audio"
+                      ? undefined
+                      : `/v1/files/${file.id}/thumbnail`,
+                }))}
+                onChange={(id) => onPatch({ asset_id: id }, true)}
+              />
             ) : (
               <span className="canvas-inspector-state">
                 项目素材库中暂无可用素材

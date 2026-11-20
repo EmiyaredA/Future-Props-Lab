@@ -183,6 +183,10 @@
     "method": "delete_node_output",
     "resource": "visual"
   },
+  "DELETE /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}": {
+    "method": "delete_previs_scene",
+    "resource": "visual"
+  },
   "GET /health": {
     "method": "health",
     "resource": "system"
@@ -983,6 +987,14 @@
     "method": "acceptance_catalog",
     "resource": "visual"
   },
+  "GET /v1/visual-workshop/asset-cards": {
+    "method": "list_account_asset_cards",
+    "resource": "visual"
+  },
+  "GET /v1/visual-workshop/asset-cards/{card_id}": {
+    "method": "get_account_asset_card",
+    "resource": "visual"
+  },
   "GET /v1/visual-workshop/generation-batches": {
     "method": "list_generation_batches",
     "resource": "generation"
@@ -1035,6 +1047,14 @@
     "method": "acceptance_summary",
     "resource": "visual"
   },
+  "GET /v1/visual-workshop/projects/{project_id}/asset-cards": {
+    "method": "list_visual_asset_cards",
+    "resource": "visual"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}": {
+    "method": "get_visual_asset_card",
+    "resource": "visual"
+  },
   "GET /v1/visual-workshop/projects/{project_id}/canvas": {
     "method": "get_canvas",
     "resource": "visual"
@@ -1049,6 +1069,18 @@
   },
   "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs/{output_id}": {
     "method": "get_node_output",
+    "resource": "visual"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/previs-scenes": {
+    "method": "list_previs_scenes",
+    "resource": "visual"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}": {
+    "method": "get_previs_scene",
+    "resource": "visual"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/script": {
+    "method": "get_visual_script",
     "resource": "visual"
   },
   "GET /v1/visual-workshop/projects/{project_id}/snapshot": {
@@ -2063,6 +2095,14 @@
     "method": "create_acceptance_template",
     "resource": "visual"
   },
+  "POST /v1/visual-workshop/asset-cards": {
+    "method": "create_account_asset_card",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/asset-cards/regroup": {
+    "method": "regroup_account_asset_cards",
+    "resource": "visual"
+  },
   "POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition": {
     "method": "retry_image_composition",
     "resource": "generation"
@@ -2102,6 +2142,14 @@
   "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples": {
     "method": "sample_acceptance_video",
     "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/asset-cards": {
+    "method": "create_visual_asset_card",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}/generations": {
+    "method": "generate_visual_asset_card",
+    "resource": "generation"
   },
   "POST /v1/visual-workshop/projects/{project_id}/asset-imports": {
     "method": "import_assets",
@@ -2145,6 +2193,10 @@
   },
   "POST /v1/visual-workshop/projects/{project_id}/open-folder": {
     "method": "reveal_project_folder",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/previs-scenes": {
+    "method": "create_previs_scene",
     "resource": "visual"
   },
   "PUT /v1/account/profile/avatar": {
@@ -2231,12 +2283,20 @@
     "method": "update_acceptance_template",
     "resource": "visual"
   },
+  "PUT /v1/visual-workshop/asset-cards/{card_id}": {
+    "method": "put_account_asset_card",
+    "resource": "visual"
+  },
   "PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}": {
     "method": "save_acceptance_repair",
     "resource": "visual"
   },
   "PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard": {
     "method": "save_acceptance_standard",
+    "resource": "visual"
+  },
+  "PUT /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}": {
+    "method": "put_visual_asset_card",
     "resource": "visual"
   },
   "PUT /v1/visual-workshop/projects/{project_id}/canvas": {
@@ -2249,6 +2309,14 @@
   },
   "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output": {
     "method": "set_node_final_output",
+    "resource": "visual"
+  },
+  "PUT /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}": {
+    "method": "update_previs_scene",
+    "resource": "visual"
+  },
+  "PUT /v1/visual-workshop/projects/{project_id}/script": {
+    "method": "put_visual_script",
     "resource": "visual"
   }
 }

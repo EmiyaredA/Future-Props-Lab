@@ -542,3 +542,44 @@
 .video-parameter-select .custom-select-menu button.selected {
   color: var(--accent);
 }
+
+.video-design-references {
+  padding: 0 0 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.video-design-references > div,
+.video-design-references ul,
+.video-design-references li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.video-design-references ul {
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.video-design-references li,
+.video-design-references button {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.video-design-references button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.video-design-references button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

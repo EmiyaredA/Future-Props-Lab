@@ -57,6 +57,8 @@ function toolLabel(name: string) {
     operations: "查找可用操作",
     fpl_operations: "查找可用操作",
     fpl_operation_read: "读取业务信息",
+    execute_workspace: "运行临时脚本",
+    save_workspace_file: "保存临时产物",
     video_timeline_batch: "调整视频时间线",
     delegate_readonly: "并行调查",
     run_script: "运行脚本",

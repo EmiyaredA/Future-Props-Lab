@@ -73,6 +73,9 @@ HTML 回退仅适用于页面导航，未知 API 和缺失程序资源返回原�
   再由账号在模型页添加接入。ZONOS3 环境与 Qwen 隔离，权重及下载校验按固定清单执行。
 - `0131_amadeus_instructions` 为兼容网站增加补充消息投递记录和运行输入就绪时间；独立 Amadeus 对应 `0005_run_instructions`。
   沿用停机备份和显式迁移流程，前端、Amadeus 与 Mac Worker 一并升级。历史迁移包含补充消息及回执，重启不自动重投未知记录。
+- `0132_visual_previs_scenes` 在兼容网站登记视觉项目白模场景表。独立视觉服务对应 `0012_visual_previs_scenes`，升级按各自的显式迁移流程执行。
+- `0133_visual_creative_workflow` 和独立视觉服务对应的 `0013_visual_creative_workflow` 新增分集剧本、设定卡，并给白模场景补可空来源字段。升级先隔离验收，停机备份 Visual 数据库和启动配置后显式迁移，再核验现有项目和白模。
+- `0134_visual_account_asset_cards` 和独立 Visual 的 `0014_visual_account_asset_cards` 按项目原归属迁移卡片账号，保留卡 ID、内容和 revision。按停机备份与隔离验证流程升级，再核验同账号的设定库和项目入口。
 - Schema 由 `db/migrations/` 维护。只在 `versions/` 追加迁移并更新 `registry.py`。已登记的 ID、顺序、SQL 和 checksum 保持完整。
   Schema 或持久化兼容性变更同步更新 ORM、注册表、测试和数据／API 文档。迁移包独立于应用运行时，可执行 schema 所需的
   确定性数据变换。日常数据管理走正式 API。禁止绕过应用写入持久数据库或手工伪造迁移状态。

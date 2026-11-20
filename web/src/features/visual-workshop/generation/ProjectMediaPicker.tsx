@@ -1,9 +1,17 @@
+import { CardReferencePicker } from "../creative/CardReferencePicker";
 import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
 import { TransferFeedback } from "@shared/ui/TransferFeedback";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   useMutation,
@@ -187,6 +195,9 @@ function GenerationMediaPreviewDialog({
 
 export function ProjectMediaPicker({
   projectId,
+  compactStrip = false,
+  addRequest,
+  renderItemTools,
   label,
   kind = "image",
   value,
@@ -205,6 +216,12 @@ export function ProjectMediaPicker({
   onDropResult,
 }: {
   projectId: string;
+  compactStrip?: boolean;
+  addRequest?: { id: number; action: "upload" | "project" | "cross" };
+  renderItemTools?: (
+    file: ManagedFile,
+    order: { index: number; total: number; move: (to: number) => void },
+  ) => ReactNode;
   label: string;
   kind?: Extract<MediaKind, "image" | "video" | "audio">;
   value: string[];
@@ -229,6 +246,7 @@ export function ProjectMediaPicker({
   const uploadInput = useRef<HTMLInputElement>(null);
   const sourceTrigger = useRef<HTMLButtonElement>(null);
   const sourceMenuRef = useRef<HTMLDivElement>(null);
+  const [cardsOpen, setCardsOpen] = useState(false);
   const [sourceMenuOpen, setSourceMenuOpen] = useState(false);
   const [sourceMenuPosition, setSourceMenuPosition] = useState({
     top: 0,
@@ -304,6 +322,7 @@ export function ProjectMediaPicker({
   useEffect(() => {
     if (!selectionReady) return;
     onFilesLoaded?.(files);
+    if (compactStrip) return;
     const available = new Set(files.map((file) => file.id));
     const valid = value.filter(
       (assetId) =>
@@ -314,6 +333,7 @@ export function ProjectMediaPicker({
     if (value.some((id) => !available.has(id))) onInvalidSelection?.();
   }, [
     files,
+    compactStrip,
     excludedAssetIds,
     onChange,
     onFilesLoaded,
@@ -441,6 +461,14 @@ export function ProjectMediaPicker({
     };
   }, [sourceMenuOpen]);
 
+  const handledRequest = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (!addRequest || handledRequest.current === addRequest.id) return;
+    handledRequest.current = addRequest.id;
+    if (addRequest.action === "upload") uploadInput.current?.click();
+    else setDialogMode(addRequest.action);
+  }, [addRequest]);
+
   const uploadButton = (
     <button
       ref={sourceTrigger}
@@ -510,6 +538,23 @@ export function ProjectMediaPicker({
               <small>选择当前项目已有素材</small>
             </span>
           </button>
+          {kind === "image" && (
+            <button
+              type="button"
+              role="menuitem"
+              disabled={remaining === 0 && !canReplaceManual}
+              onClick={() => {
+                setSourceMenuOpen(false);
+                setCardsOpen(true);
+              }}
+            >
+              <FolderOpen aria-hidden />
+              <span>
+                <strong>设定卡</strong>
+                <small>引用卡片已采用的图片</small>
+              </span>
+            </button>
+          )}
           <button
             type="button"
             role="menuitem"
@@ -532,12 +577,28 @@ export function ProjectMediaPicker({
 
   return (
     <fieldset
-      className={`generation-image-picker${minimal ? " is-minimal" : ""}${disabled ? " is-disabled" : ""}${referenceDrop.active ? " is-reference-dragover" : ""}`}
+      className={`generation-image-picker${compactStrip ? " is-compact-strip" : ""}${minimal ? " is-minimal" : ""}${disabled ? " is-disabled" : ""}${referenceDrop.active ? " is-reference-dragover" : ""}`}
       {...referenceDrop.handlers}
       disabled={disabled}
       aria-disabled={disabled}
     >
       <TransferFeedback progress={activeTransferProgress} />
+      {cardsOpen && (
+        <CardReferencePicker
+          project={projectId}
+          onClose={() => {
+            setCardsOpen(false);
+            sourceTrigger.current?.focus();
+          }}
+          onChoose={(asset) => {
+            if (!multiple && !linkedIds.length) onChange([asset]);
+            else if (remaining > 0 && !combinedValue.includes(asset))
+              onChange([...value, asset]);
+            setCardsOpen(false);
+            sourceTrigger.current?.focus();
+          }}
+        />
+      )}
 
       <legend className={minimal && !showLabel ? "sr-only" : undefined}>
         {label}
@@ -572,7 +633,7 @@ export function ProjectMediaPicker({
         <div
           className={`generation-image-options${onReorder ? " has-reference-order" : ""}`}
         >
-          {minimal || uploadLast ? null : uploadButton}
+          {compactStrip || minimal || uploadLast ? null : uploadButton}
           {visibleFiles.map((file) => {
             const linked = linkedSet.has(file.id);
             const selected = combinedValue.includes(file.id);
@@ -661,7 +722,7 @@ export function ProjectMediaPicker({
                       }
                     />
                   )}
-                  {onReorder ? (
+                  {onReorder && !compactStrip ? (
                     <span className="reference-order-actions">
                       <button
                         type="button"
@@ -689,6 +750,11 @@ export function ProjectMediaPicker({
                       </button>
                     </span>
                   ) : null}
+                  {renderItemTools?.(file, {
+                    index,
+                    total: combinedValue.length,
+                    move: (to) => reorder(file.id, combinedValue[to]),
+                  })}
                 </span>
               );
             }
@@ -724,7 +790,7 @@ export function ProjectMediaPicker({
               </button>
             );
           })}
-          {minimal || uploadLast ? uploadButton : null}
+          {!compactStrip && (minimal || uploadLast) ? uploadButton : null}
         </div>
       )}
       {multiple && !minimal ? (
@@ -742,6 +808,21 @@ export function ProjectMediaPicker({
           {uploadErrorMessage(upload.error)}
         </small>
       ) : null}
+      {compactStrip &&
+        (folders.isError || fileQueries.some((query) => query.isError)) && (
+          <small role="alert" className="generation-picker-error">
+            素材读取失败，原引用已保留。
+            <button
+              type="button"
+              onClick={() => {
+                void folders.refetch();
+                fileQueries.forEach((query) => void query.refetch());
+              }}
+            >
+              重试
+            </button>
+          </small>
+        )}
       {onDropResult ? null : (
         <ReferenceDropNotice notice={referenceDrop.notice} />
       )}

@@ -119,7 +119,7 @@ def source_snapshot(root):
         )
     ]
     paths.extend((root / "web").glob("*.*"))
-    for directory in ("web/src", "web/public", "web/scripts"):
+    for directory in ("web/src", "web/public", "web/scripts", "web/vendor/toonflow"):
         paths.extend((root / directory).rglob("*"))
     result = {}
     for path in paths:

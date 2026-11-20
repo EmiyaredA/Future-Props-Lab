@@ -4,6 +4,7 @@ import asyncio
 import os
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
 import pytest
 from future_props_lab import WaitingApproval, async_task_client, task_client
@@ -170,6 +171,61 @@ async def test_saving_is_explicit_and_uses_existing_approval(isolated):
     for path in ("../credential.json", "/etc/passwd"):
         with pytest.raises(CliError):
             await isolated.save({"path": path, "name": "bad"}, propose)
+    (isolated.root / "linked-parent").symlink_to(isolated.private, target_is_directory=True)
+    with pytest.raises(OSError):
+        await isolated.save({"path": "linked-parent/credential.json", "name": "bad"}, propose)
+
+
+async def test_workspace_denies_foreign_socket_and_process_signal(isolated):
+    temporary = TemporaryDirectory(prefix="fpl-other-socket-", dir="/tmp")
+    endpoint = Path(temporary.name) / "s"
+    server = await asyncio.start_unix_server(lambda _r, writer: writer.close(), path=str(endpoint))
+    sentinel = await asyncio.create_subprocess_exec("/bin/sleep", "30")
+    try:
+        code = (
+            "import socket, os, signal\n"
+            "s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)\n"
+            f"try: s.connect({str(endpoint)!r})\n"
+            "except PermissionError: pass\n"
+            "else: raise AssertionError('foreign socket access')\n"
+            f"try: os.kill({sentinel.pid}, signal.SIGTERM)\n"
+            "except PermissionError: pass\n"
+            "else: raise AssertionError('foreign process signal')\n"
+        )
+        (isolated.root / "guards.py").write_text(code)
+        result = await isolated.execute({"command": "python guards.py"})
+        assert result["exit_code"] == 0, result
+        assert sentinel.returncode is None
+    finally:
+        server.close()
+        await server.wait_closed()
+        if sentinel.returncode is None:
+            sentinel.terminate()
+        await sentinel.wait()
+        temporary.cleanup()
+
+
+async def test_model_cli_policy_cannot_read_application_source(isolated):
+    entry = isolated.private / "fixture-cli.py"
+    source = Path(__file__).resolve()
+    entry.write_text(
+        "#!/usr/bin/env python3\n"
+        "from pathlib import Path\n"
+        f"try: Path({str(source)!r}).read_bytes()\n"
+        "except PermissionError: print('denied')\n"
+        "else: raise AssertionError('model CLI could read source')\n"
+    )
+    entry.chmod(0o700)
+    process = await asyncio.create_subprocess_exec(
+        *isolated.command([str(entry)]),
+        cwd=isolated.root,
+        env=isolated.environment({"PATH": os.environ["PATH"]}),
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    output, error = await process.communicate()
+    assert process.returncode == 0, error.decode()
+    assert output.strip() == b"denied"
 
 
 async def test_timeout_output_limit_and_cancellation_reap_children(isolated):

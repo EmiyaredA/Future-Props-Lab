@@ -25,3 +25,13 @@ export function reorderPictureReferences(
     return position ? `<Picture ${position}>` : token;
   });
 }
+
+export function uniqueAssetIds(...groups: string[][]) {
+  return [...new Set(groups.flat())];
+}
+export function sameAssetIds(left: string[], right: string[]) {
+  return (
+    left.length === right.length &&
+    left.every((id, index) => id === right[index])
+  );
+}

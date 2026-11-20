@@ -158,11 +158,15 @@ test("opens an Updream-style context menu and persists created nodes", async () 
     }),
   });
   await user.click(screen.getByRole("button", { name: "适配视图" }));
-  const world = container.querySelector(".visual-canvas-world") as HTMLElement;
-  const fittedX = Number(
-    world.style.transform.match(/translate\(([-\d.]+)px/)?.[1],
-  );
-  expect(fittedX).toBeGreaterThan(200);
+  const view = container.querySelector<HTMLElement>(
+    ".vue-flow__transformationpane",
+  )!;
+  await waitFor(() => {
+    const fittedX = Number(
+      view.style.transform.match(/translate\(([-\d.]+)px/)?.[1],
+    );
+    expect(fittedX).toBeGreaterThan(200);
+  });
 });
 
 test("undoes and redoes canvas node changes with keyboard shortcuts", async () => {
@@ -243,8 +247,12 @@ test.each([
     const surface = container.querySelector<HTMLElement>(
       ".visual-canvas-surface",
     )!;
-    const world = container.querySelector<HTMLElement>(".visual-canvas-world")!;
-    const initialTransform = world.style.transform;
+    const view = container.querySelector<HTMLElement>(
+      ".vue-flow__transformationpane",
+    )!;
+    await waitFor(() =>
+      expect(view.style.transform).toBe("translate(135px,-48px) scale(1.3)"),
+    );
 
     fireEvent.contextMenu(surface, { clientX: 455, clientY: 312 });
     await user.click(
@@ -260,7 +268,7 @@ test.each([
     const node = container.querySelector<HTMLElement>(
       `[data-node-id^='${kind}-']`,
     )!;
-    expect(world.style.transform).toBe(initialTransform);
+    expect(view.style.transform).toBe("translate(135px,-48px) scale(1.3)");
     expect(Number.parseFloat(node.style.left)).toBeCloseTo((455 - 135) / 1.3);
     expect(Number.parseFloat(node.style.top)).toBeCloseTo((312 + 48) / 1.3);
     expect(node).toHaveClass("selected");

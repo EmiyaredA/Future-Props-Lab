@@ -51,8 +51,47 @@ class VisualCanvasDocument(Base):
     nodes: Mapped[list[dict]] = mapped_column(JSON, default=list)
     edges: Mapped[list[dict]] = mapped_column(JSON, default=list)
     categories: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    groups: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    project_card_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class VisualPrevisScene(Base):
+    __tablename__ = "visual_previs_scenes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(120))
+    format_version: Mapped[int] = mapped_column(Integer)
+    document: Mapped[dict] = mapped_column(JSON)
+    script_source: Mapped[dict | None] = mapped_column(JSON)
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class VisualScript(Base):
+    __tablename__ = "visual_scripts"
+
+    project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE"), primary_key=True
+    )
+    episodes: Mapped[list[dict]] = mapped_column(JSON)
+    revision: Mapped[int] = mapped_column(Integer)
+
+
+class VisualAssetCard(Base):
+    __tablename__ = "visual_asset_cards"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    project_id: Mapped[str | None] = mapped_column(String(36))
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    data: Mapped[dict] = mapped_column(JSON)
+    media_projects: Mapped[dict[str, str | None]] = mapped_column(JSON, default=dict)
 
 
 class VisualGenerationTask(Base):

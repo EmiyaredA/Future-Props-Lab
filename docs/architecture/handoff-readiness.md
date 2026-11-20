@@ -1,5 +1,11 @@
 # 开发交付说明
 
+`0134_visual_account_asset_cards` 和独立服务 `0014_visual_account_asset_cards` 把视觉设定卡归到账号，并保留已有卡片 ID、引用和版本。项目可以浏览同一账号的角色、场景和道具设定。
+
+`0133_visual_creative_workflow` 为兼容网站登记分集剧本、设定卡和白模来源字段。独立视觉服务对应 `0013_visual_creative_workflow`；项目快照保留剧本、设定卡及引用的项目模型。
+
+`0132_visual_previs_scenes` 为兼容网站增加视觉项目场景表，独立视觉服务对应 `0012_visual_previs_scenes`。场景随项目快照流转。现有画布、项目素材及生成记录可继续使用。
+
 `0131_amadeus_instructions` 为兼容网站增加 Amadeus 运行中补充消息的投递回执与输入就绪时间；独立 Amadeus 同步登记 `0005_run_instructions`。保留已有会话、运行与审批，升级仅通过显式迁移流程执行。取消、暂停及重启不自动重投未知消息。
 
 `0130_local_zonos_provider` 为兼容网站扩展本地语音 provider 类型，保留既有账号目录。独立 Models 的 kind 字段无 CHECK，无需迁移；新增模型须由本机管理员显式安装，ZONOS3 使用隔离的官方 MLX 环境。

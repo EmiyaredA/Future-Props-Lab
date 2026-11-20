@@ -119,6 +119,13 @@ export function useVisualCanvasController({
   });
   const canvasReady = Boolean(projectQuery.data && canvasQuery.data);
   const {
+    groups,
+    groupsRef,
+    setGroups,
+    projectCardIds,
+    projectCardIdsRef,
+    replaceProjectCardIds,
+    applyCanvasMetadata,
     revisionRef,
     nodesRef,
     edgesRef,
@@ -169,12 +176,24 @@ export function useVisualCanvasController({
     [replaceEdges],
   );
   const commitCanvasSnapshot = useCallback(
-    (nextNodes: VisualCanvasNode[], nextEdges: VisualCanvasEdge[]) => {
+    (
+      nextNodes: VisualCanvasNode[],
+      nextEdges: VisualCanvasEdge[],
+      nextGroups = groupsRef.current,
+    ) => {
       if (autoSave.current) {
         clearTimeout(autoSave.current);
         autoSave.current = undefined;
       }
       recordHistory({ nodes: nodesRef.current, edges: edgesRef.current });
+      const ids = new Set(nextNodes.map((node) => node.id));
+      groupsRef.current = nextGroups
+        .map((group) => ({
+          ...group,
+          node_ids: group.node_ids.filter((id) => ids.has(id)),
+        }))
+        .filter((group) => group.node_ids.length >= 2);
+      setGroups(groupsRef.current);
       nodesRef.current = nextNodes;
       edgesRef.current = nextEdges;
       setNodes(nextNodes);
@@ -185,6 +204,8 @@ export function useVisualCanvasController({
       autoSave,
       edgesRef,
       enqueueSave,
+      groupsRef,
+      setGroups,
       nodesRef,
       recordHistory,
       setEdges,
@@ -436,6 +457,7 @@ export function useVisualCanvasController({
       commitSnapshot: commitCanvasSnapshot,
       conflictRef,
       interactionActive,
+      groupsRef,
       selectedNodeIds,
       setSaveMessage,
     });
@@ -519,6 +541,8 @@ export function useVisualCanvasController({
         id: string;
         media_kind: "image" | "video" | "audio";
         display_name: string;
+        design_card_id?: string;
+        design_card_revision?: number;
       },
       position: { x: number; y: number },
     ) => {
@@ -528,6 +552,10 @@ export function useVisualCanvasController({
         title: asset.display_name,
         position: resolveNodePosition(asset.media_kind, position),
         asset_id: asset.id,
+        ...(asset.design_card_id && {
+          design_card_id: asset.design_card_id,
+          design_card_revision: asset.design_card_revision,
+        }),
       } as VisualCanvasNode;
       commitCanvasSnapshot([...nodesRef.current, node], edgesRef.current);
       revealNodes([node]);
@@ -653,6 +681,7 @@ export function useVisualCanvasController({
     projectId,
     nodesRef,
     edgesRef,
+    groupsRef,
     conflictRef,
     selectedNodeIds,
     getPastePosition: () => {
@@ -730,6 +759,55 @@ export function useVisualCanvasController({
     [replaceNodes, selectedNodeIds],
   );
 
+  const selectedGroup = groups.find(
+    (group) =>
+      group.node_ids.length === selectedNodeIds.length &&
+      group.node_ids.every((id) => selectedNodeIds.includes(id)),
+  );
+  const canGroup =
+    selectedNodeIds.length >= 2 &&
+    !conflict &&
+    !interactionActive &&
+    !groups.some((group) =>
+      group.node_ids.some((id) => selectedNodeIds.includes(id)),
+    );
+  const groupSelection = () => {
+    if (!canGroup) return;
+    commitCanvasSnapshot(nodesRef.current, edgesRef.current, [
+      ...groupsRef.current,
+      {
+        id: crypto.randomUUID(),
+        title: "分组",
+        node_ids: [...selectedNodeIds],
+      },
+    ]);
+    setInspectedNodeId(undefined);
+  };
+  const ungroupSelection = () => {
+    if (!selectedGroup || conflict || interactionActive) return;
+    commitCanvasSnapshot(
+      nodesRef.current,
+      edgesRef.current,
+      groupsRef.current.filter(({ id }) => id !== selectedGroup.id),
+    );
+  };
+  const renameGroup = (groupId: string, title: string) => {
+    const trimmed = title.trim();
+    if (
+      !trimmed ||
+      conflict ||
+      groupsRef.current.find(({ id }) => id === groupId)?.title === trimmed
+    )
+      return;
+    commitCanvasSnapshot(
+      nodesRef.current,
+      edgesRef.current,
+      groupsRef.current.map((group) =>
+        group.id === groupId ? { ...group, title: trimmed } : group,
+      ),
+    );
+  };
+
   useCanvasKeyboardShortcuts({
     selectedNodeIds,
     selectedEdgeId,
@@ -740,7 +818,9 @@ export function useVisualCanvasController({
       setSelectedNodeIds(nodesRef.current.map((node) => node.id)),
     copySelected,
     pasteAtPointer: () => pasteNodes(),
-    removeNodes,
+    removeNodes: selectedGroup ? ungroupSelection : removeNodes,
+    groupSelection,
+    ungroupSelection,
     removeEdge,
     setToolMode,
     fitView,
@@ -895,5 +975,15 @@ export function useVisualCanvasController({
     consumeSuppressedNodeClick,
     openContextMenu,
     selectedNode,
+    groups,
+    selectedGroup,
+    canGroup,
+    groupSelection,
+    ungroupSelection,
+    renameGroup,
+    applyCanvasMetadata,
+    projectCardIds,
+    projectCardIdsRef,
+    replaceProjectCardIds,
   };
 }

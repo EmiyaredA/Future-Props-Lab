@@ -12,8 +12,10 @@ import { MoreHorizontal } from "lucide-react";
 export function BoardMenu({
   label,
   items,
+  triggerIcon,
 }: {
   label: string;
+  triggerIcon?: ReactNode;
   items: {
     label: string;
     onSelect: () => void;
@@ -82,7 +84,7 @@ export function BoardMenu({
           }
         }}
       >
-        <MoreHorizontal size={18} />
+        {triggerIcon ?? <MoreHorizontal size={18} />}
       </button>
       {open &&
         createPortal(

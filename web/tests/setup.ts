@@ -11,6 +11,13 @@ HTMLMediaElement.prototype.play = () => Promise.resolve();
 HTMLMediaElement.prototype.pause = () => {};
 
 beforeEach(() => {
+  if (!window.ResizeObserver) {
+    window.ResizeObserver = class ResizeObserver {
+      observe() {}
+      unobserve() {}
+      disconnect() {}
+    };
+  }
   // JSDOM has no layout scrolling; model the browser API for deferred focus
   // and documentation navigation without changing application timing.
   if (!Element.prototype.scrollIntoView) {

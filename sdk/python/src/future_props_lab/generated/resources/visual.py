@@ -31,6 +31,26 @@ class Visual:
         'Acceptance Catalog. GET /v1/visual-workshop/acceptance/catalog'
         return self._client._call('GET', '/v1/visual-workshop/acceptance/catalog', parameters=[], response_type=models.NodeAcceptanceCatalogOut)
 
+    def list_account_asset_cards(self) -> list[models.CardOut]:
+        'List Account Asset Cards. GET /v1/visual-workshop/asset-cards'
+        return self._client._call('GET', '/v1/visual-workshop/asset-cards', parameters=[], response_type=list[models.CardOut])
+
+    def create_account_asset_card(self, *, body: models.CardData | dict) -> models.CardOut:
+        'Create Account Asset Card. POST /v1/visual-workshop/asset-cards'
+        return self._client._call('POST', '/v1/visual-workshop/asset-cards', parameters=[], body=body, media_type='application/json', response_type=models.CardOut)
+
+    def regroup_account_asset_cards(self, *, body: models.CardRegroupIn | dict) -> list[models.CardOut]:
+        'Regroup Account Asset Cards. POST /v1/visual-workshop/asset-cards/regroup'
+        return self._client._call('POST', '/v1/visual-workshop/asset-cards/regroup', parameters=[], body=body, media_type='application/json', response_type=list[models.CardOut])
+
+    def get_account_asset_card(self, *, card_id: str) -> models.CardOut:
+        'Get Account Asset Card. GET /v1/visual-workshop/asset-cards/{card_id}'
+        return self._client._call('GET', '/v1/visual-workshop/asset-cards/{card_id}', parameters=[('card_id', 'path', card_id)], response_type=models.CardOut)
+
+    def put_account_asset_card(self, *, card_id: str, body: models.CardUpdate | dict) -> models.CardOut:
+        'Put Account Asset Card. PUT /v1/visual-workshop/asset-cards/{card_id}'
+        return self._client._call('PUT', '/v1/visual-workshop/asset-cards/{card_id}', parameters=[('card_id', 'path', card_id)], body=body, media_type='application/json', response_type=models.CardOut)
+
     def list_projects(self) -> models.VisualWorkshopProjectListOut:
         'List Projects. GET /v1/visual-workshop/projects'
         return self._client._call('GET', '/v1/visual-workshop/projects', parameters=[], response_type=models.VisualWorkshopProjectListOut)
@@ -107,6 +127,22 @@ class Visual:
         'Acceptance Summary. GET /v1/visual-workshop/projects/{project_id}/acceptance/summary'
         return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/summary', parameters=[('project_id', 'path', project_id)], response_type=models.AcceptanceSummaryOut)
 
+    def list_visual_asset_cards(self, *, project_id: str) -> list[models.CardOut]:
+        'List Visual Asset Cards. GET /v1/visual-workshop/projects/{project_id}/asset-cards'
+        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/asset-cards', parameters=[('project_id', 'path', project_id)], response_type=list[models.CardOut])
+
+    def create_visual_asset_card(self, *, project_id: str, body: models.CardData | dict) -> models.CardOut:
+        'Create Visual Asset Card. POST /v1/visual-workshop/projects/{project_id}/asset-cards'
+        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/asset-cards', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.CardOut)
+
+    def get_visual_asset_card(self, *, project_id: str, card_id: str) -> models.CardOut:
+        'Get Visual Asset Card. GET /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}'
+        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}', parameters=[('project_id', 'path', project_id), ('card_id', 'path', card_id)], response_type=models.CardOut)
+
+    def put_visual_asset_card(self, *, project_id: str, card_id: str, body: models.CardUpdate | dict) -> models.CardOut:
+        'Put Visual Asset Card. PUT /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}'
+        return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}', parameters=[('project_id', 'path', project_id), ('card_id', 'path', card_id)], body=body, media_type='application/json', response_type=models.CardOut)
+
     def import_assets(self, *, project_id: str, body: models.VisualAssetImportIn | dict) -> models.VisualAssetListOut:
         'Import Assets. POST /v1/visual-workshop/projects/{project_id}/asset-imports'
         return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/asset-imports', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VisualAssetListOut)
@@ -179,6 +215,34 @@ class Visual:
         'Reveal Project Folder. POST /v1/visual-workshop/projects/{project_id}/open-folder'
         return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/open-folder', parameters=[('project_id', 'path', project_id)], response_type=models.ProjectFolderOpenOut)
 
+    def list_previs_scenes(self, *, project_id: str) -> list[models.PrevisSceneSummary]:
+        'List Previs Scenes. GET /v1/visual-workshop/projects/{project_id}/previs-scenes'
+        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/previs-scenes', parameters=[('project_id', 'path', project_id)], response_type=list[models.PrevisSceneSummary])
+
+    def create_previs_scene(self, *, project_id: str, body: models.PrevisSceneCreate | dict) -> models.PrevisSceneOut:
+        'Create Previs Scene. POST /v1/visual-workshop/projects/{project_id}/previs-scenes'
+        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/previs-scenes', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PrevisSceneOut)
+
+    def delete_previs_scene(self, *, project_id: str, scene_id: str, expected_revision: int) -> dict[str, bool]:
+        'Delete Previs Scene. DELETE /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}'
+        return self._client._call('DELETE', '/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}', parameters=[('project_id', 'path', project_id), ('scene_id', 'path', scene_id), ('expected_revision', 'query', expected_revision)], response_type=dict[str, bool])
+
+    def get_previs_scene(self, *, project_id: str, scene_id: str) -> models.PrevisSceneOut:
+        'Get Previs Scene. GET /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}'
+        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}', parameters=[('project_id', 'path', project_id), ('scene_id', 'path', scene_id)], response_type=models.PrevisSceneOut)
+
+    def update_previs_scene(self, *, project_id: str, scene_id: str, body: models.PrevisSceneUpdate | dict) -> models.PrevisSceneOut:
+        'Update Previs Scene. PUT /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}'
+        return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}', parameters=[('project_id', 'path', project_id), ('scene_id', 'path', scene_id)], body=body, media_type='application/json', response_type=models.PrevisSceneOut)
+
+    def get_visual_script(self, *, project_id: str) -> models.ScriptOut:
+        'Get Visual Script. GET /v1/visual-workshop/projects/{project_id}/script'
+        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/script', parameters=[('project_id', 'path', project_id)], response_type=models.ScriptOut)
+
+    def put_visual_script(self, *, project_id: str, body: models.ScriptUpdate | dict) -> models.ScriptOut:
+        'Put Visual Script. PUT /v1/visual-workshop/projects/{project_id}/script'
+        return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/script', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ScriptOut)
+
     def export_project_snapshot(self, *, project_id: str) -> Download:
         'Export Project Snapshot. GET /v1/visual-workshop/projects/{project_id}/snapshot'
         return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/snapshot', parameters=[('project_id', 'path', project_id)], response_type=Any)
@@ -206,6 +270,26 @@ class AsyncVisual:
     async def acceptance_catalog(self) -> models.NodeAcceptanceCatalogOut:
         'Acceptance Catalog. GET /v1/visual-workshop/acceptance/catalog'
         return await self._client._call('GET', '/v1/visual-workshop/acceptance/catalog', parameters=[], response_type=models.NodeAcceptanceCatalogOut)
+
+    async def list_account_asset_cards(self) -> list[models.CardOut]:
+        'List Account Asset Cards. GET /v1/visual-workshop/asset-cards'
+        return await self._client._call('GET', '/v1/visual-workshop/asset-cards', parameters=[], response_type=list[models.CardOut])
+
+    async def create_account_asset_card(self, *, body: models.CardData | dict) -> models.CardOut:
+        'Create Account Asset Card. POST /v1/visual-workshop/asset-cards'
+        return await self._client._call('POST', '/v1/visual-workshop/asset-cards', parameters=[], body=body, media_type='application/json', response_type=models.CardOut)
+
+    async def regroup_account_asset_cards(self, *, body: models.CardRegroupIn | dict) -> list[models.CardOut]:
+        'Regroup Account Asset Cards. POST /v1/visual-workshop/asset-cards/regroup'
+        return await self._client._call('POST', '/v1/visual-workshop/asset-cards/regroup', parameters=[], body=body, media_type='application/json', response_type=list[models.CardOut])
+
+    async def get_account_asset_card(self, *, card_id: str) -> models.CardOut:
+        'Get Account Asset Card. GET /v1/visual-workshop/asset-cards/{card_id}'
+        return await self._client._call('GET', '/v1/visual-workshop/asset-cards/{card_id}', parameters=[('card_id', 'path', card_id)], response_type=models.CardOut)
+
+    async def put_account_asset_card(self, *, card_id: str, body: models.CardUpdate | dict) -> models.CardOut:
+        'Put Account Asset Card. PUT /v1/visual-workshop/asset-cards/{card_id}'
+        return await self._client._call('PUT', '/v1/visual-workshop/asset-cards/{card_id}', parameters=[('card_id', 'path', card_id)], body=body, media_type='application/json', response_type=models.CardOut)
 
     async def list_projects(self) -> models.VisualWorkshopProjectListOut:
         'List Projects. GET /v1/visual-workshop/projects'
@@ -283,6 +367,22 @@ class AsyncVisual:
         'Acceptance Summary. GET /v1/visual-workshop/projects/{project_id}/acceptance/summary'
         return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/summary', parameters=[('project_id', 'path', project_id)], response_type=models.AcceptanceSummaryOut)
 
+    async def list_visual_asset_cards(self, *, project_id: str) -> list[models.CardOut]:
+        'List Visual Asset Cards. GET /v1/visual-workshop/projects/{project_id}/asset-cards'
+        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/asset-cards', parameters=[('project_id', 'path', project_id)], response_type=list[models.CardOut])
+
+    async def create_visual_asset_card(self, *, project_id: str, body: models.CardData | dict) -> models.CardOut:
+        'Create Visual Asset Card. POST /v1/visual-workshop/projects/{project_id}/asset-cards'
+        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/asset-cards', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.CardOut)
+
+    async def get_visual_asset_card(self, *, project_id: str, card_id: str) -> models.CardOut:
+        'Get Visual Asset Card. GET /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}'
+        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}', parameters=[('project_id', 'path', project_id), ('card_id', 'path', card_id)], response_type=models.CardOut)
+
+    async def put_visual_asset_card(self, *, project_id: str, card_id: str, body: models.CardUpdate | dict) -> models.CardOut:
+        'Put Visual Asset Card. PUT /v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}'
+        return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/asset-cards/{card_id}', parameters=[('project_id', 'path', project_id), ('card_id', 'path', card_id)], body=body, media_type='application/json', response_type=models.CardOut)
+
     async def import_assets(self, *, project_id: str, body: models.VisualAssetImportIn | dict) -> models.VisualAssetListOut:
         'Import Assets. POST /v1/visual-workshop/projects/{project_id}/asset-imports'
         return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/asset-imports', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VisualAssetListOut)
@@ -354,6 +454,34 @@ class AsyncVisual:
     async def reveal_project_folder(self, *, project_id: str) -> models.ProjectFolderOpenOut:
         'Reveal Project Folder. POST /v1/visual-workshop/projects/{project_id}/open-folder'
         return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/open-folder', parameters=[('project_id', 'path', project_id)], response_type=models.ProjectFolderOpenOut)
+
+    async def list_previs_scenes(self, *, project_id: str) -> list[models.PrevisSceneSummary]:
+        'List Previs Scenes. GET /v1/visual-workshop/projects/{project_id}/previs-scenes'
+        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/previs-scenes', parameters=[('project_id', 'path', project_id)], response_type=list[models.PrevisSceneSummary])
+
+    async def create_previs_scene(self, *, project_id: str, body: models.PrevisSceneCreate | dict) -> models.PrevisSceneOut:
+        'Create Previs Scene. POST /v1/visual-workshop/projects/{project_id}/previs-scenes'
+        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/previs-scenes', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.PrevisSceneOut)
+
+    async def delete_previs_scene(self, *, project_id: str, scene_id: str, expected_revision: int) -> dict[str, bool]:
+        'Delete Previs Scene. DELETE /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}'
+        return await self._client._call('DELETE', '/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}', parameters=[('project_id', 'path', project_id), ('scene_id', 'path', scene_id), ('expected_revision', 'query', expected_revision)], response_type=dict[str, bool])
+
+    async def get_previs_scene(self, *, project_id: str, scene_id: str) -> models.PrevisSceneOut:
+        'Get Previs Scene. GET /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}'
+        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}', parameters=[('project_id', 'path', project_id), ('scene_id', 'path', scene_id)], response_type=models.PrevisSceneOut)
+
+    async def update_previs_scene(self, *, project_id: str, scene_id: str, body: models.PrevisSceneUpdate | dict) -> models.PrevisSceneOut:
+        'Update Previs Scene. PUT /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}'
+        return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}', parameters=[('project_id', 'path', project_id), ('scene_id', 'path', scene_id)], body=body, media_type='application/json', response_type=models.PrevisSceneOut)
+
+    async def get_visual_script(self, *, project_id: str) -> models.ScriptOut:
+        'Get Visual Script. GET /v1/visual-workshop/projects/{project_id}/script'
+        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/script', parameters=[('project_id', 'path', project_id)], response_type=models.ScriptOut)
+
+    async def put_visual_script(self, *, project_id: str, body: models.ScriptUpdate | dict) -> models.ScriptOut:
+        'Put Visual Script. PUT /v1/visual-workshop/projects/{project_id}/script'
+        return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/script', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ScriptOut)
 
     async def export_project_snapshot(self, *, project_id: str) -> AsyncDownload:
         'Export Project Snapshot. GET /v1/visual-workshop/projects/{project_id}/snapshot'

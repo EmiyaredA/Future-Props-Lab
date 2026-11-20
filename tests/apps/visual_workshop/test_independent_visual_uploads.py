@@ -1,7 +1,9 @@
 """Exercise native Visual uploads and their durable Assets settlement."""
 
+import hashlib
 import json
 from io import BytesIO
+from uuid import uuid4
 
 import httpx
 from PIL import Image
@@ -10,6 +12,9 @@ from studio.apps.asset_library.deletions import FileCleanup
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS
 from studio.assembly.independent.visual_workshop.application import create_app
+from studio.contracts.identity.claims import HEADER, Actor, issue_context
+from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
+from studio.contracts.visual_workshop.visual_snapshot import ARCHIVE_DOMAIN
 from studio.runtime.database.migrations import apply
 from studio.runtime.http.capability_client import CapabilityClient
 from tests.apps.creative_workshop.test_creative_project_certification import CREDENTIALS
@@ -18,6 +23,7 @@ from tests.apps.thought_workshop.test_community_asset_protocol import (  # noqa:
     CATALOG,
     scenario,
 )
+from tests.apps.visual_workshop.test_visual_previs import SCENE
 from tests.integration.test_independent_project_catalog import ORIGIN, authorize
 
 PROJECTS = "/v1/visual-workshop/projects"
@@ -80,10 +86,13 @@ async def test_visual_uploads_recover_exact_bytes_and_rollback_competing_canvas(
     case.assets.state.identity = live
     case.assets.state.capabilities = files
     faults = UploadFaults(case.mesh)
+    archive_key = "isolated-visual-archive-peer-key-" * 2
+    case.assets.state.visual_archive_auth = ArchiveAuthenticator(archive_key, domain=ARCHIVE_DOMAIN)
     root = tmp_path / "visual"
     apply(root / "service.db", "visual", MIGRATIONS)
     visual = create_app(
         state_root=root,
+        archive_key=archive_key,
         public_key=case.key.public_key(),
         credential=CREDENTIALS["visual"],
         catalog=CATALOG,
@@ -135,6 +144,14 @@ async def test_visual_uploads_recover_exact_bytes_and_rollback_competing_canvas(
         assert node["asset_id"] == staged[0]
         assert node["position"] == {"x": -25, "y": 30}
         assert (await download(staged[0])).content == png.getvalue()
+        shared_card = await send(
+            "POST",
+            "/v1/visual-workshop/asset-cards",
+            json={"title": "共享参考图", "kind": "scene", "adopted_asset_id": staged[0]},
+        )
+        assert shared_card.status_code == 201, shared_card.text
+        assert shared_card.json()["media_projects"] == {staged[0]: created.json()["id"]}
+        assert (await send("GET", path + "/asset-cards")).json() == [shared_card.json()]
         video = {"id": "clip", "kind": "video", "title": "Clip", "position": {"x": 0, "y": 0}}
         text = {"id": "note", "kind": "text", "title": "Note", "position": {"x": 0, "y": 50}}
         saved = await send(
@@ -183,6 +200,71 @@ async def test_visual_uploads_recover_exact_bytes_and_rollback_competing_canvas(
         assert await cleanup.run_once() == 2
         assert await cleanup.run_once() == 0
 
+        faults.on_sealed = None
+        scene = await send("POST", path + "/previs-scenes", json=SCENE)
+        assert scene.status_code == 201, scene.text
+        scenes_path = path + "/previs-scenes"
+        read_only = Actor(
+            user_id=case.viewer,
+            platform_role="admin",
+            auth_kind="management_api_key",
+            scopes=("studio:read", "studio:private_read"),
+            api_key_id="read-only-test-key",
+        )
+
+        async def read_only_request(method, **kwargs):
+            assertion = issue_context(
+                read_only,
+                service="visual",
+                method=method,
+                path=scenes_path,
+                private_key=case.key,
+                key_id="test",
+            )
+            return await http.request(method, scenes_path, headers={HEADER: assertion}, **kwargs)
+
+        assert (await read_only_request("GET")).status_code == 200
+        assert (await read_only_request("POST", json=SCENE)).status_code == 403
+        source = {
+            "request_id": str(uuid4()),
+            "scene_id": scene.json()["id"],
+            "scene_revision": 0,
+            "shot_number": 1,
+            "sha256": hashlib.sha256(png.getvalue()).hexdigest(),
+        }
+        current = (await send("GET", path + "/canvas")).json()
+
+        async def publish_previs():
+            return await send(
+                "POST",
+                path + "/node-uploads",
+                data={
+                    "expected_revision": current["revision"],
+                    "x": 40,
+                    "y": 25,
+                    "previs": json.dumps(source),
+                },
+                files={"file": ("previs-frame.png", png.getvalue(), "image/png")},
+            )
+
+        published = await publish_previs()
+        assert published.status_code == 200, published.text
+        assert (await publish_previs()).json() == published.json()
+        node = published.json()["nodes"][-1]
+        assert node["id"] == f"previs-{source['request_id']}"
+        assert (await download(node["asset_id"])).content == png.getvalue()
+        archive = await send("GET", path + "/snapshot")
+        assert archive.status_code == 200, archive.text
+        restored = await send(
+            "POST",
+            PROJECTS + "/snapshot-imports",
+            files={"file": ("previs.zip", archive.content, "application/zip")},
+        )
+        assert restored.status_code == 200, restored.text
+        imported_scenes = f"{PROJECTS}/{restored.json()['project']['id']}/previs-scenes"
+        assert (await send("GET", imported_scenes)).json()[0]["title"] == SCENE["title"]
+
+        faults.on_sealed = concurrent_edit
         before = (await send("GET", path + "/canvas")).json()
         authorization.revoke_on_seal = True
         rejected = await upload(before["revision"])

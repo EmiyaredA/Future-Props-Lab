@@ -97,7 +97,7 @@ test("素材管理员上传后，生成面板立即看到项目素材且不污�
     page.getByText("Persona 新素材", { exact: true }).first(),
   ).toBeVisible();
 
-  await page.getByRole("button", { name: "返回画布" }).click();
+  await page.getByRole("button", { name: "前往画布" }).click();
   await page.getByText("图片1", { exact: true }).click();
   await page.getByRole("button", { name: "展开图片生成器" }).click();
   await expect(

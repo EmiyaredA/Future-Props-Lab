@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.outputs.queries import OutputError
+from studio.apps.visual_workshop.reference_subjects import compile_subjects, order_references
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument
 from studio.contracts.model_service.generation_tasks import (
     AudioGenerationTaskCreateIn,
@@ -16,6 +17,7 @@ async def resolve_references(
     *,
     frame_constraints: bool = True,
     frame_reference_slots: bool = False,
+    supports_subject: bool = False,
 ):
     if body.canvas_node_id is None:
         return body, {}, []
@@ -131,6 +133,18 @@ async def resolve_references(
         elif body.mode == "reference":
             raise OutputError("参考素材模式至少需要一个素材", code="invalid_reference")
     own_asset_id = target.get("asset_id")
+    draft = target.get("generation_draft") or {}
+    if body.kind == "video":
+        payload["reference_asset_ids"] = order_references(
+            draft.get("reference_order"), payload.get("reference_asset_ids", []), snapshot
+        )
+    subjects = draft.get("reference_subjects")
+    if supports_subject and subjects is not None:
+        parameters = payload.get("workflow_parameters") or {}
+        parameters["video_subject_to_replace"] = compile_subjects(
+            subjects, payload.get("reference_asset_ids", []), snapshot
+        )
+        payload["workflow_parameters"] = parameters
     reference_ids = [
         *payload.get("reference_asset_ids", []),
         *payload.get("video_asset_ids", []),
