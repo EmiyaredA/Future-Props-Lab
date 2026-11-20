@@ -28,6 +28,7 @@ from studio.apps.amadeus.storage.models import (
     AmadeusQuestion,
     AmadeusRun,
     AmadeusRunEvent,
+    AmadeusRunInstruction,
 )
 from studio.apps.amadeus.storage.skill_files import read_skill_file
 from studio.apps.identity.storage.models.accounts import User
@@ -47,6 +48,8 @@ def seed_legacy(path, owner, other):
         continuation="00000000-0000-4000-8000-000000000001",
         response=str(uuid4()),
         action=str(uuid4()),
+        instruction=str(uuid4()),
+        supplement=str(uuid4()),
     )
     engine = create_engine(f"sqlite:///{path}")
     try:
@@ -94,7 +97,7 @@ def seed_legacy(path, owner, other):
                     source_run_id=ids.first,
                     partial_text="旧运行尚未发出的部分回复",
                     active_owner_key=str(owner),
-                    last_event_sequence=1,
+                    last_event_sequence=2,
                 )
             )
             session.flush()
@@ -129,6 +132,42 @@ def seed_legacy(path, owner, other):
                         answer_json={"answer": "yes"},
                     ),
                 ]
+            )
+            session.add(
+                AmadeusMessage(
+                    id=ids.supplement,
+                    **dialogue,
+                    owner_user_id=str(owner),
+                    role="user",
+                    content="尚待回执的补充",
+                    status="sending",
+                    run_id=ids.continuation,
+                )
+            )
+            session.flush()
+            session.add(
+                AmadeusRunInstruction(
+                    id=ids.instruction,
+                    run_id=ids.continuation,
+                    owner_user_id=str(owner),
+                    request_id="original-instruction",
+                    message_id=ids.supplement,
+                    body_sha256="a" * 64,
+                    prompt="尚待回执的补充",
+                    status="sending",
+                    dispatch_key="previous-lease",
+                    sequence=2,
+                )
+            )
+            session.add(
+                AmadeusRunEvent(
+                    run_id=ids.continuation,
+                    owner_user_id=str(owner),
+                    sequence=2,
+                    kind="user_instruction",
+                    payload_json={"message_id": ids.supplement},
+                    idempotency_key="instruction:original-instruction",
+                )
             )
             for run, label in ((ids.first, "previous"), (ids.continuation, "current")):
                 session.add(
@@ -180,8 +219,8 @@ def test_transfer_amadeus_graph_and_preserve_unknown_execution(tmp_path):
     headers = {"X-Fpl-Migration-Token": plan.token.get_secret_value()}
     state = tmp_path / "amadeus"
     apply(state / "service.db", "amadeus", MIGRATIONS)
-    conversations, runs, messages, actions, questions, events, links = project_datasets(
-        PREFIX, (*DATASETS, LINKS)
+    conversations, runs, messages, actions, questions, events, instructions, links = (
+        project_datasets(PREFIX, (*DATASETS, LINKS))
     )
     old_port, new_port = available_ports()
 
@@ -254,7 +293,13 @@ def test_transfer_amadeus_graph_and_preserve_unknown_execution(tmp_path):
             incomplete = client.get(target + RELATIONSHIPS, headers=headers)
             assert incomplete.status_code == 409
             assert incomplete.json()["code"] == "migration_amadeus_run_relationship_invalid"
-            for dataset, count in ((messages, 1), (actions, 1), (questions, 1), (events, 2)):
+            for dataset, count in (
+                (messages, 2),
+                (actions, 1),
+                (questions, 1),
+                (events, 3),
+                (instructions, 1),
+            ):
                 assert transfer(client, plan, source, target, dataset)["record_count"] == count
             evidence = transfer(client, plan, source, target, links)
             assert evidence["record_count"] == 1
@@ -316,6 +361,9 @@ def test_transfer_amadeus_graph_and_preserve_unknown_execution(tmp_path):
                 assert run.source_run_id == ids.first
                 action = await session.get(AmadeusAction, ids.action)
                 assert action.status == "unknown"
+                instruction = await session.get(AmadeusRunInstruction, ids.instruction)
+                supplement = await session.get(AmadeusMessage, ids.supplement)
+                assert instruction.status == supplement.status == "unknown"
                 partial = await session.get(AmadeusMessage, run.response_message_id)
                 assert partial.content == run.partial_text and partial.status == "interrupted"
                 events = list(
@@ -324,7 +372,8 @@ def test_transfer_amadeus_graph_and_preserve_unknown_execution(tmp_path):
                     )
                 )
                 assert [(event.sequence, event.payload_json) for event in events] == [
-                    (1, {"text": "current"})
+                    (1, {"text": "current"}),
+                    (2, {"message_id": ids.supplement}),
                 ]
             async with app.state.database.sessions(info={"owner_user_id": str(other)}) as session:
                 assert await session.get(AmadeusRun, ids.continuation) is None

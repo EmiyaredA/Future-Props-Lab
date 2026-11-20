@@ -11,6 +11,7 @@ from studio.apps.amadeus.storage.models import (
     AmadeusQuestion,
     AmadeusRun,
     AmadeusRunEvent,
+    AmadeusRunInstruction,
 )
 from studio.runtime.database.native_records import NativeJobFields
 
@@ -33,4 +34,5 @@ MODELS = (
     AmadeusAction,
     AmadeusQuestion,
     AmadeusRunEvent,
+    AmadeusRunInstruction,
 )

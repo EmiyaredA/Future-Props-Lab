@@ -1,4 +1,5 @@
 import type { ElementTarget } from "@platform/assistantElements";
+import type { components } from "@generated/api";
 
 export type Conversation = {
   executor_kind?: string;
@@ -165,6 +166,7 @@ export type TokenUsage = Partial<
 >;
 
 export type Run = {
+  codex_image_generation?: boolean;
   model_variant?: string | null;
   harness_effort?: string | null;
   service_tier?: "fast" | null;
@@ -186,7 +188,19 @@ export type Run = {
   error_message?: string | null;
 };
 
+export type RunInstruction = {
+  request_id: string;
+  message_id: string;
+  text: string;
+  references: Reference[];
+  status: "pending" | "sending" | "accepted" | "rejected" | "unknown";
+  sequence: number;
+  created_at: string;
+};
+
 export type RunDetail = {
+  instructions?: RunInstruction[];
+  can_receive?: boolean;
   run: Run;
   events: Array<{
     sequence: number;
@@ -194,6 +208,15 @@ export type RunDetail = {
     payload: Record<string, unknown>;
     created_at?: string;
   }>;
+};
+
+export type GeneratedImage = components["schemas"]["GeneratedImage"];
+
+export type ImageGeneration = {
+  item_id: string;
+  status: "started" | "completed" | "failed" | "interrupted";
+  image?: GeneratedImage;
+  message?: string;
 };
 
 export type AvatarState =

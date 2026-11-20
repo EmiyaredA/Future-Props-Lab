@@ -288,6 +288,7 @@ export function CatalogConnections({
                       <code>
                         {[
                           "local_qwen_tts",
+                          "local_zonos_tts",
                           "local_relayvsr",
                           "local_ffmpeg",
                         ].includes(selected.kind)
@@ -304,6 +305,7 @@ export function CatalogConnections({
                         : [
                               "zealman_video",
                               "local_qwen_tts",
+                              "local_zonos_tts",
                               "local_relayvsr",
                               "local_ffmpeg",
                             ].includes(selected.kind)

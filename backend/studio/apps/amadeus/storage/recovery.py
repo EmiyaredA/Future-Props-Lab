@@ -2,8 +2,10 @@
 
 from sqlalchemy import select, update
 
+from studio.apps.amadeus.storage.instructions import close_instructions
 from studio.apps.amadeus.storage.models import AmadeusAction, AmadeusMessage, AmadeusRun
 from studio.apps.amadeus.storage.runs import ACTIVE
+from studio.contracts.amadeus.images import image_reference
 from studio.runtime.time import utc_now
 
 
@@ -13,14 +15,16 @@ async def recover_runs(session):
     if not rows:
         return
     active_ids = [row.id for row in rows]
+    await close_instructions(session, active_ids)
     for row in rows:
-        if row.partial_text and not row.response_message_id:
+        images = row.execution_config.get("generated_images", [])
+        if (row.partial_text or images) and not row.response_message_id:
             message = AmadeusMessage(
                 conversation_id=row.conversation_id,
                 owner_user_id=row.owner_user_id,
                 role="assistant",
                 content=row.partial_text,
-                references_json=[],
+                references_json=[image_reference(image) for image in images],
                 run_id=row.id,
                 status="interrupted",
             )

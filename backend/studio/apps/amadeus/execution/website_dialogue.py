@@ -4,12 +4,17 @@ import asyncio
 import time
 
 from studio.apps.amadeus.execution.website_tools import TOOLS, ToolBridge
+from studio.apps.amadeus.instructions import validate_references
 from studio.apps.amadeus.rules.dialogue_prompt import dialogue_image_names, dialogue_prompt
 from studio.apps.amadeus.storage.files import work_root
+from studio.apps.amadeus.storage.generated_images import GeneratedImages
+from studio.apps.amadeus.storage.instructions import InstructionRecords
 from studio.apps.amadeus.storage.runs import RunRecords as Runs
 from studio.apps.amadeus.storage.skill_import import load_skill
 from studio.contracts.amadeus.conversations import RunEventIn, RunOut
 from studio.host.agent_execution.cli.dialogue import run_dialogue
+from studio.host.agent_execution.cli.instruction_delivery import deliver_instructions
+from studio.host.agent_execution.cli.instructions import LiveInstructions
 from studio.runtime.database.ownership import bind_owner
 from studio.runtime.ids import new_id
 
@@ -26,6 +31,28 @@ class CodeAgentRuns:
         self.resolve_agent = resolve_agent
         self.settings = settings
         self.sessions, self.tasks = sessions, {}
+
+    async def insert(self, principal, conversation, identity, body, read):
+        async with self.sessions() as session:
+            bind_owner(session, principal.user_id)
+            records = InstructionRecords(session, principal)
+            run = await records.run(conversation, identity)
+            await self.resolve_agent(
+                session, principal.user_id, principal.user_id, run.agent_id, probe=False
+            )
+            if await records.existing(identity, body.request_id) is not None:
+                return await records.create(conversation, identity, body)
+        await validate_references(
+            principal.user_id, conversation, body.references, self.settings.runtime_path, read
+        )
+        async with self.sessions() as session:
+            bind_owner(session, principal.user_id)
+            records = InstructionRecords(session, principal)
+            run = await records.run(conversation, identity)
+            await self.resolve_agent(
+                session, principal.user_id, principal.user_id, run.agent_id, probe=False
+            )
+            return await records.create(conversation, identity, body)
 
     def start(self, app, headers, principal, run):
         run = OwnedRun(
@@ -55,6 +82,7 @@ class CodeAgentRuns:
         pending_text = ""
         last_flush = 0.0
         event_lock = asyncio.Lock()
+        instructions = LiveInstructions(timeout=900)
 
         async def persist(kind, payload, *, check_authority=True):
             async with self.sessions() as session:
@@ -105,6 +133,58 @@ class CodeAgentRuns:
         )
         transport = None
         paused = None
+        inputs = None
+
+        async def flush():
+            nonlocal pending_text, last_flush
+            async with event_lock:
+                if pending_text:
+                    text, pending_text = pending_text, ""
+                    await persist("assistant_delta", {"text": text})
+                    last_flush = time.monotonic()
+
+        async def claim(ready):
+            async with self.sessions() as session:
+                bind_owner(session, run.owner_user_id)
+                await self.resolve_agent(
+                    session, run.owner_user_id, run.user_id, run.agent_id, probe=False
+                )
+                value = await InstructionRecords(session, principal).claim(
+                    run.conversation_id, run.id, run.id, ready
+                )
+                return value.model_dump() if value else None
+
+        async def settle(receipt):
+            async with self.sessions() as session:
+                bind_owner(session, run.owner_user_id)
+                await InstructionRecords(session, principal).settle(
+                    run.conversation_id, run.id, run.id, receipt
+                )
+
+        async def authorize_image():
+            await bridge.api(f"/v1/amadeus/conversations/{run.conversation_id}")
+            async with self.sessions() as session:
+                bind_owner(session, run.owner_user_id)
+                await self.resolve_agent(
+                    session, run.owner_user_id, run.user_id, run.agent_id, probe=False
+                )
+
+        async def save_image(item_id, data):
+            nonlocal pending_text, last_flush
+            async with event_lock:
+                if pending_text:
+                    await persist("assistant_delta", {"text": pending_text})
+                    pending_text = ""
+                    last_flush = time.monotonic()
+                images = GeneratedImages(
+                    self.sessions,
+                    principal,
+                    run.conversation_id,
+                    run.id,
+                    self.settings.runtime_path,
+                )
+                return await images.save(item_id, data, authorize=authorize_image)
+
         status, error = "completed", None
         try:
             async with self.sessions() as session:
@@ -145,7 +225,9 @@ class CodeAgentRuns:
             if root.is_symlink():
                 raise ValueError("会话目录不安全")
             root.mkdir(parents=True, exist_ok=True, mode=0o700)
-            prompt = dialogue_prompt(run, skill_snapshots)
+            prompt = dialogue_prompt(
+                run, skill_snapshots, may_write=principal.allows("content.write")
+            )
             transport = asyncio.create_task(
                 run_dialogue(
                     run.agent_id,
@@ -158,17 +240,29 @@ class CodeAgentRuns:
                     root=root,
                     runtime_path=self.settings.runtime_path,
                     image_attachments=dialogue_image_names(run),
+                    **(
+                        {"image_generation_enabled": True, "save_image": save_image}
+                        if run.agent_id == "codex"
+                        and run.codex_image_generation
+                        and run.mode == "agent"
+                        and principal.allows("content.write")
+                        else {}
+                    ),
+                    instructions=instructions,
                     **run.cli_options(),
                 )
             )
             paused = asyncio.create_task(bridge.paused.wait())
+            inputs = asyncio.create_task(deliver_instructions(instructions, claim, settle, flush))
             done, _ = await asyncio.wait(
-                [transport, paused], timeout=900, return_when=asyncio.FIRST_COMPLETED
+                [transport, paused, inputs], timeout=900, return_when=asyncio.FIRST_COMPLETED
             )
             if not done:
                 raise TimeoutError("运行超过 15 分钟；请核实结果后手动继续")
             if bridge.paused.is_set():
                 return
+            if inputs in done:
+                await inputs
             await transport
         except asyncio.CancelledError:
             status, error = "interrupted", "运行已停止；未知结果不会自动重试"
@@ -190,10 +284,13 @@ class CodeAgentRuns:
 
             async def settle():
                 nonlocal status, error
-                for task in (transport, paused):
+                instructions.close()
+                for task in (transport, paused, inputs):
                     if task and not task.done() and not task.cancelling():
                         task.cancel()
-                await asyncio.gather(*(t for t in (transport, paused) if t), return_exceptions=True)
+                await asyncio.gather(
+                    *(t for t in (transport, paused, inputs) if t), return_exceptions=True
+                )
                 bridge.close()
                 if pending_text:
                     try:

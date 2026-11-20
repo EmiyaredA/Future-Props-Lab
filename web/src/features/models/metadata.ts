@@ -9,6 +9,10 @@ export const providerMetadata = {
     label: "本地 RelayVSR",
     optionLabel: "本地 RelayVSR · Metal 托管",
   },
+  local_zonos_tts: {
+    label: "本地 ZONOS3 语音",
+    optionLabel: "本地 ZONOS3 · 克隆与情绪控制",
+  },
   local_qwen_tts: {
     label: "本地 Qwen 语音",
     optionLabel: "本地 Qwen · MLX 托管",

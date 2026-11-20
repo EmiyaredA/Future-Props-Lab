@@ -659,6 +659,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Insert Instruction */
+        post: operations["insert_instruction_v1_amadeus_conversations__conversation_id__runs__run_id__instructions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval": {
         parameters: {
             query?: never;
@@ -8382,7 +8399,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "local_qwen_tts" | "local_zonos_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -15060,6 +15077,30 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** GeneratedImage */
+        GeneratedImage: {
+            /** Bytes */
+            bytes: number;
+            /** Height */
+            height: number;
+            /**
+             * Kind
+             * @default outputs
+             * @constant
+             */
+            kind: "outputs";
+            /**
+             * Mime Type
+             * @enum {string}
+             */
+            mime_type: "image/png" | "image/jpeg" | "image/webp";
+            /** Name */
+            name: string;
+            /** Sha256 */
+            sha256: string;
+            /** Width */
+            width: number;
+        };
         /** GenerationBatchListOut */
         GenerationBatchListOut: {
             /** Items */
@@ -15607,6 +15648,40 @@ export interface components {
             apps: components["schemas"]["RemoteApp"][];
             /** Revision */
             revision: string;
+        };
+        /** InstructionCreate */
+        InstructionCreate: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** References */
+            references?: components["schemas"]["Reference"][];
+            /** Request Id */
+            request_id: string;
+            /** Text */
+            text: string;
+        };
+        /** InstructionOut */
+        InstructionOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Message Id */
+            message_id: string;
+            /** References */
+            references: components["schemas"]["Reference"][];
+            /** Request Id */
+            request_id: string;
+            /** Sequence */
+            sequence: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "sending" | "accepted" | "rejected" | "unknown";
+            /** Text */
+            text: string;
         };
         /** IntegrationCheckOut */
         IntegrationCheckOut: {
@@ -18910,7 +18985,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "local_zonos_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Name */
             name: string;
             /** Supplier Id */
@@ -18938,7 +19013,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "local_zonos_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Managed Fields */
             managed_fields?: string[];
             /** Models */
@@ -19217,7 +19292,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "local_qwen_tts" | "local_zonos_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -19674,6 +19749,11 @@ export interface components {
             agent_model: string;
             /** Capabilities */
             capabilities?: string[];
+            /**
+             * Codex Image Generation
+             * @default true
+             */
+            codex_image_generation: boolean;
             /** Context */
             context?: {
                 [key: string]: unknown;
@@ -19704,8 +19784,15 @@ export interface components {
         };
         /** RunDetailOut */
         RunDetailOut: {
+            /**
+             * Can Receive
+             * @default false
+             */
+            can_receive: boolean;
             /** Events */
             events: components["schemas"]["RunEventOut"][];
+            /** Instructions */
+            instructions?: components["schemas"]["InstructionOut"][];
             run: components["schemas"]["RunOut"];
         };
         /** RunEventIn */
@@ -19716,7 +19803,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "assistant_delta" | "assistant_message" | "reasoning_summary" | "run_usage" | "tool_call" | "tool_result" | "status" | "error" | "question" | "subagent_start" | "subagent_finish";
+            kind: "assistant_delta" | "assistant_message" | "reasoning_summary" | "image_generation" | "run_usage" | "tool_call" | "tool_result" | "status" | "error" | "question" | "subagent_start" | "subagent_finish";
             /** Payload */
             payload?: {
                 [key: string]: unknown;
@@ -19765,6 +19852,11 @@ export interface components {
             agent_model: string;
             /** Capabilities */
             capabilities: string[];
+            /**
+             * Codex Image Generation
+             * @default true
+             */
+            codex_image_generation: boolean;
             /** Context */
             context: {
                 [key: string]: unknown;
@@ -19784,6 +19876,8 @@ export interface components {
             };
             /** Finished At */
             finished_at: string | null;
+            /** Generated Images */
+            generated_images?: components["schemas"]["GeneratedImage"][];
             /** Harness Effort */
             harness_effort?: string | null;
             /**
@@ -21278,7 +21372,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "local_zonos_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -21314,7 +21408,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "local_qwen_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "local_qwen_tts" | "local_zonos_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -25647,6 +25741,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    insert_instruction_v1_amadeus_conversations__conversation_id__runs__run_id__instructions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InstructionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstructionOut"];
                 };
             };
             /** @description Validation Error */

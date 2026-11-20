@@ -1,5 +1,9 @@
 # 开发交付说明
 
+`0131_amadeus_instructions` 为兼容网站增加 Amadeus 运行中补充消息的投递回执与输入就绪时间；独立 Amadeus 同步登记 `0005_run_instructions`。保留已有会话、运行与审批，升级仅通过显式迁移流程执行。取消、暂停及重启不自动重投未知消息。
+
+`0130_local_zonos_provider` 为兼容网站扩展本地语音 provider 类型，保留既有账号目录。独立 Models 的 kind 字段无 CHECK，无需迁移；新增模型须由本机管理员显式安装，ZONOS3 使用隔离的官方 MLX 环境。
+
 `0129_video_preview_renders` 为兼容网站新增 `preview_render` 任务类型，保留既有任务、账号与外键；上线通过正式迁移流程执行。独立视频服务的任务表无需升级。手动预渲染缓存可丢弃重建，默认 720p 并保持项目 30/60 FPS；正式导出仍读取原素材。
 
 `0128_local_video_providers` 扩展桌面模型目录的接入类型，支持 FFmpeg 和 RelayVSR 视频增强。升级保留原目录记录和外键。

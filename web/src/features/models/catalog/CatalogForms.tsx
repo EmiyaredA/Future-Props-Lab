@@ -126,9 +126,12 @@ export function ProviderForm({
           onChange={(next) => {
             setKind(next as typeof kind);
             if (
-              ["local_qwen_tts", "local_relayvsr", "local_ffmpeg"].includes(
-                next,
-              )
+              [
+                "local_qwen_tts",
+                "local_zonos_tts",
+                "local_relayvsr",
+                "local_ffmpeg",
+              ].includes(next)
             ) {
               setBaseUrl("");
               setApiKey("");
@@ -136,7 +139,12 @@ export function ProviderForm({
           }}
         />
       </label>
-      {!["local_qwen_tts", "local_relayvsr", "local_ffmpeg"].includes(kind) && (
+      {![
+        "local_qwen_tts",
+        "local_zonos_tts",
+        "local_relayvsr",
+        "local_ffmpeg",
+      ].includes(kind) && (
         <>
           <label>
             <span>服务地址</span>
@@ -175,7 +183,12 @@ export function ProviderForm({
           </label>
         </>
       )}
-      {["local_qwen_tts", "local_relayvsr", "local_ffmpeg"].includes(kind) && (
+      {[
+        "local_qwen_tts",
+        "local_zonos_tts",
+        "local_relayvsr",
+        "local_ffmpeg",
+      ].includes(kind) && (
         <p>本机托管连接，由「本地模型」管理安装和运行，无需 API Key。</p>
       )}
       {initial?.origin === "role_template" && (
@@ -235,6 +248,7 @@ export function ModelForm({
     zealman_video: ["video_generation"],
     autodl_video: ["video_generation"],
     local_qwen_tts: ["speech_synthesis"],
+    local_zonos_tts: ["speech_synthesis"],
     local_relayvsr: ["video_enhancement"],
     local_ffmpeg: ["video_enhancement"],
     senseaudio_asr: ["speech_recognition"],

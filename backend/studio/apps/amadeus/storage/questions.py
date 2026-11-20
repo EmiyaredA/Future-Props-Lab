@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy import select, update
 
+from studio.apps.amadeus.storage.instructions import InstructionRecords, close_instructions
 from studio.apps.amadeus.storage.models import AmadeusQuestion, AmadeusRun
 from studio.apps.amadeus.storage.runs import RunRecords as Runs
 from studio.contracts.amadeus.conversations import QuestionAnswerIn, QuestionIn, QuestionOut
@@ -31,6 +32,9 @@ class Questions:
         self.session, self.principal = session, principal
 
     async def create(self, conversation_id: str, run_id: str, body: QuestionIn) -> QuestionOut:
+        await InstructionRecords(self.session, self.principal).run(
+            conversation_id, run_id, write=True
+        )
         run = await self.session.scalar(
             select(AmadeusRun).where(
                 AmadeusRun.id == run_id,
@@ -62,6 +66,7 @@ class Questions:
         )
         self.session.add(row)
         now = utc_now()
+        await close_instructions(self.session, [run_id])
         run.status = "waiting_question"
         run.active_owner_key = None
         run.finished_at = run.updated_at = now

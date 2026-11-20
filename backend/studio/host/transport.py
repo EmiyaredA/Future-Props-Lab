@@ -1,5 +1,6 @@
 """Authenticated outbound loopback RPC; never follow redirects or proxy environment."""
 
+import json
 import re
 from urllib.parse import urlsplit
 
@@ -52,6 +53,18 @@ class NativeTransport:
 
     async def post(self, operation, body):
         response = await self.client.post("_native/v1/" + operation, json=body)
+        return self.result(response)
+
+    async def post_file(self, operation, body, item_id, data):
+        response = await self.client.post(
+            "_native/v1/" + operation,
+            data={"lease": json.dumps(body["lease"]), "item_id": item_id},
+            files={"upload": ("image", data, "application/octet-stream")},
+        )
+        return self.result(response)
+
+    @staticmethod
+    def result(response):
         if response.status_code in {403, 410}:
             raise LeaseEnded("原生任务授权已结束")
         if response.status_code in {409, 422}:

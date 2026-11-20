@@ -24,6 +24,7 @@ from studio.apps.amadeus.storage.models import (
     AmadeusQuestion,
     AmadeusRun,
     AmadeusRunEvent,
+    AmadeusRunInstruction,
 )
 from studio.apps.asset_library.storage.layout.upgrade_records import AccountStorageUpgradeRoot
 from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
@@ -284,6 +285,7 @@ TENANT_MODELS = (
     AmadeusAction,
     AmadeusRun,
     AmadeusRunEvent,
+    AmadeusRunInstruction,
     AmadeusQuestion,
     ModelInferenceAsset,
     ModelInferenceTask,

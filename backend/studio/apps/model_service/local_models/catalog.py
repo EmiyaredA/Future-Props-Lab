@@ -42,6 +42,7 @@ async def require_ready(session, model_id, *, readiness: ModelReadiness | None =
 def credential_ready(provider):
     return provider.kind in {
         "local_qwen_tts",
+        "local_zonos_tts",
         "local_relayvsr",
         "local_ffmpeg",
         "zealman_video",

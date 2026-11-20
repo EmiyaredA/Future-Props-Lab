@@ -19,6 +19,29 @@ const languages: Record<string, string> = {
   Spanish: "西班牙语",
   Italian: "意大利语",
 };
+export const speechCloningLabels: Record<string, string> = {
+  embedding: "提取说话人音色",
+  reference: "原始参考音频",
+  neutral: "不施加情绪",
+  happy: "高兴",
+  angry: "生气",
+  sad: "悲伤",
+  serene: "平静",
+  scared: "害怕",
+  confused: "困惑",
+};
+export function speechCloningSummary(payload: Record<string, unknown>) {
+  if (typeof payload.clone_mode !== "string") return "";
+  const emotion = String(payload.emotion ?? "neutral");
+  return [
+    speechCloningLabels[payload.clone_mode] ?? payload.clone_mode,
+    speechCloningLabels[emotion] ?? emotion,
+    ...(emotion !== "neutral" && typeof payload.emotion_strength === "number"
+      ? [`强度 ${Math.round(payload.emotion_strength * 100)}%`]
+      : []),
+    `种子 ${String(payload.seed ?? 42)}`,
+  ].join(" · ");
+}
 export function speechTaskStatus(status: string) {
   return statuses[status] ?? "状态待确认";
 }

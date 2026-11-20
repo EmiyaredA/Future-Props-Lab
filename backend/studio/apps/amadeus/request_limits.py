@@ -39,6 +39,9 @@ class AmadeusRequestLimits:
 
 class AmadeusNativeRequestLimits:
     def __init__(self, app):
+        self.images = RequestLimit(
+            app, prefix="/_native/v1/dialogue/images", maximum=MAX_MULTIPART_BYTES, exact=True
+        )
         self.normal = RequestLimit(app, prefix="/_native/", maximum=512 * 1024)
         self.dialogue = RequestLimit(app, prefix="/_native/v1/dialogue/", maximum=2 * 1024 * 1024)
         self.receipt = RequestLimit(
@@ -47,7 +50,9 @@ class AmadeusNativeRequestLimits:
 
     async def __call__(self, scope, receive, send):
         path = scope.get("path", "")
-        if path.startswith("/_native/v1/dialogue/"):
+        if path == "/_native/v1/dialogue/images":
+            await self.images(scope, receive, send)
+        elif path.startswith("/_native/v1/dialogue/"):
             await self.dialogue(scope, receive, send)
         elif path == "/_native/v1/receipt":
             await self.receipt(scope, receive, send)

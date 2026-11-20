@@ -16,12 +16,16 @@ from studio.apps.model_service.transcription.parameters import (
     resolve_parameters,
 )
 from studio.apps.model_service.transcription.support import model_supports_transcription
+from studio.config.local_models import LOCAL_SPEECH_PROVIDER_KINDS
 from studio.contracts.model_service.generation_tasks import (
     AudioGenerationTaskCreateIn,
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
-from studio.contracts.model_service.schemas.local_models import SpeechSynthesisParameters
+from studio.contracts.model_service.schemas.local_models import (
+    SpeechSynthesisParameters,
+    ZonosSynthesisParameters,
+)
 from studio.contracts.model_service.schemas.model_inference import (
     InferenceModelOut,
     InferenceOptionsOut,
@@ -43,7 +47,7 @@ GENERATION_KINDS = {
 
 def modalities(model, provider):
     result = []
-    if provider.kind == "local_qwen_tts" and "speech_synthesis" in model.capabilities:
+    if provider.kind in LOCAL_SPEECH_PROVIDER_KINDS and "speech_synthesis" in model.capabilities:
         result.append("speech_synthesis")
     if provider.kind in TEXT_PROVIDER_KINDS and "chat" in model.capabilities:
         result.append("text")
@@ -76,7 +80,7 @@ async def get_model(session, owner_user_id, model_id, kind, *, readiness=None):
     model, provider = row
     if not model.enabled or not provider.enabled or not credential_ready(provider):
         raise OperationError("模型未启用或缺少凭证", "model_unavailable", 409)
-    if provider.kind == "local_qwen_tts":
+    if provider.kind in LOCAL_SPEECH_PROVIDER_KINDS:
         await require_ready(session, model.slug, readiness=readiness)
     if kind not in modalities(model, provider):
         raise OperationError("模型不支持所选调用方式", "unsupported_modality")
@@ -113,14 +117,14 @@ async def options(
         kinds = modalities(model, provider)
         if not kinds or not credential_ready(provider):
             continue
-        if provider.kind == "local_qwen_tts":
+        if provider.kind in LOCAL_SPEECH_PROVIDER_KINDS:
             try:
                 await require_ready(session, model.slug, readiness=readiness)
             except OperationError:
                 continue
         parameters = {}
         if "speech_synthesis" in kinds:
-            parameters["speech_synthesis"] = speech_parameters()
+            parameters["speech_synthesis"] = speech_parameters(provider.kind)
         if "video" in kinds and provider.kind in {"volcengine_video", "autodl_video"}:
             try:
                 caps = video_capabilities(
@@ -186,7 +190,12 @@ async def options(
 def normalize_parameters(body, model, provider, assets, *, temporary_upload_configured=False):
     params = dict(body.parameters)
     if body.kind == "speech_synthesis":
-        payload = SpeechSynthesisParameters.model_validate(params).model_dump()
+        cls = (
+            ZonosSynthesisParameters
+            if provider.kind == "local_zonos_tts"
+            else SpeechSynthesisParameters
+        )
+        payload = cls.model_validate(params).model_dump()
         if (
             body.asset_ids != [payload["reference_asset_id"]]
             or len(assets) != 1

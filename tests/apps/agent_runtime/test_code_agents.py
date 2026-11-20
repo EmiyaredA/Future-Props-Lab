@@ -50,9 +50,13 @@ def send(x):
 
 
 if "app-server" in sys.argv:
+    image_enabled = "features.image_generation=true" in sys.argv
     assert os.environ["CODEX_HOME"].endswith("/profiles/codex-app-server")
     assert "features.shell_tool=false" in sys.argv
-    assert 'sandbox_mode="read-only"' in sys.argv
+    policy_flag = (
+        'default_permissions="fpl-images"' if image_enabled else 'sandbox_mode="read-only"'
+    )
+    assert policy_flag in sys.argv
     for line in sys.stdin:
         x = json.loads(line)
         method = x.get("method")
@@ -60,11 +64,16 @@ if "app-server" in sys.argv:
             send({"id": x["id"], "result": {}})
         elif method == "config/read":
             send({"id": x["id"], "result": {"config": {
-                "sandbox_mode": "read-only",
+                "sandbox_mode": None if image_enabled else "read-only",
+                "default_permissions": "fpl-images" if image_enabled else None,
+                "permissions": {"fpl-images": {
+                    "filesystem": {os.getcwd(): "read"}, "network": {"enabled": False}
+                }} if image_enabled else {},
                 "approval_policy": "never",
                 "web_search": "disabled",
                 "cli_auth_credentials_store": "file",
                 "features": {
+                    "image_generation": image_enabled,
                     "skip_host_skill_discovery": True,
                     "shell_tool": False,
                     "hooks": False,
@@ -104,6 +113,25 @@ if "app-server" in sys.argv:
                 marker = next(m["content"] for m in reversed(history) if m["role"] == "user")
             except (ValueError, KeyError, StopIteration):
                 marker = prompt
+            if "GENERATE_FAKE" in marker:
+                from PIL import Image
+                assert image_enabled
+                output = io.BytesIO()
+                large = "LARGE_IMAGE" in marker
+                Image.new("RGBA", (2200, 1500) if large else (5, 3), (10, 20, 30, 40)).save(
+                    output, format="PNG", compress_level=0 if large else 6
+                )
+                params = {"threadId": "fake-thread", "turnId": "fake-turn", "item": {
+                    "type": "imageGeneration", "id": "generated-item", "status": "in_progress"
+                }}
+                send({"method": "item/started", "params": params})
+                params["item"].update(
+                    status="completed", result=base64.b64encode(output.getvalue()).decode()
+                )
+                send({"method": "item/completed", "params": params})
+                send({"method": "item/completed", "params": params})
+                send({"method": "turn/completed", "params": {"turn": {"status": "completed"}}})
+                break
             if "IMAGE_FAKE" in marker:
                 from PIL import Image
                 assert "kind=imports" in prompt and "read_file" in prompt
@@ -182,7 +210,11 @@ if "app-server" in sys.argv:
             break
 else:
     assert "--restricted" in sys.argv and sys.argv[sys.argv.index("--tools") + 1] == ""
-    prompt = sys.stdin.read()
+    if "--input-format" in sys.argv:
+        prompt = json.loads(sys.stdin.readline())["message"]["content"]
+        send({"type": "system", "subtype": "init"})
+    else:
+        prompt = sys.stdin.read()
     if "CLAUDE_EFFORT_FAKE" in prompt:
         assert sys.argv[sys.argv.index("--model") + 1] == "claude-sonnet-4-6"
         assert sys.argv[sys.argv.index("--effort") + 1] == "high"
@@ -352,6 +384,38 @@ async def test_backend_owned_native_run_and_event_tombstones(
         )
         assert changed.status_code == 409
         assert (await client.get(root)).json()["messages"][-1]["run_id"] == identity
+
+
+@pytest.mark.usefixtures("configured")
+@pytest.mark.parametrize("large", [False, True])
+async def test_amadeus_persists_native_image_only_reply_without_tool_approval(large):
+    client, *_ = await client_account(admin=True)
+    async with aclosing(client):
+        conversation = (await client.post("/v1/amadeus/conversations")).json()
+        root = f"/v1/amadeus/conversations/{conversation['id']}"
+        await client.post(
+            root + "/messages",
+            json={
+                "role": "user",
+                "content": "GENERATE_FAKE LARGE_IMAGE" if large else "GENERATE_FAKE",
+                "expected_revision": 0,
+            },
+        )
+        started = await client.post(root + "/runs", json={"agent_id": "codex"})
+        result = await wait_run(client, root, started.json()["run"]["id"])
+        assert result["run"]["status"] == "completed", result
+        assert result["run"]["codex_image_generation"] is True
+        assert [event["kind"] for event in result["events"]] == ["image_generation"] * 2
+        assert "base64" not in str(result)
+        image = result["run"]["generated_images"][0]
+        response = await client.get(root + "/files/outputs/" + image["name"])
+        assert response.status_code == 200
+        with Image.open(io.BytesIO(response.content)) as original:
+            assert original.getpixel((0, 0)) == (10, 20, 30, 40)
+        history = (await client.get(root)).json()
+        assert history["actions"] == []
+        assert history["messages"][-1]["content"] == ""
+        assert history["messages"][-1]["references"][0]["source"] == "outputs"
 
 
 @pytest.mark.usefixtures("configured")

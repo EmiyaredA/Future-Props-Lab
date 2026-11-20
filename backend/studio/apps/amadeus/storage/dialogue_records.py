@@ -4,6 +4,7 @@ from studio.contracts.amadeus.conversations import ActionIn, QuestionIn
 from studio.runtime.database.operation_receipts import OperationError
 
 from .conversations import Conversations
+from .instructions import InstructionRecords
 from .questions import Questions
 from .runs import RunRecords
 
@@ -30,6 +31,9 @@ class DialogueRecords:
 
     async def propose(self, name, arguments):
         async with self.session() as session:
+            await InstructionRecords(session, self.principal).run(
+                self.conversation, self.run, write=True
+            )
             # pause_for_approval commits the state transition and the proposal together.
             action = await Conversations(session, self.principal).propose(
                 self.conversation,

@@ -16,6 +16,7 @@ from studio.apps.amadeus.storage.models import (
     AmadeusQuestion,
     AmadeusRun,
     AmadeusRunEvent,
+    AmadeusRunInstruction,
 )
 from studio.contracts.management.migration_batches import MigrationBatch, MigrationPage
 from studio.contracts.management.project_history import HistoryRecord, Identifier, ProjectRecord
@@ -66,6 +67,7 @@ class Run(HistoryRecord):
     partial_text: str
     last_event_sequence: int = Field(ge=0)
     heartbeat_at: datetime
+    input_ready_at: datetime | None = None
     error_message: str | None
     response_message_id: Identifier | None
     created_at: datetime
@@ -125,6 +127,19 @@ class Event(HistoryRecord):
     created_at: datetime
 
 
+class Instruction(HistoryRecord):
+    id: Identifier
+    run_id: Identifier
+    request_id: str
+    message_id: Identifier
+    body_sha256: str = Field(pattern=r"^[a-f0-9]{64}$")
+    prompt: str
+    status: Literal["pending", "sending", "accepted", "rejected", "unknown"]
+    dispatch_key: str | None
+    sequence: int = Field(gt=0)
+    created_at: datetime
+
+
 class ConversationBatch(MigrationBatch[Conversation]):
     dataset: Literal["amadeus.conversations"]
 
@@ -153,6 +168,10 @@ class EventBatch(MigrationBatch[Event]):
     dataset: Literal["amadeus.run-events"]
 
 
+class InstructionBatch(MigrationBatch[Instruction]):
+    dataset: Literal["amadeus.run-instructions"]
+
+
 async def verify_actor(session, record):
     conversation = await session.get(AmadeusConversation, record.conversation_id)
     if conversation is None or conversation.user_id != record.user_id:
@@ -172,6 +191,21 @@ async def verify_event(session, record):
     run = await session.get(AmadeusRun, record.run_id)
     if run is None or record.sequence > run.last_event_sequence:
         raise blocked("migration_amadeus_event_sequence_invalid")
+
+
+async def verify_instruction(session, record):
+    run = await session.get(AmadeusRun, record.run_id)
+    message = await session.get(AmadeusMessage, record.message_id)
+    if (
+        run is None
+        or message is None
+        or message.run_id != run.id
+        or message.conversation_id != run.conversation_id
+        or message.role != "user"
+        or message.owner_user_id != run.owner_user_id
+        or message.status != record.status
+    ):
+        raise blocked("migration_amadeus_instruction_invalid")
 
 
 class RunLinkDataset(ProjectDataset):
@@ -250,6 +284,17 @@ DATASETS = (
         validate=verify_event,
         page_size=8,
     ),
+    ProjectDataset(
+        "amadeus.run-instructions",
+        AmadeusRunInstruction,
+        Instruction,
+        InstructionBatch,
+        MigrationPage[InstructionBatch],
+        project=AmadeusRun,
+        parent_key="run_id",
+        validate=verify_instruction,
+        page_size=8,
+    ),
 )
 
 
@@ -314,6 +359,16 @@ WHERE (r.source_run_id IS NOT NULL AND (
 LIMIT 1
 """
 
+INVALID_INSTRUCTION = """
+SELECT 1 FROM amadeus_run_instructions i
+LEFT JOIN amadeus_runs r ON r.id = i.run_id
+LEFT JOIN amadeus_messages m ON m.id = i.message_id
+WHERE r.id IS NULL OR m.id IS NULL OR m.run_id IS NULL OR m.run_id != r.id
+   OR i.owner_user_id != r.owner_user_id OR m.owner_user_id != r.owner_user_id
+   OR m.conversation_id != r.conversation_id OR m.role != 'user' OR m.status != i.status
+LIMIT 1
+"""
+
 RUN_COUNT = """
 WITH RECURSIVE ordered(id) AS (
     SELECT id FROM amadeus_runs WHERE source_run_id IS NULL
@@ -328,6 +383,8 @@ async def verify_history(sessions):
     async with sessions(info={"allow_system_reads": True}) as session:
         if await session.scalar(text(INVALID)) is not None:
             raise blocked("migration_amadeus_run_relationship_invalid")
+        if await session.scalar(text(INVALID_INSTRUCTION)) is not None:
+            raise blocked("migration_amadeus_instruction_invalid")
         connected, total = (await session.execute(text(RUN_COUNT))).one()
         if connected != total:
             raise blocked("migration_amadeus_run_graph_invalid")

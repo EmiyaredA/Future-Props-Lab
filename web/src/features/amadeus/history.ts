@@ -3,6 +3,7 @@ import type {
   RunDetail,
   SavedAction,
   SavedQuestion,
+  ImageGeneration,
 } from "./protocol";
 
 export type AgentHistoryItem = {
@@ -18,6 +19,13 @@ export type AgentHistoryItem = {
 };
 
 export type TimelineItem =
+  | {
+      kind: "image_generation";
+      at: string;
+      sequence: number;
+      runId: string;
+      generation: ImageGeneration;
+    }
   | {
       kind: "message";
       at: string;
@@ -73,6 +81,17 @@ export function conversationTimeline(
       )
       .map((run) => run.run.id),
   );
+  const instructionPositions = new Map(
+    runs.flatMap((run) =>
+      run.events
+        .filter(
+          (event) =>
+            event.kind === "user_instruction" &&
+            typeof event.payload.message_id === "string",
+        )
+        .map((event) => [String(event.payload.message_id), event] as const),
+    ),
+  );
   const items: TimelineItem[] = messages
     .filter(
       (message) =>
@@ -83,8 +102,9 @@ export function conversationTimeline(
     )
     .map((message) => ({
       kind: "message",
-      at: message.created_at,
-      sequence: 0,
+      at:
+        instructionPositions.get(message.id)?.created_at || message.created_at,
+      sequence: instructionPositions.get(message.id)?.sequence || 0,
       message,
     }));
   const actionById = new Map(actions.map((action) => [action.id, action]));
@@ -97,6 +117,10 @@ export function conversationTimeline(
   const placedQuestions = new Set<string>();
   const calls = new Map<string, Extract<TimelineItem, { kind: "tool" }>>();
   for (const run of runs) {
+    const imageItems = new Map<
+      string,
+      Extract<TimelineItem, { kind: "image_generation" }>
+    >();
     items.push(...(replies.get(run.run.id) ?? []));
     const toolCalls = run.events
       .filter(
@@ -167,6 +191,30 @@ export function conversationTimeline(
             question,
           });
           placedQuestions.add(question.id);
+        }
+      } else if (
+        event.kind === "image_generation" &&
+        typeof payload.item_id === "string"
+      ) {
+        const generation = payload as unknown as ImageGeneration;
+        const previous = imageItems.get(generation.item_id);
+        const interrupted =
+          generation.status === "started" &&
+          !["running", "cancelling"].includes(run.run.status);
+        const value = interrupted
+          ? { ...generation, status: "interrupted" as const }
+          : generation;
+        if (previous) previous.generation = value;
+        else {
+          const item: Extract<TimelineItem, { kind: "image_generation" }> = {
+            kind: "image_generation",
+            at: event.created_at || fallbackTime,
+            sequence: event.sequence,
+            runId: run.run.id,
+            generation: value,
+          };
+          imageItems.set(generation.item_id, item);
+          items.push(item);
         }
       } else if (
         event.kind === "assistant_message" &&

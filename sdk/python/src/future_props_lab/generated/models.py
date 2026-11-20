@@ -52,7 +52,7 @@ class AcceptanceModelListOut(WireModel):
 class AcceptanceModelOut(WireModel):
     id: str = Field(default=..., alias='id')
     label: str = Field(default=..., alias='label')
-    provider_kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['local_qwen_tts', 'local_zonos_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     slug: str = Field(default=..., alias='slug')
 
@@ -2798,6 +2798,15 @@ class GalgameWorkshopProjectPatchIn(WireModel):
     status: Literal['draft', 'completed'] | None = Field(default=None, alias='status')
     title: str | None = Field(default=None, alias='title')
 
+class GeneratedImage(WireModel):
+    bytes: int = Field(default=..., alias='bytes', le=52428800.0, gt=0.0)
+    height: int = Field(default=..., alias='height', gt=0.0)
+    kind: Literal['outputs'] = Field(default='outputs', alias='kind')
+    mime_type: Literal['image/png', 'image/jpeg', 'image/webp'] = Field(default=..., alias='mime_type')
+    name: str = Field(default=..., alias='name', max_length=100)
+    sha256: str = Field(default=..., alias='sha256')
+    width: int = Field(default=..., alias='width', gt=0.0)
+
 class GenerationBatchListOut(WireModel):
     items: list[GenerationBatchOut] = Field(default=..., alias='items')
     total: int = Field(default=..., alias='total')
@@ -3035,6 +3044,21 @@ class InstalledRemoteApps(WireModel):
     allowed_ids: list[str] = Field(default=..., alias='allowed_ids')
     apps: list[RemoteApp] = Field(default=..., alias='apps')
     revision: str = Field(default=..., alias='revision')
+
+class InstructionCreate(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    references: list[Reference] | None = Field(default=None, alias='references', max_length=20)
+    request_id: str = Field(default=..., alias='request_id')
+    text: str = Field(default=..., alias='text', max_length=90000)
+
+class InstructionOut(WireModel):
+    created_at: datetime = Field(default=..., alias='created_at')
+    message_id: str = Field(default=..., alias='message_id')
+    references: list[Reference] = Field(default=..., alias='references')
+    request_id: str = Field(default=..., alias='request_id')
+    sequence: int = Field(default=..., alias='sequence')
+    status: Literal['pending', 'sending', 'accepted', 'rejected', 'unknown'] = Field(default=..., alias='status')
+    text: str = Field(default=..., alias='text')
 
 class IntegrationCheckOut(WireModel):
     created_at: str = Field(default=..., alias='created_at')
@@ -4356,7 +4380,7 @@ class ProviderIn(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     expected_catalog_revision: int = Field(default=..., alias='expected_catalog_revision', ge=0.0)
-    kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'local_zonos_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_id: str | None = Field(default=None, alias='supplier_id')
 
@@ -4370,7 +4394,7 @@ class ProviderOut(WireModel):
     enabled: bool = Field(default=..., alias='enabled')
     has_api_key: bool = Field(default=..., alias='has_api_key', repr=False)
     id: str = Field(default=..., alias='id')
-    kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'local_zonos_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     managed_fields: list[str] | None = Field(default=None, alias='managed_fields')
     models: list[ModelEntryOut] = Field(default=..., alias='models')
     name: str = Field(default=..., alias='name')
@@ -4485,7 +4509,7 @@ class RealtimeVoiceModelOut(WireModel):
     output_sample_rate: int = Field(default=..., alias='output_sample_rate')
     playback: RealtimeVoicePlaybackOut = Field(default=..., alias='playback')
     provider_id: str = Field(default=..., alias='provider_id')
-    provider_kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
+    provider_kind: Literal['local_qwen_tts', 'local_zonos_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
     provider_name: str = Field(default=..., alias='provider_name')
     slug: str = Field(default=..., alias='slug')
     supports_interruption: bool = Field(default=..., alias='supports_interruption')
@@ -4698,6 +4722,7 @@ class RunCreateIn(WireModel):
     agent_id: Literal['codex', 'claude-code', 'opencode', 'dsh', 'pi'] = Field(default=..., alias='agent_id')
     agent_model: str = Field(default='', alias='agent_model', max_length=160)
     capabilities: list[str] | None = Field(default=None, alias='capabilities', max_length=100)
+    codex_image_generation: bool = Field(default=True, alias='codex_image_generation')
     context: list[dict[str, Any]] | None = Field(default=None, alias='context', max_length=32)
     harness_effort: str | None = Field(default=None, alias='harness_effort')
     mode: Literal['agent', 'plan'] = Field(default='agent', alias='mode')
@@ -4709,12 +4734,14 @@ class RunCreateIn(WireModel):
     source_run_id: str | None = Field(default=None, alias='source_run_id')
 
 class RunDetailOut(WireModel):
+    can_receive: bool = Field(default=False, alias='can_receive')
     events: list[RunEventOut] = Field(default=..., alias='events')
+    instructions: list[InstructionOut] | None = Field(default=None, alias='instructions')
     run: RunOut = Field(default=..., alias='run')
 
 class RunEventIn(WireModel):
     idempotency_key: str = Field(default=..., alias='idempotency_key', min_length=1, max_length=120)
-    kind: Literal['assistant_delta', 'assistant_message', 'reasoning_summary', 'run_usage', 'tool_call', 'tool_result', 'status', 'error', 'question', 'subagent_start', 'subagent_finish'] = Field(default=..., alias='kind')
+    kind: Literal['assistant_delta', 'assistant_message', 'reasoning_summary', 'image_generation', 'run_usage', 'tool_call', 'tool_result', 'status', 'error', 'question', 'subagent_start', 'subagent_finish'] = Field(default=..., alias='kind')
     payload: dict[str, Any] | None = Field(default=None, alias='payload')
 
 class RunEventOut(WireModel):
@@ -4734,12 +4761,14 @@ class RunOut(WireModel):
     agent_id: str | None = Field(default=None, alias='agent_id')
     agent_model: str = Field(default='', alias='agent_model')
     capabilities: list[str] = Field(default=..., alias='capabilities')
+    codex_image_generation: bool = Field(default=True, alias='codex_image_generation')
     context: list[dict[str, Any]] = Field(default=..., alias='context')
     conversation_id: str = Field(default=..., alias='conversation_id')
     created_at: datetime = Field(default=..., alias='created_at')
     error_message: str | None = Field(default=..., alias='error_message')
     execution_config: dict[str, Any] | None = Field(default=None, alias='execution_config')
     finished_at: datetime | None = Field(default=..., alias='finished_at')
+    generated_images: list[GeneratedImage] | None = Field(default=None, alias='generated_images')
     harness_effort: str | None = Field(default=None, alias='harness_effort')
     heartbeat_at: datetime = Field(default=..., alias='heartbeat_at')
     id: str = Field(default=..., alias='id')
@@ -5357,7 +5386,7 @@ class TemplateProvider_Input(WireModel):
     clear_api_key: bool = Field(default=False, alias='clear_api_key', repr=False)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'local_zonos_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -5368,7 +5397,7 @@ class TemplateProvider_Output(WireModel):
     base_url: str = Field(default='', alias='base_url', max_length=512)
     enabled: bool = Field(default=True, alias='enabled')
     has_api_key: bool = Field(default=False, alias='has_api_key', repr=False)
-    kind: Literal['local_qwen_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
+    kind: Literal['local_qwen_tts', 'local_zonos_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='kind')
     models: list[TemplateModel] | None = Field(default=None, alias='models')
     name: str = Field(default=..., alias='name', min_length=1, max_length=120)
     supplier_key: str | None = Field(default=None, alias='supplier_key')
@@ -6919,6 +6948,7 @@ GalgameWorkshopProjectCreateIn.model_rebuild()
 GalgameWorkshopProjectListOut.model_rebuild()
 GalgameWorkshopProjectOut.model_rebuild()
 GalgameWorkshopProjectPatchIn.model_rebuild()
+GeneratedImage.model_rebuild()
 GenerationBatchListOut.model_rebuild()
 GenerationBatchOut.model_rebuild()
 GenerationCancelIn.model_rebuild()
@@ -6953,6 +6983,8 @@ InferenceTextIn.model_rebuild()
 InferenceTextOut.model_rebuild()
 InputReference.model_rebuild()
 InstalledRemoteApps.model_rebuild()
+InstructionCreate.model_rebuild()
+InstructionOut.model_rebuild()
 IntegrationCheckOut.model_rebuild()
 IntegrationOverviewOut.model_rebuild()
 InterviewCreateIn.model_rebuild()

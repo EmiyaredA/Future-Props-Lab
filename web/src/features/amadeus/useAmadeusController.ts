@@ -111,7 +111,7 @@ export function useAmadeusController(
     standalone,
   });
 
-  const { busy, isBusy, setMode, send, ...run } = useAmadeusRun({
+  const { busy, setMode, send, ...run } = useAmadeusRun({
     owner,
     conversations: data,
     capabilities,
@@ -333,7 +333,7 @@ export function useAmadeusController(
     rename,
     remove,
     importAttachments: (files: File[]) =>
-      attachments.importAttachments(files, isBusy),
+      attachments.importAttachments(files, () => run.submitting),
     send,
     startFromHistory,
     scopedContexts,

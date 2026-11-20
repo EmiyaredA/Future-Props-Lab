@@ -115,6 +115,10 @@ class Amadeus:
         'Heartbeat Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat'
         return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunOut)
 
+    def insert_instruction(self, *, conversation_id: str, run_id: str, body: models.InstructionCreate | dict) -> models.InstructionOut:
+        'Insert Instruction. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions'
+        return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.InstructionOut)
+
     def pause_run_for_approval(self, *, conversation_id: str, run_id: str) -> models.RunDetailOut:
         'Pause Run For Approval. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval'
         return self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunDetailOut)
@@ -262,6 +266,10 @@ class AsyncAmadeus:
     async def heartbeat_run(self, *, conversation_id: str, run_id: str) -> models.RunOut:
         'Heartbeat Run. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat'
         return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], response_type=models.RunOut)
+
+    async def insert_instruction(self, *, conversation_id: str, run_id: str, body: models.InstructionCreate | dict) -> models.InstructionOut:
+        'Insert Instruction. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions'
+        return await self._client._call('POST', '/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions', parameters=[('conversation_id', 'path', conversation_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.InstructionOut)
 
     async def pause_run_for_approval(self, *, conversation_id: str, run_id: str) -> models.RunDetailOut:
         'Pause Run For Approval. POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval'

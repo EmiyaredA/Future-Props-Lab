@@ -175,6 +175,59 @@
       ]
     },
     {
+      "id": "zonos3-mini",
+      "label": "ZONOS3-Mini",
+      "repository": "Zyphra/ZONOS3-Mini",
+      "revision": "2921b8821772b0bd10a04456863d21abf9d2f283",
+      "license": "Apache-2.0",
+      "runtime": "zonos3",
+      "environment_version": "a50e14117d99181ba7f28047b451ba03ba1a09a9",
+      "environment_disk_bytes": 7516192768,
+      "source": {
+        "url": "https://api.github.com/repos/Zyphra/ZONOS3-Mini/tarball/a50e14117d99181ba7f28047b451ba03ba1a09a9",
+        "size": 41214329,
+        "sha256": "0f8e1ccdadb1e0742f2239b064067dd477bcb404f1278ac88b8787ae2e29fd3f"
+      },
+      "files": [
+        {
+          "path": "gguf/backbone-ptq.gguf",
+          "url": "https://huggingface.co/Zyphra/ZONOS3-Mini/resolve/2921b8821772b0bd10a04456863d21abf9d2f283/gguf/backbone-ptq.gguf",
+          "size": 663150624,
+          "sha256": "66fceb6d73a8c30bde80249e4112bb308380ab7f3384fa11c8e4048115e4ceec"
+        },
+        {
+          "path": "gguf/spk-encoder.gguf",
+          "url": "https://huggingface.co/Zyphra/ZONOS3-Mini/resolve/2921b8821772b0bd10a04456863d21abf9d2f283/gguf/spk-encoder.gguf",
+          "size": 45385728,
+          "sha256": "9539f340b70be246005403b9c254732e180e85e0b3c57fb1973f0d6bc6c59bdc"
+        },
+        {
+          "path": "gguf/ssl-teacher.gguf",
+          "url": "https://huggingface.co/Zyphra/ZONOS3-Mini/resolve/2921b8821772b0bd10a04456863d21abf9d2f283/gguf/ssl-teacher.gguf",
+          "size": 1548700000,
+          "sha256": "59e4f150e1ccdf54e6349b06605c2274f2262139678688025b6614f1393e415a"
+        },
+        {
+          "path": "gguf/steer.gguf",
+          "url": "https://huggingface.co/Zyphra/ZONOS3-Mini/resolve/2921b8821772b0bd10a04456863d21abf9d2f283/gguf/steer.gguf",
+          "size": 204960,
+          "sha256": "6e8e3f86e89a09801ce083b9286f43263ec696acfaff72e25aca537aa9efa90c"
+        },
+        {
+          "path": "gguf/zac-encoder.gguf",
+          "url": "https://huggingface.co/Zyphra/ZONOS3-Mini/resolve/2921b8821772b0bd10a04456863d21abf9d2f283/gguf/zac-encoder.gguf",
+          "size": 4034646368,
+          "sha256": "4c4335196486fd24cc56b24a40ac4548f8cc58a6400bce8e4af4e72160b18053"
+        },
+        {
+          "path": "gguf/zac-keep2.gguf",
+          "url": "https://huggingface.co/Zyphra/ZONOS3-Mini/resolve/2921b8821772b0bd10a04456863d21abf9d2f283/gguf/zac-keep2.gguf",
+          "size": 452325440,
+          "sha256": "834e5b70b88294afc3c702a478487e0664dcc6b574c16fc6167d72444aabeafd"
+        }
+      ]
+    },
+    {
       "id": "relayvsr-x2-int8",
       "label": "RelayVSR 2× INT8",
       "repository": "Comfy-Org/RelayVSR",

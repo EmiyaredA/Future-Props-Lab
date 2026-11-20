@@ -19,7 +19,7 @@ from studio.apps.model_service.storage.models.local_models import (
     LocalModelInstallation,
     LocalModelOperation,
 )
-from studio.config.local_models import FFMPEG_MODEL_ID, RELAY_MODEL_ID
+from studio.config.local_models import FFMPEG_MODEL_ID, RELAY_MODEL_ID, ZONOS_MODEL_ID
 from studio.config.settings import get_settings as isolated_settings
 from studio.contracts.model_service.schemas.local_models import (
     LocalModelActionIn,
@@ -105,6 +105,7 @@ def test_pinned_manifest_and_credential_boundary():
         "qwen3-tts-1.7b-base",
         RELAY_MODEL_ID,
         FFMPEG_MODEL_ID,
+        ZONOS_MODEL_ID,
     }
     for model in manifest()["models"]:
         if model["id"] == FFMPEG_MODEL_ID:
@@ -115,6 +116,10 @@ def test_pinned_manifest_and_credential_boundary():
         if model["id"] == RELAY_MODEL_ID:
             assert model["capability"] == "video_enhancement"
             assert len(paths) == 2 and all(path.endswith(".safetensors") for path in paths)
+        elif model["id"] == ZONOS_MODEL_ID:
+            assert len(paths) == 6 and all(path.endswith(".gguf") for path in paths)
+            assert "gguf/zac.gguf" not in paths
+            assert len(model["source"]["sha256"]) == 64
         else:
             assert "speech_tokenizer/model.safetensors" in paths
         for item in model["files"]:

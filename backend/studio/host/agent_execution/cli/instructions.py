@@ -4,9 +4,11 @@ import asyncio
 
 
 class LiveInstructions:
-    def __init__(self):
+    def __init__(self, *, timeout=8):
         self.send = None
         self.pending = {}
+        self.outcomes = {}
+        self.timeout = timeout
 
     @property
     def ready(self):
@@ -19,7 +21,7 @@ class LiveInstructions:
         future = asyncio.get_running_loop().create_future()
         self.pending[identity] = future
         try:
-            async with asyncio.timeout(8):
+            async with asyncio.timeout(self.timeout):
                 await send(identity, text)
                 return await future
         except (TimeoutError, OSError, RuntimeError):
@@ -30,6 +32,7 @@ class LiveInstructions:
     def acknowledge(self, identity, status):
         future = self.pending.get(identity)
         if future is not None and not future.done():
+            self.outcomes[identity] = status
             future.set_result(status)
 
     def close(self):

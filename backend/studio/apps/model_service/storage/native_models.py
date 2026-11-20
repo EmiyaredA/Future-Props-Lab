@@ -33,7 +33,14 @@ from studio.apps.model_service.storage.native_records import (
 )
 from studio.apps.model_service.storage.service_models import TaskAuthorization
 from studio.apps.model_service.storage.task_records import task_fingerprint
-from studio.config.local_models import LOCAL_VIDEO_MODEL_IDS, definition, manifest
+from studio.config.local_models import (
+    LOCAL_SPEECH_PROVIDER_KINDS,
+    LOCAL_VIDEO_MODEL_IDS,
+    ZONOS_MODEL_ID,
+    definition,
+    manifest,
+    required_disk_bytes,
+)
 from studio.contracts.identity.claims import verify_context
 from studio.contracts.model_service.model_native import (
     OPERATIONS,
@@ -133,7 +140,7 @@ class NativeModelBroker(PollingTaskRunner):
             license=model["license"],
             model_revision=model["revision"],
             download_bytes=size,
-            required_disk_bytes=size * 2 + 2 * 1024**3,
+            required_disk_bytes=required_disk_bytes(model),
             compatible=bool(state and state.compatible),
             status=row.status if row else "not_installed",
             enabled=row.enabled if row else False,
@@ -273,7 +280,7 @@ class NativeModelBroker(PollingTaskRunner):
                     select(func.count())
                     .select_from(ModelInferenceTask.__table__)
                     .where(
-                        tasks.provider_kind == "local_qwen_tts",
+                        tasks.provider_kind.in_(LOCAL_SPEECH_PROVIDER_KINDS),
                         tasks.model_slug == model_id,
                         (
                             tasks.status.in_(
@@ -415,7 +422,7 @@ class NativeModelBroker(PollingTaskRunner):
                 if (
                     task is None
                     or task_fingerprint("inference", task) != proof.source_fingerprint
-                    or task.provider_kind != "local_qwen_tts"
+                    or task.provider_kind not in LOCAL_SPEECH_PROVIDER_KINDS
                     or task.kind != "speech_synthesis"
                     or task.status != "submitting"
                 ):
@@ -480,6 +487,11 @@ class NativeModelBroker(PollingTaskRunner):
             arguments = {
                 key: task.request_payload[key] for key in ("text", "language", "reference_text")
             }
+            if model_id == ZONOS_MODEL_ID:
+                arguments["synthesis_options"] = {
+                    key: task.request_payload[key]
+                    for key in ("clone_mode", "emotion", "emotion_strength", "seed")
+                }
             expected_fingerprint = authorization.fingerprint
             from types import SimpleNamespace
 
@@ -503,7 +515,7 @@ class NativeModelBroker(PollingTaskRunner):
             reference_filename=description.filename,
             reference_byte_size=description.byte_size,
             reference_sha256=description.content_sha256,
-        ).model_dump()
+        ).model_dump(exclude={"synthesis_options"} if model_id != ZONOS_MODEL_ID else None)
         async with self.database.sessions(info={"owner_user_id": owner}) as session:
             await session.execute(text("BEGIN IMMEDIATE"))
             existing = await session.scalar(
@@ -716,7 +728,7 @@ class DisconnectedNativeModels:
                     license=model["license"],
                     model_revision=model["revision"],
                     download_bytes=size,
-                    required_disk_bytes=size * 2 + 2 * 1024**3,
+                    required_disk_bytes=required_disk_bytes(model),
                     compatible=False,
                     status="not_installed",
                     enabled=False,

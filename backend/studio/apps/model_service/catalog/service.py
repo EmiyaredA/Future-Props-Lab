@@ -171,7 +171,12 @@ class ModelCatalogService:
 
         def provider_out(provider):
             result = self._provider_out(provider, grouped.get(provider.id, []))
-            if provider.kind in {"local_qwen_tts", "local_relayvsr", "local_ffmpeg"}:
+            if provider.kind in {
+                "local_qwen_tts",
+                "local_zonos_tts",
+                "local_relayvsr",
+                "local_ffmpeg",
+            }:
                 for model in result.models:
                     installation = installations.get(model.slug)
                     model.availability = (
@@ -283,7 +288,7 @@ class ModelCatalogService:
         row.kind = body.kind
         row.base_url = body.base_url
         row.enabled = body.enabled
-        if body.kind in {"local_qwen_tts", "local_relayvsr", "local_ffmpeg"}:
+        if body.kind in {"local_qwen_tts", "local_zonos_tts", "local_relayvsr", "local_ffmpeg"}:
             row.api_key_ciphertext = ""
         elif body.api_key.strip():
             row.api_key_ciphertext = self.cipher.encrypt(body.api_key)
@@ -437,6 +442,12 @@ class ModelCatalogService:
                 "FFmpeg 本地",
                 "本地 FFmpeg 视频增强",
                 "等比缩放与轻锐化，Apple 硬件编码",
+            ),
+            "zonos3-mini": (
+                "local_zonos_tts",
+                "ZONOS 本地",
+                "本地 ZONOS3 语音",
+                "音色克隆与情绪控制",
             ),
         }.get(
             body.model_id,

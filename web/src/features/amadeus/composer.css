@@ -1,0 +1,169 @@
+.amadeus-composer .amadeus-toolbar {
+  margin-top: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--amadeus-line-soft);
+}
+
+.amadeus-composer .amadeus-toolbar-tools {
+  width: 100%;
+  gap: 3px;
+}
+
+.amadeus-composer .amadeus-mode-switch {
+  margin-inline-start: auto;
+}
+
+.amadeus-composer-footer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 12px;
+  padding-top: 9px;
+}
+
+.amadeus-composer-footer .amadeus-composer-models {
+  margin: 0;
+  width: 100%;
+}
+
+.amadeus-composer-footer .amadeus-toolbar-run,
+.amadeus-composer-footer .amadeus-model-choices {
+  justify-content: flex-start;
+  margin: 0;
+  width: 100%;
+}
+
+.amadeus-composer-footer .amadeus-model-control {
+  flex: 0 1 auto;
+  max-width: min(100%, 200px);
+}
+
+.amadeus-composer-footer .custom-select-trigger {
+  max-width: 100%;
+  min-height: 32px;
+  padding: 5px 7px;
+  font-size: 11px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.amadeus-composer-actions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 7px;
+}
+
+.amadeus-composer-actions button,
+.amadeus-run-options,
+.amadeus-run-settings header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 36px;
+  min-height: 36px;
+  gap: 6px;
+  padding: 7px 9px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 10px;
+  background: var(--amadeus-surface);
+  color: var(--amadeus-ink);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.amadeus-composer-actions .amadeus-send {
+  background: var(--amadeus-accent);
+  color: white;
+  border-color: transparent;
+}
+
+.amadeus-composer-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.amadeus-run-options {
+  flex: 0 1 auto;
+  min-width: 0;
+  min-height: 32px;
+  max-width: 100%;
+  border-color: transparent;
+  background: transparent;
+  color: var(--amadeus-muted);
+  font-size: 11px;
+}
+
+.amadeus-run-options span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amadeus-run-options svg {
+  flex: none;
+}
+
+.amadeus-run-settings {
+  position: fixed;
+  z-index: 20000;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid var(--amadeus-line);
+  border-radius: 16px;
+  background: var(--amadeus-surface);
+  color: var(--amadeus-ink);
+  box-shadow: var(--amadeus-shadow);
+}
+
+.amadeus-run-settings header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.amadeus-run-settings h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.amadeus-run-settings p {
+  color: var(--amadeus-muted);
+  font-size: 12px;
+}
+
+.amadeus-run-settings-fields {
+  display: grid;
+  gap: 12px;
+}
+
+.amadeus-run-settings-fields .amadeus-model-control {
+  max-width: none;
+}
+
+.amadeus-instruction-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--amadeus-muted);
+}
+
+.amadeus-instruction-status button {
+  border: 1px solid var(--amadeus-line);
+  border-radius: 5px;
+  padding: 3px 5px;
+  background: var(--amadeus-surface);
+  color: var(--amadeus-ink);
+  cursor: pointer;
+}

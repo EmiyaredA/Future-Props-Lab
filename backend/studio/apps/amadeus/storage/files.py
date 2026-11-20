@@ -5,6 +5,7 @@ from __future__ import annotations
 import fcntl
 import hashlib
 import os
+import re
 import stat
 import uuid
 from pathlib import Path
@@ -12,6 +13,7 @@ from pathlib import Path
 from anyio import AsyncFile
 from anyio.to_thread import run_sync
 
+from studio.contracts.amadeus.images import GENERATED_IMAGE_NAME
 from studio.contracts.asset_library.incoming import IncomingFile
 from studio.runtime.database.operation_receipts import OperationError
 
@@ -191,11 +193,14 @@ def write_file(
     expected_sha256: str,
     *,
     files_root: Path,
+    generated_image: bool = False,
 ) -> dict:
     if kind not in {"scripts", "outputs", "imports"}:
         raise OperationError("文件类别无效")
     if len(content) > MAX_FILE_BYTES:
         raise OperationError("文件超过 50 MiB")
+    if kind == "outputs" and re.fullmatch(GENERATED_IMAGE_NAME, name) and not generated_image:
+        raise OperationError("生成图片原件只读，请保存为新文件", "immutable_generated_image", 409)
     work_file(owner_user_id, conversation_id, kind, name, files_root=files_root)
     directory_fd = _directory_fd(
         owner_user_id, conversation_id, kind, create=True, files_root=files_root

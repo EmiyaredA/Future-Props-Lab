@@ -114,6 +114,7 @@ it("uses the recovered run to stop it and aborts its outstanding poll on unmount
       harnessEfforts: [],
       harnessCatalogStatus: null,
       fast: false,
+      codexImageGeneration: true,
       fastAvailable: false,
       setFast: vi.fn(),
       reasoningEffort: "",

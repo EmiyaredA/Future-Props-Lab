@@ -12,9 +12,21 @@ MAX_REFERENCE_BYTES = 20 * 1024**2
 MIN_REFERENCE_SECONDS, MAX_REFERENCE_SECONDS = 3, 30
 
 
-def speech_parameters():
+def speech_parameters(provider_kind="local_qwen_tts"):
     return {
-        "languages": LANGUAGES,
+        "languages": ["Chinese", "English", "Japanese"]
+        if provider_kind == "local_zonos_tts"
+        else LANGUAGES,
+        "reference_text_required": provider_kind != "local_zonos_tts",
+        **(
+            {
+                "clone_modes": ["embedding", "reference"],
+                "emotions": ["neutral", "happy", "angry", "sad", "serene", "scared", "confused"],
+                "supports_seed": True,
+            }
+            if provider_kind == "local_zonos_tts"
+            else {}
+        ),
         "max_text_length": 2000,
         "max_reference_bytes": MAX_REFERENCE_BYTES,
         "min_reference_seconds": MIN_REFERENCE_SECONDS,
@@ -58,6 +70,13 @@ async def synthesize(runtime, sessions, task, source, output, *, readiness=None)
             await require_ready(session, task.model_slug, readiness=readiness)
 
     payload = {key: task.payload[key] for key in ("text", "language", "reference_text")}
+    if task.provider_kind == "local_zonos_tts":
+        payload.update(
+            {
+                key: task.payload[key]
+                for key in ("clone_mode", "emotion", "emotion_strength", "seed")
+            }
+        )
     payload.update(
         task_id=task.task_id,
         reference_path=str(Path(source).resolve()),

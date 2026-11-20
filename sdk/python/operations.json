@@ -1271,6 +1271,10 @@
     "method": "heartbeat_run",
     "resource": "amadeus"
   },
+  "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions": {
+    "method": "insert_instruction",
+    "resource": "amadeus"
+  },
   "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval": {
     "method": "pause_run_for_approval",
     "resource": "amadeus"

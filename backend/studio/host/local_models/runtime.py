@@ -4,6 +4,7 @@ import asyncio
 import json
 from pathlib import Path
 
+from studio.config.local_models import ZONOS_MODEL_ID
 from studio.host.local_models.installer import worker_environment
 
 HERE = Path(__file__).parent
@@ -69,8 +70,15 @@ class LocalRuntime:
                 ):
                     await self.close()
                     self.process = await asyncio.create_subprocess_exec(
-                        str(self.installer.python),
-                        str(HERE / "worker.py"),
+                        str(
+                            self.installer.python_for(model_id)
+                            if model_id == ZONOS_MODEL_ID
+                            else self.installer.python
+                        ),
+                        str(
+                            HERE
+                            / ("zonos_worker.py" if model_id == ZONOS_MODEL_ID else "worker.py")
+                        ),
                         str(self.installer.model_path(model_id)),
                         stdin=asyncio.subprocess.PIPE,
                         stdout=asyncio.subprocess.PIPE,

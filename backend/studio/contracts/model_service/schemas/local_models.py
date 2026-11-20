@@ -61,3 +61,22 @@ class SpeechSynthesisParameters(BaseModel):
         if not value.strip():
             raise ValueError("文本不能为空")
         return value
+
+
+class ZonosSynthesisParameters(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    text: str = Field(min_length=1, max_length=2000)
+    language: Literal["Chinese", "English", "Japanese"] = "Chinese"
+    reference_asset_id: str = Field(min_length=1)
+    reference_text: str = Field(default="", max_length=2000)
+    clone_mode: Literal["embedding", "reference"] = "embedding"
+    emotion: Literal["neutral", "happy", "angry", "sad", "serene", "scared", "confused"] = "neutral"
+    emotion_strength: float = Field(default=0.5, ge=0, le=1, allow_inf_nan=False)
+    seed: int = Field(default=42, ge=0, le=2**32 - 1)
+
+    @field_validator("text")
+    @classmethod
+    def nonempty(cls, value):
+        if not value.strip():
+            raise ValueError("文本不能为空")
+        return value

@@ -131,6 +131,8 @@ from db.migrations.versions import (
     r0127_video_enhancement,
     r0128_local_video_providers,
     r0129_video_preview_renders,
+    r0130_local_zonos_provider,
+    r0131_amadeus_instructions,
 )
 
 
@@ -611,5 +613,15 @@ MIGRATIONS += (
 MIGRATIONS += (
     Migration(r0129_video_preview_renders.MIGRATION_ID, r0129_video_preview_renders.SQL),
 )
+
+MIGRATIONS += (
+    Migration(
+        r0130_local_zonos_provider.MIGRATION_ID,
+        r0130_local_zonos_provider.SQL,
+        foreign_keys_off=True,
+    ),
+)
+
+MIGRATIONS += (Migration(r0131_amadeus_instructions.MIGRATION_ID, r0131_amadeus_instructions.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

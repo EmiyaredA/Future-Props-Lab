@@ -9,6 +9,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
 from studio.apps.amadeus.storage.conversations import Conversations
+from studio.apps.amadeus.storage.instructions import InstructionRecords, close_instructions, ready
 from studio.apps.amadeus.storage.models import (
     AmadeusAction,
     AmadeusConversation,
@@ -25,6 +26,7 @@ from studio.contracts.amadeus.conversations import (
     RunEventOut,
     RunOut,
 )
+from studio.contracts.amadeus.images import ImageGenerationEvent, image_reference
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now
 
@@ -55,6 +57,8 @@ def _run(row: AmadeusRun) -> RunOut:
         model_id=row.model_id,
         agent_id=row.agent_id,
         agent_model=row.agent_model,
+        codex_image_generation=row.execution_config.get("codex_image_generation", True),
+        generated_images=row.execution_config.get("generated_images", []),
         **{key: row.execution_config.get(key) for key in TurnOptions.model_fields},
         usage=row.execution_config.get("usage"),
         execution_config=row.execution_config,
@@ -209,9 +213,11 @@ class RunRecords:
                 self.connection_field: connection,
                 "agent_id": body.agent_id,
                 **body.cli_options(),
+                "codex_image_generation": body.codex_image_generation,
                 "messages": [
                     m.model_dump(mode="json", exclude={"pinned"})
                     for m in detail_snapshot.messages[-60:]
+                    if m.role != "user" or m.status in {"completed", "accepted"}
                 ],
                 "actions": [a.model_dump(mode="json") for a in detail_snapshot.actions],
                 "questions": [q.model_dump(mode="json") for q in detail_snapshot.questions],
@@ -248,7 +254,14 @@ class RunRecords:
                 .order_by(AmadeusRunEvent.sequence)
             )
         ).all()
-        return RunDetailOut(run=_run(row), events=[_event(item) for item in events])
+        instructions = await InstructionRecords(self.session, self.principal).items(run_id)
+        return RunDetailOut(
+            run=_run(row),
+            events=[_event(item) for item in events],
+            instructions=instructions,
+            can_receive=ready(row)
+            and not any(x.status in {"pending", "sending"} for x in instructions),
+        )
 
     async def history(self, conversation_id: str) -> list[RunDetailOut]:
         await self._conversation(conversation_id)
@@ -266,9 +279,11 @@ class RunRecords:
         return [await self.detail(conversation_id, row.id) for row in rows]
 
     async def append_event(
-        self, conversation_id: str, run_id: str, body: RunEventIn
+        self, conversation_id: str, run_id: str, body: RunEventIn, *, saved_image: bool = False
     ) -> RunEventOut:
-        row = await self.get(conversation_id, run_id)
+        row = await InstructionRecords(self.session, self.principal).run(
+            conversation_id, run_id, write=True
+        )
         existing = await self.session.scalar(
             select(AmadeusRunEvent).where(
                 AmadeusRunEvent.run_id == run_id,
@@ -281,6 +296,25 @@ class RunRecords:
             raise OperationError("运行已经结束", "run_not_active", 409)
         if len(json.dumps(body.payload, ensure_ascii=False).encode()) > MAX_EVENT_BYTES:
             raise OperationError("运行事件超过 1 MiB", "event_too_large", 422)
+        if body.kind == "image_generation":
+            try:
+                image_event = ImageGenerationEvent.model_validate(body.payload)
+            except ValidationError:
+                raise OperationError("图片事件无效", "invalid_event", 422) from None
+            if image_event.status == "completed" and not saved_image:
+                raise OperationError("图片必须先保存原件", "invalid_event", 422)
+            if (
+                row.agent_id != "codex"
+                or row.mode != "agent"
+                or not row.execution_config.get("codex_image_generation", True)
+            ):
+                raise OperationError("当前运行未启用生图", "image_generation_disabled", 403)
+            if image_event.image is not None:
+                images = row.execution_config.get("generated_images", [])
+                row.execution_config = {
+                    **row.execution_config,
+                    "generated_images": [*images, image_event.image.model_dump(mode="json")],
+                }
         if body.kind == "assistant_delta":
             text = body.payload.get("text")
             if not isinstance(text, str) or not text:
@@ -341,16 +375,21 @@ class RunRecords:
         return _run(row)
 
     async def mark_cancelling(self, conversation_id: str, run_id: str) -> RunOut:
-        row = await self.get(conversation_id, run_id)
+        row = await InstructionRecords(self.session, self.principal).run(
+            conversation_id, run_id, write=True
+        )
         if row.status in TERMINAL:
             return _run(row)
+        await close_instructions(self.session, [run_id])
         row.status = "cancelling"
         row.updated_at = utc_now()
         await self.session.commit()
         return _run(row)
 
     async def pause_for_approval(self, conversation_id: str, run_id: str) -> RunDetailOut:
-        row = await self.get(conversation_id, run_id)
+        row = await InstructionRecords(self.session, self.principal).run(
+            conversation_id, run_id, write=True
+        )
         if row.status != "running" or row.mode != "agent":
             raise OperationError("运行不可等待审批", "run_not_active", 409)
         pending = await self.session.scalar(
@@ -361,6 +400,7 @@ class RunRecords:
         if pending is None:
             raise OperationError("没有待审批操作", "approval_conflict", 409)
         now = utc_now()
+        await close_instructions(self.session, [run_id])
         row.status = "waiting_approval"
         row.active_owner_key = None
         row.finished_at = row.updated_at = now
@@ -369,13 +409,14 @@ class RunRecords:
         return await self.detail(conversation_id, run_id)
 
     async def _save_partial(self, row: AmadeusRun) -> None:
-        if row.partial_text and not row.response_message_id:
+        images = row.execution_config.get("generated_images", [])
+        if (row.partial_text or images) and not row.response_message_id:
             message = AmadeusMessage(
                 conversation_id=row.conversation_id,
                 owner_user_id=row.owner_user_id,
                 role="assistant",
                 content=row.partial_text,
-                references_json=[],
+                references_json=[image_reference(image) for image in images],
                 run_id=row.id,
                 status=row.status,
             )
@@ -386,12 +427,15 @@ class RunRecords:
     async def finish(
         self, conversation_id: str, run_id: str, status: str, error_message: str | None
     ) -> RunDetailOut:
-        row = await self.get(conversation_id, run_id)
+        row = await InstructionRecords(self.session, self.principal).run(
+            conversation_id, run_id, write=True
+        )
         if row.status in TERMINAL:
             return await self.detail(conversation_id, run_id)
         if status not in {"completed", "failed", "cancelled", "interrupted"}:
             raise OperationError("运行终态无效", "invalid_status", 422)
         now = utc_now()
+        await close_instructions(self.session, [run_id])
         row.status = status
         row.active_owner_key = None
         row.error_message = error_message

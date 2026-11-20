@@ -180,16 +180,15 @@ async def receipt(request: Request, body: Receipt):
             ):
                 raise HTTPException(409, "native_output_not_stored")
             metrics = body.outcome.result.get("metrics", {})
-            if set(metrics) - {
-                "ok",
-                "sample_rate",
-                "duration_seconds",
-                "elapsed_seconds",
-                "peak_memory_bytes",
-                "process_peak_memory_bytes",
-            }:
-                raise HTTPException(422, "native_metrics_invalid")
-            if any(type(value) not in {int, float, bool} for value in metrics.values()):
+            from studio.contracts.model_service.model_native import valid_synthesis_metrics
+
+            # Retired jobs deliberately forget their payload. The original lease
+            # above is still bound to its immutable digest for a late receipt.
+            if not valid_synthesis_metrics(
+                body.lease.payload.get("model_id", ""),
+                body.lease.payload.get("synthesis_options", {}),
+                metrics,
+            ):
                 raise HTTPException(422, "native_metrics_invalid")
         elif (
             set(body.outcome.result) != {"installed"}

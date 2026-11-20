@@ -1,4 +1,6 @@
+import { InstructionStatus } from "./InstructionStatus";
 import { AttachmentReference } from "./AttachmentReference";
+import { GeneratedImageCard } from "./GeneratedImageCard";
 import { MessageActionRow } from "./MessageActions";
 import { messageAnchors, type MessageActions } from "./useMessageActions";
 import { usageFields } from "./conversationUsage";
@@ -34,6 +36,7 @@ import type {
   Reference,
   Run,
   RunDetail,
+  RunInstruction,
   SavedQuestion,
 } from "./protocol";
 
@@ -621,6 +624,7 @@ export function ActivityFeed({
   owner,
   runs,
   onReference,
+  onRestoreInstruction,
   onApproval,
   onAnswer,
   onContinue,
@@ -657,6 +661,7 @@ export function ActivityFeed({
     arguments_: Record<string, unknown>,
     note: string,
   ) => Promise<void>;
+  onRestoreInstruction?: (item: RunInstruction) => void;
   onInspect?: (key: string) => void;
   selectedTool?: string | null;
   display?: ReturnType<typeof buildDisplayTimeline>;
@@ -664,7 +669,17 @@ export function ActivityFeed({
 }) {
   const { entries } = display || buildDisplayTimeline(detail, runs);
   const anchors = messageActions && messageAnchors(detail.messages, entries);
+  const instructions = new Map(
+    runs.flatMap((run) =>
+      (run.instructions ?? []).map((item) => [item.message_id, item] as const),
+    ),
+  );
   const runById = new Map(runs.map((item) => [item.run.id, item.run]));
+  const imageRuns = new Set(
+    entries
+      .filter((item) => item.kind === "image_generation")
+      .map((item) => item.runId),
+  );
   const continued = new Set(
     runs.map((item) => item.run.source_run_id).filter(Boolean),
   );
@@ -683,6 +698,14 @@ export function ActivityFeed({
   return (
     <>
       {entries.map((item) => {
+        if (item.kind === "image_generation")
+          return (
+            <GeneratedImageCard
+              key={`image:${item.runId}:${item.generation.item_id}`}
+              generation={item.generation}
+              conversationId={detail.conversation.id}
+            />
+          );
         if (item.kind === "run_error")
           return (
             <div
@@ -723,6 +746,13 @@ export function ActivityFeed({
         }
         if (item.kind === "message") {
           const message = item.message;
+          if (
+            message.role === "assistant" &&
+            !message.content &&
+            message.run_id &&
+            imageRuns.has(message.run_id)
+          )
+            return null;
           const actionAnchor = anchors?.get(message.id);
           const feedback =
             message.role === "user" ? feedbackTitle(message.content) : null;
@@ -753,14 +783,23 @@ export function ActivityFeed({
               <div className="amadeus-message-content">
                 {!!message.references?.length && (
                   <div className="amadeus-message-refs">
-                    {message.references.map((reference, index) => (
-                      <AttachmentReference
-                        key={`${reference.id}-${index}`}
-                        reference={reference}
-                        conversationId={detail.conversation.id}
-                        onOpen={onReference}
-                      />
-                    ))}
+                    {message.references
+                      .filter(
+                        (reference) =>
+                          !(
+                            message.run_id &&
+                            imageRuns.has(message.run_id) &&
+                            reference.source === "outputs"
+                          ),
+                      )
+                      .map((reference, index) => (
+                        <AttachmentReference
+                          key={`${reference.id}-${index}`}
+                          reference={reference}
+                          conversationId={detail.conversation.id}
+                          onOpen={onReference}
+                        />
+                      ))}
                   </div>
                 )}
                 {feedback ? (
@@ -795,6 +834,12 @@ export function ActivityFeed({
                   />
                 )}
               </div>
+              {instructions.has(message.id) && (
+                <InstructionStatus
+                  item={instructions.get(message.id)!}
+                  restore={onRestoreInstruction}
+                />
+              )}
               {message.role === "user" &&
                 Number.isFinite(Date.parse(message.created_at)) && (
                   <time

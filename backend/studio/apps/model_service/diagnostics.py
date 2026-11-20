@@ -56,7 +56,7 @@ async def test_model(
         raise DiagnosticCallError(
             status_code=409,
             message="请在模型测试的语音合成中提供参考录音"
-            if provider.kind == "local_qwen_tts"
+            if provider.kind in {"local_qwen_tts", "local_zonos_tts"}
             else "生成模型请在视觉创作工坊中使用",
             log_id="",
         )

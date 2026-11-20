@@ -59,6 +59,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute/stream"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/cancel"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/runs"),
+        ("POST", "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/events"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval"),
         ("POST", "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/question"),

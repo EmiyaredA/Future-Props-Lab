@@ -38,6 +38,7 @@ import {
 } from "./speechSynthesisPresentation";
 import { useSpeechDraft, type SpeechLimits } from "./useSpeechDraft";
 import "./speech-synthesis.css";
+import { ZonosSpeechControls } from "./ZonosSpeechControls";
 
 type SpeechPanelProps = {
   models: CapabilityTestModel[];
@@ -291,6 +292,13 @@ function SpeechWorkspace({
               />
             </div>
           </div>
+          {!!limits?.clone_modes?.length && (
+            <ZonosSpeechControls
+              limits={limits}
+              draft={draft}
+              disabled={inputDisabled}
+            />
+          )}
           <section className="speech-reference" aria-label="参考音色">
             <h2>参考音色</h2>
             <p className="speech-help">
@@ -359,34 +367,40 @@ function SpeechWorkspace({
                 </button>
               </div>
             </div>
-            <div className="speech-transcript-header">
-              <label htmlFor={`${id}-reference-text`}>录音对应文字</label>
-              <button
-                className="speech-text-button"
-                type="button"
-                aria-expanded={expanded}
-                aria-controls={`${id}-reference-text`}
-                onClick={() => setExpanded(!expanded)}
-              >
-                {expanded ? "收起编辑" : "展开编辑"}
-                <ChevronDown size={14} aria-hidden />
-              </button>
-            </div>
-            <p className="speech-help">
-              请填写这段参考录音中实际说出的内容，帮助模型还原音色。
-            </p>
-            <textarea
-              id={`${id}-reference-text`}
-              value={draft.referenceText}
-              maxLength={draft.maxLength}
-              rows={expanded ? 5 : 2}
-              placeholder="例如：今天的天气很好，适合出门散步。"
-              disabled={draft.busy}
-              onChange={(event) => draft.setReferenceText(event.target.value)}
-            />
-            <span className="speech-character-count speech-transcript-count">
-              {draft.referenceText.length} / {draft.maxLength} 字
-            </span>
+            {limits?.reference_text_required !== false && (
+              <>
+                <div className="speech-transcript-header">
+                  <label htmlFor={`${id}-reference-text`}>录音对应文字</label>
+                  <button
+                    className="speech-text-button"
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-controls={`${id}-reference-text`}
+                    onClick={() => setExpanded(!expanded)}
+                  >
+                    {expanded ? "收起编辑" : "展开编辑"}
+                    <ChevronDown size={14} aria-hidden />
+                  </button>
+                </div>
+                <p className="speech-help">
+                  请填写这段参考录音中实际说出的内容，帮助模型还原音色。
+                </p>
+                <textarea
+                  id={`${id}-reference-text`}
+                  value={draft.referenceText}
+                  maxLength={draft.maxLength}
+                  rows={expanded ? 5 : 2}
+                  placeholder="例如：今天的天气很好，适合出门散步。"
+                  disabled={draft.busy}
+                  onChange={(event) =>
+                    draft.setReferenceText(event.target.value)
+                  }
+                />
+                <span className="speech-character-count speech-transcript-count">
+                  {draft.referenceText.length} / {draft.maxLength} 字
+                </span>
+              </>
+            )}
           </section>
           <div className="speech-submit-row">
             <button
@@ -413,7 +427,9 @@ function SpeechWorkspace({
           ) : (
             !draft.reference && (
               <p className="speech-help">
-                准备好配音文稿、参考录音和对应文字后，即可生成语音。
+                {limits?.reference_text_required === false
+                  ? "准备好配音文稿与参考录音后，即可生成语音。"
+                  : "准备好配音文稿、参考录音和对应文字后，即可生成语音。"}
               </p>
             )
           )}

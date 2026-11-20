@@ -1,5 +1,6 @@
 PROVIDER_DEFAULT_CATEGORIES: dict[str, tuple[str, ...]] = {
     "local_qwen_tts": ("speech_synthesis",),
+    "local_zonos_tts": ("speech_synthesis",),
     "local_relayvsr": ("video_enhancement",),
     "local_ffmpeg": ("video_enhancement",),
     "volcengine_image": ("image_generation",),

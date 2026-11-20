@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from studio.contracts.agent_runtime.catalog import TokenUsage, TurnOptions
+from studio.contracts.amadeus.images import GeneratedImage
 
 IMAGE_ATTACHMENT_EXTENSIONS = frozenset(
     {".avif", ".bmp", ".gif", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
@@ -194,6 +195,7 @@ class ModelTurnIn(BaseModel):
 
 class RunCreateIn(TurnOptions):
     model_config = ConfigDict(extra="forbid")
+    codex_image_generation: bool = True
     agent_id: Literal["codex", "claude-code", "opencode", "dsh", "pi"]
     agent_model: str = Field(default="", max_length=160)
     model_id: str = Field(default="code-agent", max_length=160)
@@ -210,6 +212,7 @@ class RunEventIn(BaseModel):
         "assistant_delta",
         "assistant_message",
         "reasoning_summary",
+        "image_generation",
         "run_usage",
         "tool_call",
         "tool_result",
@@ -240,6 +243,8 @@ class RunEventOut(BaseModel):
 
 
 class RunOut(TurnOptions):
+    codex_image_generation: bool = True
+    generated_images: list[GeneratedImage] = Field(default_factory=list)
     agent_id: str | None = None
     agent_model: str = ""
     usage: TokenUsage | None = None
@@ -261,9 +266,38 @@ class RunOut(TurnOptions):
     finished_at: datetime | None
 
 
+InstructionStatus = Literal["pending", "sending", "accepted", "rejected", "unknown"]
+
+
+class InstructionCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    request_id: str = Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")
+    expected_revision: int = Field(ge=0)
+    text: str = Field(max_length=90_000)
+    references: list[Reference] = Field(default_factory=list, max_length=20)
+
+    @model_validator(mode="after")
+    def nonempty(self):
+        if not self.text.strip() and not self.references:
+            raise ValueError("补充消息不能为空")
+        return self
+
+
+class InstructionOut(BaseModel):
+    request_id: str
+    message_id: str
+    text: str
+    references: list[Reference]
+    status: InstructionStatus
+    sequence: int
+    created_at: datetime
+
+
 class RunDetailOut(BaseModel):
     run: RunOut
     events: list[RunEventOut]
+    instructions: list[InstructionOut] = Field(default_factory=list)
+    can_receive: bool = False
 
 
 class QuestionIn(BaseModel):

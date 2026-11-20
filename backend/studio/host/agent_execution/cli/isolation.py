@@ -154,15 +154,18 @@ def dsh_connection_patches(home):
 
 
 @asynccontextmanager
-async def launch(kind, executable, root, tool_config):
+async def launch(kind, executable, root, tool_config, *, sandbox=None):
     root = Path(root)
     # Profiles may link CLI-owned credentials. Keep them outside persistent account trees
     # so a killed process cannot leave external symlinks in a future offline backup.
-    with TemporaryDirectory(prefix="fpl-cli-") as directory:
+    with TemporaryDirectory(
+        prefix="fpl-cli-", dir=sandbox.private if sandbox else None
+    ) as directory:
         profile = Path(directory)
         env = environment()
         env["NO_COLOR"] = "1"
         if kind == "opencode":
+            original_data = Path(env.get("XDG_DATA_HOME") or Path.home() / ".local/share")
             env.update(
                 {
                     "OPENCODE_PURE": "true",
@@ -195,6 +198,13 @@ async def launch(kind, executable, root, tool_config):
             env["XDG_CONFIG_HOME"] = str(profile / "config")
             env["OPENCODE_CONFIG_DIR"] = str(profile / "config" / "opencode")
             env["OPENCODE_DB"] = str(profile / "opencode.db")
+            if sandbox is not None:
+                from .workspace import copy_regular
+
+                copy_regular(
+                    original_data / "opencode/auth.json",
+                    sandbox.private / "data/opencode/auth.json",
+                )
             servers = {}
             allowed = {"*": "deny"}
             for name, server in tool_config.get("mcpServers", {}).items():
@@ -229,7 +239,12 @@ async def launch(kind, executable, root, tool_config):
             models = read_json(home / "models.json")
             validate_pi_model_credentials(models)
             for name in ("auth.json", "models.json"):
-                link_credentials(home / name, profile / name)
+                if sandbox is None:
+                    link_credentials(home / name, profile / name)
+                else:
+                    from .workspace import copy_regular
+
+                    copy_regular(home / name, profile / name)
             connection_environment(models, env)
             env["PI_CODING_AGENT_DIR"] = str(profile)
             env["FPL_CLI_MCP_CONFIG"] = json.dumps(tool_config)
@@ -251,7 +266,13 @@ async def launch(kind, executable, root, tool_config):
                 "Help the user using only the explicitly registered FPL task tools.",
             ]
             if tool_config.get("mcpServers"):
-                args += ["--extension", str(RESOURCES / "pi_tools.mjs")]
+                extension = RESOURCES / "pi_tools.mjs"
+                if sandbox is not None:
+                    import shutil
+
+                    shutil.copyfile(extension, profile / extension.name)
+                    extension = profile / extension.name
+                args += ["--extension", str(extension)]
         elif kind == "dsh":
             home = Path(env.get("DSH_HOME") or Path.home() / ".dsh")
             env["DSH_HOME"] = str(profile)
@@ -288,12 +309,23 @@ async def launch(kind, executable, root, tool_config):
                 {"id": name, "disabled": True} for name in disabled
             ]
             connection_environment(patch, env)
+            credentials = home / ".credentials.yaml"
+            extension = RESOURCES / "dsh_tools.mjs"
+            if sandbox is not None:
+                import shutil
+
+                from .workspace import copy_regular
+
+                copy_regular(credentials, profile / "credentials.yaml", required=True)
+                credentials = profile / "credentials.yaml"
+                shutil.copyfile(extension, profile / extension.name)
+                extension = profile / extension.name
             patch += [
                 {
                     "id": "credentials",
-                    "config": {"path": str(home / ".credentials.yaml"), "watch": False},
+                    "config": {"path": str(credentials), "watch": False},
                 },
-                {"insert": [{"id": "fpl-task-tools", "name": str(RESOURCES / "dsh_tools.mjs")}]},
+                {"insert": [{"id": "fpl-task-tools", "name": str(extension)}]},
             ]
             path = profile / "fpl.patch.yml"
             path.write_text(yaml.safe_dump(patch))
@@ -310,4 +342,4 @@ async def launch(kind, executable, root, tool_config):
             args = [executable, "--profile", "acp", "--patch", str(path)]
         else:
             raise CliError("未知的 CLI 连接类型")
-        yield args, env
+        yield args, sandbox.environment(env) if sandbox is not None else env

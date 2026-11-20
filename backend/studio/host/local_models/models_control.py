@@ -82,7 +82,8 @@ class ModelsControl:
                 if not await self.installed(request.model_id):
                     raise ValueError("原生模型权重或环境不可用")
 
-            values = {key: getattr(request, key) for key in ("text", "language", "reference_text")}
+            values = request.parameters()
+            values.pop("reference_asset_id")
             values.update(reference_path=str(source), output_path=str(output))
             metrics = await self.runtime.synthesize(request.model_id, values, validate)
             description = await asyncio.to_thread(

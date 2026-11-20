@@ -33,6 +33,8 @@ from studio.contracts.amadeus.conversations import (
     FileListOut,
     FileOut,
     FileWriteIn,
+    InstructionCreate,
+    InstructionOut,
     MessageForkIn,
     MessageIn,
     MessageOut,
@@ -142,6 +144,34 @@ async def list_runs(
 ) -> list[RunDetailOut]:
     try:
         return await Runs(session, principal).history(conversation_id)
+    except OperationError as exc:
+        raise _error(exc) from None
+
+
+@router.post(
+    "/conversations/{conversation_id}/runs/{run_id}/instructions", response_model=InstructionOut
+)
+async def insert_instruction(
+    request: Request,
+    principal: StudioAuth,
+    conversation_id: str,
+    run_id: str,
+    body: InstructionCreate,
+) -> InstructionOut:
+    from studio.apps.amadeus.execution.website_dialogue import runtime
+
+    async def read(operation, arguments):
+        return await call_operation(
+            request.app,
+            request.headers,
+            operation,
+            arguments,
+            allow_write=False,
+            status_only=True,
+        )
+
+    try:
+        return await runtime(request.app).insert(principal, conversation_id, run_id, body, read)
     except OperationError as exc:
         raise _error(exc) from None
 

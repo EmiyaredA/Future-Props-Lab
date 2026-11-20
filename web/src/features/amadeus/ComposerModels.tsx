@@ -1,4 +1,5 @@
-import { Send, Square } from "lucide-react";
+import { ImageIcon, SlidersHorizontal, X } from "lucide-react";
+import * as Dialog from "@radix-ui/react-dialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import type { useAmadeusController } from "./useAmadeusController";
 
@@ -20,6 +21,9 @@ type ModelControls = Pick<
   | "setHarnessEffort"
   | "fastAvailable"
   | "fast"
+  | "codexImageGeneration"
+  | "setCodexImageGeneration"
+  | "mode"
   | "setFast"
   | "reasoningEfforts"
   | "reasoningEffort"
@@ -28,12 +32,15 @@ type ModelControls = Pick<
   | "detail"
   | "create"
   | "setError"
-  | "stop"
-  | "importing"
-  | "send"
 >;
 
-export function ComposerModels({ controls }: { controls: ModelControls }) {
+export function ComposerModels({
+  controls,
+  writable = true,
+}: {
+  controls: ModelControls;
+  writable?: boolean;
+}) {
   const {
     agents,
     agentId,
@@ -51,6 +58,9 @@ export function ComposerModels({ controls }: { controls: ModelControls }) {
     setHarnessEffort,
     fastAvailable,
     fast,
+    codexImageGeneration,
+    setCodexImageGeneration,
+    mode,
     setFast,
     reasoningEfforts,
     reasoningEffort,
@@ -59,9 +69,6 @@ export function ComposerModels({ controls }: { controls: ModelControls }) {
     detail,
     create,
     setError,
-    stop,
-    send,
-    importing,
   } = controls;
   return (
     <div className="amadeus-composer-models">
@@ -110,62 +117,122 @@ export function ComposerModels({ controls }: { controls: ModelControls }) {
               onChange={setModelId}
             />
           </div>
-          {reasoningEfforts?.length > 0 && (
-            <div className="amadeus-model-control">
-              <CustomSelect
-                ariaLabel="推理强度"
-                value={reasoningEffort || "default"}
-                disabled={busy}
-                options={[
-                  { value: "default", label: "默认推理强度" },
-                  ...reasoningEfforts.map((value) => ({
-                    value,
-                    label: `推理 · ${value}`,
-                  })),
-                ]}
-                onChange={(value) =>
-                  setReasoningEffort(value === "default" ? "" : value)
-                }
-              />
-            </div>
+          {(agentId === "codex" ||
+            reasoningEfforts?.length > 0 ||
+            modelVariants.length > 0 ||
+            harnessEfforts.length > 0 ||
+            fastAvailable ||
+            modelVariant ||
+            harnessEffort ||
+            fast) && (
+            <Dialog.Root>
+              <Dialog.Trigger asChild>
+                <button
+                  type="button"
+                  className="amadeus-run-options"
+                  aria-label="运行设置"
+                  title="运行设置"
+                >
+                  <SlidersHorizontal size={15} aria-hidden />
+                  <span>
+                    {[
+                      reasoningEffort,
+                      modelVariant,
+                      harnessEffort,
+                      fast ? "快档" : "",
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "运行设置"}
+                  </span>
+                </button>
+              </Dialog.Trigger>
+              <Dialog.Portal>
+                <Dialog.Overlay className="amadeus-files-overlay" />
+                <Dialog.Content className="amadeus-run-settings">
+                  <header>
+                    <Dialog.Title>运行设置</Dialog.Title>
+                    <Dialog.Close aria-label="关闭运行设置">
+                      <X size={17} aria-hidden />
+                    </Dialog.Close>
+                  </header>
+                  <Dialog.Description>
+                    {busy ? "当前运行的设置已固定。" : "设置将用于下一次运行。"}
+                  </Dialog.Description>
+                  <div className="amadeus-run-settings-fields">
+                    {agentId === "codex" && (
+                      <div className="amadeus-image-setting">
+                        <button
+                          type="button"
+                          role="switch"
+                          aria-label="Codex 生图"
+                          aria-checked={codexImageGeneration}
+                          className="amadeus-image-toggle"
+                          disabled={busy || mode === "plan" || !writable}
+                          onClick={() =>
+                            setCodexImageGeneration(!codexImageGeneration)
+                          }
+                        >
+                          <ImageIcon size={15} aria-hidden />
+                          Codex 生图 · {codexImageGeneration ? "开启" : "关闭"}
+                        </button>
+                        <small>
+                          {mode === "plan"
+                            ? "Plan 模式不生成图片"
+                            : !writable
+                              ? "当前账号没有生图所需的写权限"
+                              : "使用 Codex 自带生图，生成后自动保存到当前会话。"}
+                        </small>
+                      </div>
+                    )}
+                    {reasoningEfforts?.length > 0 && (
+                      <div className="amadeus-model-control">
+                        <CustomSelect
+                          ariaLabel="推理强度"
+                          value={reasoningEffort || "default"}
+                          disabled={busy}
+                          options={[
+                            { value: "default", label: "默认推理强度" },
+                            ...reasoningEfforts.map((value) => ({
+                              value,
+                              label: `推理 · ${value}`,
+                            })),
+                          ]}
+                          onChange={(value) =>
+                            setReasoningEffort(value === "default" ? "" : value)
+                          }
+                        />
+                      </div>
+                    )}
+                    <TurnOptionSelect
+                      label="模型变体"
+                      value={modelVariant}
+                      choices={modelVariants}
+                      onChange={setModelVariant}
+                      disabled={busy}
+                    />
+                    <TurnOptionSelect
+                      label="Harness 推理档位"
+                      value={harnessEffort}
+                      choices={harnessEfforts}
+                      onChange={setHarnessEffort}
+                      disabled={busy}
+                    />
+                    <TurnOptionSelect
+                      label="Codex 服务档位"
+                      defaultLabel="CLI 默认档位"
+                      value={fast ? "fast" : ""}
+                      choices={
+                        fastAvailable ? [{ id: "fast", label: "快档" }] : []
+                      }
+                      onChange={(value) => setFast(value === "fast")}
+                      disabled={busy}
+                    />
+                  </div>
+                </Dialog.Content>
+              </Dialog.Portal>
+            </Dialog.Root>
           )}
-          <TurnOptionSelect
-            label="模型变体"
-            value={modelVariant}
-            choices={modelVariants}
-            onChange={setModelVariant}
-            disabled={busy}
-          />
-          <TurnOptionSelect
-            label="Harness 推理档位"
-            value={harnessEffort}
-            choices={harnessEfforts}
-            onChange={setHarnessEffort}
-            disabled={busy}
-          />
-          <TurnOptionSelect
-            label="Codex 服务档位"
-            defaultLabel="CLI 默认档位"
-            value={fast ? "fast" : ""}
-            choices={fastAvailable ? [{ id: "fast", label: "快档" }] : []}
-            onChange={(value) => setFast(value === "fast")}
-            disabled={busy}
-          />
         </div>
-        <button
-          type="button"
-          className="amadeus-send"
-          title={busy ? "停止" : "发送"}
-          aria-label={busy ? "停止" : "发送"}
-          disabled={importing && !busy}
-          onClick={() => (busy ? stop() : void send())}
-        >
-          {busy ? (
-            <Square size={16} aria-hidden />
-          ) : (
-            <Send size={16} aria-hidden />
-          )}
-        </button>
       </div>
       {harnessCatalogStatus === "unavailable" && (
         <small className="amadeus-model-status" role="status">

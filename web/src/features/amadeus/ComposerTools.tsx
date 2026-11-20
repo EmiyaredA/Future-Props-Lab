@@ -11,6 +11,7 @@ import { ActionIcon } from "./ActionIcon";
 
 export function ComposerTools({
   busy,
+  modeLocked = false,
   standalone,
   atReferenceLimit,
   mode,
@@ -23,6 +24,7 @@ export function ComposerTools({
   openCapabilities,
 }: {
   busy: boolean;
+  modeLocked?: boolean;
   standalone: boolean;
   atReferenceLimit: boolean;
   mode: "agent" | "plan";
@@ -69,6 +71,7 @@ export function ComposerTools({
       </ActionIcon>
       <div className="amadeus-mode-switch" role="group" aria-label="运行模式">
         <ActionIcon
+          disabled={modeLocked}
           label="Agent"
           hint={mode === "agent" ? "当前为 Agent 模式" : "切换为 Agent 模式"}
           aria-pressed={mode === "agent"}
@@ -77,6 +80,7 @@ export function ComposerTools({
           <Bot size={16} aria-hidden />
         </ActionIcon>
         <ActionIcon
+          disabled={modeLocked}
           label="Plan"
           hint={mode === "plan" ? "当前为 Plan 模式" : "切换为 Plan 模式"}
           aria-pressed={mode === "plan"}

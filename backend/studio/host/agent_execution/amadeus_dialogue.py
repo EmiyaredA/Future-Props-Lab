@@ -22,6 +22,8 @@ from studio.host.agent_execution.cli.catalog import (
     inspect_connection,
 )
 from studio.host.agent_execution.cli.dialogue import run_dialogue
+from studio.host.agent_execution.cli.instruction_delivery import deliver_instructions
+from studio.host.agent_execution.cli.instructions import LiveInstructions
 from studio.host.agent_execution.cli.transport import CliError
 from studio.host.transport import LeaseEnded, ProtocolConflict
 from studio.runtime.database.operation_receipts import OperationError
@@ -117,6 +119,21 @@ class DialogueWorker:
             return NativeOutcome(status="failed", error_code="agent_unavailable")
 
         turn = DialogueChannel(self.transport, payload)
+        instructions = LiveInstructions(timeout=900)
+
+        async def claim(ready):
+            result = await self.transport.post(
+                "dialogue/instructions/claim", {**payload, "ready": ready}
+            )
+            return result.get("instruction")
+
+        async def settle(receipt):
+            result = await self.transport.post(
+                "dialogue/instructions/receipt",
+                {**payload, "receipt": receipt.model_dump(mode="json")},
+            )
+            if result.get("acknowledged") is not True:
+                raise ProtocolConflict("插入消息回执未确认")
 
         async def watch():
             while True:
@@ -125,6 +142,19 @@ class DialogueWorker:
                 if pulse.get("active") is not True:
                     raise LeaseEnded("对话授权已失效")
                 await self.connections.resolve(scope, probe=False)
+
+        async def save_image(item_id, data):
+            await turn.flush()
+            try:
+                value = await self.transport.post_file("dialogue/images", payload, item_id, data)
+            except httpx.HTTPError:
+                # The upload may already have committed: read its receipt, never regenerate.
+                value = await self.transport.post(
+                    "dialogue/images/receipt", {**payload, "item_id": item_id}
+                )
+                if value.get("image") is None:
+                    raise ProtocolConflict("图片交付结果待核实；不会自动重新生图") from None
+            return value["image"]
 
         process = asyncio.create_task(
             self.runner(
@@ -138,17 +168,26 @@ class DialogueWorker:
                 root=root,
                 runtime_path=self.connections.runtime_root,
                 image_attachments=plan.image_attachments,
+                **(
+                    {"image_generation_enabled": True, "save_image": save_image}
+                    if plan.codex_image_generation
+                    else {}
+                ),
+                instructions=instructions,
                 **scope.cli_options(),
             )
         )
         watcher = asyncio.create_task(watch())
         paused = asyncio.create_task(turn.paused.wait())
+        inputs = asyncio.create_task(deliver_instructions(instructions, claim, settle, turn.flush))
         try:
             async with asyncio.timeout(900):
                 done, _ = await asyncio.wait(
-                    (process, watcher, paused), return_when=asyncio.FIRST_COMPLETED
+                    (process, watcher, paused, inputs), return_when=asyncio.FIRST_COMPLETED
                 )
                 if paused not in done:
+                    if inputs in done:
+                        await inputs
                     if watcher in done:
                         await watcher
                     try:
@@ -174,10 +213,11 @@ class DialogueWorker:
         except Exception:
             return NativeOutcome(status="failed", error_code="agent_execution_failed")
         finally:
-            for task in (process, watcher, paused):
+            instructions.close()
+            for task in (process, watcher, paused, inputs):
                 if not task.done():
                     task.cancel()
-            await asyncio.gather(process, watcher, paused, return_exceptions=True)
+            await asyncio.gather(process, watcher, paused, inputs, return_exceptions=True)
 
 
 class DialogueChannel:
@@ -231,13 +271,13 @@ class DialogueChannel:
             if self.paused.is_set():
                 raise OperationError("对话已暂停", "run_not_active", 409)
             await self.flush_pending()
-            result = await self.transport.post(
-                "dialogue/tool", {**self.payload, "tool": {"name": name, "arguments": arguments}}
+        result = await self.transport.post(
+            "dialogue/tool", {**self.payload, "tool": {"name": name, "arguments": arguments}}
+        )
+        if result.get("ok") is not True:
+            raise OperationError(
+                result.get("message", "任务工具不可用"), result.get("code", "unsupported_tool")
             )
-            if result.get("ok") is not True:
-                raise OperationError(
-                    result.get("message", "任务工具不可用"), result.get("code", "unsupported_tool")
-                )
-            if result.get("paused") is True:
-                self.paused.set()
-            return result["result"]
+        if result.get("paused") is True:
+            self.paused.set()
+        return result["result"]

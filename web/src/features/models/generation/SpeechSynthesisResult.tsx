@@ -20,6 +20,7 @@ import { apiErrorMessage } from "@platform/api/errors";
 import {
   speechTaskStatus,
   speechAudioTime,
+  speechCloningSummary,
 } from "./speechSynthesisPresentation";
 
 export function SpeechSynthesisResult({
@@ -94,6 +95,11 @@ export function SpeechSynthesisResult({
       <p className="speech-result-text" tabIndex={0}>
         {String(task.request_payload.text ?? "") || "本次生成未提供文字预览"}
       </p>
+      {!!speechCloningSummary(task.request_payload) && (
+        <p className="speech-help" aria-label="本次合成设置">
+          {speechCloningSummary(task.request_payload)}
+        </p>
+      )}
       {!completed && !failed && (
         <p className="speech-help">
           生成完成后可在此试听。首次加载模型可能较慢。

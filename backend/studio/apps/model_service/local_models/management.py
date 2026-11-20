@@ -12,7 +12,13 @@ from studio.apps.model_service.storage.models.local_models import (
     LocalModelInstallation,
     LocalModelOperation,
 )
-from studio.config.local_models import FFMPEG_MODEL_ID, LOCAL_VIDEO_MODEL_IDS, RELAY_MODEL_ID
+from studio.config.local_models import (
+    FFMPEG_MODEL_ID,
+    LOCAL_VIDEO_MODEL_IDS,
+    RELAY_MODEL_ID,
+    ZONOS_MODEL_ID,
+    required_disk_bytes,
+)
 from studio.contracts.model_service.schemas.local_models import LocalModelOut, LocalModelsOut
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.revisions import RevisionConflictError
@@ -42,7 +48,7 @@ class LocalModels:
             license=model["license"],
             model_revision=model["revision"],
             download_bytes=size,
-            required_disk_bytes=0 if builtin else size * 2 + 2 * 1024**3,
+            required_disk_bytes=required_disk_bytes(model),
             compatible=platform_ready,
             status=("installed" if platform_ready else "not_installed")
             if builtin
@@ -98,7 +104,7 @@ class LocalModels:
             await session.commit()
 
     def files_present(self, model_id):
-        if model_id == RELAY_MODEL_ID:
+        if model_id in {RELAY_MODEL_ID, ZONOS_MODEL_ID}:
             return self.installer.model_files_present(model_id)
         return (
             self.installer.python.is_file()
@@ -175,7 +181,7 @@ class LocalModels:
                         or any(not job.done() for job in self.jobs.values())
                         or not (
                             self.files_present(model_id)
-                            if relay
+                            if relay or model_id == ZONOS_MODEL_ID
                             else (self.installer.model_path(model_id) / "config.json").is_file()
                         )
                     ):

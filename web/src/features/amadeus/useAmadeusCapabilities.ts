@@ -20,6 +20,7 @@ export function useAmadeusCapabilities(
   const [modelVariant, setModelVariant] = useState("");
   const [harnessEffort, setHarnessEffort] = useState("");
   const [fast, setFast] = useState(false);
+  const [codexImageGeneration, setCodexImageGeneration] = useState(true);
   const [harnessCatalog, setHarnessCatalog] = useState<{
     model: string;
     options?: NamedOption[];
@@ -168,6 +169,7 @@ export function useAmadeusCapabilities(
     setModelVariant(latest?.model_variant || "");
     setHarnessEffort(latest?.harness_effort || "");
     setFast(latest?.service_tier === "fast");
+    setCodexImageGeneration(latest?.codex_image_generation ?? true);
   }, [conversation, runs]);
 
   const keepModelSelection = (conversationId: string) => {
@@ -188,6 +190,8 @@ export function useAmadeusCapabilities(
     harnessCatalogStatus,
     setHarnessEffort,
     fast,
+    codexImageGeneration,
+    setCodexImageGeneration,
     fastAvailable,
     setFast,
     reasoningEfforts,

@@ -54,7 +54,7 @@ export function preferredModeModel(
       return model.capabilities.includes("video_enhancement");
     if (mode === "synthesis")
       return (
-        model.providerKind === "local_qwen_tts" &&
+        ["local_qwen_tts", "local_zonos_tts"].includes(model.providerKind) &&
         model.capabilities.includes("speech_synthesis")
       );
     if (mode === "speech")

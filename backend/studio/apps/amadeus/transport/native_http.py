@@ -3,14 +3,15 @@
 import asyncio
 from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, Request
-from pydantic import BaseModel, ConfigDict, Field
+from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from studio.apps.amadeus.storage.conversations import Conversations
 from studio.apps.amadeus.storage.files import work_root
 from studio.contracts.agent_workbench.native import NativeLease, NativeOutcome
 from studio.contracts.amadeus.amadeus_native import AmadeusPoll, DialogueToolInput, FinderScope
 from studio.contracts.amadeus.conversations import RunEventIn
+from studio.contracts.amadeus.instructions import InstructionReceipt
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
 
@@ -111,6 +112,65 @@ class DialogueEvent(Leased):
 
 class DialogueTool(Leased):
     tool: DialogueToolInput
+
+
+class ImageReceipt(Leased):
+    item_id: str = Field(min_length=1, max_length=200)
+
+
+@native.post("/dialogue/images/receipt")
+async def image_receipt(request: Request, body: ImageReceipt):
+    turn = await request.app.state.native_host.dialogue_turn(
+        request.state.amadeus_worker, body.lease
+    )
+    return {"image": await turn.image_receipt(body.item_id)}
+
+
+@native.post("/dialogue/images")
+async def dialogue_image(
+    request: Request,
+    lease: str = Form(..., max_length=20_000),
+    item_id: str = Form(..., min_length=1, max_length=200),
+    upload: UploadFile = File(...),
+):
+    try:
+        try:
+            scope = NativeLease.model_validate_json(lease)
+        except ValidationError:
+            raise HTTPException(422, "invalid_dialogue_lease") from None
+        host, worker = request.app.state.native_host, request.state.amadeus_worker
+        turn = await host.dialogue_turn(worker, scope)
+        image = await turn.save_image(
+            item_id, upload, authorize=lambda: host.authorize(worker, scope)
+        )
+        return {"image": image}
+    finally:
+        await upload.close()
+
+
+class InstructionPoll(Leased):
+    ready: bool
+
+
+class InstructionDelivery(Leased):
+    receipt: InstructionReceipt
+
+
+@native.post("/dialogue/instructions/claim")
+async def claim_instruction(request: Request, body: InstructionPoll):
+    turn = await request.app.state.native_host.dialogue_turn(
+        request.state.amadeus_worker, body.lease
+    )
+    value = await turn.claim_instruction(str(body.lease.lease_id), body.ready)
+    return {"instruction": value.model_dump(mode="json") if value else None}
+
+
+@native.post("/dialogue/instructions/receipt")
+async def instruction_receipt(request: Request, body: InstructionDelivery):
+    await request.app.state.native_host.instruction_receipt(
+        request.state.amadeus_worker, body.lease, body.receipt
+    )
+    return {"acknowledged": True}
 
 
 @native.post("/dialogue/plan")

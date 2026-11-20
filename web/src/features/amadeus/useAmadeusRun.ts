@@ -14,6 +14,7 @@ import type {
   Detail,
   Run,
   RunDetail,
+  RunInstruction,
 } from "./protocol";
 
 export function useAmadeusRun({
@@ -54,6 +55,7 @@ export function useAmadeusRun({
     | "harnessEfforts"
     | "harnessCatalogStatus"
     | "fast"
+    | "codexImageGeneration"
     | "fastAvailable"
     | "setFast"
     | "reasoningEffort"
@@ -68,6 +70,14 @@ export function useAmadeusRun({
   const [mode, setMode] = useState<"agent" | "plan">("agent");
   const [activeRun, setActiveRun] = useState<Run | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [inserting, setInserting] = useState(false);
+  const [canInsert, setCanInsert] = useState(false);
+  const [stopping, setStopping] = useState(false);
+  const stoppingRef = useRef(false);
+  const insertingRef = useRef(false);
+  const insertionAttempt = useRef<{ signature: string; id: string } | null>(
+    null,
+  );
   const submittingRef = useRef(false);
   const submissionVersion = useRef(0);
   const lifetime = useRef<AbortController | undefined>(undefined);
@@ -99,6 +109,7 @@ export function useAmadeusRun({
     harnessEfforts,
     harnessCatalogStatus,
     fast,
+    codexImageGeneration,
     fastAvailable,
     setFast,
     reasoningEffort,
@@ -112,6 +123,12 @@ export function useAmadeusRun({
     setActiveRun(null);
     submittingRef.current = false;
     setSubmitting(false);
+    setInserting(false);
+    setStopping(false);
+    stoppingRef.current = false;
+    insertingRef.current = false;
+    insertionAttempt.current = null;
+    setCanInsert(false);
     const isCurrent = captureSelection();
     const version = submissionVersion.current;
     void fetchApiJson<RunDetail | null>("/v1/amadeus/runs/active", {
@@ -126,6 +143,7 @@ export function useAmadeusRun({
           return;
         activeRunRef.current = running.run;
         setActiveRun(running.run);
+        setCanInsert(running.can_receive === true);
         await openRecoveredRun(running.run.conversation_id, isCurrent);
       })
       .catch((cause) => {
@@ -136,13 +154,20 @@ export function useAmadeusRun({
 
   const stop = () => {
     const run = activeRunRef.current;
-    if (!run) return;
+    if (!run || stoppingRef.current) return;
+    stoppingRef.current = true;
+    setStopping(true);
+    setCanInsert(false);
     const scope = lifetime.current;
     void fetchApiJson(
       `/v1/amadeus/conversations/${run.conversation_id}/runs/${run.id}/cancel`,
       { method: "POST" },
     ).catch((cause) => {
-      if (!scope?.signal.aborted) setError(String(cause));
+      if (!scope?.signal.aborted) {
+        stoppingRef.current = false;
+        setStopping(false);
+        setError(String(cause));
+      }
     });
   };
 
@@ -159,9 +184,34 @@ export function useAmadeusRun({
         );
         if (request.signal.aborted) return;
         acceptRun(value);
+        setCanInsert(value.can_receive === true && !stoppingRef.current);
+        const selected = getDetail();
+        if (
+          selected?.conversation.id === run.conversation_id &&
+          value.instructions?.some(
+            (item) =>
+              !selected.messages.some(
+                (message) => message.id === item.message_id,
+              ),
+          )
+        ) {
+          const isCurrent = captureSelection();
+          const detail = await fetchApiJson<Detail>(
+            `/v1/amadeus/conversations/${run.conversation_id}`,
+            { signal: request.signal },
+          );
+          if (!request.signal.aborted)
+            updateDetail(isCurrent, (current) =>
+              detail.conversation.revision >= current.conversation.revision
+                ? detail
+                : current,
+            );
+        }
         if (!["running", "cancelling"].includes(value.run.status)) {
           setActiveRun(null);
           activeRunRef.current = null;
+          stoppingRef.current = false;
+          setStopping(false);
           showAvatarState(
             value.run.status === "completed" ? "success" : "paused",
             2200,
@@ -187,6 +237,8 @@ export function useAmadeusRun({
   }, [
     activeRun,
     acceptRun,
+    captureSelection,
+    updateDetail,
     getDetail,
     open,
     refreshList,
@@ -200,8 +252,79 @@ export function useAmadeusRun({
     mode: "agent" | "plan";
     feedback?: string;
   }) => {
-    const prompt = options?.prompt || draft.trim();
-    if (!prompt || isBusy() || isImporting() || selectionPending()) return;
+    const prompt =
+      options?.prompt ||
+      draft.trim() ||
+      (references.length && !activeRunRef.current
+        ? "请查看我引用的内容。"
+        : "");
+    if ((!prompt && !references.length) || isImporting() || selectionPending())
+      return;
+    const running = activeRunRef.current;
+    if (running && !options) {
+      const current = getDetail();
+      if (
+        stoppingRef.current ||
+        !canInsert ||
+        insertingRef.current ||
+        current?.conversation.id !== running.conversation_id
+      )
+        return;
+      insertingRef.current = true;
+      setInserting(true);
+      const isCurrent = captureSelection();
+      const scope = lifetime.current;
+      const refs = references.map(({ windowId, ...item }) => ({
+        ...item,
+        window_id: windowId,
+      }));
+      const signature = JSON.stringify([running.id, prompt, refs]);
+      if (insertionAttempt.current?.signature !== signature)
+        insertionAttempt.current = { signature, id: crypto.randomUUID() };
+      setError("");
+      try {
+        await fetchApiJson<RunInstruction>(
+          `/v1/amadeus/conversations/${running.conversation_id}/runs/${running.id}/instructions`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              request_id: insertionAttempt.current.id,
+              expected_revision: current.conversation.revision,
+              text: prompt,
+              references: refs,
+            }),
+          },
+        );
+        if (scope?.signal.aborted) return;
+        insertionAttempt.current = null;
+        clearDraft(isCurrent, { text: draft, references });
+        setCanInsert(false);
+        const snapshot = await fetchApiJson<Detail>(
+          `/v1/amadeus/conversations/${running.conversation_id}`,
+        );
+        if (!scope?.signal.aborted)
+          updateDetail(isCurrent, (current) =>
+            snapshot.conversation.revision >= current.conversation.revision
+              ? snapshot
+              : current,
+          );
+      } catch (cause) {
+        if (!scope?.signal.aborted)
+          setError(
+            conversationConflict(cause)
+              ? CONVERSATION_CONFLICT_MESSAGE
+              : `补充消息未确认，请查看消息状态；输入已保留：${String(cause)}`,
+          );
+      } finally {
+        if (!scope?.signal.aborted) {
+          insertingRef.current = false;
+          setInserting(false);
+        }
+      }
+      return;
+    }
+    if (isBusy()) return;
     if (!agents.find((a) => a.id === agentId)?.available) {
       setError("请先在 AI 能力 → 模型与智能体 → 编程智能体 配置并授权此 Agent");
       return;
@@ -294,6 +417,8 @@ export function useAmadeusRun({
             model_variant: modelVariant || undefined,
             harness_effort: harnessEffort || undefined,
             service_tier: fast ? "fast" : undefined,
+            codex_image_generation:
+              agentId === "codex" ? codexImageGeneration : undefined,
             mode: options?.mode || mode,
             source_run_id: options?.sourceRunId,
             context: selectedProjectContexts(
@@ -315,7 +440,8 @@ export function useAmadeusRun({
       setActiveRun(value.run);
       activeRunRef.current = value.run;
       if (isSubmittingToSelection()) acceptRun(value);
-      if (!options) clearDraft(isSubmittingToSelection);
+      if (!options)
+        clearDraft(isSubmittingToSelection, { text: draft, references });
       await refreshList();
     } catch (cause) {
       const conflict = conversationConflict(cause);
@@ -332,5 +458,17 @@ export function useAmadeusRun({
     }
   };
 
-  return { mode, setMode, activeRun, busy, isBusy, send, stop };
+  return {
+    mode,
+    setMode,
+    activeRun,
+    busy,
+    isBusy,
+    send,
+    stop,
+    inserting,
+    stopping,
+    canInsert,
+    submitting,
+  };
 }

@@ -10,6 +10,7 @@ const LOG_PROVIDER_KINDS: ProviderKind[] = [
   "deepseek",
   "anthropic",
   "local_qwen_tts",
+  "local_zonos_tts",
   "senseaudio_asr",
   "senseaudio_asr_pro",
   "senseaudio_realtime",

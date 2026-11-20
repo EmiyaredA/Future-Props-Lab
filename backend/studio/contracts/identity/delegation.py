@@ -3,7 +3,7 @@
 import re
 from dataclasses import dataclass
 
-from studio.contracts.amadeus.amadeus_native import RUN_SOURCE
+from studio.contracts.amadeus.amadeus_native import INSTRUCTION_SOURCE, RUN_SOURCE
 from studio.contracts.amadeus.amadeus_skills import skill_pin_grant
 from studio.contracts.amadeus.message_forks import FORK_SOURCE, is_fork_read
 from studio.contracts.asset_library.annotation import audio_asset_grant
@@ -345,7 +345,10 @@ def permitted(grant, catalog):
                 )
                 or (
                     grant.purpose == "amadeus.dialogue.read"
-                    and RUN_SOURCE.fullmatch(grant.source_path)
+                    and (
+                        RUN_SOURCE.fullmatch(grant.source_path)
+                        or INSTRUCTION_SOURCE.fullmatch(grant.source_path)
+                    )
                 )
             )
             and grant.target_method == "GET"

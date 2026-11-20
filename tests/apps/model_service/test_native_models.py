@@ -109,10 +109,11 @@ class Runtime:
         self.started.set()
         self.busy = True
         await self.release.wait()
-        assert model_id == MODEL
+        assert model_id == self.expected_model
+        self.last_payload = dict(payload)
         Path(payload["output_path"]).write_bytes(Path(payload["reference_path"]).read_bytes())
         self.busy = False
-        return {"ok": True, "elapsed_seconds": 0.01}
+        return {"ok": True, "elapsed_seconds": 0.01, **getattr(self, "metrics", {})}
 
     async def close(self):
         self.model_id, self.process = None, None
@@ -127,7 +128,8 @@ async def until(predicate, timeout=5):
 
 
 @pytest.fixture
-async def case(tmp_path):
+async def case(tmp_path, request):
+    model_id = getattr(request, "param", MODEL)
     state = tmp_path / "models"
     apply(state / "service.db", "models", MIGRATIONS)
     database = Database("models", state, models=MODELS, account_models=ACCOUNT_MODELS)
@@ -179,7 +181,8 @@ async def case(tmp_path):
         base_url="http://127.0.0.1:29090/models", credential=credential, transport=Routing()
     )
     installer, runtime = Installer(tmp_path / "host-models"), Runtime()
-    await installer.install({"id": MODEL}, lambda _progress: asyncio.sleep(0))
+    runtime.expected_model = model_id
+    await installer.install({"id": model_id}, lambda _progress: asyncio.sleep(0))
     control = ModelsControl(
         tmp_path / "host",
         installer.root,
@@ -192,11 +195,12 @@ async def case(tmp_path):
     async with database.sessions() as session:
         session.add(
             LocalModelInstallation(
-                id=MODEL, status="installed", enabled=True, progress=100, revision=1
+                id=model_id, status="installed", enabled=True, progress=100, revision=1
             )
         )
         await session.commit()
     value = SimpleNamespace(
+        model_id=model_id,
         database=database,
         settings=settings,
         key=key,
@@ -241,7 +245,8 @@ def assertion(case, *, path, owner="alpha", role="user", local=False):
     )
 
 
-async def task(case):
+async def task(case, options=None):
+    provider_kind = "local_zonos_tts" if case.model_id == "zonos3-mini" else "local_qwen_tts"
     task_id, asset_id = str(uuid4()), str(uuid4())
     async with case.database.sessions(info={"owner_user_id": "alpha"}) as session:
         provider = await session.get(ModelProvider, "provider")
@@ -250,7 +255,7 @@ async def task(case):
                 ModelProvider(
                     id="provider",
                     owner_user_id="alpha",
-                    kind="local_qwen_tts",
+                    kind=provider_kind,
                     name="local",
                     base_url="",
                     api_key_ciphertext="",
@@ -263,7 +268,7 @@ async def task(case):
                     id="model",
                     owner_user_id="alpha",
                     provider_id="provider",
-                    slug=MODEL,
+                    slug=case.model_id,
                     capabilities=["speech_synthesis"],
                     enabled=True,
                 )
@@ -274,9 +279,9 @@ async def task(case):
             owner_user_id="alpha",
             model_id="model",
             provider_id="provider",
-            provider_kind="local_qwen_tts",
+            provider_kind=provider_kind,
             provider_name="local",
-            model_slug=MODEL,
+            model_slug=case.model_id,
             kind="speech_synthesis",
             request_id=str(uuid4()),
             fingerprint="body-fingerprint",
@@ -287,6 +292,7 @@ async def task(case):
                 "reference_text": "测试录音",
                 "reference_asset_id": asset_id,
                 "asset_ids": [asset_id],
+                **(options or {}),
             },
         )
         session.add(row)
@@ -1051,4 +1057,32 @@ async def test_foreground_finish_failure_releases_same_receipt_for_background_se
     finally:
         release.set()
         await asyncio.gather(foreground, return_exceptions=True)
+        await stop(worker)
+
+
+@pytest.mark.parametrize("case", ["zonos3-mini"], indirect=True)
+@pytest.mark.parametrize("mode", ["embedding", "reference"])
+async def test_zonos_preserves_optional_transcript_and_controls_through_native_lease(case, mode):
+    options = dict(
+        clone_mode=mode, emotion="serene", emotion_strength=0.75, seed=42, reference_text=""
+    )
+    task_id = await task(case, options)
+    case.runtime.metrics = dict(
+        clone_mode=mode, emotion="serene", seed=42, controls={"emotions.serene": 3.0}
+    )
+    worker = asyncio.create_task(case.worker.run())
+    try:
+        await case.inference.synthesize(task_id)
+        async with case.database.sessions(info={"owner_user_id": "alpha"}) as session:
+            row = await session.get(ModelInferenceTask, task_id)
+            assert row.status == "completed", row.error_message
+            job = await session.scalar(select(NativeModelJob))
+            assert job.payload["synthesis_options"] == {
+                k: v for k, v in options.items() if k != "reference_text"
+            }
+            assert not any("path" in key for key in job.payload)
+        assert case.runtime.calls == 1
+        for key, value in options.items():
+            assert case.runtime.last_payload[key] == value
+    finally:
         await stop(worker)

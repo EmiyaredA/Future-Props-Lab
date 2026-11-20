@@ -96,7 +96,7 @@ export function modelTestMode(model: CatalogModel, provider: CatalogProvider) {
   )
     return "speech";
   if (
-    provider.kind === "local_qwen_tts" &&
+    ["local_qwen_tts", "local_zonos_tts"].includes(provider.kind) &&
     model.capabilities.includes("speech_synthesis")
   )
     return "synthesis";

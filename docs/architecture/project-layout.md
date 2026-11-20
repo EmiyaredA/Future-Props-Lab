@@ -65,6 +65,11 @@ backend/
 - 应用内部 `storage/models.py` 保存共用业务模型，`storage/service_models.py` 保存独立服务附加模型，`storage/migrations/` 保存独立迁移链；迁移 SQL、ID 与顺序不变。独立与共用协议适配位于应用的 `transport/`；兼容网站协议及跨表适配归 `assembly/website/<owner>/`。音频标注保留其已抽取的 `rules/`、`use_cases/` 和 `ports.py`。
 - `assembly/independent/<应用名>/application.py` 构造服务，`cli.py` 提供启动/迁移命令，`maintenance.py` 提供存在该能力的回环维护装配。历史 Agents 服务的装配仅供归档版本参考。
 - `contracts/<所有者>/` 只保存可独立加载的数据形状、协议规则与固定权限；不导入业务实现、HTTP 框架或 ORM。账号权限清单在 `contracts/identity/route_permissions.py`，本地模型固定目录在 `config/local_models.json`。
+
+`studio/host/local_models/zonos_install.py` 和 `zonos_worker.py` 分别拥有官方 ZONOS3 MLX
+独立环境安装与私有管道推理；`zonos_requirements.txt` 固定官方源码锁中的依赖版本与哈希。
+模型源码、运行环境及权重位于 Worker 登记的 `.runtime/` 模型根目录。模型测试的克隆与情绪控件
+归 `web/src/features/models/generation/ZonosSpeechControls.tsx`，按推理 capabilities 显示。
 - `runtime/database/` 拥有数据库连接、迁移执行、通用 ORM 原语和迁移传输适配；`http/` 拥有身份断言、错误映射、请求限制及静态资源适配；`tasks/` 拥有轮询和租约队列机制；`files/` 与 `messaging/` 拥有受限文件和签名载荷机制。业务状态裁决仍由应用负责。
 - 所属应用的 `clients/` 可发布明确的跨进程客户端。镜像闭包只允许 `deployment/images.py` 显式登记的客户端模块及无副作用父包，继续逐个检查其依赖，不能因此带入该应用的存储或内部用例。
 - `host/` 负责 Mac 本机动作，`assembly/host/` 构造主机运行环境；服务镜像禁止包含任何主机代码。普通业务不能通过客户端协议获得任意主机路径或执行权限。
@@ -546,8 +551,11 @@ Future-Props-Lab/
   工坊通过 `web/src/platform/assistantElements.ts` 登记原生选区、命中和定位，`features/amadeus/SourceHost.tsx` 负责点选高亮和取消。
   `elementReferences.ts` 负责显式引用的去重、上限与快照构造。
   Portal 提供 `/amadeus` 独立工作区，与工坊侧栏共用会话组件。项目选择经 FPL 操作目录读取各业务服务。`useAmadeusData.ts` 拥有会话快照、历史、草稿和选择版本；
-  `useAmadeusRun.ts` 拥有活动任务、提交和轮询，`useAmadeusAttachments.ts` 拥有附件导入、文件列表和预览，
+  `useAmadeusRun.ts` 拥有活动任务、提交、运行中插入和轮询，`useAmadeusAttachments.ts` 拥有附件导入、文件列表和预览，
+  `storage/instructions.py` 拥有补充消息、一次性投递和回执，Host 的 `cli/live_acp.py` 与 `cli/live_claude.py` 拥有原会话中断续接；
   `useAmadeusCapabilities.ts` 拥有模型和集成目录。`useAmadeusController.ts` 组合这些命令与快照，
+  `GeneratedImageCard.tsx` 展示持久图片及下载；`apps/amadeus/storage/generated_images.py` 保存原件和幂等回执，
+  `contracts/amadeus/images.py` 定义图片引用，`host/agent_execution/cli/image_generation.py` 归一化 Codex 图片项及受控原件路径。
   `revisionConflict.ts` 解释会话 CAS 冲突；
   `vendor/pi/` 仅保留历史来源快照，不参与 Amadeus 构建。进程监督由桌面独立工具入口提供，
   不复用携带后端凭据的服务进程。

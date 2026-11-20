@@ -116,7 +116,20 @@ async def set_acp_option(protocol, event, session_id, result, key, value, *, con
     return updated
 
 
-async def acp(protocol, root, model, prompt, config, emit, allowed, *, harness_effort=None):
+async def acp(
+    protocol,
+    root,
+    model,
+    prompt,
+    config,
+    emit,
+    allowed,
+    *,
+    harness_effort=None,
+    instructions=None,
+    kind="dsh",
+    model_variant=None,
+):
     session_id = None
     titles = {}
     parts = []
@@ -170,7 +183,16 @@ async def acp(protocol, root, model, prompt, config, emit, allowed, *, harness_e
     session_id = created.get("sessionId")
     if not isinstance(session_id, str) or not session_id:
         raise CliError("ACP 未返回会话 ID")
-    if model:
+    if model and kind == "opencode":
+        if acp_option(created, "model"):
+            created = await set_acp_option(protocol, event, session_id, created, "model", model)
+        else:
+            await protocol.rpc(
+                "session/set_model", {"sessionId": session_id, "modelId": model}, event
+            )
+        if model_variant:
+            await set_acp_option(protocol, event, session_id, created, "effort", model_variant)
+    elif model:
         created = await set_acp_option(
             protocol, event, session_id, created, "model", model, confirm=harness_effort is not None
         )
@@ -180,6 +202,12 @@ async def acp(protocol, root, model, prompt, config, emit, allowed, *, harness_e
         )
         if acp_option(configured, "model").get("currentValue") != model:
             raise CliError("DeepSeek Harness 未保持所选模型，请重新选择")
+    if instructions is not None:
+        from .live_acp import live_acp
+
+        await live_acp(protocol, session_id, prompt, event, instructions)
+        await protocol.rpc("session/close", {"sessionId": session_id}, event)
+        return "".join(parts)
     result = await protocol.rpc(
         "session/prompt",
         {"sessionId": session_id, "prompt": [{"type": "text", "text": prompt}]},
@@ -308,6 +336,7 @@ async def converse(
     reasoning_effort=None,
     model_variant=None,
     harness_effort=None,
+    sandbox=None,
 ):
     if model_variant:
         provider, _, model_name = model.partition("/")
@@ -322,15 +351,20 @@ async def converse(
         selected = next((entry for entry in models if entry["id"] == model), None)
         if not selected or model_variant not in {item["id"] for item in selected["variants"]}:
             raise CliError("OpenCode 模型已不提供所选变体，请重新选择")
-    async with launch(kind, executable, root, tool_config) as (args, env):
-        if model_variant:
+    async with launch(kind, executable, root, tool_config, sandbox=sandbox) as (args, env):
+        live_opencode = kind == "opencode" and instructions is not None
+        if live_opencode:
+            args = [executable, "--pure", "acp"]
+        if model_variant and not live_opencode:
             args += ["--variant", model_variant]
-        if model and kind != "dsh":
+        if model and kind != "dsh" and not live_opencode:
             args += ["--model", model]
         if reasoning_effort:
             if kind != "pi" or not model or reasoning_effort not in PI_REASONING_EFFORTS:
                 raise CliError("此 Agent 不支持所选推理强度")
             args += ["--thinking", reasoning_effort]
+        if sandbox is not None:
+            args = sandbox.command(args)
         process = await spawn_transport(
             *watchdog,
             *args,
@@ -344,7 +378,7 @@ async def converse(
         )
         protocol = JsonLines(process, diagnostics=kind == "dsh")
         try:
-            if kind == "dsh":
+            if kind == "dsh" or live_opencode:
                 return await acp(
                     protocol,
                     root,
@@ -352,8 +386,20 @@ async def converse(
                     prompt,
                     tool_config,
                     emit,
-                    set(json.loads(env["FPL_CLI_ALLOWED_TOOLS"])),
+                    set(json.loads(env["FPL_CLI_ALLOWED_TOOLS"]))
+                    if kind == "dsh"
+                    else {
+                        f"{server}_{tool['name']}"
+                        for server, config in tool_config.get("mcpServers", {}).items()
+                        for tool in json.loads(
+                            config.get("env", {}).get("FPL_TOOL_DEFINITIONS", "[]")
+                        )
+                        if isinstance(tool, dict) and isinstance(tool.get("name"), str)
+                    },
                     harness_effort=harness_effort,
+                    instructions=instructions,
+                    kind=kind,
+                    model_variant=model_variant,
                 )
             if kind == "pi":
                 if reasoning_effort:

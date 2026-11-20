@@ -8,6 +8,7 @@ from anyio import CancelScope
 from fastapi import HTTPException
 from sqlalchemy import select, update
 
+from studio.apps.amadeus.storage.instructions import InstructionRecords
 from studio.apps.amadeus.storage.service_models import AmadeusNativeJob
 from studio.contracts.amadeus.amadeus_native import (
     DIALOGUE,
@@ -19,6 +20,7 @@ from studio.contracts.amadeus.amadeus_native import (
     ScriptResult,
     ScriptScope,
 )
+from studio.contracts.identity.principal import StudioPrincipal
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.tasks.native_queue import NativeQueue, NativeQueueError
 from studio.runtime.time import utc_now
@@ -216,6 +218,18 @@ class AmadeusHost:
         if authority.dialogue is None:
             raise HTTPException(403, "dialogue_authorization_required")
         return authority.dialogue
+
+    async def instruction_receipt(self, worker, lease, receipt):
+        if lease.operation != DIALOGUE:
+            raise HTTPException(403, "dialogue_lease_required")
+        # A late receipt may confirm the original dispatch after Stop, never dispatch new work.
+        await self.match(worker, lease, active=False)
+        scope = DialogueScope.model_validate(lease.payload)
+        principal = StudioPrincipal(lease.owner_user_id, False, "session", frozenset())
+        async with self.database.sessions(info={"owner_user_id": principal.user_id}) as session:
+            await InstructionRecords(session, principal).settle(
+                str(scope.conversation_id), str(scope.run_id), str(lease.lease_id), receipt
+            )
 
     async def settle(self, worker, lease, outcome):
         await self.match(worker, lease, active=False)

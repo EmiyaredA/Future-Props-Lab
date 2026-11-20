@@ -2,10 +2,35 @@
 
 from fastapi import APIRouter, Request
 
-from studio.contracts.amadeus.conversations import RunCreateIn, RunDetailOut
+from studio.contracts.amadeus.conversations import (
+    InstructionCreate,
+    InstructionOut,
+    RunCreateIn,
+    RunDetailOut,
+)
 from studio.runtime.http.dependencies import SessionDep, StudioAuth
 
 router = APIRouter(prefix="/v1/amadeus", tags=["amadeus"])
+
+
+@router.post(
+    "/conversations/{conversation_id}/runs/{run_id}/instructions", response_model=InstructionOut
+)
+async def insert_instruction(
+    request: Request,
+    principal: StudioAuth,
+    conversation_id: str,
+    run_id: str,
+    body: InstructionCreate,
+) -> InstructionOut:
+    return await request.app.state.runs.insert(
+        principal,
+        conversation_id,
+        run_id,
+        body,
+        assertion=request.state.service_assertion,
+        path=request.url.path,
+    )
 
 
 @router.post("/conversations/{conversation_id}/runs", response_model=RunDetailOut)

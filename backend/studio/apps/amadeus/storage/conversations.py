@@ -261,6 +261,7 @@ class Conversations:
                     conversation_id=branch_id,
                     role=message.role,
                     content=message.content,
+                    status=message.status,
                     created_at=created_at,
                     references_json=[
                         ref.model_dump(mode="json", exclude_none=True)
@@ -429,6 +430,35 @@ class Conversations:
         )
         await self.session.commit()
         return await self.detail(identity)
+
+    async def append_run_message(self, identity, run_id, expected_revision, text, references):
+        """Reserve a revision and append input inside the caller's admission transaction."""
+        row = await self._get(identity)
+        if row.executor_kind == "legacy-pi":
+            raise OperationError("旧内核对话只读，请新建 Code Agent 对话", "legacy_readonly", 409)
+        await self._revision(row, expected_revision)
+        changed = await self.session.execute(
+            update(AmadeusConversation)
+            .where(
+                AmadeusConversation.id == identity,
+                AmadeusConversation.revision == expected_revision,
+            )
+            .values(revision=expected_revision + 1, updated_at=utc_now())
+        )
+        if changed.rowcount != 1:
+            await self._conflict(identity, expected_revision)
+        message = AmadeusMessage(
+            conversation_id=identity,
+            owner_user_id=self.principal.user_id,
+            role="user",
+            content=text,
+            references_json=references,
+            run_id=run_id,
+            status="pending",
+        )
+        self.session.add(message)
+        await self.session.flush()
+        return message
 
     async def propose(self, identity: str, body: ActionIn, *, commit=True) -> ActionOut:
         await self._get(identity)

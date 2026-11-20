@@ -369,10 +369,24 @@ export function useAmadeusData({
     if (isCurrent())
       setReferences((previous) => mergeReferences(previous, [reference]));
   };
-  const clearDraft = (isCurrent: () => boolean) => {
+  const clearDraft = (
+    isCurrent: () => boolean,
+    submitted?: { text: string; references: Reference[] },
+  ) => {
     if (!isCurrent()) return;
-    setDraft("");
-    setReferences([]);
+    setDraft((previous) =>
+      !submitted || previous === submitted.text ? "" : previous,
+    );
+    setReferences((previous) =>
+      !submitted
+        ? []
+        : previous.filter(
+            (item) =>
+              !submitted.references.some(
+                (sent) => JSON.stringify(sent) === JSON.stringify(item),
+              ),
+          ),
+    );
   };
 
   useEffect(() => {

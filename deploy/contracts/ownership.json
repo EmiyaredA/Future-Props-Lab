@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "0695d5268effd5020e5f1a8d2a378be8875b8373aa363114ebf19aaacfc35948",
+  "openapi_sha256": "faa343c214c50000959f1cc4f2d85421302cfb4cc653bc3fb510602af4dbf382",
   "operations": [
     {
       "service": "identity",
@@ -271,6 +271,12 @@
       "method": "POST",
       "path": "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/heartbeat",
       "operation_id": "heartbeat_run_v1_amadeus_conversations__conversation_id__runs__run_id__heartbeat_post"
+    },
+    {
+      "service": "amadeus",
+      "method": "POST",
+      "path": "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions",
+      "operation_id": "insert_instruction_v1_amadeus_conversations__conversation_id__runs__run_id__instructions_post"
     },
     {
       "service": "amadeus",
@@ -3812,6 +3818,12 @@
       "service": "amadeus",
       "module": "studio.apps.amadeus.storage.models",
       "model": "AmadeusRunEvent"
+    },
+    {
+      "table": "amadeus_run_instructions",
+      "service": "amadeus",
+      "module": "studio.apps.amadeus.storage.models",
+      "model": "AmadeusRunInstruction"
     },
     {
       "table": "amadeus_native_jobs",

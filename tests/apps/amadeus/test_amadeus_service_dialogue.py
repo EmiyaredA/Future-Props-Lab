@@ -98,7 +98,12 @@ async def test_amadeus_cli_owner_tools_pause_continue_and_stop(
         reasoning_effort=None,
         service_tier=None,
         image_attachments=(),
+        image_generation_enabled=False,
+        save_image=None,
+        instructions=None,
     ):
+        assert instructions is not None
+        assert not image_generation_enabled or callable(save_image)
         assert (agent, executable) == ("codex", "sealed-codex-fixture")
         assert (model, reasoning_effort, service_tier) in {
             ("fixture-model", "high", "fast"),

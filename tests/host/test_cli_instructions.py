@@ -24,6 +24,7 @@ async def test_codex_targets_native_turn_and_waits_for_ack_while_tool_is_pending
         "web_search": "disabled",
         "cli_auth_credentials_store": "file",
         "features": {
+            "image_generation": False,
             "skip_host_skill_discovery": True,
             **dict.fromkeys(
                 ("shell_tool", "hooks", "plugins", "apps", "multi_agent", "skill_search"), False

@@ -6,68 +6,19 @@ import json
 import os
 import shutil
 import subprocess
-import tarfile
 from functools import lru_cache
 from pathlib import Path
 from uuid import uuid4
 
-from studio.config.local_models import RELAY_MODEL_ID, definition, manifest
+from studio.config.local_models import RELAY_MODEL_ID, ZONOS_MODEL_ID, definition, manifest
 from studio.host.local_models import downloads
+from studio.host.local_models.environment import command as command
+from studio.host.local_models.environment import extract as extract
+from studio.host.local_models.environment import worker_environment as worker_environment
 from studio.host.local_models.files import owned_path
 from studio.host.local_models.relayvsr_runtime import RUNTIME_REVISION, WEIGHTS
 
 HERE = Path(__file__).parent
-
-
-async def command(*args, timeout=900, env=None):
-    proc = await asyncio.create_subprocess_exec(
-        *map(str, args),
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-        env=env,
-    )
-    try:
-        stdout, _ = await asyncio.wait_for(proc.communicate(), timeout)
-        if proc.returncode:
-            raise ValueError("本地语音运行环境安装或自检失败")
-        return stdout
-    finally:
-        if proc.returncode is None:
-            proc.terminate()
-            try:
-                await asyncio.wait_for(proc.wait(), 5)
-            except TimeoutError:
-                proc.kill()
-                await proc.wait()
-
-
-def extract(archive, destination):
-    destination.mkdir(parents=True, exist_ok=True)
-    with tarfile.open(archive) as source:
-        source.extractall(destination, filter="data")
-
-
-def worker_environment():
-    allowed = {
-        "PATH",
-        "HOME",
-        "TMPDIR",
-        "LANG",
-        "LC_ALL",
-        "SSL_CERT_FILE",
-        "SSL_CERT_DIR",
-        "HTTPS_PROXY",
-        "HTTP_PROXY",
-        "ALL_PROXY",
-        "NO_PROXY",
-        "https_proxy",
-        "http_proxy",
-        "all_proxy",
-        "no_proxy",
-    }
-    env = {key: value for key, value in os.environ.items() if key in allowed}
-    env.update(HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1", PYTHONNOUSERSITE="1")
-    return env
 
 
 @lru_cache(maxsize=4)
@@ -97,11 +48,28 @@ class Installer:
     def model_path(self, model_id):
         return owned_path(self.root, "models", model_id)
 
+    def environment_path(self, model_id):
+        if model_id == ZONOS_MODEL_ID:
+            return owned_path(
+                self.root, "environments", "zonos3", definition(model_id)["environment_version"]
+            )
+        return owned_path(self.root, "environments", "v1")
+
+    def python_for(self, model_id):
+        return owned_path(
+            self.environment_path(model_id), "venv", "bin", "python", allow_leaf_symlink=True
+        )
+
     def is_installed(self, model):
         try:
             model_root = self.model_path(model["id"])
             if model["id"] == RELAY_MODEL_ID:
                 if not self.relay_available():
+                    return False
+            elif model["id"] == ZONOS_MODEL_ID:
+                from studio.host.local_models.zonos_install import environment_ready
+
+                if not environment_ready(self, model):
                     return False
             else:
                 executable = owned_path(
@@ -185,6 +153,11 @@ class Installer:
     def model_files_present(self, model_id):
         if model_id == RELAY_MODEL_ID:
             return all((self.model_path(model_id) / name).is_file() for name in WEIGHTS)
+        if model_id == ZONOS_MODEL_ID:
+            return all(
+                (self.model_path(model_id) / item["path"]).is_file()
+                for item in definition(model_id)["files"]
+            )
         return self.python.is_file() and (self.model_path(model_id) / "config.json").is_file()
 
     async def install_relay(self, model, report):
@@ -213,6 +186,11 @@ class Installer:
             await report(100)
 
     async def install(self, model, report, *, repair=False):
+        if model["id"] == ZONOS_MODEL_ID:
+            from studio.host.local_models.zonos_install import install
+
+            async with self.lock:
+                return await install(self, model, report, repair=repair)
         if model["id"] == RELAY_MODEL_ID:
             return await self.install_relay(model, report)
         async with self.lock:

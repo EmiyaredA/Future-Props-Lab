@@ -65,8 +65,14 @@ class ToolRelay:
                 self.connections.discard(writer)
                 self.handlers.discard(task)
                 raise
-            except Exception:
-                response = {"error": "工具失败；请检查权限、参数与资源当前状态，不要重试未知写入"}
+            except Exception as exc:
+                response = {
+                    "error": {
+                        "code": getattr(exc, "code", "task_tool_failed"),
+                        "status": getattr(exc, "status", 403),
+                        "message": "工具失败；请检查权限、参数与资源当前状态，不要重试未知写入",
+                    }
+                }
                 if call_id:
                     with suppress(Exception):
                         await self.emit(

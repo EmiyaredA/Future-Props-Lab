@@ -19,6 +19,7 @@ export function ProviderIcon({
     | "senseaudio_asr_pro"
     | "senseaudio_realtime"
     | "local_qwen_tts"
+    | "local_zonos_tts"
     | "local_relayvsr"
     | "local_ffmpeg";
   size?: number;

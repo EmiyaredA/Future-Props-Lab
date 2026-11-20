@@ -4,6 +4,7 @@ from studio.apps.amadeus.storage.migrations.versions.v0001 import SQL as RECORDS
 from studio.apps.amadeus.storage.migrations.versions.v0002 import SQL as NATIVE
 from studio.apps.amadeus.storage.migrations.versions.v0003 import SQL as IMPORTS
 from studio.apps.amadeus.storage.migrations.versions.v0004 import SQL as MESSAGE_ACTIONS
+from studio.apps.amadeus.storage.migrations.versions.v0005 import SQL as INSTRUCTIONS
 from studio.runtime.database.migrations import Migration
 
 MIGRATIONS = (
@@ -11,4 +12,5 @@ MIGRATIONS = (
     Migration("0002_amadeus_native_jobs", NATIVE),
     Migration("0003_import_receipts", IMPORTS),
     Migration("0004_message_actions", MESSAGE_ACTIONS),
+    Migration("0005_run_instructions", INSTRUCTIONS),
 )

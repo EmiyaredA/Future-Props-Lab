@@ -9,6 +9,7 @@ from tempfile import TemporaryDirectory
 from studio.contracts.agent_runtime.catalog import REASONING_EFFORTS, accepts_reasoning_effort
 
 from .codex_profile import AUTH_ARGS, profile_environment
+from .image_generation import IMAGE_MESSAGE_BYTES, ImageGeneration
 from .model_connection import toml_value
 from .transport import MAX_BYTES, CliError, close_transport, environment, spawn_transport
 from .usage import claude_usage, codex_usage
@@ -35,7 +36,7 @@ def recorded_result(result):
     return result
 
 
-def codex_command(executable, root, model=""):
+def codex_command(executable, root, model="", *, image_generation=False):
     args = [executable, "app-server", "--listen", "stdio://", *AUTH_ARGS]
     settings = {
         "approval_policy": "never",
@@ -53,22 +54,43 @@ def codex_command(executable, root, model=""):
         "features.skill_mcp_dependency_install": False,
         "features.skip_host_skill_discovery": True,
         "features.skill_search": False,
-        "features.image_generation": False,
+        "features.image_generation": image_generation,
+        "features.image_generation_animation": False,
         "features.view_image": False,
         "tools.view_image": False,
         "project_doc_max_bytes": 0,
     }
+    if image_generation:
+        settings.pop("sandbox_mode")
+        settings.update(
+            {
+                "default_permissions": "fpl-images",
+                "permissions.fpl-images.filesystem": {str(root): "read"},
+                "permissions.fpl-images.network.enabled": False,
+            }
+        )
     for key, value in settings.items():
         args += ["-c", f"{key}={toml_value(value)}"]
     return args, {"cwd": str(root), "model": model or None, "ephemeral": True}
 
 
 @asynccontextmanager
-async def codex_process(executable, profile, model="", *, watchdog=()):
+async def codex_process(
+    executable, profile, model="", *, watchdog=(), image_generation=False, sandbox=None
+):
+    if sandbox is not None:
+        profile = sandbox.codex_profile(profile)
     env = profile_environment(profile)
+    if sandbox is not None:
+        env = sandbox.environment(env)
     with TemporaryDirectory(prefix="fpl-codex-work-") as directory:
-        root = Path(directory).resolve()
-        args, thread_params = codex_command(executable, root, model)
+        root = sandbox.root if sandbox is not None else Path(directory).resolve()
+        args, thread_params = codex_command(
+            executable, root, model, image_generation=image_generation
+        )
+        if sandbox is not None:
+            args = sandbox.command(args)
+            thread_params["_fpl_profile"] = profile
         process = await spawn_transport(
             *watchdog,
             *args,
@@ -78,7 +100,7 @@ async def codex_process(executable, profile, model="", *, watchdog=()):
             stdin=asyncio.subprocess.PIPE,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
-            limit=MAX_BYTES,
+            limit=IMAGE_MESSAGE_BYTES if image_generation else MAX_BYTES,
         )
         try:
             yield process, thread_params
@@ -94,11 +116,28 @@ async def send_codex(process, value):
         raise CliError("Codex app-server 提前退出，请检查专用登录和 CLI 版本") from None
 
 
-def verify_codex_policy(value):
+def verify_codex_policy(value, *, image_root=None):
     config = value.get("config", {})
     features = config.get("features", {})
+    if image_root is not None:
+        permissions = config.get("permissions", {}).get("fpl-images", {})
+        filesystem = {
+            k: v for k, v in permissions.get("filesystem", {}).items() if k != "glob_scan_max_depth"
+        }
+        sandbox_valid = (
+            config.get("sandbox_mode") is None
+            and config.get("default_permissions") == "fpl-images"
+            and filesystem == {str(image_root): "read"}
+            and permissions.get("extends") is None
+            and permissions.get("network", {}).get("enabled") is False
+            and features.get("image_generation") is True
+        )
+    else:
+        sandbox_valid = (
+            config.get("sandbox_mode") == "read-only" and features.get("image_generation") is False
+        )
     if (
-        config.get("sandbox_mode") != "read-only"
+        not sandbox_valid
         or config.get("approval_policy") != "never"
         or config.get("web_search") != "disabled"
         or config.get("cli_auth_credentials_store") != "file"
@@ -126,11 +165,21 @@ async def codex(
     reasoning_effort=None,
     service_tier=None,
     image_input=(),
+    save_image=None,
+    sandbox=None,
 ):
-    async with codex_process(executable, profile, model, watchdog=watchdog) as (
+    async with codex_process(
+        executable,
+        profile,
+        model,
+        watchdog=watchdog,
+        image_generation=save_image is not None,
+        sandbox=sandbox,
+    ) as (
         process,
         thread_params,
     ):
+        image_profile = thread_params.pop("_fpl_profile", profile)
         await codex_turn(
             process,
             thread_params,
@@ -142,6 +191,11 @@ async def codex(
             reasoning_effort=reasoning_effort,
             service_tier=service_tier,
             image_input=image_input,
+            image_generation=(
+                ImageGeneration(emit, save_image, image_profile, Path(thread_params["cwd"]))
+                if save_image is not None
+                else None
+            ),
         )
 
 
@@ -157,6 +211,7 @@ async def codex_turn(
     reasoning_effort=None,
     service_tier=None,
     image_input=(),
+    image_generation=None,
 ):
     sequence = 0
     total = 0
@@ -169,10 +224,14 @@ async def codex_turn(
         line = await process.stdout.readline()
         if not line:
             raise CliError("Codex 连接提前结束")
-        total += len(line)
+        value = json.loads(line)
+        image_item = value.get("params", {}).get("item", {})
+        is_image = image_generation is not None and image_item.get("type") == "imageGeneration"
+        if not is_image:
+            total += len(line)
         if total > MAX_BYTES:
             raise CliError("Agent 输出超过限制")
-        return json.loads(line)
+        return value
 
     async def rpc(method, params):
         nonlocal sequence, completed
@@ -238,6 +297,17 @@ async def codex_turn(
         ):
             if usage := codex_usage(params):
                 await emit("run_usage", usage)
+        elif (
+            method in {"item/started", "item/completed"}
+            and params.get("item", {}).get("type") == "imageGeneration"
+        ):
+            if image_generation is None:
+                raise CliError("本轮未启用 Codex 生图")
+            if params.get("threadId") != thread_id or (
+                turn_id is not None and params.get("turnId") != turn_id
+            ):
+                raise CliError("Codex 图片事件不属于当前运行")
+            await image_generation.accept(method, params["item"], thread_id)
         elif method == "item/completed":
             completed_item = params.get("item", {})
             if completed_item.get("type") == "reasoning":
@@ -296,7 +366,9 @@ async def codex_turn(
     completed = None
 
     try:
-        await initialize_codex(rpc, send)
+        await initialize_codex(
+            rpc, send, image_root=Path(thread_params["cwd"]) if image_generation else None
+        )
         if reasoning_effort or service_tier:
             model = next(
                 (
@@ -353,6 +425,10 @@ async def codex_turn(
             completed = await event(await receive())
         if completed != "completed":
             raise CliError("Codex 任务未完成")
+        if image_generation and (
+            image_generation.failed or image_generation.started != image_generation.finished
+        ):
+            raise CliError("Codex 图片生成或保存未完成，请核对已保存的结果")
     finally:
         if instructions:
             instructions.close()
@@ -361,7 +437,7 @@ async def codex_turn(
         await asyncio.gather(*tool_tasks, return_exceptions=True)
 
 
-async def initialize_codex(rpc, send):
+async def initialize_codex(rpc, send, *, image_root=None):
     await rpc(
         "initialize",
         {
@@ -370,7 +446,7 @@ async def initialize_codex(rpc, send):
         },
     )
     await send({"method": "initialized"})
-    verify_codex_policy(await rpc("config/read", {"includeLayers": False}))
+    verify_codex_policy(await rpc("config/read", {"includeLayers": False}), image_root=image_root)
 
 
 @asynccontextmanager
@@ -468,7 +544,17 @@ def codex_reasoning_efforts(model):
 
 
 async def claude(
-    executable, root, model, prompt, tool_config, emit, *, watchdog=(), reasoning_effort=None
+    executable,
+    root,
+    model,
+    prompt,
+    tool_config,
+    emit,
+    *,
+    watchdog=(),
+    reasoning_effort=None,
+    instructions=None,
+    sandbox=None,
 ):
     args = [
         executable,
@@ -501,11 +587,17 @@ async def claude(
         if not accepts_reasoning_effort("claude-code", model, reasoning_effort):
             raise CliError("当前 Claude Code 模型不支持所选推理强度")
         args += ["--effort", reasoning_effort]
+    if instructions is not None:
+        args += ["--input-format", "stream-json", "--replay-user-messages"]
+    env = environment()
+    if sandbox is not None:
+        env = await sandbox.claude_environment(env)
+        args = sandbox.command(args)
     process = await spawn_transport(
         *watchdog,
         *args,
         cwd=Path(root),
-        env=environment(),
+        env=env,
         start_new_session=True,
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
@@ -514,6 +606,10 @@ async def claude(
     )
     total, streamed, completed = 0, False, False
     try:
+        if instructions is not None:
+            from .live_claude import live_claude
+
+            return await live_claude(process, prompt, emit, instructions)
         process.stdin.write(prompt.encode())
         await process.stdin.drain()
         process.stdin.close()

@@ -13,6 +13,9 @@ SCRIPT = "amadeus.script.run"
 DIALOGUE = "amadeus.dialogue.run"
 RUN_PATH = "/v1/amadeus/conversations/{conversation_id}/runs"
 RUN_SOURCE = re.compile(r"/v1/amadeus/conversations/[A-Za-z0-9_-]{1,128}/runs")
+INSTRUCTION_SOURCE = re.compile(
+    r"/v1/amadeus/conversations/[A-Za-z0-9_-]{1,128}/runs/[A-Za-z0-9_-]{1,128}/instructions"
+)
 AgentName = Literal["codex", "claude-code", "opencode", "dsh", "pi"]
 Signature = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
 EXECUTE_PATH = "/v1/amadeus/conversations/{conversation_id}/actions/{action_id}/execute"
@@ -83,6 +86,7 @@ class DialogueScope(TurnOptions):
 
 class DialoguePlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    codex_image_generation: bool = False
     prompt: Annotated[str, Field(min_length=1, max_length=400_000)]
     image_attachments: list[Annotated[str, Field(min_length=1, max_length=200)]] = Field(
         default_factory=list, max_length=20

@@ -53,12 +53,14 @@ import { ProjectPicker } from "./ProjectPicker";
 import { TranscriptViewport } from "./TranscriptViewport";
 import { ComposerAttachments } from "./ComposerAttachments";
 import { ComposerTools } from "./ComposerTools";
+import { ComposerActions } from "./ComposerActions";
 import { ComposerModels } from "./ComposerModels";
 import { UsageIndicators } from "./UsageIndicators";
 import { MessageSelection } from "./MessageActions";
 import { useMessageActions } from "./useMessageActions";
 import "./transcript.css";
 import "./message-controls.css";
+import "./composer.css";
 
 type WindowProps = {
   session: AccountSessionContext;
@@ -248,7 +250,9 @@ function AmadeusWindowContent({
   let composerStatus = "";
   let thinking = false;
   if (busy && (!activeRun || activeRun.conversation_id === conversationId)) {
-    if (activeStatus === "cancelling") composerStatus = "正在停止…";
+    if (controller.stopping || activeStatus === "cancelling")
+      composerStatus = "正在停止…";
+    else if (controller.inserting) composerStatus = "正在插入补充消息…";
     else if (!activeStatus || activeStatus === "running") {
       if (
         activeRun &&
@@ -706,6 +710,24 @@ function AmadeusWindowContent({
                 runs={runs}
                 display={display || undefined}
                 messageActions={messageActions}
+                onRestoreInstruction={(item) => {
+                  if (
+                    new Set(
+                      [...references, ...item.references].map(referenceKey),
+                    ).size > referenceLimit
+                  ) {
+                    setError(
+                      `恢复后将超过 ${referenceLimit} 项引用，请先移除部分草稿引用。`,
+                    );
+                    return;
+                  }
+                  setDraft((previous) =>
+                    [previous, item.text].filter(Boolean).join("\n\n"),
+                  );
+                  setReferences((previous) =>
+                    mergeReferences(previous, item.references),
+                  );
+                }}
                 onReference={openReference}
                 onApproval={decideApproval}
                 onReviseApproval={reviseApproval}
@@ -787,8 +809,8 @@ function AmadeusWindowContent({
                   const files = clipboardAttachments(event.clipboardData);
                   if (!files.length) return;
                   event.preventDefault();
-                  if (busy || importing) {
-                    setError("请等当前任务或附件导入完成后再粘贴。");
+                  if (importing) {
+                    setError("请等附件导入完成后再粘贴。");
                     return;
                   }
                   void importAttachments(files);
@@ -806,7 +828,8 @@ function AmadeusWindowContent({
               />
               <div className="amadeus-toolbar">
                 <ComposerTools
-                  busy={busy || importing}
+                  busy={importing}
+                  modeLocked={busy}
                   standalone={standalone}
                   atReferenceLimit={references.length >= referenceLimit}
                   mode={mode}
@@ -826,7 +849,16 @@ function AmadeusWindowContent({
                   }}
                   openCapabilities={() => void openCapabilities()}
                 />
-                <ComposerModels controls={controller} />
+              </div>
+              <div className="amadeus-composer-footer">
+                <ComposerModels
+                  controls={controller}
+                  writable={
+                    session.me.permission_keys?.includes("content.write") ??
+                    false
+                  }
+                />
+                <ComposerActions controls={controller} />
               </div>
             </div>
           </div>

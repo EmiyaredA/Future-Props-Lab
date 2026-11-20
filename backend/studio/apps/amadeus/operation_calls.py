@@ -10,7 +10,7 @@ from studio.apps.amadeus.clients.website_operations import (
     operation_result,
     operation_status,
 )
-from studio.contracts.amadeus.amadeus_native import RUN_SOURCE
+from studio.contracts.amadeus.amadeus_native import INSTRUCTION_SOURCE, RUN_SOURCE
 from studio.contracts.amadeus.message_forks import FORK_SOURCE
 from studio.contracts.identity.approved_operations import MAX_BODY, PURPOSE, request_digest
 from studio.contracts.identity.claims import HEADER
@@ -43,7 +43,9 @@ async def call_registered(
     if len(content) > MAX_BODY:
         raise OperationError("操作正文过大", "request_too_large", 413)
     read_purpose = (
-        "amadeus.dialogue.read" if RUN_SOURCE.fullmatch(source_path) else "amadeus.operation.read"
+        "amadeus.dialogue.read"
+        if (RUN_SOURCE.fullmatch(source_path) or INSTRUCTION_SOURCE.fullmatch(source_path))
+        else "amadeus.operation.read"
     )
     if FORK_SOURCE.fullmatch(source_path):
         read_purpose = "amadeus.fork.read"

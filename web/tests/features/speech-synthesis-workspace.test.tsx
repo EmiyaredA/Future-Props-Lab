@@ -443,3 +443,77 @@ test("workspace changes reset drafts and old submissions cannot refill the new c
     )?.items ?? [],
   ).toEqual([]);
 });
+
+test("ZONOS accepts audio without transcript and submits the selected cloning and emotion controls once", async () => {
+  vi.mocked(speechApi.getInferenceOptions).mockResolvedValue({
+    items: [
+      {
+        id: "m",
+        label: "ZONOS3-Mini",
+        modalities: ["speech_synthesis"],
+        parameters: {
+          speech_synthesis: {
+            languages: ["Chinese", "English", "Japanese"],
+            reference_text_required: false,
+            clone_modes: ["embedding", "reference"],
+            emotions: ["neutral", "happy", "serene"],
+            supports_seed: true,
+          },
+        },
+      },
+    ],
+  });
+  mount();
+  const user = userEvent.setup();
+  await screen.findByRole("combobox", { name: "克隆模式" });
+  expect(screen.queryByLabelText("录音对应文字")).not.toBeInTheDocument();
+  await user.type(screen.getByLabelText("目标文字"), "助手じゃない。");
+  await user.upload(
+    screen.getByLabelText("参考录音"),
+    new File(["audio"], "voice.wav", { type: "audio/wav" }),
+  );
+  await user.click(screen.getByRole("combobox", { name: "克隆模式" }));
+  await user.click(screen.getByRole("option", { name: "原始参考音频" }));
+  await user.click(screen.getByRole("combobox", { name: "情绪" }));
+  await user.click(screen.getByRole("option", { name: "平静" }));
+  fireEvent.change(screen.getByLabelText("情绪强度"), {
+    target: { value: "0.75" },
+  });
+  await user.clear(screen.getByLabelText("随机种子"));
+  expect(screen.getByRole("button", { name: "生成语音" })).toBeDisabled();
+  await user.type(screen.getByLabelText("随机种子"), "42");
+  await user.click(screen.getByRole("button", { name: "生成语音" }));
+  await waitFor(() =>
+    expect(speechApi.createSpeechTask).toHaveBeenCalledExactlyOnceWith(
+      "m",
+      "助手じゃない。",
+      "Chinese",
+      reference,
+      "",
+      {
+        clone_mode: "reference",
+        emotion: "serene",
+        emotion_strength: 0.75,
+        seed: 42,
+      },
+    ),
+  );
+});
+
+test("saved ZONOS results display the original mode, mood and seed for comparison", async () => {
+  records = [
+    result({
+      request_payload: {
+        text: "助手じゃない。",
+        clone_mode: "reference",
+        emotion: "serene",
+        emotion_strength: 0.75,
+        seed: 42,
+      },
+    }),
+  ];
+  mount();
+  expect(await screen.findByLabelText("本次合成设置")).toHaveTextContent(
+    "原始参考音频 · 平静 · 强度 75% · 种子 42",
+  );
+});

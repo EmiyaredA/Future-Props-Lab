@@ -33,6 +33,7 @@ def parser():
     cli = argparse.ArgumentParser(prog="fpl", description="Future Props Lab 网站接入")
     cli.add_argument("--profile-dir", type=Path, help="受保护的客户端配置目录")
     cli.add_argument("--profile", default="default")
+    cli.add_argument("--task", action="store_true", help="仅通过当前 Amadeus 运行授权调用项目")
     commands = cli.add_subparsers(dest="command", required=True)
     connect = commands.add_parser("connect", help="保存网站地址和已有 Management API Key")
     connect.add_argument("--url", required=True)
@@ -192,6 +193,8 @@ def main(argv=None):
     args = parser().parse_args(argv)
     options = dict(profile_dir=args.profile_dir, profile=args.profile)
     try:
+        if args.task and args.command not in {"status", "operations", "call", "wait"}:
+            raise ValueError("任务模式只支持 status、operations、call 和 wait")
         if args.command == "mcp":
             from .mcp import run_external, run_relay
 
@@ -214,7 +217,9 @@ def main(argv=None):
                 {"disconnected": True, "note": "已清除本机凭据；服务端授权可在 网站 API 密钥页撤销"}
             )
             return 0
-        with website_client(**options) as client:
+        from .task import task_client
+
+        with task_client() if args.task else website_client(**options) as client:
             capabilities = capability(client)
             if args.command == "status":
                 emit({key: capabilities[key] for key in ("version", "user_id", "scopes")})

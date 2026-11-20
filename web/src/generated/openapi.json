@@ -293,6 +293,7 @@
           "provider_kind": {
             "enum": [
               "local_qwen_tts",
+              "local_zonos_tts",
               "local_relayvsr",
               "local_ffmpeg",
               "volcengine_image",
@@ -18063,6 +18064,63 @@
         "title": "GalgameWorkshopProjectPatchIn",
         "type": "object"
       },
+      "GeneratedImage": {
+        "additionalProperties": false,
+        "properties": {
+          "bytes": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 52428800.0,
+            "title": "Bytes",
+            "type": "integer"
+          },
+          "height": {
+            "exclusiveMinimum": 0.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "kind": {
+            "const": "outputs",
+            "default": "outputs",
+            "title": "Kind",
+            "type": "string"
+          },
+          "mime_type": {
+            "enum": [
+              "image/png",
+              "image/jpeg",
+              "image/webp"
+            ],
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 100,
+            "pattern": "^codex-[a-f0-9-]{36}-[a-f0-9]{20}\\.(png|jpg|webp)$",
+            "title": "Name",
+            "type": "string"
+          },
+          "sha256": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Sha256",
+            "type": "string"
+          },
+          "width": {
+            "exclusiveMinimum": 0.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "bytes",
+          "sha256",
+          "mime_type",
+          "width",
+          "height"
+        ],
+        "title": "GeneratedImage",
+        "type": "object"
+      },
       "GenerationBatchListOut": {
         "properties": {
           "items": {
@@ -19613,6 +19671,95 @@
           "allowed_ids"
         ],
         "title": "InstalledRemoteApps",
+        "type": "object"
+      },
+      "InstructionCreate": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "references": {
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            },
+            "maxItems": 20,
+            "title": "References",
+            "type": "array"
+          },
+          "request_id": {
+            "pattern": "^[A-Za-z0-9_-]{1,64}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 90000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "text"
+        ],
+        "title": "InstructionCreate",
+        "type": "object"
+      },
+      "InstructionOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "message_id": {
+            "title": "Message Id",
+            "type": "string"
+          },
+          "references": {
+            "items": {
+              "$ref": "#/components/schemas/Reference"
+            },
+            "title": "References",
+            "type": "array"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "sequence": {
+            "title": "Sequence",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "sending",
+              "accepted",
+              "rejected",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "message_id",
+          "text",
+          "references",
+          "status",
+          "sequence",
+          "created_at"
+        ],
+        "title": "InstructionOut",
         "type": "object"
       },
       "IntegrationCheckOut": {
@@ -28221,6 +28368,7 @@
           "kind": {
             "enum": [
               "local_qwen_tts",
+              "local_zonos_tts",
               "local_relayvsr",
               "local_ffmpeg",
               "volcengine_image",
@@ -28309,6 +28457,7 @@
           "kind": {
             "enum": [
               "local_qwen_tts",
+              "local_zonos_tts",
               "local_relayvsr",
               "local_ffmpeg",
               "volcengine_image",
@@ -28977,6 +29126,7 @@
           "provider_kind": {
             "enum": [
               "local_qwen_tts",
+              "local_zonos_tts",
               "local_relayvsr",
               "local_ffmpeg",
               "volcengine_image",
@@ -30237,6 +30387,11 @@
             "title": "Capabilities",
             "type": "array"
           },
+          "codex_image_generation": {
+            "default": true,
+            "title": "Codex Image Generation",
+            "type": "boolean"
+          },
           "context": {
             "items": {
               "additionalProperties": true,
@@ -30346,11 +30501,23 @@
       },
       "RunDetailOut": {
         "properties": {
+          "can_receive": {
+            "default": false,
+            "title": "Can Receive",
+            "type": "boolean"
+          },
           "events": {
             "items": {
               "$ref": "#/components/schemas/RunEventOut"
             },
             "title": "Events",
+            "type": "array"
+          },
+          "instructions": {
+            "items": {
+              "$ref": "#/components/schemas/InstructionOut"
+            },
+            "title": "Instructions",
             "type": "array"
           },
           "run": {
@@ -30378,6 +30545,7 @@
               "assistant_delta",
               "assistant_message",
               "reasoning_summary",
+              "image_generation",
               "run_usage",
               "tool_call",
               "tool_result",
@@ -30505,6 +30673,11 @@
             "title": "Capabilities",
             "type": "array"
           },
+          "codex_image_generation": {
+            "default": true,
+            "title": "Codex Image Generation",
+            "type": "boolean"
+          },
           "context": {
             "items": {
               "additionalProperties": true,
@@ -30549,6 +30722,13 @@
               }
             ],
             "title": "Finished At"
+          },
+          "generated_images": {
+            "items": {
+              "$ref": "#/components/schemas/GeneratedImage"
+            },
+            "title": "Generated Images",
+            "type": "array"
           },
           "harness_effort": {
             "anyOf": [
@@ -34519,6 +34699,7 @@
           "kind": {
             "enum": [
               "local_qwen_tts",
+              "local_zonos_tts",
               "local_relayvsr",
               "local_ffmpeg",
               "volcengine_image",
@@ -34604,6 +34785,7 @@
           "kind": {
             "enum": [
               "local_qwen_tts",
+              "local_zonos_tts",
               "local_relayvsr",
               "local_ffmpeg",
               "volcengine_image",
@@ -44649,6 +44831,67 @@
           }
         },
         "summary": "Heartbeat Run",
+        "tags": [
+          "amadeus"
+        ]
+      }
+    },
+    "/v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions": {
+      "post": {
+        "operationId": "insert_instruction_v1_amadeus_conversations__conversation_id__runs__run_id__instructions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstructionCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstructionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Insert Instruction",
         "tags": [
           "amadeus"
         ]

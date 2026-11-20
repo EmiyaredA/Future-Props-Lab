@@ -19,7 +19,10 @@ export type ArtifactStep = {
 };
 
 export type DisplayItem =
-  | Extract<TimelineItem, { kind: "message" | "question" | "reasoning" }>
+  | Extract<
+      TimelineItem,
+      { kind: "message" | "question" | "reasoning" | "image_generation" }
+    >
   | {
       kind: "run_error";
       at: string;
@@ -83,8 +86,10 @@ const terminalStatuses = new Set([
   "waiting_question",
 ]);
 const replyBoundaries = new Set([
+  "user_instruction",
   "tool_call",
   "reasoning_summary",
+  "image_generation",
   "question",
   "error",
 ]);
@@ -106,11 +111,6 @@ function eventReplies({ run, events }: RunDetail, fallbackTime: string) {
     let text = eventText;
     const delta = event.kind === "assistant_delta";
     if (delta) deltas.push(text);
-    if (current && (delta || text.startsWith(current.message.content))) {
-      current.message.content = delta ? current.message.content + text : text;
-      if (!delta) current = undefined;
-      continue;
-    }
     // Some executors also report the whole response as a final snapshot.
     if (!delta && replies.length) {
       const prefix = replies.map((reply) => reply.message.content).join("");
@@ -124,6 +124,11 @@ function eventReplies({ run, events }: RunDetail, fallbackTime: string) {
         if (!suffix) continue;
         text = suffix;
       }
+    }
+    if (current && (delta || text.startsWith(current.message.content))) {
+      current.message.content = delta ? current.message.content + text : text;
+      if (!delta) current = undefined;
+      continue;
     }
     const at = event.created_at || fallbackTime;
     const reply: Reply = {

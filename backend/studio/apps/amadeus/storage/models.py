@@ -115,6 +115,7 @@ class AmadeusRun(Base):
     capabilities_json: Mapped[list[str]] = mapped_column(JSON, default=list)
     partial_text: Mapped[str] = mapped_column(Text, default="")
     last_event_sequence: Mapped[int] = mapped_column(Integer, default=0)
+    input_ready_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     heartbeat_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     response_message_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
@@ -166,4 +167,28 @@ class AmadeusRunEvent(Base):
     kind: Mapped[str] = mapped_column(String(40))
     payload_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
     idempotency_key: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class AmadeusRunInstruction(Base):
+    __tablename__ = "amadeus_run_instructions"
+    __table_args__ = (
+        UniqueConstraint("run_id", "request_id"),
+        Index("ix_amadeus_instructions_run_status", "run_id", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("amadeus_runs.id", ondelete="CASCADE")
+    )
+    owner_user_id: Mapped[str] = mapped_column(String(36))
+    request_id: Mapped[str] = mapped_column(String(64))
+    message_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("amadeus_messages.id", ondelete="CASCADE")
+    )
+    body_sha256: Mapped[str] = mapped_column(String(64))
+    prompt: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(16))
+    dispatch_key: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    sequence: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

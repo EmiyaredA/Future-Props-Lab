@@ -19,6 +19,10 @@ export type SpeechLimits = {
   reference_extensions?: string[];
   min_reference_seconds?: number;
   max_reference_seconds?: number;
+  reference_text_required?: boolean;
+  clone_modes?: string[];
+  emotions?: string[];
+  supports_seed?: boolean;
 };
 
 export function useSpeechDraft({
@@ -37,6 +41,10 @@ export function useSpeechDraft({
   const [text, setText] = useState("");
   const [referenceText, setReferenceText] = useState("");
   const [language, setLanguage] = useState("Chinese");
+  const [cloneMode, setCloneMode] = useState("embedding");
+  const [emotion, setEmotion] = useState("neutral");
+  const [emotionStrength, setEmotionStrength] = useState(0.5);
+  const [seed, setSeed] = useState("42");
   const [reference, setReference] = useState<InferenceAsset | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -56,11 +64,16 @@ export function useSpeechDraft({
     : (languages[0] ?? "");
   const valid =
     !!text.trim() &&
-    !!referenceText.trim() &&
+    (limits?.reference_text_required === false || !!referenceText.trim()) &&
     !!reference &&
     !!effectiveLanguage &&
     text.length <= maxLength &&
-    referenceText.length <= maxLength;
+    referenceText.length <= maxLength &&
+    (!limits?.supports_seed ||
+      (seed.trim() !== "" &&
+        Number.isInteger(Number(seed)) &&
+        Number(seed) >= 0 &&
+        Number(seed) <= 4294967295));
   const canSubmit = allowed && valid && !busy;
 
   async function replaceReference(load: () => Promise<InferenceAsset>) {
@@ -126,18 +139,30 @@ export function useSpeechDraft({
         .find({ queryKey: modelQueryKeys.inferenceTasks, exact: true }) ===
         scope;
     try {
-      const task = await createSpeechTask(
+      const args = [
         modelId,
         text,
         effectiveLanguage,
         reference,
         referenceText,
-      );
+      ] as const;
+      const task = limits?.clone_modes?.length
+        ? await createSpeechTask(...args, {
+            clone_mode: limits.clone_modes.includes(cloneMode)
+              ? cloneMode
+              : limits.clone_modes[0],
+            emotion: limits.emotions?.includes(emotion) ? emotion : "neutral",
+            emotion_strength: emotionStrength,
+            seed: Number(seed),
+          })
+        : await createSpeechTask(...args);
       if (!isCurrent()) return;
       setReference(null);
       // The task owns its input now; only a new explicit selection can supply another task.
       setMessage(
-        "已提交生成任务。下次生成请重新选择参考录音，文稿与对应文字已保留。",
+        limits?.reference_text_required === false
+          ? "已提交生成任务。下次生成请重新选择参考录音，文稿和情绪设置已保留。"
+          : "已提交生成任务。下次生成请重新选择参考录音，文稿与对应文字已保留。",
       );
       if (task) {
         client.setQueryData<{ items: InferenceTask[]; total: number }>(
@@ -179,6 +204,14 @@ export function useSpeechDraft({
     setReferenceText,
     language: effectiveLanguage,
     setLanguage,
+    cloneMode,
+    setCloneMode,
+    emotion,
+    setEmotion,
+    emotionStrength,
+    setEmotionStrength,
+    seed,
+    setSeed,
     reference,
     busy,
     error,

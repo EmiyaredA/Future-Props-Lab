@@ -73,6 +73,12 @@ export async function createSpeechTask(
   language: string,
   reference: InferenceAsset,
   reference_text: string,
+  options: {
+    clone_mode?: string;
+    emotion?: string;
+    emotion_strength?: number;
+    seed?: number;
+  } = {},
 ) {
   return unwrap(
     await api.POST("/v1/model-inference/tasks", {
@@ -82,6 +88,7 @@ export async function createSpeechTask(
         kind: "speech_synthesis",
         asset_ids: [reference.id],
         parameters: {
+          ...options,
           text,
           language,
           reference_text,

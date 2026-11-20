@@ -378,6 +378,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/instructions",
+    "sdk": "client.amadeus.insert_instruction",
+    "document": "/docs.html?page=sdk-reference-amadeus#insert-instruction",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/amadeus/conversations/{conversation_id}/runs/{run_id}/pause-approval",
     "sdk": "client.amadeus.pause_run_for_approval",
     "document": "/docs.html?page=sdk-reference-amadeus#pause-run-for-approval",
@@ -2425,6 +2432,83 @@
     "http": "PUT /v1/presentation-workshop/templates/{template_id}",
     "sdk": "client.presentation.put_template",
     "document": "/docs.html?page=sdk-reference-presentation#put-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/spreadsheet-workshop/projects/{project_id}",
+    "sdk": "client.spreadsheet.delete_project",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/spreadsheet-workshop/projects",
+    "sdk": "client.spreadsheet.list_projects",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/spreadsheet-workshop/projects/{project_id}",
+    "sdk": "client.spreadsheet.get_project",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/spreadsheet-workshop/projects/{project_id}/original",
+    "sdk": "client.spreadsheet.download_original",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#download-original",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/spreadsheet-workshop/projects/{project_id}/range",
+    "sdk": "client.spreadsheet.read_range",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#read-range",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/spreadsheet-workshop/imports/preview",
+    "sdk": "client.spreadsheet.preview_import",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#preview-import",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/spreadsheet-workshop/imports/{import_id}/confirm",
+    "sdk": "client.spreadsheet.confirm_import",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#confirm-import",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/spreadsheet-workshop/projects",
+    "sdk": "client.spreadsheet.create_project",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/spreadsheet-workshop/projects/{project_id}/export",
+    "sdk": "client.spreadsheet.export_workbook",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#export-workbook",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/spreadsheet-workshop/projects/{project_id}/operations",
+    "sdk": "client.spreadsheet.apply_operations",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#apply-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/spreadsheet-workshop/projects/{project_id}",
+    "sdk": "client.spreadsheet.update_project",
+    "document": "/docs.html?page=sdk-reference-spreadsheet#update-project",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

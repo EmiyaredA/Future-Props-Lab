@@ -8,14 +8,19 @@ from sqlalchemy import select, update
 
 from studio.apps.amadeus.rules.dialogue_prompt import dialogue_image_names, dialogue_prompt
 from studio.apps.amadeus.storage.files import work_root
+from studio.apps.amadeus.storage.generated_images import GeneratedImages
 from studio.apps.amadeus.storage.models import AmadeusAction
 from studio.apps.amadeus.storage.runs import RunRecords
 from studio.apps.amadeus.storage.skill_files import skill_root
 from studio.contracts.amadeus.amadeus_native import DialoguePlan, DialogueScope
+from studio.contracts.amadeus.images import MAX_GENERATED_IMAGE_BYTES
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.time import utc_now
 
+from .instructions import validate_references
+from .operation_calls import call_registered
 from .skill_pins import SkillSource, load_pin
+from .storage.instructions import InstructionRecords
 
 
 class DialogueTurn:
@@ -24,6 +29,12 @@ class DialogueTurn:
         self.tools = tools
         self.plan = DialoguePlan(
             prompt=prompt,
+            codex_image_generation=(
+                run.agent_id == "codex"
+                and run.mode == "agent"
+                and run.codex_image_generation
+                and principal.allows("content.write")
+            ),
             image_attachments=dialogue_image_names(run) if run.agent_id == "codex" else [],
         )
         self.lock = asyncio.Lock()
@@ -46,8 +57,42 @@ class DialogueTurn:
             )
 
     async def call(self, name, arguments):
+        return await self.tools.call(name, arguments)
+
+    async def save_image(self, item_id, incoming, *, authorize):
         async with self.lock:
-            return await self.tools.call(name, arguments)
+            if not self.plan.codex_image_generation:
+                raise OperationError("当前运行未启用生图", "image_generation_disabled", 403)
+            data = bytearray()
+            while part := await incoming.read(1024 * 1024):
+                data.extend(part)
+                if len(data) > MAX_GENERATED_IMAGE_BYTES:
+                    raise OperationError("图片超过 50 MiB", "image_too_large", 422)
+            images = GeneratedImages(
+                self.database.sessions,
+                self.principal,
+                self.run.conversation_id,
+                self.run.id,
+                self.database.root,
+            )
+            return await images.save(item_id, bytes(data), authorize=authorize)
+
+    async def image_receipt(self, item_id):
+        async with self.lock:
+            images = GeneratedImages(
+                self.database.sessions,
+                self.principal,
+                self.run.conversation_id,
+                self.run.id,
+                self.database.root,
+            )
+            return await images.receipt(item_id)
+
+    async def claim_instruction(self, dispatch_key, ready):
+        async with self.lock, self.session() as session:
+            return await InstructionRecords(session, self.principal).claim(
+                self.run.conversation_id, self.run.id, dispatch_key, ready
+            )
 
 
 class DialogueRuns:
@@ -56,6 +101,34 @@ class DialogueRuns:
         self.host, self.actions, self.locks = host, actions, locks
         self.tasks = {}
         self.turn_tools = turn_tools
+
+    async def insert(self, principal, conversation, identity, body, *, assertion, path):
+        await self.actions.require_authority(assertion, path)
+        async with self.database.sessions(info={"owner_user_id": principal.user_id}) as session:
+            records = InstructionRecords(session, principal)
+            await records.run(conversation, identity)
+            replay = await records.existing(identity, body.request_id)
+            if replay is not None:
+                return await records.create(conversation, identity, body)
+
+        async def read(operation, arguments):
+            return await call_registered(
+                self.capabilities,
+                assertion,
+                path,
+                operation,
+                arguments,
+                approved=False,
+                status_only=True,
+            )
+
+        await validate_references(
+            principal.user_id, conversation, body.references, self.database.root, read
+        )
+        # Recheck authorization after resource reads, immediately before admission.
+        await self.actions.require_authority(assertion, path)
+        async with self.database.sessions(info={"owner_user_id": principal.user_id}) as session:
+            return await InstructionRecords(session, principal).create(conversation, identity, body)
 
     async def create(self, session, principal, conversation, body, *, assertion, path):
         if self.host is None or not self.host.dialogue_ready:
@@ -103,7 +176,7 @@ class DialogueRuns:
             principal,
             run,
             self.turn_tools(principal, run, assertion, path, skills),
-            dialogue_prompt(run, skills),
+            dialogue_prompt(run, skills, may_write=principal.allows("content.write")),
         )
 
     async def execute(self, principal, run, assertion, path):

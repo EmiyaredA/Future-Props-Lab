@@ -32,8 +32,11 @@ export function AttachmentReference({
   if (
     !conversationId ||
     reference.target ||
-    reference.source !== "imports" ||
-    reference.id !== `file:${reference.name}` ||
+    !["imports", "outputs"].includes(reference.source) ||
+    reference.id !==
+      (reference.source === "outputs"
+        ? `file:outputs:${reference.name}`
+        : `file:${reference.name}`) ||
     (!videoType &&
       !/\.(avif|bmp|gif|jpe?g|png|tiff?|webp)$/i.test(reference.name))
   ) {
@@ -45,7 +48,11 @@ export function AttachmentReference({
       />
     );
   }
-  const path = conversationFileUrl(conversationId, "imports", reference.name);
+  const path = conversationFileUrl(
+    conversationId,
+    reference.source,
+    reference.name,
+  );
   return (
     <MediaAttachment
       key={path}

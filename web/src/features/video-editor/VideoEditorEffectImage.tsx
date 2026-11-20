@@ -1,5 +1,4 @@
 import { paintPageCurlCanvas, type PageCurlEffect } from "./pageCurlCanvas";
-import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { useCallback, useLayoutEffect, useRef } from "react";
 import { paintChromaCanvas } from "./chromaCanvas";
 import { paintSpinBlurCanvas } from "./spinBlurCanvas";
@@ -11,7 +10,7 @@ import type { VideoEditorClip } from "./types";
 import { noTimedEffects, type ActiveTimedEffect } from "./timedEffects";
 import { paintTimedEffectsCanvas } from "./timedEffectsCanvas";
 
-/** Reuse the loaded image for chroma key and angular blur, including text PNGs. */
+/** Program pixels stay transparent while loading; UI skeletons would cover lower tracks. */
 export function VideoEditorEffectImage({
   source,
   alt = "",
@@ -97,10 +96,12 @@ export function VideoEditorEffectImage({
   useLayoutEffect(paint, [paint, source]);
   return (
     <>
-      <ResponsiveImage
+      <img
         ref={image}
         src={source}
         alt={alt}
+        loading="eager"
+        decoding="sync"
         draggable={false}
         style={processed ? { display: "none" } : undefined}
         onLoad={(event) => {

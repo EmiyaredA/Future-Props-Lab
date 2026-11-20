@@ -32,9 +32,12 @@ export function localModelConnection(
 ) {
   const matches = catalog.providers
     .filter((provider) =>
-      ["local_qwen_tts", "local_relayvsr", "local_ffmpeg"].includes(
-        provider.kind,
-      ),
+      [
+        "local_qwen_tts",
+        "local_zonos_tts",
+        "local_relayvsr",
+        "local_ffmpeg",
+      ].includes(provider.kind),
     )
     .flatMap((provider) =>
       provider.models
@@ -118,6 +121,9 @@ export function localModelNextStep(
     };
   return {
     title: "已就绪，可以开始测试",
-    description: "准备一段 3–30 秒参考录音及对应文字，即可生成语音。",
+    description:
+      model.id === "zonos3-mini"
+        ? "准备一段 3–30 秒参考录音，即可测试音色克隆与情绪控制，无需对应文字。"
+        : "准备一段 3–30 秒参考录音及对应文字，即可生成语音。",
   };
 }

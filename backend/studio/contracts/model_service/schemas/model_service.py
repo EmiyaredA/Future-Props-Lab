@@ -73,9 +73,12 @@ class ProviderIn(BaseModel):
 
     @model_validator(mode="after")
     def valid_base_url(self) -> ProviderIn:
-        if self.kind in {"local_qwen_tts", "local_relayvsr", "local_ffmpeg"} and (
-            self.base_url.strip() or self.api_key.strip()
-        ):
+        if self.kind in {
+            "local_qwen_tts",
+            "local_zonos_tts",
+            "local_relayvsr",
+            "local_ffmpeg",
+        } and (self.base_url.strip() or self.api_key.strip()):
             raise ValueError("托管本地模型不接受服务地址或 API Key")
         if self.kind == "autodl_video" and not self.base_url.strip():
             self.base_url = "https://www.autodl.art"
