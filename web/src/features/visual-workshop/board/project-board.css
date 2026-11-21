@@ -262,17 +262,6 @@
 .board-search:focus-within {
   border-color: var(--board-accent);
 }
-.board-create-row {
-  display: flex;
-  gap: 6px;
-}
-.board-create-row > div {
-  flex: 1;
-  min-width: 0;
-}
-.board-create-row .custom-select-trigger {
-  min-height: 34px;
-}
 .board-materials > .board-upload {
   background: var(--board-soft);
   font-size: 12px;

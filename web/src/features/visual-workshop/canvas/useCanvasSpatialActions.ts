@@ -85,14 +85,54 @@ export function useCanvasSpatialActions({
     [getArea, getInsertionAnchor, nodesRef, surface, viewport],
   );
   const revealNodes = useCallback(
-    (added: VisualCanvasNode[]) => {
+    (added: VisualCanvasNode[], options?: { includeEditor?: boolean }) => {
       const area = getArea();
+      const element = surface.current;
       if (!area || !added.length) return;
-      setViewport((current) =>
-        revealCanvasBounds(canvasBounds(added), area, current),
-      );
+      setViewport((current) => {
+        let bounds = canvasBounds(added);
+        if (options?.includeEditor && element) {
+          const surfaceBounds = element.getBoundingClientRect();
+          const ids = new Set(added.map(({ id }) => id));
+          const cards =
+            element.parentElement?.querySelectorAll<HTMLElement>(
+              "[data-node-id]",
+            ) ?? [];
+          for (const card of cards) {
+            if (!ids.has(card.dataset.nodeId ?? "")) continue;
+            for (const overlay of card.querySelectorAll<HTMLElement>(
+              ".canvas-node-inspector, .canvas-media-node-actions",
+            )) {
+              if (getComputedStyle(overlay).position === "fixed") continue;
+              const box = overlay.getBoundingClientRect();
+              if (!box.width || !box.height) continue;
+              const x =
+                (box.left - surfaceBounds.left - current.x) / current.zoom;
+              const y =
+                (box.top - surfaceBounds.top - current.y) / current.zoom;
+              const right = Math.max(
+                bounds.x + bounds.width,
+                x + box.width / current.zoom,
+              );
+              const bottom = Math.max(
+                bounds.y + bounds.height,
+                y + box.height / current.zoom,
+              );
+              const left = Math.min(bounds.x, x),
+                top = Math.min(bounds.y, y);
+              bounds = {
+                x: left,
+                y: top,
+                width: right - left,
+                height: bottom - top,
+              };
+            }
+          }
+        }
+        return revealCanvasBounds(bounds, area, current);
+      });
     },
-    [getArea, setViewport],
+    [getArea, setViewport, surface],
   );
   const fitNodes = useCallback(
     (targets: VisualCanvasNode[]) => {

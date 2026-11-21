@@ -1,23 +1,8 @@
 export const visualWorkshopQueryKeys = {
+  storyboard: (project: string) => ["visual-storyboard", project] as const,
   previs: (projectId: string) => ["visual-previs-scenes", projectId] as const,
   videoMediaInfo: (assetId: string) =>
     ["visual-video-media-info", assetId] as const,
-  acceptanceCatalog: () => ["visual-acceptance-catalog"] as const,
-  acceptanceSummary: (project: string) =>
-    ["visual-acceptance-summary", project] as const,
-  nodeAcceptance: (project: string, node: string, output?: string) =>
-    ["visual-node-acceptance", project, node, output ?? "latest"] as const,
-  acceptanceTemplates: () => ["visual-acceptance-templates"] as const,
-  acceptanceStandard: (id: string) =>
-    ["visual-acceptance-standard", id] as const,
-  acceptanceRuns: (id: string, page: number) =>
-    ["visual-acceptance-runs", id, page] as const,
-  acceptanceRun: (id: string, run: string) =>
-    ["visual-acceptance-run", id, run] as const,
-  acceptanceModels: (id: string) => ["visual-acceptance-models", id] as const,
-  acceptanceOutputs: (id: string, node: string, page: number) =>
-    ["visual-node-outputs", id, node, "acceptance", page] as const,
-
   nodeOutput: (projectId: string, nodeId: string, outputId: string) =>
     ["visual-node-output", projectId, nodeId, outputId] as const,
   nodeOutputsProject: (projectId: string) =>

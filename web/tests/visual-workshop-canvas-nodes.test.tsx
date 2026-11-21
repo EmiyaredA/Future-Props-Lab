@@ -70,7 +70,7 @@ test("opens an Updream-style context menu and persists created nodes", async () 
   const user = userEvent.setup();
   const { container } = renderCanvas();
   expect(await screen.findByText("未命名项目")).toBeInTheDocument();
-  const surface = container.querySelector(".visual-canvas-surface")!;
+  const surface = await screen.findByRole("region", { name: "节点画布" });
 
   fireEvent.contextMenu(surface, { clientX: 260, clientY: 220 });
   expect(screen.getByRole("menuitem", { name: "上传" })).toBeInTheDocument();
@@ -117,11 +117,9 @@ test("opens an Updream-style context menu and persists created nodes", async () 
   expect(promptEditor).toHaveTextContent("上传素材后仍可编辑");
 
   await user.click(screen.getByRole("button", { name: "选择图片素材" }));
-  expect(screen.getByRole("tab", { name: "素材" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-  await user.click(screen.getByRole("tab", { name: "AI 生成" }));
+  expect(
+    screen.queryByRole("tab", { name: "生成设置" }),
+  ).not.toBeInTheDocument();
   expect(
     screen.getByRole("complementary", { name: "节点 AI 生成" }),
   ).toBeVisible();

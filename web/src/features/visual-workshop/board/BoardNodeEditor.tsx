@@ -1,67 +1,35 @@
-import type { ComponentProps } from "react";
 import type { BoardController } from "./boardTypes";
-import type {
-  VisualCanvasNode,
-  VisualMaterialCategory,
-  VisualNodeOutput,
-} from "../api";
+import type { VisualCanvasNode } from "../api";
 import type { Card, CardKind } from "../creative/api";
 import { CanvasNodeInspector } from "../canvas/CanvasNodeInspector";
 import { InputReferences } from "./InputReferences";
 import { TextWorkbench } from "./TextWorkbench";
-import { NodeMetadata } from "./NodeMetadata";
 
 /** Board-owned context and the shared node editor use explicit Canvas ports. */
 export function BoardNodeEditor({
   controller: c,
   node,
-  categories,
-  nodeTab,
-  onTabChange,
-  showMetadata,
-  onMetadataChange,
   legacyKind,
   pending,
   onLegacyPick,
   onLegacyCreate,
-  initialAcceptance,
   card,
   onCardHandled,
-  acceptanceOutput,
   generating,
-  onAcceptance,
 }: {
   controller: BoardController;
   node: VisualCanvasNode;
-  categories: VisualMaterialCategory[];
-  nodeTab: string;
-  onTabChange: ComponentProps<typeof CanvasNodeInspector>["onTabChange"];
-  showMetadata: boolean;
-  onMetadataChange: (open: boolean) => void;
   legacyKind?: CardKind;
   pending: boolean;
   onLegacyPick: () => void;
   onLegacyCreate: () => void;
-  initialAcceptance: boolean;
   card?: Card;
   onCardHandled: () => void;
-  acceptanceOutput?: VisualNodeOutput;
   generating: boolean;
-  onAcceptance?: () => void;
 }) {
   return (
     <>
-      <div
-        className="board-generation-context"
-        hidden={node.kind === "video" && nodeTab === "acceptance"}
-      >
-        <NodeMetadata
-          node={node}
-          categories={categories}
-          onPatch={c.patchNode}
-          open={showMetadata}
-          onOpenChange={onMetadataChange}
-        />
+      <div className="board-generation-context">
         {legacyKind && node.kind === "image" && (
           <div className="board-material-mode" aria-label="旧素材设定卡关联">
             <button type="button" disabled={pending} onClick={onLegacyPick}>
@@ -86,13 +54,9 @@ export function BoardNodeEditor({
             replaceEdges: c.replaceEdges,
             removeEdge: c.removeEdge,
           }}
-          initialTab={initialAcceptance ? "acceptance" : undefined}
           designReferenceRequest={
             card ? { card, handled: onCardHandled } : undefined
           }
-          acceptanceOutput={acceptanceOutput}
-          onTabChange={onTabChange}
-          onAcceptanceTemplate={onAcceptance}
           generating={generating}
           projectId={c.projectId}
           node={node}

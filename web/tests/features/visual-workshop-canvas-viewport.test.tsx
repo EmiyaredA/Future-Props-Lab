@@ -1,5 +1,11 @@
 import { beforeEach, vi } from "vitest";
-import { act, fireEvent, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   getVisualCanvas,
@@ -85,7 +91,11 @@ test("keeps the viewport unchanged when selecting an image node or its material 
   const user = userEvent.setup();
   const { container } = renderCanvas();
 
-  expect(await screen.findByText("图片1")).toBeInTheDocument();
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("图片1"),
+  ).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "放大" }));
   expect(screen.getByRole("button", { name: "110%" })).toBeInTheDocument();
 
@@ -107,10 +117,9 @@ test("keeps the viewport unchanged when selecting an image node or its material 
   await user.click(screen.getByRole("button", { name: "关闭媒体预览" }));
 
   await user.click(screen.getByRole("button", { name: "选择图片素材" }));
-  expect(screen.getByRole("tab", { name: "素材" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
+  expect(
+    screen.queryByRole("tab", { name: "生成设置" }),
+  ).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "110%" })).toBeInTheDocument();
 });
 
@@ -267,7 +276,11 @@ test("keeps ordinary panel scrolling but captures panel pinch zoom", async () =>
   });
   const user = userEvent.setup();
   renderCanvas();
-  expect(await screen.findByText("视频1")).toBeInTheDocument();
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("视频1"),
+  ).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "选择视频素材" }));
   const inspector = screen.getByRole("complementary", { name: "节点检查器" });
   const wheel = new WheelEvent("wheel", {
@@ -294,7 +307,8 @@ test("canvas chrome opens the current website in a browser window", async () => 
   const open = vi.spyOn(window, "open").mockReturnValue(null);
   renderCanvas();
   expect(await screen.findByText("未命名项目")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "新建窗口" }));
+  await user.click(screen.getByRole("button", { name: "项目更多操作" }));
+  await user.click(screen.getByRole("menuitem", { name: "新建窗口" }));
   expect(open).toHaveBeenCalledWith(
     window.location.href,
     "_blank",
@@ -310,16 +324,16 @@ test("zooms, opens project assets, and renames", async () => {
   const surface = container.querySelector(".visual-canvas-surface")!;
   expect(surface).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "对话" })).toBeNull();
-  expect(screen.getByRole("group", { name: "外观模式" })).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "深色" }));
+  await user.click(screen.getByRole("button", { name: "切换深色" }));
   expect(document.documentElement.dataset.theme).toBe("dark");
   expect(window.localStorage.getItem("future_props_theme")).toBe("dark");
-  await user.click(screen.getByRole("button", { name: "浅色" }));
+  await user.click(screen.getByRole("button", { name: "切换浅色" }));
   expect(document.documentElement.dataset.theme).toBe("light");
   await user.click(screen.getByRole("button", { name: "放大" }));
   expect(screen.getByRole("button", { name: "110%" })).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "素材库" }));
+  await user.click(screen.getByRole("tab", { name: "文件" }));
+  await user.click(screen.getByRole("button", { name: "导入 / 管理素材" }));
   expect(screen.getByText("项目素材内容")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "列表视图" })).toHaveAttribute(
     "aria-pressed",
@@ -346,4 +360,68 @@ test("zooms, opens project assets, and renames", async () => {
   expect(
     screen.queryByRole("button", { name: "进入全屏" }),
   ).not.toBeInTheDocument();
+});
+
+test("canvas separates creation tools from views and adds the three project design modules", async () => {
+  const user = userEvent.setup();
+  renderCanvas();
+  await screen.findByText("未命名项目");
+  const tools = screen.getByRole("tablist", { name: "项目工作区" });
+  expect(tools).toHaveTextContent("工作台剧本白模预演");
+  const views = screen.getByRole("group", { name: "工作台视图" });
+  expect(views).toHaveTextContent("画布看板");
+  expect(views).not.toHaveTextContent("剧本");
+  await user.click(screen.getByRole("tab", { name: "人设" }));
+  expect(await screen.findByRole("region", { name: "人设" })).toBeVisible();
+  await user.click(screen.getByRole("tab", { name: "场景" }));
+  expect(screen.getByRole("region", { name: "场景" })).toBeVisible();
+  expect(
+    screen.queryByRole("region", { name: "人设" }),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole("tab", { name: "文件" }));
+  await user.click(screen.getByRole("button", { name: "导入 / 管理素材" }));
+  expect(
+    screen.getByRole("complementary", { name: "项目素材库" }),
+  ).toBeVisible();
+  expect(
+    screen.queryByRole("region", { name: "场景" }),
+  ).not.toBeInTheDocument();
+});
+
+test("mobile generation editor leaves the transformed canvas and remains closable", async () => {
+  const matchMedia = window.matchMedia.bind(window);
+  const media = vi.spyOn(window, "matchMedia").mockImplementation((query) => ({
+    ...matchMedia(query),
+    matches: query === "(max-width: 700px)",
+  }));
+  try {
+    vi.mocked(getVisualCanvas).mockResolvedValueOnce({
+      project_id: "project-1",
+      edges: [],
+      nodes: [
+        {
+          id: "image-1",
+          kind: "image",
+          title: "移动分镜",
+          position: { x: 240, y: 120 },
+          asset_id: null,
+        },
+      ],
+      revision: 0,
+      updated_at: "2026-08-03T08:00:00Z",
+    });
+    const user = userEvent.setup();
+    renderCanvas();
+    await user.click(
+      await screen.findByRole("button", { name: "选择图片素材" }),
+    );
+    const editor = screen.getByRole("complementary", { name: "节点检查器" });
+    expect(editor.parentElement).toHaveClass("visual-canvas");
+    await user.click(screen.getByRole("button", { name: "关闭节点检查器" }));
+    expect(
+      screen.queryByRole("complementary", { name: "节点检查器" }),
+    ).not.toBeInTheDocument();
+  } finally {
+    media.mockRestore();
+  }
 });

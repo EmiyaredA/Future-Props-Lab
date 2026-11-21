@@ -161,6 +161,7 @@ from studio.apps.visual_workshop.acceptance.models import (
     NodeAcceptanceBinding,
 )
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
+from studio.apps.visual_workshop.creation_links.models import VisualCreationLinks
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.models import (
     VisualAssetCard,
@@ -171,6 +172,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualScript,
     VisualWorkshopProject,
 )
+from studio.apps.visual_workshop.storyboard.models import VisualStoryboard
 from studio.runtime.database.orm_base import Base
 from studio.runtime.database.ownership import TenantScopeError, bind_owner, require_owner_id
 from studio.runtime.database.project_operations import ProjectOperationReceipt
@@ -238,6 +240,8 @@ _ = (
     VisualCanvasDocument,
     VisualPrevisScene,
     VisualScript,
+    VisualStoryboard,
+    VisualCreationLinks,
     VisualAssetCard,
     VisualNodeOutput,
     AcceptanceAssetReference,

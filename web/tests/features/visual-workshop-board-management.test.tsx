@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { expect, test, vi } from "vitest";
 import { ProjectBoard } from "@features/visual-workshop/board/ProjectBoard";
 import type { BoardController } from "@features/visual-workshop/board/boardTypes";
 import type { VisualCanvasNode } from "@features/visual-workshop/api";
+import { cardsKey, type Card } from "@features/visual-workshop/creative/api";
 
 vi.mock("@features/visual-workshop/api", async () => ({
   ...(await vi.importActual<typeof import("@features/visual-workshop/api")>(
@@ -25,9 +26,23 @@ function renderBoard() {
   const upload = vi.fn();
   const patchNode = vi.fn();
   const removeNode = vi.fn();
+  const createNode = vi.fn();
   const client = new QueryClient({
-    defaultOptions: { queries: { retry: false } },
+    defaultOptions: { queries: { retry: false, staleTime: Infinity } },
   });
+  const cards: Card[] = [
+    { id: "hero", title: "小夏", kind: "character" },
+    { id: "room", title: "卧室", kind: "scene" },
+    { id: "outside", title: "其他项目角色", kind: "character" },
+  ].map((card) => ({
+    ...card,
+    revision: 0,
+    facts: "",
+    design: "",
+    proposed_design: "",
+    archived: false,
+  })) as Card[];
+  client.setQueryData(cardsKey, cards);
   function Harness() {
     const [selectedId, setSelectedId] = useState("first");
     const [nodes, setNodes] = useState<VisualCanvasNode[]>([
@@ -53,6 +68,8 @@ function renderBoard() {
         data: { categories: [{ id: "cat", name: "镜头", groups: ["主角"] }] },
       },
       client,
+      projectCardIds: ["hero", "hero", "room"],
+      createNode,
       canvasReady: true,
       saveState: "saved",
       nodes,
@@ -100,8 +117,92 @@ function renderBoard() {
     </QueryClientProvider>,
   );
   const sidebar = screen.getByRole("complementary", { name: "项目素材" });
-  return { sidebar, patchNode, removeNode, upload };
+  fireEvent.mouseDown(within(sidebar).getByRole("tab", { name: "文件" }), {
+    button: 0,
+  });
+  return { sidebar, patchNode, removeNode, upload, createNode, client };
 }
+
+test("material views replace the content, count only project cards and keep searches per view", async () => {
+  const user = userEvent.setup();
+  const { sidebar } = renderBoard();
+  const tabs = within(sidebar).getByRole("tablist", { name: "素材分类" });
+  expect(within(tabs).getByRole("tab", { name: "文件" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  expect(within(tabs).getByRole("tab", { name: "人设" })).toHaveTextContent(
+    "1",
+  );
+  expect(within(tabs).getByRole("tab", { name: "场景" })).toHaveTextContent(
+    "1",
+  );
+  expect(within(tabs).getByRole("tab", { name: "道具" })).toHaveTextContent(
+    "0",
+  );
+  expect(
+    within(sidebar).queryByText("暂无道具，点击 + 添加"),
+  ).not.toBeInTheDocument();
+  await user.type(
+    within(sidebar).getByRole("textbox", { name: "搜索文件" }),
+    "当前",
+  );
+  expect(
+    within(sidebar).queryByRole("button", { name: "管理节点 另一节点" }),
+  ).not.toBeInTheDocument();
+  expect(within(tabs).getByRole("tab", { name: "文件" })).toHaveTextContent(
+    "2",
+  );
+  await user.click(within(tabs).getByRole("tab", { name: "人设" }));
+  expect(
+    within(sidebar).getByRole("button", { name: "查看设定卡 小夏" }),
+  ).toBeVisible();
+  expect(
+    within(sidebar).queryByRole("button", { name: "查看设定卡 卧室" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(sidebar).queryByRole("button", { name: "上传素材" }),
+  ).not.toBeInTheDocument();
+  await user.type(
+    within(sidebar).getByRole("textbox", { name: "搜索人设" }),
+    "雨衣",
+  );
+  expect(within(sidebar).getByText("没有匹配的设定卡")).toBeVisible();
+  await user.click(within(tabs).getByRole("tab", { name: "道具" }));
+  expect(within(sidebar).getByText("暂无道具，点击 + 添加")).toBeVisible();
+  await user.click(within(sidebar).getByRole("button", { name: "添加道具卡" }));
+  expect(screen.getByRole("menuitem", { name: "新建道具卡" })).toBeEnabled();
+  await user.keyboard("{Escape}");
+  await user.click(within(tabs).getByRole("tab", { name: "文件" }));
+  expect(
+    within(sidebar).getByRole("textbox", { name: "搜索文件" }),
+  ).toHaveValue("当前");
+  await user.click(within(tabs).getByRole("tab", { name: "人设" }));
+  expect(
+    within(sidebar).getByRole("textbox", { name: "搜索人设" }),
+  ).toHaveValue("雨衣");
+  expect(within(sidebar).getAllByRole("tabpanel")).toHaveLength(1);
+});
+
+test("vertical material tabs support arrow keys and the create menu creates the selected type", async () => {
+  const user = userEvent.setup();
+  const { sidebar, createNode } = renderBoard();
+  act(() => within(sidebar).getByRole("tab", { name: "文件" }).focus());
+  await user.keyboard("{ArrowDown}{ArrowDown}{Enter}");
+  expect(within(sidebar).getByRole("tab", { name: "人设" })).toHaveFocus();
+  expect(within(sidebar).getByRole("tab", { name: "人设" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await user.keyboard("{Home}{Enter}");
+  await user.click(
+    within(sidebar).getByRole("button", { name: "选择新建节点类型" }),
+  );
+  await user.click(screen.getByRole("menuitem", { name: "新建视频" }));
+  expect(createNode).toHaveBeenCalledExactlyOnceWith("video");
+  await user.click(within(sidebar).getByRole("button", { name: /^新建$/ }));
+  expect(createNode).toHaveBeenLastCalledWith("video");
+});
 
 test("upload allows an explicit destination and clears the group when the category changes", async () => {
   const user = userEvent.setup();
@@ -167,24 +268,16 @@ test("each row has a visible management button; keyboard renaming targets the un
   ).toHaveFocus();
 });
 
-test("organizing a row selects it and opens classification; changes use the same node ID", async () => {
+test("node management removes classification controls while retaining file actions", async () => {
   const user = userEvent.setup();
-  const { sidebar, patchNode } = renderBoard();
+  const { sidebar } = renderBoard();
   await user.click(
     within(sidebar).getByRole("button", { name: "管理节点 另一节点" }),
   );
-  await user.click(screen.getByRole("menuitem", { name: "分类与标签" }));
-  expect(screen.getByRole("textbox", { name: "节点名称" })).toHaveValue(
-    "另一节点",
-  );
-  await user.click(screen.getByRole("combobox", { name: "节点主分类" }));
-  await user.click(screen.getByRole("option", { name: "镜头" }));
-  expect(patchNode).toHaveBeenCalledWith(
-    "second",
-    { category_id: "cat", group: null },
-    true,
-  );
-  expect(screen.getByLabelText("附加标签")).toBeVisible();
+  expect(
+    screen.queryByRole("menuitem", { name: "分类与标签" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("menuitem", { name: "重命名" })).toBeEnabled();
 });
 
 test("deletion names the target, cancellation keeps it, confirmation removes only that node", async () => {
@@ -214,15 +307,13 @@ test("deletion names the target, cancellation keeps it, confirmation removes onl
   );
 });
 
-test("approval toggles from metadata and row menu without changing selection", async () => {
+test("approval toggles from the node heading and row menu without changing selection", async () => {
   const user = userEvent.setup();
   const { sidebar, patchNode } = renderBoard();
   const trigger = screen.getByRole("switch", { name: "节点通过：当前节点" });
   expect(
-    within(screen.getByRole("region", { name: "节点分类与标签" })).getByRole(
-      "switch",
-    ),
-  ).toBe(trigger);
+    screen.queryByRole("region", { name: "节点分类与标签" }),
+  ).not.toBeInTheDocument();
   trigger.focus();
   await user.keyboard("{Enter}");
   expect(patchNode).toHaveBeenLastCalledWith("first", { approved: true }, true);
@@ -256,4 +347,16 @@ test("approval toggles from metadata and row menu without changing selection", a
   expect(
     screen.getByRole("switch", { name: "节点通过：另一节点" }),
   ).toHaveAttribute("aria-checked", "true");
+});
+
+test("creation buttons occupy the project header without a visible category label", () => {
+  renderBoard();
+  const tools = screen.getByRole("tablist", { name: "项目工作区" });
+  expect(screen.getByRole("banner")).toContainElement(tools);
+  expect(
+    screen.getByRole("navigation", { name: "看板内容" }),
+  ).not.toContainElement(tools);
+  expect(
+    screen.queryByText("创作功能", { exact: true }),
+  ).not.toBeInTheDocument();
 });

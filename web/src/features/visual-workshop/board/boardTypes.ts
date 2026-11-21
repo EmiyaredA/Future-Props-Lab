@@ -1,3 +1,7 @@
+import type { ReactNode } from "react";
+import type { WorkbenchView } from "../ProjectCreativeTools";
+import type { WorkbenchSection } from "./MaterialViews";
+import type { StoryboardWorkbench } from "../storyboard/workbench";
 import type { useVisualCanvasController } from "../canvas/useVisualCanvasController";
 import type {
   GenerationTask,
@@ -88,16 +92,18 @@ export function nodeStatus(
 }
 
 export type ProjectBoardProps = {
-  acceptanceEntry?: {
-    nodeId: string;
-    output?: VisualNodeOutput;
-    entry: number;
-  };
-  controller: BoardController;
+  embedded?: boolean;
+  view?: WorkbenchView;
+  onView?: (view: WorkbenchView) => void;
+  canvasContent?: ReactNode;
+  section?: WorkbenchSection;
+  onSection?: (section: WorkbenchSection) => void;
+  storyboard?: StoryboardWorkbench;
+  controller: BoardController & { revealNode?: (id: string) => void };
   onCanvas: () => void;
-  onPrevis?: () => void;
-  onScript?: () => void;
-  onAcceptance?: (output?: VisualNodeOutput) => void;
+  onPrevis?: (sceneId?: string) => void;
+  onScript?: (sceneId?: string) => void;
+  onStoryboard?: () => void;
   previews: Record<string, VisualNodeOutput | undefined>;
   onPreview: (nodeId: string, version?: VisualNodeOutput) => void;
 };

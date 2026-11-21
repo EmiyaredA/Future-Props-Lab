@@ -249,11 +249,12 @@ test("30 个节点下的重要信息首屏可见，菜单、分类与分页历�
   await dialog.getByLabel("名称").fill("场景设定");
   await dialog.getByRole("button", { name: "确认" }).click();
   await expect(tree.getByText("场景设定", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "整理", exact: true }).click();
   await expect(
-    page.getByRole("combobox", { name: "节点主分类" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "整理", exact: true }).click();
+    page.getByRole("button", { name: "整理", exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("tab", { name: "节点验收", exact: true }),
+  ).toHaveCount(0);
   await page
     .locator(".board-version-list button")
     .filter({ hasText: "v2" })

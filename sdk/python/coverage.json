@@ -3647,13 +3647,6 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "DELETE /v1/visual-workshop/acceptance-templates/{template_id}",
-    "sdk": "client.visual.delete_acceptance_template",
-    "document": "/docs.html?page=sdk-reference-visual#delete-acceptance-template",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "DELETE /v1/visual-workshop/projects/{project_id}",
     "sdk": "client.visual.delete_project",
     "document": "/docs.html?page=sdk-reference-visual#delete-project",
@@ -3678,20 +3671,6 @@
     "http": "DELETE /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}",
     "sdk": "client.visual.delete_previs_scene",
     "document": "/docs.html?page=sdk-reference-visual#delete-previs-scene",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/visual-workshop/acceptance-templates",
-    "sdk": "client.visual.list_acceptance_templates",
-    "document": "/docs.html?page=sdk-reference-visual#list-acceptance-templates",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/visual-workshop/acceptance/catalog",
-    "sdk": "client.visual.acceptance_catalog",
-    "document": "/docs.html?page=sdk-reference-visual#acceptance-catalog",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3724,48 +3703,6 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/models",
-    "sdk": "client.visual.list_acceptance_models",
-    "document": "/docs.html?page=sdk-reference-visual#list-acceptance-models",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}",
-    "sdk": "client.visual.get_acceptance_repair",
-    "document": "/docs.html?page=sdk-reference-visual#get-acceptance-repair",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/runs",
-    "sdk": "client.visual.list_acceptance_runs",
-    "document": "/docs.html?page=sdk-reference-visual#list-acceptance-runs",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}",
-    "sdk": "client.visual.get_acceptance_run",
-    "document": "/docs.html?page=sdk-reference-visual#get-acceptance-run",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/standard",
-    "sdk": "client.visual.get_acceptance_standard",
-    "document": "/docs.html?page=sdk-reference-visual#get-acceptance-standard",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "GET /v1/visual-workshop/projects/{project_id}/acceptance/summary",
-    "sdk": "client.visual.acceptance_summary",
-    "document": "/docs.html?page=sdk-reference-visual#acceptance-summary",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "GET /v1/visual-workshop/projects/{project_id}/asset-cards",
     "sdk": "client.visual.list_visual_asset_cards",
     "document": "/docs.html?page=sdk-reference-visual#list-visual-asset-cards",
@@ -3787,9 +3724,9 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance",
-    "sdk": "client.visual.get_node_acceptance",
-    "document": "/docs.html?page=sdk-reference-visual#get-node-acceptance",
+    "http": "GET /v1/visual-workshop/projects/{project_id}/creation-links",
+    "sdk": "client.visual.get_creation_links",
+    "document": "/docs.html?page=sdk-reference-visual#get-creation-links",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3836,6 +3773,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/storyboard",
+    "sdk": "client.visual.get_storyboard",
+    "document": "/docs.html?page=sdk-reference-visual#get-storyboard",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "PATCH /v1/visual-workshop/projects/{project_id}",
     "sdk": "client.visual.patch_project",
     "document": "/docs.html?page=sdk-reference-visual#patch-project",
@@ -3846,13 +3790,6 @@
     "http": "PATCH /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}",
     "sdk": "client.visual.patch_asset_reference",
     "document": "/docs.html?page=sdk-reference-visual#patch-asset-reference",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/visual-workshop/acceptance-templates",
-    "sdk": "client.visual.create_acceptance_template",
-    "document": "/docs.html?page=sdk-reference-visual#create-acceptance-template",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3881,41 +3818,6 @@
     "http": "POST /v1/visual-workshop/projects/snapshot-imports",
     "sdk": "client.visual.import_project_snapshot",
     "document": "/docs.html?page=sdk-reference-visual#import-project-snapshot",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs",
-    "sdk": "client.visual.start_acceptance_runs",
-    "document": "/docs.html?page=sdk-reference-visual#start-acceptance-runs",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel",
-    "sdk": "client.visual.cancel_acceptance_run",
-    "document": "/docs.html?page=sdk-reference-visual#cancel-acceptance-run",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions",
-    "sdk": "client.visual.decide_acceptance_run",
-    "document": "/docs.html?page=sdk-reference-visual#decide-acceptance-run",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts",
-    "sdk": "client.visual.create_acceptance_repair",
-    "document": "/docs.html?page=sdk-reference-visual#create-acceptance-repair",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples",
-    "sdk": "client.visual.sample_acceptance_video",
-    "document": "/docs.html?page=sdk-reference-visual#sample-acceptance-video",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -3955,13 +3857,6 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs",
-    "sdk": "client.visual.start_node_acceptance",
-    "document": "/docs.html?page=sdk-reference-visual#start-node-acceptance",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/output-uploads",
     "sdk": "client.visual.upload_node_output",
     "document": "/docs.html?page=sdk-reference-visual#upload-node-output",
@@ -3990,30 +3885,9 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "PUT /v1/visual-workshop/acceptance-templates/{template_id}",
-    "sdk": "client.visual.update_acceptance_template",
-    "document": "/docs.html?page=sdk-reference-visual#update-acceptance-template",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
     "http": "PUT /v1/visual-workshop/asset-cards/{card_id}",
     "sdk": "client.visual.put_account_asset_card",
     "document": "/docs.html?page=sdk-reference-visual#put-account-asset-card",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}",
-    "sdk": "client.visual.save_acceptance_repair",
-    "document": "/docs.html?page=sdk-reference-visual#save-acceptance-repair",
-    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
-    "verification": "named-operation-contract"
-  },
-  {
-    "http": "PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard",
-    "sdk": "client.visual.save_acceptance_standard",
-    "document": "/docs.html?page=sdk-reference-visual#save-acceptance-standard",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -4032,9 +3906,9 @@
     "verification": "named-operation-contract"
   },
   {
-    "http": "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance",
-    "sdk": "client.visual.select_node_acceptance",
-    "document": "/docs.html?page=sdk-reference-visual#select-node-acceptance",
+    "http": "PUT /v1/visual-workshop/projects/{project_id}/creation-links",
+    "sdk": "client.visual.save_creation_links",
+    "document": "/docs.html?page=sdk-reference-visual#save-creation-links",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },
@@ -4056,6 +3930,13 @@
     "http": "PUT /v1/visual-workshop/projects/{project_id}/script",
     "sdk": "client.visual.put_visual_script",
     "document": "/docs.html?page=sdk-reference-visual#put-visual-script",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/projects/{project_id}/storyboard",
+    "sdk": "client.visual.save_storyboard",
+    "document": "/docs.html?page=sdk-reference-visual#save-storyboard",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   }

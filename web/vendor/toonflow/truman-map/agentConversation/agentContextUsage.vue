@@ -1,5 +1,5 @@
 <template>
-  <el-popover v-model:visible="visible" trigger="hover" placement="top" :width="280" :offset="10" :showArrow="false" popperClass="agentContextPopover">
+  <el-popover v-model:visible="visible" trigger="hover" placement="top" :width="280" :offset="10" :showArrow="false" popperClass="agentContextPopover truman-host-popup">
     <template #reference>
       <el-button class="agentContextButton" text circle :aria-label="tokens ? `查看上下文用量，已使用 ${percent.toFixed(1)}%` : '查看上下文用量，暂无数据'" title="查看上下文用量">
         <el-progress type="circle" :width="14" :strokeWidth="2" :percentage="Math.min(100, percent)" :color="color" :showText="false" />

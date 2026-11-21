@@ -1,24 +1,11 @@
 import { useEffect, useState } from "react";
-
-export type ThemeMode = "light" | "dark";
-export const THEME_KEY = "future_props_theme";
-
-function systemTheme(): ThemeMode {
-  return typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
-export function loadTheme(): ThemeMode {
-  try {
-    const stored = localStorage.getItem(THEME_KEY);
-    if (stored === "dark" || stored === "light") return stored;
-  } catch {
-    // Storage can be unavailable in privacy modes.
-  }
-  return systemTheme();
-}
+import {
+  loadTheme,
+  systemTheme,
+  THEME_KEY,
+  type ThemeMode,
+} from "./themePreference";
+export { loadTheme, THEME_KEY, type ThemeMode } from "./themePreference";
 
 export function applyTheme(theme: ThemeMode, persist = true): void {
   const root = document.documentElement;

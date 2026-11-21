@@ -13,6 +13,9 @@
 仅监听回环地址，不创建公网隧道；Vite 限定可读源码与依赖，不能读取后端配置或运行期密钥。
 原本已使用兼容单体配置的主机仍进入原开发启动器。
 
+Amadeus 与 Agent Runtime 的 CLI 通过同一装配清单映射 Agent 发布门禁目录，并显式传给请求中间件和健康探针。
+维护时两侧 `/health` 必须报告相同的暂停标识，恢复后均为 `accepting`；容器入口保留原挂载路径。
+
 切换前正常停止正式管理 LaunchAgent、各 Worker 和该 Compose 项目的容器，保留其数据与定义。
 开发启动器拒绝仍已加载的正式 Worker、重复实例及端口占用。若暂停了正式任务的登录自启动，恢复时先按
 `.runtime/native-development/production-paused.json` 的记录核对原状态，再显式启用；已迁移的数据不能直接交给

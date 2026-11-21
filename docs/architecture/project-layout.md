@@ -250,10 +250,13 @@ docs/
 `web/src/app/routing/useApplicationNavigation.ts` 管理独立入口所属路径内的局部切页、链接和浏览器历史，
 复用 `shared/ui/navigationGuards.ts` 的功能离开保护；`useWorkshopNavigation.ts` 适配单个工坊的路由声明，
 `ApplicationNavigation.tsx` 为通用 Studio 壳提供显式归属和导航上下文，`app/layout/ApplicationPage.tsx` 将懒加载限制在内容区。
+门户通过单页 `exactPaths` 声明归属，工坊通过 `roots` 声明子树，应用目录不会接管其他工坊的入口。
 `assembly/independent/runtime_options.py` 只提供 CLI 的资源/监听参数，
 `runtime/http/service_transport.py` 通过显式传入的连接表将逻辑服务 URL 连接到回环端口，保留签名路径和身份头。
 `web/native.config.ts` 以登记的页面归属装配 Vite 多入口、HMR 和本机 API 代理。
 `web/applicationIcons.ts` 将 HTML 声明的工坊头像解析为既有 64px 派生图，供开发与独立构建共用。
+`web/themeBootstrap.ts` 在开发与构建的全部 HTML 入口注入同步主题初始化和首屏底色；
+`shared/ui/themePreference.ts` 提供不依赖 React 的偏好解析，HTML 与运行时共用，资源未加载时也遵守明暗偏好。
 运行依赖和私有投影归 `.runtime/native-development/`，可清理验收证据归 `.local/` 的任务目录。
 
 ### 独立服务迁移
@@ -1073,13 +1076,15 @@ Web 编辑器入口装配播放时钟和帧展示。`editor/playback-clock.ts` �
 
 ## 视觉项目看板与输出历史
 
+`board/MaterialViews.tsx` 与 `material-views.css` 拥有文件、人设、场景、道具的纵向页签、项目范围数量、搜索入口与独立内容滚动区；`ProjectBoard.tsx` 持有各视图的临时搜索词并装配原有素材操作，`CommonDesignCards.tsx` 展示当前设定类型。
+
 `visual_workshop/schemas/prompts.py` 定义三类媒体草稿共用的提示词版本契约，`prompt_versions.py` 在画布用例边界保留旧客户端更新时的版本集合。`generation/usePromptVersions.ts` 持有独立编辑版本的同步快照，`PromptVersionControls.tsx` 提供画布与看板共用的版本操作；版本随节点 JSON 和画布 CAS 保存，生成仅消费当前文字。参考图片排序同步更新全部版本，输出历史保持独立生命周期。
 
 `board/MaterialTree.tsx` 为已有媒体输出提供项目素材拖拽数据；`generation/useProjectReferenceDrop.ts` 拥有生成参考框的拖入解析、项目文件与类型校验、去重及数量限制，放下后由 `ReferenceDropNotice.tsx` 提示成功或失败原因，参考框通过原草稿回调保存当前文件。全能参考栏统一按媒体类型路由拖入，不改变节点连线或来源选择。
 
 `generation/generationActivityModel.ts` 将节点关联的任务／图片批次快照归一为运行状态，`GenerationActivity.tsx` 与 `generation-activity.css` 拥有紧凑状态栏、已用时和共用转圈图标。看板右侧输出历史、节点标题、素材树、状态分组与生成按钮共用运行状态；未知进度保持不定值，现有输出版本与当前任务分开显示，不用参考素材模拟中间帧。
 
-`backend/studio/apps/visual_workshop/outputs/` 拥有节点输出 ORM、历史分页、最终版本 CAS、输入解析与提交快照、上传事务及快照重映射；包入口提供 `register_imported_output`，供视频剪辑分段交接在取得画布 CAS 写锁后、同一事务内登记素材版本；`routes/outputs.py` 只负责协议适配。`canvas.py` 保留节点身份、分类与连线整体 CAS，兼容旧素材写入并统一登记版本。`generation_runner.py` 在落盘后短事务中幂等归档输出。`web/src/features/visual-workshop/board/` 拥有项目素材树、创作工作台、状态分组、历史预览与输入选择，并按素材整理、管理菜单、节点元信息与状态呈现拆分；shell、工作台与状态卡样式按职责独立维护。生成组件通过显式 `layout` 参数适配工作台，保留画布布局；画布控制器统一持有草稿、选择与视口，项目页保留两种视图切换时的历史预览。
+`backend/studio/apps/visual_workshop/outputs/` 拥有节点输出 ORM、历史分页、最终版本 CAS、输入解析与提交快照、上传事务及快照重映射；包入口提供 `register_imported_output`，供视频剪辑分段交接在取得画布 CAS 写锁后、同一事务内登记素材版本；`routes/outputs.py` 只负责协议适配。`canvas.py` 保留节点身份、分类与连线整体 CAS，兼容旧素材写入并统一登记版本。`generation_runner.py` 在落盘后短事务中幂等归档输出。`web/src/features/visual-workshop/board/` 拥有项目素材树、创作工作台、状态分组、历史预览与输入选择，并按素材视图、管理菜单、生成编辑与状态呈现拆分；shell、工作台与状态卡样式按职责独立维护。生成组件通过显式 `layout` 参数适配工作台，保留画布布局；画布控制器统一持有草稿、选择与视口，项目页保留两种视图切换时的历史预览。
 
 视觉画布 `canvasPlacement.ts` 拥有卡片与节点组的有界避让，`canvasLayout.ts` 拥有稳定的流程与网格布局，`canvasVisibleArea.ts` 计算排除固定控件后的可见区域；`useCanvasSpatialActions.ts` 将纯位置结果接入视口、整体保存与单次撤销。各新增入口共用该能力，临时编辑面板不影响持久布局。后端 `visual_workshop/node_placement.py` 只处理后台自动节点，显式 API 坐标沿用原契约；`tests/fixtures/visual_node_placement.json` 同时约束前后端尺寸与默认避让结果。
 
@@ -1151,9 +1156,11 @@ FFmpeg 快版复用同一任务队列和媒体边界。长镜头最多每 240 �
 安装目录只保留固定权重和经本机验收的运行环境。账号的输入及输出沿用 `model-inference/` 边界，`0127_video_enhancement` 保存任务检查点。
 分段结果先通过媒体校验并落盘，再提交进度。崩溃后以已提交的片段序号为续跑点。
 
-## 视觉工坊节点验收
+## 视觉工坊分镜与历史验收
 
-`backend/studio/apps/visual_workshop/acceptance/` 拥有只读动作迁移定义、节点方案 CAS 绑定、自动生成依据、不可变输出验收记录、人工结论、证据、返修和快照兼容。`execution/` 负责无凭据任务包、专用媒体 MCP 和 Agent 报告转换。`runner.py` 复用短事务及 RunnerSupervisor，模型 API 与 Agent 专属结果分别保存。生成快照与上传版本的节点设置明确区分，验收不参与生成、上传、画布保存及最终输出采用的门禁。
+`backend/studio/apps/visual_workshop/storyboard/` 拥有独立镜头文档、关联校验、短事务 CAS、快照导出和制作节点重映射；`transport/storyboard_http.py` 向网站与独立服务提供同一协议。追加迁移为网站 `0136_visual_storyboards`、独立服务 `0016_visual_storyboards`。`web/src/features/visual-workshop/storyboard/` 拥有手动镜头卡、批量纳入已有节点、顺序、剧本来源与设定关联；`productionDraft.ts` 只为新制作节点准备生成草稿。
+
+`acceptance/` 保留历史验收记录、证据、快照与删除兼容；`retirement.py` 在启动时按账号取消未完成检查。`transport/retired_acceptance_http.py` 仅提供受认证且按项目隔离的 410 兼容响应，不进入公共目录。两种装配均不启动验收执行器。
 
 `backend/studio/host/agent_execution/cli/` 拥有 Codex、Claude Code、OpenCode、DeepSeek Harness 和 Pi 的非交互执行。`transport.py` 维护受控环境与进程生命周期，`conversation.py` 维护原有 Codex/Claude 对话协议，`native.py` 维护 OpenCode JSON 事件、Harness ACP 与 Pi RPC，`isolation.py` 只继承模型连接与认证配置并生成临时执行配置；旁置 `.mjs` 资源提供 Pi 的唯一任务工具桥与 Harness 的不可放宽工具 guard，桌面构建显式打包。不包含验收业务。`studio/apps/identity/website_access/visual_acceptance.py` 复核提交者的有效权限；桌面 `acceptance_tools_entry.py` 独立打包媒体工具，不传递 FPL 凭据。
 
@@ -1162,7 +1169,7 @@ FFmpeg 快版复用同一任务队列和媒体边界。长镜头最多每 240 �
 SDK 解释器入口，正式产物位于运行根目录的 `agent-workspace/`。Python SDK 的 `task.py` 拥有任务 socket
 客户端和同步／异步传输；CLI 的 `--task` 模式复用该传输，不读取个人网站配置。
 
-`web/src/features/visual-workshop/acceptance/` 的项目入口只提供只读模板与节点汇总；画布和看板共用 `NodeAcceptancePanel`，节点负责方案选择、启动、报告、人工确认及返修复验。验收状态、生成状态和最终输出分别展示。查询键由 `queryKeys.ts` 维护；[配置与执行边界](../operations/node-acceptance.md) 说明固定连接与历史 API 兼容。
+`ProjectCreativeTools.tsx` 提供工作台／剧本／白模预演三个固定一级入口，`canvas/VisualWorkshopCanvasPage.tsx` 拥有项目工作区状态与显式联动目标；`ProjectWorkspaceNavigation.tsx` 将统一顶栏委托给当前编辑器的离开规则。`WorkbenchViewToggle.tsx` 只切换工作台内部画布／看板；`board/ProjectBoard.tsx` 复用同一资源栏并接入画布或分镜展示槽，`storyboard/workbench.ts` 定义分镜的列表、编辑和输出槽。`WorkspaceSidebar.tsx` 提供剧本与白模同尺寸的导航栏及列表，`useWorkspaceSidebarState.ts` 统一管理三个工作区的桌面默认固定、窄屏临时展开及跨断点状态；`project-workspace.css` 拥有共享尺寸、工作区布局与按内容宽度排列编辑／输出的适配。`canvas/CanvasProjectDesigns.tsx` 为画布左侧人设／场景／道具入口提供项目设定面板，复用设定库挑选、编辑、采用图与引用接口。`CanvasNodeInspector` 仅挂载生成编辑器；原自动验收前端已移除。人工通过与输出版本继续使用原画布和输出契约；[历史验收说明](../operations/node-acceptance.md) 记录兼容边界。
 
 - `studio/assembly/website/code_agent_access.py` 通过 Identity 复核有效账号。Host 的 `cli/connection_configuration.py` 负责本机启用，共用 TOML 锁和发布前授权。连接 DTO 归 Agent Runtime 契约，两套入口共用 Agent Runtime 路由。独立服务通过持久租约访问 Host。`scripts/website/codex_login.py` 建立 app-server 的专用登录。
 
@@ -1299,3 +1306,7 @@ Web 通用 UI 验收放在 `web/tests/shared/`，API、SSE、下载与传输验�
 视觉工坊网站的生成和验收适配器接收当前应用的配置。网站节点验收显式绑定方案查询与素材存储，连接签名和视频取样使用当前应用配置。独立视觉服务通过原有跨服务端口读取模型和素材能力。架构测试检查整个视觉工坊业务包的配置边界。
 
 根级测试保留受保护产品文档直接引用的证据文件。测试会话、共用夹具和子进程脚本仍由各测试根目录提供。
+
+### 视觉创作关联
+
+`backend/studio/apps/visual_workshop/creation_links/` 保存项目内场景卡与 3D 舞台、人物/道具卡与稳定白模对象标识的绑定，提供独立 CAS 文档。`storyboard/` 保存剧本选段和逐镜机位/走位覆盖；`previs/shotScope.ts` 通过宿主验证接口合成可编辑镜头，避免将镜头覆盖写回共享舞台。

@@ -1,6 +1,6 @@
 <template>
   <div class="agentModelPicker">
-    <el-popover v-model:visible="visible" trigger="click" placement="top-start" :width="300" :offset="10" :showArrow="false" popperClass="agentModelPopover" :popperStyle="{ padding: '16px', maxWidth: 'calc(100vw - 24px)' }">
+    <el-popover v-model:visible="visible" trigger="click" placement="top-start" :width="300" :offset="10" :showArrow="false" popperClass="agentModelPopover truman-host-popup" :popperStyle="{ padding: '16px', maxWidth: 'calc(100vw - 24px)' }">
       <template #reference>
         <el-button class="modelButton" text :disabled="disabled" aria-label="模型与思考强度设置" :title="selected ? `${selected.label}${levels.length ? ` · 思考${reasoningLabel}` : ''}` : '选择模型'">
           <modelLabel class="modelName" :label="selected?.label ?? (loading ? '读取模型…' : '选择模型')" :providerId="selected?.providerId" :modelId="selected?.modelId" />
@@ -10,7 +10,7 @@
       </template>
       <el-form class="modelOptions" labelPosition="top" @submit.prevent>
         <el-form-item label="模型">
-          <el-select :modelValue="selected ? modelValue : ''" filterable :disabled="disabled" :teleported="false" :loading="loading" placeholder="选择模型" aria-label="选择模型" :noDataText="loading ? '读取模型…' : '请先在 Toonflow 设置中添加文本模型'" @update:modelValue="select">
+          <el-select :modelValue="selected ? modelValue : ''" filterable :disabled="disabled" :teleported="false" :loading="loading" placeholder="选择模型" aria-label="选择模型" :noDataText="loading ? '读取模型…' : '请先在 Toonflow 设置中添加文本模型'" @update:modelValue="select" popper-class="truman-host-popup">
             <el-option-group v-for="group in groups" :key="group.id" :label="group.label">
               <el-option v-for="model in group.models" :key="model.key" :label="model.label" :value="model.key">
                 <modelLabel :label="model.label" :providerId="model.providerId" :modelId="model.modelId" />

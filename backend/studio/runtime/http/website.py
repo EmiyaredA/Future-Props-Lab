@@ -144,10 +144,12 @@ class WebsiteTransport:
         frontend_origin=None,
         frontend_port=None,
         public_access=None,
+        compatibility_api_paths=(),
         happier_local=None,
         automation_policy=None,
     ):
         self.app, self.local_port, self.public_access = app, local_port, public_access
+        self.compatibility_api_paths = tuple(compatibility_api_paths)
         self.automation_policy = automation_policy
         self.happier_local = happier_local
         if frontend_origin not in {None, "http://127.0.0.1:3000"}:
@@ -185,7 +187,10 @@ class WebsiteTransport:
         }
         if scope["type"] == "http" and scope["path"].startswith("/v1/"):
             if self.api_paths is None:
-                self.api_paths = [path_pattern(path) for path in scope["app"].openapi()["paths"]]
+                self.api_paths = [
+                    path_pattern(path)
+                    for path in (*scope["app"].openapi()["paths"], *self.compatibility_api_paths)
+                ]
             if not any(pattern.fullmatch(scope["path"]) for pattern in self.api_paths):
                 await PlainTextResponse("Not Found", 404, headers={"Cache-Control": "no-store"})(
                     scope, receive, send
@@ -239,6 +244,7 @@ def attach_website(
     frontend_port=None,
     static=None,
     public_access=None,
+    compatibility_api_paths=(),
     happier_local=None,
     automation_policy=None,
 ):
@@ -252,6 +258,7 @@ def attach_website(
         frontend_origin=frontend_origin,
         frontend_port=frontend_port,
         public_access=public_access,
+        compatibility_api_paths=compatibility_api_paths,
         happier_local=happier_local,
         automation_policy=automation_policy,
     )

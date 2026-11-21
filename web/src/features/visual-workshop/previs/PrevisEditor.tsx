@@ -1,3 +1,4 @@
+import { CustomSelect } from "@shared/ui/CustomSelect";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getProjectModels,
@@ -36,6 +37,8 @@ export type PrevisEditorHandle = { requestLeave(): Promise<boolean> };
 export function PrevisEditor({
   ref,
   initial,
+  suspended = false,
+  interactionLocked = false,
   project,
   readOnly,
   leaving,
@@ -43,14 +46,34 @@ export function PrevisEditor({
   onSaved,
   beforePublish,
   onPublished,
+  persistScene,
+  validateChange,
+  reloadScene,
+  onAdopt,
+  initialDirty = false,
+  initialCameraId,
+  onCameraChange,
 }: {
+  onAdopt?: (
+    scene: PrevisScene,
+    file: File,
+    number: number,
+  ) => void | Promise<void>;
+  initialDirty?: boolean;
+  initialCameraId?: string;
+  onCameraChange?: (id: string) => void;
+  persistScene?: (scene: PrevisScene) => Promise<PrevisScene>;
+  validateChange?: (document: SceneDocument) => SceneDocument;
+  reloadScene?: () => Promise<PrevisScene>;
   ref: Ref<PrevisEditorHandle>;
   initial: PrevisScene;
+  suspended?: boolean;
+  interactionLocked?: boolean;
   project: string;
   readOnly: boolean;
   leaving: boolean;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (scene: PrevisScene) => void;
   beforePublish?: () => Promise<void>;
   onPublished?: (canvas: VisualCanvasDocument) => void;
 }) {
@@ -98,16 +121,20 @@ export function PrevisEditor({
   if (!draft.current)
     draft.current = baseline.current = validateScene(initial.document);
   const titleDraft = useRef(initial.title);
+  const pendingInitialSave = useRef(initialDirty && !readOnly);
   const flight = useRef<Promise<PrevisScene> | null>(null);
   const batch = useRef<PrevisBatch | null>(null);
   const retry = useRef<AbortController | null>(null);
+  const [cameraId, setCameraId] = useState(initialCameraId ?? "");
+  const [capturing, setCapturing] = useState(false);
   const [title, setTitle] = useState(initial.title);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(false);
   const [status, setStatus] = useState(readOnly ? "只读预演" : "已保存");
-  const locked = saving || publishing || leaving;
+  const locked =
+    saving || publishing || capturing || leaving || interactionLocked;
 
   async function save() {
     if (flight.current) return flight.current;
@@ -115,22 +142,27 @@ export function PrevisEditor({
     const nextTitle = titleDraft.current.trim();
     if (
       readOnly ||
-      (current === baseline.current && nextTitle === saved.current.title)
+      (current === baseline.current &&
+        nextTitle === saved.current.title &&
+        !pendingInitialSave.current)
     )
       return saved.current;
     setSaving(true);
     setError("");
-    const pending = savePrevis(project, saved.current, {
-      title: nextTitle,
-      format_version: 1,
-      document: current,
-    });
+    const pending = persistScene
+      ? persistScene({ ...saved.current, title: nextTitle, document: current })
+      : savePrevis(project, saved.current, {
+          title: nextTitle,
+          format_version: 1,
+          document: current,
+        });
     flight.current = pending;
     try {
       const result = await pending;
       saved.current = result;
       baseline.current = current;
-      onSaved();
+      pendingInitialSave.current = false;
+      onSaved(result);
       setConflict(false);
       setStatus(
         draft.current === current && titleDraft.current.trim() === nextTitle
@@ -178,7 +210,7 @@ export function PrevisEditor({
 
   useImperativeHandle(ref, () => ({
     async requestLeave() {
-      if (saving || publishing || host.current?.isBusy()) {
+      if (saving || publishing || capturing || host.current?.isBusy()) {
         setError("请等待当前操作完成，再离开场景。");
         return false;
       }
@@ -199,13 +231,24 @@ export function PrevisEditor({
   }));
 
   const props: TrumanHostProps = {
+    interactionLocked,
     document: draft.current,
     readOnly,
-    saving: locked,
+    shotScoped: Boolean(validateChange),
+    saving: saving || publishing || leaving,
     statusMessage: status,
     error,
     onChange(document) {
       if (readOnly) return;
+      try {
+        document = validateChange?.(document) ?? document;
+      } catch (failure) {
+        setError(apiErrorMessage(failure));
+        draft.current = structuredClone(draft.current!);
+        host.current?.update({ ...latest.current, document: draft.current });
+        return;
+      }
+      setError("");
       draft.current = document;
       setStatus("有未保存的修改");
       host.current?.update({ ...latest.current, document });
@@ -269,14 +312,14 @@ export function PrevisEditor({
   const latest = useRef(props);
   latest.current = props;
   useLayoutEffect(() => {
-    if (!root.current) return;
+    if (!root.current || suspended) return;
     const instance = mountTrumanMap(root.current, latest.current);
     host.current = instance;
     return () => {
       host.current = null;
       instance.dispose();
     };
-  }, []);
+  }, [suspended]);
   useLayoutEffect(() => {
     host.current?.update(props);
   });
@@ -284,6 +327,7 @@ export function PrevisEditor({
     function warnIfDirty(event: BeforeUnloadEvent) {
       if (
         batch.current ||
+        pendingInitialSave.current ||
         draft.current !== baseline.current ||
         titleDraft.current.trim() !== saved.current.title
       ) {
@@ -297,12 +341,34 @@ export function PrevisEditor({
     };
   }, []);
 
+  const cameras = (draft.current?.cameras ?? []) as {
+    id: string;
+    name: string;
+  }[];
+  const selectedCamera = cameraId || cameras[0]?.id || "";
+  async function capture(kind: "frame" | "clip") {
+    if (locked || readOnly || !host.current || !onAdopt || !selectedCamera)
+      return;
+    setCapturing(true);
+    setError("");
+    try {
+      onCameraChange?.(selectedCamera);
+      const scene = await save();
+      host.current.update({ ...latest.current, saving: false });
+      const result = await host.current.captureReference(kind, selectedCamera);
+      await onAdopt(scene, result.file, result.number);
+    } catch (failure) {
+      setError(apiErrorMessage(failure));
+    } finally {
+      setCapturing(false);
+    }
+  }
   return (
     <section className="visual-previs-editor" aria-label="镜头预演编辑器">
       <div className="visual-previs-bar">
         <input
           aria-label="场景名称"
-          disabled={readOnly || locked}
+          disabled={readOnly || locked || Boolean(persistScene)}
           value={title}
           maxLength={120}
           onChange={(event) => {
@@ -320,7 +386,11 @@ export function PrevisEditor({
                 !window.confirm("载入服务器版本会舍弃本地场景草稿，是否继续？")
               )
                 return;
-              void openPrevis(project, saved.current.id)
+              void (
+                reloadScene
+                  ? reloadScene()
+                  : openPrevis(project, saved.current.id)
+              )
                 .then((remote) => {
                   draft.current = baseline.current = validateScene(
                     remote.document,
@@ -380,6 +450,37 @@ export function PrevisEditor({
             </>
           )
         ) : null}
+        {onAdopt && !readOnly && (
+          <>
+            <CustomSelect
+              ariaLabel="采用预演的机位"
+              value={selectedCamera}
+              disabled={locked}
+              onChange={(id) => {
+                setCameraId(id);
+                onCameraChange?.(id);
+              }}
+              options={cameras.map((camera) => ({
+                value: camera.id,
+                label: camera.name,
+              }))}
+            />
+            <button
+              type="button"
+              disabled={locked || !selectedCamera}
+              onClick={() => void capture("frame")}
+            >
+              采用当前帧
+            </button>
+            <button
+              type="button"
+              disabled={locked || !selectedCamera}
+              onClick={() => void capture("clip")}
+            >
+              采用预演片段
+            </button>
+          </>
+        )}
         <button type="button" disabled={locked} onClick={props.onClose}>
           返回场景列表
         </button>

@@ -109,7 +109,14 @@ def test_every_business_operation_has_an_explicit_policy():
     from studio.apps.management.transport.service import router
 
     management = {(method, route.path) for route in router.routes for method in route.methods}
-    assert actual | model_governance | directory | management == set(ROUTE_PERMISSIONS)
+    from studio.apps.visual_workshop.transport.retired_acceptance_http import router as retired
+
+    retired_operations = {
+        (method, "/v1" + route.path) for route in retired.routes for method in route.methods
+    }
+    assert actual | model_governance | directory | management | retired_operations == set(
+        ROUTE_PERMISSIONS
+    )
 
 
 @pytest.mark.asyncio

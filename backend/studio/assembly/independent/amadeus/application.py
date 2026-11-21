@@ -41,7 +41,11 @@ from studio.contracts.gateway.protocol_hash import public_contract
 from studio.runtime.database.migrations import check
 from studio.runtime.database.operation_receipts import OperationError
 from studio.runtime.database.sessions import Database
-from studio.runtime.http.agent_admission import AgentAdmission, admission_report
+from studio.runtime.http.agent_admission import (
+    AGENT_ADMISSION_MOUNT,
+    AgentAdmission,
+    admission_report,
+)
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.capability_client import CapabilityClient
 from studio.runtime.http.native_ingress import NativeIngress
@@ -75,7 +79,16 @@ async def recover(database):
             await recover_actions(db)
 
 
-def create_app(*, state_root, catalog, public_key, credential, transport=None, native_options=None):
+def create_app(
+    *,
+    state_root,
+    catalog,
+    public_key,
+    credential,
+    transport=None,
+    native_options=None,
+    admission_root=AGENT_ADMISSION_MOUNT,
+):
     if not isinstance(credential, str) or len(credential) < 32:
         raise ValueError("Amadeus 需要专属身份凭据")
     capabilities = CapabilityClient(
@@ -166,11 +179,11 @@ def create_app(*, state_root, catalog, public_key, credential, transport=None, n
             request, HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
         )
 
-    app.add_middleware(AgentAdmission, prefixes=("/v1/amadeus/",))
+    app.add_middleware(AgentAdmission, root=admission_root, prefixes=("/v1/amadeus/",))
 
     @app.get("/health")
     async def health():
-        return {"status": "ok", **admission_report(), "service": "amadeus"}
+        return {"status": "ok", **admission_report(admission_root), "service": "amadeus"}
 
     @app.get("/ready")
     async def ready():

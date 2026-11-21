@@ -15,7 +15,12 @@ import { guardedNavigation } from "@shared/ui/navigationGuards";
 const { requestLeave } = vi.hoisted(() => ({ requestLeave: vi.fn() }));
 vi.mock("@features/visual-workshop/previs/api", () => ({
   listPrevis: async () => [{ id: "scene", title: "预演场景一" }],
-  openPrevis: async () => ({ id: "scene", title: "预演场景一" }),
+  openPrevis: async () => ({
+    id: "scene",
+    title: "预演场景一",
+    revision: 0,
+    document: { objects: [] },
+  }),
   createPrevis: vi.fn(),
   deletePrevis: vi.fn(),
 }));
@@ -50,6 +55,7 @@ async function openWorkspace() {
       </NavigationProtection>
     </QueryClientProvider>,
   );
+  fireEvent.click(screen.getByRole("button", { name: "展开场景侧栏" }));
   fireEvent.click(await screen.findByRole("button", { name: "预演场景一" }));
   await screen.findByText("场景编辑就绪");
   return navigate;

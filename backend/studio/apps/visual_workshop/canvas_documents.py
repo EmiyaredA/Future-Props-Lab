@@ -300,14 +300,6 @@ class CanvasDocuments:
             .values(nodes=nodes)
         )
         if removed:
-            if await self.session.scalar(
-                select(AcceptanceRun.id).where(
-                    AcceptanceRun.project_id == project_id, AcceptanceRun.node_id.in_(removed)
-                )
-            ):
-                raise VisualCanvasError(
-                    "节点被验收记录引用，不能直接删除", code="acceptance_in_use", status=409
-                )
             from sqlalchemy import delete
 
             await self.session.execute(
@@ -319,7 +311,13 @@ class CanvasDocuments:
 
             await self.session.execute(
                 delete(VisualNodeOutput).where(
-                    VisualNodeOutput.project_id == project_id, VisualNodeOutput.node_id.in_(removed)
+                    VisualNodeOutput.project_id == project_id,
+                    VisualNodeOutput.node_id.in_(removed),
+                    VisualNodeOutput.id.not_in(
+                        select(AcceptanceRun.output_id).where(
+                            AcceptanceRun.project_id == project_id
+                        )
+                    ),
                 )
             )
         return await self.get(project_id)

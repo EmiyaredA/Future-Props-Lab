@@ -16,7 +16,7 @@
           <el-checkbox-group v-else-if="field.type === 'checkbox'" v-model="values[field.field]" :disabled="submitting">
             <el-checkbox v-for="option in field.options ?? []" :key="option" :value="option" border size="small">{{ option }}</el-checkbox>
           </el-checkbox-group>
-          <el-select v-else-if="field.type === 'select'" v-model="values[field.field]" clearable size="small" :teleported="false" :placeholder="field.placeholder || '请选择'" :disabled="submitting">
+          <el-select v-else-if="field.type === 'select'" v-model="values[field.field]" clearable size="small" :teleported="false" :placeholder="field.placeholder || '请选择'" :disabled="submitting" popper-class="truman-host-popup">
             <el-option v-for="option in field.options ?? []" :key="option" :label="option" :value="option" />
           </el-select>
           <el-input-number v-else-if="field.type === 'inputNumber'" v-model="values[field.field]" size="small" controlsPosition="right" :disabled="submitting" />

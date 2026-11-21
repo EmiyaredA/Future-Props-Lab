@@ -43,11 +43,6 @@
   overflow: visible;
   min-height: 100px;
 }
-.board-files-heading {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: var(--board-muted);
-}
 .board-design-heading {
   display: flex;
   align-items: center;
@@ -58,22 +53,11 @@
 .board-design-heading h3 {
   margin: 0;
 }
-.visual-project-board .board-design-toggle {
-  border: 0;
-  padding: 0;
-  background: transparent;
-  min-height: 26px;
-  gap: 5px;
-  font-size: inherit;
-}
 .visual-project-board .board-design-heading > .board-icon-button {
   width: 26px;
   height: 26px;
   min-height: 26px;
   padding: 4px;
-}
-.board-design-toggle > svg.is-open {
-  transform: rotate(90deg);
 }
 .visual-project-board .board-design-card-open {
   display: flex;

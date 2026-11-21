@@ -79,9 +79,9 @@
 
     <nav class="worldDock" aria-label="场景工具">
       <button v-if="readOnly && studioCameras.length" type="button" :disabled="operationLocked" aria-label="播放成片" title="播放成片" @click="setFilmPreview(true)"><icon-player-play :size="23" /><span>播放</span></button>
-      <button type="button" :class="{ active: editorPanel === 'view' }" :aria-expanded="editorPanel === 'view'" :disabled="locked" aria-label="世界设置" title="世界" @click="toggleView"><icon-world :size="23" stroke="1.4" /><span>世界</span></button>
-      <button type="button" :class="{ active: assetsOpen }" :aria-expanded="assetsOpen" title="素材库" aria-label="素材库" v-if="!readOnly" @click="toggleAssets"><icon-package :size="23" stroke="1.4" /><span>素材</span></button>
-      <button type="button" :class="{ active: brushPanelOpen }" :aria-expanded="brushPanelOpen" :disabled="locked" aria-label="画笔，地形与物件绘制" title="画笔" @click="toggleBrushPanel"><icon-brush :size="23" stroke="1.4" /><span>画笔</span></button>
+      <button type="button" :class="{ active: editorPanel === 'view' }" :aria-expanded="editorPanel === 'view'" :disabled="locked || shotScoped" aria-label="世界设置" title="世界" @click="toggleView"><icon-world :size="23" stroke="1.4" /><span>世界</span></button>
+      <button type="button" :class="{ active: assetsOpen }" :aria-expanded="assetsOpen" title="素材库" aria-label="素材库" :disabled="locked || shotScoped" v-if="!readOnly" @click="toggleAssets"><icon-package :size="23" stroke="1.4" /><span>素材</span></button>
+      <button type="button" :class="{ active: brushPanelOpen }" :aria-expanded="brushPanelOpen" :disabled="locked || shotScoped" aria-label="画笔，地形与物件绘制" title="画笔" @click="toggleBrushPanel"><icon-brush :size="23" stroke="1.4" /><span>画笔</span></button>
       <button type="button" :class="{ active: editorPanel === 'life', hinting: performanceHint && editorPanel !== 'life' }" :aria-expanded="editorPanel === 'life'" :disabled="operationLocked" aria-label="场景演绎" :title="performanceHint ? '演绎：播放、一键分镜、导出镜头表' : '演绎'" @click="toggleLife"><icon-heartbeat :size="23" stroke="1.4" /><span>演绎</span></button>
     </nav>
     <transition v-bind="panelTransition">
@@ -300,7 +300,7 @@
             <div v-if="compacting && !aiController" class="compactionStatus" role="status"><el-icon class="is-loading" aria-hidden="true"><icon-loader-2 :size="14" /></el-icon><span>正在压缩上下文…</span><button type="button" aria-label="停止压缩" title="停止压缩" @click="compactionController?.abort()"><icon-x :size="12" /></button></div>
           </section>
         </transition>
-        <div v-if="!modelValue.objects.length && !isPerformanceConversation && !aiController" class="setTemplates" role="group" aria-label="一键布景"><el-popover v-if="!upstreamPrevis" trigger="click" placement="top-start" :width="320" popperClass="pasteScriptPopover"><template #reference><button type="button" class="scriptPaste" :disabled="locked" title="粘贴一场戏的剧本（“角色：台词”），按地点搭景、按角色站位、按对白分镜"><icon-movie :size="13" /><span>粘贴剧本</span></button></template><div class="pasteScript" @keydown.stop><textarea v-model="pastedScript" rows="7" maxlength="6000" aria-label="剧本" placeholder="第7场 客栈大堂 夜 内&#10;店小二：客官，小店打烊了。&#10;林冲（冷笑）：给我一壶酒。&#10;（店小二转身离去）" /><button type="button" :disabled="locked || !pastedScript.trim()" @click="previsFromScript(pastedScript)">一键预演</button></div></el-popover><button v-if="upstreamPrevis" type="button" class="scriptPrevis" :disabled="locked" :title="upstreamPrevis" @click="previsFromUpstream"><icon-movie :size="13" /><span>按剧本一键预演</span></button><span class="setGenres"><button v-for="genre in setTemplateGenres" :key="genre" type="button" :class="{ active: setGenre === genre }" :aria-pressed="setGenre === genre" :title="setGenre === genre ? '显示全部布景' : `只看${genre}布景`" @click="setGenre = setGenre === genre ? '' : genre"><component :is="setTemplateIcons[genre]" :size="12" /><span>{{ genre }}</span></button></span><button v-for="template in visibleSetTemplates" :key="template.id" type="button" :disabled="locked" :title="`一键搭好${template.name}（${template.genre}），每件都可再改`" @click="applySetTemplate(template)"><component :is="setTemplateIcons[template.genre]" :size="13" /><span>{{ template.name }}</span></button></div>
+        <div v-if="!modelValue.objects.length && !isPerformanceConversation && !aiController" class="setTemplates" role="group" aria-label="一键布景"><el-popover v-if="!upstreamPrevis" trigger="click" placement="top-start" :width="320" popperClass="pasteScriptPopover truman-host-popup"><template #reference><button type="button" class="scriptPaste" :disabled="locked" title="粘贴一场戏的剧本（“角色：台词”），按地点搭景、按角色站位、按对白分镜"><icon-movie :size="13" /><span>粘贴剧本</span></button></template><div class="pasteScript" @keydown.stop><textarea v-model="pastedScript" rows="7" maxlength="6000" aria-label="剧本" placeholder="第7场 客栈大堂 夜 内&#10;店小二：客官，小店打烊了。&#10;林冲（冷笑）：给我一壶酒。&#10;（店小二转身离去）" /><button type="button" :disabled="locked || !pastedScript.trim()" @click="previsFromScript(pastedScript)">一键预演</button></div></el-popover><button v-if="upstreamPrevis" type="button" class="scriptPrevis" :disabled="locked" :title="upstreamPrevis" @click="previsFromUpstream"><icon-movie :size="13" /><span>按剧本一键预演</span></button><span class="setGenres"><button v-for="genre in setTemplateGenres" :key="genre" type="button" :class="{ active: setGenre === genre }" :aria-pressed="setGenre === genre" :title="setGenre === genre ? '显示全部布景' : `只看${genre}布景`" @click="setGenre = setGenre === genre ? '' : genre"><component :is="setTemplateIcons[genre]" :size="12" /><span>{{ genre }}</span></button></span><button v-for="template in visibleSetTemplates" :key="template.id" type="button" :disabled="locked" :title="`一键搭好${template.name}（${template.genre}），每件都可再改`" @click="applySetTemplate(template)"><component :is="setTemplateIcons[template.genre]" :size="13" /><span>{{ template.name }}</span></button></div>
         <div v-if="isPerformanceConversation" class="promptAnchorRow"><span class="promptAnchorChip"><icon-heartbeat :size="14" /><span>演绎 · {{ performanceContextLabel }}</span><button type="button" :disabled="locked" aria-label="退出演绎对话" title="返回场景对话" @click="clearPerformanceConversation"><icon-x :size="13" /></button></span></div>
         <div v-if="sceneAnchor" class="promptAnchorRow"><span class="promptAnchorChip" :title="sceneAnchorTitle"><component :is="sceneAnchor.kind === 'object' ? IconPackage : IconFocusCentered" :size="14" /><span>{{ sceneAnchorName }}</span><small v-if="sceneAnchor.kind === 'point'">{{ sceneAnchorCoordinates }}</small><button type="button" aria-label="移除选中锚点" title="移除锚点" @click="clearSceneAnchor"><icon-x :size="13" /></button></span></div>
         <section v-if="promptQueue.length" class="promptQueue" aria-label="排队消息">
@@ -424,7 +424,7 @@ const props = defineProps<{
   importModel: (file: File, signal: AbortSignal) => Promise<SceneAsset>;
   projectModels?: SceneAsset[];
   allowLocalImport?: boolean;
-  saving?: boolean; statusMessage?: string; error?: string; readOnly?: boolean; beforeExport?: (signal: AbortSignal) => Promise<void>;
+  saving?: boolean; interactionLocked?: boolean; statusMessage?: string; error?: string; readOnly?: boolean; shotScoped?: boolean; beforeExport?: (signal: AbortSignal) => Promise<void>;
   aiModels?: AiModel[]; modelsLoading?: boolean;
   canSnapshotRuntime?: () => boolean;
   /**
@@ -1157,9 +1157,9 @@ const sceneAnchorName = computed(() => {
 const sceneAnchorCoordinates = computed(() => sceneAnchor.value ? [sceneAnchor.value.position.x, sceneAnchor.value.position.y, sceneAnchor.value.position.z].map(round).join(", ") : "");
 const sceneAnchorTitle = computed(() => `${sceneAnchorName.value} · XYZ（m）：${sceneAnchorCoordinates.value}`);
 const terrainMinRadius = computed(() => Math.max(1, Math.ceil((props.modelValue.terrain?.size ?? 80) / (props.modelValue.terrain?.segments ?? 64) * 2) / 2));
-const operationLocked = computed(() => !!busy.value || !!props.saving);
+const operationLocked = computed(() => !!busy.value || !!props.saving || !!props.interactionLocked);
 const locked = computed(() => props.readOnly || operationLocked.value);
-const navigationEnabled = computed(() => !props.saving);
+const navigationEnabled = computed(() => !props.saving && !props.interactionLocked);
 function round(value: number) { return Math.round(value * 1000) / 1000; }
 function viewportDocument(value = props.modelValue) {
   value = aiPreviewDocument.value && aiController.value ? { ...mergedAiPreview(value).merged, view: value.view, time: value.time } : value;
@@ -5917,7 +5917,30 @@ function hostPlayPreview() {
   seekFilm(0);
   setFilmPreview(true);
 }
-defineExpose({ flushView, stageProbe: () => viewport?.createStageProbe(), hostReady, hostStatus, runHostEvent, hostClose: requestClose, hostIsBusy: () => !!busy.value, hostBuildScript, hostPlayPreview });
+async function hostCaptureReference(kind: "frame" | "clip", cameraId: string) {
+  await hostReady();
+  if (locked.value) throw hostBusyError();
+  const plan = programShots();
+  if (!plan) throw new Error("请先为机位设置镜头段");
+  const index = plan.segments.findIndex(segment => segment.cameraId === cameraId);
+  if (index < 0) throw new Error("该机位没有成片镜头段，请先安排镜头");
+  if (kind === "frame") {
+    const camera = plan.cameras.find(camera => camera.id === cameraId)!;
+    busy.value = "截取机位画面";
+    try {
+      const blob = await viewport!.capture(viewport!.getCameraPose(camera.id) ?? camera.frame, 1280, "image/png");
+      return {file: new File([blob], "镜头当前帧.png", {type: "image/png"}), number: index + 1};
+    } finally { busy.value = ""; }
+  }
+  const files: File[] = [];
+  fileSink = file => files.push(file);
+  try {
+    const result = await runExport([kind === "frame" ? "frames" : "clips"], "files", 1280, new Set([index + 1]));
+    if (!result || !files.length) throw new Error(notice.value || "预演导出未完成");
+    return {file: files[0], number: index + 1};
+  } finally { fileSink = undefined; }
+}
+defineExpose({ hostCaptureReference, flushView, stageProbe: () => viewport?.createStageProbe(), hostReady, hostStatus, runHostEvent, hostClose: requestClose, hostIsBusy: () => !!busy.value, hostBuildScript, hostPlayPreview });
 </script>
 
 <style scoped lang="scss">

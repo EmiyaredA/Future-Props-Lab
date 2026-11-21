@@ -19,6 +19,7 @@ from studio.assembly.independent.runtime_options import (
 from studio.contracts.agent_runtime.connections import ConnectionOptions
 from studio.contracts.gateway.routing import RouteCatalog
 from studio.runtime.database.migrations import apply
+from studio.runtime.http.agent_admission import AGENT_ADMISSION_MOUNT
 from studio.runtime.lifecycle.locking import service_lock
 
 
@@ -55,6 +56,7 @@ def main():
             parser.error("原生配置须为本用户独占且有效的普通文件")
     app = create_app(
         transport=runtime.transport(),
+        admission_root=runtime.path(AGENT_ADMISSION_MOUNT),
         state_root=args.state_root,
         public_key=public_key,
         catalog=RouteCatalog.read(args.catalog),

@@ -1,3 +1,4 @@
+import { ReferenceKindTag } from "./ReferenceKindTag";
 import { CardReferencePicker } from "../creative/CardReferencePicker";
 import { LoadingScene } from "@shared/ui/LoadingScene";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
@@ -198,6 +199,7 @@ export function ProjectMediaPicker({
   compactStrip = false,
   addRequest,
   renderItemTools,
+  referenceCardIds,
   label,
   kind = "image",
   value,
@@ -218,6 +220,7 @@ export function ProjectMediaPicker({
   projectId: string;
   compactStrip?: boolean;
   addRequest?: { id: number; action: "upload" | "project" | "cross" };
+  referenceCardIds?: Record<string, string>;
   renderItemTools?: (
     file: ManagedFile,
     order: { index: number; total: number; move: (to: number) => void },
@@ -708,6 +711,10 @@ export function ProjectMediaPicker({
                   >
                     <span className="generation-media-preview">
                       <GenerationMediaPreview file={file} />
+                      <ReferenceKindTag
+                        assetId={file.id}
+                        cardId={referenceCardIds?.[file.id]}
+                      />
                     </span>
                   </button>
                   {linked ? null : (

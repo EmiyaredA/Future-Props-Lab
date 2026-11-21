@@ -5,7 +5,7 @@
       <i class="cameraDot" aria-hidden="true" />
       <strong class="cameraName" :title="name">{{ name }}</strong>
       <span v-if="rangeLabel" class="rangeChip">{{ rangeLabel }}</span>
-      <el-popover v-if="formats.length" trigger="click" placement="bottom-end" :width="150" popperClass="filmFormatPopover">
+      <el-popover v-if="formats.length" trigger="click" placement="bottom-end" :width="150" popperClass="filmFormatPopover truman-host-popup">
         <template #reference><button type="button" class="formatChip" :disabled="disabled" title="成片画幅：横屏、宽银幕、竖屏短剧" @pointerdown.stop>{{ format }}</button></template>
         <div class="filmFormats" role="menu" aria-label="成片画幅">
           <button v-for="item in formats" :key="item.key" type="button" role="menuitemradio" :aria-checked="item.key === format" :class="{ active: item.key === format }" @click="emit('format', item.key)"><i :style="{ aspectRatio: String(item.aspect) }" />{{ item.name }}</button>
@@ -23,7 +23,7 @@
         <span v-if="!monitor && tracking" class="trackChip" :class="tracking" @pointerdown.stop>
           <icon-target :size="12" /><span>{{ trackName }}</span>
           <button type="button" :disabled="disabled" :title="tracking === 'aim' ? '改为跟拍：整台机位跟着走' : '改为瞄准：机位不动只转云台'" @click="emit('trackMode', tracking === 'aim' ? 'follow' : 'aim')">{{ tracking === 'aim' ? '瞄准' : '跟拍' }}</button>
-          <el-popover trigger="click" placement="bottom-end" :width="260" popperClass="cameraFeelPopover" :disabled="disabled">
+          <el-popover trigger="click" placement="bottom-end" :width="260" popperClass="cameraFeelPopover truman-host-popup" :disabled="disabled">
             <template #reference><button type="button" class="gimbalToggle" :disabled="disabled" aria-label="云台手感" title="云台手感：防抖、平滑、死区、限位"><icon-adjustments-horizontal :size="11" /></button></template>
             <div class="feelRows" role="group" aria-label="云台手感" @keydown.stop>
               <label v-for="item in gimbalFields" :key="item.key" class="feelRow" :title="item.title">
@@ -37,7 +37,7 @@
         </span>
         <span v-if="trackPicking" class="pickHint" aria-live="polite"><icon-target :size="13" />点场景里的物体</span>
         <div class="readouts" @pointerdown.stop>
-          <el-popover v-if="!monitor" trigger="click" placement="top-start" :width="210" popperClass="cameraFeelPopover" :disabled="disabled">
+          <el-popover v-if="!monitor" trigger="click" placement="top-start" :width="210" popperClass="cameraFeelPopover truman-host-popup" :disabled="disabled">
             <template #reference><button type="button" class="focalReadout focalButton" :class="{ live: zooming }" :disabled="disabled" title="焦段：点开输入精确数值或选常用定焦">{{ Math.round(focalLength) }}mm</button></template>
             <div class="feelRows" role="group" aria-label="焦段" @keydown.stop>
               <label class="feelRow focalRow"><span>焦段</span><el-input-number :modelValue="Math.round(focalLength)" :min="12" :max="200" :step="1" size="small" controlsPosition="right" aria-label="焦段毫米" @change="value => setFocal(Number(value))" /><output>mm</output></label>
@@ -56,7 +56,7 @@
         <template v-if="!monitor">
           <button type="button" :class="{ active: drawingPath }" :disabled="disabled" aria-label="画轨迹" title="画轨迹：拖出机位走的路线，按住 Shift 升降" @pointerdown.stop @click="emit('drawPath')"><icon-route :size="15" /></button>
           <button type="button" :class="{ active: keyActive }" :disabled="disabled || !hasShot" aria-label="加关键点" :title="hasShot ? '在播放头处加镜头关键点：之后滚轮调焦段、右键转向、Q/E 翻滚都记到这个点' : '先在时间轴上框出一段镜头'" @pointerdown.stop @click="emit('addKey')"><icon-keyframe :size="15" /></button>
-          <el-popover trigger="click" placement="top-end" :width="260" popperClass="cameraFeelPopover" :disabled="disabled || !hasShot">
+          <el-popover trigger="click" placement="top-end" :width="260" popperClass="cameraFeelPopover truman-host-popup" :disabled="disabled || !hasShot">
             <template #reference><button type="button" :class="{ active: shake > 0 }" :disabled="disabled || !hasShot" aria-label="这段镜头" :title="hasShot ? '这段镜头：景别、角度、运镜、手持晃动、缓动' : '先在时间轴上框出一段镜头'" @pointerdown.stop><icon-movie :size="15" /></button></template>
             <div class="feelRows" role="group" aria-label="这段镜头" @keydown.stop>
               <div class="cameraMoves" role="group" aria-label="景别"><span>景别</span><div><button v-for="size in shotSizes" :key="size.kind" type="button" :title="size.title + '（按跟拍或注视的人算焦段，焦段不够时前后挪机位）'" @click="emit('shotSize', size.kind)">{{ size.name }}</button></div></div>

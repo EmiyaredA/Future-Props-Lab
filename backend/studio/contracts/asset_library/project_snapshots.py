@@ -35,7 +35,7 @@ class ProjectSnapshotManifest(BaseModel):
 
 
 class ProjectSnapshotImportWarning(BaseModel):
-    code: Literal["model_binding_unavailable"]
+    code: Literal["model_binding_unavailable", "storyboard_cards_detached"]
     field: str
     message: str
 

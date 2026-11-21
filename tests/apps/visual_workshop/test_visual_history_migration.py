@@ -324,6 +324,21 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
     )
     with website(config, source_port) as (client, origin):
         owner, path, canvas, ids, blobs, placements, edit = seed_project(client, origin)
+        storyboard = client.put(
+            path + "/storyboard",
+            headers={"Origin": origin, "X-CSRF-Token": client.cookies["fpl_csrf"]},
+            json={
+                "expected_revision": 0,
+                "shots": [{"id": str(uuid4()), "title": "迁移镜头", "description": "保留规划内容"}],
+            },
+        )
+        assert storyboard.status_code == 200, storyboard.text
+        links = client.put(
+            path + "/creation-links",
+            headers={"Origin": origin, "X-CSRF-Token": client.cookies["fpl_csrf"]},
+            json={"expected_revision": 0, "scenes": [], "objects": []},
+        )
+        assert links.status_code == 200, links.text
     children, submitted = asyncio.run(
         seed_history(runtime / legacy_snapshot.DATABASE, owner, path.rsplit("/", 1)[-1], *ids)
     )
@@ -393,6 +408,8 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
         assert {row["dataset"]: row["record_count"] for row in report} == {
             "visual.projects": 1,
             "visual.canvases": 1,
+            "visual.storyboards": 1,
+            "visual.creation-links": 1,
             "visual.outputs": 3,
             "visual.canvas-pins": 1,
             "visual.operation-receipts": 1,
@@ -426,6 +443,21 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
         reference_dataset = next(
             item for item in RECORDS if item.name == "visual.acceptance-asset-references"
         )
+        storyboard_dataset = next(item for item in RECORDS if item.name == "visual.storyboards")
+        planned = [
+            item
+            for page in pages(client, visual_target, headers, plan, owner, storyboard_dataset)
+            for item in page.batch.records
+        ]
+        links_dataset = next(row for row in RECORDS if row.name == "visual.creation-links")
+        linked = [
+            item
+            for page in pages(client, visual_target, headers, plan, owner, links_dataset)
+            for item in page.batch.records
+        ]
+        assert linked[0].revision == 1
+        assert planned[0].revision == 1
+        assert planned[0].shots[0].title == "迁移镜头"
         references = [
             item
             for page in pages(client, visual_target, headers, plan, owner, reference_dataset)
@@ -458,11 +490,21 @@ def test_visual_history_preserves_canvas_output_placement_and_rollback(tmp_path)
         login = client.post("/v1/auth/login", json={"username": "e2e-admin", "password": PASSWORD})
         assert login.status_code == 200, login.text
         assert client.get(path + "/canvas").json() == canvas
+        assert client.get(path + "/storyboard").json()["shots"][0]["title"] == "迁移镜头"
+        assert client.get(path + "/creation-links").json()["revision"] == 1
         assert client.get(path + "/conversations").status_code == 404
         review = client.get(path + "/acceptance/runs/old-review")
-        assert review.status_code == 200, review.text
-        assert review.json()["revision"] == 6
-        assert review.json()["evidence"][0]["asset_id"] == ids[1]
+        assert review.status_code == 410, review.text
+        # Public review APIs are retired; the recovered record and evidence remain intact.
+        import sqlite3
+
+        with sqlite3.connect(recovered / ".runtime" / legacy_snapshot.DATABASE) as db:
+            historical = db.execute(
+                "SELECT revision, evidence FROM visual_acceptance_runs WHERE id = ?",
+                ("old-review",),
+            ).fetchone()
+        assert historical[0] == 6
+        assert json.loads(historical[1])[0]["asset_id"] == ids[1]
 
         for asset_id, blob in zip(ids, blobs, strict=True):
             assert client.get(f"/v1/files/{asset_id}/download").content == blob

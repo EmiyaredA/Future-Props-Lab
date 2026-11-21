@@ -11,26 +11,6 @@ class Visual:
     def __init__(self, client):
         self._client = client
 
-    def list_acceptance_templates(self) -> models.AcceptanceTemplateListOut:
-        'List Acceptance Templates. GET /v1/visual-workshop/acceptance-templates'
-        return self._client._call('GET', '/v1/visual-workshop/acceptance-templates', parameters=[], response_type=models.AcceptanceTemplateListOut)
-
-    def create_acceptance_template(self, *, body: models.AcceptanceTemplateWriteIn | dict) -> models.AcceptanceTemplateOut:
-        'Create Acceptance Template. POST /v1/visual-workshop/acceptance-templates'
-        return self._client._call('POST', '/v1/visual-workshop/acceptance-templates', parameters=[], body=body, media_type='application/json', response_type=models.AcceptanceTemplateOut)
-
-    def delete_acceptance_template(self, *, template_id: str, expected_revision: int) -> dict[str, bool]:
-        'Delete Acceptance Template. DELETE /v1/visual-workshop/acceptance-templates/{template_id}'
-        return self._client._call('DELETE', '/v1/visual-workshop/acceptance-templates/{template_id}', parameters=[('template_id', 'path', template_id), ('expected_revision', 'query', expected_revision)], response_type=dict[str, bool])
-
-    def update_acceptance_template(self, *, template_id: str, body: models.AcceptanceTemplateWriteIn | dict) -> models.AcceptanceTemplateOut:
-        'Update Acceptance Template. PUT /v1/visual-workshop/acceptance-templates/{template_id}'
-        return self._client._call('PUT', '/v1/visual-workshop/acceptance-templates/{template_id}', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.AcceptanceTemplateOut)
-
-    def acceptance_catalog(self) -> models.NodeAcceptanceCatalogOut:
-        'Acceptance Catalog. GET /v1/visual-workshop/acceptance/catalog'
-        return self._client._call('GET', '/v1/visual-workshop/acceptance/catalog', parameters=[], response_type=models.NodeAcceptanceCatalogOut)
-
     def list_account_asset_cards(self) -> list[models.CardOut]:
         'List Account Asset Cards. GET /v1/visual-workshop/asset-cards'
         return self._client._call('GET', '/v1/visual-workshop/asset-cards', parameters=[], response_type=list[models.CardOut])
@@ -74,58 +54,6 @@ class Visual:
     def patch_project(self, *, project_id: str, body: models.VisualWorkshopProjectPatchIn | dict) -> models.VisualWorkshopProjectOut:
         'Patch Project. PATCH /v1/visual-workshop/projects/{project_id}'
         return self._client._call('PATCH', '/v1/visual-workshop/projects/{project_id}', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VisualWorkshopProjectOut)
-
-    def list_acceptance_models(self, *, project_id: str) -> models.AcceptanceModelListOut:
-        'List Acceptance Models. GET /v1/visual-workshop/projects/{project_id}/acceptance/models'
-        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/models', parameters=[('project_id', 'path', project_id)], response_type=models.AcceptanceModelListOut)
-
-    def get_acceptance_repair(self, *, project_id: str, draft_id: str) -> models.AcceptanceRepairOut:
-        'Get Acceptance Repair. GET /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}'
-        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}', parameters=[('project_id', 'path', project_id), ('draft_id', 'path', draft_id)], response_type=models.AcceptanceRepairOut)
-
-    def save_acceptance_repair(self, *, project_id: str, draft_id: str, body: models.AcceptanceRepairWriteIn | dict) -> models.AcceptanceRepairOut:
-        'Save Acceptance Repair. PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}'
-        return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}', parameters=[('project_id', 'path', project_id), ('draft_id', 'path', draft_id)], body=body, media_type='application/json', response_type=models.AcceptanceRepairOut)
-
-    def list_acceptance_runs(self, *, project_id: str, node_id: str | None | Unset = UNSET, page: int | Unset = UNSET) -> models.AcceptanceRunListOut:
-        'List Acceptance Runs. GET /v1/visual-workshop/projects/{project_id}/acceptance/runs'
-        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/runs', parameters=[('project_id', 'path', project_id), ('node_id', 'query', node_id), ('page', 'query', page)], response_type=models.AcceptanceRunListOut)
-
-    def start_acceptance_runs(self, *, project_id: str, body: models.AcceptanceRunCreateIn | dict) -> models.AcceptanceRunListOut:
-        'Start Acceptance Runs. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs'
-        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.AcceptanceRunListOut)
-
-    def get_acceptance_run(self, *, project_id: str, run_id: str) -> models.AcceptanceRunOut:
-        'Get Acceptance Run. GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}'
-        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id)], response_type=models.AcceptanceRunOut)
-
-    def cancel_acceptance_run(self, *, project_id: str, run_id: str, expected_revision: int) -> models.AcceptanceRunOut:
-        'Cancel Acceptance Run. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel'
-        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id), ('expected_revision', 'query', expected_revision)], response_type=models.AcceptanceRunOut)
-
-    def decide_acceptance_run(self, *, project_id: str, run_id: str, body: models.AcceptanceDecisionIn | dict) -> models.AcceptanceRunOut:
-        'Decide Acceptance Run. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions'
-        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.AcceptanceRunOut)
-
-    def create_acceptance_repair(self, *, project_id: str, run_id: str) -> models.AcceptanceRepairOut:
-        'Create Acceptance Repair. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts'
-        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id)], response_type=models.AcceptanceRepairOut)
-
-    def sample_acceptance_video(self, *, project_id: str, run_id: str, body: models.AcceptanceSampleIn | dict) -> models.AcceptanceRunOut:
-        'Sample Acceptance Video. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples'
-        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.AcceptanceRunOut)
-
-    def get_acceptance_standard(self, *, project_id: str) -> models.AcceptanceStandardOut:
-        'Get Acceptance Standard. GET /v1/visual-workshop/projects/{project_id}/acceptance/standard'
-        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/standard', parameters=[('project_id', 'path', project_id)], response_type=models.AcceptanceStandardOut)
-
-    def save_acceptance_standard(self, *, project_id: str, body: models.AcceptanceStandardWriteIn | dict) -> models.AcceptanceStandardOut:
-        'Save Acceptance Standard. PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard'
-        return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/acceptance/standard', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.AcceptanceStandardOut)
-
-    def acceptance_summary(self, *, project_id: str) -> models.AcceptanceSummaryOut:
-        'Acceptance Summary. GET /v1/visual-workshop/projects/{project_id}/acceptance/summary'
-        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/summary', parameters=[('project_id', 'path', project_id)], response_type=models.AcceptanceSummaryOut)
 
     def list_visual_asset_cards(self, *, project_id: str) -> list[models.CardOut]:
         'List Visual Asset Cards. GET /v1/visual-workshop/projects/{project_id}/asset-cards'
@@ -171,21 +99,17 @@ class Visual:
         'Apply Canvas Operations. POST /v1/visual-workshop/projects/{project_id}/canvas/operations'
         return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/canvas/operations', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VisualCanvasDocumentOut)
 
+    def get_creation_links(self, *, project_id: str) -> models.CreationLinksOut:
+        'Get Creation Links. GET /v1/visual-workshop/projects/{project_id}/creation-links'
+        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/creation-links', parameters=[('project_id', 'path', project_id)], response_type=models.CreationLinksOut)
+
+    def save_creation_links(self, *, project_id: str, body: models.CreationLinksUpdate | dict) -> models.CreationLinksOut:
+        'Save Creation Links. PUT /v1/visual-workshop/projects/{project_id}/creation-links'
+        return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/creation-links', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.CreationLinksOut)
+
     def upload_material_node(self, *, project_id: str, body: models.Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post | dict, files: dict | list | None = None) -> models.VisualCanvasDocumentOut:
         'Upload Material Node. POST /v1/visual-workshop/projects/{project_id}/node-uploads'
         return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/node-uploads', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.VisualCanvasDocumentOut)
-
-    def get_node_acceptance(self, *, project_id: str, node_id: str, output_id: str | None | Unset = UNSET) -> models.NodeAcceptanceOut:
-        'Get Node Acceptance. GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance'
-        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id), ('output_id', 'query', output_id)], response_type=models.NodeAcceptanceOut)
-
-    def select_node_acceptance(self, *, project_id: str, node_id: str, body: models.NodeAcceptanceSelectIn | dict) -> models.NodeAcceptanceOut:
-        'Select Node Acceptance. PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance'
-        return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='application/json', response_type=models.NodeAcceptanceOut)
-
-    def start_node_acceptance(self, *, project_id: str, node_id: str, body: models.NodeAcceptanceStartIn | dict) -> models.AcceptanceRunOut:
-        'Start Node Acceptance. POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs'
-        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='application/json', response_type=models.AcceptanceRunOut)
 
     def set_node_final_output(self, *, project_id: str, node_id: str, body: models.VisualNodeFinalOutputIn | dict) -> models.VisualCanvasDocumentOut:
         'Set Node Final Output. PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output'
@@ -247,29 +171,17 @@ class Visual:
         'Export Project Snapshot. GET /v1/visual-workshop/projects/{project_id}/snapshot'
         return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/snapshot', parameters=[('project_id', 'path', project_id)], response_type=Any)
 
+    def get_storyboard(self, *, project_id: str) -> models.StoryboardOut:
+        'Get Visual Storyboard. GET /v1/visual-workshop/projects/{project_id}/storyboard'
+        return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/storyboard', parameters=[('project_id', 'path', project_id)], response_type=models.StoryboardOut)
+
+    def save_storyboard(self, *, project_id: str, body: models.StoryboardUpdate | dict) -> models.StoryboardOut:
+        'Put Visual Storyboard. PUT /v1/visual-workshop/projects/{project_id}/storyboard'
+        return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/storyboard', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.StoryboardOut)
+
 class AsyncVisual:
     def __init__(self, client):
         self._client = client
-
-    async def list_acceptance_templates(self) -> models.AcceptanceTemplateListOut:
-        'List Acceptance Templates. GET /v1/visual-workshop/acceptance-templates'
-        return await self._client._call('GET', '/v1/visual-workshop/acceptance-templates', parameters=[], response_type=models.AcceptanceTemplateListOut)
-
-    async def create_acceptance_template(self, *, body: models.AcceptanceTemplateWriteIn | dict) -> models.AcceptanceTemplateOut:
-        'Create Acceptance Template. POST /v1/visual-workshop/acceptance-templates'
-        return await self._client._call('POST', '/v1/visual-workshop/acceptance-templates', parameters=[], body=body, media_type='application/json', response_type=models.AcceptanceTemplateOut)
-
-    async def delete_acceptance_template(self, *, template_id: str, expected_revision: int) -> dict[str, bool]:
-        'Delete Acceptance Template. DELETE /v1/visual-workshop/acceptance-templates/{template_id}'
-        return await self._client._call('DELETE', '/v1/visual-workshop/acceptance-templates/{template_id}', parameters=[('template_id', 'path', template_id), ('expected_revision', 'query', expected_revision)], response_type=dict[str, bool])
-
-    async def update_acceptance_template(self, *, template_id: str, body: models.AcceptanceTemplateWriteIn | dict) -> models.AcceptanceTemplateOut:
-        'Update Acceptance Template. PUT /v1/visual-workshop/acceptance-templates/{template_id}'
-        return await self._client._call('PUT', '/v1/visual-workshop/acceptance-templates/{template_id}', parameters=[('template_id', 'path', template_id)], body=body, media_type='application/json', response_type=models.AcceptanceTemplateOut)
-
-    async def acceptance_catalog(self) -> models.NodeAcceptanceCatalogOut:
-        'Acceptance Catalog. GET /v1/visual-workshop/acceptance/catalog'
-        return await self._client._call('GET', '/v1/visual-workshop/acceptance/catalog', parameters=[], response_type=models.NodeAcceptanceCatalogOut)
 
     async def list_account_asset_cards(self) -> list[models.CardOut]:
         'List Account Asset Cards. GET /v1/visual-workshop/asset-cards'
@@ -315,58 +227,6 @@ class AsyncVisual:
         'Patch Project. PATCH /v1/visual-workshop/projects/{project_id}'
         return await self._client._call('PATCH', '/v1/visual-workshop/projects/{project_id}', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VisualWorkshopProjectOut)
 
-    async def list_acceptance_models(self, *, project_id: str) -> models.AcceptanceModelListOut:
-        'List Acceptance Models. GET /v1/visual-workshop/projects/{project_id}/acceptance/models'
-        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/models', parameters=[('project_id', 'path', project_id)], response_type=models.AcceptanceModelListOut)
-
-    async def get_acceptance_repair(self, *, project_id: str, draft_id: str) -> models.AcceptanceRepairOut:
-        'Get Acceptance Repair. GET /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}'
-        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}', parameters=[('project_id', 'path', project_id), ('draft_id', 'path', draft_id)], response_type=models.AcceptanceRepairOut)
-
-    async def save_acceptance_repair(self, *, project_id: str, draft_id: str, body: models.AcceptanceRepairWriteIn | dict) -> models.AcceptanceRepairOut:
-        'Save Acceptance Repair. PUT /v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}'
-        return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}', parameters=[('project_id', 'path', project_id), ('draft_id', 'path', draft_id)], body=body, media_type='application/json', response_type=models.AcceptanceRepairOut)
-
-    async def list_acceptance_runs(self, *, project_id: str, node_id: str | None | Unset = UNSET, page: int | Unset = UNSET) -> models.AcceptanceRunListOut:
-        'List Acceptance Runs. GET /v1/visual-workshop/projects/{project_id}/acceptance/runs'
-        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/runs', parameters=[('project_id', 'path', project_id), ('node_id', 'query', node_id), ('page', 'query', page)], response_type=models.AcceptanceRunListOut)
-
-    async def start_acceptance_runs(self, *, project_id: str, body: models.AcceptanceRunCreateIn | dict) -> models.AcceptanceRunListOut:
-        'Start Acceptance Runs. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs'
-        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.AcceptanceRunListOut)
-
-    async def get_acceptance_run(self, *, project_id: str, run_id: str) -> models.AcceptanceRunOut:
-        'Get Acceptance Run. GET /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}'
-        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id)], response_type=models.AcceptanceRunOut)
-
-    async def cancel_acceptance_run(self, *, project_id: str, run_id: str, expected_revision: int) -> models.AcceptanceRunOut:
-        'Cancel Acceptance Run. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel'
-        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id), ('expected_revision', 'query', expected_revision)], response_type=models.AcceptanceRunOut)
-
-    async def decide_acceptance_run(self, *, project_id: str, run_id: str, body: models.AcceptanceDecisionIn | dict) -> models.AcceptanceRunOut:
-        'Decide Acceptance Run. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions'
-        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.AcceptanceRunOut)
-
-    async def create_acceptance_repair(self, *, project_id: str, run_id: str) -> models.AcceptanceRepairOut:
-        'Create Acceptance Repair. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts'
-        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id)], response_type=models.AcceptanceRepairOut)
-
-    async def sample_acceptance_video(self, *, project_id: str, run_id: str, body: models.AcceptanceSampleIn | dict) -> models.AcceptanceRunOut:
-        'Sample Acceptance Video. POST /v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples'
-        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples', parameters=[('project_id', 'path', project_id), ('run_id', 'path', run_id)], body=body, media_type='application/json', response_type=models.AcceptanceRunOut)
-
-    async def get_acceptance_standard(self, *, project_id: str) -> models.AcceptanceStandardOut:
-        'Get Acceptance Standard. GET /v1/visual-workshop/projects/{project_id}/acceptance/standard'
-        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/standard', parameters=[('project_id', 'path', project_id)], response_type=models.AcceptanceStandardOut)
-
-    async def save_acceptance_standard(self, *, project_id: str, body: models.AcceptanceStandardWriteIn | dict) -> models.AcceptanceStandardOut:
-        'Save Acceptance Standard. PUT /v1/visual-workshop/projects/{project_id}/acceptance/standard'
-        return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/acceptance/standard', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.AcceptanceStandardOut)
-
-    async def acceptance_summary(self, *, project_id: str) -> models.AcceptanceSummaryOut:
-        'Acceptance Summary. GET /v1/visual-workshop/projects/{project_id}/acceptance/summary'
-        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/acceptance/summary', parameters=[('project_id', 'path', project_id)], response_type=models.AcceptanceSummaryOut)
-
     async def list_visual_asset_cards(self, *, project_id: str) -> list[models.CardOut]:
         'List Visual Asset Cards. GET /v1/visual-workshop/projects/{project_id}/asset-cards'
         return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/asset-cards', parameters=[('project_id', 'path', project_id)], response_type=list[models.CardOut])
@@ -411,21 +271,17 @@ class AsyncVisual:
         'Apply Canvas Operations. POST /v1/visual-workshop/projects/{project_id}/canvas/operations'
         return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/canvas/operations', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.VisualCanvasDocumentOut)
 
+    async def get_creation_links(self, *, project_id: str) -> models.CreationLinksOut:
+        'Get Creation Links. GET /v1/visual-workshop/projects/{project_id}/creation-links'
+        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/creation-links', parameters=[('project_id', 'path', project_id)], response_type=models.CreationLinksOut)
+
+    async def save_creation_links(self, *, project_id: str, body: models.CreationLinksUpdate | dict) -> models.CreationLinksOut:
+        'Save Creation Links. PUT /v1/visual-workshop/projects/{project_id}/creation-links'
+        return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/creation-links', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.CreationLinksOut)
+
     async def upload_material_node(self, *, project_id: str, body: models.Body_upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post | dict, files: dict | list | None = None) -> models.VisualCanvasDocumentOut:
         'Upload Material Node. POST /v1/visual-workshop/projects/{project_id}/node-uploads'
         return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/node-uploads', parameters=[('project_id', 'path', project_id)], body=body, media_type='multipart/form-data', files=files, response_type=models.VisualCanvasDocumentOut)
-
-    async def get_node_acceptance(self, *, project_id: str, node_id: str, output_id: str | None | Unset = UNSET) -> models.NodeAcceptanceOut:
-        'Get Node Acceptance. GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance'
-        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id), ('output_id', 'query', output_id)], response_type=models.NodeAcceptanceOut)
-
-    async def select_node_acceptance(self, *, project_id: str, node_id: str, body: models.NodeAcceptanceSelectIn | dict) -> models.NodeAcceptanceOut:
-        'Select Node Acceptance. PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance'
-        return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='application/json', response_type=models.NodeAcceptanceOut)
-
-    async def start_node_acceptance(self, *, project_id: str, node_id: str, body: models.NodeAcceptanceStartIn | dict) -> models.AcceptanceRunOut:
-        'Start Node Acceptance. POST /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs'
-        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs', parameters=[('project_id', 'path', project_id), ('node_id', 'path', node_id)], body=body, media_type='application/json', response_type=models.AcceptanceRunOut)
 
     async def set_node_final_output(self, *, project_id: str, node_id: str, body: models.VisualNodeFinalOutputIn | dict) -> models.VisualCanvasDocumentOut:
         'Set Node Final Output. PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output'
@@ -486,3 +342,11 @@ class AsyncVisual:
     async def export_project_snapshot(self, *, project_id: str) -> AsyncDownload:
         'Export Project Snapshot. GET /v1/visual-workshop/projects/{project_id}/snapshot'
         return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/snapshot', parameters=[('project_id', 'path', project_id)], response_type=Any)
+
+    async def get_storyboard(self, *, project_id: str) -> models.StoryboardOut:
+        'Get Visual Storyboard. GET /v1/visual-workshop/projects/{project_id}/storyboard'
+        return await self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/storyboard', parameters=[('project_id', 'path', project_id)], response_type=models.StoryboardOut)
+
+    async def save_storyboard(self, *, project_id: str, body: models.StoryboardUpdate | dict) -> models.StoryboardOut:
+        'Put Visual Storyboard. PUT /v1/visual-workshop/projects/{project_id}/storyboard'
+        return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/storyboard', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.StoryboardOut)

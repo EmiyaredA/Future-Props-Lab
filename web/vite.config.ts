@@ -5,6 +5,7 @@ import {
 } from "./chunkGraph";
 import { mathFontData } from "./mathFontData";
 import { applicationIcons } from "./applicationIcons";
+import { themeBootstrap } from "./themeBootstrap";
 import react from "@vitejs/plugin-react";
 import vue from "@vitejs/plugin-vue";
 import tailwindcss from "@tailwindcss/vite";
@@ -82,6 +83,7 @@ export default defineConfig(({ mode }) => {
         ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
         : undefined,
     plugins: [
+      themeBootstrap(),
       react(),
       vue(),
       tailwindcss(),

@@ -51,8 +51,11 @@ Future Props Lab 是单机部署的模型基础设施管理台。单机可运行
   浏览器历史、普通内部链接与按钮共用未保存保护；保存和离开条件由编辑功能声明，不能由路由层绕过。
   `useWorkshopNavigation` 消费单个工坊模块，不加载总注册表；Studio 通用壳通过 `ApplicationNavigation`
   显式提供所属 URL 根路径，壳和内容共享同一控制器。空闲或同路径点击不重建文档。
+  单页归属用 `exactPaths`，仅工坊子树使用 `roots`；门户的 `/apps` 不得接管工坊的 `/apps/...`。
 - 浏览器启动入口归 `app/entries/`；兼容网站先通过 `website-bootstrap.ts` 建立加载失败反馈，
   再加载 `website.tsx` 的 React 装配。通用 UI 与浏览器 API 测试分别归 `web/tests/shared/` 与 `web/tests/platform/`。
+  所有 HTML 在外部脚本和样式加载前同步解析主题并设置首屏底色，遵守有效的已存偏好，否则跟随系统；
+  初始化不写偏好、不依赖 React，跨应用新文档也不得先绘制默认白底。
 - Web 的 `platform/` 与 `shared/` 不得依赖 `features/` 或 `app/`，`features/` 不得依赖
   `app/`；业务代码不得堆回 `web/src/` 根目录。生产请求通过 OpenAPI 生成类型访问后端，
   `generated/` 文件不得手工编辑。

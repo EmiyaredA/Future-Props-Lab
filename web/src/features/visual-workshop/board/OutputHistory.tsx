@@ -5,9 +5,9 @@ import {
   CancelQueuedTasks,
   CancelQueuedBatch,
 } from "../generation/CancelQueuedTasks";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { Check, Eye, Trash2, Upload, Circle, CircleDot } from "lucide-react";
+import { Check, Eye, Trash2, Upload } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import {
   getNodeOutputs,
@@ -26,8 +26,6 @@ import {
   GenerationSpinner,
 } from "../generation/GenerationActivity";
 import { visualWorkshopQueryKeys } from "../queryKeys";
-import { getNodeAcceptance, acceptanceStateNames } from "../acceptance/nodeApi";
-import { AcceptanceThumbnail } from "../acceptance/ReferenceMaterialRow";
 import { VideoOutputPreview } from "./VideoOutputPreview";
 import { OutputPreview } from "./OutputPreview";
 import type { BoardController } from "./boardTypes";
@@ -39,17 +37,15 @@ export function OutputHistory({
   onPreview,
   tasks = [],
   batches = [],
-  onAcceptance,
-  acceptanceMode = false,
+  properties,
 }: {
-  acceptanceMode?: boolean;
+  properties?: ReactNode;
   controller: BoardController;
   nodeId: string;
   preview?: VisualNodeOutput;
   onPreview: (version?: VisualNodeOutput) => void;
   tasks?: GenerationTask[];
   batches?: GenerationBatch[];
-  onAcceptance?: (output: VisualNodeOutput) => void;
 }) {
   const { run: runTransfer, progress: activeTransferProgress } =
     useTransferProgress();
@@ -58,6 +54,7 @@ export function OutputHistory({
   const activity = nodeGenerationActivity(node, tasks, batches);
   const uploadInput = useRef<HTMLInputElement>(null);
   const [previewBackground, setPreviewBackground] = useState("#000000");
+  const [detailTab, setDetailTab] = useState("versions");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<VisualNodeOutput>();
@@ -94,31 +91,6 @@ export function OutputHistory({
     final.data ??
     items.find((item) => item.id === node.final_output_id) ??
     items[0];
-  const acceptance = useQuery({
-    queryKey: visualWorkshopQueryKeys.nodeAcceptance(
-      controller.projectId,
-      nodeId,
-      showing?.id,
-    ),
-    queryFn: () => getNodeAcceptance(controller.projectId, nodeId, showing?.id),
-    enabled: acceptanceMode && node.kind === "video" && !!showing,
-    refetchInterval: (query) =>
-      ["queued", "processing"].includes(
-        query.state.data?.current_run?.status ?? "",
-      )
-        ? 1500
-        : false,
-  });
-  const inspection = acceptance.data?.current_run;
-  const quality = !inspection
-    ? "未验收"
-    : !acceptance.data?.result_is_current
-      ? "需重新验收"
-      : (acceptanceStateNames[
-          inspection.status === "completed"
-            ? inspection.decision
-            : inspection.status
-        ] ?? "待确认");
   const mutate = async (
     action: (revision: number) => Promise<VisualCanvasDocument>,
   ) => {
@@ -145,7 +117,7 @@ export function OutputHistory({
   };
   return (
     <section
-      className={`board-output-panel${activity ? " is-generating" : ""}${acceptanceMode ? " is-acceptance" : ""}`}
+      className={`board-output-panel${activity ? " is-generating" : ""}`}
       aria-label="节点输出历史"
     >
       <TransferFeedback progress={activeTransferProgress} />
@@ -162,9 +134,6 @@ export function OutputHistory({
                 <Eye size={12} />
                 正在预览 {showing ? `v${showing.version}` : "—"}
               </span>
-              {acceptanceMode && (
-                <span className="board-quality-badge">{quality}</span>
-              )}
               <span className="board-final-badge">
                 <Check size={12} />
                 最终输出{" "}
@@ -255,164 +224,185 @@ export function OutputHistory({
             (batch.status === "queued" || batch.status === "processing"),
         )}
       />
-      <div className="board-output-heading">
-        <h3>
-          输出版本 <small>{history.data?.pages[0].total ?? 0}</small>
-        </h3>
-        {node.kind !== "text" && (
-          <div>
-            <button
-              className="board-upload"
-              disabled={pending}
-              onClick={() => uploadInput.current?.click()}
-            >
-              <Upload size={15} />{" "}
-              {pending ? (
-                <LoadingState variant="inline" label="正在处理…" />
-              ) : (
-                "上传版本"
-              )}
-            </button>
-            <input
-              ref={uploadInput}
-              hidden
-              type="file"
-              disabled={pending}
-              aria-label="上传输出版本"
-              accept={
-                node.kind === "video"
-                  ? "video/*,image/gif,.gif"
-                  : `${node.kind}/*`
-              }
-              onChange={(event) => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
-                if (file)
-                  void mutate((revision) =>
-                    runTransfer((onProgress) =>
-                      uploadNodeOutput(
-                        controller.projectId,
-                        nodeId,
-                        file,
-                        revision,
-                        { onProgress },
+      {properties && (
+        <div
+          className="storyboard-detail-tabs"
+          role="tablist"
+          aria-label="镜头详情"
+        >
+          <button
+            role="tab"
+            id="shot-versions-tab"
+            aria-selected={detailTab === "versions"}
+            aria-controls="shot-versions"
+            onClick={() => setDetailTab("versions")}
+          >
+            输出版本
+          </button>
+          <button
+            role="tab"
+            id="shot-properties-tab"
+            aria-selected={detailTab === "properties"}
+            aria-controls="shot-properties"
+            onClick={() => setDetailTab("properties")}
+          >
+            镜头属性
+          </button>
+        </div>
+      )}
+      {properties && (
+        <div
+          id="shot-properties"
+          role="tabpanel"
+          aria-labelledby="shot-properties-tab"
+          hidden={detailTab !== "properties"}
+        >
+          {properties}
+        </div>
+      )}
+      <div
+        id={properties ? "shot-versions" : undefined}
+        role={properties ? "tabpanel" : undefined}
+        aria-labelledby={properties ? "shot-versions-tab" : undefined}
+        hidden={Boolean(properties) && detailTab !== "versions"}
+      >
+        <div className="board-output-heading">
+          <h3>
+            输出版本 <small>{history.data?.pages[0].total ?? 0}</small>
+          </h3>
+          {node.kind !== "text" && (
+            <div>
+              <button
+                className="board-upload"
+                disabled={pending}
+                onClick={() => uploadInput.current?.click()}
+              >
+                <Upload size={15} />{" "}
+                {pending ? (
+                  <LoadingState variant="inline" label="正在处理…" />
+                ) : (
+                  "上传版本"
+                )}
+              </button>
+              <input
+                ref={uploadInput}
+                hidden
+                type="file"
+                disabled={pending}
+                aria-label="上传输出版本"
+                accept={
+                  node.kind === "video"
+                    ? "video/*,image/gif,.gif"
+                    : `${node.kind}/*`
+                }
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  event.currentTarget.value = "";
+                  if (file)
+                    void mutate((revision) =>
+                      runTransfer((onProgress) =>
+                        uploadNodeOutput(
+                          controller.projectId,
+                          nodeId,
+                          file,
+                          revision,
+                          { onProgress },
+                        ),
                       ),
-                    ),
-                  );
-              }}
-            />
-          </div>
+                    );
+                }}
+              />
+            </div>
+          )}
+        </div>
+        {node.kind === "video" && (
+          <p className="board-muted">
+            支持视频和 GIF；GIF 转为无声 MP4，并另存透明检查视频用于背景预览。
+          </p>
         )}
-      </div>
-      {node.kind === "video" && (
-        <p className="board-muted">
-          支持视频和 GIF；GIF 转为无声 MP4，并另存透明检查视频用于背景预览。
-        </p>
-      )}
-      {error && !deleteTarget && <p role="alert">{error}</p>}
-      {history.isError && (
-        <p role="alert">
-          历史加载失败{" "}
-          <button onClick={() => void history.refetch()}>重试</button>
-        </p>
-      )}
-      <div className="board-version-list">
-        {items.map((item) => (
-          <div key={item.id} className="board-version-entry">
-            <button
-              aria-pressed={showing?.id === item.id}
-              className={`board-version-select${showing?.id === item.id ? " is-preview" : ""}`}
-              onClick={() => onPreview(item)}
-            >
-              {acceptanceMode &&
-                (showing?.id === item.id ? (
-                  <CircleDot className="board-version-radio" size={18} />
-                ) : (
-                  <Circle className="board-version-radio" size={18} />
-                ))}
-              <div className="board-version-thumb">
-                {acceptanceMode && item.asset_id ? (
-                  <AcceptanceThumbnail
-                    assetId={item.asset_id}
-                    kind={item.kind}
-                    alt=""
-                  />
-                ) : (
+        {error && !deleteTarget && <p role="alert">{error}</p>}
+        {history.isError && (
+          <p role="alert">
+            历史加载失败{" "}
+            <button onClick={() => void history.refetch()}>重试</button>
+          </p>
+        )}
+        <div className="board-version-list">
+          {items.map((item) => (
+            <div key={item.id} className="board-version-entry">
+              <button
+                aria-pressed={showing?.id === item.id}
+                className={`board-version-select${showing?.id === item.id ? " is-preview" : ""}`}
+                onClick={() => onPreview(item)}
+              >
+                <div className="board-version-thumb">
                   <OutputPreview
                     kind={item.kind}
                     assetId={item.asset_id}
                     text={item.text}
                     compact
                   />
-                )}
-              </div>
-              <span className="board-version-copy">
-                <strong>
-                  v{item.version}{" "}
-                  {item.id === node.final_output_id && <em>最终输出</em>}
-                </strong>
-                <small>
-                  {outputSource(item.source)}
-                  {acceptanceMode && showing?.id === item.id
-                    ? ` · ${quality}`
-                    : ""}
-                </small>
-              </span>
-            </button>
-            {item.source === "uploaded" && (
-              <button
-                className="board-version-delete"
-                aria-label={`删除上传版本 v${item.version}`}
-                disabled={pending}
-                onClick={() => {
-                  setError("");
-                  setDeleteTarget(item);
-                }}
-              >
-                <Trash2 size={12} /> 删除
+                </div>
+                <span className="board-version-copy">
+                  <strong>
+                    v{item.version}{" "}
+                    {item.id === node.final_output_id && <em>最终输出</em>}
+                  </strong>
+                  <small>{outputSource(item.source)}</small>
+                </span>
               </button>
+              {item.source === "uploaded" && (
+                <button
+                  className="board-version-delete"
+                  aria-label={`删除上传版本 v${item.version}`}
+                  disabled={pending}
+                  onClick={() => {
+                    setError("");
+                    setDeleteTarget(item);
+                  }}
+                >
+                  <Trash2 size={12} /> 删除
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        {history.hasNextPage && (
+          <button
+            disabled={history.isFetchingNextPage}
+            onClick={() => void history.fetchNextPage()}
+          >
+            加载更早版本
+          </button>
+        )}
+        {showing && (
+          <div className="board-version-details">
+            <span>
+              {outputSource(showing.source)} ·{" "}
+              {new Date(showing.created_at).toLocaleString("zh-CN")}
+            </span>
+            {showing.id !== node.final_output_id && (
+              <>
+                <button onClick={() => onPreview(undefined)}>
+                  返回最终版本
+                </button>
+                <button
+                  disabled={pending}
+                  onClick={() => {
+                    setError("");
+                    setDeleteTarget(showing);
+                  }}
+                >
+                  删除当前历史版本
+                </button>
+              </>
             )}
           </div>
-        ))}
+        )}
+        {!history.isLoading && !items.length && (
+          <p className="board-muted">生成或上传素材后，版本将在这里保留。</p>
+        )}
       </div>
-      {history.hasNextPage && (
-        <button
-          disabled={history.isFetchingNextPage}
-          onClick={() => void history.fetchNextPage()}
-        >
-          加载更早版本
-        </button>
-      )}
-      {showing && onAcceptance && (
-        <button className="board-upload" onClick={() => onAcceptance(showing)}>
-          验收当前版本
-        </button>
-      )}
-      {showing && (
-        <div className="board-version-details">
-          <span>
-            {outputSource(showing.source)} ·{" "}
-            {new Date(showing.created_at).toLocaleString("zh-CN")}
-          </span>
-          {showing.id !== node.final_output_id && (
-            <>
-              <button onClick={() => onPreview(undefined)}>返回最终版本</button>
-              <button
-                disabled={pending}
-                onClick={() => {
-                  setError("");
-                  setDeleteTarget(showing);
-                }}
-              >
-                删除当前历史版本
-              </button>
-            </>
-          )}
-        </div>
-      )}
-      {!history.isLoading && !items.length && (
-        <p className="board-muted">生成或上传素材后，版本将在这里保留。</p>
-      )}
       <ConfirmDialog
         open={!!deleteTarget}
         title={`删除输出版本 v${deleteTarget?.version ?? ""}`}

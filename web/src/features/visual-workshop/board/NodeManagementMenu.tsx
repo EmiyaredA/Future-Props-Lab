@@ -1,9 +1,8 @@
-import { Check, Download, Pencil, Tags, Trash2 } from "lucide-react";
+import { Check, Download, Pencil, Trash2 } from "lucide-react";
 import type { VisualCanvasNode } from "../api";
 import { BoardMenu } from "./BoardMenu";
 
-export type NodeManagementAction =
-  "rename" | "organize" | "delete" | "download" | "approve";
+export type NodeManagementAction = "rename" | "delete" | "download" | "approve";
 
 export function NodeManagementMenu({
   node,
@@ -35,11 +34,6 @@ export function NodeManagementMenu({
           label: "重命名",
           icon: <Pencil size={14} aria-hidden />,
           onSelect: () => onAction("rename", node),
-        },
-        {
-          label: "分类与标签",
-          icon: <Tags size={14} aria-hidden />,
-          onSelect: () => onAction("organize", node),
         },
         {
           label: "删除节点",

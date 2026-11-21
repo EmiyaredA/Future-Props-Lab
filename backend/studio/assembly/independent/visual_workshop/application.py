@@ -13,16 +13,11 @@ from studio.apps.asset_library.clients.archive_transfer import (
     SnapshotArchiveAsset,
 )
 from studio.apps.identity.clients.authorization import LiveAuthorization
-from studio.apps.visual_workshop.acceptance.acceptance_options import (
-    router as acceptance_options_router,
-)
-from studio.apps.visual_workshop.acceptance.review_routes import router as review_router
-from studio.apps.visual_workshop.acceptance.standard_routes import router as standard_router
+from studio.apps.visual_workshop.acceptance.retirement import retire_pending_reviews
 from studio.apps.visual_workshop.composition.composition_runner import CompositionRunner
 from studio.apps.visual_workshop.generation.generation_runner import GenerationRunner
 from studio.apps.visual_workshop.generation_routes import reads as generation_records_router
 from studio.apps.visual_workshop.handoffs.segment_handoffs import SegmentHandoffs
-from studio.apps.visual_workshop.review.review_runner import ReviewRunner
 from studio.apps.visual_workshop.snapshots.snapshot_exports import SnapshotSettings
 from studio.apps.visual_workshop.snapshots.snapshot_imports import SnapshotDelivery, SnapshotImports
 from studio.apps.visual_workshop.storage.migrations.registry import MIGRATIONS
@@ -32,17 +27,13 @@ from studio.apps.visual_workshop.storage.service_models import (
     VisualCanvasReferenceMutation,
     VisualCertificationReceipt,
 )
-from studio.apps.visual_workshop.transport.acceptance_nodes_http import (
-    router as acceptance_nodes_router,
-)
-from studio.apps.visual_workshop.transport.acceptance_samples_http import router as samples_router
-from studio.apps.visual_workshop.transport.catalog_http import (
-    acceptance as acceptance_catalog_router,
-)
 from studio.apps.visual_workshop.transport.catalog_http import (
     generation as generation_catalog_router,
 )
 from studio.apps.visual_workshop.transport.composition_http import router as composition_router
+from studio.apps.visual_workshop.transport.creation_links_http import (
+    router as creation_links_router,
+)
 from studio.apps.visual_workshop.transport.creative_asset_scope import (
     independent_creative_asset_scope,
 )
@@ -51,7 +42,9 @@ from studio.apps.visual_workshop.transport.generation_http import router as gene
 from studio.apps.visual_workshop.transport.outputs_http import router as outputs_router
 from studio.apps.visual_workshop.transport.previs_http import router as previs_router
 from studio.apps.visual_workshop.transport.projects_http import router as project_router
-from studio.apps.visual_workshop.transport.repair_routes import router as repair_router
+from studio.apps.visual_workshop.transport.retired_acceptance_http import (
+    router as retired_visual_reviews,
+)
 from studio.apps.visual_workshop.transport.review_authority_http import (
     router as review_authority_router,
 )
@@ -62,6 +55,7 @@ from studio.apps.visual_workshop.transport.segment_target_routes import (
     router as segment_target_router,
 )
 from studio.apps.visual_workshop.transport.snapshot_http import router as snapshot_router
+from studio.apps.visual_workshop.transport.storyboard_http import router as storyboard_router
 from studio.assembly.http_dependencies import require_studio_auth
 from studio.assembly.independent.asset_references import install_reference_runtime
 from studio.assembly.independent.certified_project import create_certification_app
@@ -129,7 +123,6 @@ def create_app(
                 state.snapshot_imports.delivery,
                 state.generation_runner,
                 state.composition_runner,
-                state.review_runner,
             )
         ):
             raise HTTPException(503, "visual_runner_unavailable")
@@ -163,15 +156,14 @@ def create_app(
     app.include_router(project_router)
     app.include_router(previs_router, prefix="/v1")
     app.include_router(workflow_router, prefix="/v1")
+    app.include_router(storyboard_router, prefix="/v1")
+    app.include_router(creation_links_router, prefix="/v1")
+    app.include_router(retired_visual_reviews, prefix="/v1")
     app.state.creative_asset_scope = independent_creative_asset_scope
     app.include_router(snapshot_router)
     app.include_router(composition_router)
     app.include_router(outputs_router)
     app.include_router(generation_catalog_router)
-    app.include_router(acceptance_catalog_router)
-    app.include_router(acceptance_options_router)
-    app.include_router(acceptance_nodes_router)
-    app.include_router(samples_router)
     app.include_router(review_authority_router)
     app.state.snapshot_authorization = LiveAuthorization(
         service="visual", credential=credential, transport=transport
@@ -212,9 +204,6 @@ def create_app(
         )
         archive_delivery = SnapshotDelivery(app.state.database.sessions, archive)
         app.state.snapshot_imports = SnapshotImports(app.state, archive, archive_delivery)
-    app.include_router(standard_router, prefix="/v1")
-    app.include_router(review_router, prefix="/v1")
-    app.include_router(repair_router)
     app.include_router(
         generation_records_router, prefix="/v1", dependencies=[Depends(require_studio_auth)]
     )
@@ -234,8 +223,6 @@ def create_app(
         attach_web(app, release, pages=PAGES)
     composition_runner = CompositionRunner(app.state)
     app.state.composition_runner = composition_runner
-    review_runner = ReviewRunner(app.state)
-    app.state.review_runner = review_runner
     mounted = {
         (method.upper(), path)
         for path, operations in app.openapi()["paths"].items()
@@ -254,10 +241,10 @@ def create_app(
             lifespan(instance),
         ):
             await asyncio.to_thread(cleanup_snapshot_staging, app.state.snapshot_settings)
+            await retire_pending_reviews(app.state.database.sessions, independent=True)
             try:
                 if run_worker:
                     await composition_runner.start()
-                    await review_runner.start()
                     if app.state.generation_runner is not None:
                         await app.state.generation_runner.start()
                     if archive_delivery is not None:
@@ -266,7 +253,6 @@ def create_app(
             finally:
                 if app.state.generation_runner is not None:
                     await app.state.generation_runner.stop()
-                await review_runner.stop()
                 await composition_runner.stop()
                 if archive_delivery is not None:
                     await archive_delivery.stop()

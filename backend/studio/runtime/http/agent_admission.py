@@ -17,12 +17,12 @@ def admission_status(root: Path = AGENT_ADMISSION_MOUNT):
     return "paused" if (root / PAUSE).exists() else "accepting"
 
 
-def admission_report():
-    state = admission_status()
+def admission_report(root: Path = AGENT_ADMISSION_MOUNT):
+    state = admission_status(root)
     report = {"agent_admission": state}
     if state == "paused":
         try:
-            report["agent_admission_id"] = (AGENT_ADMISSION_MOUNT / PAUSE).read_text().strip()
+            report["agent_admission_id"] = (root / PAUSE).read_text().strip()
         except OSError:
             pass
     return report

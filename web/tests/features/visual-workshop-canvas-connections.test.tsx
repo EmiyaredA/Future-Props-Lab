@@ -1,5 +1,5 @@
 import { beforeEach, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ManagedFile } from "@features/files";
 import { getFiles } from "@features/files/api";
@@ -91,7 +91,11 @@ test("uses connection ports without selecting the node or opening its inspector"
     updated_at: "2026-08-03T08:00:00Z",
   });
   const { container } = renderCanvas();
-  expect(await screen.findByText("图片1")).toBeInTheDocument();
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("图片1"),
+  ).toBeInTheDocument();
   const node = container.querySelector<HTMLElement>(
     "[data-node-id='image-1']",
   )!;
@@ -165,7 +169,11 @@ test("selects a connection line and removes it with Delete", async () => {
   const user = userEvent.setup();
   const { container } = renderCanvas();
 
-  expect(await screen.findByText("图片1")).toBeInTheDocument();
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("图片1"),
+  ).toBeInTheDocument();
   const edge = screen.getByRole("button", {
     name: "连线：图片1 → 视频2",
   });
@@ -233,8 +241,16 @@ test("requires unlinking before deleting a referenced node", async () => {
   });
   const { container } = renderCanvas();
   const user = userEvent.setup();
-  expect(await screen.findByText("来源图片")).toBeInTheDocument();
-  await user.click(screen.getByText("来源图片"));
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("来源图片"),
+  ).toBeInTheDocument();
+  await user.click(
+    within(screen.getByRole("region", { name: "节点画布" })).getByText(
+      "来源图片",
+    ),
+  );
   await user.click(screen.getByRole("button", { name: "删除节点" }));
   expect(container.querySelector('[data-node-id="source"]')).not.toBeNull();
   await user.click(
@@ -246,7 +262,11 @@ test("requires unlinking before deleting a referenced node", async () => {
       container.querySelector('[aria-label="连线：来源图片 → 目标视频"]'),
     ).toBeNull(),
   );
-  await user.click(screen.getByText("来源图片"));
+  await user.click(
+    within(screen.getByRole("region", { name: "节点画布" })).getByText(
+      "来源图片",
+    ),
+  );
   await user.click(screen.getByRole("button", { name: "删除节点" }));
   await waitFor(() => expect(putVisualCanvas).toHaveBeenCalled());
   const lastCall = vi.mocked(putVisualCanvas).mock.calls.at(-1);
@@ -380,14 +400,15 @@ test("merges direct linked assets into reference rows and prompt mentions", asyn
   const user = userEvent.setup();
   renderCanvas();
 
-  const targetVideo = (await screen.findByText("目标视频")).closest(
-    ".canvas-node",
-  )!;
+  const targetVideo = (
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("目标视频")
+  ).closest(".canvas-node")!;
   await user.click(
     targetVideo.querySelector<HTMLElement>(".canvas-node-media")!,
   );
   await user.click(screen.getByRole("button", { name: "替换素材" }));
-  await user.click(screen.getByRole("tab", { name: "生成设置" }));
   expect(
     screen.getByRole("combobox", { name: "视频生成方式" }),
   ).toHaveTextContent("全能参考");

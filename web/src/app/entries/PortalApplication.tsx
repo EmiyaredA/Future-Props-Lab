@@ -16,7 +16,8 @@ import { useApplicationLocation } from "@app/routing/applicationNavigationContex
 import "./portal.css";
 
 const applications = APPLICATION_DEFINITIONS;
-const roots = ["/", "/home", "/apps", "/cloud-control"];
+// /apps is a portal page; its child paths belong to independent workshops.
+const exactPaths = ["/", "/home", "/apps", "/cloud-control"];
 
 function PortalMain() {
   const localBrowser = useRuntimeAccess();
@@ -64,7 +65,7 @@ function PortalContents() {
     );
   }
   return (
-    <IndependentShell title="Future Props Lab" roots={roots}>
+    <IndependentShell title="Future Props Lab" exactPaths={exactPaths}>
       <PortalMain />
     </IndependentShell>
   );

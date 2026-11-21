@@ -429,6 +429,7 @@ export function useVisualCanvasController({
       if (kind !== "text") setInspectedNodeId(node.id);
       setAssetsOpen(false);
       setContextMenu(undefined);
+      return node;
     },
     [
       nodesRef,

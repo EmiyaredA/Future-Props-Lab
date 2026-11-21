@@ -8,196 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field, RootModel
 class WireModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True, extra='allow', protected_namespaces=())
 
-class AcceptanceCriterion(WireModel):
-    id: str = Field(default=..., alias='id', min_length=1, max_length=64)
-    kinds: list[Literal['image', 'video', 'audio', 'text']] | None = Field(default=None, alias='kinds', min_length=1, max_length=4)
-    method: Literal['automatic', 'ai', 'manual'] = Field(default='manual', alias='method')
-    reference_asset_ids: list[str] | None = Field(default=None, alias='reference_asset_ids', max_length=40)
-    reference_label: str = Field(default='', alias='reference_label', max_length=120)
-    required: bool = Field(default=True, alias='required')
-    requirement: str = Field(default='', alias='requirement', max_length=3000)
-    specifications: Specification | None = Field(default=None, alias='specifications')
-    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
-
-class AcceptanceDecisionIn(WireModel):
-    criterion_id: str | None = Field(default=None, alias='criterion_id')
-    end_ms: int | None = Field(default=None, alias='end_ms')
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    finalize: bool = Field(default=False, alias='finalize')
-    reason: str = Field(default='', alias='reason', max_length=3000)
-    region: list[float] | None = Field(default=None, alias='region')
-    start_ms: int | None = Field(default=None, alias='start_ms')
-    verdict: Literal['passed', 'failed', 'pending', 'not_applicable'] = Field(default='pending', alias='verdict')
-
-class AcceptanceDocument(WireModel):
-    criteria: list[AcceptanceCriterion] | None = Field(default=None, alias='criteria', max_length=40)
-    node_ids: list[str] | None = Field(default=None, alias='node_ids', max_length=1000)
-    title: str = Field(default='项目验收标准', alias='title', min_length=1, max_length=120)
-
-class AcceptanceEvidence(WireModel):
-    asset_id: str = Field(default=..., alias='asset_id')
-    id: str = Field(default=..., alias='id')
-    position_ms: int | None = Field(default=None, alias='position_ms')
-    source_asset_id: str = Field(default=..., alias='source_asset_id')
-
-class AcceptanceInputOut(WireModel):
-    asset_id: str = Field(default=..., alias='asset_id')
-    kind: Literal['image', 'video'] = Field(default=..., alias='kind')
-    label: str = Field(default=..., alias='label')
-    role: Literal['character', 'motion', 'output'] = Field(default=..., alias='role')
-
-class AcceptanceModelListOut(WireModel):
-    items: list[AcceptanceModelOut] = Field(default=..., alias='items')
-
-class AcceptanceModelOut(WireModel):
-    id: str = Field(default=..., alias='id')
-    label: str = Field(default=..., alias='label')
-    provider_kind: Literal['local_qwen_tts', 'local_zonos_tts', 'local_relayvsr', 'local_ffmpeg', 'volcengine_image', 'openai', 'deepseek', 'anthropic', 'senseaudio_image', 'volcengine_video', 'senseaudio_video', 'zealman_video', 'autodl_video', 'senseaudio_asr', 'senseaudio_asr_pro', 'senseaudio_realtime', 'senseaudio_music', 'senseaudio_sfx'] = Field(default=..., alias='provider_kind')
-    provider_name: str = Field(default=..., alias='provider_name')
-    slug: str = Field(default=..., alias='slug')
-
-class AcceptanceOutputSnapshot(WireModel):
-    asset_id: str | None = Field(default=..., alias='asset_id')
-    id: str = Field(default=..., alias='id')
-    kind: Literal['image', 'video', 'audio', 'text'] = Field(default=..., alias='kind')
-    text: str | None = Field(default=..., alias='text')
-    title: str = Field(default=..., alias='title')
-    version: int = Field(default=..., alias='version')
-
-class AcceptanceRepairOut(WireModel):
-    id: str = Field(default=..., alias='id')
-    prompt_version_id: str | None = Field(default=..., alias='prompt_version_id')
-    revision: int = Field(default=..., alias='revision')
-    run_id: str = Field(default=..., alias='run_id')
-    text: str = Field(default=..., alias='text')
-
-class AcceptanceRepairWriteIn(WireModel):
-    apply: bool = Field(default=False, alias='apply')
-    expected_canvas_revision: int | None = Field(default=None, alias='expected_canvas_revision')
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    text: str = Field(default=..., alias='text', min_length=1, max_length=6000)
-
-class AcceptanceResult(WireModel):
-    criterion_id: str = Field(default=..., alias='criterion_id')
-    end_ms: int | None = Field(default=None, alias='end_ms')
-    evidence_ids: list[str] | None = Field(default=None, alias='evidence_ids')
-    explanation: str = Field(default='', alias='explanation')
-    origin: Literal['automatic', 'ai', 'manual'] = Field(default=..., alias='origin')
-    region: list[float] | None = Field(default=None, alias='region')
-    start_ms: int | None = Field(default=None, alias='start_ms')
-    suggestion: Literal['passed', 'failed', 'pending', 'not_applicable'] | None = Field(default=None, alias='suggestion')
-    verdict: Literal['passed', 'failed', 'pending', 'not_applicable'] = Field(default='pending', alias='verdict')
-
-class AcceptanceRunCreateIn(WireModel):
-    expected_standard_version: int = Field(default=..., alias='expected_standard_version', ge=1.0)
-    model_id: str | None = Field(default=None, alias='model_id')
-    output_ids: list[str] = Field(default=..., alias='output_ids', min_length=1, max_length=20)
-    previous_run_id: str | None = Field(default=None, alias='previous_run_id')
-    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=100)
-
-class AcceptanceRunListOut(WireModel):
-    items: list[AcceptanceRunOut] = Field(default=..., alias='items')
-
-class AcceptanceRunOut(WireModel):
-    created_at: str = Field(default=..., alias='created_at')
-    decision: Literal['pending', 'passed', 'failed', 'historical'] = Field(default=..., alias='decision')
-    decisions: list[dict[str, Any]] = Field(default=..., alias='decisions')
-    error_message: str | None = Field(default=..., alias='error_message')
-    evidence: list[AcceptanceEvidence] = Field(default=..., alias='evidence')
-    execution_result: dict[str, Any] | None = Field(default=None, alias='execution_result')
-    id: str = Field(default=..., alias='id')
-    model_id: str | None = Field(default=..., alias='model_id')
-    node_id: str = Field(default=..., alias='node_id')
-    output_id: str = Field(default=..., alias='output_id')
-    previous_run_id: str | None = Field(default=..., alias='previous_run_id')
-    results: list[AcceptanceResult] = Field(default=..., alias='results')
-    revision: int = Field(default=..., alias='revision')
-    scheme_id: str = Field(default='legacy', alias='scheme_id')
-    snapshot: AcceptanceSnapshot = Field(default=..., alias='snapshot')
-    standard_version: int = Field(default=..., alias='standard_version')
-    status: Literal['queued', 'processing', 'completed', 'failed', 'cancelled'] = Field(default=..., alias='status')
-
-class AcceptanceSampleIn(WireModel):
-    end_ms: int = Field(default=..., alias='end_ms', gt=0.0)
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    start_ms: int = Field(default=..., alias='start_ms', ge=0.0)
-
-class AcceptanceSchemeOut(WireModel):
-    available: bool = Field(default=..., alias='available')
-    connection_label: str = Field(default=..., alias='connection_label')
-    id: Literal['motion-transfer:api', 'motion-transfer:codex', 'motion-transfer:claude-code', 'motion-transfer:opencode', 'motion-transfer:dsh', 'motion-transfer:pi'] = Field(default=..., alias='id')
-    input_description: str = Field(default=..., alias='input_description')
-    kind: Literal['model_api', 'code_agent'] = Field(default=..., alias='kind')
-    message: str = Field(default=..., alias='message')
-    model_slug: str = Field(default='', alias='model_slug')
-    output_description: str = Field(default=..., alias='output_description')
-    provider_kind: str = Field(default='', alias='provider_kind')
-    title: str = Field(default=..., alias='title')
-    version: int = Field(default=1, alias='version')
-
-class AcceptanceSnapshot(WireModel):
-    check_results: list[AcceptanceResult] | None = Field(default=None, alias='check_results')
-    context_fingerprint: str = Field(default='', alias='context_fingerprint')
-    coverage: str = Field(default=..., alias='coverage')
-    criteria: list[AcceptanceCriterion] = Field(default=..., alias='criteria')
-    executor: dict[str, Any] | None = Field(default=None, alias='executor')
-    input_source: str = Field(default='legacy', alias='input_source')
-    inputs: dict[str, Any] | None = Field(default=None, alias='inputs')
-    inputs_version: int = Field(default=1, alias='inputs_version')
-    metadata: dict[str, Any] | None = Field(default=None, alias='metadata')
-    output: AcceptanceOutputSnapshot = Field(default=..., alias='output')
-    prompt: str = Field(default='', alias='prompt')
-    result_contract_version: int = Field(default=1, alias='result_contract_version')
-    scheme_id: str = Field(default='legacy', alias='scheme_id')
-    scheme_version: int = Field(default=1, alias='scheme_version')
-    source_bytes: int | None = Field(default=None, alias='source_bytes')
-    standard_title: str = Field(default=..., alias='standard_title')
-    standard_version: int = Field(default=..., alias='standard_version')
-
-class AcceptanceStandardOut(WireModel):
-    draft: AcceptanceDocument | None = Field(default=None, alias='draft')
-    project_id: str = Field(default=..., alias='project_id')
-    published: AcceptanceDocument | None = Field(default=None, alias='published')
-    published_version: int = Field(default=0, alias='published_version')
-    required: bool = Field(default=False, alias='required')
-    revision: int = Field(default=0, alias='revision')
-
-class AcceptanceStandardWriteIn(WireModel):
-    document: AcceptanceDocument = Field(default=..., alias='document')
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    publish: bool = Field(default=False, alias='publish')
-    required: bool = Field(default=False, alias='required')
-
-class AcceptanceSummaryItem(WireModel):
-    final_version: int | None = Field(default=None, alias='final_version')
-    issue: str = Field(default='', alias='issue')
-    kind: str = Field(default=..., alias='kind')
-    node_id: str = Field(default=..., alias='node_id')
-    output_asset_id: str | None = Field(default=None, alias='output_asset_id')
-    output_id: str | None = Field(default=None, alias='output_id')
-    output_version: int | None = Field(default=None, alias='output_version')
-    run: AcceptanceRunOut | None = Field(default=None, alias='run')
-    scheme_id: str | None = Field(default=None, alias='scheme_id')
-    state: str = Field(default=..., alias='state')
-    title: str = Field(default=..., alias='title')
-
-class AcceptanceSummaryOut(WireModel):
-    items: list[AcceptanceSummaryItem] = Field(default=..., alias='items')
-
-class AcceptanceTemplateListOut(WireModel):
-    items: list[AcceptanceTemplateOut] = Field(default=..., alias='items')
-
-class AcceptanceTemplateOut(WireModel):
-    builtin: bool = Field(default=False, alias='builtin')
-    document: AcceptanceDocument = Field(default=..., alias='document')
-    id: str = Field(default=..., alias='id')
-    revision: int = Field(default=0, alias='revision')
-    title: str = Field(default=..., alias='title')
-
-class AcceptanceTemplateWriteIn(WireModel):
-    document: AcceptanceDocument = Field(default=..., alias='document')
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-
 class AccessAction(WireModel):
     action: Literal['public_start', 'public_stop', 'check'] = Field(default=..., alias='action')
 
@@ -1143,6 +953,16 @@ class ConversionOut(WireModel):
     errors: list[dict[str, Any]] = Field(default=..., alias='errors')
     samples: list[dict[str, Any]] | None = Field(default=None, alias='samples')
     valid: bool = Field(default=..., alias='valid')
+
+class CreationLinksOut(WireModel):
+    objects: list[ObjectBinding] | None = Field(default=None, alias='objects', max_length=2000)
+    revision: int = Field(default=..., alias='revision', ge=0.0)
+    scenes: list[SceneBinding] | None = Field(default=None, alias='scenes', max_length=500)
+
+class CreationLinksUpdate(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    objects: list[ObjectBinding] | None = Field(default=None, alias='objects', max_length=2000)
+    scenes: list[SceneBinding] | None = Field(default=None, alias='scenes', max_length=500)
 
 class CreativeDraftIn(WireModel):
     components: list[str] | None = Field(default=None, alias='components', max_length=30)
@@ -3937,45 +3757,10 @@ class NamedOption(WireModel):
     id: str = Field(default=..., alias='id')
     label: str = Field(default=..., alias='label', max_length=160)
 
-class NodeAcceptanceCatalogOut(WireModel):
-    items: list[NodeAcceptanceTemplateOut] = Field(default=..., alias='items')
-
-class NodeAcceptanceOut(WireModel):
-    canvas_revision: int = Field(default=..., alias='canvas_revision')
-    context_fingerprint: str = Field(default=..., alias='context_fingerprint')
-    current_run: AcceptanceRunOut | None = Field(default=None, alias='current_run')
-    input_source: str = Field(default=..., alias='input_source')
-    inputs: list[AcceptanceInputOut] | None = Field(default=None, alias='inputs')
-    issues: list[str] | None = Field(default=None, alias='issues')
-    node_id: str = Field(default=..., alias='node_id')
-    output_id: str | None = Field(default=None, alias='output_id')
-    output_version: int | None = Field(default=None, alias='output_version')
-    prompt: str = Field(default='', alias='prompt')
-    result_is_current: bool = Field(default=False, alias='result_is_current')
-    revision: int = Field(default=0, alias='revision')
-    scheme_id: Literal['motion-transfer:api', 'motion-transfer:codex', 'motion-transfer:claude-code', 'motion-transfer:opencode', 'motion-transfer:dsh', 'motion-transfer:pi'] | None = Field(default=None, alias='scheme_id')
-    specifications: dict[str, Any] | None = Field(default=None, alias='specifications')
-
-class NodeAcceptanceSelectIn(WireModel):
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    scheme_id: Literal['motion-transfer:api', 'motion-transfer:codex', 'motion-transfer:claude-code', 'motion-transfer:opencode', 'motion-transfer:dsh', 'motion-transfer:pi'] | None = Field(default=..., alias='scheme_id')
-
-class NodeAcceptanceStartIn(WireModel):
-    context_fingerprint: str = Field(default=..., alias='context_fingerprint', min_length=64, max_length=64)
-    expected_canvas_revision: int = Field(default=..., alias='expected_canvas_revision', ge=0.0)
-    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
-    output_id: str = Field(default=..., alias='output_id')
-    previous_run_id: str | None = Field(default=None, alias='previous_run_id')
-    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=100)
-
-class NodeAcceptanceTemplateOut(WireModel):
-    criteria: list[AcceptanceCriterion] = Field(default=..., alias='criteria')
-    id: str = Field(default='builtin:motion-transfer', alias='id')
-    kinds: list[str] | None = Field(default=None, alias='kinds')
-    readonly: bool = Field(default=True, alias='readonly')
-    schemes: list[AcceptanceSchemeOut] = Field(default=..., alias='schemes')
-    title: str = Field(default='动作迁移', alias='title')
-    version: int = Field(default=1, alias='version')
+class ObjectBinding(WireModel):
+    card_id: str = Field(default=..., alias='card_id')
+    object_id: str = Field(default=..., alias='object_id', min_length=1, max_length=160)
+    previs_scene_id: str = Field(default=..., alias='previs_scene_id')
 
 class OperationBatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
@@ -4458,7 +4243,7 @@ class ProjectPatchIn(WireModel):
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class ProjectSnapshotImportWarning(WireModel):
-    code: Literal['model_binding_unavailable'] = Field(default=..., alias='code')
+    code: Literal['model_binding_unavailable', 'storyboard_cards_detached'] = Field(default=..., alias='code')
     field: str = Field(default=..., alias='field')
     message: str = Field(default=..., alias='message')
 
@@ -4921,6 +4706,10 @@ class SavedSegmentTranscriptionIn(WireModel):
     model_id: str = Field(default=..., alias='model_id')
     target_language: str | None = Field(default=None, alias='target_language')
 
+class SceneBinding(WireModel):
+    card_id: str = Field(default=..., alias='card_id')
+    previs_scene_id: str = Field(default=..., alias='previs_scene_id')
+
 class ScriptEpisode(WireModel):
     id: str = Field(default=..., alias='id')
     scenes: list[ScriptScene] | None = Field(default=None, alias='scenes', max_length=200)
@@ -5078,6 +4867,12 @@ class Sheet(WireModel):
     row: int = Field(default=100, alias='row', ge=1.0, le=100000.0)
     status: int = Field(default=0, alias='status', ge=0.0, le=1.0)
 
+class ShotPrevis(WireModel):
+    camera_id: str | None = Field(default=None, alias='camera_id')
+    overrides: dict[str, Any] | None = Field(default=None, alias='overrides')
+    scene_id: str = Field(default=..., alias='scene_id')
+    stage_revision: int = Field(default=..., alias='stage_revision', ge=0.0)
+
 class SkillCatalogOut(WireModel):
     draft_count: int = Field(default=..., alias='draft_count')
     enabled_count: int = Field(default=..., alias='enabled_count')
@@ -5158,14 +4953,6 @@ class SparseCell(WireModel):
     c: int = Field(default=..., alias='c', ge=0.0, lt=16384.0)
     r: int = Field(default=..., alias='r', ge=0.0, lt=100000.0)
     v: dict[str, Any] = Field(default=..., alias='v')
-
-class Specification(WireModel):
-    max_duration: float | None = Field(default=None, alias='max_duration')
-    min_duration: float | None = Field(default=None, alias='min_duration')
-    min_height: int | None = Field(default=None, alias='min_height')
-    min_width: int | None = Field(default=None, alias='min_width')
-    ratio: Literal['16:9', '9:16', '1:1', '4:3', '3:4', '21:9'] | None = Field(default=None, alias='ratio')
-    require_audio: bool = Field(default=False, alias='require_audio')
 
 class SplitClipOperation(WireModel):
     at_us: int = Field(default=..., alias='atUs', gt=0.0)
@@ -5292,6 +5079,37 @@ class StorageLayoutStatusOut(WireModel):
     pending_projects: int = Field(default=..., alias='pending_projects')
     restart_required: bool = Field(default=False, alias='restart_required')
     target_version: Literal[2] = Field(default=2, alias='target_version')
+
+class StoryboardOut(WireModel):
+    revision: int = Field(default=..., alias='revision', ge=0.0)
+    shots: list[StoryboardShot] | None = Field(default=None, alias='shots', max_length=1000)
+
+class StoryboardShot(WireModel):
+    camera_motion: str = Field(default='', alias='camera_motion', max_length=160)
+    card_ids: list[str] | None = Field(default=None, alias='card_ids', max_length=80)
+    description: str = Field(default='', alias='description', max_length=12000)
+    dialogue: str = Field(default='', alias='dialogue', max_length=12000)
+    duration: float | None = Field(default=None, alias='duration')
+    id: str = Field(default=..., alias='id')
+    image_node_id: str | None = Field(default=None, alias='image_node_id')
+    origin_node_id: str | None = Field(default=None, alias='origin_node_id')
+    previs: ShotPrevis | None = Field(default=None, alias='previs')
+    shot_size: str = Field(default='', alias='shot_size', max_length=80)
+    sound: str = Field(default='', alias='sound', max_length=12000)
+    source: StoryboardSource | None = Field(default=None, alias='source')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+    video_node_id: str | None = Field(default=None, alias='video_node_id')
+
+class StoryboardSource(WireModel):
+    end: int | None = Field(default=None, alias='end')
+    excerpt: str = Field(default='', alias='excerpt', max_length=12000)
+    revision: int = Field(default=..., alias='revision', ge=0.0)
+    scene_id: str = Field(default=..., alias='scene_id')
+    start: int | None = Field(default=None, alias='start')
+
+class StoryboardUpdate(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    shots: list[StoryboardShot] | None = Field(default=None, alias='shots', max_length=1000)
 
 class Structure(WireModel):
     can_edit: bool = Field(default=True, alias='can_edit')
@@ -6664,30 +6482,6 @@ class WorkflowVideoParameters(WireModel):
     video_subject_to_replace: str | None = Field(default=None, alias='video_subject_to_replace')
     width: int | None = Field(default=None, alias='width')
 
-AcceptanceCriterion.model_rebuild()
-AcceptanceDecisionIn.model_rebuild()
-AcceptanceDocument.model_rebuild()
-AcceptanceEvidence.model_rebuild()
-AcceptanceInputOut.model_rebuild()
-AcceptanceModelListOut.model_rebuild()
-AcceptanceModelOut.model_rebuild()
-AcceptanceOutputSnapshot.model_rebuild()
-AcceptanceRepairOut.model_rebuild()
-AcceptanceRepairWriteIn.model_rebuild()
-AcceptanceResult.model_rebuild()
-AcceptanceRunCreateIn.model_rebuild()
-AcceptanceRunListOut.model_rebuild()
-AcceptanceRunOut.model_rebuild()
-AcceptanceSampleIn.model_rebuild()
-AcceptanceSchemeOut.model_rebuild()
-AcceptanceSnapshot.model_rebuild()
-AcceptanceStandardOut.model_rebuild()
-AcceptanceStandardWriteIn.model_rebuild()
-AcceptanceSummaryItem.model_rebuild()
-AcceptanceSummaryOut.model_rebuild()
-AcceptanceTemplateListOut.model_rebuild()
-AcceptanceTemplateOut.model_rebuild()
-AcceptanceTemplateWriteIn.model_rebuild()
 AccessAction.model_rebuild()
 AccessStatus.model_rebuild()
 AccountAvatarDeleteIn.model_rebuild()
@@ -6840,6 +6634,8 @@ ConversationRevisionConflictOut.model_rebuild()
 ConversionIn.model_rebuild()
 ConversionIssue.model_rebuild()
 ConversionOut.model_rebuild()
+CreationLinksOut.model_rebuild()
+CreationLinksUpdate.model_rebuild()
 CreativeDraftIn.model_rebuild()
 CreativeDraftUpdateIn.model_rebuild()
 CreativeImportIn.model_rebuild()
@@ -7234,11 +7030,7 @@ MotionSettings.model_rebuild()
 MotionTransform.model_rebuild()
 MoveClipOperation.model_rebuild()
 NamedOption.model_rebuild()
-NodeAcceptanceCatalogOut.model_rebuild()
-NodeAcceptanceOut.model_rebuild()
-NodeAcceptanceSelectIn.model_rebuild()
-NodeAcceptanceStartIn.model_rebuild()
-NodeAcceptanceTemplateOut.model_rebuild()
+ObjectBinding.model_rebuild()
 OperationBatchIn.model_rebuild()
 PermissionInput.model_rebuild()
 PreparationBundle.model_rebuild()
@@ -7375,6 +7167,7 @@ SavedFilterIn.model_rebuild()
 SavedFilterOut.model_rebuild()
 SavedFilterPut.model_rebuild()
 SavedSegmentTranscriptionIn.model_rebuild()
+SceneBinding.model_rebuild()
 ScriptEpisode.model_rebuild()
 ScriptOut.model_rebuild()
 ScriptScene.model_rebuild()
@@ -7400,6 +7193,7 @@ SetAudioTransitionOperation.model_rebuild()
 SetClipSpeedOperation.model_rebuild()
 SetTransitionOperation.model_rebuild()
 Sheet.model_rebuild()
+ShotPrevis.model_rebuild()
 SkillCatalogOut.model_rebuild()
 SkillFileListOut.model_rebuild()
 SkillFileOut.model_rebuild()
@@ -7413,7 +7207,6 @@ SnapshotBlock.model_rebuild()
 SnapshotRun.model_rebuild()
 Sort.model_rebuild()
 SparseCell.model_rebuild()
-Specification.model_rebuild()
 SplitClipOperation.model_rebuild()
 SpreadsheetCreate.model_rebuild()
 SpreadsheetDocument.model_rebuild()
@@ -7431,6 +7224,10 @@ SpreadsheetSummary.model_rebuild()
 StorageLayoutIssueOut.model_rebuild()
 StorageLayoutMigrationOut.model_rebuild()
 StorageLayoutStatusOut.model_rebuild()
+StoryboardOut.model_rebuild()
+StoryboardShot.model_rebuild()
+StoryboardSource.model_rebuild()
+StoryboardUpdate.model_rebuild()
 Structure.model_rebuild()
 SvgPreviewIn.model_rebuild()
 SvgPreviewOut.model_rebuild()

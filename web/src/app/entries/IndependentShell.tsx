@@ -24,15 +24,21 @@ import { StudioShell } from "@app/layout/StudioSidebar";
 export function IndependentShell({
   title,
   roots,
+  exactPaths,
   children,
 }: {
   title: string;
   roots?: readonly string[];
+  exactPaths?: readonly string[];
   children: ReactNode;
 }) {
   return (
     <NavigationProtection>
-      <ApplicationNavigation scope={title} roots={roots}>
+      <ApplicationNavigation
+        scope={title}
+        roots={roots}
+        exactPaths={exactPaths}
+      >
         <IndependentShellContent title={title}>
           {children}
         </IndependentShellContent>

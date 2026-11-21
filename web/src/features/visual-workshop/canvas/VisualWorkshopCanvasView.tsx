@@ -1,3 +1,5 @@
+import { CanvasProjectDesigns } from "./CanvasProjectDesigns";
+import type { Card, CardKind } from "../creative/api";
 import { canvasBounds } from "./canvasPlacement";
 import { ToonflowCanvas } from "./ToonflowCanvas";
 import { LoadingState } from "@shared/ui/LoadingState";
@@ -51,16 +53,23 @@ import "@features/visual-workshop/visual-workshop.css";
 export function VisualWorkshopCanvasView({
   controller,
   onBoard,
-  onAcceptance,
+  onStoryboard,
   onPrevis,
   onScript,
+  embedded = false,
 }: {
   controller: ReturnType<typeof useVisualCanvasController>;
+  embedded?: boolean;
   onBoard?: () => void;
-  onAcceptance?: () => void;
+  onStoryboard?: () => void;
   onPrevis?: () => void;
   onScript?: () => void;
 }) {
+  const [designKind, setDesignKind] = useState<CardKind>();
+  const [designRequest, setDesignRequest] = useState<{
+    nodeId: string;
+    card: Card;
+  }>();
   const [editingGroupId, setEditingGroupId] = useState<string>();
   const { run: runTransfer, progress: activeTransferProgress } =
     useTransferProgress();
@@ -106,7 +115,6 @@ export function VisualWorkshopCanvasView({
     setSelectedNodeIds,
     selectionBox,
     alignmentGuides,
-    mediaEditorTab,
     setMediaEditorTab,
     inspectedNodeId,
     setInspectedNodeId,
@@ -159,6 +167,9 @@ export function VisualWorkshopCanvasView({
     consumeSuppressedNodeClick,
     openContextMenu,
   } = controller;
+  useEffect(() => {
+    setDesignKind(undefined);
+  }, [selectedId]);
   const videoElements = useRef(new Map<string, HTMLVideoElement>());
   const [readyVideoIds, setReadyVideoIds] = useState(() => new Set<string>());
   const [frameExport, setFrameExport] = useState<VisualCanvasFrameExport>();
@@ -556,9 +567,17 @@ export function VisualWorkshopCanvasView({
             ) : null}
             {focused && inspectedNodeId === node.id && node.kind !== "text" ? (
               <CanvasNodeInspector
+                portalHost={surface.current?.parentElement}
+                designReferenceRequest={
+                  designRequest?.nodeId === inspectedNodeId
+                    ? {
+                        card: designRequest.card,
+                        handled: () => setDesignRequest(undefined),
+                      }
+                    : undefined
+                }
                 referenceContext={{ nodes, edges, replaceEdges, removeEdge }}
                 embedded
-                initialTab={mediaEditorTab}
                 projectId={projectId}
                 node={node}
                 upstreamNodes={edges
@@ -612,7 +631,7 @@ export function VisualWorkshopCanvasView({
         style={{
           ...({
             "--canvas-ui-scale": 1 / viewport.zoom,
-            "--canvas-media-actions-top": `${-43 / viewport.zoom}px`,
+            "--canvas-media-actions-top": `${-54 / viewport.zoom}px`,
             "--canvas-inspector-gap": `${22 / viewport.zoom}px`,
           } as CSSProperties),
           backgroundPosition: `${viewport.x}px ${viewport.y}px`,
@@ -629,15 +648,21 @@ export function VisualWorkshopCanvasView({
         }}
       >
         <CanvasScreenChrome
+          embedded={embedded}
           onBoard={onBoard}
           onPrevis={onPrevis}
           onScript={onScript}
-          onAcceptance={onAcceptance}
+          onStoryboard={onStoryboard}
           projectTitle={projectQuery.data.title}
           title={title}
           editingTitle={editingTitle}
           saveState={saveState}
           assetsOpen={assetsOpen}
+          designKind={designKind}
+          onDesign={(kind) => {
+            setAssetsOpen(false);
+            setDesignKind((current) => (current === kind ? undefined : kind));
+          }}
           createMenuOpen={!!contextMenu}
           onBack={onBack}
           onStartTitleEditing={() => setEditingTitle(true)}
@@ -683,6 +708,7 @@ export function VisualWorkshopCanvasView({
             });
           }}
           onToggleAssets={() => {
+            setDesignKind(undefined);
             setSelectedId(undefined);
             setAssetsOpen((value) => !value);
           }}
@@ -753,7 +779,21 @@ export function VisualWorkshopCanvasView({
           }}
         />
       ) : null}
-      {assetsOpen ? (
+      {designKind && (
+        <CanvasProjectDesigns
+          controller={controller}
+          kind={designKind}
+          onClose={() => setDesignKind(undefined)}
+          onUse={(card) => {
+            const node = nodes.find((item) => item.id === selectedId);
+            if (node?.kind !== "video") return;
+            setDesignRequest({ nodeId: node.id, card });
+            setInspectedNodeId(node.id);
+            setDesignKind(undefined);
+          }}
+        />
+      )}
+      {!embedded && assetsOpen ? (
         <CanvasAssetsDrawer
           projectId={projectId}
           assetTab={assetTab}

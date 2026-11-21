@@ -1,0 +1,57 @@
+/* This adapter owns Element Plus tokens, including teleported popup surfaces. */
+.truman-map-host,
+.truman-host-popup {
+  --el-color-primary: var(--accent);
+  --el-color-primary-light-3: var(--accent);
+  --el-color-primary-light-5: var(--accent-line);
+  --el-color-primary-light-7: var(--accent-soft);
+  --el-color-primary-light-8: var(--accent-soft);
+  --el-color-primary-light-9: var(--accent-soft);
+  --el-bg-color: var(--surface);
+  --el-bg-color-page: var(--bg);
+  --el-bg-color-overlay: var(--surface);
+  --el-fill-color: var(--surface-soft);
+  --el-fill-color-light: var(--surface-soft);
+  --el-fill-color-lighter: var(--surface-soft);
+  --el-fill-color-extra-light: var(--surface);
+  --el-fill-color-dark: var(--surface-hover);
+  --el-fill-color-blank: var(--surface);
+  --el-border-color: var(--border);
+  --el-border-color-light: var(--border);
+  --el-border-color-lighter: var(--border);
+  --el-text-color-primary: var(--text-strong);
+  --el-text-color-regular: var(--text);
+  --el-text-color-secondary: var(--muted);
+  --el-text-color-placeholder: var(--muted);
+  --el-text-color-disabled: var(--muted);
+  --el-disabled-bg-color: var(--surface-soft);
+  --el-disabled-text-color: var(--muted);
+  --el-disabled-border-color: var(--border);
+  --el-border-radius-base: 6px;
+  color: var(--text);
+  color-scheme: light;
+}
+[data-theme="dark"] .truman-host-popup,
+.truman-map-host[data-previs-theme="dark"] {
+  color-scheme: dark;
+  --previs-editor-background: #343a3d;
+  --previs-editor-ground: #3a4042;
+}
+.truman-map-host .sceneStudio {
+  --studioGlassBackground: var(--surface);
+  --studioControlBackground: var(--surface-soft);
+  --studioHoverBackground: var(--surface-hover);
+  --studioActiveBackground: var(--accent-soft);
+  --studioActiveText: var(--text-strong);
+  font-size: 14px;
+}
+.truman-map-host .sceneStudio .floatingPanel,
+.truman-map-host .sceneStudio .worldDock {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.truman-map-host .sceneStudio button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}

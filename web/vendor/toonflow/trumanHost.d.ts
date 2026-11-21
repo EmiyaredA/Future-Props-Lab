@@ -16,8 +16,11 @@ export type ProjectSceneModel = {
   normalize?: boolean;
 };
 export type TrumanHostProps = {
+  editorTheme?: "light" | "dark";
+  interactionLocked?: boolean;
   document: SceneDocument;
   readOnly: boolean;
+  shotScoped?: boolean;
   saving: boolean;
   statusMessage: string;
   error: string;
@@ -44,6 +47,7 @@ export function mountTrumanMap(
   element: HTMLElement,
   props: TrumanHostProps,
 ): {
+  captureReference(kind: "frame" | "clip", cameraId: string): Promise<{file: File; number: number}>;
   isBusy(): boolean;
   playPreview(): void;
   buildScript(script: string, template?: string): Promise<{

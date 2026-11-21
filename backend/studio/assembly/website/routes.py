@@ -49,13 +49,18 @@ from studio.apps.thought_workshop import content_exports_http as thought_convers
 from studio.apps.thought_workshop.external_sync.records_http import router as sync_records_router
 from studio.apps.tools.transport.download_http import router as video_download_router
 from studio.apps.tools.transport.navigation_http import router as tool_navigation_router
-from studio.apps.visual_workshop.acceptance.review_routes import router as visual_review_router
-from studio.apps.visual_workshop.acceptance.standard_routes import router as visual_standard_router
 from studio.apps.visual_workshop.generation_routes import router as visual_generation_records_router
+from studio.apps.visual_workshop.transport.creation_links_http import (
+    router as creation_links_router,
+)
 from studio.apps.visual_workshop.transport.creative_workflow_http import (
     router as visual_creative_workflow_router,
 )
 from studio.apps.visual_workshop.transport.previs_http import router as visual_previs_router
+from studio.apps.visual_workshop.transport.retired_acceptance_http import (
+    router as retired_visual_reviews,
+)
+from studio.apps.visual_workshop.transport.storyboard_http import router as storyboard_router
 from studio.assembly.http_dependencies import require_studio_auth
 from studio.assembly.website.asset_library.transport.website.files import (
     router as file_management_router,
@@ -91,9 +96,6 @@ from studio.assembly.website.thought_workshop.transport.website.external_sync im
 )
 from studio.assembly.website.video_editor.transport.website.compatibility import (
     router as video_editor_router,
-)
-from studio.assembly.website.visual_workshop.acceptance.routes import (
-    router as visual_acceptance_router,
 )
 from studio.assembly.website.visual_workshop.transport.website import (
     router as visual_workshop_router,
@@ -171,6 +173,8 @@ api_router.include_router(
 api_router.include_router(
     visual_creative_workflow_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
+api_router.include_router(storyboard_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(creation_links_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(
     visual_outputs_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )
@@ -223,17 +227,15 @@ api_router.include_router(creative_workshop_router, dependencies=[Depends(requir
 api_router.include_router(community_router, prefix="/thought-workshop")
 api_router.include_router(community_tables_router, prefix="/thought-workshop")
 
-api_router.include_router(
-    visual_acceptance_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
-)
-api_router.include_router(
-    visual_standard_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
-)
-api_router.include_router(
-    visual_review_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
-)
 
 api_router.include_router(code_agents_router)
 
 api_router.include_router(media_info.router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(previews.router, dependencies=[Depends(require_studio_auth)])
+
+api_router.include_router(retired_visual_reviews, dependencies=[Depends(require_studio_auth)])
+
+# Explicit retired paths reach authenticated 410 handlers without entering OpenAPI.
+RETIRED_PUBLIC_API_PATHS = tuple(
+    dict.fromkeys("/v1" + route.path for route in retired_visual_reviews.routes)
+)

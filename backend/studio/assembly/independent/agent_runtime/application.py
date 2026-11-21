@@ -24,7 +24,11 @@ from studio.contracts.gateway.protocol_hash import public_contract
 from studio.contracts.visual_workshop.visual_agent_review import JOBS, MAX_JOB_BYTES
 from studio.runtime.database.migrations import check
 from studio.runtime.database.sessions import Database
-from studio.runtime.http.agent_admission import AgentAdmission, admission_report
+from studio.runtime.http.agent_admission import (
+    AGENT_ADMISSION_MOUNT,
+    AgentAdmission,
+    admission_report,
+)
 from studio.runtime.http.authentication import SignedIdentity
 from studio.runtime.http.capability_client import CapabilityClient
 from studio.runtime.http.native_ingress import NativeIngress
@@ -49,6 +53,7 @@ def create_app(
     transport=None,
     schema_path=None,
     web_root=None,
+    admission_root=AGENT_ADMISSION_MOUNT,
 ):
     database = Database(
         SERVICE, state_root, models=(ConnectionJob, VisualReviewJob), hide_parameters=True
@@ -132,11 +137,11 @@ def create_app(
             raise ValueError("编程智能体浏览器程序与发布契约不匹配")
         attach_web(app, release, pages=("/code-agents", "/code-agents/"))
 
-    app.add_middleware(AgentAdmission, prefixes=("/v1/", JOBS + "/"))
+    app.add_middleware(AgentAdmission, root=admission_root, prefixes=("/v1/", JOBS + "/"))
 
     @app.get("/health")
     async def health():
-        return {"status": "ok", **admission_report(), "service": SERVICE}
+        return {"status": "ok", **admission_report(admission_root), "service": SERVICE}
 
     @app.get("/ready")
     async def ready():

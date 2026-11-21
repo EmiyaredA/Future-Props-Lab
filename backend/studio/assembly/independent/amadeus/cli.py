@@ -5,6 +5,7 @@ from studio.assembly.independent.amadeus.application import create_app
 from studio.assembly.independent.amadeus.maintenance import create_export_app, create_import_app
 from studio.assembly.independent.project_cli import run_project_owner
 from studio.assembly.independent.runtime_options import RuntimeLayout
+from studio.runtime.http.agent_admission import AGENT_ADMISSION_MOUNT
 from studio.runtime.http.native_ingress import NativeWorkerOptions
 
 
@@ -14,7 +15,9 @@ def installed_app(*, runtime=None, **settings):
     native = (
         NativeWorkerOptions.model_validate_json(options.read_bytes()) if options.is_file() else None
     )
-    return create_app(native_options=native, **settings)
+    return create_app(
+        native_options=native, admission_root=runtime.path(AGENT_ADMISSION_MOUNT), **settings
+    )
 
 
 def main():

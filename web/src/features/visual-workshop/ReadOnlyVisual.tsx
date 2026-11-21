@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 import { lazy, Suspense, useState } from "react";
-import { NodeAcceptancePanel } from "./acceptance/NodeAcceptancePanel";
-import { AcceptanceWorkspace } from "./acceptance/AcceptanceWorkspace";
 import { useQuery } from "@tanstack/react-query";
 import {
   ReadOnlyCollection,
@@ -15,6 +13,9 @@ import {
   getVisualWorkshopProject,
 } from "./api";
 import { visualWorkshopQueryKeys } from "./queryKeys";
+const StoryboardWorkspace = lazy(
+  () => import("./storyboard/StoryboardWorkspace"),
+);
 const ScriptWorkspace = lazy(() => import("./creative/ScriptWorkspace"));
 const AssetCards = lazy(() =>
   import("./creative/AssetCards").then(({ AssetCards }) => ({
@@ -36,13 +37,8 @@ export function ReadOnlyVisual({
   onOpen: (id: string) => void;
   onBack: () => void;
 }) {
-  const [creative, setCreative] = useState<"script" | "cards">();
+  const [creative, setCreative] = useState<"script" | "cards" | "storyboard">();
   const [previs, setPrevis] = useState(false);
-  const [acceptance, setAcceptance] = useState(false);
-  const [inspection, setInspection] = useState<{
-    nodeId: string;
-    outputId?: string;
-  }>();
   const projects = useQuery({
     queryKey: visualWorkshopQueryKeys.projects,
     queryFn: getVisualWorkshopProjects,
@@ -61,7 +57,26 @@ export function ReadOnlyVisual({
   if (creative && projectId)
     return (
       <Suspense fallback={<p role="status">正在打开项目资料…</p>}>
-        {creative === "script" ? (
+        {creative === "storyboard" ? (
+          <StoryboardWorkspace
+            project={projectId}
+            nodes={canvas.data?.nodes ?? []}
+            projectCardIds={canvas.data?.project_card_ids ?? []}
+            readOnly
+            onScript={() => setCreative("script")}
+            onLocateNode={() => setCreative(undefined)}
+            onCreateNode={async () => {
+              throw new Error("只读项目");
+            }}
+            renderHeader={() => (
+              <header className="visual-previs-readonly-header">
+                <button onClick={() => setCreative(undefined)}>返回项目</button>
+                <strong>{project.data?.title}</strong>
+                {utilities}
+              </header>
+            )}
+          />
+        ) : creative === "script" ? (
           <ScriptWorkspace
             project={projectId}
             readOnly
@@ -95,39 +110,6 @@ export function ReadOnlyVisual({
           onBack={() => setPrevis(false)}
         />
       </Suspense>
-    );
-  if (inspection && projectId)
-    return (
-      <ReadOnlyPage
-        utilities={utilities}
-        title={`${project.data?.title ?? "视觉工坊"} · 节点验收`}
-        onBack={() => setInspection(undefined)}
-      >
-        <NodeAcceptancePanel
-          key={inspection.nodeId}
-          projectId={projectId}
-          nodeId={inspection.nodeId}
-          outputId={inspection.outputId}
-          readOnly
-          onTemplates={() => setInspection(undefined)}
-          onGeneration={() => {
-            setInspection(undefined);
-            setAcceptance(false);
-          }}
-        />
-      </ReadOnlyPage>
-    );
-  if (acceptance && projectId && canvas.data)
-    return (
-      <AcceptanceWorkspace
-        projectId={projectId}
-        title={project.data?.title ?? "视觉工坊"}
-        nodes={canvas.data.nodes}
-        readOnly
-        initialTab="summary"
-        onOpenNode={(nodeId, outputId) => setInspection({ nodeId, outputId })}
-        onBack={() => setAcceptance(false)}
-      />
     );
   if (!projectId && utilities) {
     return (
@@ -177,9 +159,9 @@ export function ReadOnlyVisual({
       )}
       {projectId && (
         <>
-          <button onClick={() => setAcceptance(true)}>查看项目验收</button>
           <button onClick={() => setCreative("script")}>分集剧本</button>
           <button onClick={() => setCreative("cards")}>设定卡</button>
+          <button onClick={() => setCreative("storyboard")}>分镜</button>
           <button onClick={() => setPrevis(true)}>白模预演</button>
         </>
       )}

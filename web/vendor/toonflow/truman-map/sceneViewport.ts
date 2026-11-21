@@ -308,6 +308,8 @@ export function createSceneViewport(canvas: HTMLCanvasElement, options: Viewport
   let cameraEditingId: string | null = null;
   let camerasVisible = false;
   let filmPreview = false;
+  let editorBackground: Color | undefined;
+  let editorGround: Color | undefined;
   let cameraSignature = "";
   let filmWasRunning = false;
   // 只有机位、没有演绎时，成片第0秒对应的世界时刻。
@@ -1270,15 +1272,36 @@ export function createSceneViewport(canvas: HTMLCanvasElement, options: Viewport
     publishObjectAnchor({ x: Math.round(x * 2) / 2, y: Math.round(y * 2) / 2, handleX: Math.round(handleX * 2) / 2, handleY: Math.round(handleY * 2) / 2, metersPerPixel: Math.round(metersPerPixel * 100000) / 100000 });
   }
 
+  // The display palette is temporary: film cameras and capture clones render the world unchanged.
+  function renderWorld(view: PerspectiveCamera) {
+    if (view !== camera || isShotView() || !editorBackground || options.autoRender === false) {
+      renderer.render(scene, view);
+      return;
+    }
+    const background = scene.background;
+    const fog = scene.fog;
+    const ground = floor.material.color.clone();
+    try {
+      scene.background = editorBackground;
+      scene.fog = new Fog(editorBackground, 65, 180);
+      if (editorGround) floor.material.color.copy(editorGround);
+      renderer.render(scene, view);
+    } finally {
+      scene.background = background;
+      scene.fog = fog;
+      floor.material.color.copy(ground);
+    }
+  }
+
   function renderScene(view: PerspectiveCamera) {
     const actors = worldLife.getActiveObjectIds();
     staticBatches.render(!pendingLoads.size, id => actors.has(id) || selectedIds.includes(id)
       || objectEditing === id || objectLift?.id === id || !!records.get(id)?.fallSpeed, () => {
-        if (view !== shotCamera && view !== viewfinderCamera) { renderer.render(scene, view); return; }
+        if (view !== shotCamera && view !== viewfinderCamera) { renderWorld(view); return; }
         const overlays = [helpers, transformHelper, grid, axes, brushIndicator, groundSelection, sceneAnchorMarker,
           performanceSelection, sceneCameras.root, scene.getObjectByName("performanceOverlay"), sceneBrush?.root, assetPlacement?.group];
         const visibility = overlays.map(overlay => overlay?.visible);
-        try { for (const overlay of overlays) if (overlay) overlay.visible = false; renderer.render(scene, view); }
+        try { for (const overlay of overlays) if (overlay) overlay.visible = false; renderWorld(view); }
         finally { overlays.forEach((overlay, index) => { if (overlay) overlay.visible = visibility[index]!; }); }
       }, id => selectedIds.includes(id) || objectEditing === id || objectLift?.id === id || !!records.get(id)?.fallSpeed);
   }
@@ -4588,12 +4611,14 @@ export function createSceneViewport(canvas: HTMLCanvasElement, options: Viewport
   }
 
   function updateTheme() {
-    const host = canvas.closest(".trumanMapEditor") ?? canvas;
+    const host = canvas.closest(".truman-map-host") ?? canvas.closest(".sceneStudio") ?? canvas;
     const style = getComputedStyle(host);
     const readColor = (name: string, fallback: string) => {
       const value = style.getPropertyValue(name).trim();
       return new Color(/^(?:#[\da-f]{3,8}|rgba?\([^)]*\)|hsla?\([^)]*\))$/i.test(value) ? value : fallback);
     };
+    editorBackground = style.getPropertyValue("--previs-editor-background").trim() ? readColor("--previs-editor-background", "#343a3d") : undefined;
+    editorGround = editorBackground ? readColor("--previs-editor-ground", "#3a4042") : undefined;
     const fill = readColor("--el-fill-color-light", "#f5f7fa");
     const border = readColor("--el-border-color", "#dcdfe6");
     const secondary = readColor("--el-text-color-secondary", "#909399");
@@ -4751,7 +4776,10 @@ export function createSceneViewport(canvas: HTMLCanvasElement, options: Viewport
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(canvas);
   const themeObserver = new MutationObserver(updateTheme);
-  themeObserver.observe(canvas.ownerDocument.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+  themeObserver.observe(canvas.ownerDocument.documentElement, { attributes: true, attributeFilter: ["class", "style", "data-theme"] });
+  const hostThemeObserver = new MutationObserver(updateTheme);
+  const themeHost = canvas.closest(".truman-map-host");
+  if (themeHost) hostThemeObserver.observe(themeHost, { attributes: true, attributeFilter: ["data-previs-theme"] });
   controls.addEventListener("change", invalidate);
   controls.addEventListener("end", onOrbitEnd);
   transform.addEventListener("objectChange", onTransformChange);
@@ -4872,6 +4900,7 @@ export function createSceneViewport(canvas: HTMLCanvasElement, options: Viewport
     renderer.setAnimationLoop(null);
     resizeObserver.disconnect();
     themeObserver.disconnect();
+    hostThemeObserver.disconnect();
     canvas.removeEventListener("pointerdown", handlePointerDown, true);
     canvas.removeEventListener("pointermove", moveBoxSelection, true);
     canvas.removeEventListener("pointermove", moveFirstPersonPointer, true);

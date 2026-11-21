@@ -202,6 +202,7 @@ test("toolbar, right-click and board additions share avoidance and view switches
   }
   const before = structuredClone(saved.nodes);
   await user.click(screen.getByRole("button", { name: "看板" }));
+  await user.click(screen.getByRole("tab", { name: "文件" }));
   await user.click(screen.getByRole("button", { name: "新建" }));
   await waitFor(() => expect(saved.nodes).toHaveLength(6));
   expect(saved.nodes.slice(0, 5)).toEqual(before);
@@ -282,6 +283,7 @@ test("board uploads keep the chosen category and group for every file and persis
   const view = renderCanvas();
   await screen.findByRole("button", { name: "添加内容" });
   await user.click(screen.getByRole("button", { name: "看板" }));
+  await user.click(screen.getByRole("tab", { name: "文件" }));
   await user.click(screen.getByRole("button", { name: "管理分类 美术素材" }));
   await user.click(screen.getByRole("menuitem", { name: "上传到此分类" }));
   expect(screen.getByRole("combobox", { name: "上传分类" })).toHaveTextContent(
@@ -302,6 +304,7 @@ test("board uploads keep the chosen category and group for every file and persis
   ]);
   view.unmount();
   renderCanvas();
+  await user.click(await screen.findByRole("tab", { name: "文件" }));
   const material = await screen.findByRole("button", {
     name: /^one\.png 图像/,
   });

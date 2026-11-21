@@ -1,24 +1,27 @@
+import {
+  ProjectCreativeTools,
+  type CreativeToolActions,
+  type CreativeTool,
+  type ProjectWorkspace,
+} from "../ProjectCreativeTools";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
-import { LoadingState } from "@shared/ui/LoadingState";
 import { AmadeusButton } from "@platform/AmadeusButton";
-import { AppWindow, ArrowLeft, Pencil, Save } from "lucide-react";
-import { ThemeToggle } from "@shared/ui/ThemeToggle";
+import { AppWindow, ArrowLeft, Pencil, Sun, Moon } from "lucide-react";
+import { useTheme } from "@shared/ui/theme";
+import { BoardMenu } from "../board/BoardMenu";
 
-function openCurrentPageInNewWindow() {
-  window.open(window.location.href, "_blank", "noopener,noreferrer");
-}
-
-export type VisualProjectHeaderProps = {
-  activeView?: "canvas" | "previs" | "script";
+export type VisualProjectHeaderProps = CreativeToolActions & {
+  activeView?: "canvas" | "board";
+  activeTool?: CreativeTool;
+  workspace?: ProjectWorkspace;
+  hideCreativeTools?: boolean;
   onCanvas?: () => void;
   busy?: boolean;
   onBoard?: () => void;
-  onPrevis?: () => void;
-  onScript?: () => void;
-  onAcceptance?: () => void;
   projectTitle: string;
   title: string;
   editingTitle: boolean;
+  saveStateText?: string;
   saveState: "saving" | "saved" | "conflict" | "error";
   onBack: () => void;
   onStartTitleEditing: () => void;
@@ -28,16 +31,18 @@ export type VisualProjectHeaderProps = {
 };
 
 export function VisualProjectHeader({
-  activeView = "canvas",
+  onWorkbench,
   onCanvas,
-  onBoard,
   onPrevis,
   onScript,
-  onAcceptance,
+  activeTool,
+  workspace,
+  hideCreativeTools = false,
   projectTitle,
   title,
   editingTitle,
   saveState,
+  saveStateText,
   onBack,
   onStartTitleEditing,
   onTitleChange,
@@ -45,22 +50,31 @@ export function VisualProjectHeader({
   onBlurTitle,
   busy,
 }: VisualProjectHeaderProps) {
+  const [theme, setTheme] = useTheme();
+  const status =
+    saveStateText ??
+    {
+      saved: "已保存",
+      saving: "保存中",
+      conflict: "存在冲突",
+      error: "保存失败",
+    }[saveState];
   return (
-    <header className="visual-canvas-topbar">
-      <div className="canvas-project-identity">
-        <ResponsiveImage
-          className="canvas-brand-mark"
-          src="/brand/visual-workshop-mark-cutout.png"
-          alt=""
-        />
+    <header className="visual-project-header visual-canvas-topbar">
+      <div className="project-header-identity">
         <button
           type="button"
           aria-label="返回项目列表"
           disabled={busy}
           onClick={onBack}
         >
-          <ArrowLeft aria-hidden />
+          <ArrowLeft size={16} aria-hidden />
         </button>
+        <ResponsiveImage
+          className="project-header-brand"
+          src="/brand/visual-workshop-mark-cutout.png"
+          alt=""
+        />
         {editingTitle ? (
           <form
             onSubmit={(event) => {
@@ -80,92 +94,69 @@ export function VisualProjectHeader({
         ) : (
           <button
             type="button"
-            className="canvas-title"
+            className="project-header-title"
+            title={projectTitle}
             disabled={busy}
             onClick={onStartTitleEditing}
           >
-            {projectTitle}
-            <Pencil aria-hidden />
+            <span>{projectTitle}</span>
+            <Pencil size={12} aria-hidden />
           </button>
         )}
-        <span className={`canvas-save-state ${saveState}`} role="status">
-          <Save aria-hidden />
-          {saveState === "saving" ? (
-            <LoadingState variant="inline" label="保存中" />
-          ) : saveState === "saved" ? (
-            "已保存"
-          ) : saveState === "conflict" ? (
-            "存在冲突"
-          ) : (
-            "保存失败"
-          )}
+        <span
+          className={`canvas-save-state project-header-status ${saveState}`}
+          role="status"
+          title={status}
+        >
+          <span aria-hidden className="project-save-dot" />
+          <span className="project-save-text">{status}</span>
         </span>
       </div>
-      <div className="canvas-top-actions">
-        {onBoard && (
-          <div
-            className="visual-project-view-toggle"
-            role="group"
-            aria-label="项目视图"
-          >
-            <button
-              type="button"
-              className={activeView === "canvas" ? "active" : undefined}
-              aria-pressed={activeView === "canvas"}
-              disabled={busy}
-              onClick={onCanvas}
-            >
-              画布
-            </button>
-            <button
-              type="button"
-              aria-pressed="false"
-              disabled={busy}
-              onClick={onBoard}
-            >
-              看板
-            </button>
-            {(onScript || activeView === "script") && (
-              <button
-                type="button"
-                className={activeView === "script" ? "active" : undefined}
-                aria-pressed={activeView === "script"}
-                disabled={busy}
-                onClick={onScript}
-              >
-                剧本
-              </button>
-            )}
-            {(onPrevis || activeView === "previs") && (
-              <button
-                type="button"
-                className={activeView === "previs" ? "active" : undefined}
-                aria-pressed={activeView === "previs"}
-                disabled={busy}
-                onClick={onPrevis}
-              >
-                白模预演
-              </button>
-            )}
-          </div>
-        )}
-        <AmadeusButton />
-        {activeView === "canvas" && (
-          <button
-            type="button"
-            aria-label="新建窗口"
-            onClick={openCurrentPageInNewWindow}
-          >
-            <AppWindow aria-hidden />
-            新建窗口
-          </button>
-        )}
-        {onAcceptance && (
-          <button type="button" disabled={busy} onClick={onAcceptance}>
-            项目验收
-          </button>
-        )}
-        <ThemeToggle />
+      {!hideCreativeTools && (
+        <ProjectCreativeTools
+          active={workspace ?? activeTool ?? "workbench"}
+          onWorkbench={onWorkbench ?? onCanvas}
+          onScript={onScript}
+          onPrevis={onPrevis}
+          disabled={busy}
+        />
+      )}
+      <div className="project-header-actions">
+        <AmadeusButton className="project-header-assistant" />
+        <button
+          type="button"
+          aria-label={theme === "dark" ? "切换浅色" : "切换深色"}
+          title={theme === "dark" ? "切换浅色" : "切换深色"}
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        >
+          {theme === "dark" ? (
+            <Sun size={16} aria-hidden />
+          ) : (
+            <Moon size={16} aria-hidden />
+          )}
+        </button>
+        <BoardMenu
+          label="项目更多操作"
+          items={[
+            {
+              label: "重命名项目",
+              onSelect: onStartTitleEditing,
+              disabled: busy,
+            },
+            {
+              label: "新建窗口",
+              icon: <AppWindow size={16} aria-hidden />,
+              onSelect: () =>
+                window.open(
+                  window.location.href,
+                  "_blank",
+                  "noopener,noreferrer",
+                ),
+            },
+            { label: "浅色", onSelect: () => setTheme("light") },
+            { label: "深色", onSelect: () => setTheme("dark") },
+          ]}
+        />
       </div>
     </header>
   );

@@ -13,9 +13,11 @@ export function BoardMenu({
   label,
   items,
   triggerIcon,
+  triggerClassName,
 }: {
   label: string;
   triggerIcon?: ReactNode;
+  triggerClassName?: string;
   items: {
     label: string;
     onSelect: () => void;
@@ -70,7 +72,7 @@ export function BoardMenu({
     <>
       <button
         ref={trigger}
-        className="board-icon-button"
+        className={`board-icon-button ${triggerClassName ?? ""}`.trim()}
         aria-label={label}
         title={label}
         aria-haspopup="menu"

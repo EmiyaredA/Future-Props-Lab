@@ -1,5 +1,7 @@
 # 开发交付说明
 
+`0136_visual_storyboards` 与独立服务 `0016_visual_storyboards` 增加独立分镜文档及 CAS 版本。升级保留既有项目、素材、输出与人工通过标记；自动验收入口和执行器下线，历史记录不清除，未完成检查在启动时归属原账号并取消。
+
 `0135_visual_canvas_groups_and_cards` 与独立服务 `0015_visual_canvas_groups_and_cards` 保存画布分组及项目设定卡收录关系。升级保留节点、输出与账号级设定卡身份。
 
 `0134_visual_account_asset_cards` 和独立服务 `0014_visual_account_asset_cards` 把视觉设定卡归到账号，并保留已有卡片 ID、引用和版本。项目可以浏览同一账号的角色、场景和道具设定。

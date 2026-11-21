@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Play, X } from "lucide-react";
@@ -43,12 +44,16 @@ function transcriptFromAnalysis(raw: string, result: ScriptAnalysis) {
 
 export default function ScriptPrevisDraft({
   project,
+  previewContainer,
+  onPreviewChange,
   seed,
   onCreated,
   onCancel,
   onBusy,
 }: {
   project: string;
+  previewContainer?: HTMLElement | null;
+  onPreviewChange?: (visible: boolean) => void;
   seed?: ScriptSeed;
   onCreated: (scene: PrevisScene) => void;
   onCancel: () => void;
@@ -112,6 +117,7 @@ export default function ScriptPrevisDraft({
   function invalidate() {
     host.current?.dispose();
     host.current = null;
+    onPreviewChange?.(false);
     setResult(undefined);
     setPreview(undefined);
     setError("");
@@ -120,6 +126,7 @@ export default function ScriptPrevisDraft({
   async function build(text: string, setId: string) {
     if (!root.current) return;
     host.current?.dispose();
+    onPreviewChange?.(true);
     setPreview(undefined);
     let document = createSceneDocument();
     const props: TrumanHostProps = {
@@ -137,7 +144,15 @@ export default function ScriptPrevisDraft({
     };
     const instance = mountTrumanMap(root.current, props);
     host.current = instance;
-    const result = await instance.buildScript(text, setId);
+    let result;
+    try {
+      result = await instance.buildScript(text, setId);
+    } catch (failure) {
+      instance.dispose();
+      if (host.current === instance) host.current = null;
+      onPreviewChange?.(false);
+      throw failure;
+    }
     if (host.current !== instance) return;
     instance.update({ ...props, document, readOnly: true });
     setPreview({
@@ -189,7 +204,11 @@ export default function ScriptPrevisDraft({
     analyzedInput?.source?.revision === source?.revision;
 
   return (
-    <div className="creative-window script-previs-draft">
+    <div
+      className={`creative-window script-previs-draft${previewContainer ? " is-docked" : ""}`}
+      role="region"
+      aria-label="从剧本创建预演"
+    >
       <header className="creative-toolbar">
         <strong>从剧本创建预演</strong>
         <button
@@ -271,7 +290,7 @@ export default function ScriptPrevisDraft({
             {canUseModels && (
               <button
                 type="button"
-                className="creative-quiet"
+                className="creative-primary"
                 disabled={busy || !raw.trim() || !model}
                 onClick={() => analyze(true)}
               >
@@ -290,7 +309,14 @@ export default function ScriptPrevisDraft({
         </div>
         <div className="script-previs-preview">
           <h2>解析预览</h2>
-          <div className="creative-previs-render" ref={root} />
+          {previewContainer ? (
+            createPortal(
+              <div className="creative-previs-render" ref={root} />,
+              previewContainer,
+            )
+          ) : (
+            <div className="creative-previs-render" ref={root} />
+          )}
           {!result && (
             <p className="creative-feedback">
               {busy ? "正在解析剧本…" : "选择或粘贴一场剧本，解析后查看预演。"}

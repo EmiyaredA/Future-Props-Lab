@@ -17,7 +17,6 @@ from studio.apps.identity.storage.models.accounts import User
 from studio.apps.identity.website_access.external_sync import external_sync_actor_allowed
 from studio.apps.identity.website_access.interview import interview_actor_allowed
 from studio.apps.identity.website_access.video_preview import preview_actor_allowed
-from studio.apps.identity.website_access.visual_acceptance import acceptance_actor_allowed
 from studio.apps.interview_assistant.codex import CodexExecutor, executable
 from studio.apps.interview_assistant.runner import InterviewPreparationRunner
 from studio.apps.model_service.inference.runner import InferenceRunner
@@ -28,6 +27,7 @@ from studio.apps.model_service.playground.recovery import recover_interrupted_mo
 from studio.apps.model_service.playground.transcription_runner import ModelTestTranscriptionRunner
 from studio.apps.model_service.video_enhancement.tasks import VideoBackend, VideoEnhancement
 from studio.apps.thought_workshop.external_sync.runner import ArticleSyncRunner
+from studio.apps.visual_workshop.acceptance.retirement import retire_pending_reviews
 from studio.assembly.website.asset_library.storage.layout.website_upgrade import (
     reconcile_project_trash,
     reconcile_snapshot_imports,
@@ -50,7 +50,6 @@ from studio.assembly.website.model_service.admission.website_quotas import recov
 from studio.assembly.website.model_service.templates.website_sync import ModelTemplateSyncRunner
 from studio.assembly.website.motion_compositor.runner import MotionExportRunner
 from studio.assembly.website.video_editor.runner import VideoEditorRunner
-from studio.assembly.website.visual_workshop.acceptance.runner import AcceptanceRunner
 from studio.assembly.website.visual_workshop.website.generation_runner import VisualGenerationRunner
 from studio.config.local_models import FFMPEG_MODEL_ID, RELAY_MODEL_ID, compatible, definition
 from studio.contracts.model_service.video_runtime import VideoRuntimeError
@@ -135,6 +134,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     local_models.relay_busy = lambda: video_enhancement.current is not None
     lifespan_app.state.video_enhancement = video_enhancement
     await video_enhancement.recover()
+    await retire_pending_reviews(sessions)
     supervisor = RunnerSupervisor(
         (
             InterviewPreparationRunner(
@@ -154,12 +154,6 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             VisualGenerationRunner(
                 claim_admission=claim_visual_capacity,
                 queue_candidates=visual_queue_candidates,
-                session_factory=sessions,
-                settings=settings,
-                decrypt=lifespan_app.state.model_decrypt,
-            ),
-            AcceptanceRunner(
-                actor_allowed=acceptance_actor_allowed,
                 session_factory=sessions,
                 settings=settings,
                 decrypt=lifespan_app.state.model_decrypt,

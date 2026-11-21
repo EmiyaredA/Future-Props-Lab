@@ -1,0 +1,22 @@
+.reference-kind-tag {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  z-index: 2;
+  padding: 3px 7px;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+  background: #6b5591;
+}
+.reference-kind-tag.is-scene {
+  background: #3c6b91;
+}
+.reference-kind-tag.is-prop {
+  background: #987133;
+}
+.generation-media-preview {
+  position: relative;
+}

@@ -110,9 +110,9 @@ function fireCanvasDragEvent(
 }
 
 async function prepareSurface() {
-  const view = renderCanvas();
+  renderCanvas();
   expect(await screen.findByText("未命名项目")).toBeInTheDocument();
-  const surface = view.container.querySelector(".visual-canvas-surface")!;
+  const surface = await screen.findByRole("region", { name: "节点画布" });
   Object.defineProperty(surface, "getBoundingClientRect", {
     configurable: true,
     value: () => ({

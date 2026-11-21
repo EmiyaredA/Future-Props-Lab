@@ -14,9 +14,6 @@ import pytest
 from fastapi import FastAPI
 from sqlalchemy import select
 
-from studio.apps.agent_runtime.storage.migrations.registry import (
-    MIGRATIONS as AGENT_RUNTIME_MIGRATIONS,
-)
 from studio.apps.asset_library.references.references import AssetReferences
 from studio.apps.identity.clients.authorization import LiveAuthorization
 from studio.apps.identity.storage.service_models import VisualGenerationApproval
@@ -40,27 +37,14 @@ from studio.apps.visual_workshop.storage.generation_dispatch_records import (
     VisualGenerationDecision,
     VisualGenerationDispatch,
 )
-from studio.assembly.independent.agent_runtime.application import create_app as create_agent_runtime
 from studio.assembly.independent.media_rendering.application import create_app as create_rendering
-from studio.contracts.agent_runtime.connections import (
-    AcceptanceAgentCatalog,
-    AcceptanceAgentStatus,
-    ConnectionOptions,
-)
 from studio.contracts.asset_library.references import ReferenceUpdate
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.delegation import RequestGrant
 from studio.contracts.motion_compositor.motion_preview import FrameFile
 from studio.contracts.thought_workshop.thought_archives import ArchiveAuthenticator
-from studio.contracts.visual_workshop.visual_acceptance_assets import (
-    PURPOSE as ACCEPTANCE_ASSETS_PURPOSE,
-)
-from studio.contracts.visual_workshop.visual_acceptance_assets import AcceptanceAssetQuery
 from studio.contracts.visual_workshop.visual_catalog import (
     ACCEPTANCE_TARGET,
-    AGENT_ACCEPTANCE_PURPOSE,
-    AGENT_ACCEPTANCE_TARGET,
-    FIXED_ACCEPTANCE_TARGET,
     GENERATION_SOURCE,
     GENERATION_TARGET,
     PURPOSE,
@@ -88,18 +72,10 @@ from studio.contracts.visual_workshop.visual_snapshot import (
     SnapshotAssetQuery,
 )
 from studio.contracts.visual_workshop.visual_snapshot import ASSET_PURPOSE as SNAPSHOT_ASSET_PURPOSE
-from studio.host.agent_execution.agent_connections_worker import ConnectionWorker
-from studio.host.transport import NativeTransport
 from studio.runtime.database.migrations import apply
 from studio.runtime.database.sessions import Database
 from studio.runtime.http.capability_client import CapabilityClient, CapabilityDenied
 from studio.runtime.messaging.timed_peer import TimedPeer
-from tests.apps.agent_runtime.test_agent_runtime_service import (
-    IDENTITY_TOKEN,
-    INGRESS,
-    TOKEN,
-    NativeBridge,
-)
 from tests.apps.creative_workshop.test_creative_project_certification import CREDENTIALS, PROJECTS
 from tests.apps.thought_workshop.test_community_asset_protocol import (  # noqa: F401
     ASSETS_SECRET,
@@ -250,16 +226,6 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
         assert available[0]["max_prompt_length"] == 6000
         selection = await verify_model_choice(case, visual, http, available[0]["id"], database)
         await verify_generation_plan(case, visual, http, models.state, selection, monkeypatch)
-        path = "/v1/visual-workshop/projects/own/acceptance/models"
-        response = await http.get(path, headers=await authorize(case, "visual", "GET", path))
-        assert response.status_code == 200, response.text
-        entries = response.json()["items"]
-        assert len(entries) == 1 and entries[0]["slug"] == "vision-own"
-        assert "credential" not in response.text and "base_url" not in response.text
-        foreign = path.replace("/own/", "/foreign/")
-        assert (
-            await http.get(foreign, headers=await authorize(case, "visual", "GET", foreign))
-        ).status_code == 404
         grant = RequestGrant(
             "visual", PURPOSE, "GET", GENERATION_SOURCE, "models", "GET", GENERATION_TARGET
         )
@@ -275,8 +241,6 @@ async def test_visual_catalog_delegates_exact_paths_and_excludes_other_accounts(
                 headers={HEADER: token, "Origin": "https://browser.test"},
             )
         ).status_code == 403
-        await verify_fixed_acceptance(case, visual, http, models, database, tmp_path)
-        await verify_node_context(case, visual, http, entries[0]["id"], transport)
         await verify_native_generation(case, visual, http, models.state, selection, monkeypatch)
 
         logged_out = await case.browser.post(
@@ -631,251 +595,6 @@ async def verify_native_batch(case, visual, models, send, root, choice, calls):
         assert [row["request_payload"]["seed"] for row in children] == [17, 18, 19, 20]
         assert all(row["status"] == "completed" for row in children)
         assert calls.count(body["prompt"]) == 4
-
-
-async def verify_fixed_acceptance(case, visual, http, models, database, root):
-    source = "/v1/visual-workshop/acceptance/catalog"
-    async with database.sessions(info={"owner_user_id": case.viewer}) as session:
-        model = await session.scalar(select(ModelEntry).where(ModelEntry.slug == "vision-own"))
-        identity = model.id
-    models.state.settings.fpl_acceptance_model_owner_user_id = case.viewer
-    models.state.settings.fpl_acceptance_model_id = identity
-    case.identity.state.identity_options["service_credentials"]["agent-runtime"] = IDENTITY_TOKEN
-    state = root / "agent-runtime"
-    apply(state / "service.db", "agent-runtime", AGENT_RUNTIME_MIGRATIONS)
-    agent_runtime = create_agent_runtime(
-        state_root=state,
-        public_key=case.key.public_key(),
-        catalog=CATALOG,
-        transport=case.mesh,
-        options=ConnectionOptions(
-            identity_credential=IDENTITY_TOKEN, ingress=INGRESS, workers={"mac": TOKEN}
-        ),
-    )
-    case.mesh.apps["agent-runtime"] = agent_runtime
-    transport = NativeTransport(
-        service="agent-runtime",
-        base_url="http://127.0.0.1:19091/agent-runtime",
-        credential=TOKEN,
-        transport=NativeBridge(agent_runtime),
-    )
-    probes = []
-
-    async def fixed(*, probe):
-        probes.append(probe)
-        return AcceptanceAgentCatalog(
-            items=[
-                AcceptanceAgentStatus(
-                    id=identity,
-                    available=identity == "codex",
-                    message="已连接" if identity == "codex" else "未配置",
-                )
-                for identity in ("codex", "claude-code", "opencode", "dsh", "pi")
-            ]
-        )
-
-    worker = ConnectionWorker(
-        transport, root / "host", catalog=None, enable=None, acceptance_status=fixed
-    )
-    try:
-        async with agent_runtime.router.lifespan_context(agent_runtime):
-            headers = await authorize(case, "visual", "GET", source)
-            requested = asyncio.create_task(http.get(source, headers=headers))
-            await worker.poll_once()
-            result = await asyncio.wait_for(requested, 8)
-            assert result.status_code == 200, result.text
-            assert probes == [True]
-            items = result.json()["items"][0]["schemes"]
-            assert len(items) == 6
-            assert {item["id"] for item in items if item["available"]} == {
-                "motion-transfer:api",
-                "motion-transfer:codex",
-            }
-            assert items[0]["model_slug"] == "vision-own"
-            assert "credential" not in result.text and "executable" not in result.text
-            agent_url = "http://agent-runtime:8080" + AGENT_ACCEPTANCE_TARGET
-            assert (await http.get(agent_url, headers=headers)).status_code == 401
-            unrelated = await authorize(case, "visual", "GET", GENERATION_SOURCE)
-            for purpose, target_service, target in (
-                (PURPOSE, "models", FIXED_ACCEPTANCE_TARGET),
-                (AGENT_ACCEPTANCE_PURPOSE, "agent-runtime", AGENT_ACCEPTANCE_TARGET),
-            ):
-                with pytest.raises(CapabilityDenied):
-                    await visual.state.capabilities.authorize_request(
-                        unrelated[HEADER],
-                        RequestGrant(
-                            "visual",
-                            purpose,
-                            "GET",
-                            GENERATION_SOURCE,
-                            target_service,
-                            "GET",
-                            target,
-                        ),
-                    )
-    finally:
-        await transport.close()
-
-
-async def verify_node_context(case, visual, http, model_id, transport):
-    case.assets.state.capabilities = CapabilityClient(
-        service="assets", credential=ASSETS_SECRET, catalog=CATALOG, transport=case.mesh
-    )
-
-    async def send(method, path, *, service="visual", **kwargs):
-        headers = await authorize(case, service, method, path)
-        return await http.request(method, f"http://{service}" + path, headers=headers, **kwargs)
-
-    prefix = "/v1/visual-workshop/projects"
-    created = await send("POST", prefix, json={"title": "Acceptance project", "kind": "canvas"})
-    assert created.status_code == 200, created.text
-    project = created.json()["id"]
-    root = prefix + "/" + project
-    await visual.state.reference_delivery.process_once()
-
-    async def upload(filename, data, content_type):
-        reply = await send(
-            "POST",
-            "/v1/files",
-            service="assets",
-            data={"project_id": project},
-            files={"upload": (filename, data, content_type)},
-        )
-        assert reply.status_code == 200, reply.text
-        return reply.json()["id"]
-
-    from PIL import Image
-
-    png = io.BytesIO()
-    Image.new("RGB", (3, 4), "blue").save(png, "PNG")
-    image = await upload("character.png", png.getvalue(), "image/png")
-    motion = await upload(
-        "motion.mp4", bytes.fromhex("0000001866747970") + b"mp42synthetic", "video/mp4"
-    )
-    output = await upload(
-        "output.mp4", bytes.fromhex("0000001866747970") + b"mp42result", "video/mp4"
-    )
-    folder = await send(
-        "POST",
-        "/v1/file-folders",
-        service="assets",
-        json={"scope": "project", "project_id": project, "name": "素材"},
-    )
-    assert folder.status_code == 200, folder.text
-    nested = await send(
-        "POST",
-        "/v1/file-folders",
-        service="assets",
-        json={
-            "scope": "project",
-            "project_id": project,
-            "name": "细节",
-            "parent_id": folder.json()["id"],
-        },
-    )
-    assert nested.status_code == 200, nested.text
-    shared = await send(
-        "POST",
-        "/v1/files",
-        service="assets",
-        files={"upload": ("shared.png", png.getvalue(), "image/png")},
-    )
-    assert shared.status_code == 200, shared.text
-    shared_id = shared.json()["id"]
-    placed = await send(
-        "POST",
-        root + "/asset-references",
-        service="assets",
-        json={"asset_id": shared_id, "folder_id": nested.json()["id"]},
-    )
-    assert placed.status_code == 200, placed.text
-    saved = await send(
-        "PUT",
-        root + "/canvas",
-        json={
-            "expected_revision": 0,
-            "nodes": [
-                {
-                    "id": "review",
-                    "kind": "video",
-                    "title": "Review",
-                    "position": {"x": 0, "y": 0},
-                    "generation_draft": {
-                        "prompt": "Match the motion",
-                        "model_id": model_id,
-                        "reference_asset_ids": [image, shared_id],
-                        "video_asset_ids": [motion],
-                        "duration": 3,
-                        "ratio": "16:9",
-                        "resolution": "720p",
-                    },
-                }
-            ],
-        },
-    )
-    assert saved.status_code == 200, saved.text
-    await visual.state.reference_delivery.process_once()
-    created_output = await send(
-        "POST",
-        root + "/nodes/review/outputs",
-        json={"expected_revision": 1, "asset_id": output},
-    )
-    assert created_output.status_code == 200, created_output.text
-    path = root + "/nodes/review/acceptance"
-    current = await send("GET", path)
-    assert current.status_code == 200, current.text
-    assert current.json()["revision"] == 0
-    selection = {"expected_revision": 0, "scheme_id": "motion-transfer:api"}
-    chosen = await send("PUT", path, json=selection)
-    assert chosen.status_code == 200, chosen.text
-    result = chosen.json()
-    assert result["revision"] == 1 and result["canvas_revision"] == 2
-    assert result["issues"] == [] and result["prompt"] == "Match the motion"
-    assert {(entry["role"], entry["asset_id"]) for entry in result["inputs"]} == {
-        ("character", image),
-        ("character", shared_id),
-        ("motion", motion),
-        ("output", output),
-    }
-    assert (await send("GET", path)).json() == result
-    stale = await send("PUT", path, json=selection)
-    assert stale.status_code == 409 and stale.json()["current"] == result
-    summary = await send("GET", root + "/acceptance/summary")
-    assert summary.status_code == 200, summary.text
-    assert summary.json()["items"][0]["state"] == "uninspected"
-    assert (await send("GET", path, params={"output_id": "unknown"})).status_code == 404
-    query = AcceptanceAssetQuery(asset_ids=[image])
-    original = (await authorize(case, "visual", "GET", path))[HEADER]
-    with pytest.raises(CapabilityDenied):
-        await visual.state.capabilities.authorize_request(
-            original,
-            RequestGrant(
-                "visual",
-                ACCEPTANCE_ASSETS_PURPOSE,
-                "GET",
-                path,
-                "assets",
-                "POST",
-                query.path("foreign"),
-            ),
-        )
-
-    snapshot = await verify_snapshot(
-        case,
-        visual,
-        send,
-        root,
-        shared_id,
-        nested.json(),
-        image,
-        motion,
-        output,
-        (await send("GET", root + "/nodes/review/outputs")).json(),
-        model_id,
-        png.getvalue(),
-    )
-    await verify_snapshot_import(send, prefix, snapshot, model_id, transport)
-    await verify_generation_inputs(case, visual, http, root, project, image, png.getvalue())
 
 
 async def verify_generation_inputs(case, visual, http, root, project, image, data):

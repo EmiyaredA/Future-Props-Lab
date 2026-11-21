@@ -203,6 +203,12 @@ export function VideoReferenceStrip({
               <ProjectMediaPicker
                 key={kind}
                 compactStrip
+                referenceCardIds={Object.fromEntries(
+                  c.designReferences.map((entry) => [
+                    entry.asset_id,
+                    entry.card_id,
+                  ]),
+                )}
                 minimal
                 label={labels[kind]}
                 kind={kind}

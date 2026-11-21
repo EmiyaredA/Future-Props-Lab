@@ -70,6 +70,7 @@ sources.push(
   "web/mathFontData.ts",
   "web/applicationIcons.ts",
   "web/chunkGraph.ts",
+  "web/themeBootstrap.ts",
   "web/tsconfig.json",
   "web/package.json",
 );

@@ -427,3 +427,64 @@
 .exportMenuPopover .exportPanel small {
   margin-inline-start: 0.5rem;
 }
+
+.previs-scope-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.previs-scope-bar button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+}
+.previs-scope-bar button[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.previs-scope-bar small {
+  color: var(--muted);
+}
+.stage-object-bindings {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.stage-object-bindings label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 20px 8px 0;
+}
+.stage-object-bindings select {
+  background: var(--bg);
+  color: var(--text);
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.previs-adoption :is(img, video) {
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #111;
+}
+.previs-adoption label {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+}
+.previs-adoption select {
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 8px;
+  border-radius: 7px;
+}

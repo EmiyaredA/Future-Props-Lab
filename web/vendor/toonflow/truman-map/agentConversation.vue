@@ -4,7 +4,7 @@
       <div ref="list" class="messageList" role="region" aria-label="对话消息" tabindex="0" @scroll.passive="readFollowing">
         <template v-for="message in messages" :key="message.id">
           <agentMessageItem :message="message" :locked="locked" :editing="editingId === message.id" @edit="emit('edit', $event)" @branch="emit('branch', $event)" @remove="emit('remove', $event)" @cancelEdit="emit('cancelEdit')" />
-          <el-popover v-if="summary && message.id === summaryThrough" v-model:visible="summaryOpen" trigger="click" placement="top" :width="320" :showArrow="false" popperClass="agentSummaryPopover">
+          <el-popover v-if="summary && message.id === summaryThrough" v-model:visible="summaryOpen" trigger="click" placement="top" :width="320" :showArrow="false" popperClass="agentSummaryPopover truman-host-popup">
             <template #reference>
               <button type="button" class="compactedMark" aria-label="以上对话已压缩，查看记忆摘要" title="查看记忆摘要"><icon-arrows-minimize :size="12" /><span>以上对话已压缩</span></button>
             </template>

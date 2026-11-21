@@ -76,6 +76,8 @@ HTML 回退仅适用于页面导航，未知 API 和缺失程序资源返回原�
 - `0132_visual_previs_scenes` 在兼容网站登记视觉项目白模场景表。独立视觉服务对应 `0012_visual_previs_scenes`，升级按各自的显式迁移流程执行。
 - `0133_visual_creative_workflow` 和独立视觉服务对应的 `0013_visual_creative_workflow` 新增分集剧本、设定卡，并给白模场景补可空来源字段。升级先隔离验收，停机备份 Visual 数据库和启动配置后显式迁移，再核验现有项目和白模。
 - `0134_visual_account_asset_cards` 和独立 Visual 的 `0014_visual_account_asset_cards` 按项目原归属迁移卡片账号，保留卡 ID、内容和 revision。按停机备份与隔离验证流程升级，再核验同账号的设定库和项目入口。
+- `0136_visual_storyboards` 和独立 Visual 的 `0016_visual_storyboards` 新增项目分镜文档，保留现有画布、剧本、设定与输出。
+  按当前运行装配选择迁移链，先在隔离副本验证迁移与恢复，再停写备份、显式迁移并核验原项目内容；不迁移停用的旧装配数据库。
 - Schema 由 `db/migrations/` 维护。只在 `versions/` 追加迁移并更新 `registry.py`。已登记的 ID、顺序、SQL 和 checksum 保持完整。
   Schema 或持久化兼容性变更同步更新 ORM、注册表、测试和数据／API 文档。迁移包独立于应用运行时，可执行 schema 所需的
   确定性数据变换。日常数据管理走正式 API。禁止绕过应用写入持久数据库或手工伪造迁移状态。
@@ -138,3 +140,7 @@ HTML 回退仅适用于页面导航，未知 API 和缺失程序资源返回原�
 `health` 要核验本次涉及的所有服务和 Worker 的就绪状态，失败返回非零。
 存在未处理的工作或已经接收的写入请求时延后；暂停期间允许读回执，暂不接收新任务。
 发布失败会在暂停期间运行回退和健康检查；无法确认健康时保持暂停，核验恢复后才由操作员重新开放。
+
+### 视觉创作关联迁移
+
+独立 Visual `0017_visual_creation_links`（兼容网站 `0137_visual_creation_links`）仅新增项目关联表；分镜 JSON 的选段和逐镜预演字段为可选，旧文档继续可读。先验证隔离迁移、快照和历史恢复，再通过现有 Agent 空闲门禁停写并备份受影响 Visual 库、配置和代码，显式运行当前装配的迁移命令。不要迁移已停用装配的数据库。恢复后核验既有记录、服务/Worker 就绪和 Agent 入口，再开放写入。

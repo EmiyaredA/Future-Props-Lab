@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "028520e111289f93951d7c214e63d167aaaee2436e6829fe84d838525e41eb63",
+  "openapi_sha256": "6bd520bd0c9518ba0ea2e039fe8841fddc27e15269c63b3e5d90fb8c0d51994f",
   "operations": [
     {
       "service": "identity",
@@ -3329,36 +3329,6 @@
     {
       "service": "visual",
       "method": "GET",
-      "path": "/v1/visual-workshop/acceptance-templates",
-      "operation_id": "list_acceptance_templates_v1_visual_workshop_acceptance_templates_get"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/acceptance-templates",
-      "operation_id": "create_acceptance_template_v1_visual_workshop_acceptance_templates_post"
-    },
-    {
-      "service": "visual",
-      "method": "DELETE",
-      "path": "/v1/visual-workshop/acceptance-templates/{template_id}",
-      "operation_id": "delete_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__delete"
-    },
-    {
-      "service": "visual",
-      "method": "PUT",
-      "path": "/v1/visual-workshop/acceptance-templates/{template_id}",
-      "operation_id": "update_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__put"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/acceptance/catalog",
-      "operation_id": "acceptance_catalog_v1_visual_workshop_acceptance_catalog_get"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
       "path": "/v1/visual-workshop/asset-cards",
       "operation_id": "list_account_asset_cards_v1_visual_workshop_asset_cards_get"
     },
@@ -3473,84 +3443,6 @@
     {
       "service": "visual",
       "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/models",
-      "operation_id": "list_acceptance_models_v1_visual_workshop_projects__project_id__acceptance_models_get"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}",
-      "operation_id": "get_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__get"
-    },
-    {
-      "service": "visual",
-      "method": "PUT",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}",
-      "operation_id": "save_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__put"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs",
-      "operation_id": "list_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_get"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs",
-      "operation_id": "start_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_post"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}",
-      "operation_id": "get_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__get"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel",
-      "operation_id": "cancel_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__cancel_post"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions",
-      "operation_id": "decide_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__decisions_post"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts",
-      "operation_id": "create_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__repair_drafts_post"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples",
-      "operation_id": "sample_acceptance_video_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__samples_post"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/standard",
-      "operation_id": "get_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_get"
-    },
-    {
-      "service": "visual",
-      "method": "PUT",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/standard",
-      "operation_id": "save_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_put"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/acceptance/summary",
-      "operation_id": "acceptance_summary_v1_visual_workshop_projects__project_id__acceptance_summary_get"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
       "path": "/v1/visual-workshop/projects/{project_id}/asset-cards",
       "operation_id": "list_visual_asset_cards_v1_visual_workshop_projects__project_id__asset_cards_get"
     },
@@ -3622,6 +3514,18 @@
     },
     {
       "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/creation-links",
+      "operation_id": "get_creation_links_v1_visual_workshop_projects__project_id__creation_links_get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/creation-links",
+      "operation_id": "save_creation_links_v1_visual_workshop_projects__project_id__creation_links_put"
+    },
+    {
+      "service": "visual",
       "method": "POST",
       "path": "/v1/visual-workshop/projects/{project_id}/generation-batches",
       "operation_id": "create_generation_batch_v1_visual_workshop_projects__project_id__generation_batches_post"
@@ -3643,24 +3547,6 @@
       "method": "POST",
       "path": "/v1/visual-workshop/projects/{project_id}/node-uploads",
       "operation_id": "upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post"
-    },
-    {
-      "service": "visual",
-      "method": "GET",
-      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance",
-      "operation_id": "get_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_get"
-    },
-    {
-      "service": "visual",
-      "method": "PUT",
-      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance",
-      "operation_id": "select_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_put"
-    },
-    {
-      "service": "visual",
-      "method": "POST",
-      "path": "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs",
-      "operation_id": "start_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_runs_post"
     },
     {
       "service": "visual",
@@ -3751,6 +3637,18 @@
       "method": "GET",
       "path": "/v1/visual-workshop/projects/{project_id}/snapshot",
       "operation_id": "export_project_snapshot_v1_visual_workshop_projects__project_id__snapshot_get"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/projects/{project_id}/storyboard",
+      "operation_id": "get_visual_storyboard_v1_visual_workshop_projects__project_id__storyboard_get"
+    },
+    {
+      "service": "visual",
+      "method": "PUT",
+      "path": "/v1/visual-workshop/projects/{project_id}/storyboard",
+      "operation_id": "put_visual_storyboard_v1_visual_workshop_projects__project_id__storyboard_put"
     }
   ],
   "websockets": [
@@ -5344,6 +5242,12 @@
       "model": "VisualProjectAssetReference"
     },
     {
+      "table": "visual_creation_links",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.creation_links.models",
+      "model": "VisualCreationLinks"
+    },
+    {
       "table": "visual_node_outputs",
       "service": "visual",
       "module": "studio.apps.visual_workshop.outputs.models",
@@ -5444,6 +5348,12 @@
       "service": "visual",
       "module": "studio.apps.visual_workshop.storage.service_models",
       "model": "VisualCompositionDispatch"
+    },
+    {
+      "table": "visual_storyboards",
+      "service": "visual",
+      "module": "studio.apps.visual_workshop.storyboard.models",
+      "model": "VisualStoryboard"
     },
     {
       "table": "project_operation_receipts",

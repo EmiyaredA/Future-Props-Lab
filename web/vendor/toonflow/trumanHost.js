@@ -1,4 +1,5 @@
 import { createApp, h, shallowRef } from "vue";
+import "./truman-theme.css";
 import "element-plus/theme-chalk/base.css";
 import "element-plus/theme-chalk/el-button.css";
 import "element-plus/theme-chalk/el-checkbox.css";
@@ -31,7 +32,14 @@ export function scriptSetOptions(script) {
 }
 
 export function mountTrumanMap(element, initial) {
+  element.classList.add("truman-map-host");
+  const syncTheme = () => {
+    element.dataset.previsTheme = props.value.editorTheme ?? element.ownerDocument.documentElement.dataset.theme ?? "light";
+  };
   const props = shallowRef(initial);
+  syncTheme();
+  const themeObserver = new MutationObserver(syncTheme);
+  themeObserver.observe(element.ownerDocument.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   const monitor = shallowRef(initial.document);
   const studio = shallowRef(null);
   const app = createApp({
@@ -81,6 +89,10 @@ export function mountTrumanMap(element, initial) {
       if (!studio.value) throw new Error("3D 预览未准备好");
       return studio.value.hostBuildScript(script, template);
     },
+    async captureReference(kind, cameraId) {
+      if (!studio.value) throw new Error("3D 预览未准备好");
+      return studio.value.hostCaptureReference(kind, cameraId);
+    },
     isBusy() {
       return studio.value?.hostIsBusy() ?? false;
     },
@@ -95,9 +107,13 @@ export function mountTrumanMap(element, initial) {
         monitor.value = next.document;
       }
       props.value = next;
+      syncTheme();
     },
     dispose() {
+      themeObserver.disconnect();
       app.unmount();
+      element.classList.remove("truman-map-host");
+      delete element.dataset.previsTheme;
     },
   };
 }

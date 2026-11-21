@@ -42,9 +42,11 @@ from studio.apps.visual_workshop.storage.models import (
     VisualPrevisScene,
     VisualWorkshopProject,
 )
+from studio.apps.visual_workshop.storyboard.snapshots import import_storyboard
 from studio.assembly.website.visual_workshop.website.projects import project_out
 from studio.config.settings import Settings
 from studio.contracts.asset_library.incoming import IncomingFile
+from studio.contracts.asset_library.project_snapshots import ProjectSnapshotImportWarning
 from studio.runtime.database.project_files import importing_project_layout
 from studio.runtime.files.project_archives import (
     ExportedProjectSnapshot,
@@ -285,10 +287,28 @@ class VisualWorkshopProjectSnapshots:
             outputs = import_outputs(
                 payload.get("outputs", []), nodes, edges, asset_ids, project.id
             )
+            scene_keys = [new_id() for _ in import_scenes(payload)]
+            scene_ids = dict(zip(payload.get("previs_scene_ids", []), scene_keys, strict=False))
+            storyboard, _detached = import_storyboard(
+                payload,
+                project.id,
+                dict(zip(old_nodes, [node["id"] for node in nodes], strict=True)),
+                scene_ids,
+            )
             asset_kinds = {asset_ids[item["id"]]: item["media_kind"] for item in assets}
             creative, creative_assets, models = import_creative_workflow(
                 payload, self.owner_user_id, project.id, asset_ids
             )
+            if storyboard:
+                creative.append(storyboard)
+            if _detached or payload.get("creation_links"):
+                warnings.append(
+                    ProjectSnapshotImportWarning(
+                        code="storyboard_cards_detached",
+                        field="storyboard.shots.card_ids",
+                        message="镜头设计已导入；账号设定库中的卡片关联需要在目标项目重新选择。",
+                    )
+                )
             if any(asset_kinds[asset] != "image" for asset in creative_assets):
                 raise ProjectSnapshotError("设定卡引用的素材不是图片")
             asset_mimes = {asset_ids[item["id"]]: item["mime_type"] for item in assets}
@@ -383,11 +403,12 @@ class VisualWorkshopProjectSnapshots:
                         node["approved"] = False
                 self.session.add_all(
                     VisualPrevisScene(
+                        id=scene_key,
                         project_id=project.id,
                         document=remap_scene_models(body.document, asset_ids),
                         **body.model_dump(exclude={"document"}),
                     )
-                    for body in scenes
+                    for scene_key, body in zip(scene_keys, scenes, strict=True)
                 )
                 self.session.add_all(creative)
                 self.session.add(

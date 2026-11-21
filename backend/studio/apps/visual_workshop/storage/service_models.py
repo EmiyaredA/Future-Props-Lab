@@ -19,6 +19,7 @@ from studio.apps.visual_workshop.acceptance.models import (
     AcceptanceTemplate,
     NodeAcceptanceBinding,
 )
+from studio.apps.visual_workshop.creation_links.models import VisualCreationLinks
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.storage.generation_dispatch_records import (
     VisualGenerationDecision,
@@ -34,6 +35,7 @@ from studio.apps.visual_workshop.storage.models import (
     VisualWorkshopProject,
 )
 from studio.apps.visual_workshop.storage.review_dispatch_records import VisualReviewDispatch
+from studio.apps.visual_workshop.storyboard.models import VisualStoryboard
 from studio.runtime.database.migration_receipts import ImportReceiptFields
 from studio.runtime.database.project_operations import ProjectOperationReceipt
 from studio.runtime.time import utc_now
@@ -119,6 +121,8 @@ MODELS = (
     VisualCanvasDocument,
     VisualPrevisScene,
     VisualScript,
+    VisualStoryboard,
+    VisualCreationLinks,
     VisualAssetCard,
     VisualGenerationTask,
     VisualGenerationBatch,

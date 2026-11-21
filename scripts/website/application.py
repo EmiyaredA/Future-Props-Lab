@@ -101,6 +101,7 @@ def create_app():
 
     from studio.assembly.website.application import create_app as create_backend_app
     from studio.assembly.website.public_access import WebAccess
+    from studio.assembly.website.routes import RETIRED_PUBLIC_API_PATHS
     from studio.contracts.gateway.automation_policy import automation_allowed
     from studio.contracts.gateway.web_access import AccessError
 
@@ -141,6 +142,7 @@ def create_app():
         frontend_port=3000 if shared else None,
         static=static,
         public_access=access,
+        compatibility_api_paths=RETIRED_PUBLIC_API_PATHS,
         happier_local=happier_local,
         automation_policy=automation_allowed,
     )

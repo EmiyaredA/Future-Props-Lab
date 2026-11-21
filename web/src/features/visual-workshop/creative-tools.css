@@ -1,0 +1,273 @@
+.visual-project-header.visual-canvas-topbar {
+  position: relative;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: initial;
+  gap: 20px;
+  width: 100%;
+  height: var(--project-header-height, 56px);
+  min-height: var(--project-header-height, 56px);
+  padding: 0 12px;
+  box-sizing: border-box;
+  background: var(--surface);
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  pointer-events: auto;
+  transform: none;
+  z-index: 45;
+}
+.project-header-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 360px;
+  min-width: 0;
+}
+.project-header-brand {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  flex: none;
+}
+.project-header-identity form {
+  min-width: 0;
+  flex: 1;
+}
+.project-header-identity input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.visual-project-header :is(button, input) {
+  font: inherit;
+  font-size: 14px;
+  min-height: 36px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  padding: 0 8px;
+}
+.visual-project-header button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.visual-project-header button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.visual-project-header button:hover:not(:disabled) {
+  background: var(--bg);
+}
+.visual-project-header :focus-visible,
+.workbench-view-toggle :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.visual-project-header .project-header-title {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  justify-content: flex-start;
+  font-weight: 600;
+  padding: 0;
+}
+.project-header-title > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.project-header-title > svg {
+  flex: none;
+}
+.project-header-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--muted);
+}
+.project-save-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.project-header-status.saved {
+  color: var(--success, #658f73);
+}
+.project-header-status:is(.error, .conflict) {
+  color: var(--danger);
+}
+.project-creative-tools {
+  flex: none;
+}
+.project-creative-tools > [role="tablist"] {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.visual-project-header .project-creative-tools [role="tab"] {
+  position: relative;
+  border: 0;
+  padding: 0 12px;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.project-creative-tools [role="tab"]::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  height: 2px;
+  left: 8px;
+  right: 8px;
+  background: transparent;
+  transition: background 150ms;
+}
+.visual-project-header .project-creative-tools [data-state="active"] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.project-creative-tools [data-state="active"]::after {
+  background: var(--accent);
+}
+.project-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  flex: none;
+}
+.project-header-actions > button:not(.project-header-assistant) {
+  width: 36px;
+  padding: 0;
+}
+.workbench-view-toggle {
+  display: flex;
+  width: max-content;
+  flex: none;
+  gap: 2px;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.workbench-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 5px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+.workbench-view-toggle button[aria-pressed="true"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+@media (max-width: 1023px) {
+  .visual-project-header.visual-canvas-topbar {
+    gap: 8px;
+  }
+  .project-header-identity {
+    flex-basis: 230px;
+  }
+  .project-save-text {
+    display: none;
+  }
+  .visual-project-header .project-header-assistant {
+    width: 36px;
+    padding: 0;
+    font-size: 0;
+    gap: 0;
+  }
+  .project-header-assistant svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+@media (max-width: 700px) {
+  .visual-project-header.visual-canvas-topbar {
+    padding: 0 6px;
+    gap: 6px;
+  }
+  .project-header-identity {
+    flex: 1;
+  }
+  .project-header-brand,
+  .project-header-status,
+  .project-header-title,
+  .project-header-actions > button:not(.board-icon-button) {
+    display: none !important;
+  }
+  .project-header-identity > button:first-child {
+    width: 30px;
+    padding: 0;
+  }
+  .visual-project-header .project-creative-tools [role="tab"] {
+    padding: 0 8px;
+  }
+  .project-header-actions {
+    margin-left: 0;
+  }
+  .project-header-identity:has(form) {
+    position: absolute;
+    top: var(--project-header-height, 56px);
+    left: 8px;
+    right: 8px;
+    padding: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .project-creative-tools [role="tab"]::after {
+    transition: none;
+  }
+}
+
+/* Reserve identical hitboxes so selection never changes header proportions. */
+.visual-project-header .project-creative-tools > [role="tablist"] {
+  display: grid;
+  grid-template-columns: repeat(3, 112px);
+  gap: 4px;
+}
+.visual-project-header .project-creative-tools [role="tab"] {
+  width: 112px;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0;
+}
+@media (max-width: 700px) {
+  .visual-project-header .project-creative-tools > [role="tablist"] {
+    grid-template-columns: repeat(3, 88px);
+    gap: 2px;
+  }
+  .visual-project-header .project-creative-tools [role="tab"] {
+    width: 88px;
+    padding: 0;
+  }
+}
+
+.visual-project-header
+  :is(
+    .project-header-actions,
+    .project-header-identity,
+    .project-creative-tools
+  ) {
+  pointer-events: auto;
+}

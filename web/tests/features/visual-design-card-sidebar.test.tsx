@@ -3,7 +3,11 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CommonDesignCards } from "@features/visual-workshop/board/CommonDesignCards";
-import { cardsKey, type Card } from "@features/visual-workshop/creative/api";
+import {
+  cardsKey,
+  type Card,
+  type CardKind,
+} from "@features/visual-workshop/creative/api";
 
 const card = (id: string, title: string, parent_id?: string): Card => ({
   id,
@@ -19,7 +23,7 @@ const card = (id: string, title: string, parent_id?: string): Card => ({
 const main = card("main", "林夏");
 const variant = card("rain", "林夏 · 雨衣", main.id);
 
-function mount(ids: string[] = [], search = "") {
+function mount(ids: string[] = [], search = "", kind: CardKind = "character") {
   const client = new QueryClient({
     defaultOptions: { queries: { staleTime: Infinity } },
   });
@@ -31,6 +35,7 @@ function mount(ids: string[] = [], search = "") {
     <QueryClientProvider client={client}>
       <CommonDesignCards
         projectId="test-project"
+        kind={kind}
         ids={ids}
         search={search}
         canUse={false}
@@ -56,11 +61,11 @@ function mount(ids: string[] = [], search = "") {
   return { add, source, view };
 }
 
-test("three fixed card groups remain available when empty", async () => {
-  const { add } = mount();
-  for (const label of ["人设", "场景", "道具"]) {
-    expect(screen.getByRole("region", { name: label })).toBeVisible();
-  }
+test("the selected card view exposes its own empty state and add actions", async () => {
+  const { add } = mount([], "", "scene");
+  expect(screen.getByRole("region", { name: "场景" })).toBeVisible();
+  expect(screen.queryByRole("region", { name: "人设" })).toBeNull();
+  expect(screen.getByText("暂无场景，点击 + 添加")).toBeVisible();
   await userEvent.click(screen.getByRole("button", { name: "添加场景卡" }));
   await userEvent.click(screen.getByRole("menuitem", { name: "从设定库添加" }));
   expect(add).toHaveBeenCalledWith("scene");

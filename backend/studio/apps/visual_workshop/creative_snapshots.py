@@ -1,19 +1,32 @@
 """Freeze and remap the project script and design library in portable snapshots."""
 
+from studio.apps.visual_workshop.creation_links.models import VisualCreationLinks
 from studio.apps.visual_workshop.creative_assets import model_id, model_path
+from studio.apps.visual_workshop.previs_scenes import scene_rows
 from studio.apps.visual_workshop.schemas.creative_workflow import CardOut, ScriptOut
 from studio.apps.visual_workshop.storage.models import (
     VisualAssetCard,
     VisualScript,
 )
+from studio.apps.visual_workshop.storyboard.snapshots import export_storyboard
 from studio.runtime.files.project_archives import ProjectSnapshotError
 from studio.runtime.ids import new_id
 
 
 async def export_creative_workflow(session, project_id):
     script = await session.get(VisualScript, project_id)
+    links = await session.get(VisualCreationLinks, project_id)
     return {
-        "script": {"episodes": script.episodes, "revision": script.revision} if script else None
+        "previs_scene_ids": [row.id for row in await scene_rows(session, project_id)],
+        "creation_links": {
+            "scenes": links.scenes,
+            "objects": links.objects,
+            "revision": links.revision,
+        }
+        if links
+        else None,
+        "script": {"episodes": script.episodes, "revision": script.revision} if script else None,
+        "storyboard": await export_storyboard(session, project_id),
     }
 
 

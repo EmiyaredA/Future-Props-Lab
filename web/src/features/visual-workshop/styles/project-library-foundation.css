@@ -250,7 +250,7 @@
 .canvas-media-node-actions {
   position: absolute;
   z-index: 8;
-  top: var(--canvas-media-actions-top, -43px);
+  top: var(--canvas-media-actions-top, -54px);
   left: 50%;
   padding: 5px 7px;
   border: 1px solid var(--line-strong);
@@ -270,16 +270,19 @@
   pointer-events: none;
 }
 
-.canvas-node-actions button,
-.canvas-node-actions a {
-  width: 26px;
-  height: 26px;
+.canvas-node .canvas-node-actions :is(button, a) {
+  box-sizing: border-box;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
   display: grid;
   place-items: center;
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--faint);
+  color: var(--muted);
   text-decoration: none;
 }
 
@@ -304,8 +307,12 @@
   color: var(--danger);
 }
 
-.canvas-node-actions svg {
-  width: 13px;
+.canvas-node .canvas-node-actions svg {
+  display: block;
+  flex: none;
+  width: 18px;
+  height: 18px;
+  max-width: none;
 }
 
 .canvas-node > textarea {

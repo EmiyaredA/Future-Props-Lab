@@ -45,7 +45,11 @@ from studio.apps.visual_workshop.storage.models import (
     VisualScript,
     VisualWorkshopProject,
 )
+from studio.apps.visual_workshop.storyboard.models import VisualStoryboard
+from studio.apps.visual_workshop.storyboard.snapshots import import_storyboard
+from studio.contracts.asset_library.project_snapshots import ProjectSnapshotImportWarning
 from studio.runtime.files.project_archives import ProjectSnapshotError
+from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now
 
 OWNED_RECORDS = {
@@ -53,6 +57,7 @@ OWNED_RECORDS = {
     for model in (
         VisualCanvasDocument,
         VisualScript,
+        VisualStoryboard,
         VisualAssetCard,
         VisualPrevisScene,
         VisualNodeOutput,
@@ -172,6 +177,20 @@ class SnapshotValues:
         if any(metadata[asset]["mime_type"] != MODEL_MIME for asset in models):
             raise ProjectSnapshotError("白模模型文件无效")
         node_ids = dict(zip(original_nodes, [node["id"] for node in nodes], strict=True))
+        scene_keys = [new_id() for _ in self.scenes]
+        scene_ids = dict(zip(self.creative.get("previs_scene_ids", []), scene_keys, strict=False))
+        storyboard, _detached = import_storyboard(self.creative, project_id, node_ids, scene_ids)
+        _detached |= bool(self.creative.get("creation_links"))
+        if storyboard:
+            creative.append(storyboard)
+        if _detached:
+            warnings.append(
+                ProjectSnapshotImportWarning(
+                    code="storyboard_cards_detached",
+                    field="storyboard.shots.card_ids",
+                    message="镜头设计已导入；账号设定库中的卡片关联需要在目标项目重新选择。",
+                )
+            )
         output_ids = {
             original["id"]: row.id for original, row in zip(self.outputs, outputs, strict=False)
         }
@@ -202,13 +221,14 @@ class SnapshotValues:
         now = utc_now()
         scenes = [
             VisualPrevisScene(
+                id=scene_key,
                 project_id=project_id,
                 created_at=now,
                 updated_at=now,
                 document=remap_scene_models(body.document, asset_ids),
                 **body.model_dump(exclude={"document"}),
             )
-            for body in self.scenes
+            for scene_key, body in zip(scene_keys, self.scenes, strict=True)
         ]
         project = VisualWorkshopProject(
             id=project_id,

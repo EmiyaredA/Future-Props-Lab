@@ -1,3 +1,4 @@
+import { SceneStageBinding } from "./SceneStageBinding";
 import { CardLibraryGroups } from "./CardLibraryGroups";
 import { libraryFamilies } from "./cardFamilies";
 import { useCardNameSort } from "./useCardNameSort";
@@ -80,6 +81,7 @@ export function AssetCards({
   fixedKind,
   initialCardId,
   onCloseCard,
+  onOpenPrevis,
   onCreated,
 }: {
   project?: string;
@@ -87,6 +89,7 @@ export function AssetCards({
   fixedKind?: CardKind;
   initialCardId?: string;
   onCloseCard?: () => void;
+  onOpenPrevis?: (id: string) => void;
   onCreated?: (card: Card) => Promise<void>;
 }) {
   const client = useQueryClient();
@@ -134,6 +137,7 @@ export function AssetCards({
     <CardEditor
       key={card.id}
       project={project}
+      onOpenPrevis={onOpenPrevis}
       initial={card}
       readOnly={readOnly}
       creation={creation}
@@ -276,6 +280,7 @@ function CardEditor({
   onChanged,
   onVariant,
   creation,
+  onOpenPrevis,
 }: {
   project?: string;
   initial: Card;
@@ -284,6 +289,7 @@ function CardEditor({
   onChanged: (card: Card) => void;
   onVariant: (parent: Card) => Promise<void>;
   creation: ReturnType<typeof useCardCreation>;
+  onOpenPrevis?: (id: string) => void;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const client = useQueryClient();
@@ -412,8 +418,10 @@ function CardEditor({
   }, []);
 
   function close() {
-    if (busy || (dirty && !window.confirm("舍弃尚未保存的设定修改？"))) return;
+    if (busy || (dirty && !window.confirm("舍弃尚未保存的设定修改？")))
+      return false;
     onClose();
+    return true;
   }
 
   function edit(patch: Partial<Card>) {
@@ -685,6 +693,17 @@ function CardEditor({
                       </div>
                     </div>
                   </details>
+                  {project && draft.kind === "scene" && (
+                    <SceneStageBinding
+                      project={project}
+                      cardId={draft.id}
+                      title={draft.title}
+                      readOnly={readOnly}
+                      onOpen={(id) => {
+                        if (close()) onOpenPrevis?.(id);
+                      }}
+                    />
+                  )}
                   {canUseModels && !draft.archived && (
                     <details className="card-editor-disclosure">
                       <summary>

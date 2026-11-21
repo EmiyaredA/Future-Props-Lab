@@ -1,0 +1,290 @@
+.board-materials:has(.board-material-views) {
+  width: var(--project-rail-width, 56px);
+  padding: 0;
+  gap: 0;
+  overflow: visible;
+  z-index: 30;
+  box-sizing: border-box;
+  border-right: 0;
+}
+.board-materials > .board-output-heading {
+  display: none;
+}
+.board-material-views {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: var(--project-rail-width, 56px);
+}
+.board-material-rail {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 var(--project-rail-width, 56px);
+  box-sizing: border-box;
+  gap: 8px;
+  padding: 8px 4px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.visual-project-board .board-material-view-tab {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 48px;
+  height: 64px;
+  min-height: 64px;
+  padding: 16px 0 4px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+}
+.board-material-view-tab:nth-child(3) {
+  margin-top: 8px;
+}
+.board-material-view-tab:nth-child(3)::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 8px;
+  right: 8px;
+  border-top: 1px solid var(--border);
+}
+.visual-project-board .board-material-view-tab[data-state="active"] {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.board-material-view-tab small {
+  position: absolute;
+  top: 2px;
+  right: 1px;
+  padding-inline: 2px;
+  font-size: 10px;
+  line-height: 12px;
+  min-width: 12px;
+  border-radius: 4px;
+  color: var(--muted);
+  background: var(--surface);
+  font-variant-numeric: tabular-nums;
+}
+.board-material-pane {
+  position: absolute;
+  z-index: 32;
+  top: 6px;
+  left: calc(var(--project-rail-width, 56px) + 6px);
+  display: flex;
+  flex-direction: column;
+  width: min(var(--project-pane-width, 280px), calc(100vw - 76px));
+  max-height: calc(100% - 12px);
+  min-height: 0;
+  gap: 16px;
+  padding: 16px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+.board-material-pane[hidden] {
+  display: none;
+}
+.board-material-pane-heading {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+}
+.visual-project-board .board-material-view-title {
+  flex: 1;
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+.visual-project-board .board-material-pane-heading button {
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.board-material-pane .board-material-content {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  gap: 8px;
+}
+.board-material-pane .board-search {
+  height: 40px;
+  min-height: 40px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  padding: 8px 10px;
+}
+.board-material-pane .board-search input {
+  height: 22px;
+  min-height: 0;
+  padding: 0;
+  line-height: 22px;
+}
+.board-materials:has(.is-open.is-pinned),
+.board-material-views.is-open.is-pinned {
+  width: var(--project-sidebar-width, 336px);
+}
+.is-pinned .board-material-pane {
+  left: var(--project-rail-width, 56px);
+  top: 0;
+  bottom: 0;
+  max-height: none;
+  height: 100%;
+  border-radius: 0;
+  border-top: 0;
+  border-bottom: 0;
+  box-shadow: none;
+}
+.board-file-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.board-create-split {
+  display: flex;
+  flex: 0 1 auto;
+}
+.visual-project-board .board-create-split > .board-primary {
+  min-width: 78px;
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: 13px;
+  border-radius: 6px 0 0 6px;
+  box-shadow: none;
+  white-space: nowrap;
+}
+.visual-project-board .board-create-split > .board-create-options {
+  align-self: stretch;
+  width: 24px;
+  height: auto;
+  min-height: 32px;
+  border: 1px solid var(--board-accent);
+  border-left-color: #ffffff40;
+  border-radius: 0 6px 6px 0;
+  background: var(--board-accent);
+  color: #fff;
+}
+.board-file-actions > .board-upload {
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.board-file-actions svg {
+  width: 14px;
+  height: 14px;
+}
+.board-material-pane .board-category > summary {
+  padding-block: 6px;
+}
+.board-material-pane .board-material-row {
+  margin: 2px 0;
+  border-color: transparent;
+}
+.board-material-pane .board-material {
+  min-height: 56px;
+}
+.board-material-pane .board-material-thumb {
+  width: 40px;
+  height: 40px;
+}
+.board-material-pane .board-material-row > .board-icon-button {
+  width: 32px;
+  height: 36px;
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
+}
+.board-material-pane .board-material-footer button {
+  min-height: 36px;
+  padding-inline: 8px;
+  font-size: 14px;
+}
+.board-material-pane .board-design-cards section {
+  padding: 0;
+  border: 0;
+}
+.board-material-pane .board-design-heading {
+  margin-bottom: 8px;
+}
+.board-material-pane .board-design-count {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.board-material-pane .board-design-card {
+  min-height: 56px;
+}
+.board-material-pane .board-design-empty {
+  padding: 20px 0;
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: center;
+}
+@media (max-width: 1023px) {
+  .board-materials:has(.is-open.is-pinned),
+  .board-material-views.is-open.is-pinned {
+    width: var(--project-rail-width, 56px);
+  }
+  .is-pinned .board-material-pane {
+    left: calc(var(--project-rail-width, 56px) + 6px);
+    top: 6px;
+    bottom: auto;
+    height: auto;
+    max-height: calc(100% - 12px);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .visual-project-board .board-material-pane-heading .material-panel-pin {
+    display: none;
+  }
+}
+
+.visual-project-board .material-panel-pin[aria-pressed="true"] {
+  color: var(--accent);
+}
+.material-panel-pin[aria-pressed="true"] svg {
+  fill: currentColor;
+}
+.board-material-view-tab[data-state="active"] small {
+  color: var(--accent);
+}
+.board-material-pane
+  :is(.board-material strong, .board-design-card-name strong) {
+  font-size: 14px;
+  font-weight: 500;
+}
+.board-material-pane
+  :is(.board-design-card-thumb, .board-design-card-thumb img) {
+  width: 40px;
+  height: 40px;
+}
+.board-material-pane .board-design-card-open {
+  gap: 12px;
+  min-height: 56px;
+}
+.board-material-pane .board-design-card-title {
+  flex-wrap: wrap;
+  gap: 3px 6px;
+}
+.board-material-pane .board-design-card-variant {
+  max-width: 100%;
+}
+.visual-project-board .board-material-pane .board-design-heading button {
+  min-height: 32px;
+  width: 32px;
+}

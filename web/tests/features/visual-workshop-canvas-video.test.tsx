@@ -1,5 +1,5 @@
 import { beforeEach, vi } from "vitest";
-import { fireEvent, screen, waitFor } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { uploadManagedFile } from "@features/files/api";
 import {
@@ -89,7 +89,11 @@ test("renders video nodes as an attached 16:9 creation workspace", async () => {
   const user = userEvent.setup();
   const { container } = renderCanvas();
 
-  expect(await screen.findByText("视频1")).toBeInTheDocument();
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("视频1"),
+  ).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "选择视频素材" }),
   ).toBeInTheDocument();
@@ -99,23 +103,18 @@ test("renders video nodes as an attached 16:9 creation workspace", async () => {
   expect(screen.getByRole("complementary", { name: "节点检查器" })).toHaveClass(
     "is-embedded",
   );
-  expect(screen.getByRole("tab", { name: "素材" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-  expect(screen.getByRole("tab", { name: "生成设置" })).toHaveAttribute(
-    "aria-selected",
-    "false",
-  );
-  await user.click(screen.getByRole("tab", { name: "生成设置" }));
-  expect(screen.getByRole("tab", { name: "生成设置" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
-  expect(screen.getByRole("tab", { name: "素材" })).toHaveAttribute(
-    "aria-selected",
-    "false",
-  );
+  expect(
+    screen.queryByRole("tab", { name: "生成设置" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("tab", { name: "生成设置" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("tab", { name: "生成设置" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("tab", { name: "生成设置" }),
+  ).not.toBeInTheDocument();
   expect(
     screen.getByRole("complementary", { name: "节点 AI 生成" }),
   ).toBeInTheDocument();
@@ -146,7 +145,11 @@ test.each([0.5, 1, 2])(
     const user = userEvent.setup();
     const { container } = renderCanvas();
 
-    expect(await screen.findByText("视频1")).toBeInTheDocument();
+    expect(
+      await within(
+        await screen.findByRole("region", { name: "节点画布" }),
+      ).findByText("视频1"),
+    ).toBeInTheDocument();
     const surface = container.querySelector<HTMLElement>(
       ".visual-canvas-surface",
     )!;
@@ -154,13 +157,17 @@ test.each([0.5, 1, 2])(
       String(1 / zoom),
     );
     expect(surface.style.getPropertyValue("--canvas-media-actions-top")).toBe(
-      `${-43 / zoom}px`,
+      `${-54 / zoom}px`,
     );
     expect(surface.style.getPropertyValue("--canvas-inspector-gap")).toBe(
       `${22 / zoom}px`,
     );
 
-    await user.click(screen.getByText("视频1"));
+    await user.click(
+      within(screen.getByRole("region", { name: "节点画布" })).getByText(
+        "视频1",
+      ),
+    );
     expect(
       container.querySelector(".canvas-media-node-actions"),
     ).toBeInTheDocument();
@@ -204,7 +211,11 @@ test("renders video node draft references as the canvas preview", async () => {
     updated_at: "2026-08-03T08:00:00Z",
   });
   const { container } = renderCanvas();
-  expect(await screen.findByText("咖啡馆桌面小世界")).toBeInTheDocument();
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("咖啡馆桌面小世界"),
+  ).toBeInTheDocument();
   expect(await screen.findByAltText("生成参考素材预览")).toBeInTheDocument();
   expect(fetchApiBlob).toHaveBeenCalledWith(
     "/v1/files/reference-image-1/thumbnail?size=640",
@@ -304,13 +315,16 @@ test("creates video tasks with the selected canvas node link", async () => {
   const user = userEvent.setup();
   const { container } = renderCanvas();
 
-  expect(await screen.findByText("镜头1")).toBeInTheDocument();
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("镜头1"),
+  ).toBeInTheDocument();
   const node = container.querySelector<HTMLElement>(
     "[data-node-id='video-1']",
   )!;
   await user.click(node.querySelector<HTMLElement>(".canvas-node-media")!);
   await user.click(screen.getByRole("button", { name: "替换素材" }));
-  await user.click(screen.getByRole("tab", { name: "生成设置" }));
   await user.click(await screen.findByRole("button", { name: "生成视频" }));
 
   await waitFor(() =>
@@ -360,7 +374,11 @@ test("drags a selected video node from its preview and saves zoom-adjusted coord
   const user = userEvent.setup();
   const { container } = renderCanvas();
 
-  expect(await screen.findByText("视频1")).toBeInTheDocument();
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("视频1"),
+  ).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "放大" }));
   const node = container.querySelector<HTMLElement>(
     "[data-node-id='video-1']",
@@ -424,7 +442,11 @@ test("does not start node dragging from interactive video controls", async () =>
   const user = userEvent.setup();
   const { container } = renderCanvas();
 
-  expect(await screen.findByText("视频1")).toBeInTheDocument();
+  expect(
+    await within(
+      await screen.findByRole("region", { name: "节点画布" }),
+    ).findByText("视频1"),
+  ).toBeInTheDocument();
   const node = container.querySelector<HTMLElement>(
     "[data-node-id='video-1']",
   )!;
@@ -456,7 +478,12 @@ test("does not start node dragging from interactive video controls", async () =>
 
   expect(node.style.left).toBe("240px");
   expect(node.style.top).toBe("120px");
-  expect(putVisualCanvas).not.toHaveBeenCalled();
+  for (const [, saved] of vi.mocked(putVisualCanvas).mock.calls) {
+    expect(saved.find((item) => item.id === "video-1")?.position).toEqual({
+      x: 240,
+      y: 120,
+    });
+  }
 });
 
 test("exports a paused video frame and creates an unconnected image node", async () => {

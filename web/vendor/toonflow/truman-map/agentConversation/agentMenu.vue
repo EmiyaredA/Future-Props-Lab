@@ -17,7 +17,7 @@
     </span>
     <div class="menuActions">
       <el-button text circle :disabled="busy" aria-label="新建对话" title="新建对话" @click="emit('newChat')"><icon-message-plus :size="16" /></el-button>
-      <el-popover v-model:visible="historyVisible" trigger="click" placement="bottom-end" :width="280" :showArrow="false">
+      <el-popover v-model:visible="historyVisible" trigger="click" placement="bottom-end" :width="280" :showArrow="false" popper-class="truman-host-popup">
         <template #reference>
           <el-button text circle :icon="IconHistory" :aria-expanded="historyVisible" aria-label="历史对话" title="历史对话" />
         </template>

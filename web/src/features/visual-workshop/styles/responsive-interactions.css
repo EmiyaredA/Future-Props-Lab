@@ -1,7 +1,7 @@
 @media (min-width: 801px) {
   .visual-canvas:has(.canvas-node-inspector.is-embedded) .canvas-controls {
-    top: 20px;
-    bottom: auto;
+    top: auto;
+    bottom: 24px;
   }
 }
 @media (max-width: 800px) {

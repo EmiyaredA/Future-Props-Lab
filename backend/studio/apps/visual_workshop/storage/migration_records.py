@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import Field, model_validator
 
+from studio.apps.visual_workshop.creation_links.models import VisualCreationLinks
+from studio.apps.visual_workshop.creation_links.schemas import CreationLinksOut
 from studio.apps.visual_workshop.migration_acceptance import DATASETS as ACCEPTANCE_DATASETS
 from studio.apps.visual_workshop.migration_generation import DATASETS as GENERATION_DATASETS
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
@@ -15,6 +17,8 @@ from studio.apps.visual_workshop.schemas.workshop import (
 )
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
 from studio.apps.visual_workshop.storage.service_models import VisualMigrationReceipt
+from studio.apps.visual_workshop.storyboard.models import VisualStoryboard
+from studio.apps.visual_workshop.storyboard.schemas import StoryboardOut
 from studio.contracts.management.migration_batches import MigrationBatch, MigrationPage
 from studio.contracts.management.project_history import HistoryRecord, Identifier, ProjectRecord
 from studio.runtime.database.edit_receipt_migration import EditReceiptBatch, EditReceiptTransfer
@@ -75,6 +79,22 @@ class Outputs(MigrationBatch[OutputRecord]):
     dataset: Literal["visual.outputs"]
 
 
+class StoryboardRecord(HistoryRecord, StoryboardOut):
+    project_id: Identifier
+
+
+class Storyboards(MigrationBatch[StoryboardRecord]):
+    dataset: Literal["visual.storyboards"]
+
+
+class CreationLinksRecord(HistoryRecord, CreationLinksOut):
+    project_id: Identifier
+
+
+class CreationLinksBatch(MigrationBatch[CreationLinksRecord]):
+    dataset: Literal["visual.creation-links"]
+
+
 DATASETS = (
     ProjectDataset(
         "visual.projects",
@@ -100,6 +120,26 @@ DATASETS = (
         Outputs,
         MigrationPage[Outputs],
         project=VisualWorkshopProject,
+        owns_record=False,
+    ),
+    ProjectDataset(
+        "visual.storyboards",
+        VisualStoryboard,
+        StoryboardRecord,
+        Storyboards,
+        MigrationPage[Storyboards],
+        project=VisualWorkshopProject,
+        key="project_id",
+        owns_record=False,
+    ),
+    ProjectDataset(
+        "visual.creation-links",
+        VisualCreationLinks,
+        CreationLinksRecord,
+        CreationLinksBatch,
+        MigrationPage[CreationLinksBatch],
+        project=VisualWorkshopProject,
+        key="project_id",
         owns_record=False,
     ),
     *GENERATION_DATASETS,

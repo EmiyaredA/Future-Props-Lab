@@ -7568,59 +7568,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/visual-workshop/acceptance-templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Acceptance Templates */
-        get: operations["list_acceptance_templates_v1_visual_workshop_acceptance_templates_get"];
-        put?: never;
-        /** Create Acceptance Template */
-        post: operations["create_acceptance_template_v1_visual_workshop_acceptance_templates_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/acceptance-templates/{template_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Update Acceptance Template */
-        put: operations["update_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__put"];
-        post?: never;
-        /** Delete Acceptance Template */
-        delete: operations["delete_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/acceptance/catalog": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Acceptance Catalog */
-        get: operations["acceptance_catalog_v1_visual_workshop_acceptance_catalog_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/visual-workshop/asset-cards": {
         parameters: {
             query?: never;
@@ -7864,179 +7811,6 @@ export interface paths {
         patch: operations["patch_project_v1_visual_workshop_projects__project_id__patch"];
         trace?: never;
     };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/models": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Acceptance Models */
-        get: operations["list_acceptance_models_v1_visual_workshop_projects__project_id__acceptance_models_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/repair-drafts/{draft_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Acceptance Repair */
-        get: operations["get_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__get"];
-        /** Save Acceptance Repair */
-        put: operations["save_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/runs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** List Acceptance Runs */
-        get: operations["list_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_get"];
-        put?: never;
-        /** Start Acceptance Runs */
-        post: operations["start_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Acceptance Run */
-        get: operations["get_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/cancel": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Cancel Acceptance Run */
-        post: operations["cancel_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__cancel_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/decisions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Decide Acceptance Run */
-        post: operations["decide_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__decisions_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/repair-drafts": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Acceptance Repair */
-        post: operations["create_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__repair_drafts_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/runs/{run_id}/samples": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Sample Acceptance Video */
-        post: operations["sample_acceptance_video_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__samples_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/standard": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Acceptance Standard */
-        get: operations["get_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_get"];
-        /** Save Acceptance Standard */
-        put: operations["save_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/acceptance/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Acceptance Summary */
-        get: operations["acceptance_summary_v1_visual_workshop_projects__project_id__acceptance_summary_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/visual-workshop/projects/{project_id}/asset-cards": {
         parameters: {
             query?: never;
@@ -8177,6 +7951,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/creation-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Creation Links */
+        get: operations["get_creation_links_v1_visual_workshop_projects__project_id__creation_links_get"];
+        /** Save Creation Links */
+        put: operations["save_creation_links_v1_visual_workshop_projects__project_id__creation_links_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/generation-batches": {
         parameters: {
             query?: never;
@@ -8239,41 +8031,6 @@ export interface paths {
         put?: never;
         /** Upload Material Node */
         post: operations["upload_material_node_v1_visual_workshop_projects__project_id__node_uploads_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Node Acceptance */
-        get: operations["get_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_get"];
-        /** Select Node Acceptance */
-        put: operations["select_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/visual-workshop/projects/{project_id}/nodes/{node_id}/acceptance/runs": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Start Node Acceptance */
-        post: operations["start_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_runs_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -8439,487 +8196,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/storyboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Visual Storyboard */
+        get: operations["get_visual_storyboard_v1_visual_workshop_projects__project_id__storyboard_get"];
+        /** Put Visual Storyboard */
+        put: operations["put_visual_storyboard_v1_visual_workshop_projects__project_id__storyboard_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AcceptanceCriterion */
-        AcceptanceCriterion: {
-            /** Id */
-            id: string;
-            /** Kinds */
-            kinds?: ("image" | "video" | "audio" | "text")[];
-            /**
-             * Method
-             * @default manual
-             * @enum {string}
-             */
-            method: "automatic" | "ai" | "manual";
-            /** Reference Asset Ids */
-            reference_asset_ids?: string[];
-            /**
-             * Reference Label
-             * @default
-             */
-            reference_label: string;
-            /**
-             * Required
-             * @default true
-             */
-            required: boolean;
-            /**
-             * Requirement
-             * @default
-             */
-            requirement: string;
-            specifications?: components["schemas"]["Specification"];
-            /** Title */
-            title: string;
-        };
-        /** AcceptanceDecisionIn */
-        AcceptanceDecisionIn: {
-            /** Criterion Id */
-            criterion_id?: string | null;
-            /** End Ms */
-            end_ms?: number | null;
-            /** Expected Revision */
-            expected_revision: number;
-            /**
-             * Finalize
-             * @default false
-             */
-            finalize: boolean;
-            /**
-             * Reason
-             * @default
-             */
-            reason: string;
-            /** Region */
-            region?: number[] | null;
-            /** Start Ms */
-            start_ms?: number | null;
-            /**
-             * Verdict
-             * @default pending
-             * @enum {string}
-             */
-            verdict: "passed" | "failed" | "pending" | "not_applicable";
-        };
-        /** AcceptanceDocument */
-        AcceptanceDocument: {
-            /** Criteria */
-            criteria?: components["schemas"]["AcceptanceCriterion"][];
-            /** Node Ids */
-            node_ids?: string[];
-            /**
-             * Title
-             * @default 项目验收标准
-             */
-            title: string;
-        };
-        /** AcceptanceEvidence */
-        AcceptanceEvidence: {
-            /** Asset Id */
-            asset_id: string;
-            /** Id */
-            id: string;
-            /** Position Ms */
-            position_ms?: number | null;
-            /** Source Asset Id */
-            source_asset_id: string;
-        };
-        /** AcceptanceInputOut */
-        AcceptanceInputOut: {
-            /** Asset Id */
-            asset_id: string;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "image" | "video";
-            /** Label */
-            label: string;
-            /**
-             * Role
-             * @enum {string}
-             */
-            role: "character" | "motion" | "output";
-        };
-        /** AcceptanceModelListOut */
-        AcceptanceModelListOut: {
-            /** Items */
-            items: components["schemas"]["AcceptanceModelOut"][];
-        };
-        /** AcceptanceModelOut */
-        AcceptanceModelOut: {
-            /** Id */
-            id: string;
-            /** Label */
-            label: string;
-            /**
-             * Provider Kind
-             * @enum {string}
-             */
-            provider_kind: "local_qwen_tts" | "local_zonos_tts" | "local_relayvsr" | "local_ffmpeg" | "volcengine_image" | "openai" | "deepseek" | "anthropic" | "senseaudio_image" | "volcengine_video" | "senseaudio_video" | "zealman_video" | "autodl_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
-            /** Provider Name */
-            provider_name: string;
-            /** Slug */
-            slug: string;
-        };
-        /** AcceptanceOutputSnapshot */
-        AcceptanceOutputSnapshot: {
-            /** Asset Id */
-            asset_id: string | null;
-            /** Id */
-            id: string;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "image" | "video" | "audio" | "text";
-            /** Text */
-            text: string | null;
-            /** Title */
-            title: string;
-            /** Version */
-            version: number;
-        };
-        /** AcceptanceRepairOut */
-        AcceptanceRepairOut: {
-            /** Id */
-            id: string;
-            /** Prompt Version Id */
-            prompt_version_id: string | null;
-            /** Revision */
-            revision: number;
-            /** Run Id */
-            run_id: string;
-            /** Text */
-            text: string;
-        };
-        /** AcceptanceRepairWriteIn */
-        AcceptanceRepairWriteIn: {
-            /**
-             * Apply
-             * @default false
-             */
-            apply: boolean;
-            /** Expected Canvas Revision */
-            expected_canvas_revision?: number | null;
-            /** Expected Revision */
-            expected_revision: number;
-            /** Text */
-            text: string;
-        };
-        /** AcceptanceResult */
-        AcceptanceResult: {
-            /** Criterion Id */
-            criterion_id: string;
-            /** End Ms */
-            end_ms?: number | null;
-            /** Evidence Ids */
-            evidence_ids?: string[];
-            /**
-             * Explanation
-             * @default
-             */
-            explanation: string;
-            /**
-             * Origin
-             * @enum {string}
-             */
-            origin: "automatic" | "ai" | "manual";
-            /** Region */
-            region?: number[] | null;
-            /** Start Ms */
-            start_ms?: number | null;
-            /** Suggestion */
-            suggestion?: ("passed" | "failed" | "pending" | "not_applicable") | null;
-            /**
-             * Verdict
-             * @default pending
-             * @enum {string}
-             */
-            verdict: "passed" | "failed" | "pending" | "not_applicable";
-        };
-        /** AcceptanceRunCreateIn */
-        AcceptanceRunCreateIn: {
-            /** Expected Standard Version */
-            expected_standard_version: number;
-            /** Model Id */
-            model_id?: string | null;
-            /** Output Ids */
-            output_ids: string[];
-            /** Previous Run Id */
-            previous_run_id?: string | null;
-            /** Request Id */
-            request_id: string;
-        };
-        /** AcceptanceRunListOut */
-        AcceptanceRunListOut: {
-            /** Items */
-            items: components["schemas"]["AcceptanceRunOut"][];
-        };
-        /** AcceptanceRunOut */
-        AcceptanceRunOut: {
-            /** Created At */
-            created_at: string;
-            /**
-             * Decision
-             * @enum {string}
-             */
-            decision: "pending" | "passed" | "failed" | "historical";
-            /** Decisions */
-            decisions: {
-                [key: string]: unknown;
-            }[];
-            /** Error Message */
-            error_message: string | null;
-            /** Evidence */
-            evidence: components["schemas"]["AcceptanceEvidence"][];
-            /** Execution Result */
-            execution_result?: {
-                [key: string]: unknown;
-            };
-            /** Id */
-            id: string;
-            /** Model Id */
-            model_id: string | null;
-            /** Node Id */
-            node_id: string;
-            /** Output Id */
-            output_id: string;
-            /** Previous Run Id */
-            previous_run_id: string | null;
-            /** Results */
-            results: components["schemas"]["AcceptanceResult"][];
-            /** Revision */
-            revision: number;
-            /**
-             * Scheme Id
-             * @default legacy
-             */
-            scheme_id: string;
-            snapshot: components["schemas"]["AcceptanceSnapshot"];
-            /** Standard Version */
-            standard_version: number;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "queued" | "processing" | "completed" | "failed" | "cancelled";
-        };
-        /** AcceptanceSampleIn */
-        AcceptanceSampleIn: {
-            /** End Ms */
-            end_ms: number;
-            /** Expected Revision */
-            expected_revision: number;
-            /** Start Ms */
-            start_ms: number;
-        };
-        /** AcceptanceSchemeOut */
-        AcceptanceSchemeOut: {
-            /** Available */
-            available: boolean;
-            /** Connection Label */
-            connection_label: string;
-            /**
-             * Id
-             * @enum {string}
-             */
-            id: "motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code" | "motion-transfer:opencode" | "motion-transfer:dsh" | "motion-transfer:pi";
-            /** Input Description */
-            input_description: string;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "model_api" | "code_agent";
-            /** Message */
-            message: string;
-            /**
-             * Model Slug
-             * @default
-             */
-            model_slug: string;
-            /** Output Description */
-            output_description: string;
-            /**
-             * Provider Kind
-             * @default
-             */
-            provider_kind: string;
-            /** Title */
-            title: string;
-            /**
-             * Version
-             * @default 1
-             */
-            version: number;
-        };
-        /** AcceptanceSnapshot */
-        AcceptanceSnapshot: {
-            /** Check Results */
-            check_results?: components["schemas"]["AcceptanceResult"][];
-            /**
-             * Context Fingerprint
-             * @default
-             */
-            context_fingerprint: string;
-            /** Coverage */
-            coverage: string;
-            /** Criteria */
-            criteria: components["schemas"]["AcceptanceCriterion"][];
-            /** Executor */
-            executor?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Input Source
-             * @default legacy
-             */
-            input_source: string;
-            /** Inputs */
-            inputs?: {
-                [key: string]: unknown;
-            };
-            /**
-             * Inputs Version
-             * @default 1
-             */
-            inputs_version: number;
-            /** Metadata */
-            metadata?: {
-                [key: string]: unknown;
-            };
-            output: components["schemas"]["AcceptanceOutputSnapshot"];
-            /**
-             * Prompt
-             * @default
-             */
-            prompt: string;
-            /**
-             * Result Contract Version
-             * @default 1
-             */
-            result_contract_version: number;
-            /**
-             * Scheme Id
-             * @default legacy
-             */
-            scheme_id: string;
-            /**
-             * Scheme Version
-             * @default 1
-             */
-            scheme_version: number;
-            /** Source Bytes */
-            source_bytes?: number | null;
-            /** Standard Title */
-            standard_title: string;
-            /** Standard Version */
-            standard_version: number;
-        };
-        /** AcceptanceStandardOut */
-        AcceptanceStandardOut: {
-            draft?: components["schemas"]["AcceptanceDocument"];
-            /** Project Id */
-            project_id: string;
-            published?: components["schemas"]["AcceptanceDocument"] | null;
-            /**
-             * Published Version
-             * @default 0
-             */
-            published_version: number;
-            /**
-             * Required
-             * @default false
-             */
-            required: boolean;
-            /**
-             * Revision
-             * @default 0
-             */
-            revision: number;
-        };
-        /** AcceptanceStandardWriteIn */
-        AcceptanceStandardWriteIn: {
-            document: components["schemas"]["AcceptanceDocument"];
-            /** Expected Revision */
-            expected_revision: number;
-            /**
-             * Publish
-             * @default false
-             */
-            publish: boolean;
-            /**
-             * Required
-             * @default false
-             */
-            required: boolean;
-        };
-        /** AcceptanceSummaryItem */
-        AcceptanceSummaryItem: {
-            /** Final Version */
-            final_version?: number | null;
-            /**
-             * Issue
-             * @default
-             */
-            issue: string;
-            /** Kind */
-            kind: string;
-            /** Node Id */
-            node_id: string;
-            /** Output Asset Id */
-            output_asset_id?: string | null;
-            /** Output Id */
-            output_id?: string | null;
-            /** Output Version */
-            output_version?: number | null;
-            run?: components["schemas"]["AcceptanceRunOut"] | null;
-            /** Scheme Id */
-            scheme_id?: string | null;
-            /** State */
-            state: string;
-            /** Title */
-            title: string;
-        };
-        /** AcceptanceSummaryOut */
-        AcceptanceSummaryOut: {
-            /** Items */
-            items: components["schemas"]["AcceptanceSummaryItem"][];
-        };
-        /** AcceptanceTemplateListOut */
-        AcceptanceTemplateListOut: {
-            /** Items */
-            items: components["schemas"]["AcceptanceTemplateOut"][];
-        };
-        /** AcceptanceTemplateOut */
-        AcceptanceTemplateOut: {
-            /**
-             * Builtin
-             * @default false
-             */
-            builtin: boolean;
-            document: components["schemas"]["AcceptanceDocument"];
-            /** Id */
-            id: string;
-            /**
-             * Revision
-             * @default 0
-             */
-            revision: number;
-            /** Title */
-            title: string;
-        };
-        /** AcceptanceTemplateWriteIn */
-        AcceptanceTemplateWriteIn: {
-            document: components["schemas"]["AcceptanceDocument"];
-            /** Expected Revision */
-            expected_revision: number;
-        };
         /** AccessAction */
         AccessAction: {
             /**
@@ -11022,6 +10320,24 @@ export interface components {
             }[];
             /** Valid */
             valid: boolean;
+        };
+        /** CreationLinksOut */
+        CreationLinksOut: {
+            /** Objects */
+            objects?: components["schemas"]["ObjectBinding"][];
+            /** Revision */
+            revision: number;
+            /** Scenes */
+            scenes?: components["schemas"]["SceneBinding"][];
+        };
+        /** CreationLinksUpdate */
+        CreationLinksUpdate: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Objects */
+            objects?: components["schemas"]["ObjectBinding"][];
+            /** Scenes */
+            scenes?: components["schemas"]["SceneBinding"][];
         };
         /** CreativeDraftIn */
         CreativeDraftIn: {
@@ -17972,102 +17288,14 @@ export interface components {
             /** Label */
             label: string;
         };
-        /** NodeAcceptanceCatalogOut */
-        NodeAcceptanceCatalogOut: {
-            /** Items */
-            items: components["schemas"]["NodeAcceptanceTemplateOut"][];
-        };
-        /** NodeAcceptanceOut */
-        NodeAcceptanceOut: {
-            /** Canvas Revision */
-            canvas_revision: number;
-            /** Context Fingerprint */
-            context_fingerprint: string;
-            current_run?: components["schemas"]["AcceptanceRunOut"] | null;
-            /** Input Source */
-            input_source: string;
-            /** Inputs */
-            inputs?: components["schemas"]["AcceptanceInputOut"][];
-            /** Issues */
-            issues?: string[];
-            /** Node Id */
-            node_id: string;
-            /** Output Id */
-            output_id?: string | null;
-            /** Output Version */
-            output_version?: number | null;
-            /**
-             * Prompt
-             * @default
-             */
-            prompt: string;
-            /**
-             * Result Is Current
-             * @default false
-             */
-            result_is_current: boolean;
-            /**
-             * Revision
-             * @default 0
-             */
-            revision: number;
-            /** Scheme Id */
-            scheme_id?: ("motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code" | "motion-transfer:opencode" | "motion-transfer:dsh" | "motion-transfer:pi") | null;
-            /** Specifications */
-            specifications?: {
-                [key: string]: unknown;
-            };
-        };
-        /** NodeAcceptanceSelectIn */
-        NodeAcceptanceSelectIn: {
-            /** Expected Revision */
-            expected_revision: number;
-            /** Scheme Id */
-            scheme_id: ("motion-transfer:api" | "motion-transfer:codex" | "motion-transfer:claude-code" | "motion-transfer:opencode" | "motion-transfer:dsh" | "motion-transfer:pi") | null;
-        };
-        /** NodeAcceptanceStartIn */
-        NodeAcceptanceStartIn: {
-            /** Context Fingerprint */
-            context_fingerprint: string;
-            /** Expected Canvas Revision */
-            expected_canvas_revision: number;
-            /** Expected Revision */
-            expected_revision: number;
-            /** Output Id */
-            output_id: string;
-            /** Previous Run Id */
-            previous_run_id?: string | null;
-            /** Request Id */
-            request_id: string;
-        };
-        /** NodeAcceptanceTemplateOut */
-        NodeAcceptanceTemplateOut: {
-            /** Criteria */
-            criteria: components["schemas"]["AcceptanceCriterion"][];
-            /**
-             * Id
-             * @default builtin:motion-transfer
-             */
-            id: string;
-            /** Kinds */
-            kinds?: string[];
-            /**
-             * Readonly
-             * @default true
-             */
-            readonly: boolean;
-            /** Schemes */
-            schemes: components["schemas"]["AcceptanceSchemeOut"][];
-            /**
-             * Title
-             * @default 动作迁移
-             */
-            title: string;
-            /**
-             * Version
-             * @default 1
-             */
-            version: number;
+        /** ObjectBinding */
+        ObjectBinding: {
+            /** Card Id */
+            card_id: string;
+            /** Object Id */
+            object_id: string;
+            /** Previs Scene Id */
+            previs_scene_id: string;
         };
         /** OperationBatchIn */
         OperationBatchIn: {
@@ -19345,9 +18573,9 @@ export interface components {
         ProjectSnapshotImportWarning: {
             /**
              * Code
-             * @constant
+             * @enum {string}
              */
-            code: "model_binding_unavailable";
+            code: "model_binding_unavailable" | "storyboard_cards_detached";
             /** Field */
             field: string;
             /** Message */
@@ -20407,6 +19635,13 @@ export interface components {
             /** Target Language */
             target_language?: string | null;
         };
+        /** SceneBinding */
+        SceneBinding: {
+            /** Card Id */
+            card_id: string;
+            /** Previs Scene Id */
+            previs_scene_id: string;
+        };
         /** ScriptEpisode */
         ScriptEpisode: {
             /** Id */
@@ -20778,6 +20013,19 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ShotPrevis */
+        ShotPrevis: {
+            /** Camera Id */
+            camera_id?: string | null;
+            /** Overrides */
+            overrides?: {
+                [key: string]: unknown;
+            };
+            /** Scene Id */
+            scene_id: string;
+            /** Stage Revision */
+            stage_revision: number;
+        };
         /** SkillCatalogOut */
         SkillCatalogOut: {
             /** Draft Count */
@@ -20951,24 +20199,6 @@ export interface components {
             v: {
                 [key: string]: unknown;
             };
-        };
-        /** Specification */
-        Specification: {
-            /** Max Duration */
-            max_duration?: number | null;
-            /** Min Duration */
-            min_duration?: number | null;
-            /** Min Height */
-            min_height?: number | null;
-            /** Min Width */
-            min_width?: number | null;
-            /** Ratio */
-            ratio?: ("16:9" | "9:16" | "1:1" | "4:3" | "3:4" | "21:9") | null;
-            /**
-             * Require Audio
-             * @default false
-             */
-            require_audio: boolean;
         };
         /** SplitClipOperation */
         SplitClipOperation: {
@@ -21263,6 +20493,80 @@ export interface components {
              * @constant
              */
             target_version: 2;
+        };
+        /** StoryboardOut */
+        StoryboardOut: {
+            /** Revision */
+            revision: number;
+            /** Shots */
+            shots?: components["schemas"]["StoryboardShot"][];
+        };
+        /** StoryboardShot */
+        StoryboardShot: {
+            /**
+             * Camera Motion
+             * @default
+             */
+            camera_motion: string;
+            /** Card Ids */
+            card_ids?: string[];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Dialogue
+             * @default
+             */
+            dialogue: string;
+            /** Duration */
+            duration?: number | null;
+            /** Id */
+            id: string;
+            /** Image Node Id */
+            image_node_id?: string | null;
+            /** Origin Node Id */
+            origin_node_id?: string | null;
+            previs?: components["schemas"]["ShotPrevis"] | null;
+            /**
+             * Shot Size
+             * @default
+             */
+            shot_size: string;
+            /**
+             * Sound
+             * @default
+             */
+            sound: string;
+            source?: components["schemas"]["StoryboardSource"] | null;
+            /** Title */
+            title: string;
+            /** Video Node Id */
+            video_node_id?: string | null;
+        };
+        /** StoryboardSource */
+        StoryboardSource: {
+            /** End */
+            end?: number | null;
+            /**
+             * Excerpt
+             * @default
+             */
+            excerpt: string;
+            /** Revision */
+            revision: number;
+            /** Scene Id */
+            scene_id: string;
+            /** Start */
+            start?: number | null;
+        };
+        /** StoryboardUpdate */
+        StoryboardUpdate: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Shots */
+            shots?: components["schemas"]["StoryboardShot"][];
         };
         /** Structure */
         Structure: {
@@ -42619,149 +41923,6 @@ export interface operations {
             };
         };
     };
-    list_acceptance_templates_v1_visual_workshop_acceptance_templates_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceTemplateListOut"];
-                };
-            };
-        };
-    };
-    create_acceptance_template_v1_visual_workshop_acceptance_templates_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AcceptanceTemplateWriteIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceTemplateOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                template_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AcceptanceTemplateWriteIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceTemplateOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_acceptance_template_v1_visual_workshop_acceptance_templates__template_id__delete: {
-        parameters: {
-            query: {
-                expected_revision: number;
-            };
-            header?: never;
-            path: {
-                template_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: boolean;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    acceptance_catalog_v1_visual_workshop_acceptance_catalog_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeAcceptanceCatalogOut"];
-                };
-            };
-        };
-    };
     list_account_asset_cards_v1_visual_workshop_asset_cards_get: {
         parameters: {
             query?: never;
@@ -43351,441 +42512,6 @@ export interface operations {
             };
         };
     };
-    list_acceptance_models_v1_visual_workshop_projects__project_id__acceptance_models_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceModelListOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                draft_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRepairOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    save_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_repair_drafts__draft_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                draft_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AcceptanceRepairWriteIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRepairOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_get: {
-        parameters: {
-            query?: {
-                node_id?: string | null;
-                page?: number;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRunListOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    start_acceptance_runs_v1_visual_workshop_projects__project_id__acceptance_runs_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AcceptanceRunCreateIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRunListOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRunOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    cancel_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__cancel_post: {
-        parameters: {
-            query: {
-                expected_revision: number;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRunOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    decide_acceptance_run_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__decisions_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AcceptanceDecisionIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRunOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_acceptance_repair_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__repair_drafts_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRepairOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    sample_acceptance_video_v1_visual_workshop_projects__project_id__acceptance_runs__run_id__samples_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                run_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AcceptanceSampleIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRunOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceStandardOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    save_acceptance_standard_v1_visual_workshop_projects__project_id__acceptance_standard_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AcceptanceStandardWriteIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceStandardOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    acceptance_summary_v1_visual_workshop_projects__project_id__acceptance_summary_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceSummaryOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     list_visual_asset_cards_v1_visual_workshop_projects__project_id__asset_cards_get: {
         parameters: {
             query?: never;
@@ -44199,6 +42925,72 @@ export interface operations {
             };
         };
     };
+    get_creation_links_v1_visual_workshop_projects__project_id__creation_links_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreationLinksOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_creation_links_v1_visual_workshop_projects__project_id__creation_links_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreationLinksUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreationLinksOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_generation_batch_v1_visual_workshop_projects__project_id__generation_batches_post: {
         parameters: {
             query?: never;
@@ -44326,112 +43118,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualCanvasDocumentOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_get: {
-        parameters: {
-            query?: {
-                output_id?: string | null;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeAcceptanceOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    select_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NodeAcceptanceSelectIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NodeAcceptanceOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    start_node_acceptance_v1_visual_workshop_projects__project_id__nodes__node_id__acceptance_runs_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                node_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["NodeAcceptanceStartIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AcceptanceRunOut"];
                 };
             };
             /** @description Validation Error */
@@ -44941,6 +43627,72 @@ export interface operations {
                 };
                 content: {
                     "application/zip": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_visual_storyboard_v1_visual_workshop_projects__project_id__storyboard_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryboardOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_visual_storyboard_v1_visual_workshop_projects__project_id__storyboard_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StoryboardUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryboardOut"];
                 };
             };
             /** @description Validation Error */
