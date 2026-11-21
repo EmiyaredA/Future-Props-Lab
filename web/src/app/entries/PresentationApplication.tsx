@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useRef } from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { PresentationWorkshopRoute } from "@app/routing/PresentationWorkshopRoute";
 import type { WorkshopPage } from "@app/routes";
@@ -7,32 +6,15 @@ import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
 import { PRESENTATION_WORKSHOP_MODULE as presentation } from "@features/presentation-workshop/module";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
-import {
-  type Guard,
-  useNavigationProtection,
-} from "@shared/ui/navigationGuards";
+import { useNavigationGuardRegistration } from "@shared/ui/navigationGuards";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
-
-function navigate(page: WorkshopPage | "apps", id?: string) {
-  const path = page === "apps" ? "/apps" : presentation.pathFor(page, id);
-  if (path) guardedNavigation(() => location.assign(path), true);
-}
+import { useWorkshopNavigation } from "@app/routing/useWorkshopNavigation";
+import { ApplicationPage } from "@app/layout/ApplicationPage";
 
 function PresentationWorkspace() {
   const writable = useAccountPermission("content.write");
-  const protection = useNavigationProtection();
-  const unregister = useRef<(() => void) | null>(null);
-  const registerNavigationGuard = useCallback(
-    (guard: Guard | null) => {
-      unregister.current?.();
-      unregister.current =
-        guard && protection ? protection.register(guard) : null;
-    },
-    [protection],
-  );
-  useEffect(() => () => unregister.current?.(), []);
-  const route = presentation.matchPath(location.pathname);
+  const registerNavigationGuard = useNavigationGuardRegistration();
+  const { route, navigate } = useWorkshopNavigation(presentation);
   if (!route)
     return (
       <section className="independent-not-found">
@@ -58,7 +40,9 @@ export default function PresentationApplication() {
       <AmadeusPageProvider key={session.me.user.id} session={session}>
         <NavigationProtection>
           <ApplicationUpdate />
-          <PresentationWorkspace />
+          <ApplicationPage>
+            <PresentationWorkspace />
+          </ApplicationPage>
         </NavigationProtection>
       </AmadeusPageProvider>
     </RuntimeAccessProvider>

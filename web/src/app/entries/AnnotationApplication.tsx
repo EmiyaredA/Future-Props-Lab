@@ -1,5 +1,5 @@
 import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
-import { lazy, useCallback, useEffect, useRef } from "react";
+import { lazy } from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { galgameSpeakerImportSource } from "@app/integrations/galgameSpeakerImport";
@@ -8,12 +8,10 @@ import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
 import { AUDIO_ANNOTATION_MODULE as annotation } from "@features/audio-annotation/module";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
-import {
-  type Guard,
-  useNavigationProtection,
-} from "@shared/ui/navigationGuards";
+import { useNavigationGuardRegistration } from "@shared/ui/navigationGuards";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
+import { useWorkshopNavigation } from "@app/routing/useWorkshopNavigation";
+import { ApplicationPage } from "@app/layout/ApplicationPage";
 
 const Editor = lazy(annotation.pages.editor);
 const Projects = lazy(annotation.pages.projects);
@@ -24,28 +22,20 @@ const ReadOnly = lazy(() =>
 );
 const index = "/apps/audio-annotation";
 
-function go(path: string) {
-  guardedNavigation(() => location.assign(path), true);
-}
-
-function AnnotationEditor({ projectId }: { projectId: string }) {
+function AnnotationEditor({
+  projectId,
+  onBack,
+}: {
+  projectId: string;
+  onBack: () => void;
+}) {
   const { me } = useStudioSession();
-  const protection = useNavigationProtection();
-  const unregister = useRef<(() => void) | null>(null);
-  const registerNavigationGuard = useCallback(
-    (guard: Guard | null) => {
-      unregister.current?.();
-      unregister.current =
-        guard && protection ? protection.register(guard) : null;
-    },
-    [protection],
-  );
-  useEffect(() => () => unregister.current?.(), []);
+  const registerNavigationGuard = useNavigationGuardRegistration();
   return (
     <Editor
       projectId={projectId}
       accountId={me.user.id}
-      onBack={() => go(index)}
+      onBack={onBack}
       registerNavigationGuard={registerNavigationGuard}
       speakerImportSource={galgameSpeakerImportSource}
     />
@@ -54,7 +44,7 @@ function AnnotationEditor({ projectId }: { projectId: string }) {
 
 function AnnotationContent() {
   const writable = useAccountPermission("content.write");
-  const route = annotation.matchPath(location.pathname);
+  const { route, go } = useWorkshopNavigation(annotation);
   const open = (id: string) => {
     const path = annotation.pathFor("audio-annotation-editor", id);
     if (path) go(path);
@@ -64,9 +54,14 @@ function AnnotationContent() {
       <>
         <ApplicationUpdate />
         {writable ? (
-          <AnnotationEditor projectId={route.projectId} />
+          <AnnotationEditor
+            key={route.projectId}
+            projectId={route.projectId}
+            onBack={() => go(index)}
+          />
         ) : (
           <ReadOnly
+            key={route.projectId}
             utilities={
               <WorkshopUtilities
                 application={annotation.definition.name}
@@ -114,7 +109,9 @@ export default function AnnotationApplication() {
     <RuntimeAccessProvider>
       <AmadeusPageProvider key={session.me.user.id} session={session}>
         <NavigationProtection>
-          <AnnotationContent />
+          <ApplicationPage>
+            <AnnotationContent />
+          </ApplicationPage>
         </NavigationProtection>
       </AmadeusPageProvider>
     </RuntimeAccessProvider>

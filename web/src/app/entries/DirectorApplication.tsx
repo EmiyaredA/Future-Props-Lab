@@ -8,49 +8,45 @@ import { DIRECTOR_DESK_MODULE as director } from "@features/director-desk/module
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
+import { useWorkshopNavigation } from "@app/routing/useWorkshopNavigation";
+import { ApplicationPage } from "@app/layout/ApplicationPage";
 
 const Editor = lazy(director.pages.editor);
 const Projects = lazy(director.pages.projects);
 const index = "/apps/director-desk";
 
-function go(path: string) {
-  guardedNavigation(() => window.location.assign(path), true);
-}
-
 function DirectorContent() {
   const writable = useAccountPermission("content.write");
-  const route = director.matchPath(window.location.pathname);
+  const { route, go } = useWorkshopNavigation(director);
   if (route?.page === "director-desk-editor" && route.projectId)
     return (
-      <NavigationProtection>
-        <ApplicationUpdate />
-        <Editor projectId={route.projectId} onBack={() => go(index)} />
-      </NavigationProtection>
+      <Editor
+        key={route.projectId}
+        projectId={route.projectId}
+        onBack={() => go(index)}
+      />
     );
 
   if (route?.page === "director-desk-projects")
     return (
-      <NavigationProtection>
-        <WorkshopShell
-          module={director}
-          page={route.page}
-          navigate={() => {}}
-          onBack={() => go("/apps")}
-        >
-          <ApplicationUpdate />
-          <Projects
-            utilities={
-              <WorkshopUtilities application={director.definition.name} />
-            }
-            readOnly={!writable}
-            onOpen={(id) => {
-              const url = director.pathFor("director-desk-editor", id);
-              if (url) go(url);
-            }}
-          />
-        </WorkshopShell>
-      </NavigationProtection>
+      <WorkshopShell
+        module={director}
+        page={route.page}
+        navigate={() => {}}
+        onBack={() => go("/apps")}
+      >
+        <ApplicationUpdate />
+        <Projects
+          utilities={
+            <WorkshopUtilities application={director.definition.name} />
+          }
+          readOnly={!writable}
+          onOpen={(id) => {
+            const url = director.pathFor("director-desk-editor", id);
+            if (url) go(url);
+          }}
+        />
+      </WorkshopShell>
     );
   return (
     <section className="independent-not-found">
@@ -65,7 +61,12 @@ export default function DirectorApplication() {
   return (
     <RuntimeAccessProvider>
       <AmadeusPageProvider key={session.me.user.id} session={session}>
-        <DirectorContent />
+        <NavigationProtection>
+          <ApplicationUpdate />
+          <ApplicationPage>
+            <DirectorContent />
+          </ApplicationPage>
+        </NavigationProtection>
       </AmadeusPageProvider>
     </RuntimeAccessProvider>
   );

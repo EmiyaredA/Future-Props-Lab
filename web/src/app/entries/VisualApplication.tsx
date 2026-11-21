@@ -8,7 +8,7 @@ import { VISUAL_WORKSHOP_MODULE as visual } from "@features/visual-workshop/modu
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { LoadingState } from "@shared/ui/LoadingState";
-import { useApplicationNavigation } from "@app/routing/useApplicationNavigation";
+import { useWorkshopNavigation } from "@app/routing/useWorkshopNavigation";
 import { ApplicationUpdate } from "./ApplicationUpdate";
 
 const Canvas = lazy(visual.pages.canvas);
@@ -23,18 +23,9 @@ const ReadOnlyVisual = lazy(() =>
   })),
 );
 
-const ownsPath = (pathname: string) => Boolean(visual.matchPath(pathname));
-
 function VisualWorkspace() {
   const writable = useAccountPermission("content.write");
-  const navigation = useApplicationNavigation(visual.definition.id, ownsPath);
-  const route = visual.matchPath(
-    new URL(navigation.path, location.origin).pathname,
-  );
-  const navigate = (page: string, projectId?: string) => {
-    const path = visual.pathFor(page, projectId);
-    if (path) navigation.navigate(path);
-  };
+  const { route, navigate, go } = useWorkshopNavigation(visual);
   const openCanvas = (id: string) => navigate("visual-workshop-canvas", id);
   const openAssets = (id: string) => navigate("visual-workshop-assets", id);
   const openProjects = () => navigate("visual-workshop-projects");
@@ -67,7 +58,7 @@ function VisualWorkspace() {
           next === "visual-workshop-assets" ? projectId : undefined,
         )
       }
-      onBack={() => navigation.navigate("/apps")}
+      onBack={() => go("/apps")}
     >
       <Suspense
         fallback={<LoadingState label="正在打开页面…" variant="region" />}

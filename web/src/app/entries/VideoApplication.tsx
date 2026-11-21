@@ -1,5 +1,5 @@
 import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
-import { lazy, useCallback, useEffect, useRef } from "react";
+import { lazy } from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { RuntimeAccessProvider } from "@features/accounts";
@@ -7,12 +7,10 @@ import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
 import { VIDEO_EDITOR_MODULE as video } from "@features/video-editor/module";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
-import {
-  type Guard,
-  useNavigationProtection,
-} from "@shared/ui/navigationGuards";
+import { useNavigationGuardRegistration } from "@shared/ui/navigationGuards";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
+import { useWorkshopNavigation } from "@app/routing/useWorkshopNavigation";
+import { ApplicationPage } from "@app/layout/ApplicationPage";
 
 const Editor = lazy(video.pages.editor);
 const Projects = lazy(video.pages.projects);
@@ -23,29 +21,10 @@ const ReadOnlyVideo = lazy(() =>
   })),
 );
 
-function go(path: string) {
-  guardedNavigation(() => location.assign(path), true);
-}
-
-function navigate(page: string, projectId?: string) {
-  const path = video.pathFor(page, projectId);
-  if (path && path !== location.pathname) go(path);
-}
-
 function VideoWorkspace() {
   const writable = useAccountPermission("content.write");
-  const protection = useNavigationProtection();
-  const unregister = useRef<(() => void) | null>(null);
-  const registerNavigationGuard = useCallback(
-    (guard: Guard | null) => {
-      unregister.current?.();
-      unregister.current =
-        guard && protection ? protection.register(guard) : null;
-    },
-    [protection],
-  );
-  useEffect(() => () => unregister.current?.(), []);
-  const route = video.matchPath(location.pathname);
+  const registerNavigationGuard = useNavigationGuardRegistration();
+  const { route, navigate, go } = useWorkshopNavigation(video);
   const utilities = (
     <WorkshopUtilities
       application={video.definition.name}
@@ -57,6 +36,7 @@ function VideoWorkspace() {
   if (writable && route?.page === "video-editor-editor" && route.projectId)
     return (
       <Editor
+        key={route.projectId}
         projectId={route.projectId}
         onBack={back}
         registerNavigationGuard={registerNavigationGuard}
@@ -80,6 +60,7 @@ function VideoWorkspace() {
         <Projects utilities={utilities} onOpenProject={openProject} />
       ) : (
         <ReadOnlyVideo
+          key={route?.projectId ?? "library"}
           utilities={utilities}
           projectId={route?.projectId}
           onOpen={openProject}
@@ -97,7 +78,9 @@ export default function VideoApplication() {
       <AmadeusPageProvider key={session.me.user.id} session={session}>
         <NavigationProtection>
           <ApplicationUpdate />
-          <VideoWorkspace />
+          <ApplicationPage>
+            <VideoWorkspace />
+          </ApplicationPage>
         </NavigationProtection>
       </AmadeusPageProvider>
     </RuntimeAccessProvider>

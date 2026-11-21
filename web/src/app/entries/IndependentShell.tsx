@@ -12,7 +12,9 @@ import { BrandMark } from "@shared/ui/BrandMark";
 
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { openAmadeus } from "@platform/assistant";
-import { guardedNavigation } from "./navigation";
+import { ApplicationNavigation } from "@app/routing/ApplicationNavigation";
+import { useApplicationLocation } from "@app/routing/applicationNavigationContext";
+import { ApplicationPage } from "@app/layout/ApplicationPage";
 import {
   studioNavigationPage,
   studioPaths,
@@ -20,6 +22,26 @@ import {
 import { StudioShell } from "@app/layout/StudioSidebar";
 
 export function IndependentShell({
+  title,
+  roots,
+  children,
+}: {
+  title: string;
+  roots?: readonly string[];
+  children: ReactNode;
+}) {
+  return (
+    <NavigationProtection>
+      <ApplicationNavigation scope={title} roots={roots}>
+        <IndependentShellContent title={title}>
+          {children}
+        </IndependentShellContent>
+      </ApplicationNavigation>
+    </NavigationProtection>
+  );
+}
+
+function IndependentShellContent({
   title,
   children,
 }: {
@@ -29,7 +51,8 @@ export function IndependentShell({
   const session = useStudioSession();
   const canUseCloudControl = useAccountPermission("cloud-control.access");
   const canRead = useAccountPermission("content.read");
-  const page = studioNavigationPage(window.location.pathname);
+  const { path, navigate } = useApplicationLocation();
+  const page = studioNavigationPage(new URL(path, location.origin).pathname);
   const assistant = () => {
     window.dispatchEvent(
       new CustomEvent("future-props:amadeus-context", {
@@ -53,23 +76,18 @@ export function IndependentShell({
       return;
     const target = event.currentTarget.href;
     event.preventDefault();
-    guardedNavigation(() => window.location.assign(target), true);
+    navigate(target);
   };
   const shell = (
-    <NavigationProtection>
+    <>
       {page ? (
         <StudioShell
           page={page}
-          navigate={(target) =>
-            guardedNavigation(
-              () => window.location.assign(studioPaths[target]),
-              true,
-            )
-          }
+          navigate={(target) => navigate(studioPaths[target])}
           assistant={assistant}
         >
           <ApplicationUpdate />
-          {children}
+          <ApplicationPage>{children}</ApplicationPage>
         </StudioShell>
       ) : (
         <div className="independent-app">
@@ -114,11 +132,13 @@ export function IndependentShell({
             </div>
           </header>
           <ApplicationUpdate />
-          <main className="independent-content">{children}</main>
+          <main className="independent-content">
+            <ApplicationPage>{children}</ApplicationPage>
+          </main>
           <AccountPanel session={session} hiddenEntries />
         </div>
       )}
-    </NavigationProtection>
+    </>
   );
   return canRead ? (
     <AmadeusPageProvider key={session.me.user.id} session={session}>

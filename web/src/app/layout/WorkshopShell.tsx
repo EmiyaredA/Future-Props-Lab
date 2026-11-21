@@ -10,6 +10,7 @@ import {
   WorkshopNavigation,
 } from "@shared/ui/WorkshopSidebar";
 import "@app/layout/workshop-shell.css";
+import { ApplicationPage } from "@app/layout/ApplicationPage";
 
 export function WorkshopShell({
   module,
@@ -72,7 +73,9 @@ export function WorkshopShell({
             />
           </WorkshopSidebar>
         </ResponsiveSidebarPanel>
-        <main className="workshop-main">{children}</main>
+        <main className="workshop-main">
+          <ApplicationPage>{children}</ApplicationPage>
+        </main>
       </div>
     </ResponsiveSidebarProvider>
   );

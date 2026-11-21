@@ -102,6 +102,8 @@ export function mountDirectorEditor(
     projectId?: string;
     registerElements?: RegisterAssistantElements | null;
     onSave?: (document: SceneDocument) => Promise<void>;
+    onNavigationState?: (state: { dirty: boolean; busy: boolean }) => void;
+    allowsUnload?: () => boolean;
   } = {},
 ): () => void {
   const lifecycle = new AbortController();
@@ -418,7 +420,17 @@ export function mountDirectorEditor(
     presentPlayback(time, project.fps, playing);
   }
   const presentFrame = createFramePresentation();
-  engine.onFrame = () =>
+  let previousNavigationState = "";
+  engine.onFrame = () => {
+    const state = {
+      dirty: Boolean(dirty || history.pending || draft),
+      busy: Boolean(busy || engine.dragging || engine.exporting),
+    };
+    const signature = `${state.dirty}:${state.busy}`;
+    if (signature !== previousNavigationState) {
+      previousNavigationState = signature;
+      host.onNavigationState?.(state);
+    }
     presentFrame({
       snapTarget: engine.objectSnapEnabled ? engine.objectSnapTarget : "",
       camera: engine.cameraEntity(),
@@ -429,6 +441,7 @@ export function mountDirectorEditor(
       selected,
       labels: mode === "shot" ? undefined : engine.getProjectedLabels(),
     });
+  };
   function seek(t: number, deferSample = false) {
     if (busy) return;
     time = Math.max(0, Number.isFinite(t) ? t : 0);
@@ -751,7 +764,7 @@ export function mountDirectorEditor(
           toast("未能读取自动恢复或模型资源，可以打开手动保存的项目文件");
       });
   const onBeforeUnload = (event: BeforeUnloadEvent) => {
-    if (dirty || busy || history.pending || draft) {
+    if (!host.allowsUnload?.() && (dirty || busy || history.pending || draft)) {
       event.preventDefault();
       event.returnValue = "";
     }

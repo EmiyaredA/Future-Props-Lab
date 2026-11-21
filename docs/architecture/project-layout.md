@@ -248,7 +248,8 @@ docs/
 `scripts/website/native_layout.py` 将既有独立部署的显式挂载转换为本机路径和配置投影；
 `native_development.py` 监督本机独立服务、Mac Worker、源码重载与停止清理。
 `web/src/app/routing/useApplicationNavigation.ts` 管理独立入口所属路径内的局部切页、链接和浏览器历史，
-复用 `shared/ui/navigationGuards.ts` 的功能离开保护；视觉入口显式声明路径归属并将懒加载限制在页面内容内。
+复用 `shared/ui/navigationGuards.ts` 的功能离开保护；`useWorkshopNavigation.ts` 适配单个工坊的路由声明，
+`ApplicationNavigation.tsx` 为通用 Studio 壳提供显式归属和导航上下文，`app/layout/ApplicationPage.tsx` 将懒加载限制在内容区。
 `assembly/independent/runtime_options.py` 只提供 CLI 的资源/监听参数，
 `runtime/http/service_transport.py` 通过显式传入的连接表将逻辑服务 URL 连接到回环端口，保留签名路径和身份头。
 `web/native.config.ts` 以登记的页面归属装配 Vite 多入口、HMR 和本机 API 代理。

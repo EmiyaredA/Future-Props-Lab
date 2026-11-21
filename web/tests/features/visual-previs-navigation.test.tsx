@@ -10,7 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { beforeEach, expect, test, vi } from "vitest";
 import PrevisWorkspace from "@features/visual-workshop/previs/PrevisWorkspace";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
-import { guardedNavigation } from "@app/entries/navigation";
+import { guardedNavigation } from "@shared/ui/navigationGuards";
 
 const { requestLeave } = vi.hoisted(() => ({ requestLeave: vi.fn() }));
 vi.mock("@features/visual-workshop/previs/api", () => ({

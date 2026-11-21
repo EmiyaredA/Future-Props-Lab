@@ -3,7 +3,7 @@ import { useState } from "react";
 import { expect, it, vi } from "vitest";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { useUnsavedNavigation } from "@shared/ui/useUnsavedNavigation";
-import { guardedNavigation } from "@app/entries/navigation";
+import { guardedNavigation } from "@shared/ui/navigationGuards";
 
 function Draft({ title }: { title: string }) {
   const [text, setText] = useState("");

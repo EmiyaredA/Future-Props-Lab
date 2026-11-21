@@ -7,9 +7,10 @@ import type { NavigationGuard } from "@features/integrations/interaction";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { useNavigationProtection } from "@shared/ui/navigationGuards";
 import { StudioServiceShell } from "./StudioServiceShell";
-import { guardedNavigation } from "./navigation";
+import { useApplicationLocation } from "@app/routing/applicationNavigationContext";
 
 const kinds = ["tool-apis", "mcp", "skills", "external-connections"] as const;
+const roots = ["/integrations"];
 
 function IntegrationsContent() {
   const canManage = useAccountPermission("configuration.manage");
@@ -24,7 +25,11 @@ function IntegrationsContent() {
     [protection],
   );
   useEffect(() => () => unregister.current?.(), []);
-  const path = location.pathname.replace(/\/$/, "");
+  const navigation = useApplicationLocation();
+  const path = new URL(navigation.path, location.origin).pathname.replace(
+    /\/$/,
+    "",
+  );
   const part =
     path === "/integrations"
       ? "tool-apis"
@@ -41,16 +46,14 @@ function IntegrationsContent() {
       kind={part as IntegrationKind}
       canManage={canManage}
       registerNavigationGuard={registerNavigationGuard}
-      onKindChange={(kind) =>
-        guardedNavigation(() => location.assign("/integrations/" + kind), true)
-      }
+      onKindChange={(kind) => navigation.navigate("/integrations/" + kind)}
     />
   );
 }
 
 export default function IntegrationsApplication() {
   return (
-    <StudioServiceShell title="集成中心">
+    <StudioServiceShell title="集成中心" roots={roots}>
       <IntegrationsContent />
     </StudioServiceShell>
   );

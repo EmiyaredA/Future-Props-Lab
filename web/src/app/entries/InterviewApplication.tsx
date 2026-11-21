@@ -8,7 +8,7 @@ import type { RegisterNavigationGuard } from "@features/interview-assistant/type
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { useNavigationProtection } from "@shared/ui/navigationGuards";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
+import { guardedNavigation } from "@shared/ui/navigationGuards";
 
 const InterviewPage = lazy(interview.pages.workspace);
 

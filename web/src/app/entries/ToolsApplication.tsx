@@ -1,7 +1,7 @@
 import { lazy } from "react";
 import { ToolNavigationPage } from "@features/tools/ToolNavigationPage";
 import { StudioServiceShell } from "./StudioServiceShell";
-import { guardedNavigation } from "./navigation";
+import { useApplicationLocation } from "@app/routing/applicationNavigationContext";
 
 const VideoFrameExporterPage = lazy(() =>
   import("@features/tools/VideoFrameExporterPage").then((module) => ({
@@ -14,12 +14,11 @@ const VideoDownloaderPage = lazy(() =>
   })),
 );
 
-function open(path: string) {
-  guardedNavigation(() => window.location.assign(path), true);
-}
+const roots = ["/tools"];
 
 function ToolsContent() {
-  const pathname = window.location.pathname.replace(/\/+$/, "");
+  const { path, navigate: open } = useApplicationLocation();
+  const pathname = new URL(path, location.origin).pathname.replace(/\/+$/, "");
   const back = () => open("/tools");
   switch (pathname) {
     case "/tools":
@@ -40,7 +39,7 @@ function ToolsContent() {
 
 export default function ToolsApplication() {
   return (
-    <StudioServiceShell title="工具导航">
+    <StudioServiceShell title="工具导航" roots={roots}>
       <ToolsContent />
     </StudioServiceShell>
   );

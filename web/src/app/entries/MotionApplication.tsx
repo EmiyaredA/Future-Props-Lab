@@ -1,5 +1,5 @@
 import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
-import { lazy, useCallback, useEffect, useRef } from "react";
+import { lazy } from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { RuntimeAccessProvider } from "@features/accounts";
@@ -7,38 +7,23 @@ import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
 import { MOTION_COMPOSITOR_MODULE as motion } from "@features/motion-compositor/module";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
-import {
-  type Guard,
-  useNavigationProtection,
-} from "@shared/ui/navigationGuards";
+import { useNavigationGuardRegistration } from "@shared/ui/navigationGuards";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
+import { useWorkshopNavigation } from "@app/routing/useWorkshopNavigation";
+import { ApplicationPage } from "@app/layout/ApplicationPage";
 
 const Editor = lazy(motion.pages.editor);
 const Projects = lazy(motion.pages.projects);
 const index = "/apps/motion-compositor";
 
-function go(path: string) {
-  guardedNavigation(() => location.assign(path), true);
-}
-
 function MotionWorkspace() {
   const writable = useAccountPermission("content.write");
-  const protection = useNavigationProtection();
-  const unregister = useRef<(() => void) | null>(null);
-  const registerNavigationGuard = useCallback(
-    (guard: Guard | null) => {
-      unregister.current?.();
-      unregister.current =
-        guard && protection ? protection.register(guard) : null;
-    },
-    [protection],
-  );
-  useEffect(() => () => unregister.current?.(), []);
-  const route = motion.matchPath(location.pathname);
+  const registerNavigationGuard = useNavigationGuardRegistration();
+  const { route, navigate, go } = useWorkshopNavigation(motion);
   if (route?.page === "motion-compositor-editor" && route.projectId)
     return (
       <Editor
+        key={route.projectId}
         projectId={route.projectId}
         onBack={() => go(index)}
         readOnly={!writable}
@@ -49,10 +34,7 @@ function MotionWorkspace() {
     <WorkshopShell
       module={motion}
       page="motion-compositor-projects"
-      navigate={(page) => {
-        const target = motion.pathFor(page);
-        if (target && target !== location.pathname) go(target);
-      }}
+      navigate={navigate}
       onBack={() => go("/apps")}
     >
       <Projects
@@ -74,7 +56,9 @@ export default function MotionApplication() {
       <AmadeusPageProvider key={session.me.user.id} session={session}>
         <NavigationProtection>
           <ApplicationUpdate />
-          <MotionWorkspace />
+          <ApplicationPage>
+            <MotionWorkspace />
+          </ApplicationPage>
         </NavigationProtection>
       </AmadeusPageProvider>
     </RuntimeAccessProvider>

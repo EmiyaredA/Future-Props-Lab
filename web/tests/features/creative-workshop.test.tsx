@@ -9,7 +9,7 @@ import { vi } from "vitest";
 import { CreativeWorkshopPage } from "@features/creative-workshop/CreativeWorkshopPage";
 import type { CreativeItem } from "@features/creative-workshop/api";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
-import { guardedNavigation } from "@app/entries/navigation";
+import { guardedNavigation } from "@shared/ui/navigationGuards";
 import type { Guard } from "@shared/ui/navigationGuards";
 
 const mocks = vi.hoisted(() => ({

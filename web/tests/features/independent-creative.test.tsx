@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import CreativeApplication from "@app/entries/CreativeApplication";
@@ -9,10 +8,9 @@ vi.mock("@platform/auth/AccountAccess", () => ({
   useAccountPermission: (name: string) =>
     name === "content.write" ? access.canWrite : access.canInstall,
 }));
-vi.mock("@app/entries/StudioServiceShell", () => ({
-  StudioServiceShell: ({ children }: { children: ReactNode }) => (
-    <main>{children}</main>
-  ),
+vi.mock("@app/entries/StudioServiceShell", async () => ({
+  StudioServiceShell: (await import("../support/independent-shell"))
+    .IndependentTestShell,
 }));
 vi.mock("@features/creative-workshop/CreativeWorkshopPage", () => ({
   CreativeWorkshopPage: ({

@@ -7,11 +7,13 @@ import {
   useModelInfrastructureFocus,
 } from "./modelInfrastructureNavigation";
 
+const roots = ["/code-agents"];
+
 export default function AgentRuntimeApplication() {
   const { me } = useStudioSession();
   const focusSelected = useModelInfrastructureFocus("code-agents");
   return (
-    <StudioServiceShell title="编程智能体">
+    <StudioServiceShell title="编程智能体" roots={roots}>
       <CodeAgentsPage
         canManage={me.user.is_platform_admin}
         scope={me.user.id}

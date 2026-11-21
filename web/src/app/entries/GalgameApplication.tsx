@@ -8,7 +8,8 @@ import { GALGAME_WORKSHOP_MODULE as galgame } from "@features/galgame-workshop/m
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
+import { useWorkshopNavigation } from "@app/routing/useWorkshopNavigation";
+import { ApplicationPage } from "@app/layout/ApplicationPage";
 
 const Projects = lazy(galgame.pages.projects);
 const Overview = lazy(galgame.pages.overview);
@@ -20,26 +21,12 @@ const ReadOnly = lazy(() =>
   })),
 );
 
-function go(path: string) {
-  guardedNavigation(() => location.assign(path), true);
-}
-
-function navigate(page: string, projectId?: string) {
-  const path = galgame.pathFor(page, projectId);
-  if (path && path !== location.pathname) go(path);
-}
-
-function openProjects() {
-  navigate("galgame-workshop-projects");
-}
-
-function openOverview(id: string) {
-  navigate("galgame-workshop-overview", id);
-}
-
 function GalgameWorkspace() {
   const writable = useAccountPermission("content.write");
-  const route = galgame.matchPath(location.pathname);
+  const { route, navigate, go } = useWorkshopNavigation(galgame);
+  const openProjects = () => navigate("galgame-workshop-projects");
+  const openOverview = (id: string) =>
+    navigate("galgame-workshop-overview", id);
   const page = route?.page ?? "galgame-workshop-projects";
   const projectId = route?.projectId;
 
@@ -47,13 +34,14 @@ function GalgameWorkspace() {
     if (page === "galgame-workshop-editor") {
       return (
         <Editor
+          key={projectId}
           projectId={projectId}
           onOverview={() => openOverview(projectId)}
         />
       );
     }
     if (page === "galgame-workshop-preview") {
-      return <Preview projectId={projectId} />;
+      return <Preview key={projectId} projectId={projectId} />;
     }
   }
 
@@ -66,6 +54,7 @@ function GalgameWorkspace() {
     >
       {!writable ? (
         <ReadOnly
+          key={projectId}
           utilities={
             <WorkshopUtilities
               application={galgame.definition.name}
@@ -78,6 +67,7 @@ function GalgameWorkspace() {
         />
       ) : projectId ? (
         <Overview
+          key={projectId}
           projectId={projectId}
           onProjects={openProjects}
           onOpenEditor={() => navigate("galgame-workshop-editor", projectId)}
@@ -101,7 +91,9 @@ export default function GalgameApplication() {
       <AmadeusPageProvider key={session.me.user.id} session={session}>
         <NavigationProtection>
           <ApplicationUpdate />
-          <GalgameWorkspace />
+          <ApplicationPage>
+            <GalgameWorkspace />
+          </ApplicationPage>
         </NavigationProtection>
       </AmadeusPageProvider>
     </RuntimeAccessProvider>

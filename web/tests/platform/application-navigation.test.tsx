@@ -6,7 +6,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { useState } from "react";
+import { lazy, Suspense, useState, type ReactElement } from "react";
 import { useApplicationNavigation } from "@app/routing/useApplicationNavigation";
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { useUnsavedNavigation } from "@shared/ui/useUnsavedNavigation";
@@ -165,4 +165,35 @@ test("local navigation does not approve a later document unload", () => {
   const event = new Event("beforeunload", { cancelable: true });
   window.dispatchEvent(event);
   expect(event.defaultPrevented).toBe(true);
+});
+
+test("a cold lazy page keeps the current content visible until its module is ready", async () => {
+  let loaded!: (module: { default: () => ReactElement }) => void;
+  const module = new Promise<{ default: () => ReactElement }>((resolve) => {
+    loaded = resolve;
+  });
+  const Target = lazy(() => module);
+  function Pages() {
+    const { path, navigate } = useApplicationNavigation("visual", ownsPath);
+    return (
+      <>
+        <button onClick={() => navigate(assets)}>切换页面</button>
+        <Suspense fallback={<p>整页占位</p>}>
+          {path === home ? <p>当前内容</p> : <Target />}
+        </Suspense>
+      </>
+    );
+  }
+  render(
+    <NavigationProtection>
+      <Pages />
+    </NavigationProtection>,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "切换页面" }));
+  expect(screen.getByText("当前内容")).toBeVisible();
+  expect(screen.queryByText("整页占位")).not.toBeInTheDocument();
+  await act(async () => {
+    loaded({ default: () => <p>目标内容</p> });
+  });
+  expect(screen.getByText("目标内容")).toBeVisible();
 });

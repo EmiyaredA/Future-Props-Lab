@@ -29,7 +29,7 @@ export function SpreadsheetWorkshopRoute({
       fallback={<LoadingState label="正在打开表格工坊…" variant="region" />}
     >
       <Page
-        key={session.me.user.id}
+        key={`${session.me.user.id}:${projectId ?? "library"}`}
         owner={session.me.user.id}
         projectId={projectId}
         readOnly={readOnly}

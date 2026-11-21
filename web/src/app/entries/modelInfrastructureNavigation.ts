@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { studioPaths } from "@app/routing/studioNavigation";
-import { guardedNavigation } from "./navigation";
+import { guardedNavigation } from "@shared/ui/navigationGuards";
 
 type View = "model-service" | "code-agents";
 const focusKey = "fpl.model-infrastructure.tab-focus";

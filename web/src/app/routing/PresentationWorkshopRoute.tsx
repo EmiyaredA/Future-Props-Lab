@@ -26,6 +26,7 @@ export function PresentationWorkshopRoute({
   const editor = page === "presentation-workshop-template-editor";
   const content = (
     <Page
+      key={`${page}:${projectId ?? "library"}`}
       utilities={
         !editing ? (
           <WorkshopUtilities

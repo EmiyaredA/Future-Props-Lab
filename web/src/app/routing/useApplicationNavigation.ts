@@ -1,6 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import {
   NAVIGATION_COMMITTED,
+  guardedNavigation,
   useNavigationProtection,
 } from "@shared/ui/navigationGuards";
 
@@ -29,9 +36,12 @@ export function useApplicationNavigation(
     }),
     [scope],
   );
-  const publish = useCallback((entry: Entry) => {
+  const publish = useCallback((entry: Entry, transition = true) => {
     current.current = entry;
-    setPath(entry.path);
+    // A confirmed departure must unmount the old draft owner immediately;
+    // otherwise an immediate Back can be intercepted by its retiring guard.
+    if (transition) startTransition(() => setPath(entry.path));
+    else setPath(entry.path);
     window.dispatchEvent(new Event(NAVIGATION_COMMITTED));
   }, []);
   const navigate = useCallback(
@@ -39,7 +49,9 @@ export function useApplicationNavigation(
       const url = new URL(target, location.href);
       const local = url.origin === location.origin && ownsPath(url.pathname);
       const next = url.pathname + url.search + url.hash;
-      if (local && next === current.current.path) return;
+      if (url.origin === location.origin && next === current.current.path)
+        return;
+      let deferred = false;
       const proceed = () => {
         if (!local) {
           location.assign(url.href);
@@ -47,11 +59,11 @@ export function useApplicationNavigation(
         }
         const index = current.current.index + 1;
         history.pushState(stateFor(index), "", next);
-        publish({ path: next, index });
+        publish({ path: next, index }, !deferred);
       };
-      if (!protection?.protect(proceed, !local)) proceed();
+      deferred = guardedNavigation(proceed, !local);
     },
-    [ownsPath, protection, publish, stateFor],
+    [ownsPath, publish, stateFor],
   );
 
   useEffect(() => {
@@ -81,7 +93,7 @@ export function useApplicationNavigation(
       }
       if (approved?.path === next.path && approved.index === next.index) {
         approved = undefined;
-        publish(next as Entry);
+        publish(next as Entry, false);
         return;
       }
       if (next.path === previous.path) return;

@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { afterEach, expect, test, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import IntegrationsApplication from "@app/entries/IntegrationsApplication";
@@ -11,13 +10,13 @@ const access = vi.hoisted(() => ({
 vi.mock("@platform/auth/AccountAccess", () => ({
   useAccountPermission: () => access.canManage,
 }));
-vi.mock("@shared/ui/navigationGuards", () => ({
+vi.mock("@shared/ui/navigationGuards", async (original) => ({
+  ...(await original<typeof import("@shared/ui/navigationGuards")>()),
   useNavigationProtection: () => ({ register: access.register }),
 }));
-vi.mock("@app/entries/StudioServiceShell", () => ({
-  StudioServiceShell: ({ children }: { children: ReactNode }) => (
-    <main>{children}</main>
-  ),
+vi.mock("@app/entries/StudioServiceShell", async () => ({
+  StudioServiceShell: (await import("../support/independent-shell"))
+    .IndependentTestShell,
 }));
 vi.mock("@features/integrations/IntegrationCenterPage", () => ({
   IntegrationCenterPage: ({

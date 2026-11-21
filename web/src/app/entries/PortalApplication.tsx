@@ -12,20 +12,45 @@ import {
 } from "@features/amadeus/PageProvider";
 import { ApplicationUpdate } from "./ApplicationUpdate";
 import { IndependentShell } from "./IndependentShell";
-import { guardedNavigation } from "./navigation";
+import { useApplicationLocation } from "@app/routing/applicationNavigationContext";
 import "./portal.css";
 
 const applications = APPLICATION_DEFINITIONS;
+const roots = ["/", "/home", "/apps", "/cloud-control"];
 
-function PortalContents() {
+function PortalMain() {
   const localBrowser = useRuntimeAccess();
   const session = useStudioSession();
   const { me } = session;
   const canWrite = useAccountPermission("content.write");
   const canRead = useAccountPermission("content.read");
   const canReadLogs = useAccountPermission("logs.read");
-  const open = (path: string) =>
-    guardedNavigation(() => window.location.assign(path), true);
+  const { path, navigate: open } = useApplicationLocation();
+  const pathname = new URL(path, location.origin).pathname;
+  return (
+    <div className="portal-scroll">
+      {/^\/cloud-control\/?$/.test(pathname) ? (
+        <CloudControlPage owner={me.user.id} />
+      ) : /^\/apps\/?$/.test(pathname) ? (
+        <ApplicationCenterRoute applications={applications} onOpen={open} />
+      ) : (
+        <HomePage
+          onNavigate={open}
+          applications={applications}
+          canWrite={canWrite}
+          showFiles={canRead}
+          canReadLogs={canReadLogs}
+          canManageHost={localBrowser && me.user.is_platform_admin}
+        />
+      )}
+    </div>
+  );
+}
+
+function PortalContents() {
+  const session = useStudioSession();
+  const { me } = session;
+  const canRead = useAccountPermission("content.read");
   if (/^\/amadeus\/?$/.test(location.pathname)) {
     return canRead ? (
       <AmadeusPageProvider key={me.user.id} session={session} workspaceOnly>
@@ -39,23 +64,8 @@ function PortalContents() {
     );
   }
   return (
-    <IndependentShell title="Future Props Lab">
-      <div className="portal-scroll">
-        {/^\/cloud-control\/?$/.test(location.pathname) ? (
-          <CloudControlPage owner={me.user.id} />
-        ) : /^\/apps\/?$/.test(location.pathname) ? (
-          <ApplicationCenterRoute applications={applications} onOpen={open} />
-        ) : (
-          <HomePage
-            onNavigate={open}
-            applications={applications}
-            canWrite={canWrite}
-            showFiles={canRead}
-            canReadLogs={canReadLogs}
-            canManageHost={localBrowser && me.user.is_platform_admin}
-          />
-        )}
-      </div>
+    <IndependentShell title="Future Props Lab" roots={roots}>
+      <PortalMain />
     </IndependentShell>
   );
 }

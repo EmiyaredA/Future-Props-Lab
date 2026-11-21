@@ -5,6 +5,7 @@ import {
 import { BLOCK_REGISTRY } from "./blockRegistry";
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { LoadingState } from "@shared/ui/LoadingState";
+import { useUnsavedNavigation } from "@shared/ui/useUnsavedNavigation";
 import { AmadeusButton } from "@platform/AmadeusButton";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import "../styles/compact-workspaces.css";
@@ -139,6 +140,16 @@ export function GalgameWorkshopEditorView({
   model: EditorPageViewModel;
 }) {
   const [mobilePanel, setMobilePanel] = useState("script");
+  const navigation = useUnsavedNavigation({
+    dirty:
+      model.status === "ready" &&
+      (model.saveState !== "saved" || model.titleSaving),
+    busy:
+      model.status === "ready" &&
+      (model.saveState === "saving" || model.titleSaving),
+    title: "剧本尚未保存",
+    description: "剧本仍有未保存的修改，离开会丢失这些修改。",
+  });
   const segmentPreview = useEditorSegmentPreviewController(model);
   useAssistantElements(
     model.status === "ready" && !segmentPreview.fastPreview
@@ -879,6 +890,7 @@ export function GalgameWorkshopEditorView({
           }}
         />
         {segmentPreview.dialog}
+        {navigation.dialog}
       </section>
     </Suspense>
   );

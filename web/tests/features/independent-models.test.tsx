@@ -17,12 +17,14 @@ vi.mock("@app/StudioSession", () => ({
     me: { user: { id: "owner-a", display_name: "原账号" } },
   }),
 }));
-vi.mock("@app/entries/StudioServiceShell", () => ({
-  StudioServiceShell: ({ children }: { children: ReactNode }) => (
-    <main>{children}</main>
-  ),
+vi.mock("@app/entries/StudioServiceShell", async () => ({
+  StudioServiceShell: (await import("../support/independent-shell"))
+    .IndependentTestShell,
 }));
-vi.mock("@app/entries/navigation", () => ({ guardedNavigation: access.guard }));
+vi.mock("@shared/ui/navigationGuards", async (original) => ({
+  ...(await original<typeof import("@shared/ui/navigationGuards")>()),
+  guardedNavigation: access.guard,
+}));
 vi.mock("@features/models/catalog/ModelServicePage", () => ({
   ModelServicePage: ({
     canWrite,

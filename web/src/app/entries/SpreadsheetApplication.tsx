@@ -7,16 +7,11 @@ import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { SpreadsheetWorkshopRoute } from "@app/routing/SpreadsheetWorkshopRoute";
 import type { WorkshopPage } from "@app/routes";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
-
-function navigate(page: WorkshopPage | "apps", id?: string) {
-  const path = page === "apps" ? "/apps" : module.pathFor(page, id);
-  if (path) guardedNavigation(() => location.assign(path), true);
-}
+import { useWorkshopNavigation } from "@app/routing/useWorkshopNavigation";
 
 function Workspace() {
   const writable = useAccountPermission("content.write");
-  const route = module.matchPath(location.pathname);
+  const { route, navigate } = useWorkshopNavigation(module);
   if (!route)
     return (
       <section className="independent-not-found">

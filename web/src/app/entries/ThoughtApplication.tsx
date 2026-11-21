@@ -1,4 +1,11 @@
-import { lazy, useCallback, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useStudioSession } from "@app/StudioSession";
 import { WorkshopUtilities } from "@app/layout/StudioGlobalHeader";
 import { AmadeusPageProvider } from "@features/amadeus/PageProvider";
@@ -13,7 +20,8 @@ import { THOUGHT_WORKSHOP_MODULE as thought } from "@features/thought-workshop/m
 import { NavigationProtection } from "@shared/ui/NavigationProtection";
 import { useNavigationProtection } from "@shared/ui/navigationGuards";
 import { ApplicationUpdate } from "./ApplicationUpdate";
-import { guardedNavigation } from "./navigation";
+import { ApplicationPage } from "@app/layout/ApplicationPage";
+import { guardedNavigation } from "@shared/ui/navigationGuards";
 import "@app/layout/workshop-shell.css";
 
 const ThoughtWorkshopPage = lazy(thought.pages.notes);
@@ -60,11 +68,13 @@ function ThoughtContent() {
   useEffect(() => {
     const pop = () => {
       const next = currentPath();
-      const resume = () => {
+      const resume = (deferred = false) => {
         if (currentPath() !== next) history.pushState({}, "", next);
-        setPath(next);
+        if (deferred) setPath(next);
+        else startTransition(() => setPath(next));
       };
-      if (protection?.protect(resume)) history.pushState({}, "", path);
+      if (protection?.protect(() => resume(true)))
+        history.pushState({}, "", path);
       else resume();
     };
     window.addEventListener("popstate", pop);
@@ -73,9 +83,11 @@ function ThoughtContent() {
   const navigate = (page: string, project?: string, document?: string) => {
     const next = thought.pathFor(page, project, document);
     if (!next || next === currentPath()) return;
-    guardedNavigation(() => {
+    let deferred = false;
+    deferred = guardedNavigation(() => {
       history.pushState({}, "", next);
-      setPath(next);
+      if (deferred) setPath(next);
+      else startTransition(() => setPath(next));
     });
   };
   const section = (value: KnowledgeSection) => navigate(sectionPages[value]);
@@ -186,7 +198,9 @@ export default function ThoughtApplication() {
       <AmadeusPageProvider key={session.me.user.id} session={session}>
         <NavigationProtection>
           <ApplicationUpdate />
-          <ThoughtContent />
+          <ApplicationPage>
+            <ThoughtContent />
+          </ApplicationPage>
         </NavigationProtection>
       </AmadeusPageProvider>
     </RuntimeAccessProvider>

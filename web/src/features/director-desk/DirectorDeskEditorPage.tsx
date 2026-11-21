@@ -2,6 +2,8 @@ import { useAssistantElementRegistration } from "@platform/assistantElements";
 import { useAssistantSplitMinimum } from "@platform/assistantLayout";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { LoadingState } from "@shared/ui/LoadingState";
+import { useUnsavedNavigation } from "@shared/ui/useUnsavedNavigation";
+import { useNavigationProtection } from "@shared/ui/navigationGuards";
 import { openAmadeus } from "@platform/assistant";
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -30,6 +32,16 @@ export function DirectorDeskEditorPage({
   onBackRef.current = onBack;
   const revision = useRef(0);
   const [openError, setOpenError] = useState("");
+  const protection = useNavigationProtection();
+  const [navigationState, setNavigationState] = useState({
+    dirty: false,
+    busy: false,
+  });
+  const navigation = useUnsavedNavigation({
+    ...navigationState,
+    title: "工程尚未保存",
+    description: "工程仍有未保存的修改，离开会丢失这些修改。",
+  });
   const project = useQuery({
     queryKey: directorDeskKeys.project(projectId),
     queryFn: ({ signal }) => getDirectorProject(projectId, signal),
@@ -61,6 +73,8 @@ export function DirectorDeskEditorPage({
           name: data.title,
           projectId,
           registerElements,
+          onNavigationState: setNavigationState,
+          allowsUnload: protection?.allowsUnload,
           document: scene as SceneDocument,
           onSave: async (document) => {
             try {
@@ -114,7 +128,7 @@ export function DirectorDeskEditorPage({
       cancelled = true;
       dispose();
     };
-  }, [project.data, projectId, canRead, registerElements]);
+  }, [project.data, projectId, canRead, registerElements, protection]);
 
   if (project.isError || openError) {
     const text =
@@ -134,6 +148,7 @@ export function DirectorDeskEditorPage({
 
   return (
     <div className="director-desk-root" data-project-id={projectId}>
+      {navigation.dialog}
       {project.isPending ? (
         <LoadingState label="正在打开预演…" variant="page" />
       ) : null}

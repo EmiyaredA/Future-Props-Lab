@@ -55,20 +55,19 @@ export function ManagementApplication() {
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
   }, []);
+  const navigate = (next: ManagementPage) => {
+    const path = "/management/" + next.replace("management-", "");
+    if (path !== location.pathname + location.search)
+      history.pushState({}, "", path);
+    setPage(next);
+  };
   return (
     <RuntimeAccessContext value={runtime.data?.local_browser === true}>
       <ManagementConsole
         page={page}
         session={session}
-        navigate={(next) => {
-          history.pushState(
-            {},
-            "",
-            "/management/" + next.replace("management-", ""),
-          );
-          setPage(next);
-        }}
-        onBack={() => window.location.assign("/management/application")}
+        navigate={navigate}
+        onBack={() => navigate("management-application")}
       />
     </RuntimeAccessContext>
   );
