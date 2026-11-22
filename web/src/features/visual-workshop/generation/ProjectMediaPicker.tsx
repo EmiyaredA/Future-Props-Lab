@@ -691,7 +691,10 @@ export function ProjectMediaPicker({
                     }
                     onClick={() => setPreviewFile(file)}
                   >
-                    <span className="generation-media-preview">
+                    <span
+                      className="generation-media-preview"
+                      data-media-kind={file.media_kind}
+                    >
                       <GenerationMediaPreview file={file} thumbnailOnly />
                       <ReferenceKindTag
                         projectId={projectId}
@@ -778,7 +781,10 @@ export function ProjectMediaPicker({
                     onChange([...value, file.id]);
                 }}
               >
-                <span className="generation-media-preview">
+                <span
+                  className="generation-media-preview"
+                  data-media-kind={file.media_kind}
+                >
                   <GenerationMediaPreview file={file} />
                 </span>
                 {minimal ? null : <span>{file.display_name}</span>}

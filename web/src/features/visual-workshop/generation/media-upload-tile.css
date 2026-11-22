@@ -126,6 +126,7 @@
   .generation-media-open {
   display: grid;
   place-items: center;
+  grid-template-columns: minmax(0, 1fr);
   width: var(--reference-tile-size);
   min-width: var(--reference-tile-size);
   height: var(--reference-tile-size);
@@ -142,4 +143,38 @@
   > .generation-media-preview {
   width: 100%;
   height: 100%;
+}
+
+.generation-image-picker.is-minimal
+  .generation-media-preview[data-media-kind="audio"] {
+  --audio-tile-accent: color-mix(in srgb, var(--text) 28%, #b98ccc);
+  position: relative;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  color: var(--audio-tile-accent);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--audio-tile-accent) 18%, var(--surface)),
+    color-mix(in srgb, var(--audio-tile-accent) 5%, var(--surface))
+  );
+}
+.generation-image-picker.is-minimal
+  .generation-media-preview[data-media-kind="audio"]::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  width: 40px;
+  height: 40px;
+  border: 1px solid
+    color-mix(in srgb, var(--audio-tile-accent) 26%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--audio-tile-accent) 9%, transparent);
+}
+.generation-image-picker.is-minimal
+  .generation-media-preview[data-media-kind="audio"]
+  > svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.6;
 }

@@ -226,6 +226,35 @@ N/A`;
   expect(referenceChip!.height).toBeLessThanOrEqual(24);
   for (const theme of ["dark", "light"]) {
     await setResponsiveTheme(page, theme);
+    const audioTile = page.locator(
+      '.video-reference-strip .generation-media-open:has([data-media-kind="audio"])',
+    );
+    await expect(audioTile).toBeVisible();
+    const audioBounds = await audioTile.evaluate((button) => {
+      const tile = button.getBoundingClientRect();
+      const preview = button
+        .querySelector(".generation-media-preview")!
+        .getBoundingClientRect();
+      const icon = button.querySelector("svg")!.getBoundingClientRect();
+      return {
+        tile: { width: tile.width, height: tile.height },
+        preview: { width: preview.width, height: preview.height },
+        icon: { width: icon.width, height: icon.height },
+        offsetX: Math.abs(icon.x + icon.width / 2 - tile.x - tile.width / 2),
+        offsetY: Math.abs(icon.y + icon.height / 2 - tile.y - tile.height / 2),
+      };
+    });
+    expect(audioBounds.tile).toEqual({ width: 64, height: 64 });
+    expect(audioBounds.preview.width).toBeGreaterThanOrEqual(56);
+    expect(audioBounds.preview.height).toBeGreaterThanOrEqual(56);
+    expect(audioBounds.icon).toEqual({ width: 24, height: 24 });
+    expect(audioBounds.offsetX).toBeLessThanOrEqual(1);
+    expect(audioBounds.offsetY).toBeLessThanOrEqual(1);
+    await audioTile.press("Enter");
+    const audioDialog = page.getByRole("dialog", { name: /声音参考/ });
+    await expect(audioDialog.locator("audio")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(audioTile).toBeFocused();
     const heights = await preview
       .locator(
         ".prompt-reference, .is-shot.prompt-render-token, .is-speaker, .is-language, .is-relationship, .prompt-render-task, .prompt-render-marker, h3",
