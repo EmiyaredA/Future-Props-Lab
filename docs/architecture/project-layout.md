@@ -85,35 +85,35 @@ backend/
 
 旧包映射如下；“已迁移”只表示该包源码与调用方迁移完成，兼容网站残余实现及整个业务的端口化另行验收。
 
-| 旧包 | 当前归属 |
-| --- | --- |
-| `fpl_config` | `studio.config` |
-| `fpl_deployment` | `studio.deployment` |
-| `fpl_annotation` | `studio.apps.audio_annotation` 与对应装配 |
-| `fpl_runtime` | 按所有者拆入 `contracts`、公开客户端、`runtime` 与 `assembly` |
-| `fpl_agent_runtime` | `studio.apps.agent_runtime` |
-| `fpl_agents` | `studio.apps.agent_workbench` |
-| `fpl_amadeus` | `studio.apps.amadeus` |
-| `fpl_assets` | `studio.apps.asset_library` |
-| `fpl_creative` | `studio.apps.creative_workshop` |
-| `fpl_director` | `studio.apps.director_desk` |
-| `fpl_galgame` | `studio.apps.galgame_workshop` |
-| `fpl_gateway` | `studio.apps.gateway` |
-| `fpl_identity` | `studio.apps.identity` |
-| `fpl_integrations` | `studio.apps.integrations` |
-| `fpl_interview` | `studio.apps.interview_assistant` |
-| `fpl_management` | `studio.apps.management` |
-| `fpl_models` | `studio.apps.model_service` |
-| `fpl_motion` | `studio.apps.motion_compositor` |
-| `fpl_portal` | `studio.apps.portal` |
-| `fpl_presentation` | `studio.apps.presentation_workshop` |
-| `fpl_remote` | `studio.apps.remote_desktop` |
-| `fpl_rendering` | `studio.apps.media_rendering` |
-| `fpl_thought` | `studio.apps.thought_workshop` |
-| `fpl_tools` | `studio.apps.tools` |
-| `fpl_video` | `studio.apps.video_editor` |
-| `fpl_visual` | `studio.apps.visual_workshop` |
-| `fpl_host` | `studio.host` |
+| 旧包                | 当前归属                                                      |
+| ------------------- | ------------------------------------------------------------- |
+| `fpl_config`        | `studio.config`                                               |
+| `fpl_deployment`    | `studio.deployment`                                           |
+| `fpl_annotation`    | `studio.apps.audio_annotation` 与对应装配                     |
+| `fpl_runtime`       | 按所有者拆入 `contracts`、公开客户端、`runtime` 与 `assembly` |
+| `fpl_agent_runtime` | `studio.apps.agent_runtime`                                   |
+| `fpl_agents`        | `studio.apps.agent_workbench`                                 |
+| `fpl_amadeus`       | `studio.apps.amadeus`                                         |
+| `fpl_assets`        | `studio.apps.asset_library`                                   |
+| `fpl_creative`      | `studio.apps.creative_workshop`                               |
+| `fpl_director`      | `studio.apps.director_desk`                                   |
+| `fpl_galgame`       | `studio.apps.galgame_workshop`                                |
+| `fpl_gateway`       | `studio.apps.gateway`                                         |
+| `fpl_identity`      | `studio.apps.identity`                                        |
+| `fpl_integrations`  | `studio.apps.integrations`                                    |
+| `fpl_interview`     | `studio.apps.interview_assistant`                             |
+| `fpl_management`    | `studio.apps.management`                                      |
+| `fpl_models`        | `studio.apps.model_service`                                   |
+| `fpl_motion`        | `studio.apps.motion_compositor`                               |
+| `fpl_portal`        | `studio.apps.portal`                                          |
+| `fpl_presentation`  | `studio.apps.presentation_workshop`                           |
+| `fpl_remote`        | `studio.apps.remote_desktop`                                  |
+| `fpl_rendering`     | `studio.apps.media_rendering`                                 |
+| `fpl_thought`       | `studio.apps.thought_workshop`                                |
+| `fpl_tools`         | `studio.apps.tools`                                           |
+| `fpl_video`         | `studio.apps.video_editor`                                    |
+| `fpl_visual`        | `studio.apps.visual_workshop`                                 |
+| `fpl_host`          | `studio.host`                                                 |
 
 Web、验收与部署目录按以下归属组织。
 
@@ -171,13 +171,13 @@ docs/
 测试夹具、跨应用支持模块和受产品文档引用的验收文件保留各自的原路径。
 `.runtime/` 保存正式单机数据，`.local/` 保存隔离测试和构建产物。
 
-| 状态 | 归属与流动 |
-| --- | --- |
-| 选中项、弹窗、焦点 | 页面组件持有。浏览器导航或页面卸载清理临时监听。 |
-| 编辑草稿与已提交资源 | 功能控制器持有草稿。账号隔离的查询键保存服务端快照，CAS 冲突交给页面展示。 |
-| 会话、项目、文档与引用 | 所属应用负责访问规则和事务。存储提交 revision 与回执，已授权素材以描述或受控内容交付。 |
-| 任务、审批、取消与结算 | 所属用例裁决，执行器提交带任务、尝试和租约的回执。未知结果保留原尝试供核对。 |
-| 事件游标与短期授权 | SSE 事件流维护版本，断线按游标恢复或重读快照。Identity 复核短期授权，执行端持有本次取消句柄。 |
+| 状态                   | 归属与流动                                                                                    |
+| ---------------------- | --------------------------------------------------------------------------------------------- |
+| 选中项、弹窗、焦点     | 页面组件持有。浏览器导航或页面卸载清理临时监听。                                              |
+| 编辑草稿与已提交资源   | 功能控制器持有草稿。账号隔离的查询键保存服务端快照，CAS 冲突交给页面展示。                    |
+| 会话、项目、文档与引用 | 所属应用负责访问规则和事务。存储提交 revision 与回执，已授权素材以描述或受控内容交付。        |
+| 任务、审批、取消与结算 | 所属用例裁决，执行器提交带任务、尝试和租约的回执。未知结果保留原尝试供核对。                  |
+| 事件游标与短期授权     | SSE 事件流维护版本，断线按游标恢复或重读快照。Identity 复核短期授权，执行端持有本次取消句柄。 |
 
 这是 Future Props Lab 目录职责的唯一完整索引。新增、删除目录或改变目录职责时更新本文件；
 各模块文档只补充局部使用方法，不另行定义一套架构。
@@ -200,6 +200,8 @@ docs/
   转录通过快照读取与提交命令接入，异步结果核对账号/项目范围、片段及音频区间。
   `playback.ts` 声明播放能力，展示组件实现该接口；保存确认只推进 CAS，不能覆盖后续编辑。
 - 视觉生成的提交与批次反馈归 `useGenerationSubmission`，参数、草稿和素材顺序仍由原业务模块持有。
+- 生成素材格的分类展示归 `generation/ReferenceKindTag.tsx`，`referenceCardLinks.ts` 仅将显式设定引用、精确素材 ID 命中的项目节点设定绑定和已解析画布连线映射为素材与设定卡 ID，不从内容推断分类或写入持久状态。
+- 视觉视频提示词的模板识别和纯解析归 `generation/promptRendering.ts`、`minimaxH3PromptRenderer.ts`，对应前端编辑器、引用选项及说明通过 `promptRenderViews.ts` 注册；`GenerationPromptField.tsx` 仅分派所选适配器或普通文本编辑器。MiniMax H3 的结构化正文归 `H3PromptPreview.tsx` 和 `PromptRenderedContent.tsx`，原文事务、撤销与中文输入归 `useH3PromptEditing.ts`，DOM 选区与原文位置映射归 `h3PromptSelection.ts`，隐藏字段／对白包装保护及源串替换归 `h3SourceEdits.ts`；普通文本继续复用 `GenerationPromptEditor`。适配器不持有生成或持久草稿状态；`promptReferenceSlots.ts` 按实际输入模式与顺序提供素材槽位，`h3PromptMentions.ts` 提供保留协议原文的引用选项，素材弹层按需加载完整媒体。分镜的白模场景选择和已发布输出展示归 `storyboard/ShotPrevisAssociation.tsx`，通过调用方的分镜 patch 与保存／导航接口完成操作。
 - 视觉画布统一使用 `web/src/features/visual-workshop/canvas/ToonflowCanvas.tsx` 的 Vue Flow 视口适配。节点、连线和编辑历史继续由画布控制器维护。白模场景与其嵌入式编辑器共用项目顶栏，场景保存与回填归 `web/src/features/visual-workshop/previs/`，TrumanMap 源码与许可归 `web/vendor/toonflow/`。
 - 视觉项目的分集剧本、设定卡和候选图交互归 `web/src/features/visual-workshop/creative/`。`schemas/creative_workflow.py` 与 `schemas/card_generation.py` 拥有纯数据结构；`creative_workflow.py`、`creative_rules.py` 和 `creative_ports.py` 拥有用例、规则与具名素材描述端口，`storage/creative_records.py` 拥有账号范围查询、CAS 和短事务。`card_generation.py` 通过绑定端口提交候选，`storage/card_generation.py` 将卡片版本、候选任务和回执与生成任务原子提交。两套装配显式提供素材检查适配。
 - 视觉生成的 `generation/generation_intake.py` 只消费 `intake_ports.py` 的准备、存储及引用交付端口；`storage/generation_intake.py` 拥有准备决议、画布绑定和原子提交，`transport/generation_bindings.py` 绑定本次请求依赖。Models 的 `providers/visual_reference_rules.py` 统一解释供应商参考能力，选择元数据与冻结计划模型分开，网站和独立 Visual 使用同一规则。
@@ -1084,6 +1086,8 @@ Web 编辑器入口装配播放时钟和帧展示。`editor/playback-clock.ts` �
 
 `generation/generationActivityModel.ts` 将节点关联的任务／图片批次快照归一为运行状态，`GenerationActivity.tsx` 与 `generation-activity.css` 拥有紧凑状态栏、已用时和共用转圈图标。看板右侧输出历史、节点标题、素材树、状态分组与生成按钮共用运行状态；未知进度保持不定值，现有输出版本与当前任务分开显示，不用参考素材模拟中间帧。
 
+`generation/image-workbench.css` 拥有工作台图像生成器的参考图片标题、提示词输入边界和参数工具栏，按图像布局作用域覆盖共用生成控件，不改变画布生成器布局或生成状态。
+
 `backend/studio/apps/visual_workshop/outputs/` 拥有节点输出 ORM、历史分页、最终版本 CAS、输入解析与提交快照、上传事务及快照重映射；包入口提供 `register_imported_output`，供视频剪辑分段交接在取得画布 CAS 写锁后、同一事务内登记素材版本；`routes/outputs.py` 只负责协议适配。`canvas.py` 保留节点身份、分类与连线整体 CAS，兼容旧素材写入并统一登记版本。`generation_runner.py` 在落盘后短事务中幂等归档输出。`web/src/features/visual-workshop/board/` 拥有项目素材树、创作工作台、状态分组、历史预览与输入选择，并按素材视图、管理菜单、生成编辑与状态呈现拆分；shell、工作台与状态卡样式按职责独立维护。生成组件通过显式 `layout` 参数适配工作台，保留画布布局；画布控制器统一持有草稿、选择与视口，项目页保留两种视图切换时的历史预览。
 
 视觉画布 `canvasPlacement.ts` 拥有卡片与节点组的有界避让，`canvasLayout.ts` 拥有稳定的流程与网格布局，`canvasVisibleArea.ts` 计算排除固定控件后的可见区域；`useCanvasSpatialActions.ts` 将纯位置结果接入视口、整体保存与单次撤销。各新增入口共用该能力，临时编辑面板不影响持久布局。后端 `visual_workshop/node_placement.py` 只处理后台自动节点，显式 API 坐标沿用原契约；`tests/fixtures/visual_node_placement.json` 同时约束前后端尺寸与默认避让结果。
@@ -1158,7 +1162,7 @@ FFmpeg 快版复用同一任务队列和媒体边界。长镜头最多每 240 �
 
 ## 视觉工坊分镜与历史验收
 
-`backend/studio/apps/visual_workshop/storyboard/` 拥有独立镜头文档、关联校验、短事务 CAS、快照导出和制作节点重映射；`transport/storyboard_http.py` 向网站与独立服务提供同一协议。追加迁移为网站 `0136_visual_storyboards`、独立服务 `0016_visual_storyboards`。`web/src/features/visual-workshop/storyboard/` 拥有手动镜头卡、批量纳入已有节点、顺序、剧本来源与设定关联；`productionDraft.ts` 只为新制作节点准备生成草稿。
+`backend/studio/apps/visual_workshop/storyboard/` 拥有独立镜头文档、关联校验、短事务 CAS、快照导出和制作节点重映射；`transport/storyboard_http.py` 向网站与独立服务提供同一协议。追加迁移为网站 `0136_visual_storyboards`、独立服务 `0016_visual_storyboards`。`web/src/features/visual-workshop/storyboard/` 拥有手动镜头卡、批量纳入已有视频节点、顺序、剧本来源与设定关联；`productionDraft.ts` 为新镜头视频准备生成草稿和图片参考，已有视频草稿保持用户编辑结果。
 
 `acceptance/` 保留历史验收记录、证据、快照与删除兼容；`retirement.py` 在启动时按账号取消未完成检查。`transport/retired_acceptance_http.py` 仅提供受认证且按项目隔离的 410 兼容响应，不进入公共目录。两种装配均不启动验收执行器。
 
@@ -1169,7 +1173,7 @@ FFmpeg 快版复用同一任务队列和媒体边界。长镜头最多每 240 �
 SDK 解释器入口，正式产物位于运行根目录的 `agent-workspace/`。Python SDK 的 `task.py` 拥有任务 socket
 客户端和同步／异步传输；CLI 的 `--task` 模式复用该传输，不读取个人网站配置。
 
-`ProjectCreativeTools.tsx` 提供工作台／剧本／白模预演三个固定一级入口，`canvas/VisualWorkshopCanvasPage.tsx` 拥有项目工作区状态与显式联动目标；`ProjectWorkspaceNavigation.tsx` 将统一顶栏委托给当前编辑器的离开规则。`WorkbenchViewToggle.tsx` 只切换工作台内部画布／看板；`board/ProjectBoard.tsx` 复用同一资源栏并接入画布或分镜展示槽，`storyboard/workbench.ts` 定义分镜的列表、编辑和输出槽。`WorkspaceSidebar.tsx` 提供剧本与白模同尺寸的导航栏及列表，`useWorkspaceSidebarState.ts` 统一管理三个工作区的桌面默认固定、窄屏临时展开及跨断点状态；`project-workspace.css` 拥有共享尺寸、工作区布局与按内容宽度排列编辑／输出的适配。`canvas/CanvasProjectDesigns.tsx` 为画布左侧人设／场景／道具入口提供项目设定面板，复用设定库挑选、编辑、采用图与引用接口。`CanvasNodeInspector` 仅挂载生成编辑器；原自动验收前端已移除。人工通过与输出版本继续使用原画布和输出契约；[历史验收说明](../operations/node-acceptance.md) 记录兼容边界。
+`ProjectCreativeTools.tsx` 提供工作台／剧本／白模预演三个固定一级入口，`canvas/VisualWorkshopCanvasPage.tsx` 拥有项目工作区状态与显式联动目标；`ProjectWorkspaceNavigation.tsx` 将统一顶栏委托给当前编辑器的离开规则。`WorkbenchViewToggle.tsx` 只切换工作台内部画布／看板；`board/ProjectBoard.tsx` 复用同一资源栏并接入画布或分镜展示槽，`storyboard/workbench.ts` 定义分镜的列表、编辑和输出槽。`WorkspaceSidebar.tsx` 提供剧本与白模同尺寸的导航栏及列表，`useWorkspaceSidebarState.ts` 统一管理三个工作区的桌面默认固定、窄屏临时展开及跨断点状态；`project-workspace.css` 拥有共享尺寸、工作区布局与按内容宽度排列编辑／输出的适配。`workspace-controls.css` 拥有三个工作区的共用控件外观，`creative/ScriptDirectory.tsx` 独立维护多集展开与搜索；`previs/ScriptPrevisDraft.tsx` 将候选预览挂入主视口，`previs/script-previs-draft.css` 独立拥有其输入、解析统计与明细布局。`PrevisEditor.tsx` 通过显式传入的侧栏容器挂载场景控件，编辑草稿与保存仍归原组件。`vendor/toonflow/truman-theme.css` 映射宿主及弹层主题，`truman-map/editorAppearance.ts` 拥有异常安全的编辑帧临时配色。`canvas/CanvasProjectDesigns.tsx` 为画布左侧人设／场景／道具入口提供项目设定面板，复用设定库挑选、编辑、采用图与引用接口。`CanvasNodeInspector` 仅挂载生成编辑器；原自动验收前端已移除。人工通过与输出版本继续使用原画布和输出契约；[历史验收说明](../operations/node-acceptance.md) 记录兼容边界。
 
 - `studio/assembly/website/code_agent_access.py` 通过 Identity 复核有效账号。Host 的 `cli/connection_configuration.py` 负责本机启用，共用 TOML 锁和发布前授权。连接 DTO 归 Agent Runtime 契约，两套入口共用 Agent Runtime 路由。独立服务通过持久租约访问 Host。`scripts/website/codex_login.py` 建立 app-server 的专用登录。
 

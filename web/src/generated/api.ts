@@ -9683,11 +9683,6 @@ export interface components {
              */
             design: string;
             /**
-             * Facts
-             * @default
-             */
-            facts: string;
-            /**
              * Kind
              * @enum {string}
              */
@@ -9698,14 +9693,11 @@ export interface components {
             parent_asset_id?: string | null;
             /** Parent Id */
             parent_id?: string | null;
-            /**
-             * Proposed Design
-             * @default
-             */
-            proposed_design: string;
             source?: components["schemas"]["ScriptSource"] | null;
             /** Title */
             title: string;
+            /** Voice Asset Id */
+            voice_asset_id?: string | null;
         };
         /** CardGenerationIn */
         CardGenerationIn: {
@@ -9738,11 +9730,6 @@ export interface components {
              * @default
              */
             design: string;
-            /**
-             * Facts
-             * @default
-             */
-            facts: string;
             /** Id */
             id: string;
             /**
@@ -9760,11 +9747,6 @@ export interface components {
             parent_asset_id?: string | null;
             /** Parent Id */
             parent_id?: string | null;
-            /**
-             * Proposed Design
-             * @default
-             */
-            proposed_design: string;
             /** Revision */
             revision: number;
             source?: components["schemas"]["ScriptSource"] | null;
@@ -9772,6 +9754,8 @@ export interface components {
             source_project_id?: string | null;
             /** Title */
             title: string;
+            /** Voice Asset Id */
+            voice_asset_id?: string | null;
         };
         /** CardRegroupIn */
         CardRegroupIn: {
@@ -9805,11 +9789,6 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
             /**
-             * Facts
-             * @default
-             */
-            facts: string;
-            /**
              * Kind
              * @enum {string}
              */
@@ -9820,14 +9799,11 @@ export interface components {
             parent_asset_id?: string | null;
             /** Parent Id */
             parent_id?: string | null;
-            /**
-             * Proposed Design
-             * @default
-             */
-            proposed_design: string;
             source?: components["schemas"]["ScriptSource"] | null;
             /** Title */
             title: string;
+            /** Voice Asset Id */
+            voice_asset_id?: string | null;
         };
         /** CatalogOut */
         CatalogOut: {

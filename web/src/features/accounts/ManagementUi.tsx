@@ -1,16 +1,19 @@
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
+import "./management-dialogs.css";
 export function ManagementDialog({
   title,
   close,
   children,
   pending = false,
+  className = "",
 }: {
   title: string;
   close: () => void;
   children: ReactNode;
   pending?: boolean;
+  className?: string;
 }) {
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -28,13 +31,13 @@ export function ManagementDialog({
   );
   return createPortal(
     <div
-      className="modal-backdrop"
+      className="modal-backdrop management-dialog-backdrop"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && !pending) close();
       }}
     >
       <section
-        className="modal-card management-dialog"
+        className={`modal-card management-dialog ${className}`}
         ref={ref}
         role="dialog"
         aria-modal="true"

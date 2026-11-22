@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { writeFileSync } from "node:fs";
 import type {
   VisualCanvasDocument,
   VisualCanvasNode,
@@ -90,13 +91,57 @@ function separated(nodes: VisualCanvasNode[]) {
   );
 }
 
-test("按连线整理、选区网格、撤销重做、刷新与看板往返", async ({ page }) => {
+test("按连线整理、选区网格、撤销重做、刷新与看板往返", async ({
+  page,
+}, info) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   const { id, original } = await createProject(
     page,
     [text("来源", 220, 240), text("下游", 220, 240), text("独立", 1500, 800)],
     true,
   );
+  for (const width of [1440, 1024]) {
+    await page.setViewportSize({ width, height: 900 });
+    for (const theme of ["light", "dark"] as const) {
+      await setResponsiveTheme(page, theme);
+      await page.screenshot({
+        path: info.outputPath(`canvas-toolbar-${width}-${theme}.png`),
+      });
+      const geometry = await page
+        .locator(".canvas-controls")
+        .evaluate((bar) => {
+          const box = (element: Element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+              left: rect.left,
+              right: rect.right,
+              top: rect.top,
+              bottom: rect.bottom,
+              width: rect.width,
+              height: rect.height,
+            };
+          };
+          return {
+            canvas: box(bar.closest(".visual-canvas")!),
+            toolbar: box(bar),
+            buttons: [...bar.querySelectorAll("button")].map((button) => ({
+              label: button.getAttribute("aria-label") ?? button.textContent,
+              box: box(button),
+              contents: [...button.children].map(box),
+            })),
+          };
+        });
+      const boundsPath = info.outputPath(
+        `canvas-toolbar-${width}-${theme}-bounds.json`,
+      );
+      writeFileSync(boundsPath, JSON.stringify(geometry));
+      await info.attach(`canvas-toolbar-${width}-${theme}-bounds`, {
+        path: boundsPath,
+        contentType: "application/json",
+      });
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByRole("button", { name: "一键整理", exact: true }).click();
   await expect
     .poll(async () => separated((await readCanvas(page, id)).nodes))
@@ -158,10 +203,10 @@ test("连续新增与看板批量上传避让，侧栏与缩放保持正常", as
     if (message.text().includes("same key")) errors.push(message.text());
   });
   const { id, original } = await createProject(page, [text("已有", 900, 500)]);
-  await page.getByRole("button", { name: "素材库", exact: true }).click();
+  await page.getByRole("tab", { name: "文件", exact: true }).click();
   for (let index = 0; index < 3; index++) {
-    await page.getByRole("button", { name: "添加内容" }).click();
-    await page.getByRole("menuitem", { name: "添加文本节点" }).click();
+    await page.getByRole("button", { name: "选择新建节点类型" }).click();
+    await page.getByRole("menuitem", { name: "新建文本", exact: true }).click();
     await expect
       .poll(async () => (await readCanvas(page, id)).nodes.length)
       .toBe(index + 2);

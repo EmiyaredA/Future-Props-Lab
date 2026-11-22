@@ -4,6 +4,8 @@ import { GenerationSpinner } from "./GenerationActivity";
 import { WorkflowVideoControls } from "@features/models";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
+import { GenerationPromptField } from "./GenerationPromptField";
+import { promptReferenceSlotsForInputs } from "./promptReferenceSlots";
 import { PromptVersionControls } from "./PromptVersionControls";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
@@ -13,6 +15,10 @@ export function StandardGenerationDrawer({
 }: {
   controller: ReturnType<typeof useGenerationDrawerController>;
 }) {
+  const PromptField =
+    controller.kind === "video"
+      ? GenerationPromptField
+      : GenerationPromptEditor;
   const {
     projectId,
     onClose,
@@ -121,14 +127,19 @@ export function StandardGenerationDrawer({
           ) : null}
         </label>
         <div className="generation-form-prompt">
-          {controller.promptVersions ? (
+          {kind === "video" ? null : controller.promptVersions ? (
             <PromptVersionControls versions={controller.promptVersions} />
           ) : (
             <span>提示词</span>
           )}
-          <GenerationPromptEditor
+          <PromptField
+            key={`${projectId}:${controller.canvasNodeId ?? ""}`}
+            versions={kind === "video" ? controller.promptVersions : undefined}
             value={prompt}
             assets={promptAssets}
+            {...(kind === "video"
+              ? { referenceSlots: promptReferenceSlotsForInputs(controller) }
+              : {})}
             label={kind === "image" ? "图片提示词" : "视频提示词"}
             placeholder={
               kind === "image" ? "描述要生成的画面…" : "描述镜头、动作和氛围…"

@@ -1,0 +1,178 @@
+.workbench-generation .canvas-generation-drawer.is-compact.image-node-composer {
+  --ui-control-height: 32px;
+  padding: 12px 12px 8px;
+  border: 1px solid var(--board-border);
+  border-radius: 10px;
+  background: var(--board-panel);
+  box-sizing: border-box;
+}
+.visual-project-workspace
+  .storyboard-production-editor:has(.image-node-composer) {
+  padding-bottom: 0;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .image-composer-body {
+  padding: 0;
+  gap: 8px;
+  overflow: visible;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .image-composer-body:focus-within {
+  box-shadow: none;
+}
+.image-workbench-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  color: var(--board-text);
+  font-size: 12px;
+}
+.image-workbench-heading small {
+  margin-left: 5px;
+  font-size: 11px;
+  color: var(--board-muted);
+}
+.workbench-generation .image-workbench-heading .video-composer-close {
+  width: 28px;
+  min-height: 28px;
+  height: 28px;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--board-muted);
+}
+.image-workbench-heading .video-composer-close svg {
+  width: 14px;
+  height: 14px;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .image-composer-tools {
+  padding: 0;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .image-composer-prompt {
+  min-height: 280px;
+  margin-top: 0;
+  padding: 0;
+  border: 1px solid var(--board-border);
+  border-radius: 9px;
+  background: var(--bg);
+  overflow: visible;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .image-composer-prompt:focus-within {
+  border-color: var(--accent-line);
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .prompt-version-controls {
+  gap: 6px;
+  padding: 8px 10px;
+  margin: 0;
+  border-bottom: 1px solid var(--board-border);
+  color: var(--board-muted);
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .prompt-version-selection {
+  gap: 7px;
+}
+.workbench-generation
+  .image-node-composer
+  .prompt-version-selection
+  > .custom-select {
+  flex-basis: 88px;
+  width: 88px;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .prompt-version-actions
+  button {
+  width: 26px;
+  min-height: 26px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--board-muted);
+}
+.workbench-generation
+  .image-node-composer
+  .prompt-version-actions
+  button:hover:not(:disabled) {
+  background: var(--board-accent-soft);
+  color: var(--board-accent);
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .generation-prompt-editor-shell {
+  flex: 1;
+  min-height: 240px;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .generation-prompt-editor {
+  min-height: 240px;
+  padding: 12px 12px 30px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .image-composer-footer {
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 0 0;
+  flex: 0 0 auto;
+  border-top: 0;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .video-composer-model {
+  flex: 1 1 130px;
+  min-width: 0;
+  max-width: 240px;
+}
+.workbench-generation
+  .image-node-composer
+  :is(
+    .custom-select-trigger,
+    .image-composer-parameters > summary,
+    .image-composer-count > summary
+  ) {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid var(--board-border);
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .image-parameter-summary-icon {
+  width: 16px;
+  height: 14px;
+  border-width: 1.5px;
+  border-radius: 3px;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .video-composer-submit {
+  min-height: 32px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+  font-size: 13px;
+}
+.workbench-generation
+  .canvas-generation-drawer.image-node-composer
+  .video-composer-submit:disabled {
+  padding-inline: 12px;
+}

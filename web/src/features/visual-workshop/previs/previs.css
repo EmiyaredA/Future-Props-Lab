@@ -488,3 +488,49 @@
   padding: 8px;
   border-radius: 7px;
 }
+
+.previs-scene-settings {
+  flex: none;
+  min-width: 0;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+}
+.previs-scene-settings > summary {
+  padding: 4px 6px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.previs-scene-settings .visual-previs-bar {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+}
+.previs-scene-settings .visual-previs-bar label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+}
+.previs-scene-settings .visual-previs-bar input {
+  width: 100%;
+  min-width: 0;
+}
+.previs-scene-settings .stage-object-bindings {
+  padding: 8px 0;
+  border: 0;
+  font-size: 12px;
+  background: transparent;
+}
+.previs-scene-settings .stage-object-bindings p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.previs-scene-settings .stage-object-bindings label {
+  display: grid;
+  width: 100%;
+  gap: 6px;
+  margin: 8px 0;
+}

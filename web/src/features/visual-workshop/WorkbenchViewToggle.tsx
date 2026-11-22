@@ -21,12 +21,14 @@ export function WorkbenchViewToggle({
         <button
           key={value}
           type="button"
+          aria-label={label}
+          title={label}
           aria-pressed={view === value}
           disabled={disabled}
           onClick={() => view !== value && onView(value)}
         >
           <Icon size={16} aria-hidden />
-          {label}
+          <span>{label}</span>
         </button>
       ))}
     </div>

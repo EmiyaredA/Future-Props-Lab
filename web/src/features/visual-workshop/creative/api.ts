@@ -65,8 +65,6 @@ export async function createCard(
   const body = {
     archived: false,
     design: "",
-    facts: "",
-    proposed_design: "",
     ...value,
   };
   return unwrap(
@@ -83,9 +81,8 @@ export async function saveCard(value: Card) {
       body: {
         kind: value.kind,
         title: value.title,
-        facts: value.facts,
         design: value.design,
-        proposed_design: value.proposed_design,
+        voice_asset_id: value.voice_asset_id,
         source: value.source,
         parent_id: value.parent_id,
         parent_asset_id: value.parent_asset_id,

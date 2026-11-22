@@ -606,7 +606,7 @@ test("selects current, cross-project, and library media from the source menu", a
   );
   await screen.findByRole("combobox", { name: "生成模型" });
   const sourceTrigger = await screen.findByRole("button", {
-    name: "上传参考图片（可选）",
+    name: "参考图片（可选）更多来源",
   });
 
   await user.click(sourceTrigger);
@@ -1092,8 +1092,13 @@ test("uploads local reference media, auto-selects it and submits asset ids", asy
   expect(
     screen.getByRole("option", { name: /Doubao Seedance 2.0/ }),
   ).toBeInTheDocument();
-  await user.click(screen.getByRole("combobox", { name: "视频生成方式" }));
-  await user.click(screen.getByRole("option", { name: "全能参考" }));
+  await user.keyboard("{Escape}");
+  expect(
+    screen.getByRole("combobox", { name: "视频生成方式" }),
+  ).toHaveTextContent("文生视频");
+  expect(screen.getByRole("button", { name: "上传参考图片" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "上传参考视频" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "上传参考音频" })).toBeEnabled();
   const stickyReferenceBar = screen.getByRole("group", {
     name: "固定参考素材",
   });
@@ -1108,6 +1113,11 @@ test("uploads local reference media, auto-selects it and submits asset ids", asy
   await user.upload(
     videoPicker!.querySelector('input[type="file"]')!,
     new File(["video"], "local.mp4", { type: "video/mp4" }),
+  );
+  await waitFor(() =>
+    expect(
+      screen.getByRole("combobox", { name: "视频生成方式" }),
+    ).toHaveTextContent("全能参考"),
   );
   await user.upload(
     audioPicker!.querySelector('input[type="file"]')!,

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "6bd520bd0c9518ba0ea2e039fe8841fddc27e15269c63b3e5d90fb8c0d51994f",
+  "openapi_sha256": "4a5f35f1d6566d4d8abf491c1e237c2488833918aaf924e33c316d3a5797e8b6",
   "operations": [
     {
       "service": "identity",
@@ -3842,6 +3842,18 @@
       "service": "assets",
       "module": "studio.apps.asset_library.migration_models",
       "model": "AssetVideoOutputHistory"
+    },
+    {
+      "table": "asset_content_fingerprints",
+      "service": "assets",
+      "module": "studio.apps.asset_library.storage.content_models",
+      "model": "AssetContentFingerprint"
+    },
+    {
+      "table": "asset_dedupe_operations",
+      "service": "assets",
+      "module": "studio.apps.asset_library.storage.content_models",
+      "model": "AssetDedupeOperation"
     },
     {
       "table": "account_storage_upgrade_roots",

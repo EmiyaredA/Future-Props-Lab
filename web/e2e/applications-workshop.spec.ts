@@ -363,9 +363,8 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   ).toHaveCount(0);
   await page.getByRole("button", { name: "替换素材" }).click();
   await page.getByRole("tab", { name: "AI 生成" }).click();
-  await page.getByRole("button", { name: "上传参考图片（可选）" }).click();
   const fileChooserPromise = page.waitForEvent("filechooser");
-  await page.getByRole("menuitem", { name: /本地上传/ }).click();
+  await page.getByRole("button", { name: "上传参考图片（可选）" }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles({
     name: "E2E 参考图.png",

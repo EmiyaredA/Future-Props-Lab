@@ -3,6 +3,81 @@ import { expect, test } from "@playwright/test";
 
 const libraryPath = "/apps/visual-workshop/card-library";
 
+test("角色语音上传和解除绑定可保存并重新打开", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(libraryPath);
+  await page.getByRole("button", { name: "语音验收角色", exact: true }).click();
+  const editor = page.getByRole("dialog");
+  await editor.getByRole("textbox", { name: "名称", exact: true }).fill("语音验收角色");
+  await expect(editor.getByText("剧本依据与待确认设计")).toHaveCount(0);
+  const wav = Buffer.alloc(44 + 16000 * 2);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(wav.length - 8, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(16000, 24);
+  wav.writeUInt32LE(32000, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(wav.length - 44, 40);
+  for (let i = 0; i < 16000; i++)
+    wav.writeInt16LE(
+      Math.round(2000 * Math.sin((2 * Math.PI * 440 * i) / 16000)),
+      44 + i * 2,
+    );
+  await editor
+    .getByLabel("上传角色语音")
+    .setInputFiles({
+      name: "角色参考.wav",
+      mimeType: "audio/wav",
+      buffer: wav,
+    });
+  const audio = editor.getByLabel("语音验收角色的角色语音");
+  await expect(audio).toHaveAttribute("src", /^blob:/);
+  await expect
+    .poll(() =>
+      audio.evaluate((element: HTMLAudioElement) => element.readyState),
+    )
+    .toBeGreaterThan(0);
+  await editor.getByRole("button", { name: "保存设定卡" }).click();
+  await expect(
+    editor.getByRole("button", { name: "保存设定卡" }),
+  ).toBeDisabled();
+  const cards = await (
+    await page.request.get("/v1/visual-workshop/asset-cards")
+  ).json();
+  const saved = cards.find(
+    (entry: { title: string; voice_asset_id?: string }) =>
+      entry.title === "语音验收角色" && entry.voice_asset_id,
+  );
+  expect(saved.voice_asset_id).toBeTruthy();
+  expect(saved).not.toHaveProperty("facts");
+  expect(saved).not.toHaveProperty("proposed_design");
+  await page.screenshot({ path: info.outputPath("角色语音-桌面.png") });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(audio).toBeVisible();
+  await page.screenshot({ path: info.outputPath("角色语音-窄屏.png") });
+  await editor.getByRole("button", { name: "解除语音绑定" }).click();
+  await editor.getByRole("button", { name: "保存设定卡" }).click();
+  await expect(
+    editor.getByRole("button", { name: "保存设定卡" }),
+  ).toBeDisabled();
+  await page.reload();
+  await page
+    .getByRole("button", { name: "语音验收角色 待确认", exact: true })
+    .click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "语音验收角色", exact: true })
+      .getByText("尚未绑定角色语音"),
+  ).toBeVisible();
+});
+
 test("三类设定卡优先展示采用图，编辑和保存可通过键盘操作", async ({
   page,
 }, info) => {

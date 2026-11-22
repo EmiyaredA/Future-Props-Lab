@@ -1,0 +1,99 @@
+.modal-card.project-certification-dialog {
+  width: min(440px, 100%);
+  padding: 24px;
+  border-radius: 16px;
+}
+.project-certification-dialog > header {
+  margin: 0 0 24px;
+  padding: 0;
+  border: 0;
+}
+.project-certification-dialog > header h2 {
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+.project-certification-dialog > header .icon-button {
+  display: grid;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 24px;
+  line-height: 1;
+}
+.project-certification-dialog > header .icon-button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.project-certification-subject {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.project-certification-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.project-certification-subject > div {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.project-certification-subject span:not(.project-certification-icon) {
+  font-size: 12px;
+  color: var(--muted);
+}
+.project-certification-subject strong {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.project-certification-dialog > footer {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 24px;
+}
+.project-certification-dialog > footer .btn {
+  min-width: 84px;
+  min-height: 36px;
+  padding: 7px 14px;
+  border-radius: 8px;
+}
+.project-certification-dialog > footer .btn.primary {
+  background: var(--accent);
+  color: #241712;
+  border-color: transparent;
+  box-shadow: none;
+}
+.project-certification-dialog > footer .btn.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 90%, white);
+}
+@media (max-width: 480px) {
+  .modal-card.project-certification-dialog {
+    padding: 20px;
+  }
+  .project-certification-dialog > footer .btn {
+    min-height: 44px;
+  }
+}

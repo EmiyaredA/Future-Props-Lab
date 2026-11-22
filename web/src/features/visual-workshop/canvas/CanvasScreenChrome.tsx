@@ -33,18 +33,6 @@ export function CanvasScreenChrome({
   return (
     <>
       {!embedded && <VisualProjectHeader {...header} />}
-      {embedded && (
-        <button
-          type="button"
-          className="workbench-add-content"
-          aria-label="添加内容"
-          title="添加内容"
-          aria-expanded={createMenuOpen}
-          onClick={onCreate}
-        >
-          <Plus size={16} aria-hidden />
-        </button>
-      )}
       {!embedded && (
         <nav className="canvas-tool-dock" aria-label="画布工具">
           <button

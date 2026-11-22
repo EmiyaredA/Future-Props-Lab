@@ -1,4 +1,5 @@
 import { WorkspaceSidebar } from "../WorkspaceSidebar";
+import { BoardMenu } from "../board/BoardMenu";
 import {
   lazy,
   useEffect,
@@ -21,6 +22,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigationGuard } from "@shared/ui/navigationGuards";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { apiErrorMessage } from "@platform/api/errors";
 import { createSceneDocument } from "../../../../vendor/toonflow/trumanScene";
 import type { VisualCanvasDocument } from "../api";
@@ -95,6 +97,8 @@ export default function PrevisWorkspace({
   projectCardIds?: string[];
 }) {
   const narrow = useSyncExternalStore(subscribeToScreen, isNarrowScreen);
+  const [sceneControlsHost, setSceneControlsHost] =
+    useState<HTMLDivElement | null>(null);
   const client = useQueryClient();
   const sceneList = visualWorkshopQueryKeys.previs(projectId);
   const [editorReadOnly, setEditorReadOnly] = useState(false);
@@ -119,9 +123,12 @@ export default function PrevisWorkspace({
   const [previewContainer, setPreviewContainer] =
     useState<HTMLDivElement | null>(null);
   const [previewing, setPreviewing] = useState(false);
-  const importButton = useRef<HTMLButtonElement>(null);
+  const createMenu = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [deleting, setDeleting] =
+    useState<Pick<PrevisScene, "id" | "revision" | "title">>();
+  const [deleteError, setDeleteError] = useState("");
   const flight = useRef(false);
   const leaving = useRef(false);
   const editor = useRef<PrevisEditorHandle>(null);
@@ -249,44 +256,41 @@ export default function PrevisWorkspace({
             <div className="visual-previs-scenes-heading">
               <h1 id={libraryHeading}>预演场景</h1>
               {canCreate && (
-                <button
-                  className="visual-previs-icon visual-previs-add"
-                  type="button"
-                  aria-label="添加预演场景"
-                  title="添加预演场景"
-                  disabled={busy}
-                  onClick={() => {
-                    if (!active && !importing) {
-                      nameInput.current?.focus();
-                      return;
-                    }
-                    leave(() => {
-                      setImporting(false);
-                      closeScene();
-                      requestAnimationFrame(() => nameInput.current?.focus());
-                    });
-                  }}
-                >
-                  <Plus aria-hidden />
-                </button>
+                <div ref={createMenu}>
+                  <BoardMenu
+                    label="添加预演场景"
+                    triggerClassName="visual-previs-icon visual-previs-add"
+                    triggerIcon={<Plus aria-hidden />}
+                    items={[
+                      {
+                        label: "新建空白场景",
+                        icon: <Box size={15} aria-hidden />,
+                        disabled: busy || importBusy,
+                        onSelect: () => {
+                          if (!active && !importing) {
+                            nameInput.current?.focus();
+                            return;
+                          }
+                          leave(() => {
+                            setImporting(false);
+                            closeScene();
+                            requestAnimationFrame(() =>
+                              nameInput.current?.focus(),
+                            );
+                          });
+                        },
+                      },
+                      {
+                        label: "从剧本创建",
+                        icon: <FileText size={15} aria-hidden />,
+                        disabled: busy || importBusy,
+                        onSelect: () => leave(() => setImporting(true)),
+                      },
+                    ]}
+                  />
+                </div>
               )}
             </div>
-            {canCreate && (
-              <button
-                ref={importButton}
-                className="visual-previs-scene visual-previs-import"
-                type="button"
-                disabled={busy || importBusy}
-                aria-pressed={importing}
-                onClick={() =>
-                  leave(() => {
-                    setImporting(true);
-                  })
-                }
-              >
-                <FileText size={15} aria-hidden /> 从剧本创建
-              </button>
-            )}
             {scenes.isPending ? (
               <p className="visual-previs-empty-list" role="status">
                 正在读取场景…
@@ -337,16 +341,8 @@ export default function PrevisWorkspace({
                           aria-label={`删除场景 ${scene.title}`}
                           title="删除场景"
                           onClick={() => {
-                            if (
-                              !window.confirm(
-                                `删除预演场景“${scene.title}”？已发送的画布素材会保留。`,
-                              )
-                            )
-                              return;
-                            void run(async () => {
-                              await deletePrevis(projectId, scene);
-                              await scenes.refetch();
-                            });
+                            setDeleteError("");
+                            setDeleting(scene);
                           }}
                         >
                           <Trash2 aria-hidden />
@@ -356,10 +352,22 @@ export default function PrevisWorkspace({
                   ))}
               </ul>
             ) : null}
+            {active && (
+              <details className="previs-scene-settings">
+                <summary>场景设置</summary>
+                <div ref={setSceneControlsHost} />
+                <StageObjectBindings
+                  project={projectId}
+                  stage={active}
+                  cardIds={projectCardIds}
+                  readOnly={readOnly || editorReadOnly || importing}
+                />
+              </details>
+            )}
           </aside>
         </WorkspaceSidebar>
         <div
-          className={`previs-content${importing && canCreate ? " is-creating" : ""}`}
+          className={`previs-content${importing && !readOnly ? " is-creating" : ""}`}
         >
           <div className="previs-stage-region">
             <div
@@ -375,23 +383,18 @@ export default function PrevisWorkspace({
                       {error}
                     </p>
                   )}
-                  <StageObjectBindings
-                    project={projectId}
-                    stage={active}
-                    cardIds={projectCardIds}
-                    readOnly={readOnly || editorReadOnly || importing}
-                  />
                   <Suspense fallback={<p role="status">正在加载场景编辑器…</p>}>
                     <Editor
                       suspended={!activeWorkspace || previewing}
                       shotId={shotId!}
                       onAdopt={shotId ? onAdopt : undefined}
                       ref={editor}
+                      sceneControlsHost={sceneControlsHost}
                       key={`${active.id}:${scope}`}
                       initial={active}
                       project={projectId}
                       interactionLocked={importing}
-                      readOnly={readOnly || editorReadOnly}
+                      readOnly={readOnly || editorReadOnly || narrow}
                       leaving={busy}
                       beforePublish={beforePublish}
                       onPublished={onPublished}
@@ -477,10 +480,12 @@ export default function PrevisWorkspace({
               )}
             </div>
           </div>
-          {importing && canCreate && (
+          {importing && !readOnly && (
             <Suspense fallback={<p role="status">正在打开剧本解析…</p>}>
               <ScriptPrevisDraft
                 project={projectId}
+                suspended={!activeWorkspace}
+                creationDisabled={narrow}
                 previewContainer={previewContainer}
                 onPreviewChange={setPreviewing}
                 seed={seed}
@@ -488,7 +493,7 @@ export default function PrevisWorkspace({
                 onCancel={() => {
                   setImporting(false);
                   setPreviewing(false);
-                  importButton.current?.focus();
+                  createMenu.current?.querySelector("button")?.focus();
                 }}
                 onCreated={(scene) => {
                   setImporting(false);
@@ -502,6 +507,35 @@ export default function PrevisWorkspace({
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title={`删除预演场景“${deleting?.title ?? ""}”？`}
+        description={
+          <>
+            <p>已发送的画布素材会保留。</p>
+            {deleteError && <p role="alert">{deleteError}</p>}
+          </>
+        }
+        confirmLabel="删除"
+        pending={busy}
+        confirmDisabled={
+          !canCreate || importBusy || active?.id === deleting?.id
+        }
+        onCancel={() => setDeleting(undefined)}
+        onConfirm={() => {
+          if (!deleting || !canCreate || active?.id === deleting.id) return;
+          void run(async () => {
+            setDeleteError("");
+            try {
+              await deletePrevis(projectId, deleting);
+              setDeleting(undefined);
+              await scenes.refetch();
+            } catch (failure) {
+              setDeleteError(apiErrorMessage(failure));
+            }
+          });
+        }}
+      />
     </section>
   );
 }

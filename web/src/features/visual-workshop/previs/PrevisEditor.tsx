@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -53,6 +54,7 @@ export function PrevisEditor({
   initialDirty = false,
   initialCameraId,
   onCameraChange,
+  sceneControlsHost,
 }: {
   onAdopt?: (
     scene: PrevisScene,
@@ -62,6 +64,7 @@ export function PrevisEditor({
   initialDirty?: boolean;
   initialCameraId?: string;
   onCameraChange?: (id: string) => void;
+  sceneControlsHost?: HTMLElement | null;
   persistScene?: (scene: PrevisScene) => Promise<PrevisScene>;
   validateChange?: (document: SceneDocument) => SceneDocument;
   reloadScene?: () => Promise<PrevisScene>;
@@ -363,9 +366,10 @@ export function PrevisEditor({
       setCapturing(false);
     }
   }
-  return (
-    <section className="visual-previs-editor" aria-label="镜头预演编辑器">
-      <div className="visual-previs-bar">
+  const controls = (
+    <div className="visual-previs-bar">
+      <label>
+        场景名称
         <input
           aria-label="场景名称"
           disabled={readOnly || locked || Boolean(persistScene)}
@@ -377,114 +381,116 @@ export function PrevisEditor({
             setStatus("有未保存的修改");
           }}
         />
-        {conflict && (
+      </label>
+      {conflict && (
+        <button
+          type="button"
+          disabled={locked}
+          onClick={() => {
+            if (!window.confirm("载入服务器版本会舍弃本地场景草稿，是否继续？"))
+              return;
+            void (
+              reloadScene
+                ? reloadScene()
+                : openPrevis(project, saved.current.id)
+            )
+              .then((remote) => {
+                draft.current = baseline.current = validateScene(
+                  remote.document,
+                );
+                saved.current = remote;
+                titleDraft.current = remote.title;
+                setTitle(remote.title);
+                setConflict(false);
+                setError("");
+                setStatus("已载入服务器版本");
+              })
+              .catch((failure: unknown) => setError(apiErrorMessage(failure)));
+          }}
+        >
+          载入服务器版本
+        </button>
+      )}
+      {batch.current?.remaining.length ? (
+        publishing ? (
           <button
             type="button"
-            disabled={locked}
-            onClick={() => {
-              if (
-                !window.confirm("载入服务器版本会舍弃本地场景草稿，是否继续？")
-              )
-                return;
-              void (
-                reloadScene
-                  ? reloadScene()
-                  : openPrevis(project, saved.current.id)
-              )
-                .then((remote) => {
-                  draft.current = baseline.current = validateScene(
-                    remote.document,
-                  );
-                  saved.current = remote;
-                  titleDraft.current = remote.title;
-                  setTitle(remote.title);
-                  setConflict(false);
-                  setError("");
-                  setStatus("已载入服务器版本");
-                })
-                .catch((failure: unknown) =>
-                  setError(apiErrorMessage(failure)),
-                );
-            }}
+            onClick={() => retry.current?.abort()}
+            disabled={!retry.current}
           >
-            载入服务器版本
+            停止发送
           </button>
-        )}
-        {batch.current?.remaining.length ? (
-          publishing ? (
-            <button
-              type="button"
-              onClick={() => retry.current?.abort()}
-              disabled={!retry.current}
-            >
-              停止发送
-            </button>
-          ) : (
-            <>
-              <button
-                type="button"
-                disabled={locked}
-                onClick={() => {
-                  const controller = new AbortController();
-                  retry.current = controller;
-                  void retryBatch(controller.signal)
-                    .catch(() => undefined)
-                    .finally(() => {
-                      retry.current = null;
-                    });
-                }}
-              >
-                继续发送剩余素材
-              </button>
-              <button
-                type="button"
-                disabled={locked}
-                onClick={() => {
-                  batch.current = null;
-                  setError("");
-                  setStatus("已结束待发送批次");
-                }}
-              >
-                结束发送
-              </button>
-            </>
-          )
-        ) : null}
-        {onAdopt && !readOnly && (
+        ) : (
           <>
-            <CustomSelect
-              ariaLabel="采用预演的机位"
-              value={selectedCamera}
-              disabled={locked}
-              onChange={(id) => {
-                setCameraId(id);
-                onCameraChange?.(id);
-              }}
-              options={cameras.map((camera) => ({
-                value: camera.id,
-                label: camera.name,
-              }))}
-            />
             <button
               type="button"
-              disabled={locked || !selectedCamera}
-              onClick={() => void capture("frame")}
+              disabled={locked}
+              onClick={() => {
+                const controller = new AbortController();
+                retry.current = controller;
+                void retryBatch(controller.signal)
+                  .catch(() => undefined)
+                  .finally(() => {
+                    retry.current = null;
+                  });
+              }}
             >
-              采用当前帧
+              继续发送剩余素材
             </button>
             <button
               type="button"
-              disabled={locked || !selectedCamera}
-              onClick={() => void capture("clip")}
+              disabled={locked}
+              onClick={() => {
+                batch.current = null;
+                setError("");
+                setStatus("已结束待发送批次");
+              }}
             >
-              采用预演片段
+              结束发送
             </button>
           </>
-        )}
-        <button type="button" disabled={locked} onClick={props.onClose}>
-          返回场景列表
-        </button>
-      </div>
+        )
+      ) : null}
+      {onAdopt && !readOnly && (
+        <>
+          <CustomSelect
+            ariaLabel="采用预演的机位"
+            value={selectedCamera}
+            disabled={locked}
+            onChange={(id) => {
+              setCameraId(id);
+              onCameraChange?.(id);
+            }}
+            options={cameras.map((camera) => ({
+              value: camera.id,
+              label: camera.name,
+            }))}
+          />
+          <button
+            type="button"
+            disabled={locked || !selectedCamera}
+            onClick={() => void capture("frame")}
+          >
+            采用当前帧
+          </button>
+          <button
+            type="button"
+            disabled={locked || !selectedCamera}
+            onClick={() => void capture("clip")}
+          >
+            采用预演片段
+          </button>
+        </>
+      )}
+    </div>
+  );
+  return (
+    <section className="visual-previs-editor" aria-label="镜头预演编辑器">
+      {sceneControlsHost === undefined
+        ? controls
+        : sceneControlsHost
+          ? createPortal(controls, sceneControlsHost)
+          : null}
       <div ref={root} className="visual-previs-host" />
     </section>
   );

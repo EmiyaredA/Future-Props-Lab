@@ -5,6 +5,7 @@ import {
   FileText,
   Plus,
   Search,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { Script } from "./api";
@@ -20,6 +21,7 @@ export function ScriptDirectory({
   onSelect,
   onNewEpisode,
   onNewScene,
+  onDelete,
 }: {
   episodes: Script["episodes"];
   selectedEpisode?: string;
@@ -30,23 +32,35 @@ export function ScriptDirectory({
   onSelect: (episode: string, scene?: string) => void;
   onNewEpisode: () => string | undefined;
   onNewScene: (episode: string) => void;
+  onDelete: (episode: string, scene?: string) => void;
 }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState("");
   const initialized = useRef(false);
+  const revealedTarget = useRef<string | undefined>(undefined);
+  const directory = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (initialized.current || !selectedEpisode) return;
     initialized.current = true;
     setExpanded(new Set([selectedEpisode]));
   }, [selectedEpisode]);
   useEffect(() => {
-    if (!targetScene) return;
+    if (!targetScene || revealedTarget.current === targetScene) return;
     const owner = episodes.find((episode) =>
       episode.scenes.some((scene) => scene.id === targetScene),
     );
     if (owner) {
+      revealedTarget.current = targetScene;
       setExpanded((previous) => new Set(previous).add(owner.id));
       setSearch("");
+      requestAnimationFrame(() => {
+        const target = Array.from(
+          directory.current?.querySelectorAll<HTMLButtonElement>(
+            "button[data-scene]",
+          ) ?? [],
+        ).find((button) => button.dataset.scene === targetScene);
+        target?.scrollIntoView({ block: "nearest" });
+      });
     }
   }, [targetScene, episodes]);
   const query = search.trim().toLocaleLowerCase();
@@ -95,7 +109,7 @@ export function ScriptDirectory({
           </button>
         )}
       </div>
-      <div className="script-directory-list">
+      <div className="script-directory-list" ref={directory}>
         {!visible.length && (
           <p className="creative-feedback">
             {query ? "没有匹配的集或场次" : "还没有分集剧本"}
@@ -105,41 +119,82 @@ export function ScriptDirectory({
           const open = Boolean(query) || expanded.has(episode.id);
           return (
             <div key={episode.id} className="script-tree-episode">
-              <button
-                type="button"
-                aria-expanded={open}
-                aria-label={`${open ? "收起" : "展开"}${episode.title}`}
-                onClick={() =>
-                  setExpanded((previous) => {
-                    const next = new Set(previous);
-                    if (next.has(episode.id)) next.delete(episode.id);
-                    else next.add(episode.id);
-                    return next;
-                  })
-                }
-              >
-                {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                <Clapperboard size={16} />
-                <span>{episode.title}</span>
-                <small>{episode.scenes.length} 场</small>
-              </button>
+              <div className="script-tree-episode-heading">
+                <button
+                  type="button"
+                  aria-expanded={open}
+                  aria-label={`${open ? "收起" : "展开"}${episode.title}`}
+                  onClick={() =>
+                    setExpanded((previous) => {
+                      const next = new Set(previous);
+                      if (next.has(episode.id)) next.delete(episode.id);
+                      else next.add(episode.id);
+                      return next;
+                    })
+                  }
+                >
+                  {open ? (
+                    <ChevronDown size={14} />
+                  ) : (
+                    <ChevronRight size={14} />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="script-tree-select"
+                  disabled={busy}
+                  aria-label={`编辑${episode.title}`}
+                  onClick={() => onSelect(episode.id)}
+                >
+                  <Clapperboard size={16} />
+                  <span>{episode.title}</span>
+                  <small>{episode.scenes.length} 场</small>
+                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    className="script-tree-delete"
+                    disabled={busy}
+                    aria-label={`删除整集 ${episode.title}`}
+                    title="删除整集"
+                    onClick={() => onDelete(episode.id)}
+                  >
+                    <Trash2 size={15} aria-hidden />
+                  </button>
+                )}
+              </div>
               {open && (
                 <ul className="script-tree-scenes">
                   {episode.scenes.map((scene) => (
-                    <li key={scene.id}>
+                    <li key={scene.id} className="script-tree-scene-row">
                       <button
                         type="button"
+                        className="script-tree-select"
                         aria-current={
                           selectedScene === scene.id &&
                           selectedEpisode === episode.id
                             ? "true"
                             : undefined
                         }
+                        disabled={busy}
+                        data-scene={scene.id}
                         onClick={() => onSelect(episode.id, scene.id)}
                       >
                         <FileText size={15} />
                         <span>{scene.title}</span>
                       </button>
+                      {!readOnly && (
+                        <button
+                          type="button"
+                          className="script-tree-delete"
+                          disabled={busy}
+                          aria-label={`删除场次 ${scene.title}`}
+                          title="删除场次"
+                          onClick={() => onDelete(episode.id, scene.id)}
+                        >
+                          <Trash2 size={15} aria-hidden />
+                        </button>
+                      )}
                     </li>
                   ))}
                   {!readOnly && (

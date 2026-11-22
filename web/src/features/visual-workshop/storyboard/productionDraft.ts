@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { VisualCanvasGenerationDraft } from "../api";
+import type { VisualCanvasVideoGenerationDraft } from "../api";
 import type { Card } from "../creative/api";
 import { resolveDesignImage } from "../creative/cardMedia";
 import type { Shot } from "./api";
@@ -8,10 +8,10 @@ import type { Shot } from "./api";
 export async function productionDraft(
   client: QueryClient,
   project: string,
-  kind: "image" | "video",
   shot: Shot,
   cards: Card[],
-): Promise<VisualCanvasGenerationDraft> {
+  referenceImageId?: string,
+): Promise<VisualCanvasVideoGenerationDraft> {
   const prompt = [
     shot.description,
     shot.shot_size && `景别：${shot.shot_size}`,
@@ -21,12 +21,12 @@ export async function productionDraft(
   ]
     .filter(Boolean)
     .join("\n");
-  if (prompt.length > (kind === "image" ? 6000 : 20000))
+  if (prompt.length > 20000)
     throw new Error("镜头内容超过提示词长度限制，请精简后再创建制作节点。");
   const usable = cards.filter(
     (card) => shot.card_ids.includes(card.id) && card.adopted_asset_id,
   );
-  if (usable.length > (kind === "image" ? 14 : 30))
+  if (usable.length > 30)
     throw new Error(
       "关联的设定图超过生成参考数量限制，请减少后再创建制作节点。",
     );
@@ -43,23 +43,27 @@ export async function productionDraft(
       card_revision: card.revision,
       title: card.title,
     });
-  const ids = [...new Set(references.map(({ asset_id }) => asset_id))];
-  return kind === "image"
-    ? { prompt, image_count: 1, size: "1024x1024", reference_asset_ids: ids }
-    : {
-        prompt,
-        duration: 5,
-        mode: ids.length ? "reference" : "text",
-        resolution: "720p",
-        ratio: "16:9",
-        generate_audio: false,
-        watermark: true,
-        reference_asset_ids: ids,
-        design_references: references.filter(
-          (entry, index) =>
-            references.findIndex(
-              (other) => other.asset_id === entry.asset_id,
-            ) === index,
-        ),
-      };
+  const ids = [
+    ...new Set([
+      ...(referenceImageId ? [referenceImageId] : []),
+      ...references.map(({ asset_id }) => asset_id),
+    ]),
+  ];
+  if (ids.length > 30)
+    throw new Error("参考图片超过生成数量限制，请减少后再创建制作节点。");
+  return {
+    prompt,
+    duration: 5,
+    mode: ids.length ? "reference" : "text",
+    resolution: "720p",
+    ratio: "16:9",
+    generate_audio: false,
+    watermark: true,
+    reference_asset_ids: ids,
+    design_references: references.filter(
+      (entry, index) =>
+        references.findIndex((other) => other.asset_id === entry.asset_id) ===
+        index,
+    ),
+  };
 }

@@ -4,7 +4,11 @@ from sqlalchemy import exists, func, select, text
 
 from studio.apps.visual_workshop.creative_ports import CardEditContext
 from studio.apps.visual_workshop.projects import Projects
-from studio.apps.visual_workshop.schemas.creative_workflow import CardOut, ScriptOut
+from studio.apps.visual_workshop.schemas.creative_workflow import (
+    CardOut,
+    ScriptOut,
+    current_card_data,
+)
 from studio.apps.visual_workshop.storage.models import VisualAssetCard, VisualScript
 from studio.runtime.project_errors import ProjectResourceError
 
@@ -124,7 +128,7 @@ def card_out(row):
         revision=row.revision,
         source_project_id=row.project_id,
         media_projects=row.media_projects,
-        **row.data,
+        **current_card_data(row.data),
     )
 
 

@@ -23,6 +23,7 @@ from studio.apps.visual_workshop.storage.migrations.versions.v0015 import (
 )
 from studio.apps.visual_workshop.storage.migrations.versions.v0016 import SQL as STORYBOARDS
 from studio.apps.visual_workshop.storage.migrations.versions.v0017 import SQL as CREATION_LINKS
+from studio.apps.visual_workshop.storage.migrations.versions.v0018 import SQL as CARD_VOICE
 from studio.runtime.database.migrations import Migration
 
 MIGRATIONS = (
@@ -43,4 +44,5 @@ MIGRATIONS = (
     Migration("0015_visual_canvas_groups_and_cards", CANVAS_GROUPS_AND_CARDS),
     Migration("0016_visual_storyboards", STORYBOARDS),
     Migration("0017_visual_creation_links", CREATION_LINKS),
+    Migration("0018_visual_card_voice", CARD_VOICE),
 )

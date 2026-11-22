@@ -1,7 +1,15 @@
 import { createPortal } from "react-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Play, X } from "lucide-react";
+import {
+  Clapperboard,
+  FileText,
+  Play,
+  Plus,
+  ScanText,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { apiErrorMessage } from "@platform/api/errors";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -22,6 +30,7 @@ import {
 import { TextModelSelect } from "../creative/TextModelSelect";
 import { createPrevis, type PrevisScene } from "./api";
 import "../creative/creative.css";
+import "./script-previs-draft.css";
 
 function transcriptFromAnalysis(raw: string, result: ScriptAnalysis) {
   const heading = [result.location, result.time].filter(Boolean).join(" · ");
@@ -44,6 +53,8 @@ function transcriptFromAnalysis(raw: string, result: ScriptAnalysis) {
 
 export default function ScriptPrevisDraft({
   project,
+  suspended = false,
+  creationDisabled = false,
   previewContainer,
   onPreviewChange,
   seed,
@@ -52,6 +63,8 @@ export default function ScriptPrevisDraft({
   onBusy,
 }: {
   project: string;
+  suspended?: boolean;
+  creationDisabled?: boolean;
   previewContainer?: HTMLElement | null;
   onPreviewChange?: (visible: boolean) => void;
   seed?: ScriptSeed;
@@ -85,6 +98,25 @@ export default function ScriptPrevisDraft({
   const abort = useRef<AbortController>(null);
   const root = useRef<HTMLDivElement>(null);
   const host = useRef<ReturnType<typeof mountTrumanMap>>(null);
+  const previewSnapshot = useRef(preview);
+  previewSnapshot.current = preview;
+  useLayoutEffect(() => {
+    if (suspended) {
+      host.current?.dispose();
+      host.current = null;
+    } else if (root.current && !host.current && previewSnapshot.current) {
+      host.current = mountTrumanMap(root.current, {
+        document: previewSnapshot.current.document,
+        readOnly: true,
+        saving: false,
+        statusMessage: "",
+        error: "",
+        onChange() {},
+        onSave() {},
+        onClose() {},
+      });
+    }
+  }, [suspended]);
   const script = useQuery({
     queryKey: scriptKey(project),
     queryFn: ({ signal }) => getScript(project, signal),
@@ -202,6 +234,20 @@ export default function ScriptPrevisDraft({
     analyzedInput?.raw === raw &&
     analyzedInput?.source?.scene_id === source?.scene_id &&
     analyzedInput?.source?.revision === source?.revision;
+  const characters = preview?.characters.length
+    ? preview.characters
+    : (result?.characters.map((entry) => entry.name) ?? []);
+  const lineCount = raw.split(/\r?\n/).filter((line) => line.trim()).length;
+  const locationSummary = result
+    ? [
+        result.location,
+        result.time && !result.location.includes(result.time)
+          ? result.time
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "";
 
   return (
     <div
@@ -210,7 +256,10 @@ export default function ScriptPrevisDraft({
       aria-label="从剧本创建预演"
     >
       <header className="creative-toolbar">
-        <strong>从剧本创建预演</strong>
+        <div className="script-previs-heading">
+          <FileText size={17} aria-hidden />
+          <strong>从剧本创建预演</strong>
+        </div>
         <button
           type="button"
           className="creative-quiet"
@@ -222,6 +271,11 @@ export default function ScriptPrevisDraft({
         </button>
       </header>
       <div className="script-previs-columns">
+        {creationDisabled && (
+          <p className="creative-feedback" role="status">
+            请扩大窗口以创建场景，当前输入已保留。
+          </p>
+        )}
         <div className="script-previs-inputs">
           <div
             className="visual-project-view-toggle"
@@ -264,22 +318,29 @@ export default function ScriptPrevisDraft({
               }}
             />
           )}
-          <label>
-            剧本文本
+          <label className="script-previs-text">
+            <span className="script-previs-field-heading">
+              <span>剧本文本</span>
+              <small>
+                {raw.length.toLocaleString()} / 12,000 字 · {lineCount} 行
+              </small>
+            </span>
             <textarea
               aria-label="剧本文本"
               maxLength={12000}
               value={raw}
               disabled={busy}
               readOnly={mode === "script"}
-              placeholder="室内 · 咖啡馆 · 夜"
+              placeholder={
+                "室内 · 咖啡馆 · 夜\n小林：你终于来了。\n小夏走到桌旁，放下手中的杯子。"
+              }
               onChange={(event) => {
                 setPaste(event.target.value);
                 invalidate();
               }}
             />
           </label>
-          <div className="creative-inline">
+          <div className="script-previs-analysis">
             {canUseModels && (
               <TextModelSelect
                 value={model}
@@ -294,6 +355,7 @@ export default function ScriptPrevisDraft({
                 disabled={busy || !raw.trim() || !model}
                 onClick={() => analyze(true)}
               >
+                <Sparkles size={14} aria-hidden />
                 AI 解析
               </button>
             )}
@@ -303,12 +365,32 @@ export default function ScriptPrevisDraft({
               disabled={busy || !raw.trim()}
               onClick={() => analyze(false)}
             >
+              <ScanText size={14} aria-hidden />
               规则解析
             </button>
           </div>
         </div>
         <div className="script-previs-preview">
-          <h2>解析预览</h2>
+          <div className="script-previs-section-heading">
+            <h2>
+              <Clapperboard size={15} aria-hidden />
+              解析预览
+            </h2>
+            <span
+              className={`script-previs-status${preview ? " is-ready" : ""}`}
+              role="status"
+            >
+              {busy
+                ? result
+                  ? "正在试排…"
+                  : "正在解析…"
+                : preview
+                  ? "可创建"
+                  : result
+                    ? "试排未完成"
+                    : "待解析"}
+            </span>
+          </div>
           {previewContainer ? (
             createPortal(
               <div className="creative-previs-render" ref={root} />,
@@ -318,56 +400,117 @@ export default function ScriptPrevisDraft({
             <div className="creative-previs-render" ref={root} />
           )}
           {!result && (
-            <p className="creative-feedback">
-              {busy ? "正在解析剧本…" : "选择或粘贴一场剧本，解析后查看预演。"}
+            <p className="script-previs-hint">
+              选择或粘贴一场剧本，解析场景、人物和对白，在预演中核对站位与机位。
             </p>
           )}
+          <dl className="script-previs-metrics" aria-label="解析统计">
+            {[
+              ["角色", result ? characters.length : "—"],
+              ["道具", result ? result.props.length : "—"],
+              ["对白", result ? result.dialogue.length : "—"],
+              ["镜头", preview ? preview.shots.length : "—"],
+            ].map(([label, count]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{count}</dd>
+              </div>
+            ))}
+          </dl>
           {result && (
             <div className="script-previs-summary">
-              {preview?.shots.length ? (
-                <button
-                  type="button"
-                  className="creative-quiet"
-                  disabled={busy}
-                  onClick={() => host.current?.playPreview()}
+              {(result.location || result.time) && (
+                <p className="script-previs-location">{locationSummary}</p>
+              )}
+              <div className="script-previs-stage-tools">
+                <label className="script-previs-set">
+                  <span>预演布景</span>
+                  <CustomSelect
+                    ariaLabel="预演布景"
+                    value={template}
+                    disabled={busy}
+                    options={[
+                      { value: "", label: "空场景" },
+                      ...scriptSetOptions(transcript).items.map(
+                        ({ id, name }) => ({ value: id, label: name }),
+                      ),
+                    ]}
+                    onChange={(id) => {
+                      setTemplate(id);
+                      void run(() => build(transcript, id));
+                    }}
+                  />
+                </label>
+                {preview?.shots.length ? (
+                  <button
+                    type="button"
+                    className="creative-quiet"
+                    disabled={busy}
+                    onClick={() => host.current?.playPreview()}
+                  >
+                    <Play size={14} aria-hidden /> 播放试排
+                  </button>
+                ) : null}
+              </div>
+              <dl className="script-previs-entities">
+                <div>
+                  <dt>角色</dt>
+                  <dd>
+                    {characters.length
+                      ? characters.map((name) => <span key={name}>{name}</span>)
+                      : "未识别"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>道具</dt>
+                  <dd>
+                    {result.props.length
+                      ? result.props.map((entry) => (
+                          <span key={entry.name} title={entry.quote}>
+                            {entry.name}
+                          </span>
+                        ))
+                      : "未识别"}
+                  </dd>
+                </div>
+              </dl>
+              <details className="script-previs-detail" open>
+                <summary>
+                  镜头试排 <span>{preview?.shots.length ?? 0}</span>
+                </summary>
+                {preview?.shots.length ? (
+                  <ol>
+                    {preview.shots.map((shot, index) => (
+                      <li key={index}>{shot}</li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p>{busy ? "正在试排…" : "暂无镜头"}</p>
+                )}
+              </details>
+              {result.dialogue.length > 0 && (
+                <details
+                  className="script-previs-detail"
+                  open={result.dialogue.length <= 3}
                 >
-                  <Play size={14} /> 播放试排
-                </button>
-              ) : null}
-              <CustomSelect
-                ariaLabel="预演布景"
-                value={template}
-                disabled={busy}
-                options={[
-                  { value: "", label: "空场景" },
-                  ...scriptSetOptions(transcript).items.map(({ id, name }) => ({
-                    value: id,
-                    label: name,
-                  })),
-                ]}
-                onChange={(id) => {
-                  setTemplate(id);
-                  void run(() => build(transcript, id));
-                }}
-              />
-              <p>
-                <strong>角色</strong>{" "}
-                {(preview?.characters.length
-                  ? preview.characters
-                  : result.characters.map((entry) => entry.name)
-                ).join("、") || "未识别"}
-              </p>
-              <p>
-                <strong>道具</strong>{" "}
-                {result.props.map((entry) => entry.name).join("、") || "未识别"}
-              </p>
-              <p>
-                <strong>镜头</strong>{" "}
-                {preview?.shots.join("、") || (busy ? "正在试排…" : "暂无镜头")}
-              </p>
+                  <summary>
+                    对白 <span>{result.dialogue.length}</span>
+                  </summary>
+                  <ul className="script-previs-dialogue">
+                    {result.dialogue.map((entry, index) => (
+                      <li key={index}>
+                        <strong>{entry.speaker}</strong>
+                        <span>{entry.line}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              )}
               {result.actions.length > 0 && (
-                <details>
-                  <summary>需核对的动作</summary>
+                <details className="script-previs-detail">
+                  <summary>
+                    需核对的动作 <span>{result.actions.length}</span>
+                  </summary>
                   <ul>
                     {result.actions.map((entry, index) => (
                       <li key={index}>{entry.quote}</li>
@@ -375,7 +518,9 @@ export default function ScriptPrevisDraft({
                   </ul>
                 </details>
               )}
-              {preview?.notice && <p>{preview.notice}</p>}
+              {preview?.notice && (
+                <p className="script-previs-notice">{preview.notice}</p>
+              )}
             </div>
           )}
           {error && (
@@ -390,6 +535,7 @@ export default function ScriptPrevisDraft({
           场景名称{" "}
           <input
             aria-label="预演场景名称"
+            placeholder="解析后自动命名，也可自行填写"
             maxLength={120}
             value={title}
             disabled={busy}
@@ -410,6 +556,7 @@ export default function ScriptPrevisDraft({
             className="creative-primary"
             disabled={
               !preview ||
+              creationDisabled ||
               !currentPreview ||
               busy ||
               (mode === "script" && !source)
@@ -431,6 +578,7 @@ export default function ScriptPrevisDraft({
               });
             }}
           >
+            <Plus size={14} aria-hidden />
             创建白模场景
           </button>
         </div>

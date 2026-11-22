@@ -30,8 +30,6 @@ const card = (
   parent_id,
   revision: 0,
   design: "",
-  facts: "",
-  proposed_design: "",
   archived: false,
 });
 test.each(["character", "scene", "prop"] as const)(

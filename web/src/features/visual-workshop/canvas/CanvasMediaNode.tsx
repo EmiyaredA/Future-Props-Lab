@@ -60,9 +60,13 @@ export function CanvasMediaPreview({
   const preview = previewSourceForNode(node);
   const readyChangeRef = useRef(onVideoReadyChange);
   readyChangeRef.current = onVideoReadyChange;
+  const thumbnail =
+    preview.kind === "image" || (preview.kind === "video" && !interactive);
+  const size = interactive ? 1280 : 640;
   const { ref, url, error } = useVisibleApiBlobUrl(
-    preview.assetId && (preview.kind === "image" || interactive)
-      ? `/v1/files/${preview.assetId}/${preview.kind === "image" ? (interactive ? "thumbnail?size=1280" : "thumbnail?size=640") : "content"}`
+    preview.assetId &&
+      (preview.kind === "image" || preview.kind === "video" || interactive)
+      ? `/v1/files/${preview.assetId}/${thumbnail ? `thumbnail?size=${size}` : "content"}`
       : null,
   );
   const missing = Boolean(error);
@@ -74,11 +78,19 @@ export function CanvasMediaPreview({
   );
 
   let content;
-  if (url && preview.kind === "image")
+  if (url && thumbnail)
     content = (
       <ResponsiveImage
         src={url}
-        alt={preview.fallback ? "生成参考素材预览" : ""}
+        alt={
+          preview.kind === "video"
+            ? preview.fallback
+              ? "生成参考视频缩略图"
+              : "视频缩略图"
+            : preview.fallback
+              ? "生成参考素材预览"
+              : ""
+        }
         draggable={false}
       />
     );

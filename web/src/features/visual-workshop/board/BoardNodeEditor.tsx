@@ -29,21 +29,23 @@ export function BoardNodeEditor({
 }) {
   return (
     <>
-      <div className="board-generation-context">
-        {legacyKind && node.kind === "image" && (
-          <div className="board-material-mode" aria-label="旧素材设定卡关联">
-            <button type="button" disabled={pending} onClick={onLegacyPick}>
-              {node.design_card_id ? "更换关联卡" : "关联已有卡"}
-            </button>
-            <button type="button" disabled={pending} onClick={onLegacyCreate}>
-              用此图创建设定卡
-            </button>
-          </div>
-        )}
-        {node.kind !== "video" && (
-          <InputReferences controller={c} nodeId={node.id} />
-        )}
-      </div>
+      {(node.kind === "text" || (legacyKind && node.kind === "image")) && (
+        <div className="board-generation-context">
+          {legacyKind && node.kind === "image" && (
+            <div className="board-material-mode" aria-label="旧素材设定卡关联">
+              <button type="button" disabled={pending} onClick={onLegacyPick}>
+                {node.design_card_id ? "更换关联卡" : "关联已有卡"}
+              </button>
+              <button type="button" disabled={pending} onClick={onLegacyCreate}>
+                用此图创建设定卡
+              </button>
+            </div>
+          )}
+          {node.kind === "text" && (
+            <InputReferences controller={c} nodeId={node.id} />
+          )}
+        </div>
+      )}
       {node.kind === "text" ? (
         <TextWorkbench controller={c} node={node} />
       ) : (

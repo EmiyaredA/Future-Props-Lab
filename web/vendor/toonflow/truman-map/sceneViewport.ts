@@ -1,3 +1,4 @@
+import { renderEditorAppearance } from "./editorAppearance";
 import {
   ACESFilmicToneMapping, AmbientLight, AxesHelper, Box3, Box3Helper, BoxGeometry, BufferGeometry,
   CapsuleGeometry, CanvasTexture, CircleGeometry, Color, ConeGeometry, CylinderGeometry, DirectionalLight, Euler, Float32BufferAttribute, Fog, Frustum,
@@ -569,6 +570,7 @@ export function createSceneViewport(canvas: HTMLCanvasElement, options: Viewport
   scene.add(worldWeather.group);
   const worldCelestials = createWorldCelestials();
   scene.add(worldCelestials.group);
+  const editorSkies = [worldWeather.group.getObjectByName("weatherSky"), worldCelestials.group.getObjectByName("celestialSky")];
   const worldLife = createWorldLife(scene);
   let performanceSeek: { time: SceneTime; life: ReturnType<typeof worldLife.snapshot>; jump: boolean } | undefined;
   let performanceEditing = false;
@@ -1278,19 +1280,7 @@ export function createSceneViewport(canvas: HTMLCanvasElement, options: Viewport
       renderer.render(scene, view);
       return;
     }
-    const background = scene.background;
-    const fog = scene.fog;
-    const ground = floor.material.color.clone();
-    try {
-      scene.background = editorBackground;
-      scene.fog = new Fog(editorBackground, 65, 180);
-      if (editorGround) floor.material.color.copy(editorGround);
-      renderer.render(scene, view);
-    } finally {
-      scene.background = background;
-      scene.fog = fog;
-      floor.material.color.copy(ground);
-    }
+    renderEditorAppearance(scene, floor.material, editorBackground, editorGround, () => renderer.render(scene, view), editorSkies);
   }
 
   function renderScene(view: PerspectiveCamera) {

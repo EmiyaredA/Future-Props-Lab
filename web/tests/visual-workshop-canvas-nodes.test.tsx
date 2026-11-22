@@ -276,45 +276,21 @@ test.each([
   },
 );
 
-test("create menu opens to the right of the add button", async () => {
+test("embedded canvas uses the sidebar creation menu without a floating add button", async () => {
   const user = userEvent.setup();
-  const { container } = renderCanvas();
+  renderCanvas();
   expect(await screen.findByText("未命名项目")).toBeInTheDocument();
-
-  const surface = container.querySelector(".visual-canvas-surface")!;
-  Object.defineProperty(surface, "getBoundingClientRect", {
-    configurable: true,
-    value: () => ({
-      bottom: 720,
-      height: 720,
-      left: 0,
-      right: 1280,
-      top: 0,
-      width: 1280,
-      x: 0,
-      y: 0,
-      toJSON: () => undefined,
-    }),
-  });
-  const addButton = screen.getByRole("button", { name: "添加内容" });
-  Object.defineProperty(addButton, "getBoundingClientRect", {
-    configurable: true,
-    value: () => ({
-      bottom: 382,
-      height: 42,
-      left: 31,
-      right: 73,
-      top: 340,
-      width: 42,
-      x: 31,
-      y: 340,
-      toJSON: () => undefined,
-    }),
-  });
-
-  await user.click(addButton);
-  const menu = screen.getByRole("menu", { name: "添加画布内容" });
-  expect(menu).toHaveStyle({ left: "83px", top: "340px" });
+  expect(
+    screen.queryByRole("button", { name: "添加内容" }),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "选择新建节点类型" }));
+  await user.click(screen.getByRole("menuitem", { name: "新建文本" }));
+  await waitFor(() => expect(putVisualCanvas).toHaveBeenCalled());
+  expect(
+    screen
+      .getByRole("region", { name: "节点画布" })
+      .querySelector(".canvas-node.text"),
+  ).not.toBeNull();
 });
 
 test("context menu upload creates a media node at the click point", async () => {

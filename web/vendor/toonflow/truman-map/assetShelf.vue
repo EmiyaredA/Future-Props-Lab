@@ -9,9 +9,9 @@
       <label class="searchField"><icon-search :size="15" /><input v-model="search" type="search" placeholder="搜索主素材" aria-label="搜索主素材" /></label>
     </div>
     <div class="assetFilters">
-      <label><span>分类</span><select v-model="categoryChoice" :disabled="disabled" aria-label="素材分类"><option v-for="item in categories" :key="item" :value="item">{{ item === '全部' ? '全部分类' : item }}</option><option v-if="!selecting" value="整套景">整套景</option><option v-if="recentIds.length" value="最近用过">最近用过</option></select></label>
-      <label><span>题材</span><select v-model="theme" :disabled="disabled || category === '基础' || setsMode" aria-label="素材题材"><option value="">全部题材</option><option v-for="item in assetThemes" :key="item" :value="item">{{ item }}</option></select></label>
-      <label><span>类型</span><select v-model="itemType" :disabled="disabled || category === '基础' || setsMode" aria-label="物品类型"><option value="">全部类型</option><option v-for="item in assetItemTypes" :key="item" :value="item">{{ item }}</option></select></label>
+      <div class="filterField"><span>分类</span><el-select v-model="categoryChoice" :disabled="disabled" aria-label="素材分类" popper-class="truman-host-popup"><el-option v-for="item in categories" :key="item" :value="item" :label="item === '全部' ? '全部分类' : item" /><el-option v-if="!selecting" value="整套景" label="整套景" /><el-option v-if="recentIds.length" value="最近用过" label="最近用过" /></el-select></div>
+      <div class="filterField"><span>题材</span><el-select v-model="theme" :disabled="disabled || category === '基础' || setsMode" :empty-values="[null, undefined]" aria-label="素材题材" popper-class="truman-host-popup"><el-option value="" label="全部题材" /><el-option v-for="item in assetThemes" :key="item" :value="item" :label="item" /></el-select></div>
+      <div class="filterField"><span>类型</span><el-select v-model="itemType" :disabled="disabled || category === '基础' || setsMode" :empty-values="[null, undefined]" aria-label="物品类型" popper-class="truman-host-popup"><el-option value="" label="全部类型" /><el-option v-for="item in assetItemTypes" :key="item" :value="item" :label="item" /></el-select></div>
     </div>
     <div class="libraryHeading">
       <span :title="setsMode ? undefined : `${filteredAssets.length.toLocaleString()} 个主素材，另含 ${(assetTotal - filteredAssets.length).toLocaleString()} 个款式与状态`">{{ setsMode ? `${filteredSets.length} 套整套景` : `${assetTotal.toLocaleString()} 个素材` }}</span>
@@ -38,8 +38,8 @@
           <section v-if="expandedAsset && row.some(asset => asset.id === expandedAsset?.id)" :id="derivativePanelId" class="derivativePanel" :aria-label="`${expandedAsset.name}的款式与状态`">
             <header class="derivativeHeader"><strong>{{ expandedAsset.name }}</strong><span>{{ derivatives.length }} 个衍生</span><button type="button" aria-label="收起衍生素材" @click="closeDerivatives"><icon-x :size="14" /></button></header>
             <div class="derivativeFilters">
-              <label><span>状态</span><select v-model="derivativeState" :disabled="disabled" aria-label="衍生状态"><option value="">全部状态</option><option v-for="item in assetStates" :key="item" :value="item">{{ item }}</option></select></label>
-              <label v-if="derivativeVariants.length"><span>款式</span><select v-model="derivativeVariant" :disabled="disabled" aria-label="衍生款式"><option value="">全部款式</option><option v-for="variant in derivativeVariants" :key="variant" :value="variant">{{ variantName(variant) }}</option></select></label>
+              <div class="filterField"><span>状态</span><el-select v-model="derivativeState" :disabled="disabled" :empty-values="[null, undefined]" aria-label="衍生状态" popper-class="truman-host-popup"><el-option value="" label="全部状态" /><el-option v-for="item in assetStates" :key="item" :value="item" :label="item" /></el-select></div>
+              <div v-if="derivativeVariants.length" class="filterField"><span>款式</span><el-select v-model="derivativeVariant" :disabled="disabled" :empty-values="[null, undefined]" aria-label="衍生款式" popper-class="truman-host-popup"><el-option value="" label="全部款式" /><el-option v-for="variant in derivativeVariants" :key="variant" :value="variant" :label="variantName(variant)" /></el-select></div>
             </div>
             <div class="derivativeGrid" :style="{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }">
               <button v-for="asset in visibleDerivatives" :key="asset.id" type="button" class="derivativeCard" :class="{ selected: selecting && selectedIdSet.has(asset.id), selecting }" :disabled="disabled" draggable="false" :aria-pressed="selecting ? selectedIdSet.has(asset.id) : undefined" :title="selecting ? `${asset.name} · 点击${selectedIdSet.has(asset.id) ? '取消选择' : '加入笔刷'}` : `${asset.name} · 点击添加或拖入场景`" @click="addAsset(asset, $event)" @pointerdown="startAssetDrag($event, asset)">
@@ -64,7 +64,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, useId, watch } from "vue";
-import { ElButton } from "element-plus";
+import { ElButton, ElOption, ElSelect } from "element-plus";
 import { IconCheck, IconChevronDown, IconSearch, IconUpload, IconX } from "@tabler/icons-vue";
 import assetThumbnail from "./assetThumbnail.vue";
 import { builtinAssets } from "./assetLibrary";
@@ -276,13 +276,16 @@ onBeforeUnmount(() => { resizeObserver?.disconnect(); cancelAssetDrag(); });
   color: var(--el-text-color-primary); background: transparent; font: inherit; font-size: 12px; line-height: 1.5;
   * { box-sizing: border-box; }
   h2, p { margin: 0; }
-  button, input, select { font: inherit; }
+  button, input { font: inherit; }
   button:not(.el-button) { color: inherit; border: 1px solid transparent; border-radius: var(--ui-radius-small, var(--el-border-radius-small)); background: transparent; cursor: pointer;
     &:hover:not(:disabled) { background: var(--studioHoverBackground, color-mix(in srgb, var(--el-fill-color) 70%, transparent)); }
     &:disabled { cursor: default; opacity: 0.45; }
   }
-  button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: -2px; }
-  select { width: 100%; min-width: 0; min-height: 30px; padding: 4px 6px; border: 1px solid var(--studioBorderColor, var(--el-border-color-light)); border-radius: var(--ui-radius-small, 4px); color: var(--el-text-color-primary); background: var(--studioControlBackground); &:disabled { opacity: 0.45; } option { color: var(--el-text-color-primary); background: var(--el-bg-color-overlay); } }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: -2px; }
+  .el-select { flex: 1; width: 100%; min-width: 0;
+    :deep(.el-select__wrapper) { min-height: 30px; padding: 4px 10px; border-radius: var(--ui-radius-small, 4px); background: var(--studioControlBackground); font-size: 12px; }
+    :deep(.el-select__suffix) { flex-shrink: 0; }
+  }
   .el-button { --el-button-bg-color: var(--studioControlBackground); --el-button-border-color: var(--studioBorderColor, var(--el-border-color-light)); --el-button-hover-bg-color: var(--studioHoverBackground); --el-button-active-bg-color: var(--studioActiveBackground); --el-button-disabled-bg-color: var(--studioControlBackground); }
   .shelfHeader { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 8px; padding: 10px 12px 8px;
     h2 { font-size: 13px; font-weight: 600; }
@@ -297,7 +300,7 @@ onBeforeUnmount(() => { resizeObserver?.disconnect(); cancelAssetDrag(); });
     }
   }
   .assetFilters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex-shrink: 0; gap: 8px; margin: 0 12px 8px;
-    > label { display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--el-text-color-secondary); font-size: 11px; > span { flex-shrink: 0; } }
+    > .filterField { display: flex; align-items: center; gap: 5px; min-width: 0; color: var(--el-text-color-secondary); font-size: 11px; > span { flex-shrink: 0; } }
   }
   .libraryHeading { display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; gap: 8px; padding: 0 12px 8px; color: var(--el-text-color-secondary); font-size: 11px;
     > span:first-child { color: var(--el-text-color-regular); font-variant-numeric: tabular-nums; }
@@ -337,7 +340,7 @@ onBeforeUnmount(() => { resizeObserver?.disconnect(); cancelAssetDrag(); });
           > button { display: grid; place-items: center; flex-shrink: 0; width: 26px; height: 26px; margin-left: auto; padding: 5px; }
         }
         .derivativeFilters { display: flex; gap: 12px; margin-bottom: 8px;
-          > label { display: flex; align-items: center; flex: 1; gap: 6px; min-width: 0; color: var(--el-text-color-secondary); font-size: 11px; > span { flex-shrink: 0; } }
+          > .filterField { display: flex; align-items: center; flex: 1; gap: 6px; min-width: 0; color: var(--el-text-color-secondary); font-size: 11px; > span { flex-shrink: 0; } }
         }
         .derivativeGrid { display: grid; gap: 6px;
           .derivativeCard { position: relative; display: flex; flex-direction: column; min-width: 0; padding: 0 0 5px; background: var(--studioControlBackground); cursor: grab; touch-action: pan-y pinch-zoom; user-select: none;
@@ -366,6 +369,6 @@ onBeforeUnmount(() => { resizeObserver?.disconnect(); cancelAssetDrag(); });
     }
   }
 }
-@media (max-width: 420px) { .assetShelf .assetFilters { gap: 5px; > label { > span { display: none; } } } }
+@media (max-width: 420px) { .assetShelf .assetFilters { gap: 5px; > .filterField { > span { display: none; } } } }
 @media (prefers-reduced-motion: reduce) { .assetShelf .assetContent .assetGrid .assetRow .assetCard .derivativeToggle > svg { transition: none; } }
 </style>

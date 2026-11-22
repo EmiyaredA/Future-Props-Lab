@@ -4,7 +4,12 @@ import { libraryFamilies } from "./cardFamilies";
 import { useCardNameSort } from "./useCardNameSort";
 import { useCardCreation } from "./useCardCreation";
 import { useBackdropDismiss } from "@shared/ui/useBackdropDismiss";
-import { importLibraryAssets, invalidateFileScope } from "@features/files";
+import {
+  importLibraryAssets,
+  invalidateFileScope,
+  uploadManagedFile,
+} from "@features/files";
+import { CardVoice } from "./CardVoice";
 import { projectModelPath, projectModelsKey } from "../previs/projectModels";
 import { useEffect, useRef, useState } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,7 +18,6 @@ import {
   ArrowDownAZ,
   ArrowUpRight,
   ChevronDown,
-  FileText,
   Images,
   Plus,
   Search,
@@ -65,7 +69,6 @@ const format = {
 function cardPrompt(card: Card) {
   return [
     `${card.title}。 ${format[card.kind]}`,
-    card.facts,
     card.design,
     card.parent_asset_id
       ? "沿用参考图的主体身份与结构，只改变本卡写明的变体内容。"
@@ -302,7 +305,7 @@ function CardEditor({
   const [modelId, setModelId] = useState("");
   const [size, setSize] = useState("");
   const [prompt, setPrompt] = useState("");
-  const [picker, setPicker] = useState<"image" | "model">();
+  const [picker, setPicker] = useState<"image" | "model" | "audio">();
   const [pickedAssets, setPickedAssets] = useState<
     Record<string, PickedCardAsset>
   >({});
@@ -378,7 +381,11 @@ function CardEditor({
   }
 
   async function saveDraft(value: Card) {
-    let { adopted_asset_id: adopted, model_asset_key: modelKey } = value;
+    let {
+      adopted_asset_id: adopted,
+      model_asset_key: modelKey,
+      voice_asset_id: voice,
+    } = value;
     if (adopted) {
       const item = pickedAssets[adopted];
       const task = tasks.find(
@@ -388,6 +395,11 @@ function CardEditor({
         ? item.projectId
         : task?.project_id || value.media_projects?.[adopted];
       if (source) adopted = await copyToLibrary(adopted, source);
+    }
+    if (voice) {
+      const picked = pickedAssets[voice];
+      const source = picked ? picked.projectId : value.media_projects?.[voice];
+      if (source) voice = await copyToLibrary(voice, source);
     }
     if (modelKey) {
       const asset = /^assets\/project-models\/([a-f0-9-]{36})\.glb$/.exec(
@@ -404,6 +416,7 @@ function CardEditor({
       ...value,
       adopted_asset_id: adopted,
       model_asset_key: modelKey,
+      voice_asset_id: voice,
     });
   }
 
@@ -567,22 +580,27 @@ function CardEditor({
           </section>
           <section className="card-editor-details" aria-label="设定详情">
             <h3>设定详情</h3>
+            {draft.kind === "character" && (
+              <CardVoice
+                assetId={draft.voice_asset_id}
+                title={draft.title}
+                readOnly={readOnly}
+                busy={busy}
+                onChoose={() => setPicker("audio")}
+                onRemove={() => edit({ voice_asset_id: null })}
+                onUpload={(file) =>
+                  run(async () => {
+                    const uploaded = await uploadManagedFile(file);
+                    await invalidateFileScope(client);
+                    edit({ voice_asset_id: uploaded.id });
+                  })
+                }
+              />
+            )}
             {readOnly ? (
               <dl className="card-editor-read-only">
                 <dt>确认的设定</dt>
                 <dd>{draft.design || "暂无已确认的设定"}</dd>
-                {draft.facts && (
-                  <>
-                    <dt>剧本依据</dt>
-                    <dd>{draft.facts}</dd>
-                  </>
-                )}
-                {draft.proposed_design && (
-                  <>
-                    <dt>待确认的设计</dt>
-                    <dd>{draft.proposed_design}</dd>
-                  </>
-                )}
               </dl>
             ) : (
               <div className="card-editor-fields">
@@ -606,44 +624,6 @@ function CardEditor({
                   />
                 </label>
                 <div className="card-editor-options">
-                  <details
-                    className="card-editor-disclosure"
-                    open={Boolean(initial.facts || initial.proposed_design)}
-                  >
-                    <summary>
-                      <FileText size={16} aria-hidden /> 剧本依据与待确认设计{" "}
-                      <ChevronDown size={16} aria-hidden />
-                    </summary>
-                    <div className="card-editor-disclosure-body">
-                      <label>
-                        剧本依据
-                        <textarea
-                          rows={3}
-                          value={draft.facts ?? ""}
-                          disabled={busy}
-                          onChange={(event) =>
-                            edit({ facts: event.target.value })
-                          }
-                        />
-                      </label>
-                      {draft.source && (
-                        <span className="card-editor-meta">
-                          来源剧本版本 {draft.source.revision}
-                        </span>
-                      )}
-                      <label>
-                        待确认的设计
-                        <textarea
-                          rows={3}
-                          value={draft.proposed_design ?? ""}
-                          disabled={busy}
-                          onChange={(event) =>
-                            edit({ proposed_design: event.target.value })
-                          }
-                        />
-                      </label>
-                    </div>
-                  </details>
                   <details
                     className="card-editor-disclosure"
                     open={!initial.adopted_asset_id}
@@ -886,7 +866,11 @@ function CardEditor({
           project={project}
           projects={projectChoices}
           value={
-            picker === "image" ? draft.adopted_asset_id : draft.model_asset_key
+            picker === "image"
+              ? draft.adopted_asset_id
+              : picker === "audio"
+                ? draft.voice_asset_id
+                : draft.model_asset_key
           }
           onClose={() => setPicker(undefined)}
           onChoose={(item) => {
@@ -895,6 +879,8 @@ function CardEditor({
             const id = item?.id ?? null;
             if (picker === "image") {
               if (id !== draft.adopted_asset_id) edit({ adopted_asset_id: id });
+            } else if (picker === "audio") {
+              if (id !== draft.voice_asset_id) edit({ voice_asset_id: id });
             } else if (id !== draft.model_asset_key) {
               edit({ model_asset_key: id });
             }

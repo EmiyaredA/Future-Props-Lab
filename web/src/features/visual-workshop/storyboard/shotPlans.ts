@@ -22,20 +22,20 @@ export function emptyShot(title = "新建分镜"): Shot {
 
 export function importShots(shots: Shot[], nodes: VisualCanvasNode[]): Shot[] {
   const seen = new Set(
-    shots.map((shot) => shot.origin_node_id).filter(Boolean),
+    shots
+      .flatMap((shot) => [shot.origin_node_id, shot.video_node_id])
+      .filter(Boolean),
   );
   return [
     ...shots,
     ...nodes.flatMap((node) => {
-      if ((node.kind !== "image" && node.kind !== "video") || seen.has(node.id))
-        return [];
+      if (node.kind !== "video" || seen.has(node.id)) return [];
       seen.add(node.id);
       return [
         {
           ...emptyShot(node.title),
           origin_node_id: node.id,
-          image_node_id: node.kind === "image" ? node.id : null,
-          video_node_id: node.kind === "video" ? node.id : null,
+          video_node_id: node.id,
         },
       ];
     }),

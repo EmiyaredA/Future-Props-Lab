@@ -59,9 +59,8 @@ class ScriptSource(WorkflowModel):
 class CardData(WorkflowModel):
     kind: Literal["character", "scene", "prop"]
     title: Title
-    facts: LongText = ""
     design: LongText = ""
-    proposed_design: LongText = ""
+    voice_asset_id: Identifier | None = None
     source: ScriptSource | None = None
     parent_id: Identifier | None = None
     parent_asset_id: Identifier | None = None
@@ -70,6 +69,17 @@ class CardData(WorkflowModel):
     adopted_asset_id: Identifier | None = None
     model_asset_key: Annotated[str, StringConstraints(max_length=180)] | None = None
     archived: bool = False
+
+    @model_validator(mode="after")
+    def validate_voice(self):
+        if self.voice_asset_id is not None and self.kind != "character":
+            raise ValueError("只有角色卡可以绑定角色语音")
+        return self
+
+
+def current_card_data(value: dict) -> dict:
+    """Read legacy records/archives without reviving retired design fields."""
+    return {key: item for key, item in value.items() if key not in {"facts", "proposed_design"}}
 
 
 class CardUpdate(CardData):

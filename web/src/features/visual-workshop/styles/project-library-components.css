@@ -253,7 +253,7 @@
   background: transparent;
 }
 
-.image-composer-tools .generation-image-options button,
+.image-composer-tools .generation-image-options > button,
 .image-composer-tools .generation-picker-state {
   width: 58px;
   min-width: 58px;
@@ -270,16 +270,19 @@
   color: var(--faint);
 }
 
-.image-composer-tools .generation-image-options button.selected {
+.image-composer-tools .generation-image-options > button.selected {
   border-style: solid;
 }
 
-.image-composer-tools .generation-image-options button > svg {
+.image-composer-tools .generation-image-options > button > svg {
   width: 20px;
   height: 20px;
 }
 
-.image-composer-tools .generation-media-preview {
+.image-composer-tools
+  .generation-image-options
+  > button
+  .generation-media-preview {
   width: 44px !important;
   height: 44px;
 }

@@ -6,8 +6,9 @@ import {
   ArrowUp,
   Clapperboard,
   GripVertical,
-  LayoutGrid,
-  Rows3,
+  Video,
+  Link2,
+  LocateFixed,
   Plus,
   Save,
   Trash2,
@@ -31,6 +32,7 @@ import "../board/project-board.css";
 import "../board/workbench.css";
 import { locateExcerpt } from "./scriptSource";
 import { productionDraft } from "./productionDraft";
+import { ShotPrevisAssociation } from "./ShotPrevisAssociation";
 import type { VisualCanvasNode, VisualCanvasGenerationDraft } from "../api";
 import {
   getStoryboard,
@@ -75,7 +77,7 @@ export default function StoryboardWorkspace({
   renderHeader: (busy: boolean, leave: Navigate, dirty: boolean) => ReactNode;
   onLocateNode: (nodeId: string) => void;
   onCreateNode: (
-    kind: "image" | "video",
+    kind: "video",
     title: string,
     draft: VisualCanvasGenerationDraft,
   ) => Promise<string>;
@@ -102,8 +104,6 @@ export default function StoryboardWorkspace({
   useEffect(() => {
     if (initialSelectedId) setSelectedId(initialSelectedId);
   }, [initialSelectedId]);
-  const [view, setView] = useState<"cards" | "table">("cards");
-  const [mediaKind, setMediaKind] = useState<"image" | "video">("video");
   const [previews, setPreviews] = useState<
     Record<string, VisualNodeOutput | undefined>
   >({});
@@ -112,9 +112,7 @@ export default function StoryboardWorkspace({
   const [filter, setFilter] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [picker, setPicker] = useState<
-    "import" | "cards" | "image" | "video"
-  >();
+  const [picker, setPicker] = useState<"import" | "video">();
   const [confirm, setConfirm] = useState<"delete" | "reload" | "source">();
   const flight = useRef(false);
   const leaving = useRef(false);
@@ -206,42 +204,40 @@ export default function StoryboardWorkspace({
     const other = shots[selectedIndex + delta];
     if (selected && other) change(reorderShots(shots, selected.id, other.id));
   }
-  function generate(kind: "image" | "video") {
-    if (!selected || !current || flight.current) return;
-    const existing =
-      kind === "image" ? selected.image_node_id : selected.video_node_id;
-    if (existing && nodeById.has(existing)) {
-      setMediaKind(kind);
-      return;
-    }
+  function generate() {
+    if (selected && current) createVideo(selected, current);
+  }
+  function createVideo(shot: Shot, document: Storyboard, save = true) {
+    if (flight.current || readOnly) return;
+    const existing = shot.video_node_id;
+    if (existing && nodeById.get(existing)?.kind === "video") return;
     flight.current = true;
     setBusy(true);
     setError("");
     void (async () => {
       try {
+        const image = nodeById.get(shot.image_node_id ?? "");
         const settings = await productionDraft(
           client,
           project,
-          kind,
-          selected,
+          shot,
           availableCards,
+          image?.kind === "image" ? (image.asset_id ?? undefined) : undefined,
         );
-        const identity = await onCreateNode(kind, selected.title, settings);
+        const identity = await onCreateNode("video", shot.title, settings);
         const next = {
-          ...current,
-          shots: shots.map((shot) =>
-            shot.id === selected.id
+          ...document,
+          shots: document.shots.map((row) =>
+            row.id === shot.id
               ? {
-                  ...shot,
-                  [kind === "image" ? "image_node_id" : "video_node_id"]:
-                    identity,
+                  ...row,
+                  video_node_id: identity,
                 }
-              : shot,
+              : row,
           ),
         };
         setDraft(next); // A failed save retains the newly created link for retry.
-        await persist(next);
-        setMediaKind(kind);
+        if (save) await persist(next);
       } catch (failure) {
         setError(apiErrorMessage(failure));
       } finally {
@@ -251,27 +247,8 @@ export default function StoryboardWorkspace({
       }
     })();
   }
-  const linkedNode =
-    selected &&
-    nodeById.get(
-      (mediaKind === "video"
-        ? selected.video_node_id
-        : selected.image_node_id) ?? "",
-    );
-  const previewNode = linkedNode;
-  const selectedForMedia = useRef(selected);
-  selectedForMedia.current = selected;
-  useEffect(() => {
-    const selected = selectedForMedia.current;
-    if (selected)
-      setMediaKind(
-        selected.video_node_id
-          ? "video"
-          : selected.image_node_id
-            ? "image"
-            : "video",
-      );
-  }, [selected?.id]);
+  const linkedNode = nodeById.get(selected?.video_node_id ?? "");
+  const previewNode = linkedNode?.kind === "video" ? linkedNode : undefined;
   const sourceScene = script.data?.episodes
     .flatMap((episode) => episode.scenes)
     .find((scene) => scene.id === selected?.source?.scene_id);
@@ -327,65 +304,13 @@ export default function StoryboardWorkspace({
           />
         </label>
         <label>
-          镜头描述
+          分镜描述
           <textarea
+            aria-label="分镜描述"
             rows={3}
             value={selected.description}
             maxLength={12000}
             onChange={(event) => patch({ description: event.target.value })}
-          />
-        </label>
-        <div className="storyboard-camera-fields">
-          <label>
-            景别
-            <input
-              value={selected.shot_size}
-              maxLength={80}
-              onChange={(event) => patch({ shot_size: event.target.value })}
-            />
-          </label>
-          <label>
-            运镜
-            <input
-              value={selected.camera_motion}
-              maxLength={160}
-              onChange={(event) => patch({ camera_motion: event.target.value })}
-            />
-          </label>
-          <label>
-            规划时长（秒）
-            <input
-              type="number"
-              min="0.1"
-              max="3600"
-              step="0.1"
-              value={selected.duration ?? ""}
-              onChange={(event) =>
-                patch({
-                  duration: event.target.value
-                    ? Number(event.target.value)
-                    : null,
-                })
-              }
-            />
-          </label>
-        </div>
-        <label>
-          对白
-          <textarea
-            rows={2}
-            maxLength={12000}
-            value={selected.dialogue}
-            onChange={(event) => patch({ dialogue: event.target.value })}
-          />
-        </label>
-        <label>
-          声音
-          <textarea
-            rows={2}
-            maxLength={12000}
-            value={selected.sound}
-            onChange={(event) => patch({ sound: event.target.value })}
           />
         </label>
         <label>
@@ -455,73 +380,28 @@ export default function StoryboardWorkspace({
           </button>
         </>
       )}
-      <div className="storyboard-references">
-        <h4>关联设定</h4>
-        {selected.card_ids.map((id) => (
-          <div key={id}>
-            <span>
-              {availableCards.find((card) => card.id === id)?.title ??
-                "设定已移出项目"}
-            </span>
-            {!readOnly && (
-              <button
-                disabled={busy}
-                aria-label={`解除设定 ${id}`}
-                onClick={() =>
-                  patch({
-                    card_ids: selected.card_ids.filter((key) => key !== id),
-                  })
-                }
-              >
-                移除
-              </button>
-            )}
-          </div>
-        ))}
-        {!readOnly && (
-          <button disabled={busy} onClick={() => setPicker("cards")}>
-            关联人设／场景／道具
-          </button>
-        )}
-      </div>
-      {(["image", "video"] as const).map((kind) => {
-        const identity =
-          kind === "image" ? selected.image_node_id : selected.video_node_id;
-        const node = nodeById.get(identity ?? "");
-        return (
-          <div className="storyboard-production-link" key={kind}>
-            <strong>{kind === "image" ? "分镜图" : "视频"}</strong>
-            <span>
-              {node?.title ??
-                (identity ? "节点已删除，请重新关联" : "未关联制作节点")}
-            </span>
-            {!readOnly && (
-              <>
-                <button disabled={busy} onClick={() => setPicker(kind)}>
-                  关联节点
-                </button>
-                <button disabled={busy} onClick={() => generate(kind)}>
-                  {node ? "编辑生成" : "创建制作节点"}
-                </button>
-              </>
-            )}
-          </div>
-        );
-      })}
-      {selected && onPrevis && (
-        <button onClick={() => commit(() => onPrevis(selected))}>
-          打开镜头白模预演
-        </button>
+      {previewNode && (
+        <div className="storyboard-production-link">
+          <strong>镜头视频</strong>
+          <span>{previewNode.title}</span>
+          {!readOnly && (
+            <button disabled={busy} onClick={() => setPicker("video")}>
+              关联节点
+            </button>
+          )}
+        </div>
       )}
-      <div className="storyboard-selected-preview">
-        {previewNode && previewNode.kind !== "text" && (
-          <OutputPreview
-            kind={previewNode.kind}
-            assetId={previewNode.asset_id}
-          />
-        )}
-      </div>
-      <small>规划时长用于镜头设计；实际素材和输出版本仍由制作节点管理。</small>
+      <ShotPrevisAssociation
+        key={selected.id}
+        project={project}
+        shot={selected}
+        nodes={nodes}
+        disabled={busy}
+        readOnly={readOnly}
+        onChange={(previs) => patch({ previs })}
+        onOpen={onPrevis ? () => commit(() => onPrevis(selected)) : undefined}
+        onOutput={(id) => commit(() => onLocateNode(id))}
+      />
     </aside>
   ) : null;
   const workbench: StoryboardWorkbench = {
@@ -541,37 +421,19 @@ export default function StoryboardWorkspace({
           <h2>
             <Clapperboard size={20} /> 分镜
           </h2>
-          <div className="storyboard-view-tools">
-            <CustomSelect
-              ariaLabel="分镜场次"
-              value={filter}
-              onChange={setFilter}
-              options={[
-                { value: "", label: "全部分镜" },
-                { value: "unassigned", label: "未关联剧本" },
-                ...scenes.map((scene) => ({
-                  value: scene.id,
-                  label: scene.label,
-                })),
-              ]}
-            />
-            <div role="group" aria-label="分镜显示方式">
-              <button
-                aria-pressed={view === "cards"}
-                onClick={() => setView("cards")}
-              >
-                <LayoutGrid size={16} />
-                <span>卡片</span>
-              </button>
-              <button
-                aria-pressed={view === "table"}
-                onClick={() => setView("table")}
-              >
-                <Rows3 size={16} />
-                <span>表格</span>
-              </button>
-            </div>
-          </div>
+          <CustomSelect
+            ariaLabel="分镜场次"
+            value={filter}
+            onChange={setFilter}
+            options={[
+              { value: "", label: "全部分镜" },
+              { value: "unassigned", label: "未关联剧本" },
+              ...scenes.map((scene) => ({
+                value: scene.id,
+                label: scene.label,
+              })),
+            ]}
+          />
           <small>
             {shots.length} 镜 · 规划{" "}
             {shots
@@ -585,7 +447,7 @@ export default function StoryboardWorkspace({
                 disabled={busy || !current || shots.length >= 1000}
                 onClick={() => setPicker("import")}
               >
-                纳入已有节点
+                纳入已有视频
               </button>
               <button
                 disabled={busy || !current || shots.length >= 1000}
@@ -594,6 +456,12 @@ export default function StoryboardWorkspace({
                   change([...shots, shot]);
                   setFilter("");
                   setSelectedId(shot.id);
+                  if (current)
+                    createVideo(
+                      shot,
+                      { ...current, shots: [...shots, shot] },
+                      false,
+                    );
                 }}
               >
                 <Plus size={16} /> 新建分镜
@@ -601,10 +469,7 @@ export default function StoryboardWorkspace({
             </>
           )}
         </div>
-        <section
-          className={`storyboard-shots is-${view}`}
-          aria-label="镜头列表"
-        >
+        <section className="storyboard-shots" aria-label="镜头列表">
           {!shown.length && (
             <div className="storyboard-empty">
               <Clapperboard size={38} />
@@ -612,14 +477,13 @@ export default function StoryboardWorkspace({
               <p>
                 {shots.length
                   ? "调整搜索或场次筛选，查看其他镜头。"
-                  : "为镜头建立分镜，或纳入画布中的图像和视频。"}
+                  : "为镜头建立分镜，或纳入画布中的视频。"}
               </p>
             </div>
           )}
           {shown.map((shot) => {
-            const node =
-              nodeById.get(shot.image_node_id ?? "") ??
-              nodeById.get(shot.video_node_id ?? "");
+            const linked = nodeById.get(shot.video_node_id ?? "");
+            const node = linked?.kind === "video" ? linked : undefined;
             return (
               <article
                 key={shot.id}
@@ -655,7 +519,7 @@ export default function StoryboardWorkspace({
                     </small>
                   </span>
                   <span className="storyboard-shot-image">
-                    {node && node.kind !== "text" ? (
+                    {node ? (
                       <OutputPreview
                         kind={node.kind}
                         assetId={node.asset_id}
@@ -675,9 +539,9 @@ export default function StoryboardWorkspace({
                       .join(" · ") || "待设计景别与运镜"}
                   </small>
                   <small>
-                    {node && node.kind !== "text" && node.asset_id
+                    {node?.asset_id
                       ? `采用节点输出${node.final_version ? ` v${node.final_version}` : ""}`
-                      : (shot.image_node_id || shot.video_node_id) && !node
+                      : shot.video_node_id && !node
                         ? "制作节点已删除"
                         : "待制作"}
                   </small>
@@ -705,20 +569,14 @@ export default function StoryboardWorkspace({
       <section className="storyboard-production-editor" aria-label="分镜制作">
         <header className="storyboard-production-heading">
           <h2>{selected?.title ?? "选择镜头"}</h2>
-          <div role="group" aria-label="制作类型">
-            {(["video", "image"] as const).map((kind) => (
-              <button
-                key={kind}
-                aria-pressed={previewNode?.kind === kind}
-                onClick={() => setMediaKind(kind)}
-              >
-                {kind === "video" ? "视频" : "分镜图"}
-              </button>
-            ))}
-          </div>
           {previewNode && (
-            <button onClick={() => commit(() => onLocateNode(previewNode.id))}>
-              定位制作节点
+            <button
+              type="button"
+              aria-label="定位制作节点"
+              title="在画布中定位"
+              onClick={() => commit(() => onLocateNode(previewNode.id))}
+            >
+              <LocateFixed size={16} aria-hidden />
             </button>
           )}
         </header>
@@ -733,21 +591,13 @@ export default function StoryboardWorkspace({
             onCardHandled={() => undefined}
             generating={false}
           />
+        ) : selected && !previewNode ? (
+          <div className="storyboard-design-sheet">{properties}</div>
+        ) : previewNode ? (
+          <OutputPreview kind="video" assetId={previewNode.asset_id} />
         ) : (
           <div className="storyboard-empty">
-            <h3>
-              {selected ? "关联制作节点后开始编辑" : "新建或选择一个镜头"}
-            </h3>
-            {selected && !readOnly && (
-              <>
-                <button onClick={() => setPicker(mediaKind)}>
-                  关联已有节点
-                </button>
-                <button onClick={() => generate(mediaKind)} disabled={busy}>
-                  创建{mediaKind === "video" ? "视频" : "图像"}制作节点
-                </button>
-              </>
-            )}
+            <h3>新建或选择一个镜头</h3>
           </div>
         )}
       </section>
@@ -767,6 +617,38 @@ export default function StoryboardWorkspace({
             batches={activity.batches.data ?? []}
             properties={properties}
           />
+        ) : selected && !previewNode ? (
+          <section
+            className="storyboard-production-start"
+            aria-label="制作镜头视频"
+          >
+            <header>
+              <h3>镜头视频</h3>
+              <span>待制作</span>
+            </header>
+            <div className="storyboard-start-preview">
+              <Video size={32} strokeWidth={1.3} aria-hidden />
+              <strong>为这一镜添加画面</strong>
+              <p>先完善镜头设计，再开始制作镜头视频。</p>
+            </div>
+            {selected.video_node_id && (
+              <p role="status">原镜头视频已不可用，请重新添加。</p>
+            )}
+            {!readOnly ? (
+              <div className="storyboard-start-actions">
+                <button className="primary" disabled={busy} onClick={generate}>
+                  <Plus size={16} aria-hidden />
+                  {busy ? "准备中…" : "开始制作镜头视频"}
+                </button>
+                <button disabled={busy} onClick={() => setPicker("video")}>
+                  <Link2 size={16} aria-hidden />
+                  关联已有视频
+                </button>
+              </div>
+            ) : (
+              <p>此镜头尚未添加镜头视频。</p>
+            )}
+          </section>
         ) : (
           properties
         )}
@@ -832,59 +714,41 @@ export default function StoryboardWorkspace({
       {picker && (
         <SearchablePickerDialog
           title={
-            picker === "import"
-              ? "纳入已有节点（确认清单）"
-              : picker === "cards"
-                ? "关联项目设定"
-                : "关联制作节点"
+            picker === "import" ? "纳入已有视频（确认清单）" : "关联镜头视频"
           }
           searchLabel="搜索项目内容"
-          loading={picker === "cards" && cards.isPending}
-          error={
-            picker === "cards" && cards.isError
-              ? apiErrorMessage(cards.error)
-              : undefined
-          }
-          items={
-            picker === "cards"
-              ? availableCards
-                  .filter((card) => !selected?.card_ids.includes(card.id))
-                  .map((card) => ({
-                    id: card.id,
-                    label: card.title,
-                    detail: card.kind,
-                    preview: card.adopted_asset_id
-                      ? `/v1/files/${card.adopted_asset_id}/thumbnail`
-                      : undefined,
-                  }))
-              : nodes
-                  .filter((node) =>
-                    picker === "import"
-                      ? node.kind === "image" || node.kind === "video"
-                      : node.kind === picker,
-                  )
-                  .map((node) => ({
-                    id: node.id,
-                    label: node.title,
-                    icon: node.kind === "text" ? undefined : node.kind,
-                    disabled:
-                      picker === "import" &&
-                      shots.some((shot) => shot.origin_node_id === node.id),
-                    detail: node.kind,
-                  }))
-          }
+          items={nodes
+            .filter(
+              (node): node is Extract<VisualCanvasNode, { kind: "video" }> =>
+                node.kind === "video" &&
+                (picker === "import" ||
+                  !shots.some(
+                    (shot) =>
+                      shot.id !== selected?.id &&
+                      shot.video_node_id === node.id,
+                  )),
+            )
+            .map((node) => ({
+              id: node.id,
+              label: node.title,
+              icon: "video" as const,
+              preview: node.asset_id
+                ? `/v1/files/${encodeURIComponent(node.asset_id)}/thumbnail`
+                : undefined,
+              disabled:
+                picker === "import" &&
+                shots.some(
+                  (shot) =>
+                    shot.origin_node_id === node.id ||
+                    shot.video_node_id === node.id,
+                ),
+              detail: node.kind,
+            }))}
           onClose={() => setPicker(undefined)}
-          clearLabel={
-            picker === "image" || picker === "video" ? "解除关联" : undefined
-          }
           onChoose={(item) => {
-            if (picker === "cards") {
-              if (selected && item)
-                patch({ card_ids: [...selected.card_ids, item.id] });
-            } else if (picker !== "import")
+            if (picker !== "import")
               patch({
-                [picker === "image" ? "image_node_id" : "video_node_id"]:
-                  item?.id ?? null,
+                video_node_id: item?.id ?? null,
               });
             setPicker(undefined);
           }}

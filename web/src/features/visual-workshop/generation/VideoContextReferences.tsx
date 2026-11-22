@@ -1,4 +1,6 @@
 import { useState } from "react";
+import * as Menu from "@radix-ui/react-dropdown-menu";
+import { ChevronDown, Link2 } from "lucide-react";
 import { TaskOutputReferenceDialog } from "./TaskOutputReferenceDialog";
 import type { useGenerationDrawerController } from "./useGenerationDrawerController";
 import type { VisualCanvasEdge } from "../api";
@@ -12,16 +14,27 @@ export function VideoContextReferences({
   const [dialog, setDialog] = useState<{ edge?: VisualCanvasEdge }>();
   if (!c.referenceContext || !c.canvasNodeId) return null;
   return (
-    <div className="video-context-references">
-      {c.referenceInputs.length > 0 && (
-        <details>
-          <summary>上下文与输入 {c.referenceInputs.length}</summary>
-          <div>
+    <>
+      <Menu.Root>
+        <Menu.Trigger asChild>
+          <button
+            type="button"
+            className="reference-add"
+            aria-label="添加参考素材"
+          >
+            <Link2 size={14} aria-hidden />
+            引用
+            <ChevronDown size={12} aria-hidden />
+          </button>
+        </Menu.Trigger>
+        <Menu.Portal>
+          <Menu.Content className="reference-menu" sideOffset={5}>
+            <Menu.Item onSelect={() => setDialog({})}>引用任务输出</Menu.Item>
+            {c.referenceInputs.length > 0 && <Menu.Separator />}
             {c.referenceInputs.map((input) => (
-              <button
-                type="button"
+              <Menu.Item
                 key={input.key}
-                onClick={() => setDialog({ edge: input.edge })}
+                onSelect={() => setDialog({ edge: input.edge })}
               >
                 <span>{input.title}</span>
                 <small>
@@ -32,14 +45,11 @@ export function VideoContextReferences({
                         ? "文本上下文"
                         : `v${input.version ?? "—"}`))}
                 </small>
-              </button>
+              </Menu.Item>
             ))}
-          </div>
-        </details>
-      )}
-      <button type="button" onClick={() => setDialog({})}>
-        引用任务输出
-      </button>
+          </Menu.Content>
+        </Menu.Portal>
+      </Menu.Root>
       {dialog && (
         <TaskOutputReferenceDialog
           projectId={c.projectId}
@@ -49,6 +59,6 @@ export function VideoContextReferences({
           onClose={() => setDialog(undefined)}
         />
       )}
-    </div>
+    </>
   );
 }

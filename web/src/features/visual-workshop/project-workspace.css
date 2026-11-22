@@ -1,5 +1,3 @@
-@import "./workspace-controls.css";
-
 .visual-project-workspace {
   --project-header-height: 56px;
   --project-rail-width: 56px;
@@ -63,15 +61,6 @@
 .is-canvas-view .board-main {
   position: relative;
 }
-.is-canvas-view .workbench-local-tools {
-  position: absolute;
-  z-index: 25;
-  top: 6px;
-  left: 8px;
-  border: 0;
-  padding: 0;
-  min-height: 32px;
-}
 .is-canvas-view .board-main > .visual-canvas {
   height: 100%;
   width: 100%;
@@ -79,20 +68,71 @@
 }
 .visual-project-workspace .canvas-controls {
   bottom: 14px;
-  padding: 4px 6px;
-  min-height: 34px;
+  left: 50%;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 5px;
+  min-height: 44px;
   gap: 4px;
-  border-radius: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  border-radius: 10px;
+}
+.visual-project-workspace .canvas-controls.with-assets {
+  left: 50%;
 }
 .visual-project-workspace .canvas-controls button {
-  height: 36px;
-  min-height: 36px;
-  width: 28px;
+  flex: none;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
 }
-.visual-project-workspace
-  .canvas-controls
-  :is(.canvas-zoom, .canvas-auto-layout-trigger) {
+.visual-project-workspace .canvas-controls svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.visual-project-workspace .canvas-controls .canvas-control-mode {
+  flex: none;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 8px;
+}
+.visual-project-workspace .canvas-controls .canvas-control-mode button {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+}
+.visual-project-workspace .canvas-controls .canvas-zoom-value {
+  width: 52px;
+  min-width: 52px;
+}
+.visual-project-workspace .canvas-controls > i {
+  flex: none;
+  height: 20px;
+  margin-inline: 3px;
+}
+.visual-project-workspace .canvas-controls .canvas-arrange-controls {
+  border-radius: 7px;
+  background: var(--surface-soft);
+}
+.visual-project-workspace .canvas-controls .canvas-arrange-default {
   width: auto;
+  min-width: 0;
+  padding-inline: 10px;
+  border-radius: 7px 0 0 7px;
+}
+.visual-project-workspace .canvas-controls .canvas-arrange-trigger {
+  width: 26px;
+  min-width: 26px;
+  border-left: 1px solid var(--border);
+  border-radius: 0 7px 7px 0;
 }
 .visual-project-workspace .canvas-assets-drawer {
   top: 8px;
@@ -114,7 +154,8 @@
   z-index: 24;
 }
 .visual-project-workspace .board-node-heading {
-  padding: 16px 20px;
+  padding: 2px 0;
+  gap: 6px;
 }
 .visual-project-workspace .board-workbench {
   min-width: 0;
@@ -129,7 +170,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 16px 20px;
+  padding: 8px 0;
+  border-left: 0;
   overflow: auto;
 }
 .visual-project-workspace .storyboard-production-heading {
@@ -137,7 +179,9 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+  padding: 0;
+  border-bottom: 0;
 }
 .visual-project-workspace .storyboard-production-heading h2 {
   margin: 0;
@@ -145,8 +189,26 @@
   font-size: 16px;
 }
 .visual-project-workspace .storyboard-production-heading button {
-  min-height: 36px;
-  padding: 4px 7px;
+  min-height: 30px;
+  width: 30px;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+.storyboard-production-heading [role="group"] {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--surface-soft);
+}
+.visual-project-workspace
+  .storyboard-production-heading
+  button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 5px;
 }
 .visual-project-workspace .storyboard-toolbar {
   padding: 0 0 8px;
@@ -226,8 +288,8 @@
 }
 .visual-project-workspace .storyboard-inspector {
   border: 0;
-  padding: 10px 12px;
-  font-size: 14px;
+  padding: 0;
+  font-size: 13px;
 }
 .visual-project-workspace .storyboard-inspector h3 {
   font-size: 14px;
@@ -339,6 +401,11 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   z-index: 24;
+  padding: 12px;
+  box-sizing: border-box;
+}
+.workbench-unlinked-shot .storyboard-production-output {
+  padding: 12px 0 0;
 }
 .visual-project-workspace .visual-script .script-text {
   min-height: 300px;
@@ -351,34 +418,40 @@
   bottom: auto;
   box-shadow: none;
 }
-.visual-project-workspace .canvas-controls {
-  flex-wrap: nowrap;
-  width: max-content;
-}
-.visual-project-workspace .canvas-controls .canvas-zoom-value {
-  width: 46px;
-}
 @media (max-width: 767px) {
   .visual-project-workspace .canvas-controls {
     gap: 2px;
-    padding: 3px;
-  }
-  .visual-project-workspace .canvas-control-mode {
-    padding: 0;
+    padding: 4px;
   }
   .visual-project-workspace .canvas-controls button {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    min-height: 30px;
+  }
+  .visual-project-workspace .canvas-controls .canvas-control-mode button {
     width: 26px;
-    padding: 0;
-    flex: none;
+    min-width: 26px;
+    height: 26px;
+    min-height: 26px;
   }
   .visual-project-workspace .canvas-controls .canvas-zoom-value {
-    width: 42px;
+    width: 44px;
+    min-width: 44px;
   }
   .visual-project-workspace .canvas-controls > i {
-    margin-inline: 0;
+    display: none;
   }
-  .visual-project-workspace .canvas-controls .canvas-auto-layout-trigger {
+  .visual-project-workspace .canvas-controls .canvas-arrange-trigger {
+    width: 24px;
+    min-width: 24px;
+  }
+}
+@media (max-width: 600px) {
+  .visual-project-workspace .canvas-controls .canvas-arrange-default {
     width: 30px;
+    min-width: 30px;
+    padding: 0;
   }
 }
 
@@ -405,26 +478,27 @@
   display: none;
 }
 .visual-project-workspace .script-linked-shots h2 {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 14px;
 }
 .visual-project-workspace .script-linked-shots h3 {
-  font-size: 14px;
+  font-size: 12px;
 }
 .visual-project-workspace .script-linked-close {
-  float: right;
   padding: 0;
   width: 28px;
-  min-height: 36px;
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
 }
 .visual-project-workspace .script-linked-shots article button {
-  border: 1px solid var(--border);
-  color: var(--text);
-  background: var(--surface);
-  border-radius: 6px;
-  padding: 5px 7px;
-  cursor: pointer;
-  font: inherit;
+  border: 0;
+  background: transparent;
+  padding: 10px 4px;
+}
+.visual-project-workspace .script-linked-shots article button:hover {
+  background: var(--surface-hover);
 }
 @media (max-width: 767px) {
   .visual-project-workspace .visual-script .script-linked-layout {
@@ -579,24 +653,6 @@
   }
 }
 
-.workbench-add-content {
-  position: absolute;
-  z-index: 25;
-  top: 6px;
-  left: 184px;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--text);
-  cursor: pointer;
-}
-
 .workspace-sidebar-pin[aria-pressed="true"] {
   color: var(--accent);
 }
@@ -608,24 +664,46 @@
 }
 .visual-project-workspace .board-workbench {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  padding: 20px;
-  gap: 20px;
+  padding: 6px 8px;
+  gap: 8px;
 }
 .visual-project-workspace .board-editor {
-  gap: 16px;
+  gap: 4px;
+  padding-inline: 0;
 }
 .visual-project-workspace .board-output-panel {
-  padding: 16px;
+  padding: 12px;
 }
 .visual-project-workspace .board-workbench button {
   min-height: 36px;
 }
+.visual-project-workspace .has-properties {
+  --ui-control-height: 32px;
+}
+.visual-project-workspace .has-properties .storyboard-detail-tabs button {
+  min-height: 32px;
+}
+.visual-project-workspace .has-properties .storyboard-inspector-heading button {
+  height: 28px;
+  min-height: 28px;
+}
+.visual-project-workspace .board-node-heading button {
+  height: 28px;
+  min-height: 28px;
+}
+.visual-project-workspace .board-node-heading input {
+  min-width: min(100%, 100px);
+  height: 32px;
+  min-height: 32px;
+  font-size: 16px;
+  line-height: 1.3;
+}
 .visual-project-workspace .workbench-generation .video-composer-body {
-  padding-inline: 16px;
+  padding-inline: 0;
 }
 .visual-project-workspace .workbench-generation .video-composer-footer {
-  padding: 12px 16px;
-  gap: 12px;
+  padding: 8px 0;
+  gap: 8px;
 }
 @container project-workbench (max-width: 899px) {
   .visual-project-workspace .board-workbench {
@@ -646,7 +724,7 @@
 }
 @media (max-width: 700px) {
   .visual-project-workspace .board-workbench {
-    padding: 12px;
-    gap: 16px;
+    padding: 6px 8px;
+    gap: 12px;
   }
 }

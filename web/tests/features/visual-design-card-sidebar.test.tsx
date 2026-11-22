@@ -15,9 +15,7 @@ const card = (id: string, title: string, parent_id?: string): Card => ({
   kind: "character",
   parent_id,
   revision: 0,
-  facts: "",
   design: "",
-  proposed_design: "",
   archived: false,
 });
 const main = card("main", "林夏");

@@ -169,8 +169,8 @@ class SnapshotValues:
         creative, creative_assets, models = import_creative_workflow(
             self.creative, owner, project_id, asset_ids
         )
-        if any(metadata[asset]["media_kind"] != "image" for asset in creative_assets):
-            raise ProjectSnapshotError("设定卡引用的素材不是图片")
+        if any(metadata[asset]["media_kind"] != kind for asset, kind in creative_assets.items()):
+            raise ProjectSnapshotError("设定卡引用的素材类型不匹配")
         models |= {
             asset_ids[key] for scene in self.scenes for key in scene_model_assets(scene.document)
         }

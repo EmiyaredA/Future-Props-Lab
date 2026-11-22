@@ -1,0 +1,9 @@
+"""Remove retired design fields from persisted account cards."""
+
+MIGRATION_ID = "0138_visual_card_voice"
+SQL = """
+UPDATE visual_asset_cards
+SET data = json_remove(data, '$.facts', '$.proposed_design'), revision = revision + 1
+WHERE json_type(data, '$.facts') IS NOT NULL
+   OR json_type(data, '$.proposed_design') IS NOT NULL;
+"""

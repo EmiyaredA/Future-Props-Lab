@@ -270,7 +270,9 @@ test("self references cannot be dragged or picked and old self selections are re
   expect(screen.getByRole("alert")).toHaveTextContent(
     "不能把当前节点自己的素材作为参考。",
   );
-  await userEvent.click(screen.getByRole("button", { name: "上传自己的参考" }));
+  await userEvent.click(
+    screen.getByRole("button", { name: "自己的参考更多来源" }),
+  );
   await userEvent.click(screen.getByRole("menuitem", { name: /本项目素材/ }));
   await screen.findByText("当前来源暂无可用素材");
   expect(

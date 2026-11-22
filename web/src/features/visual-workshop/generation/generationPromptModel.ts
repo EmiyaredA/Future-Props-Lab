@@ -15,11 +15,29 @@ export type PromptManagedFile = ManagedFile & {
   prompt_reference_name?: string;
   prompt_legacy_names?: string[];
 };
+export type PromptMentionOption = {
+  key: string;
+  label: string;
+  kind:
+    | "image"
+    | "video"
+    | "audio"
+    | "document"
+    | "subject"
+    | "speaker"
+    | "dialogue";
+  source: string;
+  file?: PromptManagedFile;
+  description?: string;
+};
 export type PromptAssetPart = {
   key: string;
   type: "asset";
-  file: PromptManagedFile;
-};
+  sourceText?: string;
+} & (
+  | { file: PromptManagedFile; tag?: never }
+  | { file?: never; tag: PromptMentionOption }
+);
 export type PromptPart = PromptTextPart | PromptAssetPart;
 export type PromptCaret = { key: string; offset: number };
 export type PromptMention = PromptCaret & { start: number; query: string };
@@ -34,8 +52,41 @@ export function promptTextPart(text = ""): PromptTextPart {
   return { key: promptKey("text"), type: "text", text };
 }
 
-export function promptAssetPart(file: PromptManagedFile): PromptAssetPart {
-  return { key: promptKey("asset"), type: "asset", file };
+export function promptAssetPart(
+  file: PromptManagedFile,
+  sourceText?: string,
+): PromptAssetPart {
+  return { key: promptKey("asset"), type: "asset", file, sourceText };
+}
+
+export function promptTagPart(tag: PromptMentionOption): PromptAssetPart {
+  return {
+    key: promptKey("asset"),
+    type: "asset",
+    tag,
+    sourceText: tag.source,
+  };
+}
+
+export function promptTokenSource(part: PromptAssetPart) {
+  return (
+    part.sourceText ??
+    (part.file ? `[${promptAssetReferenceName(part.file)}]` : part.tag.source)
+  );
+}
+
+export function promptTokenLabel(part: PromptAssetPart) {
+  return (
+    part.tag?.label ??
+    (part.sourceText
+      ?.match(/^<(Picture|Video|Audio) (\d+)>$/)
+      ?.slice(1)
+      .join(" ")
+      .replace("Picture ", "图")
+      .replace("Video ", "视频")
+      .replace("Audio ", "音频") ||
+      promptAssetReferenceName(part.file!))
+  );
 }
 
 export function promptAssetExtension(file: ManagedFile) {
@@ -100,7 +151,46 @@ export function promptAssetNameMap(assets: ManagedFile[]) {
   return filesByName;
 }
 
-export function promptPartsFromValue(value: string, assets: ManagedFile[]) {
+export function promptPartsFromValue(
+  value: string,
+  assets: ManagedFile[],
+  mentions?: PromptMentionOption[],
+) {
+  if (mentions?.length) {
+    const options = new Map(
+      mentions
+        .filter((item) => item.kind !== "dialogue")
+        .map((item) => [item.source, item]),
+    );
+    const ranges = [...value.matchAll(/<d>[\s\S]*?(?:<\/d>|$)/g)].map(
+      (match) => [match.index, match.index + match[0].length],
+    );
+    const result: PromptPart[] = [];
+    let cursor = 0;
+    for (const match of value.matchAll(
+      /<(?:Picture|Video|Audio|Subject) [1-9]\d*>|\(S[1-9]\d*(?:,\s*S[1-9]\d*)*\)/g,
+    )) {
+      const option = options.get(match[0]);
+      if (
+        !option ||
+        ranges.some(([start, end]) => match.index >= start && match.index < end)
+      )
+        continue;
+      result.push(
+        ...promptPartsFromValue(value.slice(cursor, match.index), assets),
+      );
+      result.push(
+        option.file
+          ? promptAssetPart(option.file, match[0])
+          : promptTagPart(option),
+      );
+      cursor = match.index + match[0].length;
+    }
+    if (cursor) {
+      result.push(...promptPartsFromValue(value.slice(cursor), assets));
+      return normalizePromptParts(result);
+    }
+  }
   if (!value.includes("[") && !value.includes("@"))
     return [promptTextPart(value)];
   const filesByName = promptAssetNameMap(assets);
@@ -140,10 +230,13 @@ export function promptPartsFromValue(value: string, assets: ManagedFile[]) {
 export function resolvePromptReferences(
   parts: PromptPart[],
   assets: ManagedFile[],
+  mentions?: PromptMentionOption[],
 ) {
   return normalizePromptParts(
     parts.flatMap((part) =>
-      part.type === "text" ? promptPartsFromValue(part.text, assets) : [part],
+      part.type === "text"
+        ? promptPartsFromValue(part.text, assets, mentions)
+        : [part],
     ),
   );
 }
@@ -153,10 +246,7 @@ export function normalizePromptParts(parts: PromptPart[]): PromptPart[] {
 }
 
 export function promptProjection(parts: PromptPart[]) {
-  return mentionProjection(
-    parts,
-    (part) => `[${promptAssetReferenceName(part.file)}]`,
-  );
+  return mentionProjection(parts, promptTokenSource);
 }
 
 export function promptPartsSignature(parts: PromptPart[]) {
@@ -164,16 +254,18 @@ export function promptPartsSignature(parts: PromptPart[]) {
     parts.map((part) =>
       part.type === "text"
         ? ["text", part.text]
-        : ["asset", part.file.id, promptAssetReferenceName(part.file)],
+        : [
+            "asset",
+            part.file?.id ?? part.tag?.key,
+            promptTokenLabel(part),
+            promptTokenSource(part),
+          ],
     ),
   );
 }
 
 export function promptPartLength(part: PromptPart) {
-  return mentionPartLength(
-    part,
-    (token) => `[${promptAssetReferenceName(token.file)}]`,
-  );
+  return mentionPartLength(part, promptTokenSource);
 }
 
 export function promptSelectedText(
@@ -187,7 +279,7 @@ export function promptSelectedText(
     const partEnd = offset + length;
     if (partEnd > selection.start && offset < selection.end) {
       if (part.type === "asset") {
-        chunks.push(`[${promptAssetReferenceName(part.file)}]`);
+        chunks.push(promptTokenSource(part));
       } else {
         chunks.push(
           part.text.slice(
@@ -298,30 +390,37 @@ export function renderPromptParts(root: HTMLDivElement, parts: PromptPart[]) {
     const asset = document.createElement("span");
     asset.className = "generation-prompt-asset";
     asset.contentEditable = "false";
-    asset.dataset.assetId = part.file.id;
+    if (part.file) asset.dataset.assetId = part.file.id;
+    asset.dataset.promptToken = "";
+    if (part.sourceText) asset.dataset.promptSource = part.sourceText;
+    asset.dataset.referenceKind = part.tag?.kind ?? part.file?.media_kind;
     asset.dataset.partKey = part.key;
-    asset.title = promptAssetReferenceName(part.file);
+    asset.title =
+      part.file?.display_name ??
+      part.tag?.description ??
+      promptTokenLabel(part);
 
     const preview = document.createElement("span");
     preview.className = "generation-prompt-asset-preview";
     preview.setAttribute("aria-hidden", "true");
     preview.dataset.kindLabel =
-      part.file.media_kind === "image"
+      part.file?.media_kind === "image"
         ? "图"
-        : part.file.media_kind === "video"
+        : part.file?.media_kind === "video"
           ? "视"
-          : part.file.media_kind === "audio"
+          : part.file?.media_kind === "audio"
             ? "音"
-            : "文";
+            : part.tag?.kind === "speaker"
+              ? "声"
+              : part.tag?.kind === "subject"
+                ? "人"
+                : "文";
     const name = document.createElement("span");
-    name.textContent = promptAssetReferenceName(part.file);
+    name.textContent = promptTokenLabel(part);
     const remove = document.createElement("button");
     remove.type = "button";
     remove.dataset.removePromptAsset = part.key;
-    remove.setAttribute(
-      "aria-label",
-      `移除引用 ${promptAssetReferenceName(part.file)}`,
-    );
+    remove.setAttribute("aria-label", `移除引用 ${promptTokenLabel(part)}`);
     asset.append(preview, name, remove);
     fragment.append(asset);
   }

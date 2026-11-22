@@ -139,6 +139,7 @@ from db.migrations.versions import (
     r0135_visual_canvas_groups_and_cards,
     r0136_visual_storyboards,
     r0137_visual_creation_links,
+    r0138_visual_card_voice,
 )
 
 
@@ -650,5 +651,7 @@ MIGRATIONS += (Migration(r0136_visual_storyboards.MIGRATION_ID, r0136_visual_sto
 MIGRATIONS += (
     Migration(r0137_visual_creation_links.MIGRATION_ID, r0137_visual_creation_links.SQL),
 )
+
+MIGRATIONS += (Migration(r0138_visual_card_voice.MIGRATION_ID, r0138_visual_card_voice.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

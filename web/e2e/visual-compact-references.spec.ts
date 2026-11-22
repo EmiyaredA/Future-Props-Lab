@@ -200,6 +200,31 @@ test("统一参考区保留固定版本、追踪绑定、排序及刷新，并�
     for (const width of [390, 320]) {
       await page.setViewportSize({ width, height: 844 });
       await expect(strip).toBeVisible();
+      const overflow = await page.evaluate(() =>
+        Array.from(document.querySelectorAll(".board-main *")).flatMap(
+          (element) => {
+            const box = element.getBoundingClientRect();
+            return box.right > innerWidth + 1 && box.width > 0
+              ? [
+                  {
+                    tag: element.tagName,
+                    className: element.className,
+                    right: box.right,
+                    width: box.width,
+                  },
+                ]
+              : [];
+          },
+        ),
+      );
+      if (
+        (await page.evaluate(() => document.documentElement.scrollWidth)) >
+        width
+      )
+        await info.attach("overflow-diagnostics", {
+          body: JSON.stringify(overflow),
+          contentType: "application/json",
+        });
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth),
       ).toBeLessThanOrEqual(width);

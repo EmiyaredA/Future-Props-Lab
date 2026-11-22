@@ -108,7 +108,7 @@ async def test_script_card_and_model_are_scoped_and_round_trip():
             "title": "旧信封",
             "kind": "prop",
             "source": source,
-            "facts": "纸质信封",
+            "design": "纸质信封",
             "adopted_asset_id": image_id,
             "model_asset_key": model_path,
         }

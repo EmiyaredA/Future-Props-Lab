@@ -1,0 +1,316 @@
+.script-previs-draft {
+  --previs-panel-gap: 12px;
+}
+.script-previs-draft > .creative-toolbar {
+  flex: none;
+  gap: 8px;
+  padding: 10px 12px;
+}
+.script-previs-heading,
+.script-previs-section-heading,
+.script-previs-field-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
+.script-previs-heading {
+  justify-content: flex-start;
+}
+.script-previs-heading > svg {
+  color: var(--accent);
+}
+.script-previs-draft
+  :is(.creative-quiet, .creative-primary, .custom-select-trigger) {
+  min-height: 32px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+.script-previs-draft > header > button {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.script-previs-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  align-content: start;
+}
+.script-previs-columns > div {
+  min-width: 0;
+  padding: var(--previs-panel-gap);
+}
+.script-previs-inputs {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+.script-previs-draft .visual-project-view-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--surface-soft);
+}
+.script-previs-draft .visual-project-view-toggle > button {
+  flex: 1;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+.script-previs-draft .visual-project-view-toggle > button.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.script-previs-text {
+  display: grid;
+  gap: 6px;
+}
+.script-previs-field-heading {
+  font-size: 12px;
+  font-weight: 600;
+}
+.script-previs-field-heading small {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 400;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.script-previs-draft .script-previs-text textarea {
+  display: block;
+  width: 100%;
+  min-height: 144px;
+  height: 144px;
+  max-height: 340px;
+  margin: 0;
+  padding: 9px 10px;
+  resize: vertical;
+  background: var(--surface-soft);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.script-previs-analysis {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 6px;
+}
+.script-previs-analysis > .custom-select {
+  min-width: 0;
+}
+.script-previs-analysis > button {
+  gap: 4px;
+  padding-inline: 6px;
+  white-space: nowrap;
+}
+.script-previs-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-inline-start: 1px solid var(--border);
+}
+.script-previs-section-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.script-previs-status {
+  flex: none;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 10px;
+}
+.script-previs-status.is-ready {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.script-previs-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.script-previs-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+.script-previs-metrics > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--surface-soft);
+}
+.script-previs-metrics dt {
+  color: var(--muted);
+  font-size: 11px;
+}
+.script-previs-metrics dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.script-previs-summary {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.script-previs-summary p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.script-previs-location {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.script-previs-stage-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.script-previs-set {
+  display: flex;
+  flex: 1 1 100%;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+.script-previs-set > span {
+  flex: none;
+}
+.script-previs-set .custom-select {
+  flex: 1;
+  min-width: 0;
+}
+.script-previs-entities {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  font-size: 12px;
+}
+.script-previs-entities > div {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+}
+.script-previs-entities dt {
+  color: var(--muted);
+}
+.script-previs-entities dd {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  min-width: 0;
+  color: var(--muted);
+}
+.script-previs-entities dd > span {
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--surface-soft);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.script-previs-detail {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--surface-soft);
+  font-size: 12px;
+}
+.script-previs-detail summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+.script-previs-detail summary > span {
+  margin-left: 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.script-previs-detail :is(ol, ul) {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding-inline-start: 18px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.script-previs-detail .script-previs-dialogue {
+  list-style: none;
+  padding: 0;
+}
+.script-previs-dialogue li {
+  display: grid;
+  grid-template-columns: minmax(36px, auto) minmax(0, 1fr);
+  align-items: baseline;
+  gap: 8px;
+}
+.script-previs-dialogue strong {
+  font-weight: 500;
+}
+.script-previs-notice {
+  color: var(--muted);
+}
+.script-previs-draft footer > label {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+  width: 100%;
+  font-size: 12px;
+}
+.script-previs-draft footer input {
+  width: 100%;
+  height: 32px;
+  font-size: 12px;
+}
+.script-previs-draft footer > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+}
+.script-previs-draft.is-docked .script-previs-columns {
+  grid-template-columns: minmax(0, 1fr);
+}
+.script-previs-draft.is-docked .script-previs-preview {
+  border-inline-start: 0;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 940px) {
+  .script-previs-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .script-previs-preview {
+    border-inline-start: 0;
+    border-top: 1px solid var(--border);
+  }
+}

@@ -29,6 +29,19 @@ async function createProject(page: Page) {
           position: { x: 200, y: 180 },
           generation_draft: {
             prompt: "保持人物外观，固定近景，人物A微微前倾。",
+            active_prompt_version_id: "version-6",
+            prompt_versions: [
+              "v1",
+              "用户确认分配·报社无墨镜",
+              "二维融入实拍·表情继承",
+              "用户指定得意脸红莉栖·C脸",
+              "得意C脸·仅视觉输入·后期原声",
+              "新增墨镜版·全身二维动画",
+            ].map((name, index) => ({
+              id: `version-${index + 1}`,
+              name,
+              prompt: "保持人物外观，固定近景，人物A微微前倾。",
+            })),
           },
         },
       ],
@@ -113,7 +126,7 @@ test("三个项目工作区默认固定侧栏，舒展布局保留分镜上下�
   expect(
     (await page.locator(".board-material-pane").boundingBox())!.width,
   ).toBe(280);
-  expect((await page.locator(".board-search").boundingBox())!.height).toBe(40);
+  expect((await page.locator(".board-search").boundingBox())!.height).toBe(32);
   expect(
     (await page.locator(".board-file-actions .board-primary").boundingBox())!
       .height,
@@ -136,12 +149,133 @@ test("三个项目工作区默认固定侧栏，舒展布局保留分镜上下�
     page.getByRole("button", { name: "看板", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".storyboard-production-editor")).toBeVisible();
+  const videoEditor = page.locator(
+    ".workbench-generation .video-node-composer",
+  );
+  await expect(
+    videoEditor.getByRole("textbox", { name: "视频提示词", exact: true }),
+  ).toHaveText("保持人物外观，固定近景，人物A微微前倾。");
+  await page.getByRole("combobox", { name: "提示词版本", exact: true }).click();
+  const versions = page.getByRole("listbox", {
+    name: "提示词版本",
+    exact: true,
+  });
+  const rows = await versions.getByRole("option").evaluateAll((items) =>
+    items.map((item) => {
+      const b = item.getBoundingClientRect();
+      return {
+        top: b.top,
+        bottom: b.bottom,
+        border: getComputedStyle(item).borderTopWidth,
+      };
+    }),
+  );
+  for (let i = 1; i < rows.length; i++)
+    expect(rows[i].top - rows[i - 1].bottom).toBeGreaterThanOrEqual(6);
+  expect(rows.every((row) => row.border === "0px")).toBe(true);
+  await page.screenshot({
+    path: info.outputPath("prompt-version-spacing.png"),
+  });
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("region", { name: "输入引用" })).toHaveCount(0);
+  await expect(page.getByRole("group", { name: "制作类型" })).toHaveCount(0);
+  const output = page.getByRole("region", { name: "节点输出历史" });
+  const detailTabs = output.getByRole("tablist", { name: "镜头详情" });
+  await expect(detailTabs).toBeVisible();
+  const previewBox = (await output
+    .locator(".board-large-preview")
+    .boundingBox())!;
+  const tabsBox = (await detailTabs.boundingBox())!;
+  const versionsBox = (await output.locator("#shot-versions").boundingBox())!;
+  expect(tabsBox.y - previewBox.y - previewBox.height).toBeLessThanOrEqual(10);
+  expect(versionsBox.y - tabsBox.y - tabsBox.height).toBeLessThanOrEqual(10);
+  await detailTabs.getByRole("tab", { name: "镜头属性" }).click();
+  await expect(page.getByLabel("镜头标题", { exact: true })).toBeVisible();
+  expect(
+    (await page.getByLabel("镜头标题", { exact: true }).boundingBox())!.height,
+  ).toBe(32);
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("storyboard-properties.png"),
+  });
+  await page.getByRole("button", { name: "切换深色" }).click();
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("video-workbench-dark.png"),
+  });
+  await page.setViewportSize({ width: 1584, height: 994 });
+  await page.getByRole("tab", { name: "文件", exact: true }).click();
+  await expect(page.getByRole("region", { name: "输入引用" })).toHaveCount(0);
+  await page.getByRole("textbox", { name: "视频提示词", exact: true }).fill("");
+  await page.locator(".board-node-type").click();
+  await expect(
+    page.getByRole("status", { name: "已保存", exact: true }),
+  ).toBeVisible();
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("video-workbench-selected-design.png"),
+  });
+  await videoEditor.screenshot({
+    animations: "disabled",
+    path: info.outputPath("video-workbench-selected-panel.png"),
+  });
+  await page.getByRole("tab", { name: "分镜", exact: true }).click();
+  await page.setViewportSize({ width: 390, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  const videoFooter = (await videoEditor
+    .locator(".video-composer-footer")
+    .boundingBox())!;
+  expect(videoFooter.x + videoFooter.width).toBeLessThanOrEqual(390);
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("video-workbench-mobile.png"),
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("storyboard-properties-dark.png"),
+  });
+  await page.getByRole("button", { name: "切换浅色" }).click();
+  await detailTabs.getByRole("tab", { name: "输出版本" }).click();
   await page.screenshot({
     animations: "disabled",
     path: info.outputPath("workbench-board.png"),
   });
   await page.getByRole("tab", { name: "剧本", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "剧本文本" })).toBeVisible();
+  await page.getByRole("button", { name: "关联分镜 1" }).click();
+  const linkedShots = page.getByRole("complementary", { name: "剧本关联镜头" });
+  await expect(linkedShots).toBeVisible();
+  await expect(
+    linkedShots.getByRole("button", { name: "S02 · 人物A近景" }),
+  ).toBeVisible();
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("script-linked-shots.png"),
+  });
+  await page.getByRole("button", { name: "切换深色" }).click();
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("script-linked-shots-dark.png"),
+  });
+  await page.setViewportSize({ width: 390, height: 900 });
+  const linkedBounds = (await linkedShots.boundingBox())!;
+  expect(linkedBounds.x).toBeGreaterThanOrEqual(0);
+  expect(linkedBounds.x + linkedBounds.width).toBeLessThanOrEqual(390);
+  await expect(
+    linkedShots.getByRole("button", { name: "关闭关联分镜" }),
+  ).toBeVisible();
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("script-linked-shots-mobile.png"),
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.getByRole("button", { name: "切换浅色" }).click();
+  await linkedShots.getByRole("button", { name: "关闭关联分镜" }).click();
   await expect(
     page.getByRole("button", { name: "画布", exact: true }),
   ).toHaveCount(0);

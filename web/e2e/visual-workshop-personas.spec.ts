@@ -132,7 +132,7 @@ test("创作者从其他项目复制参考图后可直接提交生成任务", as
   await page.goto("/apps/visual-workshop/projects/persona-project/canvas");
   await page.getByText("图片1", { exact: true }).click();
   const sourceTrigger = page.getByRole("button", {
-    name: "上传参考图片（可选）",
+    name: "参考图片（可选）更多来源",
   });
   await expect(sourceTrigger).toBeVisible();
   await sourceTrigger.click();

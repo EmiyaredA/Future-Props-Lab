@@ -29,8 +29,12 @@ import {
   type PromptPart,
   type PromptSelection,
   type PromptTextPart,
+  type PromptMentionOption,
+  promptTagPart,
 } from "@features/visual-workshop/generation/generationPromptModel";
 import { GenerationMediaPreview } from "@features/visual-workshop/generation/GenerationMediaPreview";
+import { createPortal } from "react-dom";
+import { useSelectPopover } from "@shared/ui/useSelectPopover";
 
 export function GenerationPromptEditor({
   value,
@@ -40,6 +44,8 @@ export function GenerationPromptEditor({
   onChange,
   onBlur,
   canvasHistoryShortcuts = false,
+  normalizeReferencesOnLoad = true,
+  mentions,
   maxLength = 6000,
 }: {
   value: string;
@@ -49,6 +55,8 @@ export function GenerationPromptEditor({
   onChange: (value: string) => void;
   onBlur?: () => void;
   canvasHistoryShortcuts?: boolean;
+  normalizeReferencesOnLoad?: boolean;
+  mentions?: PromptMentionOption[];
   maxLength?: number;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -57,21 +65,43 @@ export function GenerationPromptEditor({
   const pendingDomSync = useRef(true);
   const composing = useRef(false);
   const [parts, setParts] = useState<PromptPart[]>(() => [
-    ...promptPartsFromValue(value, assets),
+    ...promptPartsFromValue(value, assets, mentions),
   ]);
   const [mention, setMention] = useState<PromptMention>();
   const [mentionTop, setMentionTop] = useState(32);
   const [activeOption, setActiveOption] = useState(0);
   const query = mention?.query.trim().toLocaleLowerCase("zh-CN") ?? "";
-  const options = assets
-    .filter((file) =>
+  const mentionAnchor = useRef<HTMLButtonElement>(null);
+  const mentionMenu = useRef<HTMLDivElement>(null);
+  useSelectPopover(
+    Boolean(mention),
+    mentionAnchor,
+    mentionMenu,
+    300,
+    300,
+    "start",
+  );
+  const [previewTargets, setPreviewTargets] = useState<
+    { key: string; target: Element; file: ManagedFile }[]
+  >([]);
+  const options = (
+    mentions ??
+    assets.map((file): PromptMentionOption => ({
+      key: file.id,
+      file,
+      label: promptAssetReferenceName(file),
+      source: `[${promptAssetReferenceName(file)}]`,
+      kind: file.media_kind === "font" ? "document" : file.media_kind,
+    }))
+  )
+    .filter((option) =>
       query
-        ? `${file.display_name} ${file.original_filename} ${promptAssetReferenceName(file)}`
+        ? `${option.label} ${option.description ?? ""} ${option.source} ${option.file?.display_name ?? ""} ${option.file?.original_filename ?? ""}`
             .toLocaleLowerCase("zh-CN")
             .includes(query)
         : true,
     )
-    .slice(0, 8);
+    .slice(0, 40);
 
   const restoreCaret = (caret: PromptCaret) => {
     const root = editorRef.current;
@@ -99,6 +129,18 @@ export function GenerationPromptEditor({
     if (!root || !pendingDomSync.current) return;
     pendingDomSync.current = false;
     renderPromptParts(root, parts);
+    setPreviewTargets(
+      parts.flatMap((part) => {
+        if (part.type !== "asset") return [];
+        const file = part.file ?? part.tag.file;
+        const target = [
+          ...root.querySelectorAll<HTMLElement>("[data-prompt-token]"),
+        ]
+          .find((element) => element.dataset.partKey === part.key)
+          ?.querySelector(".generation-prompt-asset-preview");
+        return file && target ? [{ key: part.key, target, file }] : [];
+      }),
+    );
     if (!pendingCaret.current) return;
     const caret = pendingCaret.current;
     pendingCaret.current = undefined;
@@ -106,14 +148,15 @@ export function GenerationPromptEditor({
   }, [parts]);
 
   useEffect(() => {
-    const nextParts = promptPartsFromValue(value, assets);
+    const nextParts = promptPartsFromValue(value, assets, mentions);
     const projected = promptProjection(parts);
     const nextProjected = promptProjection(nextParts);
     if (
       projected === nextProjected &&
       promptPartsSignature(parts) === promptPartsSignature(nextParts)
     ) {
-      if (value !== nextProjected) onChange(nextProjected);
+      if (normalizeReferencesOnLoad && value !== nextProjected)
+        onChange(nextProjected);
       return;
     }
     if (
@@ -124,8 +167,17 @@ export function GenerationPromptEditor({
       return;
     pendingDomSync.current = true;
     setParts(nextParts);
-    if (value !== nextProjected) onChange(nextProjected);
-  }, [assets, canvasHistoryShortcuts, onChange, parts, value]);
+    if (normalizeReferencesOnLoad && value !== nextProjected)
+      onChange(nextProjected);
+  }, [
+    assets,
+    mentions,
+    canvasHistoryShortcuts,
+    normalizeReferencesOnLoad,
+    onChange,
+    parts,
+    value,
+  ]);
 
   useEffect(() => setActiveOption(0), [query]);
 
@@ -135,7 +187,7 @@ export function GenerationPromptEditor({
     options: { parseReferences?: boolean } = {},
   ) => {
     const normalized = options.parseReferences
-      ? resolvePromptReferences(next, assets)
+      ? resolvePromptReferences(next, assets, mentions)
       : normalizePromptParts(next);
     const projected = promptProjection(normalized);
     if (projected.length > maxLength) {
@@ -207,7 +259,7 @@ export function GenerationPromptEditor({
     const root = editorRef.current;
     if (!(target instanceof Element) || !root) return false;
     if (target.closest("[data-remove-prompt-asset]")) return false;
-    const asset = target.closest<HTMLElement>("[data-asset-id]");
+    const asset = target.closest<HTMLElement>("[data-prompt-token]");
     if (!asset || !root.contains(asset)) return false;
     const selection = window.getSelection();
     if (!selection?.isCollapsed) return true;
@@ -313,22 +365,37 @@ export function GenerationPromptEditor({
     );
   };
 
-  const selectAsset = (file: ManagedFile) => {
+  const selectAsset = (option: PromptMentionOption) => {
     if (!mention) return;
     const index = parts.findIndex((part) => part.key === mention.key);
     const current = parts[index];
     if (current?.type !== "text") return;
     const before = { ...current, text: current.text.slice(0, mention.start) };
     const after = promptTextPart(current.text.slice(mention.offset));
+    const inserted =
+      option.kind === "dialogue"
+        ? promptTextPart(option.source)
+        : option.kind === "subject" || option.kind === "speaker"
+          ? promptTagPart(option)
+          : promptAssetPart(option.file!, mentions ? option.source : undefined);
+    const nextParts = [
+      ...parts.slice(0, index),
+      before,
+      inserted,
+      after,
+      ...parts.slice(index + 1),
+    ];
+    const normalized = normalizePromptParts(nextParts);
     commit(
-      [
-        ...parts.slice(0, index),
-        before,
-        promptAssetPart(file),
-        after,
-        ...parts.slice(index + 1),
-      ],
-      { key: after.key, offset: 0 },
+      normalized,
+      option.kind === "dialogue"
+        ? promptCaretAtOffset(
+            normalized,
+            promptProjection(parts.slice(0, index)).length +
+              before.text.length +
+              option.source.indexOf("</d>"),
+          )
+        : { key: after.key, offset: 0 },
     );
     setMention(undefined);
   };
@@ -339,11 +406,24 @@ export function GenerationPromptEditor({
     const known = new Map(
       [
         ...assets,
-        ...parts.flatMap((part) => (part.type === "asset" ? [part.file] : [])),
+        ...parts.flatMap((part) =>
+          part.type === "asset" && part.file ? [part.file] : [],
+        ),
       ].map((file) => [file.id, file]),
     );
     const next: PromptPart[] = [];
     for (const node of [...root.childNodes]) {
+      if (
+        node instanceof HTMLElement &&
+        node.dataset.promptToken !== undefined &&
+        !node.dataset.assetId
+      ) {
+        const part = parts.find(
+          (item) => item.type === "asset" && item.key === node.dataset.partKey,
+        );
+        if (part) next.push(part);
+        continue;
+      }
       if (node instanceof HTMLElement && node.dataset.assetId) {
         const file = known.get(node.dataset.assetId);
         if (file)
@@ -351,6 +431,7 @@ export function GenerationPromptEditor({
             key: node.dataset.partKey || promptKey("asset"),
             type: "asset",
             file,
+            sourceText: node.dataset.promptSource,
           });
         continue;
       }
@@ -549,50 +630,90 @@ export function GenerationPromptEditor({
           if (key) removeAsset(key);
         }}
       />
+      {previewTargets.map(({ key, target, file }) =>
+        createPortal(
+          <GenerationMediaPreview file={file} thumbnailOnly />,
+          target,
+          key,
+        ),
+      )}
       <small>
         {promptProjection(parts).length}/{maxLength}
       </small>
       {mention ? (
-        <div
-          className="generation-prompt-mention-menu"
-          role="listbox"
-          aria-label="引用已选素材"
-          style={{ top: mentionTop }}
-        >
-          {options.length ? (
-            options.map((file, index) => (
-              <button
-                type="button"
-                role="option"
-                aria-selected={index === activeOption}
-                key={file.id}
-                onMouseDown={(event) => {
-                  event.preventDefault();
-                  selectAsset(file);
-                }}
-                onMouseEnter={() => setActiveOption(index)}
-              >
-                <span className="generation-prompt-option-preview">
-                  <GenerationMediaPreview file={file} />
-                </span>
-                <span>
-                  <strong>{promptAssetReferenceName(file)}</strong>
-                  <small>
-                    {file.media_kind === "image"
-                      ? "图片"
-                      : file.media_kind === "video"
-                        ? "视频"
-                        : file.media_kind === "audio"
-                          ? "音频"
-                          : "文档"}
-                  </small>
-                </span>
-              </button>
-            ))
-          ) : (
-            <span>{assets.length ? "没有匹配素材" : "请先在上方添加素材"}</span>
-          )}
-        </div>
+        <>
+          <button
+            ref={mentionAnchor}
+            type="button"
+            className="prompt-mention-anchor"
+            aria-hidden
+            tabIndex={-1}
+            style={{ top: mentionTop }}
+          />
+          <div
+            ref={mentionMenu}
+            popover="manual"
+            className="generation-prompt-mention-menu"
+            role="listbox"
+            aria-label="引用已选素材"
+          >
+            {options.length ? (
+              options.map((option, index) => (
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={index === activeOption}
+                  key={option.key}
+                  aria-label={option.label}
+                  data-reference-kind={option.kind}
+                  onMouseDown={(event) => {
+                    event.preventDefault();
+                    selectAsset(option);
+                  }}
+                  onMouseEnter={() => setActiveOption(index)}
+                >
+                  <span className="generation-prompt-option-preview">
+                    {option.file ? (
+                      <GenerationMediaPreview
+                        file={option.file}
+                        thumbnailOnly
+                      />
+                    ) : (
+                      <span>
+                        {option.kind === "speaker"
+                          ? "S"
+                          : option.kind === "dialogue"
+                            ? "对白"
+                            : "主体"}
+                      </span>
+                    )}
+                  </span>
+                  <span>
+                    <strong>{option.label}</strong>
+                    <small>
+                      {option.description ??
+                        (option.kind === "image"
+                          ? "图片"
+                          : option.kind === "video"
+                            ? "视频"
+                            : option.kind === "audio"
+                              ? "音频"
+                              : option.kind === "subject"
+                                ? "主体"
+                                : option.kind === "speaker"
+                                  ? "说话人"
+                                  : "文档")}
+                    </small>
+                  </span>
+                </button>
+              ))
+            ) : (
+              <span>
+                {assets.length ? "没有匹配素材" : "请先在上方添加素材"}
+              </span>
+            )}
+          </div>
+        </>
       ) : null}
     </div>
   );

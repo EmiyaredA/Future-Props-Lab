@@ -27,7 +27,7 @@ export function CardAssetPicker({
   onChoose,
   onClose,
 }: {
-  kind: "image" | "model";
+  kind: "image" | "model" | "audio";
   project?: string;
   projects: PickerItem[];
   value?: string | null;
@@ -41,8 +41,8 @@ export function CardAssetPicker({
     queryFn: () => getFolders(projectId),
   });
   const listedFolders = folders.data?.items;
-  const includeReferences = kind === "image" && !!projectId;
-  const mediaKind = kind === "image" ? "image" : "document";
+  const includeReferences = kind !== "model" && !!projectId;
+  const mediaKind = kind === "model" ? "document" : kind;
   const files = useQueries({
     queries: [
       undefined,
@@ -122,8 +122,20 @@ export function CardAssetPicker({
   return (
     <SearchablePickerDialog
       key={source}
-      title={kind === "image" ? "选择采用图" : "关联 3D 模型"}
-      searchLabel={kind === "image" ? "搜索图片" : "搜索 3D 模型"}
+      title={
+        kind === "image"
+          ? "选择采用图"
+          : kind === "audio"
+            ? "选择角色语音"
+            : "关联 3D 模型"
+      }
+      searchLabel={
+        kind === "image"
+          ? "搜索图片"
+          : kind === "audio"
+            ? "搜索音频"
+            : "搜索 3D 模型"
+      }
       value={value}
       items={[...assets.values()]}
       loading={folders.isPending || files.pending || canvas.isLoading}
@@ -132,7 +144,13 @@ export function CardAssetPicker({
           ? apiErrorMessage(error, "部分素材读取失败，请关闭后重试。")
           : undefined
       }
-      clearLabel={kind === "image" ? "移除采用图" : "解除关联"}
+      clearLabel={
+        kind === "image"
+          ? "移除采用图"
+          : kind === "audio"
+            ? "解除语音绑定"
+            : "解除关联"
+      }
       toolbar={
         projects.length > 0 && (
           <SearchablePickerField

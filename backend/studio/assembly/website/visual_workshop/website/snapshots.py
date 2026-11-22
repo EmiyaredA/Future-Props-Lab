@@ -309,8 +309,8 @@ class VisualWorkshopProjectSnapshots:
                         message="镜头设计已导入；账号设定库中的卡片关联需要在目标项目重新选择。",
                     )
                 )
-            if any(asset_kinds[asset] != "image" for asset in creative_assets):
-                raise ProjectSnapshotError("设定卡引用的素材不是图片")
+            if any(asset_kinds[asset] != kind for asset, kind in creative_assets.items()):
+                raise ProjectSnapshotError("设定卡引用的素材类型不匹配")
             asset_mimes = {asset_ids[item["id"]]: item["mime_type"] for item in assets}
             try:
                 models |= {

@@ -29,6 +29,7 @@ import {
   FolderOpen,
   Image,
   Music,
+  MoreHorizontal,
   Upload,
   Video,
   X,
@@ -54,6 +55,7 @@ import {
   orderedReferenceIds,
 } from "@features/visual-workshop/generation/referenceOrder";
 import { ReferenceDropNotice } from "./ReferenceDropNotice";
+import "./media-upload-tile.css";
 import {
   useProjectReferenceDrop,
   type ReferenceDropNotice as ReferenceDropNoticeState,
@@ -201,6 +203,7 @@ export function ProjectMediaPicker({
   renderItemTools,
   referenceCardIds,
   label,
+  tileLabel,
   kind = "image",
   value,
   linkedValue = [],
@@ -220,12 +223,14 @@ export function ProjectMediaPicker({
   projectId: string;
   compactStrip?: boolean;
   addRequest?: { id: number; action: "upload" | "project" | "cross" };
-  referenceCardIds?: Record<string, string>;
+  referenceCardIds?: Record<string, string[]>;
   renderItemTools?: (
     file: ManagedFile,
     order: { index: number; total: number; move: (to: number) => void },
   ) => ReactNode;
   label: string;
+  /** Compact caption below tiles; selection and validation remain unchanged. */
+  tileLabel?: string;
   kind?: Extract<MediaKind, "image" | "video" | "audio">;
   value: string[];
   linkedValue?: string[];
@@ -472,35 +477,57 @@ export function ProjectMediaPicker({
     else setDialogMode(addRequest.action);
   }, [addRequest]);
 
+  const uploadDisabled =
+    disabled || upload.isPending || (remaining === 0 && !canReplaceManual);
   const uploadButton = (
-    <button
-      ref={sourceTrigger}
-      type="button"
-      className="generation-media-upload"
-      aria-label={`上传${label}`}
-      title={`上传${label}`}
-      aria-haspopup="menu"
-      aria-expanded={sourceMenuOpen}
-      disabled={
-        disabled || upload.isPending || (remaining === 0 && !canReplaceManual)
-      }
-      onClick={() => setSourceMenuOpen((current) => !current)}
-    >
-      {upload.isPending ? (
-        <LoadingScene />
-      ) : minimal ? (
-        <UploadIcon aria-hidden />
-      ) : (
-        <Upload aria-hidden />
-      )}
-      <span className={minimal ? "sr-only" : undefined}>
+    <span className="generation-media-add">
+      <button
+        type="button"
+        className="generation-media-upload"
+        aria-label={`上传${label}`}
+        title={`上传${label}`}
+        disabled={uploadDisabled}
+        onClick={() => uploadInput.current?.click()}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          if (!uploadDisabled) setSourceMenuOpen(true);
+        }}
+      >
         {upload.isPending ? (
-          <LoadingState variant="inline" label="上传中" />
+          <LoadingScene />
+        ) : minimal ? (
+          <UploadIcon aria-hidden />
         ) : (
-          "上传"
+          <Upload aria-hidden />
         )}
-      </span>
-    </button>
+        <span className={minimal ? "sr-only" : undefined}>
+          {upload.isPending ? (
+            <LoadingState variant="inline" label="上传中" />
+          ) : (
+            "上传"
+          )}
+        </span>
+      </button>
+      <button
+        ref={sourceTrigger}
+        type="button"
+        className="generation-media-sources"
+        aria-label={`${label}更多来源`}
+        title="从项目、文件库或设定卡选择"
+        aria-haspopup="menu"
+        aria-expanded={sourceMenuOpen}
+        disabled={uploadDisabled}
+        onClick={() => setSourceMenuOpen((current) => !current)}
+      >
+        <MoreHorizontal size={14} aria-hidden />
+      </button>
+      {compactStrip || tileLabel ? (
+        <span className="generation-media-upload-label" aria-hidden>
+          {tileLabel ??
+            (kind === "image" ? "图片" : kind === "video" ? "视频" : "音频")}
+        </span>
+      ) : null}
+    </span>
   );
   const sourceMenu = sourceMenuOpen
     ? createPortal(
@@ -603,14 +630,17 @@ export function ProjectMediaPicker({
         />
       )}
 
-      <legend className={minimal && !showLabel ? "sr-only" : undefined}>
+      <legend
+        className={minimal && (!showLabel || tileLabel) ? "sr-only" : undefined}
+      >
         {label}
       </legend>
       <input
         ref={uploadInput}
         hidden
         type="file"
-        disabled={disabled}
+        aria-label={`上传${label}文件`}
+        disabled={uploadDisabled}
         multiple={multiple}
         accept={MEDIA_ACCEPT[kind]}
         onChange={(event) => {
@@ -710,10 +740,10 @@ export function ProjectMediaPicker({
                     onClick={() => setPreviewFile(file)}
                   >
                     <span className="generation-media-preview">
-                      <GenerationMediaPreview file={file} />
+                      <GenerationMediaPreview file={file} thumbnailOnly />
                       <ReferenceKindTag
                         assetId={file.id}
-                        cardId={referenceCardIds?.[file.id]}
+                        cardIds={referenceCardIds?.[file.id]}
                       />
                     </span>
                   </button>
@@ -762,6 +792,11 @@ export function ProjectMediaPicker({
                     total: combinedValue.length,
                     move: (to) => reorder(file.id, combinedValue[to]),
                   })}
+                  {tileLabel ? (
+                    <span className="generation-media-upload-label" aria-hidden>
+                      {tileLabel}
+                    </span>
+                  ) : null}
                 </span>
               );
             }
@@ -797,7 +832,7 @@ export function ProjectMediaPicker({
               </button>
             );
           })}
-          {!compactStrip && (minimal || uploadLast) ? uploadButton : null}
+          {compactStrip || minimal || uploadLast ? uploadButton : null}
         </div>
       )}
       {multiple && !minimal ? (

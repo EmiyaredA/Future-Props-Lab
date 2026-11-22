@@ -8,8 +8,10 @@ import "./prompt-versions.css";
 
 export function PromptVersionControls({
   versions,
+  inline = false,
 }: {
   versions: ReturnType<typeof usePromptVersions>;
+  inline?: boolean;
 }) {
   const [dialog, setDialog] = useState<{
     action: "rename" | "delete";
@@ -21,7 +23,7 @@ export function PromptVersionControls({
   const atLimit = versions.prompt_versions.length >= 20;
   return (
     <div
-      className="prompt-version-controls"
+      className={`prompt-version-controls${inline ? " is-inline" : ""}`}
       role="group"
       aria-label="提示词版本管理"
       onSubmit={(event) => event.stopPropagation()}
@@ -30,6 +32,7 @@ export function PromptVersionControls({
         <span>提示词版本</span>
         <CustomSelect
           ariaLabel="提示词版本"
+          menuMinWidth={240}
           value={versions.active_prompt_version_id}
           options={versions.prompt_versions.map((version) => ({
             value: version.id,

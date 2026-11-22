@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@platform/api/client";
 import { useAccountPermission } from "@platform/auth/AccountAccess";
 import { ManagementDialog, ManagementError } from "./ManagementUi";
+import "./project-certification.css";
 export function ProjectCertification({
   kind,
   project,
@@ -39,17 +40,32 @@ export function ProjectCertification({
       </button>
       {open && (
         <ManagementDialog
+          className="project-certification-dialog"
           title={project.is_official ? "撤销官方标记" : "标记官方作品"}
           close={() => setOpen(false)}
           pending={busy}
         >
+          <div className="project-certification-subject">
+            <span className="project-certification-icon" aria-hidden="true">
+              <BadgeCheck size={22} />
+            </span>
+            <div>
+              <span>作品名称</span>
+              <strong>{project.title}</strong>
+            </div>
+          </div>
           <p>
-            确认更改「{project.title}
-            」的官方认证状态？认证标记只影响此作品的官方身份。
+            {project.is_official
+              ? "撤销后，此作品将不再显示官方认证标记。"
+              : "确认后，此作品将显示官方认证标记。"}
           </p>
           <ManagementError error={error} />
           <footer>
-            <button className="btn" onClick={() => setOpen(false)}>
+            <button
+              className="btn"
+              disabled={busy}
+              onClick={() => setOpen(false)}
+            >
               取消
             </button>
             <button
@@ -77,7 +93,11 @@ export function ProjectCertification({
                   .finally(() => setBusy(false));
               }}
             >
-              确认
+              {busy
+                ? "保存中…"
+                : project.is_official
+                  ? "撤销标记"
+                  : "标记为官方"}
             </button>
           </footer>
         </ManagementDialog>

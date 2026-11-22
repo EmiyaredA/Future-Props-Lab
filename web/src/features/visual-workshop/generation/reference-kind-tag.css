@@ -1,22 +1,38 @@
 .reference-kind-tag {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 2px;
+  right: 2px;
   z-index: 2;
-  padding: 3px 7px;
-  border-radius: 5px;
+  box-sizing: border-box;
+  display: block;
+  width: 30px;
+  max-width: calc(100% - 24px);
+  height: 18px;
+  padding: 0 3px;
+  overflow: hidden;
+  border-radius: 4px;
   color: #fff;
   font-size: 11px;
-  line-height: 1.4;
+  font-weight: 500;
+  line-height: 18px;
+  text-align: center;
+  white-space: nowrap;
   pointer-events: none;
-  background: #6b5591;
+  background: #69508c;
 }
 .reference-kind-tag.is-scene {
-  background: #3c6b91;
+  background: #315f82;
 }
 .reference-kind-tag.is-prop {
-  background: #987133;
+  background: #79551f;
 }
 .generation-media-preview {
   position: relative;
+}
+/* Image inputs retain a separate remove action below the category badge. */
+.generation-image-picker.is-minimal
+  .generation-image-options
+  .generation-media-card:has(.reference-kind-tag)
+  > .generation-media-remove {
+  top: calc(var(--reference-tile-size) - 22px);
 }

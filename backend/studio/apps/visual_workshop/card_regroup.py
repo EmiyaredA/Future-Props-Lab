@@ -65,6 +65,7 @@ async def regroup_cards(session, owner, body: CardRegroupIn):
             }
             retained = {
                 card.adopted_asset_id,
+                card.voice_asset_id,
                 *card.candidate_asset_ids,
                 model_id(card.model_asset_key) if card.model_asset_key else None,
             }

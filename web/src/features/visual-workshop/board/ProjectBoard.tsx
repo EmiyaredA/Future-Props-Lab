@@ -1,5 +1,4 @@
 import { VisualProjectHeader } from "../canvas/VisualProjectHeader";
-import { WorkbenchViewToggle } from "../WorkbenchViewToggle";
 import { useWorkspaceSidebarState } from "../useWorkspaceSidebarState";
 import { NodeApproval } from "../NodeApproval";
 import { BoardNodeEditor } from "./BoardNodeEditor";
@@ -51,10 +50,7 @@ import { OutputHistory } from "./OutputHistory";
 import { BoardMenu } from "./BoardMenu";
 import { MaterialTree, type TreeAction } from "./MaterialTree";
 import { MaterialUpload } from "./MaterialUpload";
-import {
-  NodeManagementMenu,
-  type NodeManagementAction,
-} from "./NodeManagementMenu";
+import type { NodeManagementAction } from "./NodeManagementMenu";
 import { StatusBoard } from "./StatusBoard";
 import { downloadNodeOutput } from "./downloadNodeOutput";
 import { statusIcons, statusKeys, typeIcons } from "./boardPresentation";
@@ -352,6 +348,9 @@ export function ProjectBoard({
       {!embedded && (
         <VisualProjectHeader
           workspace="workbench"
+          activeView={view}
+          onCanvas={onCanvas}
+          onBoard={() => onView?.("board")}
           projectTitle={c.projectQuery.data?.title ?? "创作项目"}
           title={c.title}
           editingTitle={c.editingTitle}
@@ -638,17 +637,8 @@ export function ProjectBoard({
           )}
         </aside>
         <main className="board-main">
-          <div className="workbench-local-tools">
-            <WorkbenchViewToggle
-              view={view}
-              onView={
-                onView ??
-                ((next) => {
-                  if (next === "canvas") onCanvas();
-                })
-              }
-            />
-            {view === "board" && activeSection !== "storyboard" && (
+          {view === "board" && activeSection !== "storyboard" && (
+            <div className="workbench-local-tools">
               <nav className="board-tabs" aria-label="看板内容">
                 <button
                   aria-pressed={tab === "workbench"}
@@ -666,8 +656,8 @@ export function ProjectBoard({
                 </button>
                 <span>{c.nodes.length} 个节点</span>
               </nav>
-            )}
-          </div>
+            </div>
+          )}
           {notice && (
             <p className="board-notice" role="alert">
               {notice}
@@ -742,11 +732,6 @@ export function ProjectBoard({
                       onChange={(approved) =>
                         c.patchNode(selected.id, { approved }, true)
                       }
-                    />
-                    <NodeManagementMenu
-                      node={selected}
-                      onAction={manageNode}
-                      downloading={downloading}
                     />
                   </div>
                   <input

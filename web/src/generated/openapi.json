@@ -4215,12 +4215,6 @@
             "title": "Design",
             "type": "string"
           },
-          "facts": {
-            "default": "",
-            "maxLength": 12000,
-            "title": "Facts",
-            "type": "string"
-          },
           "kind": {
             "enum": [
               "character",
@@ -4266,12 +4260,6 @@
             ],
             "title": "Parent Id"
           },
-          "proposed_design": {
-            "default": "",
-            "maxLength": 12000,
-            "title": "Proposed Design",
-            "type": "string"
-          },
           "source": {
             "anyOf": [
               {
@@ -4287,6 +4275,18 @@
             "minLength": 1,
             "title": "Title",
             "type": "string"
+          },
+          "voice_asset_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Asset Id"
           }
         },
         "required": [
@@ -4380,12 +4380,6 @@
             "title": "Design",
             "type": "string"
           },
-          "facts": {
-            "default": "",
-            "maxLength": 12000,
-            "title": "Facts",
-            "type": "string"
-          },
           "id": {
             "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
             "title": "Id",
@@ -4450,12 +4444,6 @@
             ],
             "title": "Parent Id"
           },
-          "proposed_design": {
-            "default": "",
-            "maxLength": 12000,
-            "title": "Proposed Design",
-            "type": "string"
-          },
           "revision": {
             "minimum": 0.0,
             "title": "Revision",
@@ -4487,6 +4475,18 @@
             "minLength": 1,
             "title": "Title",
             "type": "string"
+          },
+          "voice_asset_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Asset Id"
           }
         },
         "required": [
@@ -4585,12 +4585,6 @@
             "title": "Expected Revision",
             "type": "integer"
           },
-          "facts": {
-            "default": "",
-            "maxLength": 12000,
-            "title": "Facts",
-            "type": "string"
-          },
           "kind": {
             "enum": [
               "character",
@@ -4636,12 +4630,6 @@
             ],
             "title": "Parent Id"
           },
-          "proposed_design": {
-            "default": "",
-            "maxLength": 12000,
-            "title": "Proposed Design",
-            "type": "string"
-          },
           "source": {
             "anyOf": [
               {
@@ -4657,6 +4645,18 @@
             "minLength": 1,
             "title": "Title",
             "type": "string"
+          },
+          "voice_asset_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Asset Id"
           }
         },
         "required": [

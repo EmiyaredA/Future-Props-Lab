@@ -175,12 +175,13 @@ test("editor surfaces and compact panels fit without replacing the workspace", a
   }
   await page.goto(`/apps/visual-workshop/projects/${visual.id}/canvas`);
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.getByRole("button", { name: "添加内容", exact: true }).click();
   await expect(
-    page.getByRole("menuitem", { name: "上传", exact: true }),
-  ).toBeFocused();
-  await page.keyboard.press("ArrowDown");
-  await page.keyboard.press("Enter");
+    page.getByRole("button", { name: "添加内容", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("tab", { name: "文件", exact: true }).click();
+  await page.getByRole("button", { name: "选择新建节点类型" }).click();
+  await page.getByRole("menuitem", { name: "新建文本", exact: true }).click();
+  await page.keyboard.press("Escape");
   const canvasText = page.locator(".canvas-node.text textarea");
   await expect(canvasText).toHaveCount(1);
   await page.getByRole("button", { name: "适配视图", exact: true }).click();

@@ -25,17 +25,14 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--board-border);
+  padding-bottom: 4px;
+  border-bottom: 0;
 }
 .board-node-topline {
   display: flex;
   gap: 8px;
   align-items: center;
   flex-shrink: 0;
-  margin-left: auto;
-}
-.board-node-topline > .board-icon-button {
   margin-left: auto;
 }
 .board-node-type {
@@ -263,10 +260,10 @@
   flex: 1;
 }
 .workbench-generation .canvas-generation-drawer.video-node-composer {
-  border: 1px solid var(--board-border);
-  border-radius: 12px;
-  background: var(--board-panel);
-  box-shadow: 0 2px 12px color-mix(in srgb, var(--board-text) 3%, transparent);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .workbench-generation .video-composer-header {
   min-height: 44px;
@@ -318,11 +315,11 @@
 .workbench-generation .video-composer-reference {
   min-height: 0;
   margin: 0;
-  padding: 12px;
-  gap: 20px;
-  border: 1px solid var(--board-border);
-  border-radius: 10px;
-  background: var(--board-soft);
+  padding: 6px 0;
+  gap: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
   scrollbar-width: thin;
 }
@@ -369,8 +366,8 @@
   border-top: 0;
 }
 .workbench-generation .prompt-version-controls {
-  margin-bottom: 12px;
-  border-bottom: 1px solid var(--board-border);
+  margin-bottom: 6px;
+  border-bottom: 0;
 }
 .workbench-generation .video-composer-prompt .generation-prompt-editor {
   color: var(--board-text);
@@ -389,26 +386,30 @@
 }
 .workbench-generation :is(.image-composer-body, .video-composer-body) {
   margin: 0;
-  padding: 12px;
-  background: var(--board-panel);
-  border-radius: 10px 10px 0 0;
+  padding: 6px 0;
+  background: transparent;
+  border-radius: 0;
 }
 .workbench-generation .image-composer-tools {
-  min-height: 36px;
+  min-height: 64px;
   gap: 8px;
 }
 .workbench-generation .image-composer-tools .generation-image-options {
-  max-height: 40px;
+  max-height: none;
 }
-.workbench-generation .image-composer-tools .generation-image-options button {
-  width: 36px;
-  min-width: 36px;
-  min-height: 36px;
+.workbench-generation .image-composer-tools .generation-image-options > button {
+  width: 64px;
+  min-width: 64px;
+  min-height: 64px;
   padding: 3px;
 }
-.workbench-generation .image-composer-tools .generation-media-preview {
-  width: 30px !important;
-  height: 30px;
+.workbench-generation
+  .image-composer-tools
+  .generation-image-options
+  > button
+  .generation-media-preview {
+  width: 58px;
+  height: 58px;
 }
 .workbench-generation :is(.image-composer-prompt, .video-composer-prompt) {
   min-height: 280px;
@@ -435,8 +436,8 @@
   z-index: 3;
   min-height: 50px;
   padding: 9px;
-  border-top: 1px solid var(--board-border);
-  border-radius: 0 0 10px 10px;
+  border-top: 0;
+  border-radius: 0;
   flex-wrap: wrap;
   background: var(--board-panel);
 }

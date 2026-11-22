@@ -117,7 +117,7 @@ export function OutputHistory({
   };
   return (
     <section
-      className={`board-output-panel${activity ? " is-generating" : ""}`}
+      className={`board-output-panel${properties ? " has-properties" : ""}${activity ? " is-generating" : ""}`}
       aria-label="节点输出历史"
     >
       <TransferFeedback progress={activeTransferProgress} />

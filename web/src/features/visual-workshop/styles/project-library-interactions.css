@@ -215,7 +215,7 @@
 
 .video-composer-reference .generation-image-options {
   max-width: 320px;
-  max-height: 48px;
+  max-height: var(--reference-tile-size, 64px);
   padding: 0;
   display: flex;
   gap: 5px;
@@ -225,7 +225,7 @@
   background: transparent;
 }
 
-.video-composer-reference .generation-image-options button {
+.video-composer-reference .generation-image-options > button {
   width: 48px;
   min-width: 48px;
   min-height: 48px;
@@ -241,11 +241,11 @@
   display: flex;
 }
 
-.video-composer-reference .generation-image-options button.selected {
+.video-composer-reference .generation-image-options > button.selected {
   border-style: solid;
 }
 
-.video-composer-reference .generation-image-options button > span {
+.video-composer-reference .generation-image-options > button > span {
   width: 100%;
 }
 
@@ -301,7 +301,10 @@
   object-fit: cover;
 }
 
-.video-composer-reference .generation-media-preview {
+.video-composer-reference
+  .generation-image-options
+  > button
+  .generation-media-preview {
   width: 36px !important;
   height: 36px;
   flex: none;

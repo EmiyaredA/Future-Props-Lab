@@ -1,3 +1,17 @@
+.modal-backdrop.management-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  top: var(--visible-top, 0px);
+  height: var(--visible-height, 100dvh);
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  box-sizing: border-box;
+  overflow: auto;
+  background: var(--overlay);
+  backdrop-filter: blur(4px);
+}
 .management-dialog {
   width: min(560px, calc(100vw - 32px));
   max-height: calc(100dvh - 40px);

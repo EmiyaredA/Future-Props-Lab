@@ -29,13 +29,13 @@ export function OutputPreview({
     ) : (
       <pre className="board-text-preview">{text}</pre>
     );
-  if (assetId && kind === "image")
+  if (assetId && (kind === "image" || (kind === "video" && compact)))
     return (
       <ImagePreview
         interactive={!compact}
         src={visualAssetDownloadPath(assetId)}
         size={compact ? 320 : 1280}
-        alt="输出预览"
+        alt={kind === "video" ? "视频缩略图" : "输出预览"}
       />
     );
   if (blob.url && kind === "video")

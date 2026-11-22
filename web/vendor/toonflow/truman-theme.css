@@ -37,7 +37,7 @@
   --previs-editor-background: #343a3d;
   --previs-editor-ground: #3a4042;
 }
-.truman-map-host .sceneStudio {
+.truman-map-host[data-previs-theme] .sceneStudio {
   --studioGlassBackground: var(--surface);
   --studioControlBackground: var(--surface-soft);
   --studioHoverBackground: var(--surface-hover);
@@ -54,4 +54,8 @@
 .truman-map-host .sceneStudio button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+.truman-map-host[data-previs-theme] .sceneStudio button:disabled {
+  opacity: 1;
+  color: var(--faint);
 }

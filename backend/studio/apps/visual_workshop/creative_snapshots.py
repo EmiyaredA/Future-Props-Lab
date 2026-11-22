@@ -3,7 +3,11 @@
 from studio.apps.visual_workshop.creation_links.models import VisualCreationLinks
 from studio.apps.visual_workshop.creative_assets import model_id, model_path
 from studio.apps.visual_workshop.previs_scenes import scene_rows
-from studio.apps.visual_workshop.schemas.creative_workflow import CardOut, ScriptOut
+from studio.apps.visual_workshop.schemas.creative_workflow import (
+    CardOut,
+    ScriptOut,
+    current_card_data,
+)
 from studio.apps.visual_workshop.storage.models import (
     VisualAssetCard,
     VisualScript,
@@ -41,7 +45,7 @@ def import_creative_workflow(payload, owner, project_id, asset_ids):
         raw = payload.get("asset_cards", [])
         if not isinstance(raw, list) or len(raw) > 500:
             raise ValueError("设定卡数量无效")
-        cards = [CardOut.model_validate(item) for item in raw]
+        cards = [CardOut.model_validate(current_card_data(item)) for item in raw]
         identities = {card.id: new_id() for card in cards}
         by_id = {card.id: card for card in cards}
         if len(identities) != len(cards):
@@ -70,7 +74,7 @@ def import_creative_workflow(payload, owner, project_id, asset_ids):
             data["parent_id"] = identities.get(card.parent_id)
             data["candidate_task_ids"] = []
             data["candidate_asset_ids"] = [asset_ids[key] for key in card.candidate_asset_ids]
-            for name in ("adopted_asset_id", "parent_asset_id"):
+            for name in ("adopted_asset_id", "parent_asset_id", "voice_asset_id"):
                 if data[name]:
                     data[name] = asset_ids[data[name]]
             if card.model_asset_key:
@@ -87,13 +91,23 @@ def import_creative_workflow(payload, owner, project_id, asset_ids):
                     data=data,
                     media_projects={
                         **{asset_ids[key]: project_id for key in card_image_ids(card)},
+                        **(
+                            {asset_ids[card.voice_asset_id]: project_id}
+                            if card.voice_asset_id
+                            else {}
+                        ),
                         **({asset_ids[model]: project_id} if card.model_asset_key else {}),
                     },
                 )
             )
         return (
             rows,
-            {asset_ids[key] for card in cards for key in card_image_ids(card)},
+            {
+                **{asset_ids[key]: "image" for card in cards for key in card_image_ids(card)},
+                **{
+                    asset_ids[card.voice_asset_id]: "audio" for card in cards if card.voice_asset_id
+                },
+            },
             {asset_ids[key] for card in cards if (key := model_id(card.model_asset_key))},
         )
     except (KeyError, TypeError, ValueError) as exc:

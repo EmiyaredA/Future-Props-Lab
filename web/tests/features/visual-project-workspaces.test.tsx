@@ -16,6 +16,7 @@ import { cardsKey } from "@features/visual-workshop/creative/api";
 
 afterEach(() => {
   window.innerWidth = 1024;
+  vi.restoreAllMocks();
 });
 
 function header(workspace: "workbench" | "script" | "previs" = "workbench") {
@@ -69,11 +70,26 @@ test("all workspaces use the same three global tabs without canvas, board or sto
   expect(h.onWorkbench).toHaveBeenCalledOnce();
 });
 
-test("window and theme actions remain accessible through the same menu in every workspace", async () => {
+test("desktop menu only contains actions absent from the visible header", async () => {
   const user = userEvent.setup();
   header("previs");
   await user.click(screen.getByRole("button", { name: "项目更多操作" }));
   expect(screen.getByRole("menuitem", { name: "新建窗口" })).toBeEnabled();
+  expect(screen.queryByRole("menuitem", { name: "重命名项目" })).toBeNull();
+  expect(screen.queryByRole("menuitem", { name: "深色" })).toBeNull();
+  expect(screen.queryByRole("menuitem", { name: "浅色" })).toBeNull();
+  await user.keyboard("{Escape}");
+  expect(screen.getByRole("button", { name: "我的项目" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "切换深色" })).toBeEnabled();
+});
+
+test("compact header retains rename and theme fallbacks in its menu", async () => {
+  const media = window.matchMedia("(max-width: 700px)");
+  vi.spyOn(window, "matchMedia").mockReturnValue({ ...media, matches: true });
+  const user = userEvent.setup();
+  header("previs");
+  await user.click(screen.getByRole("button", { name: "项目更多操作" }));
+  expect(screen.getByRole("menuitem", { name: "重命名项目" })).toBeEnabled();
   await user.click(screen.getByRole("menuitem", { name: "深色" }));
   expect(document.documentElement).toHaveAttribute("data-theme", "dark");
 });

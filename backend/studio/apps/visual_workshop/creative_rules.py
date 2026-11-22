@@ -47,16 +47,22 @@ def validate_card(project_id, data, previous, parent, script):
         raise ProjectResourceError("候选任务须通过设定卡生成", "visual_card_reference", 422)
 
 
-def prepare_card(project_id, data, identities, images, models, found, context):
+def prepare_card(
+    project_id, data, identities, images, models, audio, found, context, *, inherit_voice=False
+):
     previous, parent = context.previous, context.parent
     validate_card(project_id, data, previous, parent, context.script)
+    if inherit_voice and parent and parent.voice_asset_id != data.voice_asset_id:
+        raise ProjectResourceError("父卡语音已更新，请重新创建变体", "visual_card_conflict", 409)
     previous_media = previous.media_projects if previous else {}
     media = {}
     for identity in identities:
         item = found.get(identity)
         if item is not None:
-            if (identity not in images or item.media_kind == "image") and (
-                identity not in models or item.mime_type == MODEL_MIME
+            if (
+                (identity not in images or item.media_kind == "image")
+                and (identity not in models or item.mime_type == MODEL_MIME)
+                and (identity not in audio or item.media_kind == "audio")
             ):
                 media[identity] = item.project_id
                 continue

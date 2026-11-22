@@ -1,6 +1,6 @@
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import { useState, type ReactNode, type HTMLAttributes } from "react";
-import { ChevronDown, Plus } from "lucide-react";
+import { ChevronDown, Link2 } from "lucide-react";
 import { ProjectMediaPicker } from "./ProjectMediaPicker";
 import { VideoDesignReferences } from "./VideoDesignReferences";
 import { ReferenceSubjectEditor } from "./ReferenceSubjectEditor";
@@ -9,6 +9,7 @@ import { TaskOutputReferenceDialog } from "./TaskOutputReferenceDialog";
 import { LegacyReferenceSubjects } from "./LegacyReferenceSubjects";
 import { orderedReferenceIds } from "./referenceOrder";
 import { subjectLabel } from "./referenceSubjects";
+import { referenceCardIdsForInputs } from "./referenceCardLinks";
 import type { useGenerationDrawerController } from "./useGenerationDrawerController";
 import type { VisualCanvasEdge } from "../api";
 
@@ -66,10 +67,13 @@ export function VideoReferenceStrip({
     "素材读取中";
   const change = (kind: Media, next: string[]) => {
     setters[kind](next);
+    const activate = c.videoMode === "text" && next.length > 0;
+    if (activate) c.setVideoMode("reference");
     const subjects = c.referenceSubjects;
     c.persistDraft(
       {
         [fields[kind]]: next,
+        ...(activate ? { mode: "reference" } : {}),
         ...(kind === "image" && subjects
           ? {
               reference_subjects: Object.fromEntries(
@@ -97,9 +101,6 @@ export function VideoReferenceStrip({
   const missing = c.referenceInputs.filter(
     (item) => !item.assetId || item.kind === "text",
   );
-  const count =
-    new Set([...ids("image"), ...ids("video"), ...ids("audio")]).size +
-    missing.length;
   const activeKinds = (Object.keys(selections) as Media[]).filter(
     (kind) => c.referenceLimits[kind] > 0 || ids(kind).length > 0,
   );
@@ -116,7 +117,6 @@ export function VideoReferenceStrip({
         >
           <div className="reference-strip-toolbar">
             {modeControl}
-            <span>参考素材 {count}</span>
             {supportsSubjects &&
               c.referenceSubjects === null &&
               c.effectiveSubject.trim() && (
@@ -135,8 +135,8 @@ export function VideoReferenceStrip({
                   className="reference-add"
                   aria-label="添加参考素材"
                 >
-                  <Plus size={14} />
-                  添加
+                  <Link2 size={14} />
+                  引用
                   <ChevronDown size={12} />
                 </button>
               </Menu.Trigger>
@@ -144,7 +144,6 @@ export function VideoReferenceStrip({
                 <Menu.Content className="reference-menu" sideOffset={5}>
                   {(
                     [
-                      ["upload", "本地上传"],
                       ["project", "本项目素材"],
                       ["cross", "跨项目／文件库"],
                     ] as const
@@ -203,12 +202,7 @@ export function VideoReferenceStrip({
               <ProjectMediaPicker
                 key={kind}
                 compactStrip
-                referenceCardIds={Object.fromEntries(
-                  c.designReferences.map((entry) => [
-                    entry.asset_id,
-                    entry.card_id,
-                  ]),
-                )}
+                referenceCardIds={referenceCardIdsForInputs(c)}
                 minimal
                 label={labels[kind]}
                 kind={kind}
@@ -289,11 +283,6 @@ export function VideoReferenceStrip({
                 </small>
               </button>
             ))}
-            {!count && (
-              <span className="reference-empty">
-                添加图片、视频或音频作为参考
-              </span>
-            )}
             {activeKinds
               .flatMap((kind) =>
                 ids(kind).filter(

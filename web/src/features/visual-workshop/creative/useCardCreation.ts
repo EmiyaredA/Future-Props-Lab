@@ -36,7 +36,6 @@ export function useCardCreation(
           title: parent
             ? `${parent.title.slice(0, 110)} · 变体`
             : `新建${label}`,
-          facts: parent?.facts,
           source: parent?.source,
           parent_id: parent?.id,
           parent_asset_id: parent?.adopted_asset_id,

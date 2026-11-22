@@ -9,6 +9,16 @@ import { AmadeusButton } from "@platform/AmadeusButton";
 import { AppWindow, ArrowLeft, Pencil, Sun, Moon } from "lucide-react";
 import { useTheme } from "@shared/ui/theme";
 import { BoardMenu } from "../board/BoardMenu";
+import { WorkbenchViewToggle } from "../WorkbenchViewToggle";
+import { useSyncExternalStore } from "react";
+
+const compactHeaderQuery = "(max-width: 700px)";
+function subscribeHeaderSize(notify: () => void) {
+  const media = window.matchMedia(compactHeaderQuery);
+  media.addEventListener("change", notify);
+  return () => media.removeEventListener("change", notify);
+}
+const isCompactHeader = () => window.matchMedia(compactHeaderQuery).matches;
 
 export type VisualProjectHeaderProps = CreativeToolActions & {
   activeView?: "canvas" | "board";
@@ -33,6 +43,8 @@ export type VisualProjectHeaderProps = CreativeToolActions & {
 export function VisualProjectHeader({
   onWorkbench,
   onCanvas,
+  onBoard,
+  activeView,
   onPrevis,
   onScript,
   activeTool,
@@ -51,6 +63,7 @@ export function VisualProjectHeader({
   busy,
 }: VisualProjectHeaderProps) {
   const [theme, setTheme] = useTheme();
+  const compact = useSyncExternalStore(subscribeHeaderSize, isCompactHeader);
   const status =
     saveStateText ??
     {
@@ -121,6 +134,15 @@ export function VisualProjectHeader({
           disabled={busy}
         />
       )}
+      {activeView && onCanvas && onBoard && (
+        <div className="project-header-view">
+          <WorkbenchViewToggle
+            view={activeView}
+            onView={(next) => (next === "canvas" ? onCanvas() : onBoard())}
+            disabled={busy}
+          />
+        </div>
+      )}
       <div className="project-header-actions">
         <AmadeusButton className="project-header-assistant" />
         <button
@@ -138,11 +160,29 @@ export function VisualProjectHeader({
         <BoardMenu
           label="项目更多操作"
           items={[
-            {
-              label: "重命名项目",
-              onSelect: onStartTitleEditing,
-              disabled: busy,
-            },
+            ...(compact && activeView && onCanvas && onBoard
+              ? [
+                  {
+                    label: "切换到画布",
+                    onSelect: onCanvas,
+                    disabled: busy || activeView === "canvas",
+                  },
+                  {
+                    label: "切换到看板",
+                    onSelect: onBoard,
+                    disabled: busy || activeView === "board",
+                  },
+                ]
+              : []),
+            ...(compact
+              ? [
+                  {
+                    label: "重命名项目",
+                    onSelect: onStartTitleEditing,
+                    disabled: busy,
+                  },
+                ]
+              : []),
             {
               label: "新建窗口",
               icon: <AppWindow size={16} aria-hidden />,
@@ -153,8 +193,12 @@ export function VisualProjectHeader({
                   "noopener,noreferrer",
                 ),
             },
-            { label: "浅色", onSelect: () => setTheme("light") },
-            { label: "深色", onSelect: () => setTheme("dark") },
+            ...(compact
+              ? [
+                  { label: "浅色", onSelect: () => setTheme("light") },
+                  { label: "深色", onSelect: () => setTheme("dark") },
+                ]
+              : []),
           ]}
         />
       </div>

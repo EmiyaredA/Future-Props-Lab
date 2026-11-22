@@ -155,7 +155,6 @@ export function ScriptCardExtraction({
                 await createCard(project, {
                   kind: entry.kind,
                   title: entry.name,
-                  facts: entry.quote,
                   source: seed.source,
                 });
                 remaining.delete(index);

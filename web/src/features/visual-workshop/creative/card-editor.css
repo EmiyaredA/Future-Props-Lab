@@ -367,3 +367,31 @@
     text-align: end;
   }
 }
+.card-editor-voice {
+  margin-block: 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.card-editor-voice h4,
+.card-editor-voice-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-editor-voice h4 {
+  margin: 0 0 10px;
+}
+.card-editor-voice p {
+  margin: 8px 0;
+}
+.card-editor-voice audio {
+  display: block;
+  width: 100%;
+  margin-block: 10px;
+}
+.card-editor-voice-actions {
+  flex-wrap: wrap;
+}

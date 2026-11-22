@@ -11,6 +11,7 @@ import { apiErrorMessage } from "@platform/api/errors";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useAccountId } from "@platform/auth/AccountAccess";
 import "../project-workspace.css";
+import "../workspace-controls.css";
 import { subscribeAmadeusMutation } from "@platform/assistant";
 import {
   assistantElementSource,
@@ -38,9 +39,10 @@ import {
   type PrevisAdoption,
 } from "../previs/PrevisReferenceDialog";
 import { getStoryboard } from "../storyboard/api";
+import { productionDraft } from "../storyboard/productionDraft";
 import { type VisualNodeOutput } from "../api";
 
-import type { ScriptSeed } from "../creative/api";
+import { cardsKey, listCards, type ScriptSeed } from "../creative/api";
 
 const ScriptWorkspace = lazy(() => import("../creative/ScriptWorkspace"));
 const StoryboardWorkspace = lazy(
@@ -272,7 +274,9 @@ function ProjectWorkspacePage(props: VisualWorkshopCanvasPageProps) {
   useEffect(() => {
     if (workspace !== "workbench" || section !== "storyboard" || !selectedShot)
       return;
-    const id = selectedShot.video_node_id ?? selectedShot.image_node_id;
+    const id = nodes.find(
+      (node) => node.id === selectedShot.video_node_id && node.kind === "video",
+    )?.id;
     if (id === selectedId) return;
     setSelectedId(id ?? undefined);
     setSelectedNodeIds(id ? [id] : []);
@@ -281,6 +285,7 @@ function ProjectWorkspacePage(props: VisualWorkshopCanvasPageProps) {
     workspace,
     section,
     selectedShot,
+    nodes,
     selectedId,
     view,
     setSelectedId,
@@ -324,8 +329,12 @@ function ProjectWorkspacePage(props: VisualWorkshopCanvasPageProps) {
           <>
             <VisualWorkshopCanvasView embedded controller={controller} />
             {section === "storyboard" &&
-              !content.selected?.video_node_id &&
-              !content.selected?.image_node_id && (
+              content.selected &&
+              !nodes.some(
+                (node) =>
+                  node.id === content.selected?.video_node_id &&
+                  node.kind === "video",
+              ) && (
                 <div className="workbench-unlinked-shot">
                   {content.editor}
                   {content.output}
@@ -349,6 +358,9 @@ function ProjectWorkspacePage(props: VisualWorkshopCanvasPageProps) {
       <TransferFeedback progress={controller.transferProgress} />
       <VisualProjectHeader
         workspace={workspace}
+        activeView={workspace === "workbench" ? view : undefined}
+        onCanvas={() => switchView("canvas")}
+        onBoard={() => switchView("board")}
         projectTitle={projectTitle}
         title={title}
         editingTitle={controller.editingTitle}
@@ -427,6 +439,44 @@ function ProjectWorkspacePage(props: VisualWorkshopCanvasPageProps) {
               initialSceneId={scriptSceneId}
               initialSource={scriptSource}
               onStoryboard={openStoryboard}
+              beforeStoryboardSave={controller.prepareCanvasForAgent}
+              onPrepareShot={async (shot) => {
+                if (
+                  shot.video_node_id &&
+                  controller
+                    .readCanvas()
+                    .nodes.some(
+                      (node) =>
+                        node.id === shot.video_node_id && node.kind === "video",
+                    )
+                ) {
+                  return shot;
+                }
+                if (!controller.canvasReady || controller.conflict)
+                  throw new Error("请先处理画布读取或保存冲突");
+                const cards = await controller.client.fetchQuery({
+                  queryKey: cardsKey,
+                  queryFn: ({ signal }) => listCards(signal),
+                });
+                const generation_draft = await productionDraft(
+                  controller.client,
+                  projectId,
+                  shot,
+                  cards.filter(
+                    (card) =>
+                      controller.projectCardIds.includes(card.id) &&
+                      !card.archived,
+                  ),
+                );
+                const node = controller.createNode("video");
+                if (!node) throw new Error("镜头视频创建失败");
+                controller.patchNode(
+                  node.id,
+                  { title: shot.title, generation_draft },
+                  true,
+                );
+                return { ...shot, video_node_id: node.id };
+              }}
               onPrevis={openPrevis}
               renderHeader={(busy, leave, dirty) =>
                 renderEditorNavigation("script", busy, leave, dirty)
@@ -461,9 +511,12 @@ function ProjectWorkspacePage(props: VisualWorkshopCanvasPageProps) {
               onAdopt={async (scene, file, number) => {
                 const board = await getStoryboard(projectId);
                 const shot = board.shots.find((row) => row.id === previsShotId);
-                const nodeId = shot?.video_node_id ?? shot?.image_node_id;
+                const nodeId = nodes.find(
+                  (node) =>
+                    node.id === shot?.video_node_id && node.kind === "video",
+                )?.id;
                 if (!nodeId)
-                  throw new Error("请先为分镜关联制作节点，再采用预演结果");
+                  throw new Error("请先为分镜关联镜头视频，再采用预演结果");
                 setAdoption({ scene, file, number, nodeId });
               }}
               renderHeader={(busy, leave) =>

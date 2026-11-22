@@ -2,18 +2,18 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 12px;
+  gap: 6px;
   min-width: 0;
-  padding: 10px 0 12px;
+  padding: 6px 0;
   color: var(--muted);
   font-size: 12px;
 }
 
 .prompt-version-selection {
   display: flex;
-  flex: 1 1 180px;
+  flex: 0 1 auto;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
@@ -23,7 +23,9 @@
 }
 
 .prompt-version-selection > .custom-select {
-  flex: 1;
+  flex: 0 1 120px;
+  width: 120px;
+  max-width: 160px;
   min-width: 0;
 }
 
@@ -35,16 +37,48 @@
   font-size: 12px;
 }
 
+.prompt-version-selection .custom-select-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  width: max(100%, 240px);
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+}
+
+.prompt-version-selection .custom-select-menu button {
+  flex: none;
+  align-items: flex-start;
+  text-align: left;
+  min-height: 36px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.prompt-version-selection .custom-select-menu button > span {
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.prompt-version-selection .custom-select-menu button:is(:hover, .selected) {
+  background: var(--surface-hover);
+}
+
 .prompt-version-actions {
   display: flex;
   flex: none;
   align-items: center;
   gap: 2px;
-  margin-left: auto;
-  padding: 3px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: var(--surface-soft);
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .prompt-version-actions button {

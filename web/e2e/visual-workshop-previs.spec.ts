@@ -29,7 +29,8 @@ test("白模场景可分镜、下载并将逐镜图发送到原画布", async ({
   expect(editorBounds.x).toBeGreaterThan(0);
   expect(editorBounds.x + editorBounds.width).toBeLessThan(1440);
   await editor.getByRole("button", { name: "素材库", exact: true }).click();
-  await editor.getByLabel("素材分类").selectOption("整套景");
+  await editor.getByRole("combobox", { name: "素材分类" }).press("ArrowDown");
+  await page.getByRole("option", { name: "整套景", exact: true }).click();
   await editor.getByRole("button", { name: /室内对话/ }).click();
   await expect(editor.getByText(/有未保存的修改/)).toBeVisible({
     timeout: 20_000,

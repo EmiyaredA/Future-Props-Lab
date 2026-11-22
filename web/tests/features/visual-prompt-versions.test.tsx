@@ -96,18 +96,24 @@ beforeEach(() => {
 function mount(
   kind: "image" | "video" | "audio",
   prepare = vi.fn(async () => 5),
+  prompt = initial.prompt,
+  compact = true,
 ) {
   const saved = vi.fn();
   function Harness() {
     const common = {
       model_id: `model-${kind}`,
-      prompt: initial.prompt,
-      prompt_versions: initial.prompt_versions,
+      prompt,
+      prompt_versions: initial.prompt_versions!.map((version) =>
+        version.id === initial.active_prompt_version_id
+          ? { ...version, prompt }
+          : version,
+      ),
       active_prompt_version_id: initial.active_prompt_version_id,
     };
     const [draft, setDraft] = useState<VisualCanvasGenerationDraft>(
       kind === "video"
-        ? initial
+        ? { ...initial, ...common }
         : kind === "image"
           ? { ...common, size: "1024x1024", image_count: 1 }
           : {
@@ -122,7 +128,7 @@ function mount(
     );
     return (
       <GenerationDrawer
-        compact
+        compact={compact}
         layout="workbench"
         lockedKind={kind}
         projectId="project"
@@ -179,6 +185,44 @@ async function select(name: string) {
   await userEvent.click(screen.getByRole("combobox", { name: "提示词版本" }));
   await userEvent.click(screen.getByRole("option", { name }));
 }
+
+test.each([true, false])(
+  "H3 preview submits current source and respects the save barrier (compact=%s)",
+  async (compact) => {
+    const prompt =
+      "subject_definitions:\n<Subject 1>: Woman in <Picture 1>.\ndetailed_description:\n[Shot 1] She says <d>[Chinese] 你好。</d>";
+    const prepare = vi.fn(async () => 5);
+    const { saved } = mount("video", prepare, prompt, compact);
+    const preview = await screen.findByRole("region", {
+      name: "视频提示词渲染预览",
+    });
+    await screen.findByText("Test video", {
+      selector: "summary span, summary, .custom-select-trigger span",
+    });
+    const initialSaves = saved.mock.calls.length;
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "提示词渲染模板" }),
+    );
+    await userEvent.click(screen.getByRole("option", { name: "MiniMax H3" }));
+    expect(saved).toHaveBeenCalledTimes(initialSaves);
+    expect(saved.mock.calls.every(([draft]) => draft.prompt === prompt)).toBe(
+      true,
+    );
+    fireEvent.submit(preview.closest("form")!);
+    await waitFor(() => expect(createGenerationTask).toHaveBeenCalledTimes(1));
+    expect(prepare).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(createGenerationTask).mock.calls[0][1]).toMatchObject({
+      prompt,
+      expected_canvas_revision: 5,
+    });
+    await select("v1");
+    expect(editor("video")).toHaveTextContent("第一版");
+    await select("v2");
+    expect(
+      screen.getByRole("region", { name: "视频提示词渲染预览" }).textContent,
+    ).toContain("你好。");
+  },
+);
 
 test.each(["image", "video", "audio"] as const)(
   "%s variants independently save edits, manage versions and submit current text",

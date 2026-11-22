@@ -184,12 +184,17 @@ test("save failure keeps the arranged draft; conflict prevents another layout", 
   expect(putVisualCanvas).toHaveBeenCalledTimes(2);
 });
 
-test("toolbar, right-click and board additions share avoidance and view switches preserve positions", async () => {
+test("sidebar, right-click and board additions share avoidance and view switches preserve positions", async () => {
   const user = userEvent.setup();
   const consoleError = vi.spyOn(console, "error");
   renderCanvas();
-  await user.click(await screen.findByRole("button", { name: "添加内容" }));
-  await user.click(screen.getByRole("menuitem", { name: "添加文本节点" }));
+  await user.click(
+    await screen.findByRole("button", { name: "选择新建节点类型" }),
+  );
+  expect(
+    screen.queryByRole("button", { name: "添加内容" }),
+  ).not.toBeInTheDocument();
+  await user.click(screen.getByRole("menuitem", { name: "新建文本" }));
   await waitFor(() => expect(saved.nodes).toHaveLength(4));
   const surface = screen.getByRole("region", { name: "节点画布" });
   fireEvent.contextMenu(surface, { clientX: 0, clientY: 0 });
@@ -235,7 +240,7 @@ test("batch uploads use latest returned nodes and stop on failure without replay
     },
   );
   const { container } = renderCanvas();
-  await screen.findByRole("button", { name: "添加内容" });
+  await screen.findByRole("region", { name: "节点画布" });
   fireEvent.change(container.querySelector('input[type="file"]')!, {
     target: {
       files: [
@@ -281,7 +286,7 @@ test("board uploads keep the chosen category and group for every file and persis
     },
   );
   const view = renderCanvas();
-  await screen.findByRole("button", { name: "添加内容" });
+  await screen.findByRole("region", { name: "节点画布" });
   await user.click(screen.getByRole("button", { name: "看板" }));
   await user.click(screen.getByRole("tab", { name: "文件" }));
   await user.click(screen.getByRole("button", { name: "管理分类 美术素材" }));

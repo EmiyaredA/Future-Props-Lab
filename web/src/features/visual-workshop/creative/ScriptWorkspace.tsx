@@ -1,9 +1,22 @@
+import { BoardMenu } from "../board/BoardMenu";
 import { ScriptDirectory } from "./ScriptDirectory";
 import { WorkspaceSidebar } from "../WorkspaceSidebar";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDown, ArrowUp, Clapperboard, FileText, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Box,
+  Clapperboard,
+  ChevronRight,
+  FileText,
+  Save,
+  Shapes,
+  X,
+} from "lucide-react";
 import { apiErrorMessage } from "@platform/api/errors";
 import { useNavigationGuard } from "@shared/ui/navigationGuards";
 import {
@@ -23,6 +36,18 @@ import "../previs/previs.css";
 import "./creative.css";
 
 type Navigate = (action: () => void | Promise<void>) => void;
+
+const exampleScene = {
+  heading: "室内 · 咖啡馆 · 夜",
+  text: [
+    "窗外细雨不断，咖啡馆里只剩角落的一盏暖灯。桌上放着两杯咖啡和一封尚未拆开的信。",
+    "林舟坐在桌子左侧，将信封轻轻推向对面的苏晚。苏晚放下咖啡杯，抬眼看向他。",
+    "林舟：这封信是今天下午收到的，你先看看。",
+    "苏晚：寄信的人，有留下名字吗？",
+    "林舟摇了摇头。苏晚拿起信封，停顿片刻后沿着封口拆开。",
+    "苏晚：那我们就从这封信开始查。",
+  ].join("\n\n"),
+};
 
 function move<T>(
   items: T[],
@@ -47,11 +72,15 @@ export default function ScriptWorkspace({
   initialSceneId,
   initialSource,
   onStoryboard,
+  onPrepareShot,
+  beforeStoryboardSave,
 }: {
   project: string;
   initialSceneId?: string;
   initialSource?: Shot["source"];
   onStoryboard?: (id?: string) => void;
+  onPrepareShot?: (shot: Shot) => Promise<Shot>;
+  beforeStoryboardSave?: () => Promise<unknown>;
   readOnly?: boolean;
   activeWorkspace?: boolean;
   renderHeader?: (
@@ -72,6 +101,7 @@ export default function ScriptWorkspace({
     queryFn: ({ signal }) => getStoryboard(project, signal),
   });
   const textInput = useRef<HTMLTextAreaElement>(null);
+  const workspace = useRef<HTMLElement>(null);
   const [selection, setSelection] = useState<{
     scene: string;
     start: number;
@@ -79,6 +109,7 @@ export default function ScriptWorkspace({
   }>();
   const [linksOpen, setLinksOpen] = useState(false);
   const [target, setTarget] = useState("");
+  const pendingShot = useRef<Shot | undefined>(undefined);
   const [draft, setDraft] = useState<Script>();
   const current = draft ?? script.data;
   const [episodeId, setEpisodeId] = useState("");
@@ -92,6 +123,11 @@ export default function ScriptWorkspace({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [extract, setExtract] = useState<ScriptSeed>();
+  const [deleting, setDeleting] = useState<{
+    episode: string;
+    scene?: string;
+  }>();
+  const [reloadOpen, setReloadOpen] = useState(false);
   const flight = useRef(false);
   const leaving = useRef(false);
   const episode =
@@ -173,6 +209,55 @@ export default function ScriptWorkspace({
       );
   }
 
+  const deleteEpisode = current?.episodes.find(
+    (item) => item.id === deleting?.episode,
+  );
+  const deleteScene = deleteEpisode?.scenes.find(
+    (item) => item.id === deleting?.scene,
+  );
+  function deleteEntry() {
+    if (readOnly || busy || flight.current || !current || !deleteEpisode)
+      return;
+    if (deleting?.scene) {
+      if (!deleteScene) return;
+      const remaining = deleteEpisode.scenes.filter(
+        (item) => item.id !== deleteScene.id,
+      );
+      updateEpisodes(
+        current.episodes.map((item) =>
+          item.id === deleteEpisode.id ? { ...item, scenes: remaining } : item,
+        ),
+      );
+      if (scene?.id === deleteScene.id) {
+        const index = deleteEpisode.scenes.indexOf(deleteScene);
+        setEpisodeId(deleteEpisode.id);
+        setSceneId(remaining[Math.min(index, remaining.length - 1)]?.id ?? "");
+        setSelection(undefined);
+      }
+    } else {
+      const remaining = current.episodes.filter(
+        (item) => item.id !== deleteEpisode.id,
+      );
+      updateEpisodes(remaining);
+      if (episode?.id === deleteEpisode.id) {
+        const index = current.episodes.indexOf(deleteEpisode);
+        const next = remaining[Math.min(index, remaining.length - 1)];
+        setEpisodeId(next?.id ?? "");
+        setSceneId(next?.scenes[0]?.id ?? "");
+        setSelection(undefined);
+      }
+    }
+    setDeleting(undefined);
+    requestAnimationFrame(() => {
+      const next =
+        textInput.current ??
+        workspace.current?.querySelector<HTMLElement>(
+          ".script-episode-tools input, .visual-previs-scenes-heading button",
+        );
+      next?.focus();
+    });
+  }
+
   function changeScene(patch: Partial<ScriptScene>) {
     if (episode && scene)
       changeEpisode({
@@ -193,10 +278,20 @@ export default function ScriptWorkspace({
     });
   }
 
-  const related =
-    board.data?.shots.filter((shot) => shot.source?.scene_id === scene?.id) ??
-    [];
+  const related = scene
+    ? (board.data?.shots.filter((shot) => shot.source?.scene_id === scene.id) ??
+      [])
+    : [];
   const range = selection?.scene === scene?.id ? selection : undefined;
+  function captureSelection(input: HTMLTextAreaElement) {
+    if (!scene) return;
+    if (input.selectionEnd > input.selectionStart) setLinksOpen(true);
+    setSelection({
+      scene: scene.id,
+      start: input.selectionStart,
+      end: input.selectionEnd,
+    });
+  }
   function linkSelection() {
     if (!scene || !range || range.end <= range.start) return;
     const excerpt = scene.text.slice(range.start, range.end);
@@ -207,8 +302,9 @@ export default function ScriptWorkspace({
         ? latest.shots.find((shot) => shot.id === target)
         : undefined;
       if (target && !previous) throw new Error("目标镜头已删除，请重新选择");
-      const shot = {
+      let shot: Shot = {
         ...(previous ?? emptyShot(excerpt.slice(0, 32))),
+        ...(!previous ? { description: excerpt } : {}),
         source: {
           scene_id: scene.id,
           revision: saved.revision,
@@ -217,6 +313,17 @@ export default function ScriptWorkspace({
           end: range.end,
         },
       };
+      if (onPrepareShot && (!previous || !shot.video_node_id)) {
+        if (
+          JSON.stringify(pendingShot.current?.source) ===
+          JSON.stringify(shot.source)
+        )
+          shot = pendingShot.current!;
+        else pendingShot.current = shot;
+        shot = await onPrepareShot(shot);
+        pendingShot.current = shot;
+      }
+      await beforeStoryboardSave?.();
       const updated = await saveStoryboard(project, {
         ...latest,
         shots: previous
@@ -224,12 +331,14 @@ export default function ScriptWorkspace({
           : [...latest.shots, shot],
       });
       client.setQueryData(keys.storyboard(project), updated);
+      pendingShot.current = undefined;
       onStoryboard?.(shot.id);
     });
   }
 
   return (
     <section
+      ref={workspace}
       className="visual-previs-library visual-script"
       aria-label="分集剧本"
     >
@@ -244,6 +353,7 @@ export default function ScriptWorkspace({
               targetScene={initialSceneId}
               busy={busy || !current}
               readOnly={readOnly}
+              onDelete={(episode, scene) => setDeleting({ episode, scene })}
               onSelect={(episode, scene) => {
                 setEpisodeId(episode);
                 setSceneId(scene ?? "");
@@ -280,8 +390,7 @@ export default function ScriptWorkspace({
                             {
                               id,
                               title: `第 ${item.scenes.length + 1} 场`,
-                              heading: "",
-                              text: "",
+                              ...exampleScene,
                             },
                           ],
                         }
@@ -295,7 +404,7 @@ export default function ScriptWorkspace({
           </aside>
         </WorkspaceSidebar>
         <div className="creative-window">
-          <header className="creative-toolbar">
+          <header className="creative-toolbar script-document-toolbar">
             <button
               className="creative-quiet"
               aria-expanded={linksOpen}
@@ -304,35 +413,43 @@ export default function ScriptWorkspace({
               <Clapperboard size={16} />
               关联分镜 {related.length}
             </button>
-            <strong>
-              {episode?.title ?? "分集剧本"}
-              {scene ? ` / ${scene.title}` : ""}
-            </strong>
+            <span className="script-document-context">
+              {episode?.scenes.length ?? 0} 场
+            </span>
             {!readOnly && (
-              <div>
+              <div className="script-document-actions">
                 <button
+                  aria-label="保存剧本"
+                  title="保存剧本"
                   className="creative-primary"
                   disabled={!draft || busy}
                   onClick={() => commit()}
                 >
-                  保存剧本
+                  <Save size={14} aria-hidden />
+                  <span>保存剧本</span>
                 </button>
                 {scene && (
                   <button
                     className="creative-quiet"
+                    title="提取设定"
+                    aria-label="提取设定"
                     disabled={busy || !scene.text.trim()}
                     onClick={() => handoff(setExtract)}
                   >
-                    提取设定
+                    <Shapes size={14} aria-hidden />
+                    <span>提取设定</span>
                   </button>
                 )}
                 {scene && onPrevis && (
                   <button
                     className="creative-quiet"
+                    title="转为白模预演"
+                    aria-label="转为白模预演"
                     disabled={busy || !scene.text.trim()}
                     onClick={() => handoff(onPrevis)}
                   >
-                    转为白模预演
+                    <Box size={14} aria-hidden />
+                    <span>转为白模预演</span>
                   </button>
                 )}
               </div>
@@ -344,17 +461,8 @@ export default function ScriptWorkspace({
               {draft && (
                 <button
                   className="creative-quiet"
-                  onClick={async () => {
-                    if (
-                      window.confirm("载入服务器版本会舍弃当前草稿，是否继续？")
-                    ) {
-                      const result = await script.refetch();
-                      if (result.isSuccess) {
-                        setDraft(undefined);
-                        setError("");
-                      }
-                    }
-                  }}
+                  disabled={busy}
+                  onClick={() => setReloadOpen(true)}
                 >
                   载入服务器版本
                 </button>
@@ -387,41 +495,35 @@ export default function ScriptWorkspace({
                       }
                     />
                   </label>
-                  <details className="script-sort">
-                    <summary>调整顺序</summary>
-                    {[-1, 1].map((delta) => (
-                      <button
-                        key={delta}
-                        className="creative-quiet"
-                        type="button"
-                        disabled={
-                          busy ||
-                          (current?.episodes.indexOf(episode) ?? 0) + delta <
-                            0 ||
-                          (current?.episodes.indexOf(episode) ?? 0) + delta >=
-                            (current?.episodes.length ?? 0)
-                        }
-                        aria-label={delta < 0 ? "上移本集" : "下移本集"}
-                        onClick={() =>
-                          current &&
-                          updateEpisodes(
-                            move(
-                              current.episodes,
-                              (item) => item.id,
-                              episode.id,
-                              delta,
-                            ),
-                          )
-                        }
-                      >
-                        {delta < 0 ? (
-                          <ArrowUp size={15} />
+                  <BoardMenu
+                    label="调整本集顺序"
+                    triggerIcon={<ArrowUpDown size={14} aria-hidden />}
+                    triggerClassName="script-sort-trigger"
+                    items={[-1, 1].map((delta) => ({
+                      label: delta < 0 ? "上移本集" : "下移本集",
+                      icon:
+                        delta < 0 ? (
+                          <ArrowUp size={14} />
                         ) : (
-                          <ArrowDown size={15} />
-                        )}
-                      </button>
-                    ))}
-                  </details>
+                          <ArrowDown size={14} />
+                        ),
+                      disabled:
+                        busy ||
+                        (current?.episodes.indexOf(episode) ?? 0) + delta < 0 ||
+                        (current?.episodes.indexOf(episode) ?? 0) + delta >=
+                          (current?.episodes.length ?? 0),
+                      onSelect: () =>
+                        current &&
+                        updateEpisodes(
+                          move(
+                            current.episodes,
+                            (item) => item.id,
+                            episode.id,
+                            delta,
+                          ),
+                        ),
+                    }))}
+                  />
                 </div>
               )}
               {scene ? (
@@ -430,6 +532,7 @@ export default function ScriptWorkspace({
                     <h2>{scene.title}</h2>
                   ) : (
                     <div className="script-title-line">
+                      <span className="script-field-label">场次名称</span>
                       <input
                         className="script-title"
                         aria-label="场次名称"
@@ -440,39 +543,34 @@ export default function ScriptWorkspace({
                           changeScene({ title: event.target.value })
                         }
                       />
-                      <details className="script-sort">
-                        <summary>调整顺序</summary>
-                        {[-1, 1].map((delta) => (
-                          <button
-                            key={delta}
-                            className="creative-quiet"
-                            type="button"
-                            disabled={
-                              busy ||
-                              episode.scenes.indexOf(scene) + delta < 0 ||
-                              episode.scenes.indexOf(scene) + delta >=
-                                episode.scenes.length
-                            }
-                            aria-label={delta < 0 ? "上移本场" : "下移本场"}
-                            onClick={() =>
-                              changeEpisode({
-                                scenes: move(
-                                  episode.scenes,
-                                  (item) => item.id,
-                                  scene.id,
-                                  delta,
-                                ),
-                              })
-                            }
-                          >
-                            {delta < 0 ? (
-                              <ArrowUp size={15} />
+                      <BoardMenu
+                        label="调整本场顺序"
+                        triggerIcon={<ArrowUpDown size={14} aria-hidden />}
+                        triggerClassName="script-sort-trigger"
+                        items={[-1, 1].map((delta) => ({
+                          label: delta < 0 ? "上移本场" : "下移本场",
+                          icon:
+                            delta < 0 ? (
+                              <ArrowUp size={14} />
                             ) : (
-                              <ArrowDown size={15} />
-                            )}
-                          </button>
-                        ))}
-                      </details>
+                              <ArrowDown size={14} />
+                            ),
+                          disabled:
+                            busy ||
+                            episode.scenes.indexOf(scene) + delta < 0 ||
+                            episode.scenes.indexOf(scene) + delta >=
+                              episode.scenes.length,
+                          onSelect: () =>
+                            changeEpisode({
+                              scenes: move(
+                                episode.scenes,
+                                (item) => item.id,
+                                scene.id,
+                                delta,
+                              ),
+                            }),
+                        }))}
+                      />
                     </div>
                   )}
                   {readOnly ? (
@@ -490,21 +588,24 @@ export default function ScriptWorkspace({
                       }
                     />
                   )}
+                  <div className="script-body-heading">
+                    <span>场景正文</span>
+                    <small>
+                      {scene.text.length.toLocaleString()} / 12,000 字
+                    </small>
+                  </div>
                   {readOnly ? (
                     <div className="script-readonly">{scene.text}</div>
                   ) : (
                     <textarea
                       ref={textInput}
-                      onSelect={(event) => {
-                        const input = event.currentTarget;
-                        if (input.selectionEnd > input.selectionStart)
-                          setLinksOpen(true);
-                        setSelection({
-                          scene: scene.id,
-                          start: input.selectionStart,
-                          end: input.selectionEnd,
-                        });
-                      }}
+                      onSelect={(event) =>
+                        captureSelection(event.currentTarget)
+                      }
+                      onKeyUp={(event) => captureSelection(event.currentTarget)}
+                      onMouseUp={(event) =>
+                        captureSelection(event.currentTarget)
+                      }
                       className="script-text"
                       aria-label="剧本文本"
                       placeholder="写下场景动作和对白，每位角色的对白另起一行。"
@@ -533,22 +634,30 @@ export default function ScriptWorkspace({
             if (event.key === "Escape") setLinksOpen(false);
           }}
         >
-          <button
-            className="creative-quiet script-linked-close"
-            aria-label="关闭关联分镜"
-            onClick={() => setLinksOpen(false)}
-          >
-            <X size={16} />
-          </button>
-          <h2>
-            关联分镜 <small>{related.length}</small>
-          </h2>
+          <header className="script-linked-heading">
+            <h2>
+              <Clapperboard size={16} aria-hidden />
+              关联分镜 <small>{related.length}</small>
+            </h2>
+            <button
+              className="creative-quiet script-linked-close"
+              aria-label="关闭关联分镜"
+              onClick={() => setLinksOpen(false)}
+            >
+              <X size={16} />
+            </button>
+          </header>
           {!readOnly && (
-            <section>
+            <section
+              className="script-link-selection"
+              aria-label="选段关联镜头"
+            >
               <h3>选段关联镜头</h3>
-              <blockquote>
+              <blockquote className={range ? "has-selection" : ""}>
                 {(range && scene?.text.slice(range.start, range.end)) ||
-                  "在正文中选中动作或对白"}
+                  (scene
+                    ? "在正文中选中动作或对白"
+                    : "先选择场次，再在正文中选取片段")}
               </blockquote>
               <CustomSelect
                 ariaLabel="选段关联目标"
@@ -563,7 +672,7 @@ export default function ScriptWorkspace({
                 ]}
               />
               <button
-                className="creative-primary"
+                className="creative-primary script-link-submit"
                 disabled={
                   busy || !range || range.end <= range.start || !board.data
                 }
@@ -579,21 +688,86 @@ export default function ScriptWorkspace({
               <button onClick={() => void board.refetch()}>重试</button>
             </p>
           )}
-          {related.map((shot) => (
-            <article key={shot.id}>
-              <button onClick={() => commit(() => onStoryboard?.(shot.id))}>
-                {shot.title}
-              </button>
-              <p>{shot.source?.excerpt || shot.description || "已关联本场"}</p>
-              {shot.source?.excerpt &&
-                scene &&
-                !locateExcerpt(scene.text, shot.source) && (
-                  <small>原文已变化，保留了关联时的选段</small>
-                )}
-            </article>
-          ))}
+          <div className="script-linked-list">
+            {related.map((shot) => (
+              <article key={shot.id}>
+                <button
+                  aria-label={shot.title}
+                  onClick={() => commit(() => onStoryboard?.(shot.id))}
+                >
+                  <span className="script-linked-number">
+                    {String(
+                      (board.data?.shots.indexOf(shot) ?? 0) + 1,
+                    ).padStart(2, "0")}
+                  </span>
+                  <span className="script-linked-copy">
+                    <strong>{shot.title}</strong>
+                    <span>
+                      {shot.source?.excerpt || shot.description || "已关联本场"}
+                    </span>
+                  </span>
+                  <ChevronRight size={14} aria-hidden />
+                </button>
+                {shot.source?.excerpt &&
+                  scene &&
+                  !locateExcerpt(scene.text, shot.source) && (
+                    <small>原文已变化，保留了关联时的选段</small>
+                  )}
+              </article>
+            ))}
+            {!related.length && !board.isError && (
+              <p className="script-linked-empty">
+                {scene ? "本场还没有关联分镜" : "选择场次后查看关联分镜"}
+              </p>
+            )}
+          </div>
         </aside>
       </div>
+      <ConfirmDialog
+        open={Boolean(deleteEpisode)}
+        title={`删除${deleting?.scene ? "场次" : "整集"}“${deleteScene?.title ?? deleteEpisode?.title ?? ""}”？`}
+        description={
+          <>
+            {!deleting?.scene && (
+              <p>
+                将删除本集及其全部 {deleteEpisode?.scenes.length ?? 0} 个场次。
+              </p>
+            )}
+            <p>
+              确认后从当前草稿移除，保存剧本后生效。已关联的分镜和素材会保留。
+            </p>
+          </>
+        }
+        confirmLabel="删除"
+        confirmDisabled={busy || readOnly}
+        onCancel={() => setDeleting(undefined)}
+        onConfirm={deleteEntry}
+      />
+      <ConfirmDialog
+        open={reloadOpen}
+        title="载入服务器版本？"
+        description="载入服务器版本会舍弃当前草稿。"
+        confirmLabel="载入"
+        pending={busy}
+        onCancel={() => setReloadOpen(false)}
+        onConfirm={async () => {
+          if (flight.current) return;
+          flight.current = true;
+          setBusy(true);
+          try {
+            const result = await script.refetch();
+            if (result.isSuccess) {
+              setDraft(undefined);
+              setSelection(undefined);
+              setError("");
+              setReloadOpen(false);
+            } else setError(apiErrorMessage(result.error));
+          } finally {
+            flight.current = false;
+            setBusy(false);
+          }
+        }}
+      />
       {extract && (
         <ScriptCardExtraction
           project={project}

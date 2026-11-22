@@ -21,6 +21,8 @@ import { ProjectMediaPicker } from "@features/visual-workshop/generation/Project
 import { ReferenceDropNotice } from "@features/visual-workshop/generation/ReferenceDropNotice";
 import { useGenerationDrawerController } from "@features/visual-workshop/generation/useGenerationDrawerController";
 import type { ReferenceDropNotice as ReferenceDropNoticeState } from "@features/visual-workshop/generation/useProjectReferenceDrop";
+import "./image-workbench.css";
+import { referenceCardIdsForInputs } from "./referenceCardLinks";
 
 export function CompactImageGenerationDrawer({
   controller,
@@ -63,6 +65,17 @@ export function CompactImageGenerationDrawer({
   const [dropNotice, setDropNotice] = useState<ReferenceDropNoticeState | null>(
     null,
   );
+  const expandControl = (
+    <button
+      type="button"
+      className="video-composer-close"
+      aria-label={composerExpanded ? "收起图片生成器" : "展开图片生成器"}
+      title={composerExpanded ? "收起" : "展开"}
+      onClick={() => setComposerExpanded((current) => !current)}
+    >
+      {composerExpanded ? <Minimize2 aria-hidden /> : <Maximize2 aria-hidden />}
+    </button>
+  );
   return (
     <aside
       className={`canvas-generation-drawer is-compact image-node-composer${composerExpanded ? " is-expanded" : ""}`}
@@ -70,8 +83,17 @@ export function CompactImageGenerationDrawer({
     >
       <form className="video-node-composer-form" onSubmit={submit}>
         <div className="image-composer-body">
+          {controller.layout === "workbench" && (
+            <div className="image-workbench-heading">
+              <span>
+                参考图片 <small>可选</small>
+              </span>
+              {expandControl}
+            </div>
+          )}
           <div className="image-composer-tools">
             <ProjectMediaPicker
+              referenceCardIds={referenceCardIdsForInputs(controller)}
               excludedAssetIds={controller.excludedAssetIds}
               onDropResult={setDropNotice}
               projectId={projectId}
@@ -97,21 +119,7 @@ export function CompactImageGenerationDrawer({
               onFilesLoaded={rememberPromptFiles}
               onInvalidSelection={invalidSelection}
             />
-            <button
-              type="button"
-              className="video-composer-close"
-              aria-label={
-                composerExpanded ? "收起图片生成器" : "展开图片生成器"
-              }
-              title={composerExpanded ? "收起" : "展开"}
-              onClick={() => setComposerExpanded((current) => !current)}
-            >
-              {composerExpanded ? (
-                <Minimize2 aria-hidden />
-              ) : (
-                <Maximize2 aria-hidden />
-              )}
-            </button>
+            {controller.layout !== "workbench" && expandControl}
           </div>
           <ReferenceDropNotice notice={dropNotice} />
           <div className="video-composer-prompt image-composer-prompt">

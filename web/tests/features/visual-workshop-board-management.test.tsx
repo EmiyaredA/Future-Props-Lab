@@ -37,9 +37,7 @@ function renderBoard() {
   ].map((card) => ({
     ...card,
     revision: 0,
-    facts: "",
     design: "",
-    proposed_design: "",
     archived: false,
   })) as Card[];
   client.setQueryData(cardsKey, cards);

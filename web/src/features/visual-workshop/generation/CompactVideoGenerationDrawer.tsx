@@ -1,3 +1,4 @@
+import { referenceCardIdsForInputs } from "./referenceCardLinks";
 import { VideoReferenceStrip } from "./VideoReferenceStrip";
 import { VideoContextReferences } from "./VideoContextReferences";
 import { VideoDesignReferences } from "./VideoDesignReferences";
@@ -18,8 +19,8 @@ import {
 } from "@features/models";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { type VideoMode } from "@features/visual-workshop/generation/options";
-import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
-import { PromptVersionControls } from "./PromptVersionControls";
+import { GenerationPromptField } from "./GenerationPromptField";
+import { promptReferenceSlotsForInputs } from "./promptReferenceSlots";
 import { GenerationSpinner } from "./GenerationActivity";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
 import { ReferenceDropNotice } from "@features/visual-workshop/generation/ReferenceDropNotice";
@@ -34,6 +35,7 @@ export function CompactVideoGenerationDrawer({
 }: {
   controller: ReturnType<typeof useGenerationDrawerController>;
 }) {
+  const referenceCardIds = referenceCardIdsForInputs(controller);
   const modeLabels: Array<{ value: VideoMode; label: string }> = [
     { value: "text", label: "文生视频" },
     { value: "image", label: "图生视频" },
@@ -112,19 +114,48 @@ export function CompactVideoGenerationDrawer({
     linkedAssetIds.image.length > 0 ||
     linkedAssetIds.video.length > 0 ||
     linkedAssetIds.audio.length > 0;
+  const showUnifiedReferenceBar =
+    isReferenceMode ||
+    (videoMode === "text" &&
+      !hasFrameReferences &&
+      !hasOmniReferences &&
+      (!controller.videoCapabilities?.supported_modes ||
+        controller.videoCapabilities.supported_modes.includes("reference")) &&
+      Object.values(referenceLimits).some((limit) => limit > 0));
   const showReferenceBar =
     videoMode !== "text" || hasFrameReferences || hasOmniReferences;
   const changeImages = (value: string[]) => {
     setReferences(value);
-    persistDraft({ reference_asset_ids: value }, true);
+    if (videoMode === "text" && value.length) setVideoMode("reference");
+    persistDraft(
+      {
+        reference_asset_ids: value,
+        ...(videoMode === "text" && value.length ? { mode: "reference" } : {}),
+      },
+      true,
+    );
   };
   const changeVideos = (value: string[]) => {
     setVideoReferences(value);
-    persistDraft({ video_asset_ids: value }, true);
+    if (videoMode === "text" && value.length) setVideoMode("reference");
+    persistDraft(
+      {
+        video_asset_ids: value,
+        ...(videoMode === "text" && value.length ? { mode: "reference" } : {}),
+      },
+      true,
+    );
   };
   const changeAudio = (value: string[]) => {
     setAudioReferences(value);
-    persistDraft({ audio_asset_ids: value }, true);
+    if (videoMode === "text" && value.length) setVideoMode("reference");
+    persistDraft(
+      {
+        audio_asset_ids: value,
+        ...(videoMode === "text" && value.length ? { mode: "reference" } : {}),
+      },
+      true,
+    );
   };
   const [dropNotice, setDropNotice] = useState<ReferenceDropNoticeState | null>(
     null,
@@ -141,7 +172,7 @@ export function CompactVideoGenerationDrawer({
         linkedValue: linkedAssetIds.image,
         multiple: true,
         max: referenceLimits.image,
-        disabled: !isReferenceMode,
+        disabled: !showUnifiedReferenceBar,
         onChange: changeImages,
       },
       {
@@ -150,7 +181,7 @@ export function CompactVideoGenerationDrawer({
         linkedValue: linkedAssetIds.video,
         multiple: true,
         max: referenceLimits.video,
-        disabled: !isReferenceMode,
+        disabled: !showUnifiedReferenceBar,
         onChange: changeVideos,
       },
       {
@@ -159,7 +190,7 @@ export function CompactVideoGenerationDrawer({
         linkedValue: linkedAssetIds.audio,
         multiple: true,
         max: referenceLimits.audio,
-        disabled: !isReferenceMode,
+        disabled: !showUnifiedReferenceBar,
         onChange: changeAudio,
       },
     ],
@@ -209,18 +240,18 @@ export function CompactVideoGenerationDrawer({
       aria-label="节点 AI 生成"
     >
       <form className="video-node-composer-form" onSubmit={submit}>
-        {!isReferenceMode && (
-          <header className="video-composer-header">
-            {modeControl}
-            {expandControl}
-          </header>
-        )}
-
         <div className="video-composer-body">
-          {!isReferenceMode && controller.lockedKind === "video" && (
+          {!showUnifiedReferenceBar && (
+            <header className="reference-strip-toolbar">
+              {modeControl}
+              <VideoContextReferences controller={controller} />
+              {expandControl}
+            </header>
+          )}
+          {!showUnifiedReferenceBar && controller.lockedKind === "video" && (
             <VideoDesignReferences controller={controller} />
           )}
-          {isReferenceMode ? (
+          {showUnifiedReferenceBar ? (
             <VideoReferenceStrip
               controller={controller}
               dropHandlers={referenceDrop.handlers}
@@ -244,10 +275,12 @@ export function CompactVideoGenerationDrawer({
               {videoMode === "image" ||
               (firstFrame.length > 0 && videoMode !== "frames") ? (
                 <ProjectMediaPicker
+                  referenceCardIds={referenceCardIds}
                   excludedAssetIds={controller.excludedAssetIds}
                   onDropResult={setDropNotice}
                   projectId={projectId}
                   label="起始画面"
+                  tileLabel="起始画面"
                   minimal
                   showLabel={controller.layout === "workbench"}
                   value={firstFrame}
@@ -266,10 +299,12 @@ export function CompactVideoGenerationDrawer({
               {videoMode === "frames" ? (
                 <>
                   <ProjectMediaPicker
+                    referenceCardIds={referenceCardIds}
                     excludedAssetIds={controller.excludedAssetIds}
                     onDropResult={setDropNotice}
                     projectId={projectId}
                     label="首帧"
+                    tileLabel="首帧"
                     minimal
                     showLabel={controller.layout === "workbench"}
                     value={firstFrame}
@@ -284,10 +319,12 @@ export function CompactVideoGenerationDrawer({
                     onInvalidSelection={invalidSelection}
                   />
                   <ProjectMediaPicker
+                    referenceCardIds={referenceCardIds}
                     excludedAssetIds={controller.excludedAssetIds}
                     onDropResult={setDropNotice}
                     projectId={projectId}
                     label="尾帧（可选）"
+                    tileLabel="尾帧·可选"
                     minimal
                     showLabel={controller.layout === "workbench"}
                     value={lastFrame}
@@ -305,10 +342,12 @@ export function CompactVideoGenerationDrawer({
               ) : null}
               {lastFrame.length > 0 && videoMode !== "frames" ? (
                 <ProjectMediaPicker
+                  referenceCardIds={referenceCardIds}
                   excludedAssetIds={controller.excludedAssetIds}
                   onDropResult={setDropNotice}
                   projectId={projectId}
                   label="尾帧"
+                  tileLabel="尾帧"
                   minimal
                   showLabel={controller.layout === "workbench"}
                   value={lastFrame}
@@ -330,10 +369,12 @@ export function CompactVideoGenerationDrawer({
                   references.length ||
                   linkedAssetIds.image.length ? (
                     <ProjectMediaPicker
+                      referenceCardIds={referenceCardIds}
                       excludedAssetIds={controller.excludedAssetIds}
                       onDropResult={setDropNotice}
                       projectId={projectId}
                       label={characterReplacement ? "角色参考图" : "参考图片"}
+                      tileLabel="图片"
                       onReorder={
                         !characterReplacement || referenceLimits.image > 1
                           ? reorderImages
@@ -355,10 +396,12 @@ export function CompactVideoGenerationDrawer({
                   videoReferences.length ||
                   linkedAssetIds.video.length ? (
                     <ProjectMediaPicker
+                      referenceCardIds={referenceCardIds}
                       excludedAssetIds={controller.excludedAssetIds}
                       onDropResult={setDropNotice}
                       projectId={projectId}
                       label={characterReplacement ? "源视频" : "参考视频"}
+                      tileLabel={characterReplacement ? "源视频" : "视频"}
                       kind="video"
                       minimal
                       showLabel={controller.layout === "workbench"}
@@ -376,10 +419,12 @@ export function CompactVideoGenerationDrawer({
                   audioReferences.length ||
                   linkedAssetIds.audio.length ? (
                     <ProjectMediaPicker
+                      referenceCardIds={referenceCardIds}
                       excludedAssetIds={controller.excludedAssetIds}
                       onDropResult={setDropNotice}
                       projectId={projectId}
                       label="参考音频"
+                      tileLabel="音频"
                       kind="audio"
                       minimal
                       showLabel={controller.layout === "workbench"}
@@ -398,10 +443,7 @@ export function CompactVideoGenerationDrawer({
             </div>
           ) : null}
           <ReferenceDropNotice notice={dropNotice} />
-          {!isReferenceMode && (
-            <VideoContextReferences controller={controller} />
-          )}
-          {!isReferenceMode &&
+          {!showUnifiedReferenceBar &&
             controller.videoCapabilities?.supports_video_subject_to_replace && (
               <VideoSubjectControl
                 value={controller.workflowValues.video_subject_to_replace ?? ""}
@@ -411,15 +453,15 @@ export function CompactVideoGenerationDrawer({
             )}
           {controller.videoCapabilities?.supports_prompt !== false && (
             <div className="video-composer-prompt">
-              {controller.promptVersions && (
-                <PromptVersionControls versions={controller.promptVersions} />
-              )}
-              <GenerationPromptEditor
+              <GenerationPromptField
+                key={`${projectId}:${controller.canvasNodeId ?? ""}`}
+                versions={controller.promptVersions}
                 value={prompt}
                 maxLength={
                   controller.videoCapabilities?.max_prompt_length ?? 6000
                 }
                 assets={promptAssets}
+                referenceSlots={promptReferenceSlotsForInputs(controller)}
                 label="视频提示词"
                 placeholder={
                   characterReplacement

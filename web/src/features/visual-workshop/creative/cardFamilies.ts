@@ -7,7 +7,7 @@ const names = new Intl.Collator("zh-CN", {
 export const compareCards = (a: Card, b: Card) =>
   names.compare(a.title, b.title) || a.id.localeCompare(b.id);
 export const cardMatches = (card: Card, search: string) =>
-  `${card.title}\n${card.design ?? ""}\n${card.facts ?? ""}`
+  `${card.title}\n${card.design ?? ""}`
     .toLocaleLowerCase()
     .includes(search.trim().toLocaleLowerCase());
 
