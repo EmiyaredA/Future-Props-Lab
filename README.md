@@ -208,6 +208,9 @@ npm run dev
 
 配置默认保存在 `backend/config.toml`，数据库与素材默认保存在 `.runtime/`，两者均不提交 Git。
 启动器只检查数据库迁移状态；已有部署的迁移、后台运行与公网访问请按[生产部署指南](docs/operations/production-deployment.md)操作。
+已有独立服务部署可用 `npm run dev -- --public` 让热加载版本复用已配置的公网域名与 SSH 隧道；
+同时开放管理端时追加 `--public-management`。默认仍为纯本机模式，详见
+[开发流程](docs/operations/development-workflow.md)。
 
 ## Python 自动化
 

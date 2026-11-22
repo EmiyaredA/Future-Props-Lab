@@ -305,7 +305,10 @@ def run(root=ROOT, *, public=False, public_management=False):
                 if child.poll() is not None and name not in failed_reloads
             ]
             if failed:
-                raise RuntimeError("本机进程已退出：" + ", ".join(failed))
+                message = "本机进程已退出：" + ", ".join(failed)
+                if "public-access" in failed:
+                    message += "；原因见 .runtime/native-development/logs/public-access.log"
+                raise RuntimeError(message)
             changed = {Path(path) for _event, path in changes}
             restart = {name for name, paths in dependencies.items() if paths & changed}
             if any(path.is_relative_to(root / "scripts/website") for path in changed):

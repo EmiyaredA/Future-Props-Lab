@@ -50,6 +50,11 @@ Future Props Lab 使用单台 Mac、一个后端进程和 SQLite；浏览器为�
 
 ## 公网
 
+独立服务的本机热加载可通过 `npm run dev -- --public` 显式复用现有公网接入；
+管理端需要额外指定 `--public-management`。参数仅影响当前开发进程，不修改持久开关或正式发布目录。
+它沿用公网身份和权限边界，将页面与 HMR 转发到 Vite；启动条件、状态与退出方式见
+[开发与验证流程](development-workflow.md)。下文的正式构建要求仍适用于正式部署。
+
 `[website]` 配置正式 `web_root` 和 `public_enabled`；统一启动入口对当前进程固定使用后端 9001，不改写持久配置和密钥。`[remote_web]` 保留精确 HTTPS origin、回环 28081、SSH 专用连接及导入凭据标识；`enabled` 为旧兼容字段，自动公网启动由 `website.public_enabled` 控制。
 
 本机与公网共享同一份静态构建和业务进程。部署 `scripts/website/Caddyfile.shared`，先用 Caddy 校验再重载。网关只终止 HTTPS，并通过现有 SSH 隧道代理页面、静态资源与 API。公网探针核对实际转发到的实例与构建。确认两边的 `/ready` 和 `/build.json` 后，再清理旧本地发布快照与云端静态程序目录。专用凭据在 `backend/web-access/credentials/`，目录 0700、文件 0600。

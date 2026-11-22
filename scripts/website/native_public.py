@@ -71,6 +71,10 @@ async def serve(tunnels, status_path, stop):
                 previous = status
             if any(tunnel.phase == "failed" for tunnel in tunnels.values()):
                 raise RuntimeError("公网 SSH 授权失败，请检查公网日志与已导入凭据")
+            for tunnel in tunnels.values():
+                if tunnel.task is not None and tunnel.task.done():
+                    await tunnel.task
+                    raise RuntimeError("公网隧道监督任务已退出，请检查公网日志")
             try:
                 await asyncio.wait_for(stop.wait(), 0.5)
             except TimeoutError:

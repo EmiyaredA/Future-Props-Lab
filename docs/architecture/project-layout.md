@@ -256,6 +256,8 @@ Galgame 的精确帧封面适配归其 `projects/projectCover.ts`；两者不挂
 
 `scripts/website/native_layout.py` 将既有独立部署的显式挂载转换为本机路径和配置投影；
 `native_development.py` 监督本机独立服务、Mac Worker、源码重载与停止清理。
+`native_public.py` 读取显式选择的公网配置，监督既有 Studio／管理端 SSH 隧道并写出状态；
+`studio/deployment/gateway.py` 为开发模式生成独立回环公网监听，保留公网鉴权并转发 Vite 页面与 HMR。
 `web/src/app/routing/useApplicationNavigation.ts` 管理独立入口所属路径内的局部切页、链接和浏览器历史，
 复用 `shared/ui/navigationGuards.ts` 的功能离开保护；`useWorkshopNavigation.ts` 适配单个工坊的路由声明，
 `ApplicationNavigation.tsx` 为通用 Studio 壳提供显式归属和导航上下文，`app/layout/ApplicationPage.tsx` 将懒加载限制在内容区。

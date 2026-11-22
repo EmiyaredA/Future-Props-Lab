@@ -10,8 +10,29 @@
 本机依赖使用 `.runtime/native-development/tools/caddy`，由可信官方 macOS 包及其 SHA256 准备；
 配置投影、程序契约快照、日志、Vite 缓存和进程登记均在 `.runtime/native-development/`，文件 0600、
 私有目录 0700。前端源码由 Vite 提供，程序快照保留各服务既有 API 版本校验，不发布或覆盖正式网页。
-仅监听回环地址，不创建公网隧道；Vite 限定可读源码与依赖，不能读取后端配置或运行期密钥。
+默认仅监听回环地址，不创建公网隧道；Vite 限定可读源码与依赖，不能读取后端配置或运行期密钥。
 原本已使用兼容单体配置的主机仍进入原开发启动器。
+
+独立服务需要从公网访问热加载版本时，使用 `npm run dev -- --public`（或 `npm start -- --public`）。
+该参数读取现有 `[remote_web]` 的精确 HTTPS origin、SSH 主机、端口和已导入凭据；不改写正式配置，
+不受旧 `remote_web.enabled` 或 `website.public_enabled` 开关影响。默认只开放 Studio；
+`npm run dev -- --public --public-management` 同时读取 `[management].public_origin` 和
+`[management_remote]`，开启管理端独立隧道。缺失凭据、权限不正确或端口冲突时拒绝启动。
+切换参数前先正常停止当前开发实例，重复启动不会接管或更改已有实例。
+
+公网专用回环监听按配置默认使用 Studio 28081、管理端 28083；云端分别经反向 SSH 的 28080、28082
+转发，沿用已有 HTTPS 网关。云端需代理页面、资源、API 和 WebSocket 升级，参考
+`scripts/website/Caddyfile.shared`。前端页面、源码和 HMR 由专用公网监听转发到 Vite 3000，
+API、SSE、媒体和应用清单仍走既有路由目录与 Identity 公网鉴权，公网不能取得本机权限。
+Vite 仅添加配置中的精确公网域名白名单；浏览器按当前页面来源建立同源 WSS，保留本机 HMR。
+公网提供的是开发源码与现有业务数据，Python 重载期间也可能短暂不可用。
+
+隧道在前端就绪后启动，断线按既有策略重连；退出时关闭 SSH 子进程。状态位于
+`.runtime/native-development/public-access.json`，`ready` 表示公网与当前本机网关构建核对成功；
+日志位于 `.runtime/native-development/logs/public-access.log`。不带参数重新启动即恢复纯本机模式。
+原生网关的构建标识由启动器按本次运行生成，同一次启动的 Python 重载复用该标识；
+它用于公网与本机实例核对，不代表正式镜像发布版本。
+兼容单体入口继续使用原公网配置，不接受这两个独立服务参数。
 
 Amadeus 与 Agent Runtime 的 CLI 通过同一装配清单映射 Agent 发布门禁目录，并显式传给请求中间件和健康探针。
 维护时两侧 `/health` 必须报告相同的暂停标识，恢复后均为 `accepting`；容器入口保留原挂载路径。

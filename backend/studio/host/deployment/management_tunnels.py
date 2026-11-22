@@ -184,6 +184,12 @@ class GatewayTunnel:
                             "SSH 凭据、可信指纹或远端转发授权无效，请本机核查",
                         )
                         return
+                    self.phase = "reconnecting"
+                    self.error = (
+                        "SSH 握手超时，等待云端 SSH 服务恢复"
+                        if b"banner exchange" in diagnostic
+                        else "SSH 连接已关闭，正在重连"
+                    )
                 except (ValueError, OSError, httpx.HTTPError):
                     self.phase, self.error = "reconnecting", "公网或本机网关暂不可达，正在重连"
                 await self.stop_child()

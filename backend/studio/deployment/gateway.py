@@ -130,7 +130,7 @@ def render_gateway(
             or public_loopback_port in {local_port or origins["local"].port, native_port}
         ):
             raise ValueError("开发公网监听必须使用独立回环端口")
-        listeners.append(("public", f"http://127.0.0.1:{public_loopback_port}"))
+        listeners.append(("public", f"http://:{public_loopback_port}"))
     if development_frontend is not None and (
         public_loopback_port is None
         or not re.fullmatch(r"127\.0\.0\.1:[0-9]{4,5}", development_frontend)
@@ -172,6 +172,7 @@ def render_gateway(
         matcher = ingress.replace("-", "_")
         lines = [
             f"{listener} {{",
+            *(["  bind 127.0.0.1"] if local_only else []),
             *([tls] if ingress == "happier-local" else []),
             "  route {",
             f"    @bad_host expression {{http.request.hostport}} != {quoted(origin.netloc)}",
@@ -357,7 +358,7 @@ def render_gateway(
             paths = [f"/_apps/{service.id}/*"]
             if audience == "management" and not live_frontend:
                 paths.append("/")
-            for root in (() if live_frontend else service.page_roots):
+            for root in () if live_frontend else service.page_roots:
                 paths.append(root)
                 if root not in {"/", "/apps"} and not root.endswith(".html"):
                     paths.append(root + "/*")
@@ -414,6 +415,7 @@ def render_gateway(
         result.extend(
             [
                 f"http://127.0.0.1:{native_port} {{" if local_only else "http://:29090 {",
+                *(["  bind 127.0.0.1"] if local_only else []),
                 "  route {",
                 f'    @host expression {{http.request.hostport}} != "127.0.0.1:{native_port}"',
                 "    respond @host 403",

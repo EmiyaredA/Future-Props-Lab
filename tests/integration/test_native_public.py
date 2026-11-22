@@ -2,17 +2,88 @@
 
 import asyncio
 import json
-from unittest.mock import Mock
+import re
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, Mock
 
+import httpx
 import pytest
-from scripts.website import development, native_development, native_public
+from scripts.website import development, native_development, native_layout, native_public
 from scripts.website.native_layout import configuration_copy
 
 from studio.contracts.gateway.catalog import SERVICES
 from studio.contracts.gateway.routing import Operation, RouteCatalog
 from studio.contracts.gateway.web_access import GatewayProfile
 from studio.deployment.gateway import render_gateway
+from studio.host.deployment import management_tunnels
 from studio.runtime.lifecycle.locking import service_lock
+
+
+@pytest.mark.asyncio
+async def test_projected_gateway_versions_pass_real_tunnel_probe_and_change_per_run(
+    tmp_path, monkeypatch
+):
+    config = public_config(tmp_path)
+    credentials = config.parent / "web-access/credentials"
+    tokens = {}
+    for kind in ("gateway-token", "management-gateway-token", "native-ingress"):
+        tokens[kind] = tmp_path / kind
+        tokens[kind].write_text("t" * 40)
+    units = {}
+    for name in ("gateway", "management"):
+        state = tmp_path / name
+        state.mkdir()
+        (state / "service.db").write_bytes(b"prepare must not read or change this sentinel")
+        units[name] = {
+            "mounts": {
+                "/state": str(state),
+                **{"/run/fpl/" + kind: str(path) for kind, path in tokens.items()},
+            },
+            "environment": {"FPL_SERVICE_VERSION": "development"},
+        }
+    catalog = tmp_path / "deploy/contracts/ownership.json"
+    catalog.parent.mkdir(parents=True)
+    catalog.write_text('{"version":1,"operations":[]}')
+    schema = tmp_path / "web/src/generated/openapi.json"
+    schema.parent.mkdir(parents=True)
+    schema.write_text("{}")
+    monkeypatch.setattr(native_layout, "compose_services", lambda *_args: units)
+    monkeypatch.setattr(
+        native_layout, "ENTRY_POINTS", {name: native_layout.ENTRY_POINTS[name] for name in units}
+    )
+    monkeypatch.setattr(native_layout, "render_gateway", Mock(return_value="# isolated gateway"))
+    runtime = tmp_path / "runtime"
+    first = native_layout.prepare(tmp_path, config, runtime, tmp_path / "caddy")
+    second = native_layout.prepare(tmp_path, config, runtime, tmp_path / "caddy")
+    client = httpx.AsyncClient
+    for service, restarted in zip(first, second, strict=True):
+        version = service.environment["FPL_SERVICE_VERSION"]
+        assert re.fullmatch(r"[a-f0-9]{20}", version)
+        assert restarted.environment["FPL_SERVICE_VERSION"] != version
+        assert units[service.name]["environment"]["FPL_SERVICE_VERSION"] == "development"
+        assert (service.state / "service.db").read_bytes().startswith(b"prepare must not read")
+
+        def response(request, name=service.name, build=version):
+            expected = "/management/build.json" if name == "management" else "/build.json"
+            assert request.url.path == expected
+            return httpx.Response(200, json={"service": name, "build_id": build})
+
+        monkeypatch.setattr(
+            httpx,
+            "AsyncClient",
+            lambda **kwargs: client(transport=httpx.MockTransport(response), **kwargs),
+        )
+        profile = GatewayProfile(
+            origin="https://studio.example.test",
+            host="gateway.example.test",
+            user="tunnel",
+            identity_id="a" * 32,
+            known_hosts_id="b" * 32,
+        )
+        tunnel = native_public.GatewayTunnel(profile, credentials, service=service.name)
+        await tunnel.check(remote=False)
+        assert tunnel.build_id == version
+        await tunnel.check()
 
 
 def public_config(tmp_path):
@@ -33,6 +104,43 @@ def public_config(tmp_path):
     return config
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("diagnostic", "error"),
+    [
+        (b"Connection closed by gateway port 22", "SSH 连接已关闭"),
+        (b"Connection timed out during banner exchange", "SSH 握手超时"),
+    ],
+)
+async def test_early_ssh_exit_reports_reconnecting_instead_of_connecting_forever(
+    tmp_path, monkeypatch, diagnostic, error
+):
+    config = public_config(tmp_path)
+    tunnel = native_public.configured_tunnels(tmp_path, config)["gateway"]
+    tunnel.enabled = True
+    tunnel.phase = "connecting"
+    tunnel.check = AsyncMock()
+    child = SimpleNamespace(
+        returncode=255, stderr=SimpleNamespace(read=AsyncMock(return_value=diagnostic))
+    )
+    monkeypatch.setattr(
+        management_tunnels.asyncio, "create_subprocess_exec", AsyncMock(return_value=child)
+    )
+    sleeps = []
+
+    async def sleep(delay):
+        sleeps.append(delay)
+        if len(sleeps) == 2:
+            tunnel.enabled = False
+
+    monkeypatch.setattr(management_tunnels.asyncio, "sleep", sleep)
+    await tunnel.follow()
+    assert tunnel.phase == "reconnecting"
+    assert error in tunnel.error
+    assert diagnostic.decode() not in tunnel.error
+    assert len(sleeps) == 2
+
+
 def test_public_profiles_use_existing_credentials_without_changing_configuration(tmp_path):
     config = public_config(tmp_path)
     before = config.read_bytes()
@@ -47,7 +155,7 @@ def test_public_profiles_use_existing_credentials_without_changing_configuration
 
 def test_public_preflight_rejects_missing_or_insecure_credentials(tmp_path):
     config = public_config(tmp_path)
-    identity = tmp_path / f'backend/web-access/credentials/{"a" * 32}.identity'
+    identity = tmp_path / f"backend/web-access/credentials/{'a' * 32}.identity"
     identity.chmod(0o644)
     with pytest.raises(ValueError, match="0600"):
         native_public.configured_tunnels(tmp_path, config)
@@ -98,7 +206,7 @@ def gateway_config(**options):
 
 def test_public_gateway_keeps_socket_identity_and_routes_only_frontend_to_vite():
     config = gateway_config(public_loopback_port=28081, development_frontend="127.0.0.1:3000")
-    local, public = config.split("http://127.0.0.1:28081 {", 1)
+    local, public = config.split("http://:28081 {", 1)
     public, native = public.split("http://127.0.0.1:29090 {", 1)
     assert "X-Fpl-Ingress public" not in local
     assert "X-Fpl-Ingress public" in public
@@ -111,7 +219,8 @@ def test_public_gateway_keeps_socket_identity_and_routes_only_frontend_to_vite()
     assert "/_apps/portal/*" in public
     assert "header_up -Cookie" in public
     assert "request_header -Cookie" in native
-    assert "http://:" not in config
+    assert "bind 127.0.0.1" in public
+    assert "http://:9000" not in config
 
 
 @pytest.mark.parametrize("port", [9001, 29090, 80, 65536, "28081"])
@@ -159,6 +268,7 @@ class FakeTunnel:
         self.fail = fail
         self.phase = "off"
         self.closed = False
+        self.task = None
 
     async def action(self, _action):
         if self.fail:
@@ -202,3 +312,15 @@ async def test_cancelled_public_worker_drains_tunnels_and_records_offline(tmp_pa
         await task
     assert tunnel.closed
     assert json.loads(status.read_text())["gateway"]["phase"] == "off"
+
+
+@pytest.mark.asyncio
+async def test_unexpected_tunnel_task_exit_is_reported_and_closes_all_tunnels(tmp_path):
+    first, second = FakeTunnel(), FakeTunnel()
+    first.task = asyncio.create_task(asyncio.sleep(0))
+    await first.task
+    with pytest.raises(RuntimeError, match="监督任务已退出"):
+        await native_public.serve(
+            {"gateway": first, "management": second}, tmp_path / "status.json", asyncio.Event()
+        )
+    assert first.closed and second.closed

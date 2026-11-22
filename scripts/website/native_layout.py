@@ -6,6 +6,7 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from secrets import token_hex
 
 import tomlkit
 import yaml
@@ -222,6 +223,10 @@ def prepare(root, config, directory, caddy, *, public_profiles=None):
         if name == "remote":
             arguments.extend(["--guacd-host", "127.0.0.1"])
         env = {key: mapped(value, paths) for key, value in unit["environment"].items()}
+        if name in {"gateway", "management"}:
+            # Native CLI processes do not inherit the image's build environment.
+            # Keep one valid, instance-specific identity across this run's reloads.
+            env["FPL_SERVICE_VERSION"] = token_hex(10)
         services.append(
             NativeService(
                 name,
