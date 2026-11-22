@@ -172,7 +172,8 @@ async def test_script_card_and_model_are_scoped_and_round_trip():
         assert copied.status_code in (200, 201), copied.text
         copy_path = f"{PROJECTS}/{copied.json()['project']['id']}"
         copy_cards = (await client.get(f"{copy_path}/asset-cards")).json()
-        assert [item["id"] for item in copy_cards if item["title"] == "旧信封"] == [parent]
+        assert copy_cards == []
+        assert (await client.get(f"{account_cards}/{parent}")).json()["id"] == parent
         assert (await client.get(f"{copy_path}/script")).json() == saved.json()
         copy_preview = (await client.get(f"{copy_path}/previs-scenes")).json()[0]
         copy_scene = (await client.get(f"{copy_path}/previs-scenes/{copy_preview['id']}")).json()
@@ -322,7 +323,7 @@ async def test_card_generation_replays_exact_paid_task():
             SqlCardGeneration(session, owner, project, card["id"], data), project, data
         ).run(submit)
         assert calls == 1 and first.id == second.id
-        cards = await CreativeWorkflow(SqlCreativeRecords(session, owner)).cards(project)
+        cards = await CreativeWorkflow(SqlCreativeRecords(session, owner)).cards()
         assert next(item for item in cards if item.id == card["id"]).candidate_task_ids == [
             first.id
         ]

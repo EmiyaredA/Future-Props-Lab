@@ -1,5 +1,7 @@
 import { BoardMenu } from "../board/BoardMenu";
 import { ScriptDirectory } from "./ScriptDirectory";
+import { ScriptEpisodeOverview } from "./ScriptEpisodeOverview";
+import type { VisualCanvasNode } from "../api";
 import { WorkspaceSidebar } from "../WorkspaceSidebar";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -40,12 +42,11 @@ type Navigate = (action: () => void | Promise<void>) => void;
 const exampleScene = {
   heading: "室内 · 咖啡馆 · 夜",
   text: [
-    "窗外细雨不断，咖啡馆里只剩角落的一盏暖灯。桌上放着两杯咖啡和一封尚未拆开的信。",
-    "林舟坐在桌子左侧，将信封轻轻推向对面的苏晚。苏晚放下咖啡杯，抬眼看向他。",
+    "中景，固定机位，约8秒。咖啡馆角落亮着暖灯，桌上放着两杯咖啡和一封尚未拆开的信。",
+    "林舟将信封轻轻推向对面的苏晚。苏晚放下咖啡杯，抬眼看向他。",
     "林舟：这封信是今天下午收到的，你先看看。",
     "苏晚：寄信的人，有留下名字吗？",
-    "林舟摇了摇头。苏晚拿起信封，停顿片刻后沿着封口拆开。",
-    "苏晚：那我们就从这封信开始查。",
+    "声音：窗外细雨、杯子轻放在桌面的声音。",
   ].join("\n\n"),
 };
 
@@ -65,6 +66,7 @@ function move<T>(
 
 export default function ScriptWorkspace({
   project,
+  nodes = [],
   readOnly = false,
   activeWorkspace = true,
   renderHeader,
@@ -76,6 +78,7 @@ export default function ScriptWorkspace({
   beforeStoryboardSave,
 }: {
   project: string;
+  nodes?: VisualCanvasNode[];
   initialSceneId?: string;
   initialSource?: Shot["source"];
   onStoryboard?: (id?: string) => void;
@@ -113,11 +116,13 @@ export default function ScriptWorkspace({
   const [draft, setDraft] = useState<Script>();
   const current = draft ?? script.data;
   const [episodeId, setEpisodeId] = useState("");
+  const [overview, setOverview] = useState(false);
   const [sceneId, setSceneId] = useState(initialSceneId ?? "");
   useEffect(() => {
     if (initialSceneId) {
       setSceneId(initialSceneId);
       setEpisodeId("");
+      setOverview(false);
     }
   }, [initialSceneId]);
   const [busy, setBusy] = useState(false);
@@ -136,8 +141,10 @@ export default function ScriptWorkspace({
       item.scenes.some((scene) => scene.id === sceneId),
     ) ??
     current?.episodes[0];
-  const scene =
-    episode?.scenes.find((item) => item.id === sceneId) ?? episode?.scenes[0];
+  const scene = overview
+    ? undefined
+    : (episode?.scenes.find((item) => item.id === sceneId) ??
+      episode?.scenes[0]);
 
   const activeScene = useRef(scene);
   activeScene.current = scene;
@@ -278,10 +285,12 @@ export default function ScriptWorkspace({
     });
   }
 
-  const related = scene
-    ? (board.data?.shots.filter((shot) => shot.source?.scene_id === scene.id) ??
-      [])
-    : [];
+  const related = (board.data?.shots ?? []).filter((shot) =>
+    scene
+      ? shot.source?.scene_id === scene.id
+      : overview &&
+        episode?.scenes.some((entry) => entry.id === shot.source?.scene_id),
+  );
   const range = selection?.scene === scene?.id ? selection : undefined;
   function captureSelection(input: HTMLTextAreaElement) {
     if (!scene) return;
@@ -345,7 +354,7 @@ export default function ScriptWorkspace({
       {renderHeader?.(busy, (action) => commit(action), Boolean(draft))}
       <div className="visual-previs-layout script-linked-layout">
         <WorkspaceSidebar label="剧本" icon={FileText}>
-          <aside className="visual-previs-scenes" aria-label="集与场">
+          <aside className="visual-previs-scenes" aria-label="集与分镜">
             <ScriptDirectory
               episodes={current?.episodes ?? []}
               selectedEpisode={episode?.id}
@@ -357,6 +366,7 @@ export default function ScriptWorkspace({
               onSelect={(episode, scene) => {
                 setEpisodeId(episode);
                 setSceneId(scene ?? "");
+                setOverview(!scene);
               }}
               onNewEpisode={() => {
                 if (!current) return;
@@ -371,6 +381,7 @@ export default function ScriptWorkspace({
                 ]);
                 setEpisodeId(id);
                 setSceneId("");
+                setOverview(true);
                 return id;
               }}
               onNewScene={(ownerId) => {
@@ -389,7 +400,7 @@ export default function ScriptWorkspace({
                             ...item.scenes,
                             {
                               id,
-                              title: `第 ${item.scenes.length + 1} 场`,
+                              title: `分镜 ${String(item.scenes.length + 1).padStart(2, "0")}`,
                               ...exampleScene,
                             },
                           ],
@@ -399,6 +410,7 @@ export default function ScriptWorkspace({
                 );
                 setEpisodeId(ownerId);
                 setSceneId(id);
+                setOverview(false);
               }}
             />
           </aside>
@@ -414,7 +426,7 @@ export default function ScriptWorkspace({
               关联分镜 {related.length}
             </button>
             <span className="script-document-context">
-              {episode?.scenes.length ?? 0} 场
+              {episode?.scenes.length ?? 0} 镜
             </span>
             {!readOnly && (
               <div className="script-document-actions">
@@ -480,7 +492,9 @@ export default function ScriptWorkspace({
             </p>
           )}
           {episode ? (
-            <div className="script-page">
+            <div
+              className={`script-page${overview ? " script-episode-page" : ""}`}
+            >
               {!readOnly && (
                 <div className="script-episode-tools">
                   <label>
@@ -526,16 +540,35 @@ export default function ScriptWorkspace({
                   />
                 </div>
               )}
-              {scene ? (
+              {overview && episode.scenes.length > 0 ? (
+                <ScriptEpisodeOverview
+                  key={episode.id}
+                  episode={episode}
+                  shots={board.data?.shots ?? []}
+                  nodes={nodes}
+                  busy={busy}
+                  readOnly={readOnly}
+                  onOrder={(scenes) => changeEpisode({ scenes })}
+                  onEdit={(id) => {
+                    setSceneId(id);
+                    setOverview(false);
+                  }}
+                  onProduction={
+                    onStoryboard
+                      ? (id) => commit(() => onStoryboard(id))
+                      : undefined
+                  }
+                />
+              ) : scene ? (
                 <>
                   {readOnly ? (
                     <h2>{scene.title}</h2>
                   ) : (
                     <div className="script-title-line">
-                      <span className="script-field-label">场次名称</span>
+                      <span className="script-field-label">分镜名称</span>
                       <input
                         className="script-title"
-                        aria-label="场次名称"
+                        aria-label="分镜名称"
                         value={scene.title}
                         disabled={busy}
                         maxLength={120}
@@ -544,11 +577,11 @@ export default function ScriptWorkspace({
                         }
                       />
                       <BoardMenu
-                        label="调整本场顺序"
+                        label="调整本分镜顺序"
                         triggerIcon={<ArrowUpDown size={14} aria-hidden />}
                         triggerClassName="script-sort-trigger"
                         items={[-1, 1].map((delta) => ({
-                          label: delta < 0 ? "上移本场" : "下移本场",
+                          label: delta < 0 ? "上移本分镜" : "下移本分镜",
                           icon:
                             delta < 0 ? (
                               <ArrowUp size={14} />
@@ -589,7 +622,7 @@ export default function ScriptWorkspace({
                     />
                   )}
                   <div className="script-body-heading">
-                    <span>场景正文</span>
+                    <span>分镜正文</span>
                     <small>
                       {scene.text.length.toLocaleString()} / 12,000 字
                     </small>
@@ -608,7 +641,7 @@ export default function ScriptWorkspace({
                       }
                       className="script-text"
                       aria-label="剧本文本"
-                      placeholder="写下场景动作和对白，每位角色的对白另起一行。"
+                      placeholder="写下这个分镜的画面、运镜、动作、对白和声音。"
                       value={scene.text ?? ""}
                       disabled={busy}
                       maxLength={12000}
@@ -619,7 +652,7 @@ export default function ScriptWorkspace({
                   )}
                 </>
               ) : (
-                <p>本集还没有场次。</p>
+                <p>本集还没有分镜。</p>
               )}
             </div>
           ) : (
@@ -647,7 +680,7 @@ export default function ScriptWorkspace({
               <X size={16} />
             </button>
           </header>
-          {!readOnly && (
+          {!readOnly && !overview && (
             <section
               className="script-link-selection"
               aria-label="选段关联镜头"
@@ -657,7 +690,7 @@ export default function ScriptWorkspace({
                 {(range && scene?.text.slice(range.start, range.end)) ||
                   (scene
                     ? "在正文中选中动作或对白"
-                    : "先选择场次，再在正文中选取片段")}
+                    : "先选择分镜，再在正文中选取片段")}
               </blockquote>
               <CustomSelect
                 ariaLabel="选段关联目标"
@@ -703,7 +736,9 @@ export default function ScriptWorkspace({
                   <span className="script-linked-copy">
                     <strong>{shot.title}</strong>
                     <span>
-                      {shot.source?.excerpt || shot.description || "已关联本场"}
+                      {shot.source?.excerpt ||
+                        shot.description ||
+                        "已关联本分镜"}
                     </span>
                   </span>
                   <ChevronRight size={14} aria-hidden />
@@ -717,7 +752,11 @@ export default function ScriptWorkspace({
             ))}
             {!related.length && !board.isError && (
               <p className="script-linked-empty">
-                {scene ? "本场还没有关联分镜" : "选择场次后查看关联分镜"}
+                {scene
+                  ? "本分镜还没有关联分镜"
+                  : overview
+                    ? "本集还没有关联制作"
+                    : "选择分镜后查看关联分镜"}
               </p>
             )}
           </div>
@@ -725,12 +764,12 @@ export default function ScriptWorkspace({
       </div>
       <ConfirmDialog
         open={Boolean(deleteEpisode)}
-        title={`删除${deleting?.scene ? "场次" : "整集"}“${deleteScene?.title ?? deleteEpisode?.title ?? ""}”？`}
+        title={`删除${deleting?.scene ? "分镜" : "整集"}“${deleteScene?.title ?? deleteEpisode?.title ?? ""}”？`}
         description={
           <>
             {!deleting?.scene && (
               <p>
-                将删除本集及其全部 {deleteEpisode?.scenes.length ?? 0} 个场次。
+                将删除本集及其全部 {deleteEpisode?.scenes.length ?? 0} 个分镜。
               </p>
             )}
             <p>

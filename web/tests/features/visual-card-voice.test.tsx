@@ -71,3 +71,24 @@ test("pending save/upload disables voice mutations", () => {
   for (const button of screen.getAllByRole("button"))
     expect(button).toBeDisabled();
 });
+
+test("a failed decode can be retried even in read-only mode", async () => {
+  render(
+    <CardVoice
+      title="琉华"
+      assetId="voice"
+      readOnly
+      busy={false}
+      onChoose={vi.fn()}
+      onUpload={vi.fn()}
+      onRemove={vi.fn()}
+    />,
+  );
+  fireEvent.error(screen.getByLabelText("琉华的角色语音"));
+  expect(screen.getByRole("alert")).toHaveTextContent("语音无法读取");
+  await userEvent.click(screen.getByRole("button", { name: "重试语音" }));
+  expect(screen.getByLabelText("琉华的角色语音")).toHaveAttribute(
+    "src",
+    "blob:voice",
+  );
+});

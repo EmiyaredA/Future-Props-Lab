@@ -3,15 +3,16 @@ import { expect, test } from "@playwright/test";
 
 const libraryPath = "/apps/visual-workshop/card-library";
 
-test("角色语音上传和解除绑定可保存并重新打开", async ({
-  page,
-}, info) => {
+test("角色语音上传和解除绑定可保存并重新打开", async ({ page }, info) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(libraryPath);
-  await page.getByRole("button", { name: "语音验收角色", exact: true }).click();
+  await page.getByRole("button", { name: "新建角色卡", exact: true }).click();
   const editor = page.getByRole("dialog");
-  await editor.getByRole("textbox", { name: "名称", exact: true }).fill("语音验收角色");
+  await editor
+    .getByRole("textbox", { name: "名称", exact: true })
+    .fill("语音验收角色");
   await expect(editor.getByText("剧本依据与待确认设计")).toHaveCount(0);
+  await editor.getByRole("tab", { name: "设定", exact: true }).click();
   const wav = Buffer.alloc(44 + 16000 * 2);
   wav.write("RIFF", 0);
   wav.writeUInt32LE(wav.length - 8, 4);
@@ -30,13 +31,11 @@ test("角色语音上传和解除绑定可保存并重新打开", async ({
       Math.round(2000 * Math.sin((2 * Math.PI * 440 * i) / 16000)),
       44 + i * 2,
     );
-  await editor
-    .getByLabel("上传角色语音")
-    .setInputFiles({
-      name: "角色参考.wav",
-      mimeType: "audio/wav",
-      buffer: wav,
-    });
+  await editor.getByLabel("上传角色语音").setInputFiles({
+    name: "角色参考.wav",
+    mimeType: "audio/wav",
+    buffer: wav,
+  });
   const audio = editor.getByLabel("语音验收角色的角色语音");
   await expect(audio).toHaveAttribute("src", /^blob:/);
   await expect
@@ -45,6 +44,7 @@ test("角色语音上传和解除绑定可保存并重新打开", async ({
     )
     .toBeGreaterThan(0);
   await editor.getByRole("button", { name: "保存设定卡" }).click();
+  await expect(editor.getByText("有未保存的修改")).toBeHidden();
   await expect(
     editor.getByRole("button", { name: "保存设定卡" }),
   ).toBeDisabled();
@@ -62,8 +62,19 @@ test("角色语音上传和解除绑定可保存并重新打开", async ({
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(audio).toBeVisible();
   await page.screenshot({ path: info.outputPath("角色语音-窄屏.png") });
+  await page.setViewportSize({ width: 320, height: 680 });
+  const tabs = editor.getByRole("tablist", { name: "设定卡编辑分区" });
+  expect(await tabs.evaluate((el) => el.scrollWidth - el.clientWidth)).toBe(0);
+  await editor.getByRole("tab", { name: "设定", exact: true }).click();
+  await expect(editor.getByRole("textbox", { name: "名称" })).toHaveValue(
+    "语音验收角色",
+  );
+  await editor.getByRole("tab", { name: "关联", exact: true }).click();
+  await editor.getByRole("tab", { name: "设定", exact: true }).click();
+  await expect(audio).toHaveAttribute("src", /^blob:/);
   await editor.getByRole("button", { name: "解除语音绑定" }).click();
   await editor.getByRole("button", { name: "保存设定卡" }).click();
+  await expect(editor.getByText("有未保存的修改")).toBeHidden();
   await expect(
     editor.getByRole("button", { name: "保存设定卡" }),
   ).toBeDisabled();
@@ -71,6 +82,7 @@ test("角色语音上传和解除绑定可保存并重新打开", async ({
   await page
     .getByRole("button", { name: "语音验收角色 待确认", exact: true })
     .click();
+  await page.getByRole("tab", { name: "设定", exact: true }).click();
   await expect(
     page
       .getByRole("dialog", { name: "语音验收角色", exact: true })
@@ -81,6 +93,11 @@ test("角色语音上传和解除绑定可保存并重新打开", async ({
 test("三类设定卡优先展示采用图，编辑和保存可通过键盘操作", async ({
   page,
 }, info) => {
+  const nativeDialogs: string[] = [];
+  page.on("dialog", (dialog) => {
+    nativeDialogs.push(dialog.type());
+    void dialog.dismiss();
+  });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(libraryPath);
   const csrf = (await page.context().cookies()).find(
@@ -180,9 +197,7 @@ test("三类设定卡优先展示采用图，编辑和保存可通过键盘操�
     const editor = page.getByRole("dialog", { name: title, exact: true });
     const preview = editor.getByRole("img", { name: `${title}的采用图` });
     const save = editor.getByRole("button", { name: "保存设定卡" });
-    const options = editor
-      .locator("summary")
-      .filter({ hasText: "素材与 3D 模型" });
+    const materialsTab = editor.getByRole("tab", { name: "关联", exact: true });
 
     // A click on dialog padding stays inside; the backdrop closes all card kinds.
     const bounds = (await editor.boundingBox())!;
@@ -201,7 +216,7 @@ test("三类设定卡优先展示采用图，编辑和保存可通过键盘操�
     });
     expect(fitsPreview).toBe(true);
     await expect(
-      editor.getByRole("textbox", { name: "确认的设定" }),
+      editor.getByRole("textbox", { name: "描述" }),
     ).toBeInViewport();
     await expect(save).toBeInViewport();
     await expect(
@@ -210,26 +225,124 @@ test("三类设定卡优先展示采用图，编辑和保存可通过键盘操�
     await expect(
       editor.getByRole("button", { name: "选择采用图" }),
     ).toBeHidden();
-    await options.focus();
-    await page.keyboard.press("Enter");
+    const designTab = editor.getByRole("tab", { name: "设定", exact: true });
+    const description = editor.getByRole("textbox", {
+      name: "描述",
+      exact: true,
+    });
+    const edited = `${await description.inputValue()} 补充细节。`;
+    await description.fill(edited);
+    await designTab.focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(materialsTab).toBeFocused();
+    await expect(materialsTab).toHaveAttribute("aria-selected", "true");
     await expect(
       editor.getByRole("button", { name: "选择采用图" }),
     ).toBeVisible();
-    await page.keyboard.press("Enter");
+    await page.keyboard.press("Home");
+    await expect(designTab).toBeFocused();
+    await expect(description).toHaveValue(edited);
     await expect(
       editor.getByRole("button", { name: "选择采用图" }),
     ).toBeHidden();
     await editor.getByRole("heading", { name: title }).click();
     await editor.screenshot({ path: info.outputPath(`${label}-desktop.png`) });
 
-    await editor.getByRole("button", { name: "采用候选图 1" }).click();
+    const candidateCount = label === "道具卡" ? 4 : 2;
+    await expect(editor.locator(".card-editor-candidate")).toHaveCount(
+      candidateCount,
+    );
+    await expect(editor.locator(".card-editor-selected")).toHaveText("已选中");
+    await editor.getByRole("button", { name: "采用候选图 2" }).click();
     await expect(
       editor.getByRole("link", { name: "查看原图" }),
     ).toHaveAttribute("href", `/v1/files/${assetIds[1]}/content`);
     // Unsaved changes still require an explicit discard decision.
-    page.once("dialog", (confirmation) => confirmation.dismiss());
     await page.mouse.click(4, 4);
+    const discard = page.getByRole("alertdialog", { name: "舍弃设定修改？" });
+    await expect(discard).toBeVisible();
+    await discard.screenshot({
+      path: info.outputPath(`${label}-discard-confirm.png`),
+    });
+    await discard.getByRole("button", { name: "继续编辑" }).click();
+    await expect(discard).toBeHidden();
     await expect(editor).toBeVisible();
+    await editor.getByRole("button", { name: "关闭", exact: true }).click();
+    await expect(discard).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(discard).toBeHidden();
+    await expect(editor).toBeVisible();
+    if (label === "角色卡") {
+      await page.route(
+        "**/v1/visual-workshop/asset-cards/*",
+        (route) =>
+          route.fulfill({
+            status: 409,
+            json: { detail: "版本冲突，请重新载入" },
+          }),
+        { times: 1 },
+      );
+      await save.click();
+      const reload = editor.getByRole("button", {
+        name: "载入已保存版本",
+        exact: true,
+      });
+      await expect(reload).toBeVisible();
+      await reload.click();
+      const reloadConfirm = page.getByRole("alertdialog", {
+        name: "载入已保存版本？",
+      });
+      await reloadConfirm.getByRole("button", { name: "保留草稿" }).click();
+      await expect(
+        editor.getByRole("link", { name: "查看原图" }),
+      ).toHaveAttribute("href", `/v1/files/${assetIds[1]}/content`);
+      await reload.click();
+      await reloadConfirm
+        .getByRole("button", { name: "载入已保存版本", exact: true })
+        .click();
+      await expect(save).toBeDisabled();
+      await expect(
+        editor.getByRole("link", { name: "查看原图" }),
+      ).toHaveAttribute("href", `/v1/files/${assetIds[0]}/content`);
+      await editor.getByRole("button", { name: "采用候选图 2" }).click();
+    }
+    await save.click();
+    await expect(editor.getByText("有未保存的修改")).toBeHidden();
+    await expect(save).toBeDisabled();
+    await expect(editor.locator(".card-editor-candidate")).toHaveCount(
+      candidateCount,
+    );
+    await expect(
+      editor.locator(".card-editor-candidate[data-adopted='true']"),
+    ).toHaveCount(1);
+    if (label === "道具卡") {
+      await editor.getByRole("tab", { name: "生成", exact: true }).click();
+      await editor.getByRole("button", { name: "归档", exact: true }).click();
+      await expect(
+        editor.getByRole("tab", { name: "设定", exact: true }),
+      ).toHaveAttribute("aria-selected", "true");
+      await expect(editor.getByRole("tab", { name: "生成" })).toHaveCount(0);
+      await editor.getByRole("button", { name: "恢复卡片" }).click();
+      await expect(editor.getByRole("tab", { name: "生成" })).toBeVisible();
+    }
+    await page.keyboard.press("Escape");
+    await expect(editor).toBeHidden();
+    await page.reload();
+    await page.getByRole("button", { name: label, exact: true }).click();
+    await page.getByRole("button", { name: `${title} 已采用图片` }).click();
+    await expect(editor.locator(".card-editor-candidate")).toHaveCount(
+      candidateCount,
+    );
+    await editor.getByRole("button", { name: "采用候选图 1" }).click();
+    await expect(
+      editor.getByRole("link", { name: "查看原图" }),
+    ).toHaveAttribute("href", `/v1/files/${assetIds[0]}/content`);
+    await expect(editor.locator(".card-editor-candidate")).toHaveCount(
+      candidateCount,
+    );
+    await save.click();
+    await expect(save).toBeDisabled();
+    await editor.getByRole("button", { name: "采用候选图 2" }).click();
     await save.click();
     await expect(editor.getByText("有未保存的修改")).toBeHidden();
     await expect(save).toBeDisabled();
@@ -262,6 +375,31 @@ test("三类设定卡优先展示采用图，编辑和保存可通过键盘操�
   await expect(mobile.getByRole("button", { name: "关闭" })).toBeInViewport();
   await scroll.evaluate((el) => (el.scrollTop = 0));
   await mobile.screenshot({ path: info.outputPath("道具卡-mobile-dark.png") });
+  await mobile
+    .getByRole("textbox", { name: "名称", exact: true })
+    .fill("窄屏未保存草稿");
+  const mobileDraft = page.getByRole("dialog", {
+    name: "窄屏未保存草稿",
+    exact: true,
+  });
+  await mobileDraft.getByRole("button", { name: "关闭", exact: true }).click();
+  const mobileDiscard = page.getByRole("alertdialog", {
+    name: "舍弃设定修改？",
+  });
+  await expect(
+    mobileDiscard.getByRole("button", { name: "舍弃修改" }),
+  ).toBeInViewport();
+  await mobileDiscard.screenshot({
+    path: info.outputPath("discard-mobile-dark.png"),
+  });
+  await mobileDiscard.getByRole("button", { name: "继续编辑" }).click();
+  await expect(
+    mobileDraft.getByRole("textbox", { name: "名称", exact: true }),
+  ).toHaveValue("窄屏未保存草稿");
+  await mobileDraft.getByRole("button", { name: "关闭", exact: true }).click();
+  await mobileDiscard.getByRole("button", { name: "舍弃修改" }).click();
+  await expect(mobileDraft).toBeHidden();
+  expect(nativeDialogs).toEqual([]);
 });
 
 test("采用图搜索覆盖项目和总文件的子目录，项目归属可搜索", async ({
@@ -321,6 +459,7 @@ test("采用图搜索覆盖项目和总文件的子目录，项目归属可搜�
   await page.reload();
   await page.getByRole("button", { name: "新建角色卡", exact: true }).click();
   const editor = page.getByRole("dialog", { name: "新建角色卡", exact: true });
+  await editor.getByRole("tab", { name: "关联", exact: true }).click();
   const trigger = editor.getByRole("button", {
     name: "选择采用图",
     exact: true,
@@ -389,7 +528,7 @@ test("采用图搜索覆盖项目和总文件的子目录，项目归属可搜�
   expect(saved.adopted_asset_id).toBeTruthy();
   expect(saved.media_projects[saved.adopted_asset_id]).toBeNull();
 
-  await editor.getByText("候选图生成", { exact: true }).click();
+  await editor.getByRole("tab", { name: "生成", exact: true }).click();
   const ownership = editor.getByRole("button", { name: "生成任务归属项目" });
   await ownership.click();
   const projectPicker = page.getByRole("dialog", {
@@ -404,5 +543,11 @@ test("采用图搜索覆盖项目和总文件的子目录，项目归属可搜�
     .getByRole("button", { name: "星海项目归属", exact: true })
     .click();
   await projectPicker.getByRole("button", { name: "确认选择" }).click();
+  await expect(ownership).toHaveText("星海项目归属");
+  const prompt = editor.getByRole("textbox", { name: "生成提示词" });
+  await prompt.fill("保留生成草稿与项目选择");
+  await editor.getByRole("tab", { name: "设定", exact: true }).click();
+  await editor.getByRole("tab", { name: "生成", exact: true }).click();
+  await expect(prompt).toHaveValue("保留生成草稿与项目选择");
   await expect(ownership).toHaveText("星海项目归属");
 });

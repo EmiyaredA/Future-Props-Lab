@@ -1,6 +1,7 @@
 """Visual's own project and canvas rows, separate from file-library storage."""
 
 from studio.apps.visual_workshop.canvas_values import canvas_out
+from studio.apps.visual_workshop.project_previews import project_previews
 from studio.apps.visual_workshop.project_values import project_out
 from studio.apps.visual_workshop.schemas.workshop import VisualWorkshopProjectListOut
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument, VisualWorkshopProject
@@ -19,7 +20,13 @@ class Projects:
 
     async def list(self):
         rows = await list_owned_projects(self.session, VisualWorkshopProject, self.owner)
-        return VisualWorkshopProjectListOut(items=[project_out(row) for row in rows])
+        previews = await project_previews(self.session, self.owner, [row.id for row in rows])
+        return VisualWorkshopProjectListOut(
+            items=[
+                project_out(row).model_copy(update={"preview": previews.get(row.id)})
+                for row in rows
+            ]
+        )
 
     async def row(self, project_id):
         return await load_owned_project(

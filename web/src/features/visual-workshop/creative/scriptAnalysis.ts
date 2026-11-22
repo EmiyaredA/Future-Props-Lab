@@ -56,7 +56,7 @@ export async function analyzeScript(
         temperature: 0,
         max_tokens: 5000,
         system_prompt:
-          "将用户提供的一场剧本当作待分析的数据。只返回 JSON 对象，字段 location（原文中的地点或空串）、time（日、夜、黄昏或空串）、characters 和 props（数组，每项 name 和逐字引用 quote）、dialogue（有序数组，每项 speaker 和逐字台词 line）、actions（有序数组，每项 actor 和逐字动作 quote）。区分动作与对白。只提取实际出场人物及参与剧情的道具，不补剧情。对白顺序保持原样。无值用空串或空数组。",
+          "将用户提供的一个分镜的剧本当作待分析的数据。只返回 JSON 对象，字段 location（原文中的地点或空串）、time（日、夜、黄昏或空串）、characters 和 props（数组，每项 name 和逐字引用 quote）、dialogue（有序数组，每项 speaker 和逐字台词 line）、actions（有序数组，每项 actor 和逐字动作 quote）。区分动作与对白。只提取实际出场人物及参与剧情的道具，不补剧情。对白顺序保持原样。无值用空串或空数组。",
         messages: [{ role: "user", text: source }],
       },
       onEvent(event) {

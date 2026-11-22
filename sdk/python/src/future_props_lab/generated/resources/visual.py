@@ -11,6 +11,10 @@ class Visual:
     def __init__(self, client):
         self._client = client
 
+    def inspect_visual_asset_card_links(self, *, body: models.AssetCardLinksIn | dict) -> models.AssetCardLinksOut:
+        'Inspect Visual Asset Card Links. POST /v1/visual-workshop/asset-card-links'
+        return self._client._call('POST', '/v1/visual-workshop/asset-card-links', parameters=[], body=body, media_type='application/json', response_type=models.AssetCardLinksOut)
+
     def list_account_asset_cards(self) -> list[models.CardOut]:
         'List Account Asset Cards. GET /v1/visual-workshop/asset-cards'
         return self._client._call('GET', '/v1/visual-workshop/asset-cards', parameters=[], response_type=list[models.CardOut])
@@ -30,6 +34,10 @@ class Visual:
     def put_account_asset_card(self, *, card_id: str, body: models.CardUpdate | dict) -> models.CardOut:
         'Put Account Asset Card. PUT /v1/visual-workshop/asset-cards/{card_id}'
         return self._client._call('PUT', '/v1/visual-workshop/asset-cards/{card_id}', parameters=[('card_id', 'path', card_id)], body=body, media_type='application/json', response_type=models.CardOut)
+
+    def get_visual_material_usage(self) -> models.MaterialUsageOut:
+        'Get Visual Material Usage. GET /v1/visual-workshop/material-usage'
+        return self._client._call('GET', '/v1/visual-workshop/material-usage', parameters=[], response_type=models.MaterialUsageOut)
 
     def list_projects(self) -> models.VisualWorkshopProjectListOut:
         'List Projects. GET /v1/visual-workshop/projects'
@@ -159,6 +167,10 @@ class Visual:
         'Update Previs Scene. PUT /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}'
         return self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}', parameters=[('project_id', 'path', project_id), ('scene_id', 'path', scene_id)], body=body, media_type='application/json', response_type=models.PrevisSceneOut)
 
+    def register_project_reference_image(self, *, project_id: str, body: models.ReferenceImageRegistration | dict) -> models.ReferenceImageRegistered:
+        'Register Project Reference Image. POST /v1/visual-workshop/projects/{project_id}/reference-images'
+        return self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/reference-images', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ReferenceImageRegistered)
+
     def get_visual_script(self, *, project_id: str) -> models.ScriptOut:
         'Get Visual Script. GET /v1/visual-workshop/projects/{project_id}/script'
         return self._client._call('GET', '/v1/visual-workshop/projects/{project_id}/script', parameters=[('project_id', 'path', project_id)], response_type=models.ScriptOut)
@@ -183,6 +195,10 @@ class AsyncVisual:
     def __init__(self, client):
         self._client = client
 
+    async def inspect_visual_asset_card_links(self, *, body: models.AssetCardLinksIn | dict) -> models.AssetCardLinksOut:
+        'Inspect Visual Asset Card Links. POST /v1/visual-workshop/asset-card-links'
+        return await self._client._call('POST', '/v1/visual-workshop/asset-card-links', parameters=[], body=body, media_type='application/json', response_type=models.AssetCardLinksOut)
+
     async def list_account_asset_cards(self) -> list[models.CardOut]:
         'List Account Asset Cards. GET /v1/visual-workshop/asset-cards'
         return await self._client._call('GET', '/v1/visual-workshop/asset-cards', parameters=[], response_type=list[models.CardOut])
@@ -202,6 +218,10 @@ class AsyncVisual:
     async def put_account_asset_card(self, *, card_id: str, body: models.CardUpdate | dict) -> models.CardOut:
         'Put Account Asset Card. PUT /v1/visual-workshop/asset-cards/{card_id}'
         return await self._client._call('PUT', '/v1/visual-workshop/asset-cards/{card_id}', parameters=[('card_id', 'path', card_id)], body=body, media_type='application/json', response_type=models.CardOut)
+
+    async def get_visual_material_usage(self) -> models.MaterialUsageOut:
+        'Get Visual Material Usage. GET /v1/visual-workshop/material-usage'
+        return await self._client._call('GET', '/v1/visual-workshop/material-usage', parameters=[], response_type=models.MaterialUsageOut)
 
     async def list_projects(self) -> models.VisualWorkshopProjectListOut:
         'List Projects. GET /v1/visual-workshop/projects'
@@ -330,6 +350,10 @@ class AsyncVisual:
     async def update_previs_scene(self, *, project_id: str, scene_id: str, body: models.PrevisSceneUpdate | dict) -> models.PrevisSceneOut:
         'Update Previs Scene. PUT /v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}'
         return await self._client._call('PUT', '/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}', parameters=[('project_id', 'path', project_id), ('scene_id', 'path', scene_id)], body=body, media_type='application/json', response_type=models.PrevisSceneOut)
+
+    async def register_project_reference_image(self, *, project_id: str, body: models.ReferenceImageRegistration | dict) -> models.ReferenceImageRegistered:
+        'Register Project Reference Image. POST /v1/visual-workshop/projects/{project_id}/reference-images'
+        return await self._client._call('POST', '/v1/visual-workshop/projects/{project_id}/reference-images', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.ReferenceImageRegistered)
 
     async def get_visual_script(self, *, project_id: str) -> models.ScriptOut:
         'Get Visual Script. GET /v1/visual-workshop/projects/{project_id}/script'

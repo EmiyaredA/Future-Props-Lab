@@ -16,6 +16,7 @@ export function ConfirmDialog({
   confirmDisabled = false,
   onCancel,
   onConfirm,
+  portalContainer,
 }: {
   open: boolean;
   className?: string;
@@ -28,6 +29,7 @@ export function ConfirmDialog({
   confirmDisabled?: boolean;
   onCancel: () => void;
   onConfirm: () => void | Promise<void>;
+  portalContainer?: HTMLElement | null;
 }) {
   const titleId = useId();
   const descriptionId = useId();
@@ -156,6 +158,6 @@ export function ConfirmDialog({
         </div>
       </div>
     </div>,
-    document.body,
+    portalContainer ?? document.body,
   );
 }

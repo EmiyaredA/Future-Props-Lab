@@ -153,6 +153,8 @@ export function ThoughtWorkshopPage({
     queryKey: thoughtKeys.projects(projectId ? "" : query, trash),
     queryFn: ({ signal }) =>
       listKnowledge(projectId ? "" : query, trash, signal),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
   const directory = useQuery({
     retry: false,
@@ -633,7 +635,11 @@ export function ThoughtWorkshopPage({
                     project={p}
                     cover="canvas"
                     coverTitle={p.title}
-                    coverContent={<KnowledgeCover assetId={p.cover_asset_id} />}
+                    coverContent={
+                      p.cover_asset_id ? (
+                        <KnowledgeCover assetId={p.cover_asset_id} imageOnly />
+                      ) : undefined
+                    }
                     metadata={<span>{p.document_count} 篇文档</span>}
                     description={p.description}
                     onOpen={() => {}}

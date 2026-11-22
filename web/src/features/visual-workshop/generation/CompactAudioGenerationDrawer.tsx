@@ -227,6 +227,7 @@ export function CompactAudioGenerationDrawer({
           <div className="audio-generation-references">
             <strong>参考音频</strong>
             <ProjectMediaPicker
+              dropTargetKey={canvasNodeId}
               excludedAssetIds={excludedAssetIds}
               onDropResult={setDropNotice}
               projectId={projectId}

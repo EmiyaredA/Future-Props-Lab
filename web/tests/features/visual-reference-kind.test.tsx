@@ -1,10 +1,19 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
-import { expect, test } from "vitest";
-import { cardsKey, type Card } from "@features/visual-workshop/creative/api";
+import { expect, test, vi, beforeEach } from "vitest";
+import {
+  projectCardsKey,
+  type Card,
+} from "@features/visual-workshop/creative/api";
 import { ReferenceKindTag } from "@features/visual-workshop/generation/ReferenceKindTag";
 import { referenceCardIdsForInputs } from "@features/visual-workshop/generation/referenceCardLinks";
 import type { GenerationDrawerProps } from "@features/visual-workshop/generation/generationDrawerTypes";
+
+const { contentLinks } = vi.hoisted(() => ({ contentLinks: vi.fn() }));
+vi.mock("@features/visual-workshop/generation/referenceContentLinks", () => ({
+  referenceContentCardIds: contentLinks,
+}));
+beforeEach(() => contentLinks.mockReset().mockResolvedValue([]));
 
 const cards: Card[] = (["character", "scene", "prop"] as const).map((kind) => ({
   id: kind,
@@ -20,10 +29,14 @@ function setup(assetId: string, cardIds?: string[], available = cards) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  client.setQueryData(cardsKey, available);
+  client.setQueryData(projectCardsKey("project"), available);
   return render(
     <QueryClientProvider client={client}>
-      <ReferenceKindTag assetId={assetId} cardIds={cardIds} />
+      <ReferenceKindTag
+        projectId="project"
+        assetId={assetId}
+        cardIds={cardIds}
+      />
     </QueryClientProvider>,
   );
 }
@@ -167,4 +180,18 @@ test("manually selected assets retain project node card associations without inp
     "manual-role": ["character", "prop"],
     "manual-scene": ["scene"],
   });
+});
+
+test("a verified equivalent restores only existing explicit card kinds", async () => {
+  contentLinks.mockResolvedValue(["character"]);
+  setup("copied-by-import");
+  expect(await screen.findByText("角色")).toBeInTheDocument();
+  expect(contentLinks).toHaveBeenCalledWith("copied-by-import");
+});
+
+test("conflicting equivalent associations remain unclassified", async () => {
+  contentLinks.mockResolvedValue(["character", "scene"]);
+  const { container } = setup("ambiguous-copy");
+  await vi.waitFor(() => expect(contentLinks).toHaveBeenCalled());
+  expect(container).toBeEmptyDOMElement();
 });

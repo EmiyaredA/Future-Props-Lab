@@ -8,8 +8,8 @@ import {
 } from "@platform/api/client";
 import type { MotionFormat, MotionOperation } from "./types";
 
-export const listProjects = async () =>
-  unwrap(await api.GET("/v1/motion-compositor/projects"));
+export const listProjects = async (signal?: AbortSignal) =>
+  unwrap(await api.GET("/v1/motion-compositor/projects", { signal }));
 
 export const createProject = async (
   body: components["schemas"]["ProjectCreateIn"],

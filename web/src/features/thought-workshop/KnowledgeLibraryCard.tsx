@@ -11,6 +11,7 @@ import {
 import { ProjectLibraryCard } from "@shared/ui/project-library/ProjectLibraryCard";
 import { KnowledgeActionMenu, type TopbarAction } from "./KnowledgeActionMenu";
 import { KnowledgeCover } from "./KnowledgeCover";
+import { ProjectCoverPreview } from "@shared/ui/project-library/ProjectCoverPreview";
 import type { KnowledgeBase } from "./api";
 import "./knowledge-library-card.css";
 
@@ -38,7 +39,22 @@ export function KnowledgeLibraryCard({
       project={project}
       cover="knowledge"
       coverTitle="知识库"
-      coverContent={<KnowledgeCover assetId={cover_asset_id} imageOnly />}
+      coverContent={
+        cover_asset_id ? (
+          <KnowledgeCover
+            assetId={cover_asset_id}
+            imageOnly
+            fallback={
+              <ProjectCoverPreview
+                namespace="knowledge"
+                projectId={project.id}
+                title={title}
+                preview={project.preview}
+              />
+            }
+          />
+        ) : undefined
+      }
       metadata={
         <span className="knowledge-card-count">
           <BookOpen size={12} aria-hidden="true" />

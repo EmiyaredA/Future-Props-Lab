@@ -14,6 +14,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
+from studio.apps.asset_library.storage.content_models import (
+    AssetContentFingerprint,
+    AssetDedupeCanonicalPin,
+    AssetDedupeOperation,
+)
 from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.runtime.ids import new_id
 from studio.runtime.time import utc_now
@@ -453,6 +458,9 @@ class VisualUploadStage(ReferenceBase):
 
 
 MODELS = (
+    AssetContentFingerprint,
+    AssetDedupeOperation,
+    AssetDedupeCanonicalPin,
     VisualUploadStage,
     VisualAssetFolder,
     VisualAsset,

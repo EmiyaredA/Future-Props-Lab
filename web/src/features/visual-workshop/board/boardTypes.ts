@@ -40,6 +40,7 @@ export type BoardController = Pick<
   | "removeNode"
   | "renameMutation"
   | "replaceProjectCardIds"
+  | "registerReferenceImage"
   | "resolveConflict"
   | "saveMessage"
   | "saveState"

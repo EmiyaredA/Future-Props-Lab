@@ -8,25 +8,38 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 
 from studio.apps.asset_library.content_fingerprints import ContentFingerprints, snapshot
-from studio.apps.asset_library.storage.content_models import AssetDedupeOperation
-from studio.apps.asset_library.storage.models import VisualAsset
+from studio.apps.asset_library.storage.content_models import (
+    AssetDedupeCanonicalPin,
+    AssetDedupeOperation,
+)
 from studio.apps.asset_library.storage.service_models import (
-    AssetDeletion, AssetReferencePin, AssetReferenceSet, PreparedAssetPin, VisualProjectFileLink,
+    AssetReferencePin,
+    AssetReferenceSet,
+    PreparedAssetPin,
+    VisualProjectFileLink,
 )
 from studio.contracts.asset_library.content_identity import (
-    ContentAudit, ContentIdentities, ContentIdentity, DuplicateGroup, DuplicateMember,
+    ContentAudit,
+    ContentIdentities,
+    ContentIdentity,
+    DuplicateGroup,
+    DuplicateMember,
 )
 from studio.contracts.asset_library.errors import AssetError
 
 
 def serialized(item):
-    return {key: value.isoformat() if hasattr(value, "isoformat") else value for key, value in item.items()}
+    return {
+        key: value.isoformat() if hasattr(value, "isoformat") else value
+        for key, value in item.items()
+    }
 
 
 class ContentAudits:
-    def __init__(self, files):
+    def __init__(self, files, *, protection_reader=None, protect_asset=None):
         self.files, self.session, self.owner = files, files.session, files.owner_user_id
         self.index = ContentFingerprints(files)
+        self.protection_reader, self.protect_asset = protection_reader, protect_asset
 
     async def identities(self, ids):
         seeds = []
@@ -42,38 +55,70 @@ class ContentAudits:
         for identity, key in keys.items():
             groups[key].append(identity)
         return ContentIdentities(
-            items=[ContentIdentity(asset_id=item["id"], content_key=keys[item["id"]],
-                                   equivalent_ids=sorted(groups[keys[item["id"]]]))
-                   for item in seeds if item["id"] in keys],
+            items=[
+                ContentIdentity(
+                    asset_id=item["id"],
+                    content_key=keys[item["id"]],
+                    equivalent_ids=sorted(groups[keys[item["id"]]]),
+                )
+                for item in seeds
+                if item["id"] in keys
+            ],
             unavailable_ids=[item["id"] for item in seeds if item["id"] not in keys],
         )
 
     async def protections(self, ids):
         result = defaultdict(set)
+        if self.protection_reader:
+            for identity, reasons in (await self.protection_reader(ids)).items():
+                result[identity].update(reasons)
+            return result
         for asset, service, kind in await self.session.execute(
-            select(AssetReferencePin.asset_id, AssetReferenceSet.service_id, AssetReferenceSet.resource_kind)
+            select(
+                AssetReferencePin.asset_id,
+                AssetReferenceSet.service_id,
+                AssetReferenceSet.resource_kind,
+            )
             .join(AssetReferenceSet, AssetReferenceSet.id == AssetReferencePin.reference_set_id)
-            .where(AssetReferencePin.owner_user_id == self.owner, AssetReferencePin.asset_id.in_(ids))
+            .where(
+                AssetReferencePin.owner_user_id == self.owner, AssetReferencePin.asset_id.in_(ids)
+            )
         ):
             result[asset].add(f"{service}:{kind}")
-        for asset in await self.session.scalars(select(PreparedAssetPin.asset_id).where(
-            PreparedAssetPin.owner_user_id == self.owner, PreparedAssetPin.asset_id.in_(ids)
-        )):
+        for asset in await self.session.scalars(
+            select(PreparedAssetPin.asset_id).where(
+                PreparedAssetPin.owner_user_id == self.owner, PreparedAssetPin.asset_id.in_(ids)
+            )
+        ):
             result[asset].add("prepared-reference")
-        for asset in await self.session.scalars(select(VisualProjectFileLink.asset_id).where(
-            VisualProjectFileLink.owner_user_id == self.owner, VisualProjectFileLink.asset_id.in_(ids)
-        )):
+        for asset in await self.session.scalars(
+            select(VisualProjectFileLink.asset_id).where(
+                VisualProjectFileLink.owner_user_id == self.owner,
+                VisualProjectFileLink.asset_id.in_(ids),
+            )
+        ):
             result[asset].add("project-placement")
+        for asset in await self.session.scalars(
+            select(AssetDedupeCanonicalPin.asset_id).where(
+                AssetDedupeCanonicalPin.owner_user_id == self.owner,
+                AssetDedupeCanonicalPin.asset_id.in_(ids),
+            )
+        ):
+            result[asset].add("dedupe-recovery")
         return result
 
     async def create(self, body):
-        existing = await self.session.scalar(select(AssetDedupeOperation).where(
-            AssetDedupeOperation.owner_user_id == self.owner,
-            AssetDedupeOperation.request_id == body.request_id,
-        ))
+        existing = await self.session.scalar(
+            select(AssetDedupeOperation).where(
+                AssetDedupeOperation.owner_user_id == self.owner,
+                AssetDedupeOperation.request_id == body.request_id,
+            )
+        )
         if existing:
             if existing.document["project_ids"] != sorted(set(body.project_ids)):
-                raise AssetError("同一请求不能更换项目范围", code="dedupe_request_conflict", status=409)
+                raise AssetError(
+                    "同一请求不能更换项目范围", code="dedupe_request_conflict", status=409
+                )
             return await self.status(existing.id)
         for project in sorted(set(body.project_ids)):
             await self.files._project(project)
@@ -82,28 +127,52 @@ class ContentAudits:
         sizes = defaultdict(list)
         for item in items:
             sizes[(item["media_kind"], item["byte_size"])].append(item)
-        candidates = [item for group in sizes.values() if len(group) > 1 and any(
-            item["project_id"] in body.project_ids for item in group
-        ) for item in group]
+        candidates = [
+            item
+            for group in sizes.values()
+            if len(group) > 1 and any(item["project_id"] in body.project_ids for item in group)
+            for item in group
+        ]
         keys, missing = await self.index.fingerprints(candidates)
         groups = defaultdict(list)
         for item in candidates:
             if item["id"] in keys:
                 groups[keys[item["id"]]].append(item)
         protection = await self.protections(list(keys))
-        document = {"project_ids": sorted(set(body.project_ids)), "groups": {}, "unavailable_ids": missing}
+        document = {
+            "project_ids": sorted(set(body.project_ids)),
+            "groups": {},
+            "unavailable_ids": missing,
+        }
         for key, group in sorted(groups.items()):
             if len(group) < 2 or not any(item["project_id"] in body.project_ids for item in group):
                 continue
-            ordered = sorted(group, key=lambda item: (item["project_id"] is not None, item["created_at"], item["id"]))
-            public = DuplicateGroup(content_key=key, canonical_id=ordered[0]["id"], members=[
-                DuplicateMember(**serialized(item), protected_by=sorted(protection[item["id"]]))
-                for item in ordered
-            ])
-            document["groups"][key] = {"public": public.model_dump(), "originals": [serialized(item) for item in ordered]}
+            ordered = sorted(
+                group,
+                key=lambda item: (item["project_id"] is not None, item["created_at"], item["id"]),
+            )
+            public = DuplicateGroup(
+                content_key=key,
+                canonical_id=ordered[0]["id"],
+                members=[
+                    DuplicateMember(**serialized(item), protected_by=sorted(protection[item["id"]]))
+                    for item in ordered
+                ],
+            )
+            document["groups"][key] = {
+                "public": public.model_dump(),
+                "originals": [serialized(item) for item in ordered],
+            }
         identity = str(uuid4())
-        self.session.add(AssetDedupeOperation(id=identity, owner_user_id=self.owner,
-                                           request_id=body.request_id, revision=0, document=document))
+        self.session.add(
+            AssetDedupeOperation(
+                id=identity,
+                owner_user_id=self.owner,
+                request_id=body.request_id,
+                revision=0,
+                document=document,
+            )
+        )
         try:
             await self.session.commit()
         except IntegrityError:
@@ -120,10 +189,15 @@ class ContentAudits:
         return version, document
 
     async def save(self, identity, expected, document, *, commit=True):
-        result = await self.session.execute(update(AssetDedupeOperation).where(
-            AssetDedupeOperation.id == identity, AssetDedupeOperation.owner_user_id == self.owner,
-            AssetDedupeOperation.revision == expected,
-        ).values(revision=expected + 1, document=document))
+        result = await self.session.execute(
+            update(AssetDedupeOperation)
+            .where(
+                AssetDedupeOperation.id == identity,
+                AssetDedupeOperation.owner_user_id == self.owner,
+                AssetDedupeOperation.revision == expected,
+            )
+            .values(revision=expected + 1, document=document)
+        )
         if result.rowcount != 1:
             await self.session.rollback()
             raise AssetError("去重操作已变化，请重新读取", code="dedupe_conflict", status=409)
@@ -135,15 +209,28 @@ class ContentAudits:
         groups = []
         for group in document["groups"].values():
             public = DuplicateGroup.model_validate(group["public"])
-            completed = set(await self.session.scalars(select(AssetDeletion.asset_id).where(
-                AssetDeletion.owner_user_id == self.owner, AssetDeletion.asset_id.in_(public.removed_ids),
-                AssetDeletion.status == "completed",
-            )))
-            public.reclaimed_bytes = sum(item["byte_size"] for item in group["originals"] if item["id"] in completed)
+            if public.state == "cleaned":
+                from studio.apps.asset_library.content_fingerprints import original_path
+
+                public.reclaimed_bytes = sum(
+                    item["byte_size"]
+                    for item in group["originals"]
+                    if item["id"] in public.removed_ids
+                    and not original_path(self.files, item).exists()
+                )
+                # A promoted shared original consumes one physical copy of its own.
+                canonical = group.get("canonical")
+                if canonical and original_path(self.files, canonical).exists():
+                    public.reclaimed_bytes = max(0, public.reclaimed_bytes - canonical["byte_size"])
             groups.append(public)
         await self.session.rollback()
-        return ContentAudit(id=identity, revision=version, project_ids=document["project_ids"],
-                            groups=groups, unavailable_ids=document["unavailable_ids"])
+        return ContentAudit(
+            id=identity,
+            revision=version,
+            project_ids=document["project_ids"],
+            groups=groups,
+            unavailable_ids=document["unavailable_ids"],
+        )
 
     def group(self, document, key):
         group = document["groups"].get(key)
@@ -168,5 +255,7 @@ class ContentAudits:
         await self.session.rollback()
         keys, missing = await self.index.fingerprints(items, fresh=True)
         if missing or any(key != group["public"]["content_key"] for key in keys.values()):
-            raise AssetError("原件已变化或无法读取，停止清理", code="dedupe_content_changed", status=409)
+            raise AssetError(
+                "原件已变化或无法读取，停止清理", code="dedupe_content_changed", status=409
+            )
         return items

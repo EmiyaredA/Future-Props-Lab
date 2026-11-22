@@ -1,11 +1,13 @@
 import { useState } from "react";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { Plus } from "lucide-react";
+import { Images, Plus } from "lucide-react";
 import { ImagePreview } from "@shared/ui/ImagePreview";
 import type { Card } from "./api";
 import type { CardFamily } from "./cardFamilies";
 import { cardKindInfo } from "./cardKinds";
 import { VariantStrip } from "./VariantStrip";
+import { CardFamilyGallery } from "./CardFamilyGallery";
+import { useCardFamilyImages } from "./useCardFamilyImages";
 
 function status(card: Card) {
   return card.archived
@@ -29,18 +31,22 @@ function Picture({ card }: { card: Card }) {
 
 function Family({
   family: { root, items },
+  galleryItems,
   onOpen,
   onVariant,
   readOnly,
   busy,
 }: {
   family: CardFamily;
+  galleryItems: Card[];
   onOpen: (id: string) => void;
   onVariant: (card: Card) => void;
   readOnly: boolean;
   busy: boolean;
 }) {
   const [selected, setSelected] = useState<string>();
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const images = useCardFamilyImages(galleryItems, galleryOpen);
   const preview = items.find(({ id }) => id === root.id) ?? items[0]!;
   const variants = items.filter(({ id }) => id !== preview.id);
   const open = (card: Card) => {
@@ -68,23 +74,47 @@ function Family({
         <span className="creative-card-cover">
           <Picture card={preview} />
         </span>
-        <strong title={preview.title}>{preview.title}</strong>
-        <small>{status(preview)}</small>
       </button>
-      <div className="card-family-actions">
-        <small>{items.filter(({ id }) => id !== root.id).length} 款变体</small>
+      <div className="card-family-summary">
+        <button
+          type="button"
+          className="card-family-title"
+          title={preview.title}
+          aria-label={`${readOnly ? "查看" : "编辑"}${preview.title}`}
+          onClick={() => open(preview)}
+        >
+          <strong>{preview.title}</strong>
+        </button>
+        <small className="card-family-status" title={status(preview)}>
+          {status(preview).replace("图片", "")}
+        </small>
+        <small className="card-family-variant-count">
+          {items.filter(({ id }) => id !== root.id).length} 变体
+        </small>
         {!readOnly && (
           <button
             type="button"
+            className="card-family-add-variant"
             aria-label={`为${root.title}创建变体`}
+            title="创建变体"
             disabled={busy || root.archived || !root.adopted_asset_id}
             onClick={() => onVariant(root)}
           >
             <Plus size={13} aria-hidden />
-            创建变体
           </button>
         )}
       </div>
+      <button
+        type="button"
+        className="card-family-gallery-button"
+        aria-label={`查看${root.title}的全部关联图片`}
+        title={images.incomplete ? "打开后读取更多候选生成结果" : undefined}
+        onClick={() => setGalleryOpen(true)}
+      >
+        <Images size={14} aria-hidden />
+        查看全部图片（{images.count}
+        {images.incomplete ? "+" : ""}）
+      </button>
       {variants.length > 0 && (
         <Tooltip.Provider delayDuration={350}>
           <VariantStrip
@@ -134,6 +164,13 @@ function Family({
                           <Picture card={card} />
                         </span>
                         <span className="card-variant-caption">{title}</span>
+                        <small className="card-variant-image-count">
+                          {images.groups.find(
+                            (group) => group.card.id === card.id,
+                          )?.images.length ?? 0}
+                          {images.incompleteCards.has(card.id) ? "+" : ""}{" "}
+                          张图片
+                        </small>
                       </button>
                     </Tooltip.Trigger>
                     <Tooltip.Portal>
@@ -153,15 +190,33 @@ function Family({
           </VariantStrip>
         </Tooltip.Provider>
       )}
+      {galleryOpen && (
+        <CardFamilyGallery
+          root={root}
+          groups={images.groups}
+          loading={images.loading}
+          failed={images.failed}
+          generating={images.generating}
+          onRetry={images.retry}
+          onClose={() => setGalleryOpen(false)}
+          onOpenCard={(id) => {
+            setGalleryOpen(false);
+            setSelected(id);
+            onOpen(id);
+          }}
+        />
+      )}
     </article>
   );
 }
 
 export function CardLibraryGroups({
   families,
+  galleryFamilies = families,
   ...props
 }: {
   families: CardFamily[];
+  galleryFamilies?: CardFamily[];
   onOpen: (id: string) => void;
   onVariant: (card: Card) => void;
   readOnly: boolean;
@@ -170,7 +225,15 @@ export function CardLibraryGroups({
   return (
     <div className="creative-card-grid card-library-grid">
       {families.map((family) => (
-        <Family key={family.root.id} family={family} {...props} />
+        <Family
+          key={family.root.id}
+          family={family}
+          galleryItems={
+            galleryFamilies.find(({ root }) => root.id === family.root.id)
+              ?.items ?? family.items
+          }
+          {...props}
+        />
       ))}
     </div>
   );

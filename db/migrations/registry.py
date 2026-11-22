@@ -140,6 +140,7 @@ from db.migrations.versions import (
     r0136_visual_storyboards,
     r0137_visual_creation_links,
     r0138_visual_card_voice,
+    r0139_asset_content_identity,
 )
 
 
@@ -653,5 +654,9 @@ MIGRATIONS += (
 )
 
 MIGRATIONS += (Migration(r0138_visual_card_voice.MIGRATION_ID, r0138_visual_card_voice.SQL),)
+
+MIGRATIONS += (
+    Migration(r0139_asset_content_identity.MIGRATION_ID, r0139_asset_content_identity.SQL),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

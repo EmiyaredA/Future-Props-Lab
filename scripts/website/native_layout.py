@@ -94,12 +94,18 @@ def mapped(value, paths):
     return value
 
 
-def configuration_copy(source, destination, paths, *, identity=False, gateway=False):
+def configuration_copy(
+    source, destination, paths, *, identity=False, gateway=False, public_profiles=None
+):
     document = tomlkit.parse(source.read_text())
     data = mapped(document.unwrap(), paths)
     if identity:
         data.setdefault("website", {})["port"] = 3000
         data.setdefault("management", {})["local_origin"] = "http://127.0.0.1:3000"
+        if public_profiles:
+            data.setdefault("remote_web", {})["origin"] = public_profiles["gateway"].origin
+            if "management" in public_profiles:
+                data["management"]["public_origin"] = public_profiles["management"].origin
     if gateway:
         data["happier"] = {}
     # A projection contains the same secrets; it is never printed or committed.
@@ -133,9 +139,11 @@ def development_release(root, directory, service, catalog, schema):
     return release, {"build": build, "entry": entry}
 
 
-def prepare(root, config, directory, caddy):
+def prepare(root, config, directory, caddy, *, public_profiles=None):
     units = compose_services(root, config)
     names = [name for name in ENTRY_POINTS if name in units]
+    if public_profiles and not set(public_profiles).issubset(names):
+        raise ValueError("公网所需的独立网关未在现有部署中登记")
     addresses = {name: f"127.0.0.1:{19100 + index}" for index, name in enumerate(names)}
     if len(names) != len(set(addresses.values())):
         raise ValueError("本机服务端口重复")
@@ -178,6 +186,7 @@ def prepare(root, config, directory, caddy):
                 paths,
                 identity=name == "identity",
                 gateway=name == "gateway",
+                public_profiles=public_profiles,
             )
             paths["/run/fpl/config.toml"] = str(destination)
         for target in (
@@ -260,6 +269,7 @@ def prepare(root, config, directory, caddy):
     native = {name: token for name, token in native.items() if token}
     for audience, port, native_port in (("studio", 9001, 29090), ("management", 9002, 29092)):
         name = "gateway" if audience == "studio" else "management"
+        public = (public_profiles or {}).get(name)
         token = (
             Path(
                 all_mounts["/run/fpl/gateway-token"]
@@ -273,7 +283,7 @@ def prepare(root, config, directory, caddy):
             catalog,
             gateway_token=token,
             local_origin="http://127.0.0.1:3000",
-            public_origin="https://native-development.invalid",
+            public_origin=public.origin if public else "https://native-development.invalid",
             addresses=addresses,
             local_only=True,
             local_port=port,
@@ -293,6 +303,8 @@ def prepare(root, config, directory, caddy):
             if audience == "studio" and "/run/fpl/creative-bridge-ingress" in all_mounts
             else None,
             creative_socket_directory=directory / "bridge",
+            public_loopback_port=public.local_port if public else None,
+            development_frontend="127.0.0.1:3000" if public else None,
         )
         private_write(directory / f"{name}.Caddyfile", routing)
     routes = [

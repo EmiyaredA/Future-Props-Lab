@@ -8,6 +8,18 @@ from studio.apps.visual_workshop.creative_ports import CreativeAsset
 from studio.apps.visual_workshop.projects import Projects
 
 
+async def website_reference_image_guard(session, owner, project_id):
+    await Projects(session, owner).row(project_id)
+
+
+async def website_reference_image_identity(request, session, owner, project_id, asset_id):
+    from studio.assembly.website.asset_library.transport.content import bind_content_audits
+
+    await Projects(session, owner).row(project_id)
+    result = await bind_content_audits(request, session, owner).identities([asset_id])
+    return next((item for item in result.items if item.asset_id == asset_id), None)
+
+
 async def website_creative_asset_scope(_request, session, owner, project_id, identities):
     if project_id is None:
         records = await session.execute(

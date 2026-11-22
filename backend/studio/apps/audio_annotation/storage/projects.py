@@ -9,6 +9,7 @@ from studio.apps.audio_annotation.models import (
     AudioAnnotationWaveform,
 )
 from studio.apps.audio_annotation.ports import AudioSources
+from studio.apps.audio_annotation.project_preview import audio_preview
 from studio.apps.audio_annotation.rules.audio import require_audio
 from studio.apps.audio_annotation.rules.documents import validate_document
 from studio.apps.audio_annotation.schemas.document import (
@@ -86,6 +87,7 @@ class ProjectRecords:
             segment_count=len(document.segments),
             reviewed_segment_count=reviewed,
             waveform_ready=bool(waveform.peaks),
+            preview=audio_preview(waveform, document, row.duration_ms),
             document_revision=document.revision,
             revision=row.revision,
             created_at=iso_utc(row.created_at),

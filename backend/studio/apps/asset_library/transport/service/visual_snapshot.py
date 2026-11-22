@@ -4,13 +4,16 @@ import jwt
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
+from studio.apps.asset_library.content_audits import ContentAudits
 from studio.apps.asset_library.scoped_project_files import check_project_scope
+from studio.apps.asset_library.transport.service.context import cases
 from studio.apps.asset_library.visual.visual_snapshot_files import (
     card_media,
     metadata,
     originals,
     scoped_assets,
 )
+from studio.contracts.asset_library.content_identity import ContentIdentities
 from studio.contracts.asset_library.descriptions import LibraryAssetDescription, LibraryAssetQuery
 from studio.contracts.identity.claims import HEADER, verify_context
 from studio.contracts.identity.permissions import effective_permissions
@@ -71,6 +74,21 @@ async def visual_metadata(request: Request, project_id: str, digest: str, body: 
     state = request.app.state
     async with state.database.sessions(info={"owner_user_id": owner}) as session:
         return await metadata(session, state.settings, project_id, body)
+
+
+@router.post(ASSETS + "/{project_id}/identities/{digest}", response_model=ContentIdentities)
+async def reference_image_identities(
+    request: Request, project_id: str, digest: str, body: LibraryAssetQuery
+):
+    owner = await authorize(request, digest, body.digest)
+    if len(body.asset_ids) != 1:
+        raise HTTPException(422, "reference_image_selection_size")
+    async with request.app.state.database.sessions(info={"owner_user_id": owner}) as session:
+        await check_project_scope(session, "visual", project_id)
+        rows = await scoped_assets(session, project_id, body.asset_ids, include_private=False)
+        if len(rows) != 1 or rows[0][0].media_kind != "image":
+            raise HTTPException(422, "reference_image_project_scope")
+        return await ContentAudits(cases(request, session, owner)).identities(body.asset_ids)
 
 
 @router.post(

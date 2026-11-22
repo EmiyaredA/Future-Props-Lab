@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.video_editor.errors import VideoEditorNotFoundError
+from studio.apps.video_editor.project_previews import project_previews
 from studio.apps.video_editor.schemas import (
     VideoEditorProjectCreateIn,
     VideoEditorProjectListOut,
@@ -108,7 +109,15 @@ class VideoEditorProjects:
             .scalars()
             .all()
         )
-        return VideoEditorProjectListOut(items=[project_out(row) for row in rows])
+        previews = await project_previews(
+            self.session, self.owner_user_id, [row.id for row in rows]
+        )
+        return VideoEditorProjectListOut(
+            items=[
+                project_out(row).model_copy(update={"preview": previews.get(row.id)})
+                for row in rows
+            ]
+        )
 
     async def get(self, project_id: str) -> VideoEditorProjectOut:
         return project_out(await self.row(project_id))

@@ -357,10 +357,11 @@ export async function getGenerationTasks(
   );
 }
 
-export async function getGenerationTask(taskId: string) {
+export async function getGenerationTask(taskId: string, signal?: AbortSignal) {
   return unwrap(
     await api.GET("/v1/visual-workshop/generation-tasks/{task_id}", {
       params: { path: { task_id: taskId } },
+      signal,
     }),
   );
 }

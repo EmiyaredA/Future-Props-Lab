@@ -84,8 +84,8 @@ export function ScriptDirectory({
       <label className="workspace-search">
         <Search size={16} aria-hidden />
         <input
-          aria-label="搜索集与场次"
-          placeholder="搜索集与场次…"
+          aria-label="搜索集与分镜"
+          placeholder="搜索集与分镜…"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
@@ -112,7 +112,7 @@ export function ScriptDirectory({
       <div className="script-directory-list" ref={directory}>
         {!visible.length && (
           <p className="creative-feedback">
-            {query ? "没有匹配的集或场次" : "还没有分集剧本"}
+            {query ? "没有匹配的集或分镜" : "还没有分集剧本"}
           </p>
         )}
         {visible.map((episode) => {
@@ -144,11 +144,16 @@ export function ScriptDirectory({
                   className="script-tree-select"
                   disabled={busy}
                   aria-label={`编辑${episode.title}`}
+                  aria-current={
+                    selectedEpisode === episode.id && !selectedScene
+                      ? "true"
+                      : undefined
+                  }
                   onClick={() => onSelect(episode.id)}
                 >
                   <Clapperboard size={16} />
                   <span>{episode.title}</span>
-                  <small>{episode.scenes.length} 场</small>
+                  <small>{episode.scenes.length} 镜</small>
                 </button>
                 {!readOnly && (
                   <button
@@ -188,8 +193,8 @@ export function ScriptDirectory({
                           type="button"
                           className="script-tree-delete"
                           disabled={busy}
-                          aria-label={`删除场次 ${scene.title}`}
-                          title="删除场次"
+                          aria-label={`删除分镜 ${scene.title}`}
+                          title="删除分镜"
                           onClick={() => onDelete(episode.id, scene.id)}
                         >
                           <Trash2 size={15} aria-hidden />
@@ -205,7 +210,7 @@ export function ScriptDirectory({
                         onClick={() => onNewScene(episode.id)}
                       >
                         <Plus size={15} />
-                        新建场
+                        新建分镜
                       </button>
                     </li>
                   )}

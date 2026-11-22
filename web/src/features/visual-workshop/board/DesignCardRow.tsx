@@ -4,6 +4,7 @@ import { ImagePreview } from "@shared/ui/ImagePreview";
 import type { VisualCanvasNode } from "../api";
 import type { Card } from "../creative/api";
 import { BoardMenu } from "./BoardMenu";
+import { setCanvasAssetDragData } from "../canvas/canvasAssetDrag";
 
 export function DesignCardRow({
   card,
@@ -62,6 +63,25 @@ export function DesignCardRow({
       type="button"
       className="board-design-card-open"
       aria-label={`查看设定卡 ${card.title}`}
+      draggable={Boolean(
+        !actions.disabled && !card.archived && card.adopted_asset_id,
+      )}
+      onDragStart={(event) => {
+        if (actions.disabled || card.archived || !card.adopted_asset_id) {
+          event.preventDefault();
+          return;
+        }
+        event.stopPropagation();
+        const source = card.media_projects?.[card.adopted_asset_id];
+        setCanvasAssetDragData(event.dataTransfer, {
+          assetId: card.adopted_asset_id,
+          mediaKind: "image",
+          displayName: card.title,
+          importMode: source ? "cross-project" : "library",
+          sourceProjectId: source ?? undefined,
+          cardId: card.id,
+        });
+      }}
       onClick={() => actions.onView(card)}
     >
       <span className="board-design-card-thumb">

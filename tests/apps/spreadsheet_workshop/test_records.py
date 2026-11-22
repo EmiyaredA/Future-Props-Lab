@@ -210,3 +210,32 @@ async def test_sheet_rename_updates_quoted_references_and_delete_marks_ref(recor
         ),
     )
     assert updated.document.sheets[0].celldata[0].v["f"] == "=#REF!+1"
+
+
+async def test_library_preview_reads_only_saved_visible_cells_without_mutating_workbook(records):
+    document = {
+        "schema_version": 1,
+        "sheets": [
+            {
+                "id": "sheet-1",
+                "name": "拍摄预算",
+                "row": 10000,
+                "column": 30,
+                "celldata": [
+                    {"r": index, "c": 2, "v": {"v": index, "m": f"¥{index}", "bg": "#ffeecc"}}
+                    for index in range(2000)
+                ],
+            }
+        ],
+    }
+    created = await records.create(
+        "alice", SpreadsheetCreate(request_id="preview", title="预算", document=document)
+    )
+    listed = (await records.list("alice", "", 0, 30)).items[0]
+    assert listed.preview.kind == "table"
+    assert len(listed.preview.cells) == 6 and listed.preview.cells[0][0].text == "¥0"
+    assert listed.preview.cells[0][0].background == "#ffeecc"
+    assert len(listed.model_dump_json()) < 4000
+    after = await records.get("alice", created.id)
+    assert after.revision == created.revision and after.document == created.document
+    assert not (await records.list("bob", "", 0, 30)).items

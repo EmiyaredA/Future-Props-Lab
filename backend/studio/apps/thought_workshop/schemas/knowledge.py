@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from studio.apps.thought_workshop.schemas.workshop import ThoughtNoteSummary, ThoughtRevisionIn
+from studio.runtime.project_preview import ProjectPreview
 
 
 class KnowledgeBaseIn(BaseModel):
@@ -27,6 +28,7 @@ class KnowledgeBasePut(KnowledgeBaseIn, ThoughtRevisionIn):
 
 
 class KnowledgeBaseOut(KnowledgeBaseIn):
+    preview: ProjectPreview | None = None
     model_config = ConfigDict(from_attributes=True)
     id: str
     home_note_id: str

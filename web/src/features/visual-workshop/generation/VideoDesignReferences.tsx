@@ -11,7 +11,7 @@ import { Plus, X } from "lucide-react";
 import { apiErrorMessage } from "@platform/api/errors";
 import { ImagePreview } from "@shared/ui/ImagePreview";
 import { resolveDesignImage } from "../creative/cardMedia";
-import { cardsKey, listCards, type Card } from "../creative/api";
+import { projectCardsKey, listProjectCards, type Card } from "../creative/api";
 import { DesignCardPicker } from "../creative/DesignCardPicker";
 import type { useGenerationDrawerController } from "./useGenerationDrawerController";
 
@@ -52,14 +52,26 @@ export function VideoDesignReferences({
       new Set([...references, ...linkedAssetIds.image]).size,
   );
   const cards = useQuery({
-    queryKey: cardsKey,
-    queryFn: ({ signal }) => listCards(signal),
+    queryKey: projectCardsKey(projectId),
+    queryFn: ({ signal }) => listProjectCards(projectId, signal),
     enabled: designReferences.length > 0,
   });
 
   const add = useCallback(
     async (chosen: Card[], replace?: string) => {
       if (!supported) throw new Error("当前模型不支持全能参考");
+      const projectCards = await client.fetchQuery({
+        queryKey: projectCardsKey(projectId),
+        queryFn: ({ signal }) => listProjectCards(projectId, signal),
+        staleTime: 0,
+      });
+      if (
+        chosen.some(
+          (card) =>
+            !projectCards.some((item) => item.id === card.id && !item.archived),
+        )
+      )
+        throw new Error("请先将设定卡收录到当前项目");
       const selected = chosen.filter(
         (card) =>
           !designReferences.some(
@@ -290,6 +302,7 @@ export function VideoDesignReferences({
       {error && <small role="alert">{error}</small>}
       {open && (
         <DesignCardPicker
+          projectId={projectId}
           title="添加设定参考"
           needsImage
           max={available}

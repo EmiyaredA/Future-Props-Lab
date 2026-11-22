@@ -1,9 +1,13 @@
+import * as Tabs from "@radix-ui/react-tabs";
+import { CardEditorTabs } from "./CardEditorTabs";
+import { CardCandidateImages } from "./CardCandidateImages";
 import { SceneStageBinding } from "./SceneStageBinding";
 import { CardLibraryGroups } from "./CardLibraryGroups";
 import { libraryFamilies } from "./cardFamilies";
 import { useCardNameSort } from "./useCardNameSort";
 import { useCardCreation } from "./useCardCreation";
 import { useBackdropDismiss } from "@shared/ui/useBackdropDismiss";
+import { useConfirmation } from "@shared/ui/useConfirmation";
 import {
   importLibraryAssets,
   invalidateFileScope,
@@ -12,16 +16,14 @@ import {
 import { CardVoice } from "./CardVoice";
 import { projectModelPath, projectModelsKey } from "../previs/projectModels";
 import { useEffect, useRef, useState } from "react";
-import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Archive,
   ArrowDownAZ,
   ArrowUpRight,
-  ChevronDown,
   Images,
   Plus,
   Search,
-  Sparkles,
   X,
 } from "lucide-react";
 import { apiErrorMessage } from "@platform/api/errors";
@@ -31,11 +33,7 @@ import { SearchablePickerField } from "@shared/ui/SearchablePickerDialog";
 import { CardAssetPicker, type PickedCardAsset } from "./CardAssetPicker";
 import { ImagePreview } from "@shared/ui/ImagePreview";
 import { WorkshopSearch } from "@shared/ui/WorkshopAppChrome";
-import {
-  getGenerationOptions,
-  getGenerationTask,
-  getVisualWorkshopProjects,
-} from "../api";
+import { getGenerationOptions, getVisualWorkshopProjects } from "../api";
 import { visualWorkshopQueryKeys } from "../queryKeys";
 import {
   cardsKey,
@@ -47,6 +45,8 @@ import {
 } from "./api";
 import { cardKindInfo, cardKinds } from "./cardKinds";
 import { placeCardImage } from "./cardMedia";
+import { cardCandidateIds } from "./cardImages";
+import { useCardCandidates } from "./useCardCandidates";
 import "./creative.css";
 import "./card-library.css";
 import "./card-editor.css";
@@ -264,6 +264,13 @@ export function AssetCards({
       {families.length > 0 && (
         <CardLibraryGroups
           families={families}
+          galleryFamilies={libraryFamilies(
+            cards.data ?? [],
+            kind,
+            includeArchived,
+            "",
+            sorting.sorted(kind),
+          )}
           onOpen={setActive}
           onVariant={(parent) => void add(parent)}
           readOnly={readOnly}
@@ -297,10 +304,18 @@ function CardEditor({
   const dialog = useRef<HTMLDialogElement>(null);
   const client = useQueryClient();
   const { label, icon: KindIcon } = cardKindInfo[initial.kind];
-  const [draft, setDraft] = useState(initial);
+  const [draft, setDraft] = useState(() => ({
+    ...initial,
+    candidate_asset_ids: cardCandidateIds(initial),
+  }));
+  const [editorTab, setEditorTab] = useState("design");
   const [dirty, setDirty] = useState(false);
   const [working, setBusy] = useState(false);
   const busy = working || creation.busy;
+  const confirmation = useConfirmation({
+    portalContainer: dialog.current,
+    pending: busy,
+  });
   const [notice, setNotice] = useState("");
   const [modelId, setModelId] = useState("");
   const [size, setSize] = useState("");
@@ -334,19 +349,12 @@ function CardEditor({
   const parentScope = draft.parent_asset_id
     ? draft.media_projects?.[draft.parent_asset_id]
     : null;
-  const tasks = useQueries({
-    queries: (draft.candidate_task_ids ?? []).map((id) => ({
-      queryKey: visualWorkshopQueryKeys.generationTask(id),
-      queryFn: () => getGenerationTask(id),
-      refetchInterval: (query: {
-        state: { data?: Awaited<ReturnType<typeof getGenerationTask>> };
-      }) =>
-        query.state.data &&
-        !["completed", "failed", "cancelled"].includes(query.state.data.status)
-          ? 2300
-          : false,
-    })),
-  });
+  const {
+    tasks,
+    ids: candidateIds,
+    aliases,
+    resolving,
+  } = useCardCandidates(draft, copies.current);
   const models =
     options.data?.models.filter(
       (entry) =>
@@ -354,16 +362,6 @@ function CardEditor({
         (!draft.parent_asset_id || entry.max_reference_images > 0),
     ) ?? [];
   const model = models.find((item) => item.id === modelId);
-  const candidateIds = [
-    ...new Set([
-      ...(draft.candidate_asset_ids ?? []),
-      ...tasks.flatMap(({ data }) =>
-        data?.status === "completed" && data.result_asset_id
-          ? [data.result_asset_id]
-          : [],
-      ),
-    ]),
-  ];
 
   async function copyToLibrary(asset: string, source: string) {
     const previous = copies.current.get(asset);
@@ -381,6 +379,8 @@ function CardEditor({
   }
 
   async function saveDraft(value: Card) {
+    if (candidateIds.length > 80)
+      throw new Error("候选图最多保留 80 张，请先整理候选图");
     let {
       adopted_asset_id: adopted,
       model_asset_key: modelKey,
@@ -415,6 +415,11 @@ function CardEditor({
     return saveCard({
       ...value,
       adopted_asset_id: adopted,
+      candidate_asset_ids: cardCandidateIds(
+        { ...value, adopted_asset_id: adopted },
+        candidateIds,
+        new Map([...aliases, ...copies.current]),
+      ),
       model_asset_key: modelKey,
       voice_asset_id: voice,
     });
@@ -430,20 +435,38 @@ function CardEditor({
     };
   }, []);
 
-  function close() {
-    if (busy || (dirty && !window.confirm("舍弃尚未保存的设定修改？")))
+  async function close() {
+    if (busy) return false;
+    if (
+      dirty &&
+      !(await confirmation.confirm({
+        title: "舍弃设定修改？",
+        description: "尚未保存的设定修改将被舍弃。",
+        confirmLabel: "舍弃修改",
+        cancelLabel: "继续编辑",
+      }))
+    )
       return false;
     onClose();
     return true;
   }
 
   function edit(patch: Partial<Card>) {
-    setDraft({ ...draft, ...patch });
+    setDraft({
+      ...draft,
+      ...patch,
+      candidate_asset_ids: [
+        ...new Set([
+          ...candidateIds,
+          ...(patch.adopted_asset_id ? [patch.adopted_asset_id] : []),
+        ]),
+      ],
+    });
     setDirty(true);
   }
 
   function apply(value: Card) {
-    setDraft(value);
+    setDraft({ ...value, candidate_asset_ids: cardCandidateIds(value) });
     setDirty(false);
     onChanged(value);
   }
@@ -525,43 +548,14 @@ function CardEditor({
                 </div>
               )}
             </div>
-            {candidateIds.length > 0 && (
-              <section
-                className="card-editor-candidate-section"
-                aria-label="候选图"
-              >
-                <h3>候选图</h3>
-                <div className="card-editor-candidates">
-                  {candidateIds.map((id, index) => (
-                    <div key={id} className="card-editor-candidate">
-                      <ImagePreview
-                        interactive={false}
-                        size={320}
-                        alt={`候选图 ${index + 1}`}
-                        src={`/v1/files/${id}/content`}
-                      />
-                      {!readOnly && (
-                        <button
-                          type="button"
-                          className="creative-quiet"
-                          aria-label={
-                            id === draft.adopted_asset_id
-                              ? undefined
-                              : `采用候选图 ${index + 1}`
-                          }
-                          disabled={busy || id === draft.adopted_asset_id}
-                          onClick={() => edit({ adopted_asset_id: id })}
-                        >
-                          {id === draft.adopted_asset_id
-                            ? "已采用"
-                            : "采用此图"}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
+            <CardCandidateImages
+              ids={candidateIds}
+              adoptedId={draft.adopted_asset_id}
+              readOnly={readOnly}
+              busy={busy}
+              onAdopt={(id) => edit({ adopted_asset_id: id })}
+            />
+            {resolving && <p role="status">正在核对候选图…</p>}
             {tasks.some(
               ({ data, isPending }) =>
                 isPending ||
@@ -578,254 +572,288 @@ function CardEditor({
                 : [],
             )}
           </section>
-          <section className="card-editor-details" aria-label="设定详情">
-            <h3>设定详情</h3>
-            {draft.kind === "character" && (
-              <CardVoice
-                assetId={draft.voice_asset_id}
-                title={draft.title}
+          <Tabs.Root
+            value={
+              editorTab === "generation" &&
+              (readOnly || !canUseModels || draft.archived)
+                ? "design"
+                : editorTab
+            }
+            onValueChange={setEditorTab}
+            className="card-editor-details"
+            asChild
+          >
+            <section aria-label="设定详情">
+              <CardEditorTabs
                 readOnly={readOnly}
-                busy={busy}
-                onChoose={() => setPicker("audio")}
-                onRemove={() => edit({ voice_asset_id: null })}
-                onUpload={(file) =>
-                  run(async () => {
-                    const uploaded = await uploadManagedFile(file);
-                    await invalidateFileScope(client);
-                    edit({ voice_asset_id: uploaded.id });
-                  })
-                }
+                canGenerate={canUseModels && !draft.archived}
               />
-            )}
-            {readOnly ? (
-              <dl className="card-editor-read-only">
-                <dt>确认的设定</dt>
-                <dd>{draft.design || "暂无已确认的设定"}</dd>
-              </dl>
-            ) : (
-              <div className="card-editor-fields">
-                <label>
-                  名称
-                  <input
-                    value={draft.title}
-                    maxLength={120}
-                    disabled={busy}
-                    onChange={(event) => edit({ title: event.target.value })}
+              <Tabs.Content value="design" className="card-editor-panel">
+                <div className="card-editor-panel-heading">
+                  <h3>基本设定</h3>
+                  <p>记录外观与细节，让创作保持一致。</p>
+                </div>
+                {readOnly ? (
+                  <dl className="card-editor-read-only">
+                    <dt>描述</dt>
+                    <dd>{draft.design || "暂无描述"}</dd>
+                  </dl>
+                ) : (
+                  <div className="card-editor-fields">
+                    <label>
+                      名称
+                      <input
+                        value={draft.title}
+                        maxLength={120}
+                        disabled={busy}
+                        onChange={(event) =>
+                          edit({ title: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      描述
+                      <textarea
+                        className="card-editor-design"
+                        rows={4}
+                        value={draft.design ?? ""}
+                        disabled={busy}
+                        onChange={(event) =>
+                          edit({ design: event.target.value })
+                        }
+                      />
+                    </label>
+                  </div>
+                )}
+                {draft.kind === "character" && (
+                  <CardVoice
+                    assetId={draft.voice_asset_id}
+                    title={draft.title}
+                    readOnly={readOnly}
+                    busy={busy}
+                    onChoose={() => setPicker("audio")}
+                    onRemove={() => edit({ voice_asset_id: null })}
+                    onUpload={(file) =>
+                      run(async () => {
+                        const uploaded = await uploadManagedFile(file);
+                        await invalidateFileScope(client);
+                        edit({ voice_asset_id: uploaded.id });
+                      })
+                    }
                   />
-                </label>
-                <label>
-                  确认的设定
-                  <textarea
-                    className="card-editor-design"
-                    rows={4}
-                    value={draft.design ?? ""}
-                    disabled={busy}
-                    onChange={(event) => edit({ design: event.target.value })}
-                  />
-                </label>
-                <div className="card-editor-options">
-                  <details
-                    className="card-editor-disclosure"
-                    open={!initial.adopted_asset_id}
-                  >
-                    <summary>
-                      <Images size={16} aria-hidden /> 素材与 3D 模型{" "}
-                      <ChevronDown size={16} aria-hidden />
-                    </summary>
-                    <div className="card-editor-disclosure-body">
-                      <div className="card-editor-select-field">
-                        <span>采用图</span>
-                        <button
-                          type="button"
-                          className="searchable-picker-trigger"
-                          aria-label="选择采用图"
-                          aria-haspopup="dialog"
-                          disabled={busy}
-                          onClick={() => setPicker("image")}
-                        >
-                          <span>
-                            {draft.adopted_asset_id
-                              ? (pickedAssets[draft.adopted_asset_id]?.label ??
-                                "更换采用图")
-                              : "选择采用图"}
-                          </span>
-                          <Search size={15} aria-hidden />
-                        </button>
-                      </div>
-                      <div className="card-editor-select-field">
-                        <span>3D 模型</span>
-                        <button
-                          type="button"
-                          className="searchable-picker-trigger"
-                          aria-label="关联 3D 模型"
-                          aria-haspopup="dialog"
-                          disabled={busy}
-                          onClick={() => setPicker("model")}
-                        >
-                          <span>
-                            {draft.model_asset_key
-                              ? (pickedAssets[draft.model_asset_key]?.label ??
-                                "更换已关联模型")
-                              : "关联 3D 模型"}
-                          </span>
-                          <Search size={15} aria-hidden />
-                        </button>
-                      </div>
+                )}
+              </Tabs.Content>
+              {!readOnly && (
+                <Tabs.Content
+                  value="materials"
+                  className="card-editor-panel"
+                  forceMount
+                >
+                  <div className="card-editor-panel-heading">
+                    <h3>关联资源</h3>
+                    <p>查看和管理此设定关联的图片与 3D 模型。</p>
+                  </div>
+                  <div className="card-editor-fields">
+                    <div className="card-editor-select-field">
+                      <span>采用图</span>
+                      {draft.adopted_asset_id && (
+                        <div className="card-editor-linked-image">
+                          <ImagePreview
+                            size={320}
+                            alt={`${draft.title}已关联的采用图`}
+                            src={`/v1/files/${draft.adopted_asset_id}/content`}
+                          />
+                          <a
+                            href={`/v1/files/${draft.adopted_asset_id}/content`}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            查看关联图片 <ArrowUpRight size={14} aria-hidden />
+                          </a>
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className="searchable-picker-trigger"
+                        aria-label="选择采用图"
+                        aria-haspopup="dialog"
+                        disabled={busy}
+                        onClick={() => setPicker("image")}
+                      >
+                        <span>
+                          {draft.adopted_asset_id
+                            ? (pickedAssets[draft.adopted_asset_id]?.label ??
+                              "更换采用图")
+                            : "选择采用图"}
+                        </span>
+                        <Search size={15} aria-hidden />
+                      </button>
                     </div>
-                  </details>
+                    <div className="card-editor-select-field">
+                      <span>3D 模型</span>
+                      <button
+                        type="button"
+                        className="searchable-picker-trigger"
+                        aria-label="关联 3D 模型"
+                        aria-haspopup="dialog"
+                        disabled={busy}
+                        onClick={() => setPicker("model")}
+                      >
+                        <span>
+                          {draft.model_asset_key
+                            ? (pickedAssets[draft.model_asset_key]?.label ??
+                              "更换已关联模型")
+                            : "关联 3D 模型"}
+                        </span>
+                        <Search size={15} aria-hidden />
+                      </button>
+                    </div>
+                  </div>
                   {project && draft.kind === "scene" && (
                     <SceneStageBinding
                       project={project}
                       cardId={draft.id}
                       title={draft.title}
                       readOnly={readOnly}
-                      onOpen={(id) => {
-                        if (close()) onOpenPrevis?.(id);
+                      onOpen={async (id) => {
+                        if (await close()) onOpenPrevis?.(id);
                       }}
                     />
                   )}
-                  {canUseModels && !draft.archived && (
-                    <details className="card-editor-disclosure">
-                      <summary>
-                        <Sparkles size={16} aria-hidden /> 候选图生成{" "}
-                        <ChevronDown size={16} aria-hidden />
-                      </summary>
-                      <section
-                        className="card-editor-disclosure-body"
-                        aria-label="候选图生成"
-                      >
-                        <div className="card-editor-generation-fields">
-                          <SearchablePickerField
-                            title="生成任务归属项目"
-                            searchLabel="搜索项目"
-                            placeholder="选择生成任务归属项目"
-                            value={generationProject}
-                            items={
-                              parentScope
-                                ? projectChoices.filter(
-                                    ({ id }) => id === parentScope,
-                                  )
-                                : projectChoices
-                            }
-                            disabled={busy}
-                            onChange={setGenerationProject}
-                          />
-                          <CustomSelect
-                            escapeClipping={false}
-                            ariaLabel="图片模型"
-                            placeholder="选择图片模型"
-                            value={modelId}
-                            disabled={busy}
-                            options={models.map((item) => ({
-                              value: item.id,
-                              label: item.label,
-                            }))}
-                            onChange={(id) => {
-                              setModelId(id);
-                              const sizes =
-                                models.find((item) => item.id === id)?.sizes ??
-                                [];
-                              setSize(
-                                sizes.find(
-                                  (entry) =>
-                                    entry.startsWith("16:9") ||
-                                    entry.startsWith("1536x"),
-                                ) ??
-                                  sizes[0] ??
-                                  "",
-                              );
-                            }}
-                          />
-                          {model && (
-                            <CustomSelect
-                              escapeClipping={false}
-                              ariaLabel="图片尺寸"
-                              value={size}
-                              disabled={busy}
-                              options={(model.sizes ?? []).map((entry) => ({
-                                label: entry,
-                                value: entry,
-                              }))}
-                              onChange={setSize}
-                            />
-                          )}
-                        </div>
-                        <label>
-                          生成提示词
-                          <textarea
-                            disabled={busy}
-                            rows={5}
-                            value={prompt || cardPrompt(draft)}
-                            onChange={(event) => setPrompt(event.target.value)}
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          className="creative-primary"
-                          disabled={
-                            busy ||
-                            !model ||
-                            !size ||
-                            !generationProject ||
-                            !draft.title.trim()
-                          }
-                          onClick={() =>
-                            void run(async () => {
-                              const current = dirty
-                                ? await saveDraft(draft)
-                                : draft;
-                              if (dirty) apply(current);
-                              if (current.parent_asset_id)
-                                await placeCardImage(
-                                  generationProject,
-                                  current.parent_asset_id,
-                                  parentScope,
-                                );
-                              const input = {
-                                expected_revision: current.revision,
-                                model_id: modelId,
-                                size,
-                                prompt: (prompt || cardPrompt(current)).trim(),
-                              };
-                              const key = JSON.stringify([
-                                generationProject,
-                                input,
-                              ]);
-                              if (pendingRequest.current?.key !== key)
-                                pendingRequest.current = {
-                                  key,
-                                  id: crypto.randomUUID(),
-                                };
-                              await generateCard(
-                                generationProject,
-                                current.id,
-                                {
-                                  ...input,
-                                  request_id: pendingRequest.current.id,
-                                },
-                              );
-                              pendingRequest.current = null;
-                              const cards = await client.fetchQuery({
-                                queryKey: cardsKey,
-                                queryFn: () => listCards(),
-                                staleTime: 0,
-                              });
-                              const saved = cards.find(
-                                (entry) => entry.id === current.id,
-                              );
-                              if (saved) apply(saved);
-                            })
-                          }
-                        >
-                          生成候选图
-                        </button>
-                      </section>
-                    </details>
-                  )}
-                </div>
-              </div>
-            )}
-          </section>
+                </Tabs.Content>
+              )}
+              {!readOnly && canUseModels && !draft.archived && (
+                <Tabs.Content value="generation" className="card-editor-panel">
+                  <div className="card-editor-panel-heading">
+                    <h3>候选图生成</h3>
+                    <p>根据当前设定生成新方案，结果会出现在候选图中。</p>
+                  </div>
+                  <div className="card-editor-fields">
+                    <div className="card-editor-generation-fields">
+                      <SearchablePickerField
+                        title="生成任务归属项目"
+                        searchLabel="搜索项目"
+                        placeholder="选择生成任务归属项目"
+                        value={generationProject}
+                        items={
+                          parentScope
+                            ? projectChoices.filter(
+                                ({ id }) => id === parentScope,
+                              )
+                            : projectChoices
+                        }
+                        disabled={busy}
+                        onChange={setGenerationProject}
+                      />
+                      <CustomSelect
+                        escapeClipping={false}
+                        ariaLabel="图片模型"
+                        placeholder="选择图片模型"
+                        value={modelId}
+                        disabled={busy}
+                        options={models.map((item) => ({
+                          value: item.id,
+                          label: item.label,
+                        }))}
+                        onChange={(id) => {
+                          setModelId(id);
+                          const sizes =
+                            models.find((item) => item.id === id)?.sizes ?? [];
+                          setSize(
+                            sizes.find(
+                              (entry) =>
+                                entry.startsWith("16:9") ||
+                                entry.startsWith("1536x"),
+                            ) ??
+                              sizes[0] ??
+                              "",
+                          );
+                        }}
+                      />
+                      {model && (
+                        <CustomSelect
+                          escapeClipping={false}
+                          ariaLabel="图片尺寸"
+                          value={size}
+                          disabled={busy}
+                          options={(model.sizes ?? []).map((entry) => ({
+                            label: entry,
+                            value: entry,
+                          }))}
+                          onChange={setSize}
+                        />
+                      )}
+                    </div>
+                    <label>
+                      生成提示词
+                      <textarea
+                        disabled={busy}
+                        rows={5}
+                        value={prompt || cardPrompt(draft)}
+                        onChange={(event) => setPrompt(event.target.value)}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      className="creative-primary"
+                      disabled={
+                        busy ||
+                        !model ||
+                        !size ||
+                        !generationProject ||
+                        !draft.title.trim()
+                      }
+                      onClick={() =>
+                        void run(async () => {
+                          const current = dirty
+                            ? await saveDraft(draft)
+                            : draft;
+                          if (dirty) apply(current);
+                          if (current.parent_asset_id)
+                            await placeCardImage(
+                              generationProject,
+                              current.parent_asset_id,
+                              parentScope,
+                            );
+                          const input = {
+                            expected_revision: current.revision,
+                            model_id: modelId,
+                            size,
+                            prompt: (prompt || cardPrompt(current)).trim(),
+                          };
+                          const key = JSON.stringify([
+                            generationProject,
+                            input,
+                          ]);
+                          if (pendingRequest.current?.key !== key)
+                            pendingRequest.current = {
+                              key,
+                              id: crypto.randomUUID(),
+                            };
+                          await generateCard(generationProject, current.id, {
+                            ...input,
+                            request_id: pendingRequest.current.id,
+                          });
+                          pendingRequest.current = null;
+                          const cards = await client.fetchQuery({
+                            queryKey: cardsKey,
+                            queryFn: () => listCards(),
+                            staleTime: 0,
+                          });
+                          const saved = cards.find(
+                            (entry) => entry.id === current.id,
+                          );
+                          if (saved) apply(saved);
+                        })
+                      }
+                    >
+                      生成候选图
+                    </button>
+                  </div>
+                </Tabs.Content>
+              )}
+            </section>
+          </Tabs.Root>
         </div>
       </div>
       {creation.error && (
@@ -848,7 +876,15 @@ function CardEditor({
           <button
             className="creative-quiet"
             onClick={async () => {
-              if (!window.confirm("舍弃当前草稿并载入已保存版本？")) return;
+              if (
+                !(await confirmation.confirm({
+                  title: "载入已保存版本？",
+                  description: "当前未保存的设定草稿将被舍弃。",
+                  confirmLabel: "载入已保存版本",
+                  cancelLabel: "保留草稿",
+                }))
+              )
+                return;
               await run(async () => {
                 const fresh = await listCards();
                 const item = fresh.find((entry) => entry.id === draft.id);
@@ -937,6 +973,7 @@ function CardEditor({
           </div>
         </footer>
       )}
+      {confirmation.dialog}
     </dialog>
   );
 }

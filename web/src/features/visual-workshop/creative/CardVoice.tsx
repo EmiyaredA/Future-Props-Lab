@@ -1,6 +1,38 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Music, Upload } from "lucide-react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+
+function VoiceAudio({
+  assetId,
+  title,
+  onRetry,
+}: {
+  assetId: string;
+  title: string;
+  onRetry: () => void;
+}) {
+  const media = useApiBlobUrl(`/v1/files/${assetId}/content`);
+  const [decodeError, setDecodeError] = useState(false);
+  if (media.loading) return <p role="status">正在加载角色语音…</p>;
+  if (media.error || decodeError)
+    return (
+      <div>
+        <p role="alert">语音无法读取，请重试或更换音频。</p>
+        <button type="button" className="creative-quiet" onClick={onRetry}>
+          重试语音
+        </button>
+      </div>
+    );
+  return media.url ? (
+    <audio
+      controls
+      preload="metadata"
+      src={media.url}
+      aria-label={`${title}的角色语音`}
+      onError={() => setDecodeError(true)}
+    />
+  ) : null;
+}
 
 export function CardVoice({
   assetId,
@@ -20,21 +52,18 @@ export function CardVoice({
   onRemove: () => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
-  const media = useApiBlobUrl(assetId ? `/v1/files/${assetId}/content` : null);
+  const [attempt, setAttempt] = useState(0);
   return (
     <section className="card-editor-voice" aria-label="角色语音">
       <h4>
         <Music size={16} aria-hidden /> 角色语音
       </h4>
-      {media.loading && <p role="status">正在加载角色语音…</p>}
-      {media.error && <p role="alert">语音无法读取，请更换音频或重试。</p>}
-      {media.url && (
-        <audio
-          key={assetId}
-          controls
-          preload="metadata"
-          src={media.url}
-          aria-label={`${title}的角色语音`}
+      {assetId && (
+        <VoiceAudio
+          key={`${assetId}:${attempt}`}
+          assetId={assetId}
+          title={title}
+          onRetry={() => setAttempt((value) => value + 1)}
         />
       )}
       {!assetId && <p>尚未绑定角色语音</p>}

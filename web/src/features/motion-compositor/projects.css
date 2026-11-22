@@ -35,37 +35,10 @@
   );
   cursor: pointer;
 }
-.mc-project-cover strong {
-  position: relative;
-  z-index: 2;
-  max-width: 75%;
-  font-size: 23px;
-  font-weight: 900;
-  transform: rotate(-7deg);
-  text-shadow: 3px 3px #111;
-}
-.mc-project-cover small {
-  position: relative;
-  z-index: 2;
-  margin-top: 10px;
-  letter-spacing: 3px;
-  font-weight: 800;
-}
-.mc-cover-slice {
-  position: absolute;
-  top: -50px;
-  right: 20%;
-  width: 45px;
-  height: 300px;
-  transform: rotate(25deg);
-  background: #fff9ec;
-}
-.mc-cover-spark {
-  position: absolute;
-  top: 21px;
-  right: 28px;
-  font-size: 52px;
-  color: #111820;
+.mc-project-cover:not(:has(.project-cover-preview)) {
+  align-items: center;
+  justify-content: center;
+  background: var(--surface-soft);
 }
 .mc-project-card-body {
   padding: 14px 16px;
@@ -275,4 +248,8 @@
   .mc-projects button {
     min-height: 44px;
   }
+}
+.mc-project-cover {
+  aspect-ratio: 16 / 9;
+  height: auto;
 }

@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { SelectOption } from "@shared/ui/CustomSelect";
+import type { GenerationOptions } from "../api";
 
 export type GenerationKind = "image" | "video" | "audio";
 export type VideoMode = "text" | "image" | "frames" | "reference";
@@ -88,4 +89,25 @@ export function imageRatioIconStyle(
   return ratio >= 1
     ? { width: 32, height: Math.max(12, 32 / ratio) }
     : { width: Math.max(12, 32 * ratio), height: 32 };
+}
+
+export function imageInputError(
+  model: GenerationOptions["models"][number] | undefined,
+  ids: string[],
+  files: Record<string, { mime_type: string }>,
+  prompt: string,
+) {
+  if (ids.length > (model?.max_reference_images ?? 1))
+    return `当前模型最多支持 ${model?.max_reference_images ?? 1} 张参考图，请减少输入或选择支持多图的模型。`;
+  if (
+    ids.some(
+      (id) =>
+        files[id] &&
+        model?.reference_mime_types?.length &&
+        !model.reference_mime_types.includes(files[id].mime_type),
+    )
+  )
+    return "当前模型不支持所选参考图片格式，请按模型支持的格式重新上传。";
+  if (prompt.length > (model?.max_prompt_length ?? 2000))
+    return `当前模型提示词最多支持 ${model?.max_prompt_length ?? 2000} 个字符。`;
 }

@@ -25,10 +25,14 @@ export const uploadDirectorProjectFile = (
 export const downloadDirectorProjectFile = async (
   projectId: string,
   key: string,
+  signal?: AbortSignal,
 ) =>
   new Uint8Array(
     await (
-      await fetchApiBlob(`/v1/director-desk/projects/${projectId}/files/${key}`)
+      await fetchApiBlob(
+        `/v1/director-desk/projects/${projectId}/files/${key}`,
+        { signal },
+      )
     ).arrayBuffer(),
   );
 
@@ -47,8 +51,15 @@ export const externalizeDocument = (projectId: string, document: unknown) =>
     uploadDirectorProjectFile(projectId, bytes),
   );
 
-export const hydrateDocument = (projectId: string, document: unknown) =>
-  hydrateTree(document, (key) => downloadDirectorProjectFile(projectId, key));
+export const hydrateDocument = (
+  projectId: string,
+  document: unknown,
+  signal?: AbortSignal,
+) =>
+  hydrateTree(document, (key) => {
+    signal?.throwIfAborted();
+    return downloadDirectorProjectFile(projectId, key, signal);
+  });
 
 export const listDirectorProjects = async (query = "", signal?: AbortSignal) =>
   unwrap(

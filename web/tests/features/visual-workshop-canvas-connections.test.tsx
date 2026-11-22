@@ -431,7 +431,7 @@ test("merges direct linked assets into reference rows and prompt mentions", asyn
   ).toBeTruthy();
   expect(
     screen.queryByRole("button", { name: "移除参考文件 连线图片.png" }),
-  ).not.toBeInTheDocument();
+  ).toBeInTheDocument();
   await user.click(
     screen.getByRole("button", { name: "参考详情 手动图片.png" }),
   );

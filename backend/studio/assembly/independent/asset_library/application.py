@@ -19,6 +19,7 @@ from studio.apps.asset_library.references.reference_changes import ReferenceChan
 from studio.apps.asset_library.references.retention_api import router as retention_router
 from studio.apps.asset_library.storage.migrations.registry import MIGRATIONS
 from studio.apps.asset_library.storage.service_models import MODELS
+from studio.apps.asset_library.transport.content_http import router as content_router
 from studio.apps.asset_library.transport.service.annotation_assets import (
     router as annotation_assets_router,
 )
@@ -302,7 +303,7 @@ def create_app(
     app.state.visual_segment_assets_peer = (
         visual_segment_peer(visual_segment_assets_key) if visual_segment_assets_key else None
     )
-    for router in (files_router, layout_router, links_router):
+    for router in (files_router, layout_router, links_router, content_router):
         app.include_router(router, prefix="/v1")
     app.include_router(retention_router)
     app.include_router(visual_upload_router)

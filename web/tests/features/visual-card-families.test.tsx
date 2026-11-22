@@ -48,13 +48,15 @@ test.each(["character", "scene", "prop"] as const)(
     ]);
     const open = vi.fn();
     render(
-      <CardLibraryGroups
-        families={families}
-        onOpen={open}
-        onVariant={vi.fn()}
-        readOnly={false}
-        busy={false}
-      />,
+      <QueryClientProvider client={new QueryClient()}>
+        <CardLibraryGroups
+          families={families}
+          onOpen={open}
+          onVariant={vi.fn()}
+          readOnly={false}
+          busy={false}
+        />
+      </QueryClientProvider>,
     );
     expect(screen.getAllByRole("group", { name: /设定组$/ })).toHaveLength(2);
     await userEvent.click(

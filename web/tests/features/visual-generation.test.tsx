@@ -1,3 +1,26 @@
+vi.mock("@features/visual-workshop/creative/api", async (original) => ({
+  ...(await original<
+    typeof import("@features/visual-workshop/creative/api")
+  >()),
+  registerReferenceImage: vi.fn(async (_project, body) => ({
+    card: {
+      id: "uploaded-card",
+      kind: body.kind,
+      title: body.title,
+      adopted_asset_id: body.asset_id,
+      revision: 0,
+      archived: false,
+    },
+    project_card_ids: ["uploaded-card"],
+    revision: 1,
+    reused: false,
+  })),
+}));
+async function confirmImageCategory(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(await screen.findByRole("combobox", { name: "素材分类 1" }));
+  await user.click(screen.getByRole("option", { name: /^人设$/ }));
+  await user.click(screen.getByRole("button", { name: "上传并关联" }));
+}
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   fireEvent,
@@ -46,6 +69,12 @@ vi.mock("@features/visual-workshop/api", async () => {
   return {
     ...actual,
     createGenerationTask: vi.fn(),
+    getVisualCanvas: vi.fn(async () => ({
+      revision: 0,
+      nodes: [],
+      edges: [],
+      project_card_ids: [],
+    })),
     getGenerationOptions: vi.fn(),
     getGenerationTasks: vi.fn(),
     getVisualWorkshopProjects: vi.fn(),
@@ -418,6 +447,7 @@ test("uses the compact image node composer with reference, size, and seed contro
     referencePicker,
     new File(["image"], "local.png", { type: "image/png" }),
   );
+  await confirmImageCategory(user);
   const selectedReference = await screen.findByRole("button", {
     name: "参考图.png",
   });
@@ -577,6 +607,7 @@ test("opens selected reference media from the card and only removes it with the 
     referencePicker,
     new File(["image"], "local.png", { type: "image/png" }),
   );
+  await confirmImageCategory(user);
 
   const referenceCard = await screen.findByRole("button", {
     name: "参考图.png",
@@ -594,7 +625,7 @@ test("opens selected reference media from the card and only removes it with the 
   expect(screen.queryByRole("button", { name: "参考图.png" })).toBeNull();
 });
 
-test("selects current, cross-project, and library media from the source menu", async () => {
+test("selects only current-project media from the reference source menu", async () => {
   const user = userEvent.setup();
   renderWithClient(
     <GenerationDrawer
@@ -633,55 +664,10 @@ test("selects current, cross-project, and library media from the source menu", a
   ).toBeVisible();
 
   await user.click(sourceTrigger);
-  await user.click(screen.getByRole("menuitem", { name: /跨项目素材/ }));
-  const crossDialog = await screen.findByRole("dialog", {
-    name: "选择跨项目素材",
-  });
-  expect(within(crossDialog).getByLabelText("来源项目")).toHaveTextContent(
-    "其他视觉项目",
-  );
-  await user.click(
-    await within(crossDialog).findByRole("option", {
-      name: "跨项目参考图.png",
-    }),
-  );
-  await user.click(
-    within(crossDialog).getByRole("button", { name: "导入并选择" }),
-  );
-  await waitFor(() =>
-    expect(importManagedFiles).toHaveBeenCalledWith("project-1", {
-      sourceScope: "project",
-      sourceProjectId: "project-2",
-      assetIds: ["cross-project-asset"],
-    }),
-  );
   expect(
-    await screen.findByRole("button", { name: "跨项目参考图.png" }),
-  ).toBeVisible();
-
-  await user.click(sourceTrigger);
-  await user.click(screen.getByRole("menuitem", { name: /跨项目素材/ }));
-  const libraryDialog = await screen.findByRole("dialog", {
-    name: "选择跨项目素材",
-  });
-  await user.click(within(libraryDialog).getByRole("tab", { name: "公共库" }));
-  await user.click(
-    await within(libraryDialog).findByRole("option", {
-      name: "公共参考图.png",
-    }),
-  );
-  await user.click(
-    within(libraryDialog).getByRole("button", { name: "导入并选择" }),
-  );
-  await waitFor(() =>
-    expect(importManagedFiles).toHaveBeenCalledWith("project-1", {
-      sourceScope: "library",
-      assetIds: ["library-asset"],
-    }),
-  );
-  expect(
-    await screen.findByRole("button", { name: "公共参考图.png" }),
-  ).toBeVisible();
+    screen.queryByRole("menuitem", { name: /跨项目素材|公共库/ }),
+  ).not.toBeInTheDocument();
+  expect(importManagedFiles).not.toHaveBeenCalled();
 });
 
 test("uses the compact video node composer for image-to-video tasks", async () => {
@@ -738,6 +724,7 @@ test("uses the compact video node composer for image-to-video tasks", async () =
     startFramePicker,
     new File(["image"], "local.png", { type: "image/png" }),
   );
+  await confirmImageCategory(user);
   const promptEditor = screen.getByRole("textbox", { name: "视频提示词" });
   expect(promptEditor).toHaveAttribute("contenteditable", "true");
   await user.type(promptEditor, "@");

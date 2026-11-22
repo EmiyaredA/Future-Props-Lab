@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from studio.runtime.project_preview import ProjectPreview
+
 MAX_TEXT = 16_384
 FILE_KEY = re.compile(r"^[a-f0-9]{64}$")
 
@@ -78,6 +80,7 @@ class DirectorProjectOut(DirectorModel):
 
 
 class DirectorProjectSummary(DirectorModel):
+    preview: ProjectPreview | None = None
     id: str
     title: str
     revision: int

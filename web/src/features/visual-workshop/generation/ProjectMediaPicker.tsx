@@ -1,3 +1,7 @@
+import type {
+  RegisterReferenceImage,
+  DesignReference,
+} from "./useReferenceUploads";
 import { ReferenceKindTag } from "./ReferenceKindTag";
 import { CardReferencePicker } from "../creative/CardReferencePicker";
 import { LoadingScene } from "@shared/ui/LoadingScene";
@@ -14,17 +18,11 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import {
-  useMutation,
-  useQueries,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery } from "@tanstack/react-query";
 import {
   Check,
   ChevronLeft,
   ChevronRight,
-  Copy,
   Download,
   FolderOpen,
   Image,
@@ -38,8 +36,6 @@ import {
   fileQueryKeys,
   getFiles,
   getFolders,
-  invalidateFileScope,
-  uploadManagedFile,
   type ManagedFile,
   type MediaKind,
 } from "@features/files";
@@ -60,10 +56,6 @@ import {
   useProjectReferenceDrop,
   type ReferenceDropNotice as ReferenceDropNoticeState,
 } from "./useProjectReferenceDrop";
-
-function uploadErrorMessage(error: unknown) {
-  return apiErrorMessage(error, "上传失败，请稍后重试。");
-}
 
 function GenerationMediaPreviewDialog({
   file,
@@ -198,6 +190,8 @@ function GenerationMediaPreviewDialog({
 
 export function ProjectMediaPicker({
   projectId,
+  registerImage,
+  dropTargetKey,
   compactStrip = false,
   addRequest,
   renderItemTools,
@@ -215,14 +209,17 @@ export function ProjectMediaPicker({
   disabled = false,
   excludedAssetIds = [],
   onChange,
+  onRemove,
   onReorder,
   onFilesLoaded,
   onInvalidSelection,
   onDropResult,
 }: {
   projectId: string;
+  registerImage?: RegisterReferenceImage;
+  dropTargetKey?: string;
   compactStrip?: boolean;
-  addRequest?: { id: number; action: "upload" | "project" | "cross" };
+  addRequest?: { id: number; action: "upload" | "project" };
   referenceCardIds?: Record<string, string[]>;
   renderItemTools?: (
     file: ManagedFile,
@@ -241,16 +238,14 @@ export function ProjectMediaPicker({
   uploadLast?: boolean;
   disabled?: boolean;
   excludedAssetIds?: string[];
-  onChange: (value: string[]) => void;
+  onChange: (value: string[], design?: DesignReference) => void;
+  /** Lets the owner remove linked inputs through its existing reference flow. */
+  onRemove?: (assetId: string) => void;
   onReorder?: (value: string[]) => void;
   onFilesLoaded?: (files: ManagedFile[]) => void;
   onInvalidSelection?: () => void;
   onDropResult?: (notice: ReferenceDropNoticeState) => void;
 }) {
-  const { run: runTransfer, progress: activeTransferProgress } =
-    useTransferProgress();
-
-  const client = useQueryClient();
   const uploadInput = useRef<HTMLInputElement>(null);
   const sourceTrigger = useRef<HTMLButtonElement>(null);
   const sourceMenuRef = useRef<HTMLDivElement>(null);
@@ -260,7 +255,7 @@ export function ProjectMediaPicker({
     top: 0,
     left: 0,
   });
-  const [dialogMode, setDialogMode] = useState<"project" | "cross">();
+  const [dialogMode, setDialogMode] = useState<"project">();
   const [previewFile, setPreviewFile] = useState<ManagedFile>();
   const [optimisticFiles, setOptimisticFiles] = useState<ManagedFile[]>([]);
   const draggedId = useRef<string | undefined>(undefined);
@@ -349,47 +344,19 @@ export function ProjectMediaPicker({
     selectionReady,
     value,
   ]);
-  const upload = useMutation({
-    mutationFn: async (selected: File[]) => {
-      const uploaded: ManagedFile[] = [];
-      for (const file of selected)
-        uploaded.push(
-          await runTransfer((onProgress) =>
-            uploadManagedFile(file, projectId, undefined, undefined, {
-              onProgress,
-            }),
-          ),
-        );
-      return uploaded;
-    },
-    onSuccess: (uploaded) => {
-      setOptimisticFiles((current) => [
-        ...current.filter(
-          (file) => !uploaded.some((item) => item.id === file.id),
-        ),
-        ...uploaded,
-      ]);
-      void invalidateFileScope(client, projectId);
-      onFilesLoaded?.(uploaded);
-      const ids = uploaded
-        .filter((file) => file.media_kind === kind)
-        .map((file) => file.id);
-      if (!multiple) {
-        onChange(linkedIds.length ? value : ids.slice(-1));
-        return;
-      }
-      const next = [...manualIds];
-      const occupied = new Set(combinedValue);
-      ids.forEach((id) => {
-        if (occupied.has(id) || occupied.size >= max) return;
-        occupied.add(id);
-        next.push(id);
-      });
-      onChange(next);
-    },
-  });
   const referenceDrop = useProjectReferenceDrop({
     projectId,
+    targetKey: dropTargetKey,
+    registerImage,
+    onFilesLoaded: (loaded) => {
+      setOptimisticFiles((current) => [
+        ...current.filter(
+          (file) => !loaded.some((item) => item.id === file.id),
+        ),
+        ...loaded,
+      ]);
+      onFilesLoaded?.(loaded);
+    },
     files,
     excludedAssetIds,
     onResult: onDropResult,
@@ -400,7 +367,7 @@ export function ProjectMediaPicker({
         linkedValue,
         multiple,
         max,
-        disabled: disabled || upload.isPending,
+        disabled,
         onChange,
       },
     ],
@@ -478,7 +445,7 @@ export function ProjectMediaPicker({
   }, [addRequest]);
 
   const uploadDisabled =
-    disabled || upload.isPending || (remaining === 0 && !canReplaceManual);
+    disabled || referenceDrop.pending || (remaining === 0 && !canReplaceManual);
   const uploadButton = (
     <span className="generation-media-add">
       <button
@@ -493,7 +460,7 @@ export function ProjectMediaPicker({
           if (!uploadDisabled) setSourceMenuOpen(true);
         }}
       >
-        {upload.isPending ? (
+        {referenceDrop.pending ? (
           <LoadingScene />
         ) : minimal ? (
           <UploadIcon aria-hidden />
@@ -501,7 +468,7 @@ export function ProjectMediaPicker({
           <Upload aria-hidden />
         )}
         <span className={minimal ? "sr-only" : undefined}>
-          {upload.isPending ? (
+          {referenceDrop.pending ? (
             <LoadingState variant="inline" label="上传中" />
           ) : (
             "上传"
@@ -513,7 +480,7 @@ export function ProjectMediaPicker({
         type="button"
         className="generation-media-sources"
         aria-label={`${label}更多来源`}
-        title="从项目、文件库或设定卡选择"
+        title="选择当前项目的素材或设定卡"
         aria-haspopup="menu"
         aria-expanded={sourceMenuOpen}
         disabled={uploadDisabled}
@@ -585,21 +552,6 @@ export function ProjectMediaPicker({
               </span>
             </button>
           )}
-          <button
-            type="button"
-            role="menuitem"
-            disabled={remaining === 0 && !canReplaceManual}
-            onClick={() => {
-              setSourceMenuOpen(false);
-              setDialogMode("cross");
-            }}
-          >
-            <Copy aria-hidden />
-            <span>
-              <strong>跨项目素材</strong>
-              <small>从其他项目或公共库导入</small>
-            </span>
-          </button>
         </div>,
         document.body,
       )
@@ -612,7 +564,7 @@ export function ProjectMediaPicker({
       disabled={disabled}
       aria-disabled={disabled}
     >
-      <TransferFeedback progress={activeTransferProgress} />
+      <TransferFeedback progress={referenceDrop.progress} />
       {cardsOpen && (
         <CardReferencePicker
           project={projectId}
@@ -648,7 +600,7 @@ export function ProjectMediaPicker({
             0,
             multiple ? remaining : canReplaceManual ? 1 : remaining,
           );
-          if (selected.length) upload.mutate(selected);
+          if (selected.length) void referenceDrop.uploadFiles(selected);
           event.currentTarget.value = "";
         }}
       />
@@ -742,21 +694,23 @@ export function ProjectMediaPicker({
                     <span className="generation-media-preview">
                       <GenerationMediaPreview file={file} thumbnailOnly />
                       <ReferenceKindTag
+                        projectId={projectId}
                         assetId={file.id}
                         cardIds={referenceCardIds?.[file.id]}
                       />
                     </span>
                   </button>
-                  {linked ? null : (
+                  {linked && !onRemove ? null : (
                     <button
                       type="button"
                       className="generation-media-remove"
                       aria-label={`移除参考文件 ${file.display_name}`}
                       title="移除参考文件"
                       disabled={disabled}
-                      onClick={() =>
-                        onChange(value.filter((item) => item !== file.id))
-                      }
+                      onClick={() => {
+                        if (onRemove) onRemove(file.id);
+                        else onChange(value.filter((item) => item !== file.id));
+                      }}
                     />
                   )}
                   {onReorder && !compactStrip ? (
@@ -845,11 +799,8 @@ export function ProjectMediaPicker({
           {orderNotice}
         </span>
       ) : null}
-      {upload.isError ? (
-        <small className="generation-picker-error" role="alert">
-          {uploadErrorMessage(upload.error)}
-        </small>
-      ) : null}
+      {referenceDrop.dialogs}
+      {referenceDrop.feedback}
       {compactStrip &&
         (folders.isError || fileQueries.some((query) => query.isError)) && (
           <small role="alert" className="generation-picker-error">
@@ -885,55 +836,22 @@ export function ProjectMediaPicker({
               projectId={projectId}
               kind={kind}
               excludedAssetIds={excludedAssetIds}
-              initialValue={
-                dialogMode === "project"
-                  ? manualIds.filter((id) => !linkedSet.has(id))
-                  : []
-              }
+              initialValue={manualIds.filter((id) => !linkedSet.has(id))}
               multiple={multiple}
-              limit={
-                dialogMode === "project"
-                  ? manualLimit
-                  : multiple
-                    ? remaining
-                    : 1
-              }
+              limit={manualLimit}
               onClose={() => {
                 setDialogMode(undefined);
                 sourceTrigger.current?.focus();
               }}
               onConfirm={(ids, selectedFiles) => {
-                if (dialogMode === "project") {
-                  onChange(
-                    orderedReferenceIds(
-                      combinedValue.filter(
-                        (id) => linkedSet.has(id) || ids.includes(id),
-                      ),
-                      ids,
+                onChange(
+                  orderedReferenceIds(
+                    combinedValue.filter(
+                      (id) => linkedSet.has(id) || ids.includes(id),
                     ),
-                  );
-                } else {
-                  setOptimisticFiles((current) => [
-                    ...current.filter(
-                      (file) =>
-                        !selectedFiles.some((item) => item.id === file.id),
-                    ),
-                    ...selectedFiles,
-                  ]);
-                  if (!multiple) {
-                    onChange(linkedIds.length ? value : ids.slice(-1));
-                  } else {
-                    const next = [...manualIds];
-                    const occupied = new Set(combinedValue);
-                    ids.forEach((id) => {
-                      if (occupied.has(id) || occupied.size >= max) return;
-                      occupied.add(id);
-                      next.push(id);
-                    });
-                    onChange(next);
-                  }
-                  void invalidateFileScope(client, projectId);
-                }
+                    ids,
+                  ),
+                );
                 onFilesLoaded?.(selectedFiles);
                 setDialogMode(undefined);
                 sourceTrigger.current?.focus();

@@ -5,7 +5,14 @@ import {
   SearchablePickerDialog,
   type PickerItem,
 } from "@shared/ui/SearchablePickerDialog";
-import { cardsKey, listCards, type Card, type CardKind } from "./api";
+import {
+  cardsKey,
+  listCards,
+  projectCardsKey,
+  listProjectCards,
+  type Card,
+  type CardKind,
+} from "./api";
 import { cardKindInfo, cardKinds } from "./cardKinds";
 import { cardRoot, groupCards } from "./cardFamilies";
 
@@ -19,6 +26,7 @@ export function DesignCardPicker({
   exclude = [],
   excludedLabel,
   kind,
+  projectId,
 }: {
   title: string;
   onClose: () => void;
@@ -29,11 +37,13 @@ export function DesignCardPicker({
   exclude?: string[];
   excludedLabel?: string;
   kind?: CardKind;
+  projectId?: string;
 }) {
   const [category, setCategory] = useState<CardKind | undefined>(kind);
   const query = useQuery({
-    queryKey: cardsKey,
-    queryFn: ({ signal }) => listCards(signal),
+    queryKey: projectId ? projectCardsKey(projectId) : cardsKey,
+    queryFn: ({ signal }) =>
+      projectId ? listProjectCards(projectId, signal) : listCards(signal),
     refetchOnMount: "always",
   });
   const byId = new Map((query.data ?? []).map((card) => [card.id, card]));

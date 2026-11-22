@@ -1,4 +1,5 @@
 import { useReferenceImageOrder } from "./useReferenceImageOrder";
+import { useProjectReferenceIssues } from "./useProjectReferenceIssues";
 import { useReferenceSubjectBindings } from "./useReferenceSubjectBindings";
 import { type ReferenceSubjects } from "./referenceSubjects";
 import { useGenerationSubmission } from "./useGenerationSubmission";
@@ -33,6 +34,7 @@ import {
 } from "./usePromptVersions";
 import {
   imageSizeChoices,
+  imageInputError,
   type GenerationKind,
   type VideoMode,
 } from "@features/visual-workshop/generation/options";
@@ -74,6 +76,12 @@ export function useGenerationDrawerController({
     lockedKind === "video"
       ? (draft as VisualCanvasVideoGenerationDraft | null | undefined)
       : undefined;
+  const referenceIssues = useProjectReferenceIssues(
+    projectId,
+    canvasNodeId,
+    videoDraft?.design_references ?? [],
+    referenceContext,
+  );
   const [kind, setKind] = useState<GenerationKind>(lockedKind ?? "image");
   const [modelId, setModelId] = useState(
     imageDraft?.model_id ?? videoDraft?.model_id ?? "",
@@ -689,6 +697,10 @@ export function useGenerationDrawerController({
   });
   const submit = async (event: FormEvent) => {
     event.preventDefault();
+    if (referenceIssues.blocking) {
+      setNotice("请先修复未收录到当前项目或不可用的参考设定。");
+      return;
+    }
     if (generating || createMutation.isPending || createBatchMutation.isPending)
       return;
     const prompt = readPrompt().prompt;
@@ -712,37 +724,17 @@ export function useGenerationDrawerController({
       setNotice("参考音频需要搭配至少一张图片或一个视频。");
       return;
     }
-    if (
-      kind === "image" &&
-      imageReference.length > (selectedModel?.max_reference_images ?? 1)
-    ) {
-      setNotice(
-        `当前模型最多支持 ${selectedModel?.max_reference_images ?? 1} 张参考图，请减少输入或选择支持多图的模型。`,
+    if (kind === "image") {
+      const error = imageInputError(
+        selectedModel,
+        imageReference,
+        promptFiles,
+        prompt,
       );
-      return;
-    }
-    if (
-      kind === "image" &&
-      imageReference.some(
-        (id) =>
-          promptFiles[id] &&
-          selectedModel?.reference_mime_types?.length &&
-          !selectedModel.reference_mime_types.includes(
-            promptFiles[id].mime_type,
-          ),
-      )
-    ) {
-      setNotice("当前模型不支持所选参考图片格式，请按模型支持的格式重新上传。");
-      return;
-    }
-    if (
-      kind === "image" &&
-      prompt.length > (selectedModel?.max_prompt_length ?? 2000)
-    ) {
-      setNotice(
-        `当前模型提示词最多支持 ${selectedModel?.max_prompt_length ?? 2000} 个字符。`,
-      );
-      return;
+      if (error) {
+        setNotice(error);
+        return;
+      }
     }
     if (kind === "video" && !workflowCapabilities) {
       const error = videoSelectionError(videoCapabilities, {
@@ -919,6 +911,7 @@ export function useGenerationDrawerController({
     promptVersions: lockedKind && onDraftChange ? promptVersions : undefined,
     availableReferenceFiles: Object.values(promptFiles),
     designReferenceRequest,
+    referenceIssues,
     designReferences: videoDraft?.design_references ?? [],
     excludedAssetIds,
     projectId,

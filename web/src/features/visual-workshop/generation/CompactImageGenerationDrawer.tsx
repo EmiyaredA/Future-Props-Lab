@@ -1,4 +1,5 @@
 import { LoadingState } from "@shared/ui/LoadingState";
+import { ProjectReferenceIssues } from "./ProjectReferenceIssues";
 import { useState } from "react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
@@ -83,6 +84,7 @@ export function CompactImageGenerationDrawer({
     >
       <form className="video-node-composer-form" onSubmit={submit}>
         <div className="image-composer-body">
+          <ProjectReferenceIssues issues={controller.referenceIssues} />
           {controller.layout === "workbench" && (
             <div className="image-workbench-heading">
               <span>
@@ -93,10 +95,14 @@ export function CompactImageGenerationDrawer({
           )}
           <div className="image-composer-tools">
             <ProjectMediaPicker
+              registerImage={
+                controller.referenceContext?.registerReferenceImage
+              }
               referenceCardIds={referenceCardIdsForInputs(controller)}
               excludedAssetIds={controller.excludedAssetIds}
               onDropResult={setDropNotice}
               projectId={projectId}
+              dropTargetKey={controller.canvasNodeId}
               multiple={(selectedModel?.max_reference_images ?? 1) > 1}
               max={selectedModel?.max_reference_images ?? 1}
               label="参考图片（可选）"

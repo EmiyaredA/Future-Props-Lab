@@ -1,3 +1,4 @@
+import { ProjectCoverPreview } from "@shared/ui/project-library/ProjectCoverPreview";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -228,7 +229,18 @@ function Library({ owner, readOnly, onOpen, utilities }: Props) {
                 onClick={() => onOpen(project.id)}
               >
                 <span className="spreadsheet-card-art">
-                  <FileSpreadsheet size={38} />
+                  {project.preview ? (
+                    <ProjectCoverPreview
+                      namespace="spreadsheet"
+                      projectId={project.id}
+                      title={project.title}
+                      preview={project.preview}
+                    />
+                  ) : (
+                    <span className="project-cover-placeholder">
+                      暂无内容预览
+                    </span>
+                  )}
                 </span>
                 <h2>{project.title}</h2>
                 <p>

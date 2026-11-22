@@ -31,6 +31,26 @@ class Files:
         'Import Project Assets To Library. POST /v1/file-library/asset-imports'
         return self._client._call('POST', '/v1/file-library/asset-imports', parameters=[], body=body, media_type='application/json', response_type=models.VisualAssetListOut)
 
+    def create_file_content_audit(self, *, body: models.ContentAuditRequest | dict) -> models.ContentAudit:
+        'Create File Content Audit. POST /v1/file-library/content-audits'
+        return self._client._call('POST', '/v1/file-library/content-audits', parameters=[], body=body, media_type='application/json', response_type=models.ContentAudit)
+
+    def get_file_content_audit(self, *, operation_id: str) -> models.ContentAudit:
+        'Get File Content Audit. GET /v1/file-library/content-audits/{operation_id}'
+        return self._client._call('GET', '/v1/file-library/content-audits/{operation_id}', parameters=[('operation_id', 'path', operation_id)], response_type=models.ContentAudit)
+
+    def clean_file_duplicate_group(self, *, operation_id: str, body: models.DedupeStep | dict) -> models.ContentAudit:
+        'Clean File Duplicate Group. POST /v1/file-library/content-audits/{operation_id}/clean'
+        return self._client._call('POST', '/v1/file-library/content-audits/{operation_id}/clean', parameters=[('operation_id', 'path', operation_id)], body=body, media_type='application/json', response_type=models.ContentAudit)
+
+    def prepare_file_duplicate_group(self, *, operation_id: str, body: models.DedupeStep | dict) -> models.ContentAudit:
+        'Prepare File Duplicate Group. POST /v1/file-library/content-audits/{operation_id}/prepare'
+        return self._client._call('POST', '/v1/file-library/content-audits/{operation_id}/prepare', parameters=[('operation_id', 'path', operation_id)], body=body, media_type='application/json', response_type=models.ContentAudit)
+
+    def restore_file_duplicate_group(self, *, operation_id: str, body: models.DedupeStep | dict) -> models.ContentAudit:
+        'Restore File Duplicate Group. POST /v1/file-library/content-audits/{operation_id}/restore'
+        return self._client._call('POST', '/v1/file-library/content-audits/{operation_id}/restore', parameters=[('operation_id', 'path', operation_id)], body=body, media_type='application/json', response_type=models.ContentAudit)
+
     def import_library_folder_archive(self, *, body: models.Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post | dict, files: dict | list | None = None) -> models.LibraryFolderImportOut:
         'Import Library Folder Archive. POST /v1/file-library/folder-archive-imports'
         return self._client._call('POST', '/v1/file-library/folder-archive-imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.LibraryFolderImportOut)
@@ -62,6 +82,10 @@ class Files:
     def upload_file(self, *, body: models.Body_upload_file_v1_files_post | dict, files: dict | list | None = None) -> models.VisualAssetOut:
         'Upload File. POST /v1/files'
         return self._client._call('POST', '/v1/files', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.VisualAssetOut)
+
+    def inspect_file_content_identities(self, *, body: models.IdentityRequest | dict) -> models.ContentIdentities:
+        'Inspect File Content Identities. POST /v1/files/content-identities'
+        return self._client._call('POST', '/v1/files/content-identities', parameters=[], body=body, media_type='application/json', response_type=models.ContentIdentities)
 
     def preview_svg(self, *, body: models.SvgPreviewIn | dict) -> models.SvgPreviewOut:
         'Preview Svg. POST /v1/files/svg/preview'
@@ -127,6 +151,26 @@ class AsyncFiles:
         'Import Project Assets To Library. POST /v1/file-library/asset-imports'
         return await self._client._call('POST', '/v1/file-library/asset-imports', parameters=[], body=body, media_type='application/json', response_type=models.VisualAssetListOut)
 
+    async def create_file_content_audit(self, *, body: models.ContentAuditRequest | dict) -> models.ContentAudit:
+        'Create File Content Audit. POST /v1/file-library/content-audits'
+        return await self._client._call('POST', '/v1/file-library/content-audits', parameters=[], body=body, media_type='application/json', response_type=models.ContentAudit)
+
+    async def get_file_content_audit(self, *, operation_id: str) -> models.ContentAudit:
+        'Get File Content Audit. GET /v1/file-library/content-audits/{operation_id}'
+        return await self._client._call('GET', '/v1/file-library/content-audits/{operation_id}', parameters=[('operation_id', 'path', operation_id)], response_type=models.ContentAudit)
+
+    async def clean_file_duplicate_group(self, *, operation_id: str, body: models.DedupeStep | dict) -> models.ContentAudit:
+        'Clean File Duplicate Group. POST /v1/file-library/content-audits/{operation_id}/clean'
+        return await self._client._call('POST', '/v1/file-library/content-audits/{operation_id}/clean', parameters=[('operation_id', 'path', operation_id)], body=body, media_type='application/json', response_type=models.ContentAudit)
+
+    async def prepare_file_duplicate_group(self, *, operation_id: str, body: models.DedupeStep | dict) -> models.ContentAudit:
+        'Prepare File Duplicate Group. POST /v1/file-library/content-audits/{operation_id}/prepare'
+        return await self._client._call('POST', '/v1/file-library/content-audits/{operation_id}/prepare', parameters=[('operation_id', 'path', operation_id)], body=body, media_type='application/json', response_type=models.ContentAudit)
+
+    async def restore_file_duplicate_group(self, *, operation_id: str, body: models.DedupeStep | dict) -> models.ContentAudit:
+        'Restore File Duplicate Group. POST /v1/file-library/content-audits/{operation_id}/restore'
+        return await self._client._call('POST', '/v1/file-library/content-audits/{operation_id}/restore', parameters=[('operation_id', 'path', operation_id)], body=body, media_type='application/json', response_type=models.ContentAudit)
+
     async def import_library_folder_archive(self, *, body: models.Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post | dict, files: dict | list | None = None) -> models.LibraryFolderImportOut:
         'Import Library Folder Archive. POST /v1/file-library/folder-archive-imports'
         return await self._client._call('POST', '/v1/file-library/folder-archive-imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.LibraryFolderImportOut)
@@ -158,6 +202,10 @@ class AsyncFiles:
     async def upload_file(self, *, body: models.Body_upload_file_v1_files_post | dict, files: dict | list | None = None) -> models.VisualAssetOut:
         'Upload File. POST /v1/files'
         return await self._client._call('POST', '/v1/files', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.VisualAssetOut)
+
+    async def inspect_file_content_identities(self, *, body: models.IdentityRequest | dict) -> models.ContentIdentities:
+        'Inspect File Content Identities. POST /v1/files/content-identities'
+        return await self._client._call('POST', '/v1/files/content-identities', parameters=[], body=body, media_type='application/json', response_type=models.ContentIdentities)
 
     async def preview_svg(self, *, body: models.SvgPreviewIn | dict) -> models.SvgPreviewOut:
         'Preview Svg. POST /v1/files/svg/preview'

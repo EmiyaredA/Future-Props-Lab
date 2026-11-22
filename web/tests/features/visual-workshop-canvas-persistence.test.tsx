@@ -7,6 +7,13 @@ import {
   type VisualCanvasDocument,
 } from "@features/visual-workshop/api";
 import { useCanvasPersistence } from "@features/visual-workshop/canvas/useCanvasPersistence";
+import {
+  registerReferenceImage,
+  type ReferenceImageResult,
+} from "@features/visual-workshop/creative/api";
+vi.mock("@features/visual-workshop/creative/api", () => ({
+  registerReferenceImage: vi.fn(),
+}));
 
 vi.mock("@features/visual-workshop/api", () => ({ putVisualCanvas: vi.fn() }));
 
@@ -21,6 +28,7 @@ const canvas: VisualCanvasDocument = {
 };
 
 beforeEach(() => {
+  vi.mocked(registerReferenceImage).mockReset();
   vi.useFakeTimers();
   vi.mocked(putVisualCanvas)
     .mockReset()
@@ -38,6 +46,70 @@ function renderPersistence() {
     wrapper: StrictMode,
   });
 }
+
+test("image registration preserves edits and newly collected cards in saves queued during registration", async () => {
+  let finish!: (result: ReferenceImageResult) => void;
+  vi.mocked(registerReferenceImage).mockImplementation(
+    () =>
+      new Promise((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const { result } = renderHook(() =>
+    useCanvasPersistence("project", {
+      ...canvas,
+      project_card_ids: ["existing"],
+    }),
+  );
+  let registering!: Promise<ReferenceImageResult>;
+  await act(async () => {
+    registering = result.current.registerReferenceImage({
+      request_id: "request",
+      asset_id: "uploaded",
+      kind: "scene",
+      title: "森林",
+    });
+    await Promise.resolve();
+  });
+  expect(registerReferenceImage).toHaveBeenCalledOnce();
+  act(() =>
+    result.current.patchNode("video", { title: "登记期间修改的镜头" }, true),
+  );
+  await act(async () => {
+    finish({
+      card: {
+        id: "new-card",
+        title: "森林",
+        kind: "scene",
+        revision: 0,
+        adopted_asset_id: "uploaded",
+        archived: false,
+        design: "",
+      },
+      project_card_ids: ["existing", "new-card"],
+      revision: 1,
+      reused: false,
+    });
+    await registering;
+    await result.current.prepareCanvasForAgent();
+  });
+  expect(putVisualCanvas).toHaveBeenLastCalledWith(
+    "project",
+    expect.arrayContaining([
+      expect.objectContaining({ title: "登记期间修改的镜头" }),
+    ]),
+    1,
+    [],
+    undefined,
+    [],
+    ["existing", "new-card"],
+  );
+  expect(result.current.readCanvas().projectCardIds).toEqual([
+    "existing",
+    "new-card",
+  ]);
+  expect(result.current.readCanvas().nodes[0].title).toBe("登记期间修改的镜头");
+});
 
 test.each([
   { kind: "success", receiptRevision: 1, expectedRevision: 7 },

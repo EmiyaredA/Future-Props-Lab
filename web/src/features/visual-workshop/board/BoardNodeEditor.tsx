@@ -51,6 +51,12 @@ export function BoardNodeEditor({
       ) : (
         <CanvasNodeInspector
           referenceContext={{
+            projectCardIds: c.projectCardIds,
+            registerReferenceImage: c.registerReferenceImage,
+            collectCard: (card) =>
+              c.replaceProjectCardIds([
+                ...new Set([...c.readCanvas().projectCardIds, card.id]),
+              ]),
             nodes: c.nodes,
             edges: c.edges,
             replaceEdges: c.replaceEdges,

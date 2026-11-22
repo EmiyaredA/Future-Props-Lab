@@ -30,6 +30,7 @@ class ContentAuditRequest(BaseModel):
 class DuplicateMember(BaseModel):
     id: str
     project_id: str | None
+    folder_id: str | None = None
     display_name: str
     original_filename: str
     media_kind: str
@@ -62,4 +63,4 @@ class DedupeStep(BaseModel):
     model_config = ConfigDict(extra="forbid")
     expected_revision: int = Field(ge=0)
     content_key: str = Field(pattern=r"^[a-f0-9]{64}$")
-
+    remove_asset_ids: list[str] = Field(default_factory=list, max_length=1000)

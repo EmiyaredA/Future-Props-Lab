@@ -67,6 +67,8 @@ export function DirectorDeskProjectsPage({
   const projects = useQuery({
     queryKey: directorDeskKeys.projects(query),
     queryFn: ({ signal }) => listDirectorProjects(query, signal),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
   const create = useMutation({
     mutationFn: () => createDirectorProject("未命名预演"),
@@ -202,7 +204,17 @@ export function DirectorDeskProjectsPage({
                 id: project.id,
                 title: project.title,
                 updated_at: project.updated_at,
+                preview: project.preview,
               }}
+              renderPreview={(signal) =>
+                import("./projectCover").then(({ renderDirectorCover }) =>
+                  renderDirectorCover(
+                    project.id,
+                    project.preview?.source_revision,
+                    signal,
+                  ),
+                )
+              }
               cover="director"
               coverTitle="三维预演"
               onOpen={() => onOpen(project.id)}

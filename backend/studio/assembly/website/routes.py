@@ -56,12 +56,14 @@ from studio.apps.visual_workshop.transport.creation_links_http import (
 from studio.apps.visual_workshop.transport.creative_workflow_http import (
     router as visual_creative_workflow_router,
 )
+from studio.apps.visual_workshop.transport.material_identity_http import router as material_router
 from studio.apps.visual_workshop.transport.previs_http import router as visual_previs_router
 from studio.apps.visual_workshop.transport.retired_acceptance_http import (
     router as retired_visual_reviews,
 )
 from studio.apps.visual_workshop.transport.storyboard_http import router as storyboard_router
 from studio.assembly.http_dependencies import require_studio_auth
+from studio.assembly.website.asset_library.transport.content import router as content_router
 from studio.assembly.website.asset_library.transport.website.files import (
     router as file_management_router,
 )
@@ -108,6 +110,9 @@ from studio.assembly.website.visual_workshop.transport.website.outputs import (
 )
 
 api_router = APIRouter(prefix="/v1")
+
+api_router.include_router(content_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(material_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(cloud_control_router)
 api_router.include_router(local_models_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(video_enhancement_router, dependencies=[Depends(require_studio_auth)])

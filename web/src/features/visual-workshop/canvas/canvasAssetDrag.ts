@@ -8,6 +8,7 @@ export type CanvasAssetDragPayload = {
   displayName: string;
   importMode: CanvasAssetImportMode;
   sourceProjectId?: string;
+  cardId?: string;
 };
 
 export function isCanvasMediaKind(
@@ -58,6 +59,7 @@ export function readCanvasAssetDragData(
         typeof parsed.sourceProjectId === "string"
           ? parsed.sourceProjectId
           : undefined,
+      cardId: typeof parsed.cardId === "string" ? parsed.cardId : undefined,
     };
   } catch {
     return null;

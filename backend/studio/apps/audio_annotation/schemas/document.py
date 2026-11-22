@@ -4,6 +4,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from studio.runtime.project_preview import ProjectPreview
+
 STABLE_ID_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$"
 HEX_COLOR_PATTERN = r"^#[0-9A-Fa-f]{6}$"
 LANGUAGE_CODE_PATTERN = r"^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$"
@@ -196,6 +198,7 @@ class AudioAnnotationProjectPatchIn(BaseModel):
 
 
 class AudioAnnotationProjectOut(BaseModel):
+    preview: ProjectPreview | None = None
     id: str
     title: str
     asset_id: str

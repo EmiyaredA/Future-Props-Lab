@@ -6,6 +6,7 @@ import stat
 from types import SimpleNamespace
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from studio.apps.asset_library.storage.content_models import AssetContentFingerprint
 from studio.apps.asset_library.storage.models import VisualAsset
@@ -36,8 +37,11 @@ def measure(path, size, cached=None):
         if not stat.S_ISREG(before.st_mode) or before.st_size != size:
             raise OSError("original size changed")
         descriptor = {
-            "size": before.st_size, "mtime": before.st_mtime_ns,
-            "ctime": before.st_ctime_ns, "inode": before.st_ino, "device": before.st_dev,
+            "size": before.st_size,
+            "mtime": before.st_mtime_ns,
+            "ctime": before.st_ctime_ns,
+            "inode": before.st_ino,
+            "device": before.st_dev,
         }
         if cached and cached[0] == descriptor:
             digest = cached[1]
@@ -46,9 +50,14 @@ def measure(path, size, cached=None):
         after = os.fstat(stream.fileno())
         current = path.stat(follow_symlinks=False)
         if (before.st_ino, before.st_size, before.st_mtime_ns, before.st_ctime_ns) != (
-            after.st_ino, after.st_size, after.st_mtime_ns, after.st_ctime_ns
+            after.st_ino,
+            after.st_size,
+            after.st_mtime_ns,
+            after.st_ctime_ns,
         ) or (current.st_ino, current.st_mtime_ns, current.st_size) != (
-            before.st_ino, before.st_mtime_ns, before.st_size
+            before.st_ino,
+            before.st_mtime_ns,
+            before.st_size,
         ):
             raise OSError("original changed while hashing")
     return descriptor, digest
@@ -67,7 +76,9 @@ class ContentFingerprints:
             VisualAsset.media_kind.in_(("image", "video", "audio")),
         ]
         if project_ids is not None:
-            condition.append(VisualAsset.project_id.is_(None) | VisualAsset.project_id.in_(project_ids))
+            condition.append(
+                VisualAsset.project_id.is_(None) | VisualAsset.project_id.in_(project_ids)
+            )
         if sizes is not None:
             condition.append(VisualAsset.byte_size.in_(sizes))
         rows = await self.session.scalars(select(VisualAsset).where(*condition))
@@ -88,9 +99,13 @@ class ContentFingerprints:
                 unavailable.append(item["id"])
                 continue
             current = await self.session.get(VisualAsset, item["id"], populate_existing=True)
-            if not current or current.owner_user_id != self.owner or any(
-                getattr(current, key) != item[key]
-                for key in ("storage_key", "storage_version", "byte_size", "revision")
+            if (
+                not current
+                or current.owner_user_id != self.owner
+                or any(
+                    getattr(current, key) != item[key]
+                    for key in ("storage_key", "storage_version", "byte_size", "revision")
+                )
             ):
                 await self.session.rollback()
                 unavailable.append(item["id"])
@@ -100,6 +115,20 @@ class ContentFingerprints:
                 row = AssetContentFingerprint(asset_id=item["id"], owner_user_id=self.owner)
                 self.session.add(row)
             row.descriptor, row.sha256 = descriptor, digest
-            await self.session.commit()
-            result[item["id"]] = content_key(self.owner, item["media_kind"], item["byte_size"], digest)
+            try:
+                await self.session.commit()
+            except IntegrityError:
+                await self.session.rollback()
+                current = await self.session.get(VisualAsset, item["id"])
+                if (
+                    current is None
+                    or current.owner_user_id != self.owner
+                    or current.revision != item["revision"]
+                ):
+                    unavailable.append(item["id"])
+                    continue
+            result[item["id"]] = content_key(
+                self.owner, item["media_kind"], item["byte_size"], digest
+            )
+            await self.session.rollback()
         return result, unavailable

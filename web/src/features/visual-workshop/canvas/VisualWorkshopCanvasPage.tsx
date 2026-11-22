@@ -435,6 +435,7 @@ function ProjectWorkspacePage(props: VisualWorkshopCanvasPageProps) {
           >
             <ScriptWorkspace
               project={projectId}
+              nodes={nodes}
               activeWorkspace={workspace === "script"}
               initialSceneId={scriptSceneId}
               initialSource={scriptSource}

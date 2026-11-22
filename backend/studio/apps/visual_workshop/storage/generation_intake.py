@@ -8,6 +8,7 @@ from studio.apps.visual_workshop.generation_errors import GenerationError
 from studio.apps.visual_workshop.handoffs.segment_handoffs import require_canvas_unreserved
 from studio.apps.visual_workshop.outputs.queries import OutputError
 from studio.apps.visual_workshop.outputs.references import resolve_references
+from studio.apps.visual_workshop.project_reference_rules import require_project_design_references
 from studio.apps.visual_workshop.projects import Projects
 from studio.apps.visual_workshop.reference_backlog import pending_outcomes
 from studio.apps.visual_workshop.storage.generation_dispatch_records import (
@@ -72,6 +73,10 @@ class SqlGenerationIntake:
         project, identity = plan.project_id, str(plan.plan_id)
         await self.projects.row(project)
         await require_canvas_unreserved(self.session, self.owner, project)
+        try:
+            await require_project_design_references(self.session, project, arguments.canvas_node_id)
+        except OutputError as exc:
+            raise GenerationError(str(exc), code=exc.code, status=exc.status) from None
         decision = await self.session.get(
             VisualGenerationDecision, identity, populate_existing=True
         )

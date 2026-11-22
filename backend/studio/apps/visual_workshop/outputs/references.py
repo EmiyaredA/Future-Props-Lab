@@ -2,6 +2,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.outputs.queries import OutputError
+from studio.apps.visual_workshop.project_reference_rules import require_project_design_references
 from studio.apps.visual_workshop.reference_subjects import compile_subjects, order_references
 from studio.apps.visual_workshop.storage.models import VisualCanvasDocument
 from studio.contracts.model_service.generation_tasks import (
@@ -30,6 +31,7 @@ async def resolve_references(
     target = nodes.get(body.canvas_node_id)
     if target is None or target["kind"] != body.kind:
         raise OutputError("生成节点不存在或类型不匹配", code="canvas_kind_mismatch")
+    await require_project_design_references(session, project_id, body.canvas_node_id)
     payload = body.model_dump(mode="json")
     workflow_parameters = getattr(body, "workflow_parameters", None)
     if workflow_parameters is not None:

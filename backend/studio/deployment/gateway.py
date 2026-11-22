@@ -41,6 +41,8 @@ def render_gateway(
     local_only=False,
     local_port=None,
     creative_socket_directory=CREATIVE_SOCKET_DIR,
+    public_loopback_port=None,
+    development_frontend=None,
 ):
     if audience not in {"studio", "management"}:
         raise ValueError("Unknown gateway audience")
@@ -120,6 +122,21 @@ def render_gateway(
         if happier_origin or happier_studio_origin:
             raise ValueError("纯本机开发不装配 Happier HTTPS 入口")
         listeners = [("local", f"http://127.0.0.1:{local_port or origins['local'].port}")]
+    if public_loopback_port is not None:
+        if (
+            not local_only
+            or not isinstance(public_loopback_port, int)
+            or not 1024 <= public_loopback_port <= 65535
+            or public_loopback_port in {local_port or origins["local"].port, native_port}
+        ):
+            raise ValueError("开发公网监听必须使用独立回环端口")
+        listeners.append(("public", f"http://127.0.0.1:{public_loopback_port}"))
+    if development_frontend is not None and (
+        public_loopback_port is None
+        or not re.fullmatch(r"127\.0\.0\.1:[0-9]{4,5}", development_frontend)
+        or not 1024 <= int(development_frontend.split(":")[1]) <= 65535
+    ):
+        raise ValueError("开发前端必须通过专用公网监听转发到回环地址")
     tls = "    tls /run/fpl/happier-cert.pem /run/fpl/happier-key.pem"
     if happier_studio_origin or happier_origin:
         if audience != "studio" or not control:
@@ -150,6 +167,7 @@ def render_gateway(
         "}",
     ]
     for ingress, listener in listeners:
+        live_frontend = development_frontend if ingress == "public" else None
         origin = origins[ingress]
         matcher = ingress.replace("-", "_")
         lines = [
@@ -337,9 +355,9 @@ def render_gateway(
             ):
                 continue
             paths = [f"/_apps/{service.id}/*"]
-            if audience == "management":
+            if audience == "management" and not live_frontend:
                 paths.append("/")
-            for root in service.page_roots:
+            for root in (() if live_frontend else service.page_roots):
                 paths.append(root)
                 if root not in {"/", "/apps"} and not root.endswith(".html"):
                     paths.append(root + "/*")
@@ -357,7 +375,22 @@ def render_gateway(
                     "    }",
                 ]
             )
-        lines.extend(["    respond 404", "  }", "}"])
+        if live_frontend:
+            lines.extend(
+                [
+                    "    handle {",
+                    "      header >Cache-Control no-store",
+                    f"      reverse_proxy {live_frontend} {{",
+                    "        flush_interval -1",
+                    "        header_up -Cookie",
+                    "        header_up -Authorization",
+                    "      }",
+                    "    }",
+                ]
+            )
+        else:
+            lines.append("    respond 404")
+        lines.extend(["  }", "}"])
         result.extend(lines)
     if happier_origin:
         result.extend(

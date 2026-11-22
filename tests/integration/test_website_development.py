@@ -157,7 +157,7 @@ def test_background_service_and_npm_aliases_use_the_same_pair(tmp_path):
     package = json.loads((development.ROOT / "package.json").read_text())
     assert package["scripts"]["start"] == "uv run python scripts/website/development.py"
     assert all(
-        package["scripts"][name] == "npm start"
+        package["scripts"][name] == "npm start --"
         for name in ["dev", "dev:web", "dev:backend", "start:backend"]
     )
 

@@ -151,7 +151,8 @@ async def test_visual_uploads_recover_exact_bytes_and_rollback_competing_canvas(
         )
         assert shared_card.status_code == 201, shared_card.text
         assert shared_card.json()["media_projects"] == {staged[0]: created.json()["id"]}
-        assert (await send("GET", path + "/asset-cards")).json() == [shared_card.json()]
+        assert (await send("GET", path + "/asset-cards")).json() == []
+        assert shared_card.json() in (await send("GET", "/v1/visual-workshop/asset-cards")).json()
         video = {"id": "clip", "kind": "video", "title": "Clip", "position": {"x": 0, "y": 0}}
         text = {"id": "note", "kind": "text", "title": "Note", "position": {"x": 0, "y": 50}}
         saved = await send(

@@ -7,6 +7,14 @@ import type { GenerationKind } from "@features/visual-workshop/generation/option
 import type { VisualCanvasNode, VisualCanvasEdge } from "../api";
 
 export type CanvasReferenceContext = {
+  projectCardIds?: string[];
+  registerReferenceImage?: (
+    input: Omit<
+      import("../creative/api").ReferenceImageInput,
+      "expected_revision"
+    >,
+  ) => Promise<import("../creative/api").ReferenceImageResult>;
+  collectCard?: (card: import("../creative/api").Card) => Promise<void>;
   removeEdge: (id: string) => void;
   nodes: VisualCanvasNode[];
   edges: VisualCanvasEdge[];

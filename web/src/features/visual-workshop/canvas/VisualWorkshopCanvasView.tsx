@@ -576,7 +576,21 @@ export function VisualWorkshopCanvasView({
                       }
                     : undefined
                 }
-                referenceContext={{ nodes, edges, replaceEdges, removeEdge }}
+                referenceContext={{
+                  nodes,
+                  edges,
+                  replaceEdges,
+                  removeEdge,
+                  projectCardIds: controller.projectCardIds,
+                  registerReferenceImage: controller.registerReferenceImage,
+                  collectCard: (card) =>
+                    controller.replaceProjectCardIds([
+                      ...new Set([
+                        ...controller.readCanvas().projectCardIds,
+                        card.id,
+                      ]),
+                    ]),
+                }}
                 embedded
                 projectId={projectId}
                 node={node}

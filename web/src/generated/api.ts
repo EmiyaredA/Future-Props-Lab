@@ -1935,6 +1935,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/file-library/content-audits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create File Content Audit */
+        post: operations["create_file_content_audit_v1_file_library_content_audits_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/file-library/content-audits/{operation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get File Content Audit */
+        get: operations["get_file_content_audit_v1_file_library_content_audits__operation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/file-library/content-audits/{operation_id}/clean": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Clean File Duplicate Group */
+        post: operations["clean_file_duplicate_group_v1_file_library_content_audits__operation_id__clean_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/file-library/content-audits/{operation_id}/prepare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Prepare File Duplicate Group */
+        post: operations["prepare_file_duplicate_group_v1_file_library_content_audits__operation_id__prepare_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/file-library/content-audits/{operation_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore File Duplicate Group */
+        post: operations["restore_file_duplicate_group_v1_file_library_content_audits__operation_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/file-library/folder-archive-imports": {
         parameters: {
             query?: never;
@@ -2049,6 +2134,23 @@ export interface paths {
         put?: never;
         /** Upload File */
         post: operations["upload_file_v1_files_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/files/content-identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inspect File Content Identities */
+        post: operations["inspect_file_content_identities_v1_files_content_identities_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7568,6 +7670,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/asset-card-links": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Inspect Visual Asset Card Links */
+        post: operations["inspect_visual_asset_card_links_v1_visual_workshop_asset_card_links_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/asset-cards": {
         parameters: {
             query?: never;
@@ -7751,6 +7870,23 @@ export interface paths {
         put?: never;
         /** Retry Materialization */
         post: operations["retry_materialization_v1_visual_workshop_generation_tasks__task_id__retry_materialization_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/material-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Visual Material Usage */
+        get: operations["get_visual_material_usage_v1_visual_workshop_material_usage_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -8156,6 +8292,23 @@ export interface paths {
         post?: never;
         /** Delete Previs Scene */
         delete: operations["delete_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/reference-images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register Project Reference Image */
+        post: operations["register_project_reference_image_v1_visual_workshop_projects__project_id__reference_images_post"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -8815,6 +8968,23 @@ export interface components {
             /** Updated At */
             updated_at: string;
         };
+        /** AssetCardLink */
+        AssetCardLink: {
+            /** Asset Id */
+            asset_id: string;
+            /** Card Ids */
+            card_ids: string[];
+        };
+        /** AssetCardLinksIn */
+        AssetCardLinksIn: {
+            /** Asset Ids */
+            asset_ids: string[];
+        };
+        /** AssetCardLinksOut */
+        AssetCardLinksOut: {
+            /** Items */
+            items: components["schemas"]["AssetCardLink"][];
+        };
         /** AssetImportIn */
         AssetImportIn: {
             /** Assetids */
@@ -8943,6 +9113,7 @@ export interface components {
             mime_type: string;
             /** Original Filename */
             original_filename: string;
+            preview?: components["schemas"]["ProjectPreview"] | null;
             /** Reviewed Segment Count */
             reviewed_segment_count: number;
             /** Revision */
@@ -10145,6 +10316,42 @@ export interface components {
             documents: components["schemas"]["ThoughtNoteOut"][];
             knowledge_base: components["schemas"]["PublicationOut"];
         };
+        /** ContentAudit */
+        ContentAudit: {
+            /** Groups */
+            groups: components["schemas"]["DuplicateGroup"][];
+            /** Id */
+            id: string;
+            /** Project Ids */
+            project_ids: string[];
+            /** Revision */
+            revision: number;
+            /** Unavailable Ids */
+            unavailable_ids?: string[];
+        };
+        /** ContentAuditRequest */
+        ContentAuditRequest: {
+            /** Project Ids */
+            project_ids: string[];
+            /** Request Id */
+            request_id: string;
+        };
+        /** ContentIdentities */
+        ContentIdentities: {
+            /** Items */
+            items: components["schemas"]["ContentIdentity"][];
+            /** Unavailable Ids */
+            unavailable_ids?: string[];
+        };
+        /** ContentIdentity */
+        ContentIdentity: {
+            /** Asset Id */
+            asset_id: string;
+            /** Content Key */
+            content_key: string;
+            /** Equivalent Ids */
+            equivalent_ids: string[];
+        };
         /** ConversationDetailOut */
         ConversationDetailOut: {
             /** Actions */
@@ -10633,6 +10840,15 @@ export interface components {
             /** Username */
             username: string;
         };
+        /** DedupeStep */
+        DedupeStep: {
+            /** Content Key */
+            content_key: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Remove Asset Ids */
+            remove_asset_ids?: string[];
+        };
         /** DeleteApiKeyIn */
         DeleteApiKeyIn: {
             /** Expected Revision */
@@ -10918,6 +11134,7 @@ export interface components {
         DirectorProjectSummary: {
             /** Id */
             id: string;
+            preview?: components["schemas"]["ProjectPreview"] | null;
             /** Revision */
             revision: number;
             /** Title */
@@ -10950,6 +11167,32 @@ export interface components {
             /** Revision */
             revision: number;
         };
+        /** DuplicateGroup */
+        DuplicateGroup: {
+            /** Canonical Id */
+            canonical_id: string;
+            /** Content Key */
+            content_key: string;
+            /** Members */
+            members: components["schemas"]["DuplicateMember"][];
+            /**
+             * Reclaimed Bytes
+             * @default 0
+             */
+            reclaimed_bytes: number;
+            /** Removed Ids */
+            removed_ids?: string[];
+            /** Skipped */
+            skipped?: {
+                [key: string]: string;
+            };
+            /**
+             * State
+             * @default audited
+             * @enum {string}
+             */
+            state: "audited" | "reserved" | "ready" | "cleaned" | "restored";
+        };
         /** DuplicateIn */
         DuplicateIn: {
             /** Expected Knowledge Revision */
@@ -10969,6 +11212,31 @@ export interface components {
              * @default false
              */
             subtree: boolean;
+        };
+        /** DuplicateMember */
+        DuplicateMember: {
+            /** Byte Size */
+            byte_size: number;
+            /** Created At */
+            created_at: string;
+            /** Display Name */
+            display_name: string;
+            /** Folder Id */
+            folder_id?: string | null;
+            /** Id */
+            id: string;
+            /** Media Kind */
+            media_kind: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Original Filename */
+            original_filename: string;
+            /** Project Id */
+            project_id: string | null;
+            /** Protected By */
+            protected_by?: string[];
+            /** Revision */
+            revision: number;
         };
         /** DuplicateOut */
         DuplicateOut: {
@@ -14676,6 +14944,7 @@ export interface components {
              * @default false
              */
             is_official: boolean;
+            preview?: components["schemas"]["ProjectPreview"] | null;
             /** Revision */
             revision: number;
             /**
@@ -14943,6 +15212,11 @@ export interface components {
             exchange_url: string;
             /** Ticket */
             ticket: string;
+        };
+        /** IdentityRequest */
+        IdentityRequest: {
+            /** Asset Ids */
+            asset_ids: string[];
         };
         /** IdlePreference */
         IdlePreference: {
@@ -15584,6 +15858,7 @@ export interface components {
             home_note_id: string;
             /** Id */
             id: string;
+            preview?: components["schemas"]["ProjectPreview"] | null;
             /** Revision */
             revision: number;
             /** Title */
@@ -15838,6 +16113,17 @@ export interface components {
             revision: number;
             /** Status */
             status: string;
+        };
+        /** MaterialUsageOut */
+        MaterialUsageOut: {
+            /** Active Project Ids */
+            active_project_ids: string[];
+            /** Frozen Asset Ids */
+            frozen_asset_ids: string[];
+            /** Project Revisions */
+            project_revisions: {
+                [key: string]: number;
+            };
         };
         /** McpCatalogOut */
         McpCatalogOut: {
@@ -18418,6 +18704,20 @@ export interface components {
              */
             effect: "none" | "fade" | "slideX" | "slideY" | "slideX3D" | "slideY3D" | "rotate" | "scaleX" | "scaleY" | "scale" | "scaleReverse" | "random";
         };
+        /** PreviewCell */
+        PreviewCell: {
+            /** Background */
+            background?: string | null;
+            /**
+             * Bold
+             * @default false
+             */
+            bold: boolean;
+            /** Color */
+            color?: string | null;
+            /** Text */
+            text: string;
+        };
         /** PrevisSceneCreate */
         PrevisSceneCreate: {
             /** Document */
@@ -18531,6 +18831,7 @@ export interface components {
             createdAt: string;
             /** Id */
             id: string;
+            preview?: components["schemas"]["ProjectPreview"] | null;
             /** Revision */
             revision: number;
             /** Title */
@@ -18544,6 +18845,41 @@ export interface components {
             expectedRevision: number;
             /** Title */
             title: string;
+        };
+        /** ProjectPreview */
+        ProjectPreview: {
+            /** Cells */
+            cells?: components["schemas"]["PreviewCell"][][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "text" | "waveform" | "table" | "scene" | "empty";
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /** Peaks */
+            peaks?: number[];
+            /** Source Id */
+            source_id?: string | null;
+            /** Source Revision */
+            source_revision?: number | null;
+            /**
+             * Source Time
+             * @default 0
+             */
+            source_time: number;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /** Urls */
+            urls?: string[];
+            /** Version */
+            version: string;
         };
         /** ProjectSnapshotImportWarning */
         ProjectSnapshotImportWarning: {
@@ -19034,6 +19370,34 @@ export interface components {
             value: string;
             /** Window Id */
             window_id?: number | null;
+        };
+        /** ReferenceImageRegistered */
+        ReferenceImageRegistered: {
+            card: components["schemas"]["CardOut"];
+            /** Project Card Ids */
+            project_card_ids: string[];
+            /** Reused */
+            reused: boolean;
+            /** Revision */
+            revision: number;
+        };
+        /** ReferenceImageRegistration */
+        ReferenceImageRegistration: {
+            /** Asset Id */
+            asset_id: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "character" | "scene" | "prop";
+            /** Request Id */
+            request_id: string;
+            /** Reuse Card Id */
+            reuse_card_id?: string | null;
+            /** Title */
+            title: string;
         };
         /** ReferenceTarget */
         ReferenceTarget: {
@@ -20324,6 +20688,7 @@ export interface components {
             document: components["schemas"]["SpreadsheetDocument"];
             /** Id */
             id: string;
+            preview?: components["schemas"]["ProjectPreview"] | null;
             /** Revision */
             revision: number;
             /** Source Name */
@@ -20383,6 +20748,7 @@ export interface components {
             created_at: string;
             /** Id */
             id: string;
+            preview?: components["schemas"]["ProjectPreview"] | null;
             /** Revision */
             revision: number;
             /** Source Name */
@@ -22624,6 +22990,7 @@ export interface components {
             createdAt: string;
             /** Id */
             id: string;
+            preview?: components["schemas"]["ProjectPreview"] | null;
             /** Revision */
             revision: number;
             /** Sourceapplication */
@@ -23958,6 +24325,7 @@ export interface components {
              * @enum {string}
              */
             kind: "image" | "video" | "canvas";
+            preview?: components["schemas"]["ProjectPreview"] | null;
             /** Revision */
             revision: number;
             /**
@@ -28409,6 +28777,175 @@ export interface operations {
             };
         };
     };
+    create_file_content_audit_v1_file_library_content_audits_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentAuditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentAudit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_file_content_audit_v1_file_library_content_audits__operation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentAudit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    clean_file_duplicate_group_v1_file_library_content_audits__operation_id__clean_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DedupeStep"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentAudit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    prepare_file_duplicate_group_v1_file_library_content_audits__operation_id__prepare_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DedupeStep"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentAudit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_file_duplicate_group_v1_file_library_content_audits__operation_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                operation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DedupeStep"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentAudit"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     import_library_folder_archive_v1_file_library_folder_archive_imports_post: {
         parameters: {
             query?: never;
@@ -28632,6 +29169,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inspect_file_content_identities_v1_files_content_identities_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentIdentities"];
                 };
             };
             /** @description Validation Error */
@@ -41899,6 +42469,39 @@ export interface operations {
             };
         };
     };
+    inspect_visual_asset_card_links_v1_visual_workshop_asset_card_links_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssetCardLinksIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetCardLinksOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_account_asset_cards_v1_visual_workshop_asset_cards_get: {
         parameters: {
             query?: never;
@@ -42297,6 +42900,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_visual_material_usage_v1_visual_workshop_material_usage_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaterialUsageOut"];
                 };
             };
         };
@@ -43506,6 +44129,41 @@ export interface operations {
                     "application/json": {
                         [key: string]: boolean;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    register_project_reference_image_v1_visual_workshop_projects__project_id__reference_images_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReferenceImageRegistration"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReferenceImageRegistered"];
                 };
             };
             /** @description Validation Error */

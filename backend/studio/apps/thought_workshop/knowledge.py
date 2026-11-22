@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from studio.apps.thought_workshop.errors import ThoughtError
 from studio.apps.thought_workshop.history import History
+from studio.apps.thought_workshop.project_previews import project_previews
 from studio.apps.thought_workshop.publication.lifecycle import withdraw_library
 from studio.apps.thought_workshop.schemas.document import empty_document
 from studio.apps.thought_workshop.schemas.knowledge import (
@@ -80,7 +81,13 @@ class KnowledgeBases:
                 .order_by(ThoughtKnowledgeBase.updated_at.desc(), ThoughtKnowledgeBase.id)
             )
         ).all()
-        return [await self.output(row) for row in rows]
+        previews = await project_previews(
+            self.session, self.owner_user_id, [row.id for row in rows]
+        )
+        return [
+            (await self.output(row)).model_copy(update={"preview": previews.get(row.id)})
+            for row in rows
+        ]
 
     async def cover(self, asset_id: str | None) -> None:
         if asset_id is None:

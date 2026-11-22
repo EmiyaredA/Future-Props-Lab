@@ -9,6 +9,7 @@ from studio.apps.visual_workshop.acceptance.standards import delete_acceptance
 from studio.apps.visual_workshop.asset_references.models import VisualProjectAssetReference
 from studio.apps.visual_workshop.outputs.models import VisualNodeOutput
 from studio.apps.visual_workshop.previs_publication import RECEIPT_KIND, publication_resource_id
+from studio.apps.visual_workshop.project_previews import project_previews
 from studio.apps.visual_workshop.project_values import project_out as project_out
 from studio.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectCreateIn,
@@ -45,7 +46,15 @@ class VisualWorkshopProjects:
 
     async def list(self) -> VisualWorkshopProjectListOut:
         rows = await list_owned_projects(self.session, VisualWorkshopProject, self.owner_user_id)
-        return VisualWorkshopProjectListOut(items=[project_out(row) for row in rows])
+        previews = await project_previews(
+            self.session, self.owner_user_id, [row.id for row in rows]
+        )
+        return VisualWorkshopProjectListOut(
+            items=[
+                project_out(row).model_copy(update={"preview": previews.get(row.id)})
+                for row in rows
+            ]
+        )
 
     async def _row(self, project_id: str) -> VisualWorkshopProject:
         return await load_owned_project(

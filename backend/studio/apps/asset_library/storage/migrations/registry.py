@@ -24,6 +24,8 @@ from studio.apps.asset_library.storage.migrations.versions.v0020 import (
 )
 from studio.runtime.database.migrations import Migration
 
+from studio.apps.asset_library.storage.migrations.versions.v0021 import SQL as SQL_0021
+
 MIGRATIONS = (
     Migration("0001_assets", SQL_0001),
     Migration("0002_prepared_references", SQL_0002),
@@ -45,4 +47,5 @@ MIGRATIONS = (
     Migration("0018_visual_conversation_scopes", SQL_0018),
     Migration("0019_visual_archive_staging", SQL_0019),
     Migration("0020_retire_visual_conversations", RETIRE_VISUAL_DIALOGUE),
+    Migration("0021_content_identity", SQL_0021),
 )

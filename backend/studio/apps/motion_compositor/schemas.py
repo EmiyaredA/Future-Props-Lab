@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 from studio.contracts.motion_compositor.document import MotionComposition, MotionLayer
+from studio.runtime.project_preview import ProjectPreview
 
 
 class ProjectCreateIn(BaseModel):
@@ -27,6 +28,7 @@ class ProjectPatchIn(BaseModel):
 
 
 class ProjectOut(BaseModel):
+    preview: ProjectPreview | None = None
     id: str
     title: str
     revision: int

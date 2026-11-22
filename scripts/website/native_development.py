@@ -112,7 +112,9 @@ def host_workers(root):
     return result
 
 
-def run(root=ROOT):
+def run(root=ROOT, *, public=False, public_management=False):
+    if public_management and not public:
+        raise ValueError("--public-management 需要同时指定 --public")
     directory = root / ".runtime/native-development"
     if directory.is_symlink():
         raise RuntimeError("本机运行目录不能是符号链接")
@@ -158,13 +160,38 @@ def run(root=ROOT):
         try:
             ownership.enter_context(service_lock(directory))
         except RuntimeError:
+            record = directory / "process.json"
+            try:
+                current = json.loads(record.read_text())
+            except (OSError, ValueError):
+                current = {}
+            if (current.get("public", False), current.get("public_management", False)) != (
+                public,
+                public_management,
+            ):
+                raise RuntimeError(
+                    "热加载已按其他公网参数启动；请先正常停止原实例，再使用新参数启动"
+                ) from None
             print("本机热加载已启动：http://127.0.0.1:3000；无需重复启动", flush=True)
             return
         acquired = True
         ownership.enter_context(service_lock(root / ".runtime/deployment/native-mode"))
         clear_stale_bridge(directory / "bridge/creative.sock")
         workers = host_workers(root)
-        services = prepare(root, root / "backend/config.toml", directory, caddy)
+        tunnels = {}
+        if public:
+            from scripts.website.native_public import configured_tunnels
+
+            tunnels = configured_tunnels(
+                root, root / "backend/config.toml", management=public_management
+            )
+        services = prepare(
+            root,
+            root / "backend/config.toml",
+            directory,
+            caddy,
+            public_profiles={name: tunnel.profile for name, tunnel in tunnels.items()},
+        )
         from importlib import import_module
 
         from studio.deployment.images import STUDIO_OWNERS
@@ -177,7 +204,11 @@ def run(root=ROOT):
             ).MIGRATIONS
             check(service.state / "service.db", service.name, registry)
         ports = [service.port for service in services]
-        check_ports([3000, 9001, 9002, 29090, 29092, *ports])
+        listeners = [3000, 9001, 9002, 29090, 29092, *ports]
+        listeners.extend(tunnel.profile.local_port for tunnel in tunnels.values())
+        if len(listeners) != len(set(listeners)):
+            raise RuntimeError("公网监听端口与本机服务重复，请检查公网端口配置")
+        check_ports(listeners)
         # Only validate; startup must never apply schema migrations.
         for name in ("gateway", "management"):
             subprocess.run(
@@ -215,18 +246,42 @@ def run(root=ROOT):
             {
                 "FPL_NATIVE_WEB_CONFIG": str(directory / "web.json"),
                 "FPL_VITE_CACHE_DIR": str(directory / "vite-cache"),
+                "FPL_NATIVE_PUBLIC_ORIGINS": json.dumps(
+                    sorted({tunnel.profile.origin for tunnel in tunnels.values()})
+                ),
             },
         )
+        if public:
+            wait_health({"web": children["web"]}, [3000])
+            spawn(
+                "public-access",
+                [
+                    sys.executable,
+                    "-m",
+                    "scripts.website.native_public",
+                    "--config",
+                    str(root / "backend/config.toml"),
+                    *(["--management"] if public_management else []),
+                ],
+            )
         private_write(
             directory / "process.json",
             json.dumps(
                 {
                     "pid": os.getpid(),
+                    "public": public,
+                    "public_management": public_management,
                     "services": {name: child.pid for name, child in children.items()},
                 }
             ),
         )
         print("本机独立服务已启动：http://127.0.0.1:3000（Python 重载 / Vite 热更新）", flush=True)
+        if public:
+            print(
+                "公网隧道连接中；状态：.runtime/native-development/public-access.json；"
+                "日志：.runtime/native-development/logs/public-access.log",
+                flush=True,
+            )
         dependencies = {
             service.name: set(source_closure(root, service.name).values()) for service in services
         }
@@ -289,6 +344,8 @@ def run(root=ROOT):
                     json.dumps(
                         {
                             "pid": os.getpid(),
+                            "public": public,
+                            "public_management": public_management,
                             "services": {name: child.pid for name, child in children.items()},
                         }
                     ),

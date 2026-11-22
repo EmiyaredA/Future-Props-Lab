@@ -1,4 +1,5 @@
 import { LoadingState } from "@shared/ui/LoadingState";
+import { ProjectReferenceIssues } from "./ProjectReferenceIssues";
 import { Image, Sparkles, Video, X } from "lucide-react";
 import { GenerationSpinner } from "./GenerationActivity";
 import { WorkflowVideoControls } from "@features/models";
@@ -105,6 +106,7 @@ export function StandardGenerationDrawer({
         </div>
       ) : null}
       <form className="generation-form" onSubmit={submit}>
+        <ProjectReferenceIssues issues={controller.referenceIssues} />
         <label>
           <span>模型</span>
           <CustomSelect
@@ -177,6 +179,10 @@ export function StandardGenerationDrawer({
               )}
             </div>
             <ProjectMediaPicker
+              dropTargetKey={controller.canvasNodeId}
+              registerImage={
+                controller.referenceContext?.registerReferenceImage
+              }
               excludedAssetIds={controller.excludedAssetIds}
               projectId={projectId}
               label="参考图片（可选）"
@@ -265,6 +271,10 @@ export function StandardGenerationDrawer({
             </fieldset>
             {videoMode === "image" ? (
               <ProjectMediaPicker
+                dropTargetKey={controller.canvasNodeId}
+                registerImage={
+                  controller.referenceContext?.registerReferenceImage
+                }
                 excludedAssetIds={controller.excludedAssetIds}
                 projectId={projectId}
                 label="起始画面（必选）"
@@ -276,6 +286,10 @@ export function StandardGenerationDrawer({
             {videoMode === "frames" ? (
               <>
                 <ProjectMediaPicker
+                  dropTargetKey={controller.canvasNodeId}
+                  registerImage={
+                    controller.referenceContext?.registerReferenceImage
+                  }
                   excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="首帧（必选）"
@@ -284,6 +298,10 @@ export function StandardGenerationDrawer({
                   onFilesLoaded={rememberPromptFiles}
                 />
                 <ProjectMediaPicker
+                  dropTargetKey={controller.canvasNodeId}
+                  registerImage={
+                    controller.referenceContext?.registerReferenceImage
+                  }
                   excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="尾帧（可选）"
@@ -296,17 +314,40 @@ export function StandardGenerationDrawer({
             {videoMode === "reference" ? (
               <>
                 <ProjectMediaPicker
+                  dropTargetKey={controller.canvasNodeId}
+                  registerImage={
+                    controller.referenceContext?.registerReferenceImage
+                  }
                   excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="参考图片"
                   value={references}
                   multiple
                   max={referenceLimits.image}
-                  onChange={setReferences}
+                  onChange={(next, design) => {
+                    setReferences(next);
+                    if (design)
+                      controller.persistDraft(
+                        {
+                          reference_asset_ids: next,
+                          design_references: [
+                            ...controller.designReferences.filter(
+                              (item) => item.asset_id !== design.asset_id,
+                            ),
+                            design,
+                          ],
+                        },
+                        true,
+                      );
+                  }}
                   onFilesLoaded={rememberPromptFiles}
                 />
                 {(referenceLimits.video > 0 || videoReferences.length > 0) && (
                   <ProjectMediaPicker
+                    dropTargetKey={controller.canvasNodeId}
+                    registerImage={
+                      controller.referenceContext?.registerReferenceImage
+                    }
                     excludedAssetIds={controller.excludedAssetIds}
                     projectId={projectId}
                     label="参考视频"
@@ -319,6 +360,10 @@ export function StandardGenerationDrawer({
                   />
                 )}
                 <ProjectMediaPicker
+                  dropTargetKey={controller.canvasNodeId}
+                  registerImage={
+                    controller.referenceContext?.registerReferenceImage
+                  }
                   excludedAssetIds={controller.excludedAssetIds}
                   projectId={projectId}
                   label="参考音频"

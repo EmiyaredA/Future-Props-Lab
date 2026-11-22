@@ -191,6 +191,16 @@ class CanvasDocuments:
             if node.kind == "video" and node.generation_draft
             for ref in node.generation_draft.design_references
         } - previous_refs
+        attached_cards = {card_id for card_id, _, _ in new_refs}
+        attached_cards.update(
+            node.design_card_id
+            for node in body.nodes
+            if node.kind == "image"
+            and node.design_card_id
+            and node.design_card_id != old.get(node.id, {}).get("design_card_id")
+        )
+        if attached_cards - set(project_card_ids):
+            raise VisualCanvasError("请先将设定卡收录到当前项目", code="project_card_required")
         new_cards.update(card_id for card_id, _, _ in new_refs)
         usable: dict[str, VisualAssetCard] = {}
         if new_cards:

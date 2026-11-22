@@ -67,6 +67,16 @@ export default defineConfig(async (environment) => {
   const filename = process.env.FPL_NATIVE_WEB_CONFIG;
   if (!filename) throw new Error("Start native development with npm run dev");
   const pages = JSON.parse(readFileSync(filename, "utf8")) as NativePage[];
+  const publicOrigins = JSON.parse(
+    process.env.FPL_NATIVE_PUBLIC_ORIGINS || "[]",
+  ) as string[];
+  const publicHosts = publicOrigins.map((origin) => {
+    const parsed = new URL(origin);
+    if (parsed.protocol !== "https:" || parsed.origin !== origin) {
+      throw new Error("Native public access requires an exact HTTPS origin");
+    }
+    return parsed.hostname;
+  });
   const shared = await baseConfig({ ...environment, mode: "studio" });
   return {
     ...shared,
@@ -82,6 +92,10 @@ export default defineConfig(async (environment) => {
       host: "127.0.0.1",
       port: 3000,
       strictPort: true,
+      allowedHosts: publicHosts,
+      cors: {
+        origin: ["http://127.0.0.1:3000", ...publicOrigins],
+      },
       fs: {
         allow: [
           resolve(__dirname),

@@ -71,7 +71,7 @@ test("剧本目录删除和预演删除使用项目弹窗并保留取消与保�
       );
       if (width < 1024) await sidebar.click();
       const remove = page.getByRole("button", {
-        name: "删除场次 第 1-1 场",
+        name: "删除分镜 第 1-1 场",
         exact: true,
       });
       await expect(remove).toBeVisible();
@@ -88,7 +88,7 @@ test("剧本目录删除和预演删除使用项目弹窗并保留取消与保�
       expect(removeBox.width).toBe(32);
       await remove.click();
       const dialog = page.getByRole("alertdialog", {
-        name: "删除场次“第 1-1 场”？",
+        name: "删除分镜“第 1-1 场”？",
       });
       await expect(dialog).toBeVisible();
       expect(
@@ -106,7 +106,7 @@ test("剧本目录删除和预演删除使用项目弹窗并保留取消与保�
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.getByLabel("剧本文本", { exact: true }).fill("保留当前未保存编辑");
   await page
-    .getByRole("button", { name: "删除场次 第 1-2 场", exact: true })
+    .getByRole("button", { name: "删除分镜 第 1-2 场", exact: true })
     .click();
   await page
     .getByRole("alertdialog")
@@ -123,7 +123,7 @@ test("剧本目录删除和预演删除使用项目弹窗并保留取消与保�
   await page.getByRole("button", { name: "保存剧本", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("验收保存失败");
   await expect(
-    page.getByRole("button", { name: "删除场次 第 1-2 场", exact: true }),
+    page.getByRole("button", { name: "删除分镜 第 1-2 场", exact: true }),
   ).toHaveCount(0);
   await page.unroute(`**${base}/script`);
   await page.getByRole("button", { name: "保存剧本", exact: true }).click();
@@ -136,7 +136,7 @@ test("剧本目录删除和预演删除使用项目弹窗并保留取消与保�
   await page
     .getByRole("button", { name: "删除整集 第 2 集", exact: true })
     .click();
-  await expect(page.getByRole("alertdialog")).toContainText("全部 2 个场次");
+  await expect(page.getByRole("alertdialog")).toContainText("全部 2 个分镜");
   await page
     .getByRole("alertdialog")
     .getByRole("button", { name: "删除", exact: true })

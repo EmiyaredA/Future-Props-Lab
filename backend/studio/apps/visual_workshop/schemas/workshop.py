@@ -26,6 +26,7 @@ from studio.contracts.model_service.generation_tasks import (
 )
 from studio.contracts.model_service.task_execution import TaskExecutionInfo
 from studio.contracts.model_service.workflow_video import WorkflowVideoParameters
+from studio.runtime.project_preview import ProjectPreview
 
 GenerationTaskStatus = Literal[
     "queued", "submitting", "pending", "processing", "completed", "failed", "cancelled"
@@ -74,6 +75,7 @@ def _clean_prompt_reference_names(value: dict[str, str]) -> dict[str, str]:
 
 
 class VisualWorkshopProjectOut(BaseModel):
+    preview: ProjectPreview | None = None
     is_official: bool = False
     id: str
     title: str

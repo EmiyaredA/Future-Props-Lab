@@ -300,7 +300,7 @@ export default function ScriptPrevisDraft({
           </div>
           {mode === "script" && (
             <CustomSelect
-              ariaLabel="项目场次"
+              ariaLabel="项目分镜"
               value={chosen}
               options={scenes.map(({ scene, label }) => ({
                 value: scene.id,
@@ -401,7 +401,7 @@ export default function ScriptPrevisDraft({
           )}
           {!result && (
             <p className="script-previs-hint">
-              选择或粘贴一场剧本，解析场景、人物和对白，在预演中核对站位与机位。
+              选择或粘贴一个分镜的剧本，解析场景、人物和对白，在预演中核对站位与机位。
             </p>
           )}
           <dl className="script-previs-metrics" aria-label="解析统计">

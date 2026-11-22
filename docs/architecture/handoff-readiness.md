@@ -359,3 +359,5 @@ MLX、Python 或模型权重。管理员通过模型服务主动选择安装 Qwe
 ## 账号直接归属
 
 迁移 `0116_account_ownership` 移除 Workspace，根资源与任务使用 `owner_user_id`。固定管理员与普通用户两种角色，管理员不跨账号访问私人内容。旧数据归唯一原 Owner，旧 Session 和 API Key 撤销；正式布局 API 负责文件核验及可恢复迁移，完成并重启前业务 API 和后台执行器暂停。历史 migration 不改写，开发验收不使用正式数据库。
+
+`0139_asset_content_identity`（独立 Assets `0021_content_identity`）增加账号隔离的完整文件哈希索引、去重操作记录和保留原件保护。迁移只新增表；业务整理通过公开 API 执行，保留历史引用，支持中断重试及从原件恢复。

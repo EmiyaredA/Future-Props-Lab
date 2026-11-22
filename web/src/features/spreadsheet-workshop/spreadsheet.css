@@ -296,3 +296,11 @@
     margin-left: auto;
   }
 }
+.spreadsheet-card-art {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}

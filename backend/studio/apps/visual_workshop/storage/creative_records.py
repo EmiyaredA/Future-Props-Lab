@@ -49,14 +49,15 @@ class SqlCreativeRecords:
             raise
 
     async def cards(self, project_id=None):
+        project_cards = None
         if project_id is not None:
-            await self.projects.row(project_id)
+            project_cards = set((await self.projects.canvas_row(project_id)).project_card_ids or [])
         rows = await self.session.scalars(
             select(VisualAssetCard)
             .where(VisualAssetCard.owner_user_id == self.owner)
             .order_by(VisualAssetCard.id)
         )
-        return [card_out(row) for row in rows]
+        return [card_out(row) for row in rows if project_cards is None or row.id in project_cards]
 
     async def card_row(self, project_id, card_id):
         if project_id is not None:

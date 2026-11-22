@@ -90,7 +90,7 @@ class ModelIdentity(BaseModel):
 def asset_target(method, path):
     if method == "POST":
         return re.fullmatch(
-            rf"{ASSETS}/({ID})/(metadata|originals|selection)/([a-f0-9]{{64}})", path
+            rf"{ASSETS}/({ID})/(metadata|originals|selection|identities)/([a-f0-9]{{64}})", path
         )
     return None
 
@@ -107,6 +107,15 @@ def snapshot_grant(grant):
     if grant.caller != "visual":
         return False
     if grant.source_method in ("POST", "PUT"):
+        registration = re.fullmatch(rf"{SOURCE}/({ID})/reference-images", grant.source_path)
+        target = asset_target(grant.target_method, grant.target_path)
+        if registration and target:
+            return (
+                grant.source_method == "POST"
+                and registration[1] == target[1]
+                and target[2] in {"selection", "identities"}
+                and (grant.purpose, grant.target_service) == (ASSET_PURPOSE, "assets")
+            )
         if re.fullmatch(
             rf"/v1/visual-workshop(?:/projects/{ID})?/asset-cards(?:/{ID})?",
             grant.source_path,
@@ -131,7 +140,7 @@ def snapshot_grant(grant):
         return False
     if (grant.purpose, grant.target_service) == (ASSET_PURPOSE, "assets"):
         target = asset_target(grant.target_method, grant.target_path)
-        return bool(target and target[1] == source[1] and target[2] != "selection")
+        return bool(target and target[1] == source[1] and target[2] in {"metadata", "originals"})
     return (grant.purpose, grant.target_service) == (MODEL_PURPOSE, "models") and model_target(
         grant.target_method, grant.target_path
     )

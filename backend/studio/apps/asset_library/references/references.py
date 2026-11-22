@@ -175,6 +175,12 @@ async def protect_references(session, asset_ids):
     """Call while holding the same short write transaction as asset deletion."""
     if not asset_ids:
         return
+    from studio.apps.asset_library.storage.content_models import AssetDedupeCanonicalPin
+
+    if AssetDedupeCanonicalPin in session.info.get("owned_models", ()) and await session.scalar(
+        select(AssetDedupeCanonicalPin.asset_id).where(AssetDedupeCanonicalPin.asset_id.in_(asset_ids)).limit(1)
+    ):
+        raise AssetError("素材用于去重恢复，暂不可删除", code="asset_in_use", status=409)
     for model in (AssetReferencePin, PreparedAssetPin, VisualProjectFileLink):
         if (
             await session.scalar(

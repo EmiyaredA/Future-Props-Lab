@@ -1,22 +1,56 @@
 """Shared Visual script and design-card transport."""
 
-from fastapi import APIRouter, Request
+from functools import partial
+
+from fastapi import APIRouter, HTTPException, Request
 
 from studio.apps.visual_workshop.card_regroup import CardRegroupIn, regroup_cards
 from studio.apps.visual_workshop.creative_workflow import CreativeWorkflow
+from studio.apps.visual_workshop.reference_images import ReferenceImages
 from studio.apps.visual_workshop.schemas.creative_workflow import (
     CardData,
     CardOut,
     CardUpdate,
+    ReferenceImageRegistered,
+    ReferenceImageRegistration,
     ScriptOut,
     ScriptUpdate,
 )
 from studio.apps.visual_workshop.storage.creative_records import SqlCreativeRecords
+from studio.apps.visual_workshop.storage.reference_images import SqlReferenceImages
 from studio.apps.visual_workshop.transport.creative_asset_scope import creative_asset_inspection
 from studio.apps.visual_workshop.transport.project_errors import resolve
 from studio.assembly.http_dependencies import OwnerDep, SessionDep
+from studio.runtime.revisions import RevisionConflictError
 
 router = APIRouter(prefix="/visual-workshop", tags=["visual-workshop"])
+
+
+@router.post("/projects/{project_id}/reference-images", response_model=ReferenceImageRegistered)
+async def register_project_reference_image(
+    request: Request,
+    session: SessionDep,
+    owner: OwnerDep,
+    project_id: str,
+    body: ReferenceImageRegistration,
+):
+    try:
+        return await resolve(
+            ReferenceImages(
+                SqlReferenceImages(session, owner, request.app.state.reference_image_guard),
+                creative_asset_inspection(request, session, owner),
+                partial(request.app.state.reference_image_identity, request, session, owner),
+            ).register(project_id, body)
+        )
+    except RevisionConflictError as exc:
+        raise HTTPException(
+            409,
+            {
+                "code": "canvas_revision_conflict",
+                "message": "项目已更新，请保留草稿并重新读取",
+                "current": exc.snapshot,
+            },
+        ) from None
 
 
 @router.get("/projects/{project_id}/script", response_model=ScriptOut)

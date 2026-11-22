@@ -98,11 +98,13 @@
   border-radius: 6px;
 }
 
-.visual-project-board .board-material[draggable="true"] {
+.visual-project-board
+  :is(.board-material, .board-design-card-open)[draggable="true"] {
   cursor: grab;
 }
 
-.visual-project-board .board-material[draggable="true"]:active {
+.visual-project-board
+  :is(.board-material, .board-design-card-open)[draggable="true"]:active {
   cursor: grabbing;
 }
 .visual-project-board :is(button, input, textarea, summary):focus-visible,

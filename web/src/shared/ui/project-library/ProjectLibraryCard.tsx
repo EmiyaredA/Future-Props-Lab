@@ -1,10 +1,16 @@
 import type { ReactNode } from "react";
+import {
+  ProjectCoverPreview,
+  type ProjectPreview,
+  type PreviewRenderer,
+} from "./ProjectCoverPreview";
 import { relativeTime } from "@shared/lib/date";
 
 export type ProjectLibraryItem = {
   id: string;
   title: string;
   updated_at?: string;
+  preview?: ProjectPreview | null;
 };
 
 export function ProjectLibraryCard({
@@ -17,7 +23,9 @@ export function ProjectLibraryCard({
   coverContent,
   metadata,
   description,
+  renderPreview,
 }: {
+  renderPreview?: PreviewRenderer;
   coverContent?: ReactNode;
   metadata?: ReactNode;
   description?: string;
@@ -33,9 +41,18 @@ export function ProjectLibraryCard({
       <button
         className={`workshop-project-cover ${cover}`}
         onClick={onOpen}
-        aria-label={coverContent ? `打开 ${project.title}` : undefined}
+        aria-label={`打开 ${project.title}`}
       >
-        {coverContent}
+        {coverContent ??
+          (project.preview && (
+            <ProjectCoverPreview
+              namespace={cover}
+              projectId={project.id}
+              title={project.title}
+              preview={project.preview}
+              render={renderPreview}
+            />
+          ))}
         <span className="workshop-project-cover-content">
           <span className="workshop-project-cover-label">
             <strong>{coverTitle}</strong>

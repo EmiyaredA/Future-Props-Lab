@@ -56,7 +56,9 @@ const episodes: Script["episodes"] = [
 ];
 beforeEach(() => {
   vi.mocked(getScript).mockReset();
-  vi.mocked(getStoryboard).mockResolvedValue({ revision: 0, shots: [] });
+  vi.mocked(getStoryboard)
+    .mockReset()
+    .mockResolvedValue({ revision: 0, shots: [] });
   vi.mocked(saveStoryboard)
     .mockReset()
     .mockImplementation(async (_, value) => ({
@@ -150,12 +152,95 @@ test("linked shot rows show the current scene's excerpt and open that shot", asy
   await waitFor(() => expect(onStoryboard).toHaveBeenCalledWith(shot.id));
 });
 
+test("selecting an episode shows ordered blocks; reordering retains edits and supports failed saving", async () => {
+  const shot = {
+    ...emptyShot("欢迎镜头制作"),
+    source: { scene_id: "s1", revision: 1, excerpt: "第一场正文" },
+  };
+  const { user, onStoryboard } = setup(
+    false,
+    undefined,
+    [shot],
+    [
+      {
+        ...episodes[0],
+        scenes: [
+          episodes[0].scenes[0],
+          { id: "s3", title: "盖起屋顶", heading: "草原", text: "屋顶正文" },
+        ],
+      },
+      episodes[1],
+    ],
+  );
+  await user.type(screen.getByLabelText("剧本文本"), "，未保存");
+  await user.click(screen.getByRole("button", { name: "编辑第一集" }));
+  const sequence = screen.getByRole("list", { name: "本集分镜顺序" });
+  expect(
+    within(sequence)
+      .getAllByRole("heading")
+      .map((item) => item.textContent),
+  ).toEqual(["意外来客", "盖起屋顶"]);
+  expect(within(sequence).queryByText("雨夜重逢")).toBeNull();
+  expect(screen.queryByLabelText("剧本文本")).toBeNull();
+  expect(screen.getByRole("button", { name: "编辑第一集" })).toHaveAttribute(
+    "aria-current",
+    "true",
+  );
+  await user.click(
+    within(sequence).getByRole("button", { name: "上移分镜 盖起屋顶" }),
+  );
+  expect(
+    within(sequence)
+      .getAllByRole("heading")
+      .map((item) => item.textContent),
+  ).toEqual(["盖起屋顶", "意外来客"]);
+  vi.mocked(saveScript).mockRejectedValueOnce(new Error("保存冲突"));
+  await user.click(
+    screen.getByRole("button", { name: "查看制作 欢迎镜头制作" }),
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("保存冲突");
+  expect(onStoryboard).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "保存剧本" }));
+  await waitFor(() => expect(saveScript).toHaveBeenCalledTimes(2));
+  const saved = vi.mocked(saveScript).mock.calls[1][1];
+  expect(saved.episodes[0].scenes.map((item) => item.id)).toEqual(["s3", "s1"]);
+  expect(saved.episodes[0].scenes[1].text).toBe("第一场正文，未保存");
+  expect(saved.episodes[1]).toEqual(episodes[1]);
+  await user.click(
+    screen.getByRole("button", { name: "查看制作 欢迎镜头制作" }),
+  );
+  await waitFor(() => expect(onStoryboard).toHaveBeenCalledWith(shot.id));
+  await user.click(
+    within(sequence).getAllByRole("button", {
+      name: /^编辑分镜$/,
+    })[0],
+  );
+  expect(screen.getByLabelText("分镜名称")).toHaveValue("盖起屋顶");
+});
+
+test("read-only episode views preserve navigation and hide order controls", async () => {
+  const { user } = setup(true);
+  await user.click(screen.getByRole("button", { name: "编辑第一集" }));
+  const overview = screen.getByRole("region", { name: "整集分镜" });
+  expect(
+    within(overview).getByRole("heading", { name: "意外来客" }),
+  ).toBeVisible();
+  expect(
+    within(overview).queryByRole("button", {
+      name: /上移分镜|下移分镜|拖动排序/,
+    }),
+  ).toBeNull();
+  await user.click(within(overview).getByRole("button", { name: "查看剧本" }));
+  expect(screen.getByText("第一场正文")).toBeVisible();
+  expect(saveScript).not.toHaveBeenCalled();
+});
+
 test("a project without a script does not list unassigned shots as related scenes", async () => {
   const { user } = setup(false, undefined, [emptyShot("无来源镜头")], []);
   await user.click(screen.getByRole("button", { name: "关联分镜 0" }));
   const panel = screen.getByRole("complementary", { name: "剧本关联镜头" });
   expect(within(panel).queryByText("无来源镜头")).not.toBeInTheDocument();
-  expect(within(panel).getByText("选择场次后查看关联分镜")).toBeVisible();
+  expect(within(panel).getByText("选择分镜后查看关联分镜")).toBeVisible();
   expect(
     within(panel).getByRole("button", { name: "从选段新建镜头" }),
   ).toBeDisabled();
@@ -172,11 +257,11 @@ test("episodes expand independently; collapsing the active episode keeps its edi
   expect(screen.queryByRole("button", { name: "雨夜重逢" })).toBeNull();
   expect(screen.getByLabelText("剧本文本")).toHaveValue("第二场正文");
   await user.type(
-    screen.getByRole("textbox", { name: "搜索集与场次" }),
+    screen.getByRole("textbox", { name: "搜索集与分镜" }),
     "雨夜",
   );
   expect(screen.getByRole("button", { name: "雨夜重逢" })).toBeVisible();
-  await user.clear(screen.getByRole("textbox", { name: "搜索集与场次" }));
+  await user.clear(screen.getByRole("textbox", { name: "搜索集与分镜" }));
   expect(screen.queryByRole("button", { name: "雨夜重逢" })).toBeNull();
   expect(screen.getByRole("button", { name: "意外来客" })).toBeVisible();
   await user.click(screen.getByRole("button", { name: "全部收起" }));
@@ -193,8 +278,8 @@ test("adding a scene to a nonactive expanded episode updates that episode and pr
       name: "收起第二集",
     })
     .closest<HTMLElement>(".script-tree-episode")!;
-  await user.click(within(owner).getByRole("button", { name: "新建场" }));
-  expect(screen.getByLabelText("场次名称")).toHaveValue("第 2 场");
+  await user.click(within(owner).getByRole("button", { name: "新建分镜" }));
+  expect(screen.getByLabelText("分镜名称")).toHaveValue("分镜 02");
   expect(screen.getByLabelText("场景信息")).toHaveValue("室内 · 咖啡馆 · 夜");
   expect(
     (screen.getByLabelText("剧本文本") as HTMLTextAreaElement).value,
@@ -215,7 +300,7 @@ test("new scene examples are editable drafts and clearing them is preserved afte
   const owner = screen
     .getByRole("button", { name: "收起第 3 集" })
     .closest<HTMLElement>(".script-tree-episode")!;
-  await user.click(within(owner).getByRole("button", { name: "新建场" }));
+  await user.click(within(owner).getByRole("button", { name: "新建分镜" }));
   expect(saveScript).not.toHaveBeenCalled();
   expect(
     (screen.getByLabelText("剧本文本") as HTMLTextAreaElement).value,
@@ -253,7 +338,7 @@ test("read-only scripts retain navigation and expansion but do not expose creati
   await user.click(screen.getByRole("button", { name: "展开第二集" }));
   await user.click(screen.getByRole("button", { name: "雨夜重逢" }));
   expect(screen.getByText("第二场正文")).toBeVisible();
-  expect(screen.queryByRole("button", { name: "新建场" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "新建分镜" })).toBeNull();
   expect(screen.queryByRole("button", { name: "保存剧本" })).toBeNull();
   expect(screen.queryByRole("button", { name: /^删除/ })).toBeNull();
 });
@@ -264,7 +349,7 @@ test("an empty episode can be selected without coupling its expansion to the edi
   await user.click(screen.getByRole("button", { name: "意外来客" }));
   await user.click(screen.getByRole("button", { name: "编辑第 3 集" }));
   expect(screen.getByLabelText("分集名称")).toHaveValue("第 3 集");
-  expect(screen.getByText("本集还没有场次。")).toBeVisible();
+  expect(screen.getByText("本集还没有分镜。")).toBeVisible();
   expect(saveScript).not.toHaveBeenCalled();
 });
 
@@ -284,10 +369,10 @@ test("source navigation reveals and scrolls to the target scene without reopenin
 test("deletion confirmation can be cancelled without changing the active draft", async () => {
   const { user } = setup();
   await user.type(screen.getByLabelText("剧本文本"), "，未保存");
-  const remove = screen.getByRole("button", { name: "删除场次 意外来客" });
+  const remove = screen.getByRole("button", { name: "删除分镜 意外来客" });
   await user.click(remove);
   const dialog = screen.getByRole("alertdialog");
-  expect(dialog).toHaveAccessibleName("删除场次“意外来客”？");
+  expect(dialog).toHaveAccessibleName("删除分镜“意外来客”？");
   await user.click(within(dialog).getByRole("button", { name: "取消" }));
   expect(remove).toHaveFocus();
   expect(screen.getByLabelText("剧本文本")).toHaveValue("第一场正文，未保存");
@@ -316,13 +401,13 @@ test("deleting an active scene selects its neighbour and failed saving retains d
   await user.click(screen.getByRole("button", { name: "离开咖啡馆" }));
   await user.type(screen.getByLabelText("剧本文本"), "，未保存");
   await user.click(screen.getByRole("button", { name: "意外来客" }));
-  await user.click(screen.getByRole("button", { name: "删除场次 意外来客" }));
+  await user.click(screen.getByRole("button", { name: "删除分镜 意外来客" }));
   await user.click(
     within(screen.getByRole("alertdialog")).getByRole("button", {
       name: /^删除$/,
     }),
   );
-  expect(screen.getByLabelText("场次名称")).toHaveValue("离开咖啡馆");
+  expect(screen.getByLabelText("分镜名称")).toHaveValue("离开咖啡馆");
   expect(screen.getByLabelText("剧本文本")).toHaveValue("第三场正文，未保存");
   expect(screen.queryByRole("button", { name: "意外来客" })).toBeNull();
   expect(saveScript).not.toHaveBeenCalled();
@@ -343,7 +428,7 @@ test("deleting the last scene keeps its empty episode and linked shots", async (
     source: { scene_id: "s1", revision: 1, excerpt: "第一场正文" },
   };
   const { user } = setup(false, "s1", [shot]);
-  await user.click(screen.getByRole("button", { name: "删除场次 意外来客" }));
+  await user.click(screen.getByRole("button", { name: "删除分镜 意外来客" }));
   expect(screen.getByRole("alertdialog")).toHaveTextContent(
     "已关联的分镜和素材会保留",
   );
@@ -353,7 +438,7 @@ test("deleting the last scene keeps its empty episode and linked shots", async (
     }),
   );
   expect(screen.getByLabelText("分集名称")).toHaveValue("第一集");
-  expect(screen.getByText("本集还没有场次。")).toBeVisible();
+  expect(screen.getByText("本集还没有分镜。")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "保存剧本" }));
   await waitFor(() => expect(saveScript).toHaveBeenCalledOnce());
   expect(vi.mocked(saveScript).mock.calls[0][1].episodes[0].scenes).toEqual([]);
@@ -378,11 +463,11 @@ test("deleting a filtered inactive episode removes all its scenes and preserves 
   );
   await user.type(screen.getByLabelText("剧本文本"), "，未保存");
   await user.type(
-    screen.getByRole("textbox", { name: "搜索集与场次" }),
+    screen.getByRole("textbox", { name: "搜索集与分镜" }),
     "雨夜",
   );
   await user.click(screen.getByRole("button", { name: "删除整集 第二集" }));
-  expect(screen.getByRole("alertdialog")).toHaveTextContent("全部 2 个场次");
+  expect(screen.getByRole("alertdialog")).toHaveTextContent("全部 2 个分镜");
   await user.click(
     within(screen.getByRole("alertdialog")).getByRole("button", {
       name: /^删除$/,
@@ -404,7 +489,7 @@ test("deleting active episodes selects the next episode and supports removing th
       }),
     );
     if (title === "第一集") {
-      expect(screen.getByLabelText("场次名称")).toHaveValue("雨夜重逢");
+      expect(screen.getByLabelText("分镜名称")).toHaveValue("雨夜重逢");
     }
   }
   expect(screen.getByText("这个项目还没有剧本。")).toBeVisible();

@@ -52,6 +52,27 @@ def prepare_card(
 ):
     previous, parent = context.previous, context.parent
     validate_card(project_id, data, previous, parent, context.script)
+    candidates = list(dict.fromkeys(data.candidate_asset_ids))
+    retained = (
+        previous.adopted_asset_id
+        if previous and previous.adopted_asset_id != data.adopted_asset_id
+        else None
+    )
+    if retained and retained not in candidates:
+        candidates.insert(0, retained)
+    if len(candidates) > 80:
+        raise ProjectResourceError(
+            "保留旧采用图后候选图超过 80 张，请先整理候选图",
+            "visual_card_candidate_limit",
+            422,
+        )
+    data = data.model_copy(update={"candidate_asset_ids": candidates})
+    # The previous image is already authorized by the locked, owner-bound card.
+    # Its existing media scope must survive even when old clients omit it.
+    identities, images = set(identities), set(images)
+    if retained:
+        identities.add(retained)
+        images.add(retained)
     if inherit_voice and parent and parent.voice_asset_id != data.voice_asset_id:
         raise ProjectResourceError("父卡语音已更新，请重新创建变体", "visual_card_conflict", 409)
     previous_media = previous.media_projects if previous else {}

@@ -107,14 +107,14 @@ async function contrast(locator: Locator) {
   });
 }
 
-test("分镜文字与 hover 对比度、剧本多集展开及跨集新建场", async ({
+test("分镜文字与 hover 对比度、剧本多集展开及跨集新建分镜", async ({
   page,
 }, info) => {
   test.setTimeout(120_000);
   await page.setViewportSize({ width: 1584, height: 994 });
   const { base } = await createProject(page);
   await page.getByRole("tab", { name: "分镜", exact: true }).click();
-  const filter = page.getByRole("combobox", { name: "分镜场次" });
+  const filter = page.getByRole("combobox", { name: "剧本分镜" });
   await expect(filter).toHaveText("全部分镜");
   await expect(filter.locator(".custom-select-trigger-content")).toBeVisible();
   const create = page.getByRole("button", { name: "新建分镜", exact: true });
@@ -150,9 +150,9 @@ test("分镜文字与 hover 对比度、剧本多集展开及跨集新建场", a
   const owner = page
     .getByRole("button", { name: "收起第2集 · 雨夜" })
     .locator("../..");
-  await owner.getByRole("button", { name: "新建场" }).click();
-  await expect(page.getByLabel("场次名称", { exact: true })).toHaveValue(
-    "第 2 场",
+  await owner.getByRole("button", { name: "新建分镜" }).click();
+  await expect(page.getByLabel("分镜名称", { exact: true })).toHaveValue(
+    "分镜 02",
   );
   await expect(page.getByLabel("场景信息", { exact: true })).toHaveValue(
     "室内 · 咖啡馆 · 夜",
@@ -434,7 +434,7 @@ test("39镜分镜列表保留卡片高度，滚动后可选末镜", async ({ pag
         page.getByRole("group", { name: "分镜显示方式", exact: true }),
       ).toHaveCount(0);
       await expect(
-        page.getByRole("combobox", { name: "分镜场次", exact: true }),
+        page.getByRole("combobox", { name: "剧本分镜", exact: true }),
       ).toHaveText("全部分镜");
       await list.evaluate((element) => (element.scrollTop = 0));
       await expect

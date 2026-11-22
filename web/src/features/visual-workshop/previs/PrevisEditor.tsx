@@ -1,5 +1,6 @@
 import { createPortal } from "react-dom";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { useConfirmation } from "@shared/ui/useConfirmation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getProjectModels,
@@ -138,6 +139,9 @@ export function PrevisEditor({
   const [status, setStatus] = useState(readOnly ? "只读预演" : "已保存");
   const locked =
     saving || publishing || capturing || leaving || interactionLocked;
+  const confirmation = useConfirmation({
+    pending: saving || publishing || capturing,
+  });
 
   async function save() {
     if (flight.current) return flight.current;
@@ -219,9 +223,13 @@ export function PrevisEditor({
       }
       if (
         batch.current &&
-        !window.confirm(
-          "仍有素材待发送。关闭场景会舍弃这次未发送的文件，是否关闭？",
-        )
+        !(await confirmation.confirm({
+          title: "离开预演场景？",
+          description:
+            "仍有素材待发送，离开会舍弃这次未发送的文件。已发送的素材会保留。",
+          confirmLabel: "舍弃并离开",
+          cancelLabel: "留在场景",
+        }))
       )
         return false;
       try {
@@ -386,26 +394,33 @@ export function PrevisEditor({
         <button
           type="button"
           disabled={locked}
-          onClick={() => {
-            if (!window.confirm("载入服务器版本会舍弃本地场景草稿，是否继续？"))
-              return;
-            void (
-              reloadScene
-                ? reloadScene()
-                : openPrevis(project, saved.current.id)
+          onClick={async () => {
+            if (
+              !(await confirmation.confirm({
+                title: "载入服务器版本？",
+                description: "本地未保存的场景草稿将被舍弃。",
+                confirmLabel: "载入服务器版本",
+                cancelLabel: "保留草稿",
+              }))
             )
-              .then((remote) => {
-                draft.current = baseline.current = validateScene(
-                  remote.document,
-                );
-                saved.current = remote;
-                titleDraft.current = remote.title;
-                setTitle(remote.title);
-                setConflict(false);
-                setError("");
-                setStatus("已载入服务器版本");
-              })
-              .catch((failure: unknown) => setError(apiErrorMessage(failure)));
+              return;
+            setSaving(true);
+            try {
+              const remote = await (reloadScene
+                ? reloadScene()
+                : openPrevis(project, saved.current.id));
+              draft.current = baseline.current = validateScene(remote.document);
+              saved.current = remote;
+              titleDraft.current = remote.title;
+              setTitle(remote.title);
+              setConflict(false);
+              setError("");
+              setStatus("已载入服务器版本");
+            } catch (failure) {
+              setError(apiErrorMessage(failure));
+            } finally {
+              setSaving(false);
+            }
           }}
         >
           载入服务器版本
@@ -492,6 +507,7 @@ export function PrevisEditor({
           ? createPortal(controls, sceneControlsHost)
           : null}
       <div ref={root} className="visual-previs-host" />
+      {confirmation.dialog}
     </section>
   );
 }

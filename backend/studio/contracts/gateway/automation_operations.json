@@ -152,6 +152,10 @@
       "method": "list_file_folders",
       "resource": "files"
     },
+    "GET /v1/file-library/content-audits/{operation_id}": {
+      "method": "get_file_content_audit",
+      "resource": "files"
+    },
     "GET /v1/file-storage/layout": {
       "method": "storage_layout_status",
       "resource": "files"
@@ -536,6 +540,10 @@
       "method": "get_generation_task",
       "resource": "generation"
     },
+    "GET /v1/visual-workshop/material-usage": {
+      "method": "get_visual_material_usage",
+      "resource": "visual"
+    },
     "GET /v1/visual-workshop/projects": {
       "method": "list_projects",
       "resource": "visual"
@@ -554,6 +562,10 @@
     },
     "GET /v1/visual-workshop/projects/{project_id}/canvas": {
       "method": "get_canvas",
+      "resource": "visual"
+    },
+    "GET /v1/visual-workshop/projects/{project_id}/creation-links": {
+      "method": "get_creation_links",
       "resource": "visual"
     },
     "GET /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/outputs": {
@@ -688,12 +700,32 @@
       "method": "import_project_assets_to_library",
       "resource": "files"
     },
+    "POST /v1/file-library/content-audits": {
+      "method": "create_file_content_audit",
+      "resource": "files"
+    },
+    "POST /v1/file-library/content-audits/{operation_id}/clean": {
+      "method": "clean_file_duplicate_group",
+      "resource": "files"
+    },
+    "POST /v1/file-library/content-audits/{operation_id}/prepare": {
+      "method": "prepare_file_duplicate_group",
+      "resource": "files"
+    },
+    "POST /v1/file-library/content-audits/{operation_id}/restore": {
+      "method": "restore_file_duplicate_group",
+      "resource": "files"
+    },
     "POST /v1/file-storage/open-folder": {
       "method": "reveal_library_folder",
       "resource": "files"
     },
     "POST /v1/files": {
       "method": "upload_file",
+      "resource": "files"
+    },
+    "POST /v1/files/content-identities": {
+      "method": "inspect_file_content_identities",
       "resource": "files"
     },
     "POST /v1/files/svg/preview": {
@@ -1080,6 +1112,10 @@
       "method": "apply_timeline_operations",
       "resource": "video"
     },
+    "POST /v1/visual-workshop/asset-card-links": {
+      "method": "inspect_visual_asset_card_links",
+      "resource": "visual"
+    },
     "POST /v1/visual-workshop/asset-cards": {
       "method": "create_account_asset_card",
       "resource": "visual"
@@ -1144,6 +1180,10 @@
       "method": "reveal_project_folder",
       "resource": "visual"
     },
+    "POST /v1/visual-workshop/projects/{project_id}/reference-images": {
+      "method": "register_project_reference_image",
+      "resource": "visual"
+    },
     "PUT /v1/audio-annotation/projects/{project_id}/document": {
       "method": "put_document",
       "resource": "annotation"
@@ -1200,20 +1240,16 @@
       "method": "put_canvas",
       "resource": "visual"
     },
+    "PUT /v1/visual-workshop/projects/{project_id}/creation-links": {
+      "method": "save_creation_links",
+      "resource": "visual"
+    },
     "PUT /v1/visual-workshop/projects/{project_id}/nodes/{node_id}/final-output": {
       "method": "set_node_final_output",
       "resource": "visual"
     },
     "PUT /v1/visual-workshop/projects/{project_id}/storyboard": {
       "method": "save_storyboard",
-      "resource": "visual"
-    },
-    "GET /v1/visual-workshop/projects/{project_id}/creation-links": {
-      "method": "get_creation_links",
-      "resource": "visual"
-    },
-    "PUT /v1/visual-workshop/projects/{project_id}/creation-links": {
-      "method": "save_creation_links",
       "resource": "visual"
     }
   },

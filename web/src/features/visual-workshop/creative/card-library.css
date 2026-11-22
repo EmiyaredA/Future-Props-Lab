@@ -282,33 +282,93 @@
 .card-family-main .creative-card-cover {
   width: 100%;
 }
-.card-family-main strong {
+.card-family-title strong {
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
 }
-.card-family-actions {
+.card-family-summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  flex-wrap: nowrap;
+  min-width: 0;
+  min-height: 28px;
   gap: 6px;
 }
-.card-family-actions button {
+.card-family-title {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: start;
+}
+.card-family-status,
+.card-family-variant-count {
+  flex: none;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.4;
+}
+.card-family-add-variant {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 3px 5px;
+  justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  padding: 0;
   border: 1px solid var(--border);
   border-radius: 5px;
   color: var(--muted);
   background: var(--surface);
-  font-size: 11px;
+}
+.card-family-title:focus-visible,
+.card-family-add-variant:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (pointer: coarse) {
+  .card-family-title,
+  .card-family-add-variant {
+    min-height: 44px;
+  }
+  .card-family-add-variant {
+    width: 44px;
+  }
 }
 .card-family-context {
   margin: 0;
   font-size: 12px;
   color: var(--muted);
+}
+.card-family-gallery-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+}
+.card-family-gallery-button:hover,
+.card-family-gallery-button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+.card-variant-image-count {
+  color: var(--muted);
+  font-size: 10px;
 }
 .card-library-sort {
   display: inline-flex;

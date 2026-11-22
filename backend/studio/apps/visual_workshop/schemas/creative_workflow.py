@@ -79,6 +79,8 @@ class CardData(WorkflowModel):
 
 def current_card_data(value: dict) -> dict:
     """Read legacy records/archives without reviving retired design fields."""
+    if not isinstance(value, dict):
+        raise ValueError("设定卡结构无效")
     return {key: item for key, item in value.items() if key not in {"facts", "proposed_design"}}
 
 
@@ -91,3 +93,19 @@ class CardOut(CardData):
     revision: int = Field(ge=0)
     source_project_id: str | None = None
     media_projects: dict[str, str | None] = Field(default_factory=dict)
+
+
+class ReferenceImageRegistration(WorkflowModel):
+    request_id: Annotated[str, StringConstraints(min_length=1, max_length=64)]
+    expected_revision: int = Field(ge=0)
+    asset_id: Identifier
+    kind: Literal["character", "scene", "prop"]
+    title: Title
+    reuse_card_id: Identifier | None = None
+
+
+class ReferenceImageRegistered(WorkflowModel):
+    card: CardOut
+    project_card_ids: list[Identifier]
+    revision: int = Field(ge=0)
+    reused: bool

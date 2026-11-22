@@ -148,6 +148,7 @@ export function VisualWorkshopProjectsPage({
                 id: project.id,
                 title: project.title,
                 updated_at: project.updated_at,
+                preview: project.preview,
               }}
               metadata={
                 project.is_official ? (

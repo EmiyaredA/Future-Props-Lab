@@ -30,7 +30,7 @@ export function VideoReferenceStrip({
   const [request, setRequest] = useState<{
     id: number;
     kind: Media;
-    action: "upload" | "project" | "cross";
+    action: "upload" | "project";
   }>();
   const [taskDialog, setTaskDialog] = useState<{ edge?: VisualCanvasEdge }>();
   const selections = {
@@ -65,7 +65,11 @@ export function VideoReferenceStrip({
     c.designReferences.find((item) => item.asset_id === id)?.title ??
     c.availableReferenceFiles.find((item) => item.id === id)?.display_name ??
     "素材读取中";
-  const change = (kind: Media, next: string[]) => {
+  const change = (
+    kind: Media,
+    next: string[],
+    design?: import("./useReferenceUploads").DesignReference,
+  ) => {
     setters[kind](next);
     const activate = c.videoMode === "text" && next.length > 0;
     if (activate) c.setVideoMode("reference");
@@ -73,6 +77,16 @@ export function VideoReferenceStrip({
     c.persistDraft(
       {
         [fields[kind]]: next,
+        ...(design
+          ? {
+              design_references: [
+                ...c.designReferences.filter(
+                  (item) => item.asset_id !== design.asset_id,
+                ),
+                design,
+              ],
+            }
+          : {}),
         ...(activate ? { mode: "reference" } : {}),
         ...(kind === "image" && subjects
           ? {
@@ -142,39 +156,36 @@ export function VideoReferenceStrip({
               </Menu.Trigger>
               <Menu.Portal>
                 <Menu.Content className="reference-menu" sideOffset={5}>
-                  {(
-                    [
-                      ["project", "本项目素材"],
-                      ["cross", "跨项目／文件库"],
-                    ] as const
-                  ).map(([action, label]) => (
-                    <Menu.Sub key={action}>
-                      <Menu.SubTrigger>
-                        {label}
-                        <ChevronDown size={12} />
-                      </Menu.SubTrigger>
-                      <Menu.Portal>
-                        <Menu.SubContent
-                          className="reference-menu"
-                          sideOffset={5}
-                        >
-                          {activeKinds.map((kind) => (
-                            <Menu.Item
-                              key={kind}
-                              disabled={
-                                ids(kind).length >= c.referenceLimits[kind]
-                              }
-                              onSelect={() =>
-                                setRequest({ id: Date.now(), kind, action })
-                              }
-                            >
-                              {labels[kind]}
-                            </Menu.Item>
-                          ))}
-                        </Menu.SubContent>
-                      </Menu.Portal>
-                    </Menu.Sub>
-                  ))}
+                  {([["project", "本项目素材"]] as const).map(
+                    ([action, label]) => (
+                      <Menu.Sub key={action}>
+                        <Menu.SubTrigger>
+                          {label}
+                          <ChevronDown size={12} />
+                        </Menu.SubTrigger>
+                        <Menu.Portal>
+                          <Menu.SubContent
+                            className="reference-menu"
+                            sideOffset={5}
+                          >
+                            {activeKinds.map((kind) => (
+                              <Menu.Item
+                                key={kind}
+                                disabled={
+                                  ids(kind).length >= c.referenceLimits[kind]
+                                }
+                                onSelect={() =>
+                                  setRequest({ id: Date.now(), kind, action })
+                                }
+                              >
+                                {labels[kind]}
+                              </Menu.Item>
+                            ))}
+                          </Menu.SubContent>
+                        </Menu.Portal>
+                      </Menu.Sub>
+                    ),
+                  )}
                   <Menu.Item
                     disabled={images.length >= c.referenceLimits.image}
                     onSelect={open}
@@ -207,6 +218,8 @@ export function VideoReferenceStrip({
                 label={labels[kind]}
                 kind={kind}
                 projectId={c.projectId}
+                registerImage={c.referenceContext?.registerReferenceImage}
+                dropTargetKey={c.canvasNodeId}
                 value={kind === "image" ? ids(kind) : selections[kind]}
                 linkedValue={c.linkedAssetIds[kind]}
                 max={c.referenceLimits[kind]}
@@ -215,7 +228,10 @@ export function VideoReferenceStrip({
                 addRequest={request?.kind === kind ? request : undefined}
                 onFilesLoaded={c.rememberPromptFiles}
                 onInvalidSelection={c.invalidSelection}
-                onChange={(next) => change(kind, next)}
+                onChange={(next, design) => change(kind, next, design)}
+                onRemove={
+                  c.referenceContext ? (id) => remove(kind, id) : undefined
+                }
                 onReorder={kind === "image" ? c.reorderImages : undefined}
                 renderItemTools={(file, order) => {
                   const input = c.referenceInputs.find(

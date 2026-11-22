@@ -34,6 +34,33 @@ const card = "/v1/visual-workshop/asset-cards/{card_id}";
 export const scriptKey = (project: string) =>
   ["visual-script", project] as const;
 export const cardsKey = ["visual-asset-cards"] as const;
+export const projectCardsKey = (project: string) =>
+  ["visual-project-cards", project] as const;
+export type ReferenceImageInput =
+  components["schemas"]["ReferenceImageRegistration"];
+export type ReferenceImageResult =
+  components["schemas"]["ReferenceImageRegistered"];
+
+export async function listProjectCards(
+  project_id: string,
+  signal?: AbortSignal,
+) {
+  return unwrap(
+    await api.GET(cards, { params: { path: { project_id } }, signal }),
+  );
+}
+
+export async function registerReferenceImage(
+  project_id: string,
+  body: ReferenceImageInput,
+) {
+  return unwrap(
+    await api.POST(
+      "/v1/visual-workshop/projects/{project_id}/reference-images",
+      { params: { path: { project_id } }, body },
+    ),
+  );
+}
 
 export async function getScript(project_id: string, signal?: AbortSignal) {
   return normalizedScript(

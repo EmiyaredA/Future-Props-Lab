@@ -265,6 +265,16 @@ class ArticleSyncTaskOut(WireModel):
     steps: list[dict[str, Any]] | None = Field(default=None, alias='steps')
     updated_at: str = Field(default=..., alias='updated_at')
 
+class AssetCardLink(WireModel):
+    asset_id: str = Field(default=..., alias='asset_id')
+    card_ids: list[str] = Field(default=..., alias='card_ids')
+
+class AssetCardLinksIn(WireModel):
+    asset_ids: list[str] = Field(default=..., alias='asset_ids', min_length=1, max_length=500)
+
+class AssetCardLinksOut(WireModel):
+    items: list[AssetCardLink] = Field(default=..., alias='items')
+
 class AssetImportIn(WireModel):
     asset_ids: list[str] = Field(default=..., alias='assetIds', min_length=1, max_length=100)
 
@@ -327,6 +337,7 @@ class AudioAnnotationProjectOut(WireModel):
     id: str = Field(default=..., alias='id')
     mime_type: str = Field(default=..., alias='mime_type')
     original_filename: str = Field(default=..., alias='original_filename')
+    preview: ProjectPreview | None = Field(default=None, alias='preview')
     reviewed_segment_count: int = Field(default=..., alias='reviewed_segment_count')
     revision: int = Field(default=..., alias='revision')
     segment_count: int = Field(default=..., alias='segment_count')
@@ -884,6 +895,26 @@ class CommunitySnapshot(WireModel):
     documents: list[ThoughtNoteOut] = Field(default=..., alias='documents')
     knowledge_base: PublicationOut = Field(default=..., alias='knowledge_base')
 
+class ContentAudit(WireModel):
+    groups: list[DuplicateGroup] = Field(default=..., alias='groups')
+    id: str = Field(default=..., alias='id')
+    project_ids: list[str] = Field(default=..., alias='project_ids')
+    revision: int = Field(default=..., alias='revision')
+    unavailable_ids: list[str] | None = Field(default=None, alias='unavailable_ids')
+
+class ContentAuditRequest(WireModel):
+    project_ids: list[str] = Field(default=..., alias='project_ids', min_length=1, max_length=100)
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=80)
+
+class ContentIdentities(WireModel):
+    items: list[ContentIdentity] = Field(default=..., alias='items')
+    unavailable_ids: list[str] | None = Field(default=None, alias='unavailable_ids')
+
+class ContentIdentity(WireModel):
+    asset_id: str = Field(default=..., alias='asset_id')
+    content_key: str = Field(default=..., alias='content_key')
+    equivalent_ids: list[str] = Field(default=..., alias='equivalent_ids')
+
 class ConversationDetailOut(WireModel):
     actions: list[ActionOut] | None = Field(default=None, alias='actions')
     conversation: ConversationOut = Field(default=..., alias='conversation')
@@ -1091,6 +1122,11 @@ class CurrentUserOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     username: str = Field(default=..., alias='username')
 
+class DedupeStep(WireModel):
+    content_key: str = Field(default=..., alias='content_key')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    remove_asset_ids: list[str] | None = Field(default=None, alias='remove_asset_ids', max_length=1000)
+
 class DeleteApiKeyIn(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
 
@@ -1220,6 +1256,7 @@ class DirectorProjectPatch(WireModel):
 
 class DirectorProjectSummary(WireModel):
     id: str = Field(default=..., alias='id')
+    preview: ProjectPreview | None = Field(default=None, alias='preview')
     revision: int = Field(default=..., alias='revision')
     title: str = Field(default=..., alias='title')
     updated_at: datetime = Field(default=..., alias='updated_at')
@@ -1236,6 +1273,15 @@ class DocumentOut(WireModel):
     document: MotionComposition = Field(default=..., alias='document')
     revision: int = Field(default=..., alias='revision')
 
+class DuplicateGroup(WireModel):
+    canonical_id: str = Field(default=..., alias='canonical_id')
+    content_key: str = Field(default=..., alias='content_key')
+    members: list[DuplicateMember] = Field(default=..., alias='members')
+    reclaimed_bytes: int = Field(default=0, alias='reclaimed_bytes')
+    removed_ids: list[str] | None = Field(default=None, alias='removed_ids')
+    skipped: dict[str, str] | None = Field(default=None, alias='skipped')
+    state: Literal['audited', 'reserved', 'ready', 'cleaned', 'restored'] = Field(default='audited', alias='state')
+
 class DuplicateIn(WireModel):
     expected_knowledge_revision: int = Field(default=..., alias='expected_knowledge_revision', ge=0.0)
     expected_revisions: dict[str, int] = Field(default=..., alias='expected_revisions')
@@ -1243,6 +1289,19 @@ class DuplicateIn(WireModel):
     parent_id: str | None = Field(default=None, alias='parent_id')
     source_knowledge_revision: int = Field(default=..., alias='source_knowledge_revision', ge=0.0)
     subtree: bool = Field(default=False, alias='subtree')
+
+class DuplicateMember(WireModel):
+    byte_size: int = Field(default=..., alias='byte_size')
+    created_at: str = Field(default=..., alias='created_at')
+    display_name: str = Field(default=..., alias='display_name')
+    folder_id: str | None = Field(default=None, alias='folder_id')
+    id: str = Field(default=..., alias='id')
+    media_kind: str = Field(default=..., alias='media_kind')
+    mime_type: str = Field(default=..., alias='mime_type')
+    original_filename: str = Field(default=..., alias='original_filename')
+    project_id: str | None = Field(default=..., alias='project_id')
+    protected_by: list[str] | None = Field(default=None, alias='protected_by')
+    revision: int = Field(default=..., alias='revision')
 
 class DuplicateOut(WireModel):
     knowledge_base_id: str = Field(default=..., alias='knowledge_base_id')
@@ -2668,6 +2727,7 @@ class GalgameWorkshopProjectOut(WireModel):
     created_at: str = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
     is_official: bool = Field(default=False, alias='is_official')
+    preview: ProjectPreview | None = Field(default=None, alias='preview')
     revision: int = Field(default=..., alias='revision')
     status: Literal['draft', 'completed'] = Field(default=..., alias='status')
     title: str = Field(default=..., alias='title')
@@ -2780,6 +2840,9 @@ class HandoffOut(WireModel):
 class HappierLaunch(WireModel):
     exchange_url: str = Field(default=..., alias='exchange_url')
     ticket: str = Field(default=..., alias='ticket')
+
+class IdentityRequest(WireModel):
+    asset_ids: list[str] = Field(default=..., alias='asset_ids', min_length=1, max_length=200)
 
 class IdlePreference(WireModel):
     idle_minutes: int = Field(default=..., alias='idle_minutes', ge=5.0, le=120.0)
@@ -3063,6 +3126,7 @@ class KnowledgeBaseOut(WireModel):
     document_count: int = Field(default=0, alias='document_count')
     home_note_id: str = Field(default=..., alias='home_note_id')
     id: str = Field(default=..., alias='id')
+    preview: ProjectPreview | None = Field(default=None, alias='preview')
     revision: int = Field(default=..., alias='revision')
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
     updated_at: datetime = Field(default=..., alias='updated_at')
@@ -3175,6 +3239,11 @@ class ManagementJob(WireModel):
     result: dict[str, Any] | None = Field(default=None, alias='result')
     revision: int = Field(default=..., alias='revision')
     status: str = Field(default=..., alias='status')
+
+class MaterialUsageOut(WireModel):
+    active_project_ids: list[str] = Field(default=..., alias='active_project_ids')
+    frozen_asset_ids: list[str] = Field(default=..., alias='frozen_asset_ids')
+    project_revisions: dict[str, int] = Field(default=..., alias='project_revisions')
 
 class McpCatalogOut(WireModel):
     items: list[McpOut] = Field(default=..., alias='items')
@@ -4188,6 +4257,12 @@ class PresentationTransition(WireModel):
     duration: int = Field(default=600, alias='duration', ge=50.0, le=10000.0)
     effect: Literal['none', 'fade', 'slideX', 'slideY', 'slideX3D', 'slideY3D', 'rotate', 'scaleX', 'scaleY', 'scale', 'scaleReverse', 'random'] = Field(default='none', alias='effect')
 
+class PreviewCell(WireModel):
+    background: str | None = Field(default=None, alias='background')
+    bold: bool = Field(default=False, alias='bold')
+    color: str | None = Field(default=None, alias='color')
+    text: str = Field(default=..., alias='text', max_length=120)
+
 class PrevisSceneCreate(WireModel):
     document: dict[str, Any] = Field(default=..., alias='document')
     format_version: Literal[1] = Field(default=..., alias='format_version')
@@ -4231,6 +4306,7 @@ class ProjectListOut(WireModel):
 class ProjectOut(WireModel):
     created_at: str = Field(default=..., alias='createdAt')
     id: str = Field(default=..., alias='id')
+    preview: ProjectPreview | None = Field(default=None, alias='preview')
     revision: int = Field(default=..., alias='revision')
     title: str = Field(default=..., alias='title')
     updated_at: str = Field(default=..., alias='updatedAt')
@@ -4238,6 +4314,18 @@ class ProjectOut(WireModel):
 class ProjectPatchIn(WireModel):
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
     title: str = Field(default=..., alias='title', min_length=1, max_length=120)
+
+class ProjectPreview(WireModel):
+    cells: list[list[PreviewCell]] | None = Field(default=None, alias='cells', max_length=6)
+    kind: Literal['image', 'text', 'waveform', 'table', 'scene', 'empty'] = Field(default=..., alias='kind')
+    label: str = Field(default='', alias='label', max_length=160)
+    peaks: list[float] | None = Field(default=None, alias='peaks', max_length=96)
+    source_id: str | None = Field(default=None, alias='source_id')
+    source_revision: int | None = Field(default=None, alias='source_revision')
+    source_time: int = Field(default=0, alias='source_time')
+    text: str = Field(default='', alias='text', max_length=400)
+    urls: list[str] | None = Field(default=None, alias='urls', max_length=4)
+    version: str = Field(default=..., alias='version')
 
 class ProjectSnapshotImportWarning(WireModel):
     code: Literal['model_binding_unavailable', 'storyboard_cards_detached'] = Field(default=..., alias='code')
@@ -4452,6 +4540,20 @@ class Reference(WireModel):
     thumbnail: str | None = Field(default=None, alias='thumbnail')
     value: str = Field(default='', alias='value', max_length=2000)
     window_id: int | None = Field(default=None, alias='window_id')
+
+class ReferenceImageRegistered(WireModel):
+    card: CardOut = Field(default=..., alias='card')
+    project_card_ids: list[str] = Field(default=..., alias='project_card_ids')
+    reused: bool = Field(default=..., alias='reused')
+    revision: int = Field(default=..., alias='revision', ge=0.0)
+
+class ReferenceImageRegistration(WireModel):
+    asset_id: str = Field(default=..., alias='asset_id')
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    kind: Literal['character', 'scene', 'prop'] = Field(default=..., alias='kind')
+    request_id: str = Field(default=..., alias='request_id', min_length=1, max_length=64)
+    reuse_card_id: str | None = Field(default=None, alias='reuse_card_id')
+    title: str = Field(default=..., alias='title', min_length=1, max_length=120)
 
 class ReferenceTarget(WireModel):
     available: bool = Field(default=..., alias='available')
@@ -5012,6 +5114,7 @@ class SpreadsheetProject(WireModel):
     created_at: str = Field(default=..., alias='created_at')
     document: SpreadsheetDocument = Field(default=..., alias='document')
     id: str = Field(default=..., alias='id')
+    preview: ProjectPreview | None = Field(default=None, alias='preview')
     revision: int = Field(default=..., alias='revision')
     source_name: str | None = Field(default=None, alias='source_name')
     title: str = Field(default=..., alias='title')
@@ -5041,6 +5144,7 @@ class SpreadsheetSummary(WireModel):
     calculation: Literal['pending', 'browser_calculated', 'not_needed'] = Field(default=..., alias='calculation')
     created_at: str = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
+    preview: ProjectPreview | None = Field(default=None, alias='preview')
     revision: int = Field(default=..., alias='revision')
     source_name: str | None = Field(default=None, alias='source_name')
     title: str = Field(default=..., alias='title')
@@ -5918,6 +6022,7 @@ class VideoEditorProjectListOut(WireModel):
 class VideoEditorProjectOut(WireModel):
     created_at: str = Field(default=..., alias='createdAt')
     id: str = Field(default=..., alias='id')
+    preview: ProjectPreview | None = Field(default=None, alias='preview')
     revision: int = Field(default=..., alias='revision')
     source_application: str | None = Field(default=None, alias='sourceApplication')
     source_compiler_version: str | None = Field(default=None, alias='sourceCompilerVersion')
@@ -6446,6 +6551,7 @@ class VisualWorkshopProjectOut(WireModel):
     id: str = Field(default=..., alias='id')
     is_official: bool = Field(default=False, alias='is_official')
     kind: Literal['image', 'video', 'canvas'] = Field(default=..., alias='kind')
+    preview: ProjectPreview | None = Field(default=None, alias='preview')
     revision: int = Field(default=..., alias='revision')
     status: Literal['draft', 'completed'] = Field(default=..., alias='status')
     title: str = Field(default=..., alias='title')
@@ -6521,6 +6627,9 @@ ArticleSyncReconcileOut.model_rebuild()
 ArticleSyncState.model_rebuild()
 ArticleSyncSubmit.model_rebuild()
 ArticleSyncTaskOut.model_rebuild()
+AssetCardLink.model_rebuild()
+AssetCardLinksIn.model_rebuild()
+AssetCardLinksOut.model_rebuild()
 AssetImportIn.model_rebuild()
 AssetListOut.model_rebuild()
 AssetOut.model_rebuild()
@@ -6621,6 +6730,10 @@ CommunityNote.model_rebuild()
 CommunityNotePut.model_rebuild()
 CommunityReferenceTarget.model_rebuild()
 CommunitySnapshot.model_rebuild()
+ContentAudit.model_rebuild()
+ContentAuditRequest.model_rebuild()
+ContentIdentities.model_rebuild()
+ContentIdentity.model_rebuild()
 ConversationDetailOut.model_rebuild()
 ConversationListItemOut.model_rebuild()
 ConversationListOut.model_rebuild()
@@ -6649,6 +6762,7 @@ CsvIn.model_rebuild()
 CsvPreview.model_rebuild()
 CsvSource.model_rebuild()
 CurrentUserOut.model_rebuild()
+DedupeStep.model_rebuild()
 DeleteApiKeyIn.model_rebuild()
 DeleteMutationOut.model_rebuild()
 DeleteOut.model_rebuild()
@@ -6681,7 +6795,9 @@ DirectorProjectSummary.model_rebuild()
 DirectorToolCall.model_rebuild()
 DirectorToolOut.model_rebuild()
 DocumentOut.model_rebuild()
+DuplicateGroup.model_rebuild()
 DuplicateIn.model_rebuild()
+DuplicateMember.model_rebuild()
 DuplicateOut.model_rebuild()
 DuplicateSnapshot.model_rebuild()
 ElementTarget.model_rebuild()
@@ -6893,6 +7009,7 @@ HTTPValidationError.model_rebuild()
 HandoffIn.model_rebuild()
 HandoffOut.model_rebuild()
 HappierLaunch.model_rebuild()
+IdentityRequest.model_rebuild()
 IdlePreference.model_rebuild()
 ImageCompositionCreateIn.model_rebuild()
 ImageCompositionItemIn.model_rebuild()
@@ -6952,6 +7069,7 @@ LoginIn.model_rebuild()
 ManagementAccessAction.model_rebuild()
 ManagementApplicationAction.model_rebuild()
 ManagementJob.model_rebuild()
+MaterialUsageOut.model_rebuild()
 McpCatalogOut.model_rebuild()
 McpCreateIn.model_rebuild()
 McpOut.model_rebuild()
@@ -7080,6 +7198,7 @@ PresentationTemplateOut.model_rebuild()
 PresentationTemplatePut.model_rebuild()
 PresentationTextLayout.model_rebuild()
 PresentationTransition.model_rebuild()
+PreviewCell.model_rebuild()
 PrevisSceneCreate.model_rebuild()
 PrevisSceneOut.model_rebuild()
 PrevisSceneSummary.model_rebuild()
@@ -7089,6 +7208,7 @@ ProjectFolderOpenOut.model_rebuild()
 ProjectListOut.model_rebuild()
 ProjectOut.model_rebuild()
 ProjectPatchIn.model_rebuild()
+ProjectPreview.model_rebuild()
 ProjectSnapshotImportWarning.model_rebuild()
 ProviderEnabledIn.model_rebuild()
 ProviderIn.model_rebuild()
@@ -7120,6 +7240,8 @@ RecordsPut.model_rebuild()
 RedemptionOut.model_rebuild()
 RedemptionPage.model_rebuild()
 Reference.model_rebuild()
+ReferenceImageRegistered.model_rebuild()
+ReferenceImageRegistration.model_rebuild()
 ReferenceTarget.model_rebuild()
 RegistrationIn.model_rebuild()
 RegistrationInviteAction.model_rebuild()

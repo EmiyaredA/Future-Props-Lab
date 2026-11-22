@@ -1,0 +1,160 @@
+.visual-project-workspace .script-page.script-episode-page {
+  display: block;
+  width: min(100%, 1280px);
+}
+.script-episode-overview {
+  min-width: 0;
+  margin-top: 20px;
+}
+.script-episode-heading {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 18px;
+}
+.script-episode-heading h2 {
+  margin: 0;
+  font-size: 17px;
+  overflow-wrap: anywhere;
+}
+.script-episode-heading :is(span, small) {
+  color: var(--muted);
+}
+.script-episode-heading small {
+  flex-basis: 100%;
+}
+.script-episode-sequence {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  align-items: stretch;
+  gap: 20px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.script-episode-block {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.script-episode-block + .script-episode-block::before {
+  content: "→";
+  position: absolute;
+  inset-inline-start: -15px;
+  top: 11px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.script-episode-block-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  min-height: 36px;
+}
+.script-episode-number {
+  color: var(--accent-hover);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.script-episode-block-toolbar > div {
+  display: flex;
+  gap: 2px;
+}
+.script-episode-block-toolbar button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  color: var(--muted);
+  background: transparent;
+}
+.script-episode-block-toolbar button[draggable="true"] {
+  cursor: grab;
+}
+.script-episode-block-toolbar button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.script-episode-block-toolbar button:disabled {
+  opacity: 0.35;
+}
+.script-episode-thumbnail {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-block: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+}
+.script-episode-thumbnail :is(img, video, .fpl-image-preview) {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.script-episode-block-copy {
+  flex: 1;
+  padding: 12px;
+  min-width: 0;
+}
+.script-episode-block-copy h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.script-episode-block-copy small {
+  color: var(--muted);
+}
+.script-episode-block-copy p {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  margin: 10px 0 0;
+  font-size: 12px;
+}
+.script-episode-block footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+.script-episode-block footer span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.script-episode-productions {
+  display: grid;
+  gap: 4px;
+  padding: 0 12px 12px;
+}
+.script-episode-productions button {
+  justify-content: flex-start;
+  min-width: 0;
+}
+.script-episode-productions span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 700px) {
+  .script-episode-block + .script-episode-block::before {
+    content: "↓";
+    inset-inline-start: 50%;
+    top: -20px;
+  }
+}

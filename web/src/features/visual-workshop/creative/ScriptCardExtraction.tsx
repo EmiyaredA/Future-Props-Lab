@@ -100,7 +100,7 @@ export function ScriptCardExtraction({
                   );
                   setDrafts(next);
                   setChecked(new Set(next.map((_, index) => index)));
-                  if (!next.length) setError("本场没有新的设定可添加。");
+                  if (!next.length) setError("本分镜没有新的设定可添加。");
                 } catch (failure) {
                   if (!controller.signal.aborted)
                     setError(apiErrorMessage(failure));

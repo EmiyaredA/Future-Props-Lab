@@ -19,6 +19,7 @@ from studio.runtime.database.project_records import (
     load_owned_project,
     patch_revisioned_project,
 )
+from studio.runtime.project_preview import ProjectPreview, preview_version
 from studio.runtime.revisions import RevisionConflictError
 from studio.runtime.time import utc_now
 
@@ -72,7 +73,18 @@ class DirectorDeskProjects:
                 .limit(limit)
             )
         ).all()
-        items = [DirectorProjectSummary.model_validate(row, from_attributes=True) for row in rows]
+        items = [
+            DirectorProjectSummary.model_validate(row, from_attributes=True).model_copy(
+                update={
+                    "preview": ProjectPreview(
+                        kind="scene",
+                        version=preview_version(row.revision),
+                        source_revision=row.revision,
+                    )
+                }
+            )
+            for row in rows
+        ]
         return DirectorProjectList(total=int(total or 0), items=items)
 
     async def create(self, body: DirectorProjectCreate) -> DirectorProjectOut:

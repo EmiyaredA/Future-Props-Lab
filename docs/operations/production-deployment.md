@@ -76,6 +76,7 @@ HTML 回退仅适用于页面导航，未知 API 和缺失程序资源返回原�
 - `0132_visual_previs_scenes` 在兼容网站登记视觉项目白模场景表。独立视觉服务对应 `0012_visual_previs_scenes`，升级按各自的显式迁移流程执行。
 - `0133_visual_creative_workflow` 和独立视觉服务对应的 `0013_visual_creative_workflow` 新增分集剧本、设定卡，并给白模场景补可空来源字段。升级先隔离验收，停机备份 Visual 数据库和启动配置后显式迁移，再核验现有项目和白模。
 - `0134_visual_account_asset_cards` 和独立 Visual 的 `0014_visual_account_asset_cards` 按项目原归属迁移卡片账号，保留卡 ID、内容和 revision。按停机备份与隔离验证流程升级，再核验同账号的设定库和项目入口。
+- `0138_visual_card_voice` 和独立 Visual 的 `0018_visual_card_voice` 清除设定卡 JSON 内的 `facts`、`proposed_design`，只对包含旧字段的卡片推进 revision。语音引用为可空 JSON 字段，无新增表或素材文件变换。先在隔离副本验证，再按空闲门禁正常停写、备份受影响 Visual 库及恢复配置，显式迁移当前装配；公共契约变化后重新运行本机开发入口。新卡读写拒绝旧字段，旧归档导入丢弃它们。
 - `0136_visual_storyboards` 和独立 Visual 的 `0016_visual_storyboards` 新增项目分镜文档，保留现有画布、剧本、设定与输出。
   按当前运行装配选择迁移链，先在隔离副本验证迁移与恢复，再停写备份、显式迁移并核验原项目内容；不迁移停用的旧装配数据库。
 - Schema 由 `db/migrations/` 维护。只在 `versions/` 追加迁移并更新 `registry.py`。已登记的 ID、顺序、SQL 和 checksum 保持完整。
@@ -144,3 +145,9 @@ HTML 回退仅适用于页面导航，未知 API 和缺失程序资源返回原�
 ### 视觉创作关联迁移
 
 独立 Visual `0017_visual_creation_links`（兼容网站 `0137_visual_creation_links`）仅新增项目关联表；分镜 JSON 的选段和逐镜预演字段为可选，旧文档继续可读。先验证隔离迁移、快照和历史恢复，再通过现有 Agent 空闲门禁停写并备份受影响 Visual 库、配置和代码，显式运行当前装配的迁移命令。不要迁移已停用装配的数据库。恢复后核验既有记录、服务/Worker 就绪和 Agent 入口，再开放写入。
+
+### 精确素材去重
+
+兼容网站 `0139_asset_content_identity` 与独立 Assets `0021_content_identity` 仅新增内容指纹、操作记录和原件保护表。先在隔离库运行迁移与重试/恢复测试，按实际装配备份受影响的 Assets 数据库、配置和源码，使用已登记的 CLI 显式迁移。不要迁移停用装配。
+
+通过 `python -m scripts.maintenance.visual_material_dedupe inspect --output <报告>` 审计当前账号视觉项目，再用同一 `--operation` 执行 `apply --recovery-dir <.runtime/恢复目录>`。脚本检查任务、冻结历史、输入槽和别名冲突，先以 CAS 迁移卡片与画布，再清理允许删除的 ID。需要恢复时调用同一操作的 `restore --group <内容键>`；遇到新的用户修改停止恢复，不覆盖。保留原件与操作日志属于恢复依赖，不能作为普通重复副本删除。

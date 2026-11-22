@@ -1,5 +1,6 @@
 """Own the fixed hot-reloading website pair and its existing live data lifecycle."""
 
+import argparse
 import contextlib
 import fcntl
 import os
@@ -125,7 +126,17 @@ def run_pair(root=ROOT):
             signal.signal(sig, handler)
 
 
-def main():
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="FPL 本机热加载启动器")
+    parser.add_argument(
+        "--public", action="store_true", help="使用既有配置开启独立 Studio 公网隧道"
+    )
+    parser.add_argument(
+        "--public-management", action="store_true", help="同时开启管理端公网隧道（需 --public）"
+    )
+    args = parser.parse_args(argv)
+    if args.public_management and not args.public:
+        parser.error("--public-management 需要同时指定 --public")
     sys.path.insert(0, str(ROOT / "backend"))
     sys.path.insert(0, str(ROOT))
     from studio.config import read_config
@@ -134,8 +145,12 @@ def main():
     if config.is_file() and read_config(config).get("fpl_deployment_environment"):
         from scripts.website.native_development import run
 
-        run(ROOT)
+        run(ROOT, public=args.public, public_management=args.public_management)
         return
+    if args.public:
+        parser.error(
+            "--public 参数用于独立服务热加载；兼容单体使用已有 website.public_enabled 配置"
+        )
     state = ROOT / ".runtime/dev-server"
     state.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (state / "launcher.lock").open("a") as lock:
@@ -154,4 +169,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (RuntimeError, ValueError, OSError) as exc:
+        raise SystemExit(str(exc)) from None

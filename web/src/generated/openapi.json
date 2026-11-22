@@ -1552,6 +1552,61 @@
         "title": "ArticleSyncTaskOut",
         "type": "object"
       },
+      "AssetCardLink": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "card_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Card Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "asset_id",
+          "card_ids"
+        ],
+        "title": "AssetCardLink",
+        "type": "object"
+      },
+      "AssetCardLinksIn": {
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Asset Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "asset_ids"
+        ],
+        "title": "AssetCardLinksIn",
+        "type": "object"
+      },
+      "AssetCardLinksOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AssetCardLink"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AssetCardLinksOut",
+        "type": "object"
+      },
       "AssetImportIn": {
         "properties": {
           "assetIds": {
@@ -1884,6 +1939,16 @@
           "original_filename": {
             "title": "Original Filename",
             "type": "string"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "reviewed_segment_count": {
             "title": "Reviewed Segment Count",
@@ -5519,6 +5584,123 @@
         "title": "CommunitySnapshot",
         "type": "object"
       },
+      "ContentAudit": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/DuplicateGroup"
+            },
+            "title": "Groups",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Project Ids",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "unavailable_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unavailable Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "revision",
+          "project_ids",
+          "groups"
+        ],
+        "title": "ContentAudit",
+        "type": "object"
+      },
+      "ContentAuditRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "project_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Project Ids",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "project_ids"
+        ],
+        "title": "ContentAuditRequest",
+        "type": "object"
+      },
+      "ContentIdentities": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ContentIdentity"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "unavailable_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unavailable Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ContentIdentities",
+        "type": "object"
+      },
+      "ContentIdentity": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "content_key": {
+            "title": "Content Key",
+            "type": "string"
+          },
+          "equivalent_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Equivalent Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "asset_id",
+          "content_key",
+          "equivalent_ids"
+        ],
+        "title": "ContentIdentity",
+        "type": "object"
+      },
       "ConversationDetailOut": {
         "properties": {
           "actions": {
@@ -6814,6 +6996,35 @@
         "title": "CurrentUserOut",
         "type": "object"
       },
+      "DedupeStep": {
+        "additionalProperties": false,
+        "properties": {
+          "content_key": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Content Key",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "remove_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 1000,
+            "title": "Remove Asset Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "content_key"
+        ],
+        "title": "DedupeStep",
+        "type": "object"
+      },
       "DeleteApiKeyIn": {
         "properties": {
           "expected_revision": {
@@ -7512,6 +7723,16 @@
             "title": "Id",
             "type": "string"
           },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -7593,6 +7814,63 @@
         "title": "DocumentOut",
         "type": "object"
       },
+      "DuplicateGroup": {
+        "properties": {
+          "canonical_id": {
+            "title": "Canonical Id",
+            "type": "string"
+          },
+          "content_key": {
+            "title": "Content Key",
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/DuplicateMember"
+            },
+            "title": "Members",
+            "type": "array"
+          },
+          "reclaimed_bytes": {
+            "default": 0,
+            "title": "Reclaimed Bytes",
+            "type": "integer"
+          },
+          "removed_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Removed Ids",
+            "type": "array"
+          },
+          "skipped": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Skipped",
+            "type": "object"
+          },
+          "state": {
+            "default": "audited",
+            "enum": [
+              "audited",
+              "reserved",
+              "ready",
+              "cleaned",
+              "restored"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "content_key",
+          "members",
+          "canonical_id"
+        ],
+        "title": "DuplicateGroup",
+        "type": "object"
+      },
       "DuplicateIn": {
         "additionalProperties": false,
         "properties": {
@@ -7642,6 +7920,84 @@
           "expected_revisions"
         ],
         "title": "DuplicateIn",
+        "type": "object"
+      },
+      "DuplicateMember": {
+        "properties": {
+          "byte_size": {
+            "title": "Byte Size",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "media_kind": {
+            "title": "Media Kind",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "original_filename": {
+            "title": "Original Filename",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "protected_by": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Protected By",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "display_name",
+          "original_filename",
+          "media_kind",
+          "mime_type",
+          "byte_size",
+          "revision",
+          "created_at"
+        ],
+        "title": "DuplicateMember",
         "type": "object"
       },
       "DuplicateOut": {
@@ -17331,6 +17687,16 @@
             "title": "Is Official",
             "type": "boolean"
           },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -18102,6 +18468,25 @@
           "ticket"
         ],
         "title": "HappierLaunch",
+        "type": "object"
+      },
+      "IdentityRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Asset Ids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "asset_ids"
+        ],
+        "title": "IdentityRequest",
         "type": "object"
       },
       "IdlePreference": {
@@ -19850,6 +20235,16 @@
             "title": "Id",
             "type": "string"
           },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -20530,6 +20925,38 @@
           "revision"
         ],
         "title": "ManagementJob",
+        "type": "object"
+      },
+      "MaterialUsageOut": {
+        "properties": {
+          "active_project_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Active Project Ids",
+            "type": "array"
+          },
+          "frozen_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Frozen Asset Ids",
+            "type": "array"
+          },
+          "project_revisions": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Project Revisions",
+            "type": "object"
+          }
+        },
+        "required": [
+          "frozen_asset_ids",
+          "active_project_ids",
+          "project_revisions"
+        ],
+        "title": "MaterialUsageOut",
         "type": "object"
       },
       "McpCatalogOut": {
@@ -27277,6 +27704,47 @@
         "title": "PresentationTransition",
         "type": "object"
       },
+      "PreviewCell": {
+        "properties": {
+          "background": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Background"
+          },
+          "bold": {
+            "default": false,
+            "title": "Bold",
+            "type": "boolean"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "text": {
+            "maxLength": 120,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "title": "PreviewCell",
+        "type": "object"
+      },
       "PrevisSceneCreate": {
         "additionalProperties": false,
         "properties": {
@@ -27521,6 +27989,16 @@
             "title": "Id",
             "type": "string"
           },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -27563,6 +28041,98 @@
           "title"
         ],
         "title": "ProjectPatchIn",
+        "type": "object"
+      },
+      "ProjectPreview": {
+        "properties": {
+          "cells": {
+            "items": {
+              "items": {
+                "$ref": "#/components/schemas/PreviewCell"
+              },
+              "type": "array"
+            },
+            "maxItems": 6,
+            "title": "Cells",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "text",
+              "waveform",
+              "table",
+              "scene",
+              "empty"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "default": "",
+            "maxLength": 160,
+            "title": "Label",
+            "type": "string"
+          },
+          "peaks": {
+            "items": {
+              "type": "number"
+            },
+            "maxItems": 96,
+            "title": "Peaks",
+            "type": "array"
+          },
+          "source_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Id"
+          },
+          "source_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Revision"
+          },
+          "source_time": {
+            "default": 0,
+            "title": "Source Time",
+            "type": "integer"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 400,
+            "title": "Text",
+            "type": "string"
+          },
+          "urls": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 4,
+            "title": "Urls",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "version"
+        ],
+        "title": "ProjectPreview",
         "type": "object"
       },
       "ProjectSnapshotImportWarning": {
@@ -28834,6 +29404,96 @@
           "name"
         ],
         "title": "Reference",
+        "type": "object"
+      },
+      "ReferenceImageRegistered": {
+        "additionalProperties": false,
+        "properties": {
+          "card": {
+            "$ref": "#/components/schemas/CardOut"
+          },
+          "project_card_ids": {
+            "items": {
+              "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+              "type": "string"
+            },
+            "title": "Project Card Ids",
+            "type": "array"
+          },
+          "reused": {
+            "title": "Reused",
+            "type": "boolean"
+          },
+          "revision": {
+            "minimum": 0.0,
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "card",
+          "project_card_ids",
+          "revision",
+          "reused"
+        ],
+        "title": "ReferenceImageRegistered",
+        "type": "object"
+      },
+      "ReferenceImageRegistration": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "character",
+              "scene",
+              "prop"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "reuse_card_id": {
+            "anyOf": [
+              {
+                "pattern": "^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reuse Card Id"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "expected_revision",
+          "asset_id",
+          "kind",
+          "title"
+        ],
+        "title": "ReferenceImageRegistration",
         "type": "object"
       },
       "ReferenceTarget": {
@@ -32231,6 +32891,16 @@
             "title": "Id",
             "type": "string"
           },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -32394,6 +33064,16 @@
           "id": {
             "title": "Id",
             "type": "string"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "revision": {
             "title": "Revision",
@@ -38121,6 +38801,16 @@
             "title": "Id",
             "type": "string"
           },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "revision": {
             "title": "Revision",
             "type": "integer"
@@ -42142,6 +42832,16 @@
             ],
             "title": "Kind",
             "type": "string"
+          },
+          "preview": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProjectPreview"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "revision": {
             "title": "Revision",
@@ -48751,6 +49451,245 @@
         ]
       }
     },
+    "/v1/file-library/content-audits": {
+      "post": {
+        "operationId": "create_file_content_audit_v1_file_library_content_audits_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentAuditRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentAudit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create File Content Audit",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-library/content-audits/{operation_id}": {
+      "get": {
+        "operationId": "get_file_content_audit_v1_file_library_content_audits__operation_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentAudit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get File Content Audit",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-library/content-audits/{operation_id}/clean": {
+      "post": {
+        "operationId": "clean_file_duplicate_group_v1_file_library_content_audits__operation_id__clean_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DedupeStep"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentAudit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Clean File Duplicate Group",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-library/content-audits/{operation_id}/prepare": {
+      "post": {
+        "operationId": "prepare_file_duplicate_group_v1_file_library_content_audits__operation_id__prepare_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DedupeStep"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentAudit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Prepare File Duplicate Group",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-library/content-audits/{operation_id}/restore": {
+      "post": {
+        "operationId": "restore_file_duplicate_group_v1_file_library_content_audits__operation_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "operation_id",
+            "required": true,
+            "schema": {
+              "title": "Operation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DedupeStep"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentAudit"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Restore File Duplicate Group",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
     "/v1/file-library/folder-archive-imports": {
       "post": {
         "operationId": "import_library_folder_archive_v1_file_library_folder_archive_imports_post",
@@ -49129,6 +50068,47 @@
           }
         },
         "summary": "Upload File",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/files/content-identities": {
+      "post": {
+        "operationId": "inspect_file_content_identities_v1_files_content_identities_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IdentityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentIdentities"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Inspect File Content Identities",
         "tags": [
           "file-management"
         ]
@@ -69259,6 +70239,47 @@
         ]
       }
     },
+    "/v1/visual-workshop/asset-card-links": {
+      "post": {
+        "operationId": "inspect_visual_asset_card_links_v1_visual_workshop_asset_card_links_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssetCardLinksIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssetCardLinksOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Inspect Visual Asset Card Links",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
     "/v1/visual-workshop/asset-cards": {
       "get": {
         "operationId": "list_account_asset_cards_v1_visual_workshop_asset_cards_get",
@@ -69926,6 +70947,27 @@
         "summary": "Retry Materialization",
         "tags": [
           "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/material-usage": {
+      "get": {
+        "operationId": "get_visual_material_usage_v1_visual_workshop_material_usage_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialUsageOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Visual Material Usage",
+        "tags": [
+          "visual-workshop"
         ]
       }
     },
@@ -71823,6 +72865,58 @@
           }
         },
         "summary": "Update Previs Scene",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/reference-images": {
+      "post": {
+        "operationId": "register_project_reference_image_v1_visual_workshop_projects__project_id__reference_images_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferenceImageRegistration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferenceImageRegistered"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Project Reference Image",
         "tags": [
           "visual-workshop"
         ]

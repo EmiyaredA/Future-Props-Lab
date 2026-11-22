@@ -1,12 +1,15 @@
 import { ResponsiveImage } from "@shared/ui/ResponsiveImage";
 import { BookOpen } from "lucide-react";
 import { useImagePreviewUrl } from "@platform/api/useImagePreviewUrl";
+import type { ReactNode } from "react";
 export function KnowledgeCover({
   assetId,
   imageOnly = false,
+  fallback,
 }: {
   assetId?: string | null;
   imageOnly?: boolean;
+  fallback?: ReactNode;
 }) {
   const { ref, url, error } = useImagePreviewUrl(
     assetId ? `/v1/files/${encodeURIComponent(assetId)}/download` : null,
@@ -14,7 +17,7 @@ export function KnowledgeCover({
   if (imageOnly) {
     return (
       <span ref={ref} className="knowledge-card-image">
-        {url && <ResponsiveImage src={url} alt="" />}
+        {url ? <ResponsiveImage src={url} alt="" /> : error ? fallback : null}
       </span>
     );
   }

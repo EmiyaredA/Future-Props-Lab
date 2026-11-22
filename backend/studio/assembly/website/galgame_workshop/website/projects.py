@@ -9,6 +9,7 @@ from studio.apps.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
     GalgameWorkshopProjectNotFoundError,
 )
+from studio.apps.galgame_workshop.project_previews import project_previews
 from studio.apps.galgame_workshop.project_values import project_out as project_out
 from studio.apps.galgame_workshop.schemas import (
     GalgameWorkshopProjectCreateIn,
@@ -44,7 +45,15 @@ class GalgameWorkshopProjects:
 
     async def list(self) -> GalgameWorkshopProjectListOut:
         rows = await list_owned_projects(self.session, GalgameWorkshopProject, self.owner_user_id)
-        return GalgameWorkshopProjectListOut(items=[project_out(row) for row in rows])
+        previews = await project_previews(
+            self.session, self.owner_user_id, [row.id for row in rows]
+        )
+        return GalgameWorkshopProjectListOut(
+            items=[
+                project_out(row).model_copy(update={"preview": previews.get(row.id)})
+                for row in rows
+            ]
+        )
 
     async def _row(self, project_id: str) -> GalgameWorkshopProject:
         return await load_owned_project(

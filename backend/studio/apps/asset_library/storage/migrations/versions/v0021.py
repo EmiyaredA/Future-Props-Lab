@@ -21,4 +21,14 @@ CREATE TABLE asset_dedupe_operations (
     UNIQUE(owner_user_id, request_id)
 );
 CREATE INDEX ix_asset_dedupe_operations_owner_user_id ON asset_dedupe_operations(owner_user_id);
+CREATE TABLE asset_dedupe_canonical_pins (
+    operation_id VARCHAR(36) NOT NULL,
+    content_key VARCHAR(64) NOT NULL,
+    owner_user_id VARCHAR(36) NOT NULL,
+    asset_id VARCHAR(36) NOT NULL,
+    PRIMARY KEY(operation_id, content_key),
+    FOREIGN KEY(asset_id) REFERENCES visual_assets(id) ON DELETE RESTRICT
+);
+CREATE INDEX ix_asset_dedupe_canonical_pins_owner_user_id ON asset_dedupe_canonical_pins(owner_user_id);
+CREATE INDEX ix_asset_dedupe_canonical_pins_asset_id ON asset_dedupe_canonical_pins(asset_id);
 """

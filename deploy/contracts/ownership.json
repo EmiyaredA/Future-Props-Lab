@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "openapi_sha256": "4a5f35f1d6566d4d8abf491c1e237c2488833918aaf924e33c316d3a5797e8b6",
+  "openapi_sha256": "8c05163c12993e8ae45cdbf04e12e61765dcd260a5df52ab4bc01ab213675875",
   "operations": [
     {
       "service": "identity",
@@ -827,6 +827,36 @@
     {
       "service": "assets",
       "method": "POST",
+      "path": "/v1/file-library/content-audits",
+      "operation_id": "create_file_content_audit_v1_file_library_content_audits_post"
+    },
+    {
+      "service": "assets",
+      "method": "GET",
+      "path": "/v1/file-library/content-audits/{operation_id}",
+      "operation_id": "get_file_content_audit_v1_file_library_content_audits__operation_id__get"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/file-library/content-audits/{operation_id}/clean",
+      "operation_id": "clean_file_duplicate_group_v1_file_library_content_audits__operation_id__clean_post"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/file-library/content-audits/{operation_id}/prepare",
+      "operation_id": "prepare_file_duplicate_group_v1_file_library_content_audits__operation_id__prepare_post"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/file-library/content-audits/{operation_id}/restore",
+      "operation_id": "restore_file_duplicate_group_v1_file_library_content_audits__operation_id__restore_post"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
       "path": "/v1/file-library/folder-archive-imports",
       "operation_id": "import_library_folder_archive_v1_file_library_folder_archive_imports_post"
     },
@@ -871,6 +901,12 @@
       "method": "POST",
       "path": "/v1/files",
       "operation_id": "upload_file_v1_files_post"
+    },
+    {
+      "service": "assets",
+      "method": "POST",
+      "path": "/v1/files/content-identities",
+      "operation_id": "inspect_file_content_identities_v1_files_content_identities_post"
     },
     {
       "service": "assets",
@@ -3328,6 +3364,12 @@
     },
     {
       "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/asset-card-links",
+      "operation_id": "inspect_visual_asset_card_links_v1_visual_workshop_asset_card_links_post"
+    },
+    {
+      "service": "visual",
       "method": "GET",
       "path": "/v1/visual-workshop/asset-cards",
       "operation_id": "list_account_asset_cards_v1_visual_workshop_asset_cards_get"
@@ -3403,6 +3445,12 @@
       "method": "POST",
       "path": "/v1/visual-workshop/generation-tasks/{task_id}/retry-materialization",
       "operation_id": "retry_materialization_v1_visual_workshop_generation_tasks__task_id__retry_materialization_post"
+    },
+    {
+      "service": "visual",
+      "method": "GET",
+      "path": "/v1/visual-workshop/material-usage",
+      "operation_id": "get_visual_material_usage_v1_visual_workshop_material_usage_get"
     },
     {
       "service": "visual",
@@ -3619,6 +3667,12 @@
       "method": "PUT",
       "path": "/v1/visual-workshop/projects/{project_id}/previs-scenes/{scene_id}",
       "operation_id": "update_previs_scene_v1_visual_workshop_projects__project_id__previs_scenes__scene_id__put"
+    },
+    {
+      "service": "visual",
+      "method": "POST",
+      "path": "/v1/visual-workshop/projects/{project_id}/reference-images",
+      "operation_id": "register_project_reference_image_v1_visual_workshop_projects__project_id__reference_images_post"
     },
     {
       "service": "visual",
@@ -3842,6 +3896,12 @@
       "service": "assets",
       "module": "studio.apps.asset_library.migration_models",
       "model": "AssetVideoOutputHistory"
+    },
+    {
+      "table": "asset_dedupe_canonical_pins",
+      "service": "assets",
+      "module": "studio.apps.asset_library.storage.content_models",
+      "model": "AssetDedupeCanonicalPin"
     },
     {
       "table": "asset_content_fingerprints",

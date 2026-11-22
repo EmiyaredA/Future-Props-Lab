@@ -7,6 +7,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from studio.runtime.project_preview import ProjectPreview
+
 from .geometry import validate_geometry
 
 MAX_UPLOAD = 20 * 1024 * 1024
@@ -135,6 +137,7 @@ class SpreadsheetPut(Wire):
 
 
 class SpreadsheetSummary(Wire):
+    preview: ProjectPreview | None = None
     id: str
     title: str
     revision: int

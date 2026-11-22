@@ -5,6 +5,7 @@ from copy import deepcopy
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from studio.apps.motion_compositor.project_previews import project_previews
 from studio.apps.motion_compositor.schemas import (
     DocumentOut,
     OperationBatchIn,
@@ -205,7 +206,15 @@ class MotionProjects:
                 )
             ).scalars()
         )
-        return ProjectListOut(items=[project_out(row) for row in rows])
+        previews = await project_previews(
+            self.session, self.owner_user_id, [row.id for row in rows]
+        )
+        return ProjectListOut(
+            items=[
+                project_out(row).model_copy(update={"preview": previews.get(row.id)})
+                for row in rows
+            ]
+        )
 
     async def get(self, project_id: str) -> ProjectOut:
         return project_out(await self.row(project_id))

@@ -137,6 +137,7 @@ export function VideoEditorProjectsPage({
                 id: project.id,
                 title: project.title,
                 updated_at: project.updatedAt,
+                preview: project.preview,
               }}
               cover="video"
               coverTitle="剪辑工程"

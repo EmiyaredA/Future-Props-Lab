@@ -327,6 +327,8 @@ export function AudioAnnotationProjectsPage({
   const projectsQuery = useQuery({
     queryKey: audioAnnotationQueryKeys.projectList(query),
     queryFn: () => listAudioAnnotationProjects(query),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
   const projects = useMemo(
     () => projectsQuery.data?.items ?? [],
@@ -453,6 +455,7 @@ export function AudioAnnotationProjectsPage({
                   id: project.id,
                   title: project.title,
                   updated_at: project.updated_at,
+                  preview: project.preview,
                 }}
                 cover="audio"
                 coverTitle={formatDuration(project.duration_ms)}

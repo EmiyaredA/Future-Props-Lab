@@ -105,8 +105,20 @@
   height: 100%;
   object-fit: cover;
 }
-.video-reference-strip .generation-media-card > .generation-media-remove {
-  display: none;
+.video-reference-strip
+  .generation-image-picker.is-minimal.is-compact-strip
+  .generation-image-options
+  .generation-media-card
+  > .generation-media-remove {
+  top: 4px;
+}
+.video-reference-strip
+  .generation-media-card:has(> .generation-media-remove):is(
+    :hover,
+    :focus-within
+  )
+  .reference-kind-tag {
+  opacity: 0;
 }
 .video-reference-strip
   .generation-image-options

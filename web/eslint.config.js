@@ -5,10 +5,7 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: [
-      "dist",
-      "src/generated",
-    ],
+    ignores: ["dist", "src/generated"],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -20,6 +17,7 @@ export default tseslint.config(
     },
     plugins: { "react-hooks": reactHooks, "react-refresh": reactRefresh },
     rules: {
+      "no-alert": "error",
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": [
         "warn",

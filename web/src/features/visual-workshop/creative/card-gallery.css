@@ -1,0 +1,167 @@
+.card-gallery-dialog {
+  box-sizing: border-box;
+  width: min(1080px, calc(100vw - 40px));
+  max-width: none;
+  max-height: calc(100dvh - 40px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.card-gallery-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.card-gallery-dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+.card-gallery-header,
+.card-gallery-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.card-gallery-header {
+  flex: none;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.card-gallery-header > div,
+.card-gallery-group-heading > div {
+  flex: 1;
+  min-width: 0;
+}
+.card-gallery-header h2,
+.card-gallery-group-heading h3 {
+  margin: 0 0 5px;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+.card-gallery-group-heading h3 {
+  font-size: 14px;
+}
+.card-gallery-dialog small,
+.card-gallery-empty,
+.card-gallery-scroll > p {
+  color: var(--muted);
+  font-size: 12px;
+}
+.card-gallery-dialog button,
+.card-gallery-dialog a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  gap: 4px;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: none;
+}
+.card-gallery-dialog button:hover,
+.card-gallery-dialog a:hover {
+  background: var(--surface-soft);
+}
+.card-gallery-dialog :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.card-gallery-scroll {
+  min-height: 0;
+  padding: 20px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.card-gallery-scroll > section + section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.card-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.card-gallery-grid figure {
+  min-width: 0;
+  margin: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+}
+.card-gallery-thumbnail {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+}
+.card-gallery-thumbnail .fpl-image-preview,
+.card-gallery-large-image .fpl-image-preview {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.card-gallery-thumbnail img,
+.card-gallery-large-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.card-gallery-thumbnail img {
+  cursor: zoom-in;
+}
+.card-gallery-grid figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.card-gallery-adopted {
+  color: var(--accent-text);
+  font-weight: 650;
+}
+.card-gallery-viewer {
+  height: min(900px, calc(100dvh - 40px));
+}
+.card-gallery-large-image {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  overflow: auto;
+  background: var(--surface-soft);
+}
+@media (max-width: 600px) {
+  .card-gallery-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+    border-radius: 12px;
+  }
+  .card-gallery-viewer {
+    height: calc(100dvh - 16px);
+  }
+  .card-gallery-header,
+  .card-gallery-scroll {
+    padding: 12px;
+  }
+}
+@media (pointer: coarse) {
+  .card-gallery-dialog button,
+  .card-gallery-dialog a {
+    min-height: 44px;
+  }
+}

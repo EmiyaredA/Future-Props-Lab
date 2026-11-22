@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "@platform/api/client";
 import {
+  registerReferenceImage as registerImage,
+  type ReferenceImageInput,
+  type ReferenceImageResult,
+} from "../creative/api";
+import {
   putVisualCanvas,
   type VisualCanvasDocument,
   type VisualCanvasEdge,
@@ -28,6 +33,8 @@ export function useCanvasPersistence(
   const metadataWritten = useRef(false);
   const groupsRef = useRef<VisualCanvasGroup[]>([]);
   const projectCardIdsRef = useRef<string[]>([]);
+  const registrationVersion = useRef(0);
+  const registeredCards = useRef(new Map<string, number>());
   const [groups, setGroups] = useState<VisualCanvasGroup[]>([]);
   const [projectCardIds, setProjectCardIds] = useState<string[]>([]);
   const applyCanvasMetadata = useCallback((document: VisualCanvasDocument) => {
@@ -138,6 +145,7 @@ export function useCanvasPersistence(
         }))
         .filter((group) => group.node_ids.length >= 2);
       const cardCopy = [...projectCardIdsRef.current];
+      const cardRegistrationVersion = registrationVersion.current;
       const includeMetadata =
         metadataWritten.current || Boolean(groupCopy.length || cardCopy.length);
       metadataWritten.current = includeMetadata;
@@ -159,7 +167,16 @@ export function useCanvasPersistence(
                 edgeCopy,
                 undefined,
                 groupCopy,
-                cardCopy,
+                [
+                  ...new Set([
+                    ...cardCopy,
+                    ...[...registeredCards.current]
+                      .filter(
+                        ([, version]) => version > cardRegistrationVersion,
+                      )
+                      .map(([id]) => id),
+                  ]),
+                ],
               )
             : await putVisualCanvas(
                 projectId,
@@ -402,6 +419,60 @@ export function useCanvasPersistence(
     [patchNode, prepareCanvasForAgent, scheduleSave],
   );
 
+  const registerReferenceImage = useCallback(
+    async (input: Omit<ReferenceImageInput, "expected_revision">) => {
+      await prepareCanvasForAgent();
+      let result: ReferenceImageResult | undefined;
+      const operation = saveQueue.current.then(async () => {
+        if (conflictRef.current) throw new Error("画布存在保存冲突，请先处理");
+        pendingSaves.current++;
+        try {
+          const expectedRevision = revisionRef.current;
+          result = await registerImage(projectId, {
+            ...input,
+            expected_revision: revisionRef.current,
+          });
+          if (result.revision > expectedRevision + Number(!result.reused)) {
+            throw new Error(
+              "登记已完成，但项目随后发生变化，请重新读取后再关联",
+            );
+          }
+          revisionRef.current = result.revision;
+          if (
+            !result.reused &&
+            !projectCardIdsRef.current.includes(result.card.id)
+          ) {
+            registeredCards.current.set(
+              result.card.id,
+              ++registrationVersion.current,
+            );
+            projectCardIdsRef.current = [
+              ...projectCardIdsRef.current,
+              result.card.id,
+            ];
+          }
+          metadataWritten.current = true;
+          setProjectCardIds(projectCardIdsRef.current);
+        } catch (error) {
+          if (
+            error instanceof ApiError &&
+            error.status === 409 &&
+            error.problem.code === "canvas_revision_conflict" &&
+            error.problem.current
+          )
+            registerConflict(error.problem.current as VisualCanvasDocument);
+          throw error;
+        } finally {
+          pendingSaves.current--;
+        }
+      });
+      saveQueue.current = operation.catch(() => undefined);
+      await operation;
+      return result!;
+    },
+    [prepareCanvasForAgent, projectId, registerConflict],
+  );
+
   const readCanvas = useCallback(
     () =>
       structuredClone({
@@ -463,6 +534,7 @@ export function useCanvasPersistence(
     projectCardIds,
     projectCardIdsRef,
     replaceProjectCardIds,
+    registerReferenceImage,
     applyCanvasMetadata,
     revisionRef,
     nodesRef,

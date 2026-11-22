@@ -29,11 +29,13 @@ from studio.apps.galgame_workshop.schemas.project_content import (
     GalgameStoryVariable as GalgameStoryVariable,
 )
 from studio.contracts.asset_library.project_snapshots import ProjectSnapshotImportWarning
+from studio.runtime.project_preview import ProjectPreview
 
 GalgameWorkshopProjectStatus = Literal["draft", "completed"]
 
 
 class GalgameWorkshopProjectOut(BaseModel):
+    preview: ProjectPreview | None = None
     is_official: bool = False
     id: str
     title: str

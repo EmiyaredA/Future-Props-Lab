@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { apiErrorMessage } from "@platform/api/errors";
 import { SearchablePickerDialog } from "@shared/ui/SearchablePickerDialog";
-import { cardsKey, listCards } from "./api";
+import { projectCardsKey, listProjectCards } from "./api";
 import { cardKindInfo } from "./cardKinds";
 import { placeCardImage } from "./cardMedia";
 
@@ -15,8 +15,8 @@ export function CardReferencePicker({
   onChoose: (asset: string) => void;
 }) {
   const query = useQuery({
-    queryKey: cardsKey,
-    queryFn: ({ signal }) => listCards(signal),
+    queryKey: projectCardsKey(project),
+    queryFn: ({ signal }) => listProjectCards(project, signal),
   });
   const cards =
     query.data?.filter((card) => card.adopted_asset_id && !card.archived) ?? [];

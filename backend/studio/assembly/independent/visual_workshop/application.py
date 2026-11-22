@@ -36,6 +36,7 @@ from studio.apps.visual_workshop.transport.creation_links_http import (
 )
 from studio.apps.visual_workshop.transport.creative_asset_scope import (
     independent_creative_asset_scope,
+    independent_reference_image_identity,
 )
 from studio.apps.visual_workshop.transport.creative_workflow_http import router as workflow_router
 from studio.apps.visual_workshop.transport.generation_http import router as generation_router
@@ -155,11 +156,20 @@ def create_app(
     )
     app.include_router(project_router)
     app.include_router(previs_router, prefix="/v1")
+    from studio.apps.visual_workshop.transport.material_identity_http import (
+        router as material_router,
+    )
+
+    app.include_router(material_router, prefix="/v1")
     app.include_router(workflow_router, prefix="/v1")
     app.include_router(storyboard_router, prefix="/v1")
     app.include_router(creation_links_router, prefix="/v1")
     app.include_router(retired_visual_reviews, prefix="/v1")
     app.state.creative_asset_scope = independent_creative_asset_scope
+    app.state.reference_image_identity = independent_reference_image_identity
+    from studio.apps.visual_workshop.handoffs.segment_handoffs import require_canvas_unreserved
+
+    app.state.reference_image_guard = require_canvas_unreserved
     app.include_router(snapshot_router)
     app.include_router(composition_router)
     app.include_router(outputs_router)

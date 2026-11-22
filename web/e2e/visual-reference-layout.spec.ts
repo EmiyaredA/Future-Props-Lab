@@ -8,6 +8,7 @@ test("三张图片与参考视频的详情操作位于图片下方，图标和�
   page,
 }, info) => {
   test.setTimeout(120_000);
+  page.setDefaultTimeout(10_000);
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.route("**/v1/visual-workshop/generation-options", (route) =>
     route.fulfill({
@@ -153,6 +154,7 @@ test("三张图片与参考视频的详情操作位于图片下方，图标和�
     headers,
     data: {
       expected_revision: canvas.revision,
+      project_card_ids: cards.map((card) => card.id),
       nodes: [
         ...canvas.nodes.map((node, index) =>
           index === 1
@@ -311,8 +313,8 @@ test("三张图片与参考视频的详情操作位于图片下方，图标和�
     expect(tags).toHaveLength(3);
     expect(new Set(tags.map((tag) => tag.background)).size).toBe(3);
     for (const tag of tags) {
-      expect(tag.height).toBe(18);
-      expect(tag.width).toBe(30);
+      expect(tag.height).toBe(14);
+      expect(tag.width).toBe(24);
       expect(tag.inside).toBe(true);
       expect(tag.clearOfNumber).toBe(true);
       expect(tag.textFits).toBe(true);
@@ -335,6 +337,30 @@ test("三张图片与参考视频的详情操作位于图片下方，图标和�
     }
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
+  const firstTile = strip.locator(".generation-media-card").first();
+  const cornerRemove = firstTile.getByRole("button", { name: /^移除参考文件/ });
+  await page.mouse.move(0, 0);
+  await page.evaluate(() => (document.activeElement as HTMLElement)?.blur());
+  await expect(cornerRemove).toHaveCSS("opacity", "0");
+  await firstTile.hover();
+  await expect(cornerRemove).toHaveCSS("opacity", "1");
+  await expect(firstTile.locator(".reference-kind-tag")).toHaveCSS(
+    "opacity",
+    "0",
+  );
+  const corner = (await cornerRemove.boundingBox())!;
+  const tile = (await firstTile
+    .locator(".generation-media-open")
+    .boundingBox())!;
+  expect(corner.y - tile.y).toBeLessThan(8);
+  expect(tile.x + tile.width - corner.x - corner.width).toBeLessThan(8);
+  await page.mouse.move(0, 0);
+  await cornerRemove.focus();
+  await expect(cornerRemove).toHaveCSS("opacity", "1");
+  await strip.screenshot({
+    path: info.outputPath("reference-hover-remove.png"),
+  });
+  await cornerRemove.blur();
   await strip
     .getByRole("button", { name: /^参考详情 / })
     .first()
@@ -346,6 +372,96 @@ test("三张图片与参考视频的详情操作位于图片下方，图标和�
   await strip.locator(".generation-media-open").first().click();
   await expect(page.getByRole("dialog", { name: /分镜图1/ })).toBeVisible();
   await page.getByRole("button", { name: "关闭预览", exact: true }).click();
+  await firstTile.hover();
+  await cornerRemove.click();
+  await expect(strip.locator(".generation-media-card")).toHaveCount(3);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect
+    .poll(async () => {
+      const state = await (await page.request.get(`${base}/canvas`)).json();
+      const draft = state.nodes.find(
+        (node: { id: string }) => node.id === "shot",
+      ).generation_draft;
+      return {
+        edges: state.edges.map((edge: { id: string }) => edge.id),
+        images: draft.reference_asset_ids,
+        designs: draft.design_references,
+      };
+    })
+    .toEqual({
+      edges: ["reference-1", "reference-2", "reference-3"],
+      images: [],
+      designs: [],
+    });
+  await page.getByRole("tab", { name: "人设", exact: true }).click();
+  const designSource = page.getByRole("button", {
+    name: "查看设定卡 实际归属-character",
+    exact: true,
+  });
+  await expect(designSource).toHaveAttribute("draggable", "true");
+  await designSource.dragTo(strip.locator(".reference-strip-toolbar"));
+  await expect(strip.locator(".generation-media-card")).toHaveCount(4);
+  await expect
+    .poll(async () => {
+      const state = await (await page.request.get(`${base}/canvas`)).json();
+      return state.nodes.find((node: { id: string }) => node.id === "shot")
+        .generation_draft.design_references;
+    })
+    .toEqual([
+      {
+        asset_id: canvas.nodes[0].asset_id,
+        card_id: cards[0].id,
+        card_revision: cards[0].revision,
+        title: cards[0].title,
+      },
+    ]);
+  const localDrop = await page.evaluateHandle(() => {
+    const bytes = Uint8Array.from(
+      atob(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+      ),
+      (char) => char.charCodeAt(0),
+    );
+    const transfer = new DataTransfer();
+    transfer.items.add(
+      new File([bytes], "本地拖入参考.png", { type: "image/png" }),
+    );
+    return transfer;
+  });
+  await strip
+    .locator(".reference-strip-toolbar")
+    .dispatchEvent("drop", { dataTransfer: localDrop });
+  await localDrop.dispose();
+  const classify = page.getByRole("dialog", { name: "上传并加入项目设定" });
+  await expect(classify).toBeVisible();
+  await classify
+    .getByRole("textbox", { name: "素材名称 1" })
+    .fill("本地新场景");
+  await classify.getByRole("combobox", { name: "素材分类 1" }).click();
+  await page.getByRole("option", { name: "场景", exact: true }).click();
+  await classify.getByRole("button", { name: "上传并关联" }).click();
+  await expect(
+    strip.getByRole("button", { name: "本地拖入参考", exact: true }),
+  ).toBeVisible();
+  await expect(strip.locator(".generation-media-card")).toHaveCount(5);
+  await page.getByRole("tab", { name: "场景", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "查看设定卡 本地新场景", exact: true }),
+  ).toBeVisible();
+  await expect
+    .poll(async () => {
+      const state = await (await page.request.get(`${base}/canvas`)).json();
+      return state.nodes.find((node: { id: string }) => node.id === "shot")
+        .generation_draft.reference_asset_ids.length;
+    })
+    .toBe(2);
+  await page.getByRole("tab", { name: "文件", exact: true }).click();
+  const fileSource = page
+    .locator(".board-material")
+    .filter({ hasText: "分镜图1" });
+  await fileSource.dragTo(strip);
+  await expect(page.getByRole("alert")).toContainText("已经在参考框里");
+  await expect(strip.locator(".generation-media-card")).toHaveCount(5);
   const latest = await (await page.request.get(`${base}/canvas`)).json();
   const withImage = await page.request.put(`${base}/canvas`, {
     headers,
@@ -397,5 +513,148 @@ test("三张图片与参考视频的详情操作位于图片下方，图标和�
   await page.screenshot({
     path: info.outputPath("image-category-hover.png"),
     animations: "disabled",
+  });
+  const storyboard = await (
+    await page.request.get(`${base}/storyboard`)
+  ).json();
+  const shots = [
+    { id: crypto.randomUUID(), title: "当前参考目标", video_node_id: "shot" },
+    {
+      id: crypto.randomUUID(),
+      title: "可拖入视频的分镜",
+      video_node_id: canvas.nodes[3].id,
+    },
+  ];
+  const savedShots = await page.request.put(`${base}/storyboard`, {
+    headers,
+    data: { expected_revision: storyboard.revision, shots },
+  });
+  expect(savedShots.ok(), await savedShots.text()).toBeTruthy();
+  await page.reload();
+  await page.getByRole("tab", { name: "分镜", exact: true }).click();
+  await page
+    .locator(".storyboard-shot-select")
+    .filter({ hasText: "当前参考目标" })
+    .click();
+  const sourceShot = page
+    .locator(".storyboard-shot")
+    .filter({ hasText: "可拖入视频的分镜" });
+  const videoTile = strip
+    .locator(".generation-media-card")
+    .filter({ has: page.getByRole("button", { name: /^参考视频/ }) });
+  // Remove the existing linked video, then add the same source from its shot.
+  await videoTile.hover();
+  await videoTile.getByRole("button", { name: /^移除参考文件/ }).click();
+  await expect(strip.locator(".generation-media-card")).toHaveCount(4);
+  await sourceShot.dragTo(strip);
+  await expect(strip.locator(".generation-media-card")).toHaveCount(5);
+  await expect(page.getByLabel("镜头标题")).toHaveValue("当前参考目标");
+  await expect
+    .poll(async () => {
+      const state = await (await page.request.get(`${base}/canvas`)).json();
+      return state.nodes.find((node: { id: string }) => node.id === "shot")
+        .generation_draft.video_asset_ids;
+    })
+    .toEqual([canvas.nodes[3].asset_id]);
+  await page.reload();
+  await page.getByRole("tab", { name: "分镜", exact: true }).click();
+  await page
+    .locator(".storyboard-shot-select")
+    .filter({ hasText: "当前参考目标" })
+    .click();
+  await expect(strip.locator(".generation-media-card")).toHaveCount(5);
+  await strip.screenshot({
+    path: info.outputPath("reference-drop-restored.png"),
+  });
+  const outsideResponse = await page.request.post(
+    "/v1/visual-workshop/asset-cards",
+    {
+      headers,
+      data: {
+        kind: "character",
+        title: "尚未收录的角色",
+        adopted_asset_id: canvas.nodes[1].asset_id,
+      },
+    },
+  );
+  expect(outsideResponse.ok(), await outsideResponse.text()).toBeTruthy();
+  const outside = await outsideResponse.json();
+  await strip.getByRole("button", { name: "添加参考素材" }).click();
+  await expect(
+    page.getByRole("menuitem", { name: "跨项目／文件库", exact: true }),
+  ).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "设定卡", exact: true }).click();
+  const picker = page.getByRole("dialog", { name: "添加设定参考" });
+  await expect(picker).toBeVisible();
+  await expect(picker.getByText(outside.title, { exact: true })).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  const collected = await (await page.request.get(`${base}/canvas`)).json();
+  const target = collected.nodes.find(
+    (node: { id: string }) => node.id === "shot",
+  );
+  target.generation_draft.reference_asset_ids.push(canvas.nodes[1].asset_id);
+  target.generation_draft.design_references.push({
+    card_id: outside.id,
+    card_revision: outside.revision,
+    asset_id: canvas.nodes[1].asset_id,
+    title: outside.title,
+  });
+  const withOutside = await page.request.put(`${base}/canvas`, {
+    headers,
+    data: {
+      expected_revision: collected.revision,
+      nodes: collected.nodes,
+      edges: collected.edges,
+      project_card_ids: [...collected.project_card_ids, outside.id],
+    },
+  });
+  expect(withOutside.ok(), await withOutside.text()).toBeTruthy();
+  const retained = await page.request.put(`${base}/canvas`, {
+    headers,
+    data: {
+      expected_revision: (await withOutside.json()).revision,
+      nodes: collected.nodes,
+      edges: collected.edges,
+      project_card_ids: collected.project_card_ids,
+    },
+  });
+  expect(retained.ok(), await retained.text()).toBeTruthy();
+  await page.reload();
+  await page.getByRole("tab", { name: "分镜", exact: true }).click();
+  await page
+    .locator(".storyboard-shot-select")
+    .filter({ hasText: "当前参考目标" })
+    .click();
+  const repair = page.getByRole("button", {
+    name: `收录到项目：${outside.title}`,
+    exact: true,
+  });
+  await expect(repair).toBeVisible();
+  const submissions: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.method() === "POST" &&
+      /\/generation-(tasks|batches)$/.test(new URL(request.url()).pathname)
+    )
+      submissions.push(request.url());
+  });
+  await page.getByRole("button", { name: "生成视频", exact: true }).click();
+  await expect(
+    page.getByText("请先修复未收录到当前项目或不可用的参考设定。", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect(submissions).toEqual([]);
+  await repair.click();
+  await expect(repair).toHaveCount(0);
+  await expect
+    .poll(
+      async () =>
+        (await (await page.request.get(`${base}/canvas`)).json())
+          .project_card_ids,
+    )
+    .toContain(outside.id);
+  await strip.screenshot({
+    path: info.outputPath("project-reference-repaired.png"),
   });
 });

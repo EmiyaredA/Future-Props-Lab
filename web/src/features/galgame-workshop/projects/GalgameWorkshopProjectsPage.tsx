@@ -143,6 +143,18 @@ export function GalgameWorkshopProjectsPage({
                   <span className="workshop-status completed">官方作品</span>
                 ) : undefined
               }
+              renderPreview={
+                project.preview?.kind === "scene"
+                  ? (signal) =>
+                      import("./projectCover").then(({ renderGalgameCover }) =>
+                        renderGalgameCover(
+                          project.id,
+                          project.preview!,
+                          signal,
+                        ),
+                      )
+                  : undefined
+              }
               cover="galgame"
               coverTitle="故事工程"
               onOpen={() => onOpenProject(project.id)}

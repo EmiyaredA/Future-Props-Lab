@@ -41,6 +41,8 @@ export function useProjectLibraryController<T extends ProjectRecord>(
   const projectsQuery = useQuery({
     queryKey: adapter.queryKey,
     queryFn: adapter.listProjects,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
   const refresh = () =>
     void client.invalidateQueries({ queryKey: adapter.queryKey });

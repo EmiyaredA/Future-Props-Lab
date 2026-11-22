@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from studio.contracts.asset_library.project_snapshots import ProjectSnapshotImportWarning
 from studio.contracts.video_editor.timeline_document import VideoEditorChromaKey
+from studio.runtime.project_preview import ProjectPreview
 
 VideoEditorPreset = Literal["720p30", "1080p30", "720p60", "1080p60"]
 VideoEditorTaskStatus = Literal["queued", "running", "completed", "failed", "cancelled"]
@@ -68,6 +69,7 @@ class VideoEditorProjectPatchIn(BaseModel):
 
 
 class VideoEditorProjectOut(BaseModel):
+    preview: ProjectPreview | None = None
     id: str
     title: str
     status: Literal["draft", "completed"]

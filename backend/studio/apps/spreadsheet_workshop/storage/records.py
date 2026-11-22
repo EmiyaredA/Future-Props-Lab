@@ -16,6 +16,7 @@ from studio.runtime.tasks.blocking_io import run_blocking_io
 from studio.runtime.time import utc_now
 
 from ..exchange import import_document
+from ..preview import workbook_previews
 from ..rules import apply_operations, default_document, has_formulas
 from ..schemas import (
     CONVERTER,
@@ -83,28 +84,37 @@ class Records:
             predicate = [SpreadsheetWorkbook.owner_user_id == owner]
             if query:
                 predicate.append(SpreadsheetWorkbook.title.contains(query, autoescape=True))
-            rows = await session.scalars(
-                select(SpreadsheetWorkbook)
-                .options(
-                    load_only(
-                        *(
-                            getattr(SpreadsheetWorkbook, field)
-                            for field in SpreadsheetSummary.model_fields
+            rows = (
+                await session.scalars(
+                    select(SpreadsheetWorkbook)
+                    .options(
+                        load_only(
+                            *(
+                                getattr(SpreadsheetWorkbook, field)
+                                for field in SpreadsheetSummary.model_fields
+                                if field != "preview"
+                            ),
                         )
                     )
+                    .where(*predicate)
+                    .order_by(SpreadsheetWorkbook.updated_at.desc())
+                    .offset(offset)
+                    .limit(limit)
                 )
-                .where(*predicate)
-                .order_by(SpreadsheetWorkbook.updated_at.desc())
-                .offset(offset)
-                .limit(limit)
-            )
+            ).all()
+            previews = await workbook_previews(session, owner, [row.id for row in rows])
             total = await session.scalar(
                 select(func.count()).select_from(SpreadsheetWorkbook).where(*predicate)
             )
             return SpreadsheetList(
                 items=[
                     SpreadsheetSummary(
-                        **{field: getattr(row, field) for field in SpreadsheetSummary.model_fields}
+                        preview=previews.get(row.id),
+                        **{
+                            field: getattr(row, field)
+                            for field in SpreadsheetSummary.model_fields
+                            if field != "preview"
+                        },
                     )
                     for row in rows
                 ],

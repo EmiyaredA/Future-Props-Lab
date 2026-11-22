@@ -1,0 +1,71 @@
+.reference-upload-form {
+  width: min(680px, calc(100vw - 24px));
+}
+.reference-upload-form h2 {
+  margin: 0;
+  font-size: 18px;
+}
+.reference-upload-form p {
+  margin: 0;
+  color: var(--muted);
+}
+.reference-upload-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px auto;
+  align-items: end;
+  gap: 8px;
+}
+.reference-upload-row label {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+.reference-upload-row input {
+  min-width: 0;
+  width: 100%;
+  padding: 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+.reference-upload-form button,
+.reference-upload-failures button {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.reference-upload-form button:disabled,
+.reference-upload-failures button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.reference-upload-form footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.reference-upload-failures {
+  display: grid;
+  gap: 8px;
+  color: var(--danger);
+  font-size: 12px;
+}
+.reference-upload-failures > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+@media (max-width: 560px) {
+  .reference-upload-row {
+    grid-template-columns: minmax(0, 1fr) 100px;
+  }
+  .reference-upload-row > button {
+    grid-column: 1 / -1;
+    justify-self: end;
+  }
+}

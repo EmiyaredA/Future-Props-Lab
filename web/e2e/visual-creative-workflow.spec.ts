@@ -91,8 +91,8 @@ test("分集剧本提取设定、白模试排、导入模型和选择镜头回�
   const projectUrl = page.url();
   await page.getByRole("button", { name: "剧本", exact: true }).click();
   await page.getByRole("button", { name: "新建集" }).click();
-  await page.getByRole("button", { name: "新建场" }).click();
-  await page.getByRole("textbox", { name: "场次名称" }).fill("咖啡馆对话");
+  await page.getByRole("button", { name: "新建分镜" }).click();
+  await page.getByRole("textbox", { name: "分镜名称" }).fill("咖啡馆对话");
   await page
     .getByRole("textbox", { name: "场景信息" })
     .fill("室内 · 咖啡馆 · 夜");

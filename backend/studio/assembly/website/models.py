@@ -26,6 +26,11 @@ from studio.apps.amadeus.storage.models import (
     AmadeusRunEvent,
     AmadeusRunInstruction,
 )
+from studio.apps.asset_library.storage.content_models import (
+    AssetContentFingerprint,
+    AssetDedupeCanonicalPin,
+    AssetDedupeOperation,
+)
 from studio.apps.asset_library.storage.layout.upgrade_records import AccountStorageUpgradeRoot
 from studio.apps.asset_library.storage.models import VisualAsset, VisualAssetFolder
 from studio.apps.audio_annotation.models import (
@@ -264,7 +269,11 @@ _ = (
     User,
 )
 
+
 TENANT_MODELS = (
+    AssetContentFingerprint,
+    AssetDedupeOperation,
+    AssetDedupeCanonicalPin,
     CloudFactor,
     CloudUnlock,
     DesktopPreference,

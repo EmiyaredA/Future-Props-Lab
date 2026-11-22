@@ -20,6 +20,7 @@ import { SearchablePickerDialog } from "@shared/ui/SearchablePickerDialog";
 import { useNavigationGuard } from "@shared/ui/navigationGuards";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { OutputPreview } from "../board/OutputPreview";
+import { setCanvasAssetDragData } from "../canvas/canvasAssetDrag";
 import { cardsKey, listCards, getScript, scriptKey } from "../creative/api";
 import { visualWorkshopQueryKeys as keys } from "../queryKeys";
 import { MaterialViews, type MaterialView } from "../board/MaterialViews";
@@ -316,7 +317,7 @@ export default function StoryboardWorkspace({
         <label>
           来源剧本
           <CustomSelect
-            ariaLabel="关联剧本场次"
+            ariaLabel="关联剧本分镜"
             value={selected.source?.scene_id ?? ""}
             onChange={(id) =>
               patch({
@@ -341,7 +342,7 @@ export default function StoryboardWorkspace({
                 ? [
                     {
                       value: selected.source.scene_id,
-                      label: "来源场次已删除",
+                      label: "来源分镜已删除",
                     },
                   ]
                 : []),
@@ -422,7 +423,7 @@ export default function StoryboardWorkspace({
             <Clapperboard size={20} /> 分镜
           </h2>
           <CustomSelect
-            ariaLabel="分镜场次"
+            ariaLabel="剧本分镜"
             value={filter}
             onChange={setFilter}
             options={[
@@ -476,7 +477,7 @@ export default function StoryboardWorkspace({
               <h3>{shots.length ? "没有匹配的分镜" : "还没有分镜"}</h3>
               <p>
                 {shots.length
-                  ? "调整搜索或场次筛选，查看其他镜头。"
+                  ? "调整搜索或剧本分镜筛选，查看其他镜头。"
                   : "为镜头建立分镜，或纳入画布中的视频。"}
               </p>
             </div>
@@ -484,13 +485,31 @@ export default function StoryboardWorkspace({
           {shown.map((shot) => {
             const linked = nodeById.get(shot.video_node_id ?? "");
             const node = linked?.kind === "video" ? linked : undefined;
+            const image = nodeById.get(shot.image_node_id ?? "");
+            const media = node?.asset_id
+              ? node
+              : image?.kind === "image"
+                ? image
+                : undefined;
             return (
               <article
                 key={shot.id}
                 className={`storyboard-shot${selected?.id === shot.id ? " is-selected" : ""}`}
-                draggable={!readOnly && !busy && !filter}
-                onDragStart={() => {
-                  drag.current = shot.id;
+                draggable={
+                  !readOnly && !busy && (!filter || Boolean(media?.asset_id))
+                }
+                onDragStart={(event) => {
+                  drag.current = filter ? "" : shot.id;
+                  if (media?.asset_id) {
+                    setCanvasAssetDragData(event.dataTransfer, {
+                      assetId: media.asset_id,
+                      mediaKind: media.kind,
+                      displayName: shot.title,
+                      importMode: "none",
+                      sourceProjectId: project,
+                    });
+                    event.dataTransfer.effectAllowed = "copyMove";
+                  }
                 }}
                 onDragEnd={() => {
                   drag.current = "";

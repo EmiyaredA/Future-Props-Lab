@@ -182,6 +182,11 @@ docs/
 这是 Future Props Lab 目录职责的唯一完整索引。新增、删除目录或改变目录职责时更新本文件；
 各模块文档只补充局部使用方法，不另行定义一套架构。
 
+项目卡片的通用展示、视口加载与客户端队列归 `web/src/shared/ui/project-library/`，轻量只读响应形状归
+`backend/studio/runtime/project_preview.py`。各工坊自己的 `project_previews.py`／`preview.py` 拥有取材规则，
+列表查询只读取账号内已有内容。导演台的单帧封面入口归 `web/src/features/director-desk/projectCover.ts`，
+Galgame 的精确帧封面适配归其 `projects/projectCover.ts`；两者不挂载编辑器、不保存项目。
+
 ## 兼容网站与组件端口
 
 兼容网站的跨应用存储、文件布局、后台执行适配与相应协议组合统一位于
@@ -203,11 +208,13 @@ docs/
 - 生成素材格的分类展示归 `generation/ReferenceKindTag.tsx`，`referenceCardLinks.ts` 仅将显式设定引用、精确素材 ID 命中的项目节点设定绑定和已解析画布连线映射为素材与设定卡 ID，不从内容推断分类或写入持久状态。
 - 视觉视频提示词的模板识别和纯解析归 `generation/promptRendering.ts`、`minimaxH3PromptRenderer.ts`，对应前端编辑器、引用选项及说明通过 `promptRenderViews.ts` 注册；`GenerationPromptField.tsx` 仅分派所选适配器或普通文本编辑器。MiniMax H3 的结构化正文归 `H3PromptPreview.tsx` 和 `PromptRenderedContent.tsx`，原文事务、撤销与中文输入归 `useH3PromptEditing.ts`，DOM 选区与原文位置映射归 `h3PromptSelection.ts`，隐藏字段／对白包装保护及源串替换归 `h3SourceEdits.ts`；普通文本继续复用 `GenerationPromptEditor`。适配器不持有生成或持久草稿状态；`promptReferenceSlots.ts` 按实际输入模式与顺序提供素材槽位，`h3PromptMentions.ts` 提供保留协议原文的引用选项，素材弹层按需加载完整媒体。分镜的白模场景选择和已发布输出展示归 `storyboard/ShotPrevisAssociation.tsx`，通过调用方的分镜 patch 与保存／导航接口完成操作。
 - 视觉画布统一使用 `web/src/features/visual-workshop/canvas/ToonflowCanvas.tsx` 的 Vue Flow 视口适配。节点、连线和编辑历史继续由画布控制器维护。白模场景与其嵌入式编辑器共用项目顶栏，场景保存与回填归 `web/src/features/visual-workshop/previs/`，TrumanMap 源码与许可归 `web/vendor/toonflow/`。
-- 视觉项目的分集剧本、设定卡和候选图交互归 `web/src/features/visual-workshop/creative/`。`schemas/creative_workflow.py` 与 `schemas/card_generation.py` 拥有纯数据结构；`creative_workflow.py`、`creative_rules.py` 和 `creative_ports.py` 拥有用例、规则与具名素材描述端口，`storage/creative_records.py` 拥有账号范围查询、CAS 和短事务。`card_generation.py` 通过绑定端口提交候选，`storage/card_generation.py` 将卡片版本、候选任务和回执与生成任务原子提交。两套装配显式提供素材检查适配。
+- 视觉项目的分集／逐镜剧本、设定卡和候选图交互归 `web/src/features/visual-workshop/creative/`。`ScriptEpisodeOverview.tsx` 展示按本集剧本顺序排列的分镜块、现有制作输出与排序入口，选择、草稿和保存仍由 `ScriptWorkspace.tsx` 持有。`schemas/creative_workflow.py` 与 `schemas/card_generation.py` 拥有纯数据结构；`creative_workflow.py`、`creative_rules.py` 和 `creative_ports.py` 拥有用例、规则与具名素材描述端口，`storage/creative_records.py` 拥有账号范围查询、CAS 和短事务。`card_generation.py` 通过绑定端口提交候选，`storage/card_generation.py` 将卡片版本、候选任务和回执与生成任务原子提交。两套装配显式提供素材检查适配。
 - 视觉生成的 `generation/generation_intake.py` 只消费 `intake_ports.py` 的准备、存储及引用交付端口；`storage/generation_intake.py` 拥有准备决议、画布绑定和原子提交，`transport/generation_bindings.py` 绑定本次请求依赖。Models 的 `providers/visual_reference_rules.py` 统一解释供应商参考能力，选择元数据与冻结计划模型分开，网站和独立 Visual 使用同一规则。
 - 画布持久化唯一拥有服务器/本地冲突恢复、旧保存队列排空及错误清理；看板和画布视图只消费命令及快照。`board/useBoardGenerationTasks.ts` 拥有任务观察及缓存失效，`canvas/useCanvasViewportGestures.ts` 拥有滚轮与触控监听生命周期，`paths.ts` 拥有不加载页面注册的纯路径生成。
-- 看板 `board/CommonDesignCards.tsx` 按项目已收录 ID 分类、搜索并显示 `DesignCardRow.tsx` 独立项；账号库的设定组、高清变体滚动和父关系规则归 `creative/CardLibraryGroups.tsx`、`VariantStrip.tsx`、`cardFamilies.ts`。`useCardNameSort.ts` 保存账号与视图范围的类别排序偏好，`useCardCreation.ts` 拥有建卡后的项目收录及重试。共享 `ui/useBackdropDismiss.ts` 只识别遮罩点击，是否允许关闭仍由各弹窗的未保存与提交状态决定。
+- 看板 `board/CommonDesignCards.tsx` 按项目已收录 ID 分类、搜索并显示 `DesignCardRow.tsx` 独立项；账号库的设定组、高清变体滚动和父关系规则归 `creative/CardLibraryGroups.tsx`、`VariantStrip.tsx`、`cardFamilies.ts`。设定组图片汇总规则、按需候选任务读取和总览／大图弹窗分别归 `creative/cardImages.ts`、`useCardFamilyImages.ts`、`CardFamilyGallery.tsx`，仅消费显式关联。`useCardNameSort.ts` 保存账号与视图范围的类别排序偏好，`useCardCreation.ts` 拥有建卡后的项目收录及重试。共享 `ui/useBackdropDismiss.ts` 只识别遮罩点击，是否允许关闭仍由各弹窗的未保存与提交状态决定。
 - 文件库目录路径规则归 `folderPaths.ts` 并通过公共入口导出；两套文件 API 共用 `storage/asset_edits.py`。
+- 设定卡编辑候选的顺序与 ID 归一规则归 `creative/cardImages.ts`；`useCardCandidates.ts` 读取候选任务及已核验的项目原件／库副本身份，`CardCandidateImages.tsx` 只展示完整候选与选择状态。服务端旧采用图保留规则归 Visual 的 `creative_rules.py`，在账号范围存储的 CAS 上下文应用。
+- 共享确认外观与焦点管理归 `web/src/shared/ui/ConfirmDialog.tsx`；`useConfirmation.tsx` 提供异步选择、重复请求拒绝和卸载取消，不裁决业务操作。调用方显式提供模态容器和进行中状态，业务用例在确认后继续执行。
 
 [源码迁移清单](source-relocations.json) 为历史文档中的代码依据提供静态定位；不参与服务加载，
 不创建旧模块别名、符号链接或默认兼容实现。产品文档正文保持原样。
@@ -1082,7 +1089,9 @@ Web 编辑器入口装配播放时钟和帧展示。`editor/playback-clock.ts` �
 
 `visual_workshop/schemas/prompts.py` 定义三类媒体草稿共用的提示词版本契约，`prompt_versions.py` 在画布用例边界保留旧客户端更新时的版本集合。`generation/usePromptVersions.ts` 持有独立编辑版本的同步快照，`PromptVersionControls.tsx` 提供画布与看板共用的版本操作；版本随节点 JSON 和画布 CAS 保存，生成仅消费当前文字。参考图片排序同步更新全部版本，输出历史保持独立生命周期。
 
-`board/MaterialTree.tsx` 为已有媒体输出提供项目素材拖拽数据；`generation/useProjectReferenceDrop.ts` 拥有生成参考框的拖入解析、项目文件与类型校验、去重及数量限制，放下后由 `ReferenceDropNotice.tsx` 提示成功或失败原因，参考框通过原草稿回调保存当前文件。全能参考栏统一按媒体类型路由拖入，不改变节点连线或来源选择。
+`board/MaterialTree.tsx` 为已有媒体输出提供项目素材拖拽数据，`storyboard/StoryboardWorkspace.tsx` 为分镜的现有视频或图片输出提供同一协议，`board/DesignCardRow.tsx` 附带设定卡身份。`generation/useProjectReferenceDrop.ts` 拥有参考框的项目范围、类型、去重和数量校验；本地文件统一交给 `useReferenceUploads.tsx` 完成分类、上传、登记与逐项重试，设定卡复用 `creative/cardMedia.ts` 的采用图解析。`useProjectReferenceIssues.ts` 与 `ProjectReferenceIssues.tsx` 分别核对历史设定关联及提供补收录反馈；`ReferenceKindTag.tsx` 仅展示当前项目卡分类。外部来源保留在项目素材管理，参考框不直接导入。缩略图与详情菜单共用移除流程，连线引用由调用方显式解除。
+
+视觉工坊 `reference_images.py` 编排项目图片与内容身份校验，`storage/reference_images.py` 在 Visual 操作回执和画布 CAS 的同一短事务中登记卡片与项目成员；`project_reference_rules.py` 在生成输入解析与结算时复核关联。`transport/creative_asset_scope.py` 经限定的内部 Assets 路径读取内容身份，兼容网站适配由 `assembly/website/visual_workshop/creative_assets.py` 显式装配。前端 `useCanvasPersistence.ts` 串行登记与草稿保存，合并登记期间排队保存所需的新卡，保留同时发生的节点编辑和后续显式移除。
 
 `generation/generationActivityModel.ts` 将节点关联的任务／图片批次快照归一为运行状态，`GenerationActivity.tsx` 与 `generation-activity.css` 拥有紧凑状态栏、已用时和共用转圈图标。看板右侧输出历史、节点标题、素材树、状态分组与生成按钮共用运行状态；未知进度保持不定值，现有输出版本与当前任务分开显示，不用参考素材模拟中间帧。
 
@@ -1314,3 +1323,5 @@ Web 通用 UI 验收放在 `web/tests/shared/`，API、SSE、下载与传输验�
 ### 视觉创作关联
 
 `backend/studio/apps/visual_workshop/creation_links/` 保存项目内场景卡与 3D 舞台、人物/道具卡与稳定白模对象标识的绑定，提供独立 CAS 文档。`storyboard/` 保存剧本选段和逐镜机位/走位覆盖；`previs/shotScope.ts` 通过宿主验证接口合成可编辑镜头，避免将镜头覆盖写回共享舞台。
+
+- `scripts/maintenance/`：通过公开 API 进行可恢复的素材检查、引用整理和精确去重；不直接修改持久数据库。

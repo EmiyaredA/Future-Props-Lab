@@ -1,10 +1,22 @@
 """Assets-owned derived fingerprints and durable cleanup decisions."""
 
+from datetime import datetime
+
 from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from studio.runtime.database.orm_base import Base
 from studio.runtime.time import utc_now
+
+
+class AssetDedupeCanonicalPin(Base):
+    __tablename__ = "asset_dedupe_canonical_pins"
+    operation_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    content_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    owner_user_id: Mapped[str] = mapped_column(String(36), index=True)
+    asset_id: Mapped[str] = mapped_column(
+        ForeignKey("visual_assets.id", ondelete="RESTRICT"), index=True
+    )
 
 
 class AssetContentFingerprint(Base):
@@ -25,5 +37,4 @@ class AssetDedupeOperation(Base):
     request_id: Mapped[str] = mapped_column(String(80))
     revision: Mapped[int] = mapped_column(Integer, default=0)
     document: Mapped[dict] = mapped_column(JSON)
-    created_at: Mapped[object] = mapped_column(DateTime, default=utc_now)
-
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

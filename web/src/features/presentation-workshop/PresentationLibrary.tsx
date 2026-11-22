@@ -54,6 +54,8 @@ export function PresentationLibrary({
   const query = useQuery({
     queryKey: presentationKeys.projects(search, offset),
     queryFn: ({ signal }) => listProjects(search, offset, signal),
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
   const perform = async (action: () => Promise<void>) => {
     if (busy) return;

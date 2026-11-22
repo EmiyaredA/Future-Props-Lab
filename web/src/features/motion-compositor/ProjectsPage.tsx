@@ -1,3 +1,4 @@
+import { ProjectCoverPreview } from "@shared/ui/project-library/ProjectCoverPreview";
 import type { ReactNode } from "react";
 import { LoadingState } from "@shared/ui/LoadingState";
 import { useTransferProgress } from "@platform/api/useTransferProgress";
@@ -71,20 +72,28 @@ export function ProjectsPage({
     setProjects(result.items);
   };
   useEffect(() => {
-    let alive = true;
-    void listProjects()
-      .then((result) => {
-        if (alive) setProjects(result.items);
-      })
-      .catch((caught: unknown) => {
-        if (alive)
-          setError(caught instanceof Error ? caught.message : "项目读取失败");
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
+    let controller = new AbortController();
+    const load = () => {
+      controller.abort();
+      controller = new AbortController();
+      const signal = controller.signal;
+      void listProjects(signal)
+        .then((result) => {
+          if (!signal.aborted) setProjects(result.items);
+        })
+        .catch((caught: unknown) => {
+          if (!signal.aborted)
+            setError(caught instanceof Error ? caught.message : "项目读取失败");
+        })
+        .finally(() => {
+          if (!signal.aborted) setLoading(false);
+        });
+    };
+    load();
+    window.addEventListener("focus", load);
     return () => {
-      alive = false;
+      controller.abort();
+      window.removeEventListener("focus", load);
     };
   }, []);
 
@@ -211,17 +220,25 @@ export function ProjectsPage({
         />
       ) : (
         <div className="mc-project-grid">
-          {filtered.map((project, index) => (
+          {filtered.map((project) => (
             <article className="mc-project-card" key={project.id}>
               <button
                 className="mc-project-cover"
                 onClick={() => onOpen(project.id)}
                 aria-label={`打开${project.title}`}
               >
-                <span className="mc-cover-slice" />
-                <span className="mc-cover-spark">✦</span>
-                <strong>{project.title}</strong>
-                <small>FX / {String(index + 1).padStart(2, "0")}</small>
+                {project.preview ? (
+                  <ProjectCoverPreview
+                    namespace="motion"
+                    projectId={project.id}
+                    title={project.title}
+                    preview={project.preview}
+                  />
+                ) : (
+                  <span className="project-cover-placeholder">
+                    暂无内容预览
+                  </span>
+                )}
               </button>
               <div className="mc-project-card-body">
                 <h3>{project.title}</h3>
