@@ -100,28 +100,34 @@ for (const width of [1440, 390]) {
       preview.getByRole("heading", { name: /主体定义/ }),
     ).toBeVisible();
     const controls = page.getByRole("group", { name: "提示词显示" });
-    const promptScroller = page.locator(".video-composer-prompt", {
-      has: controls,
-    });
+    const promptScroller = page.locator(
+      ".video-composer-prompt > .generation-prompt-field > :is(.prompt-render-preview, .generation-prompt-editor-shell)",
+    );
     async function checkPinnedToolbar(mode: string) {
       await promptScroller.evaluate((element) => {
         element.scrollTop = 0;
       });
       const before = (await controls.boundingBox())!;
-      await promptScroller.evaluate((element) => {
-        element.scrollTop = 220;
-      });
-      await expect
-        .poll(() => promptScroller.evaluate((element) => element.scrollTop))
-        .toBeGreaterThan(100);
-      await expect
-        .poll(async () =>
-          Math.abs((await controls.boundingBox())!.y - before.y),
-        )
-        .toBeLessThanOrEqual(1);
-      await expect(
-        controls.getByRole("button", { name: "复制原文" }),
-      ).toBeVisible();
+      for (const position of [220, Number.MAX_SAFE_INTEGER]) {
+        await promptScroller.evaluate((element, top) => {
+          element.scrollTop = top;
+        }, position);
+        await expect
+          .poll(() => promptScroller.evaluate((element) => element.scrollTop))
+          .toBeGreaterThan(100);
+        await expect
+          .poll(async () =>
+            Math.abs((await controls.boundingBox())!.y - before.y),
+          )
+          .toBeLessThanOrEqual(1);
+        const contentBounds = (await promptScroller.boundingBox())!;
+        expect(contentBounds.y).toBeGreaterThanOrEqual(
+          before.y + before.height,
+        );
+        await controls
+          .getByRole("button", { name: "复制原文" })
+          .click({ trial: true });
+      }
       await page.screenshot({ path: info.outputPath(`h3-pinned-${mode}.png`) });
       await promptScroller.evaluate((element) => {
         element.scrollTop = 0;
@@ -228,6 +234,7 @@ for (const width of [1440, 390]) {
       await page.getByRole("button", { name: "替换素材" }).click();
       await expect(preview).toContainText("Rain and traffic.");
       await controls.scrollIntoViewIfNeeded();
+      await checkPinnedToolbar("canvas");
       await page.screenshot({ path: info.outputPath("h3-canvas.png") });
     }
     await page.reload();

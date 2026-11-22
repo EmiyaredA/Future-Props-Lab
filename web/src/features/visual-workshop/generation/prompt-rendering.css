@@ -33,6 +33,28 @@
   background: var(--board-panel, var(--surface-soft));
 }
 
+/* Keep video prompt controls outside the scrolling editor in every view. */
+.video-composer-prompt:has(> .generation-prompt-field) {
+  overflow: hidden;
+}
+
+.video-composer-prompt > .generation-prompt-field {
+  min-height: 0;
+}
+
+.video-composer-prompt > .generation-prompt-field > .prompt-render-toolbar {
+  position: static;
+}
+
+.video-composer-prompt
+  > .generation-prompt-field
+  > :is(.prompt-render-preview, .generation-prompt-editor-shell) {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .generation-prompt-field
   > :is(.prompt-render-preview, .generation-prompt-editor-shell) {
   box-sizing: border-box;
